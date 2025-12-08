@@ -1,0 +1,353 @@
+/* ==========================================
+   OVERRIDES DE LAYOUT SOLO PARA ESTIMATOR
+   ========================================== */
+
+/* Que toda la app sea alto de viewport y no scrollee el body */
+.app-layout {
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* main-area ocupa todo y hace scroll solo en main-content */
+.main-area {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* ==========================================
+   SIDEBAR ESTIMATOR (Resumen + lista)
+   ========================================== */
+
+.estimator-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Tarjeta de resumen del estimate (Project, Subtotal, Total, etc.) */
+.estimator-summary-card {
+    background: #020617;
+    border-radius: 12px;
+    border: 1px solid #111827;
+    padding: 12px 12px 14px;
+}
+
+.summary-title {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #9ca3af;
+    margin-bottom: 8px;
+}
+
+.summary-block {
+    margin-bottom: 6px;
+}
+
+.summary-label {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.summary-value {
+    font-size: 13px;
+    color: #e5e7eb;
+    font-weight: 500;
+}
+
+/* Subtotal un poco más grande */
+.summary-subtotal {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Total (con overhead) más grande y en azul */
+.summary-total {
+    font-size: 18px;
+    font-weight: 700;
+    color: #3b82f6;
+}
+
+/* Si quisieras volver a usar grid, aquí está
+   (de momento no es obligatorio usarlo) */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 12px;
+    margin-top: 8px;
+}
+
+/* Card que envuelve la lista de estimates con scroll interno */
+.estimator-list-card {
+    margin-top: 4px;
+    background: #020617;
+    border-radius: 12px;
+    border: 1px solid #111827;
+    padding: 10px 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.estimator-list-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #6b7280;
+}
+
+/* Wrapper con scroll vertical para la lista de archivos */
+.estimator-files-wrapper {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.estimator-files-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.estimator-file {
+    font-size: 12px;
+    color: #9ca3af;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    cursor: default;
+}
+
+.estimator-file--active {
+    border-color: #1d4ed8;
+    background: rgba(37, 99, 235, 0.12);
+    color: #e5e7eb;
+}
+
+/* ==========================================
+   TOOLBAR ESTIMATOR + SEARCH
+   ========================================== */
+
+.estimator-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 8px;
+}
+
+.estimator-toolbar .toolbar-left {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.estimator-toolbar .toolbar-right {
+    display: flex;
+    align-items: center;
+}
+
+/* Contenedor de la barra de búsqueda */
+.estimator-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    border: 1px solid #1f2937;
+    background: #020617;        /* fondo oscuro */
+}
+
+/* Icono (lupa) */
+.search-icon {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+/* Input de búsqueda: se integra con el tema oscuro */
+.search-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #e5e7eb;
+    font-size: 13px;
+    min-width: 180px;
+}
+
+.search-input::placeholder {
+    color: #6b7280;
+}
+
+/* Para que el input global no meta box-shadow raro aquí */
+.estimator-search .search-input:focus {
+    box-shadow: none;
+}
+
+/* ==========================================
+   PANEL + TABLA ESTIMATOR (BLANCO)
+   ========================================== */
+
+/* Panel principal del estimator (fondo blanco) */
+.estimator-panel {
+    background: #ffffff !important;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb !important;
+    padding: 18px 16px;
+    color: #111827;
+}
+
+/* Wrapper de tabla con scroll propio y header sticky */
+.estimator-table-wrapper {
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    overflow-y: auto;
+    max-height: calc(100vh - 260px); /* ajusta si hace falta */
+}
+
+/* Header fijo (sticky) dentro del scroll de la tabla */
+.estimator-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f3f4f6;
+}
+
+/* Tabla base en blanco */
+.estimator-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    color: #111827;
+    font-size: 13px;
+}
+
+.estimator-table th,
+.estimator-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* Hover muy suave azul en filas */
+.estimator-table tbody tr:hover {
+    background: #eff6ff; /* azul muy suave */
+}
+
+/* ==========================================
+   CATEGORÍAS / SUBCATEGORÍAS
+   ========================================== */
+
+/* Fila de categoría (grupo) */
+.group-row {
+    cursor: pointer;
+}
+
+.group-row .category-accnum {
+    font-weight: 600;
+    color: #4b5563;
+}
+
+.group-row .group-cell {
+    font-weight: 700;
+    color: #1d4ed8;        /* azul en texto */
+    background: #ffffff;   /* fondo blanco */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Icono de toggle (▾ / ▸) */
+.group-toggle-icon {
+    font-size: 10px;
+    opacity: 0.7;
+}
+
+/* Subcategoría con sangría (2 tabs aprox) */
+.category-row .category-name {
+    font-weight: 600;
+    color: #111827;
+    padding-left: 32px;  /* sangría */
+}
+
+/* Columna de código (ID / clave) */
+.category-accnum {
+    width: 80px;
+    font-weight: 500;
+    color: #4b5563;
+}
+
+/* Celdas 'mute' pero en tema claro */
+.estimator-panel .table-cell-muted {
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+/* Feedback debajo de la tabla (estado, mensajes) */
+.estimator-feedback {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* ==========================================
+   TOPBAR — botón de info (icon-button)
+   ========================================== */
+
+.editable-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Botón de ícono (info) junto al título */
+.icon-button {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px;
+    line-height: 1;
+    color: #9ca3af;              /* gris medio por default */
+    transition: color 0.15s ease, transform 0.1s ease;
+}
+
+.icon-button:hover {
+    color: #e5e7eb;              /* más claro al hover */
+    transform: translateY(-1px);
+}
+
+/* ==========================================
+   MODAL PROJECT INFO (header + read-only)
+   ========================================== */
+
+/* Header del modal de info: título + botón "Manage info" */
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+/* Inputs en modo read-only (cuando no estás en "Manage info") */
+.input-readonly {
+    background: #f9fafb;
+    border-color: #e5e7eb;
+    color: #6b7280;
+    cursor: default;
+}
+
+/* Evitar que en read-only cambie al foco como editable */
+.input-readonly:focus {
+    outline: none;
+    box-shadow: none;
+    border-color: #e5e7eb;
+}

@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>NGM HUB — Estimator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Fuentes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    >
+
+    <!-- CSS global -->
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <!-- CSS específico del estimator -->
+    <link rel="stylesheet" href="assets/css/estimator_styles.css">
+</head>
+
+<body>
+    <div class="app-layout">
+        <!-- SIDEBAR ESPECIAL PARA ESTIMATOR -->
+        <aside class="sidebar estimator-sidebar">
+            <div class="sidebar-logo">
+                <!-- Logo más grande: se controla por .sidebar-logo-img en CSS -->
+                <img src="assets/img/logo.png" alt="NGM HUB" class="sidebar-logo-img">
+            </div>
+
+            <!-- Resumen del estimate -->
+            <div class="estimator-summary-card">
+                <div class="summary-title">Estimate Overview</div>
+
+                <div class="summary-block">
+                    <div class="summary-label">Project</div>
+                    <div class="summary-value" id="summary-project">(Untitled)</div>
+                </div>
+
+                <div class="summary-block">
+                    <div class="summary-label">Subtotal</div>
+                    <div class="summary-value summary-subtotal" id="summary-subtotal">$0</div>
+                </div>
+
+                <div class="summary-block">
+                    <div class="summary-label">Total</div>
+                    <div class="summary-value summary-total" id="summary-total">$0</div>
+                </div>
+
+                <div class="summary-block">
+                    <div class="summary-label">Overhead</div>
+                    <div class="summary-value" id="summary-overhead">—</div>
+                </div>
+
+                <div class="summary-block">
+                    <div class="summary-label">Created</div>
+                    <div class="summary-value" id="summary-date">—</div>
+                </div>
+            </div>
+
+            <!-- Lista de estimates (scroll + card) -->
+            <div class="estimator-list-card">
+                <div class="estimator-list-title">Estimates</div>
+                <div class="estimator-files-wrapper">
+                    <ul id="estimator-files-list" class="estimator-files-list">
+                        <!-- Por ahora mockeado -->
+                        <li class="estimator-file estimator-file--active">estimate.ngm</li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN AREA -->
+        <main class="main-area">
+            <!-- TOPBAR -->
+            <header class="topbar">
+                <div>
+                    <div class="topbar-title editable-title">
+                        <!-- Solo nombre del proyecto -->
+                        <span id="project-title-text">Untitled Project</span>
+                        <!-- Icono de info (reemplaza al lápiz) -->
+                        <button id="project-info-btn" class="icon-button" title="Project info">
+                            ⓘ
+                        </button>
+                    </div>
+                    <div class="topbar-subtitle" id="project-subtitle">
+                        Loaded from <code>estimate.ngm</code>.
+                    </div>
+                </div>
+                <div class="user-pill">
+                    Template Mode
+                </div>
+            </header>
+
+            <!-- CONTENIDO PRINCIPAL (SCROLL SOLO AQUÍ) -->
+            <section class="main-content">
+                <!-- TOOLBAR DEL ESTIMATOR -->
+                <div class="estimator-toolbar">
+                    <div class="toolbar-left">
+                        <button class="btn-secondary" id="btn-add-concept">Add Concept</button>
+                        <button class="btn-secondary" id="btn-overhead">Overhead</button>
+                        <button class="btn-secondary" id="btn-import-revit">Import from Revit</button>
+                        <button class="btn-secondary" id="btn-export">Export</button>
+                        <button class="btn-secondary" id="btn-columns">Columns</button>
+                    </div>
+                    <div class="toolbar-right">
+                        <!-- Barra de búsqueda / filtro -->
+                        <div class="estimator-search">
+                            <span class="search-icon">🔍</span>
+                            <input
+                                type="text"
+                                id="estimator-search-input"
+                                class="input search-input"
+                                placeholder="Filter by code, name, unit…"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="panel panel-narrow estimator-panel">
+                        <div id="estimator-status" class="table-lock-label" style="margin-bottom: 8px;">
+                            Fetching /estimator/base-structure…
+                        </div>
+
+                        <div class="table-wrapper estimator-table-wrapper">
+                            <table class="table estimator-table">
+                                <thead>
+                                    <tr>
+                                        <th class="col-code" style="width: 90px;">Code</th>
+                                        <th class="col-image" style="width: 80px;">Image</th>
+                                        <th class="col-name">Category / Subcategory / Concept</th>
+                                        <th class="col-qty" style="width: 90px;">QTY</th>
+                                        <th class="col-unit" style="width: 110px;">Unit</th>
+                                        <th class="col-unit-cost" style="width: 120px;">Unit Cost</th>
+                                        <th class="col-subtotal" style="width: 120px;">Subtotal</th>
+                                        <th class="col-total" style="width: 140px;">Total</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="estimator-body">
+                                    <tr>
+                                        <td colspan="8" class="table-cell-muted">
+                                            Loading…
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="estimator-feedback" class="estimator-feedback"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL PARA INFO / EDITAR INFO DEL PROYECTO -->
+    <div id="project-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Project Info</div>
+                <button type="button" class="btn-secondary" id="project-manage-btn">
+                    ✏️ Manage info
+                </button>
+            </div>
+
+            <form id="project-form" class="modal-form">
+                <div>
+                    <div class="field-label">Project Name</div>
+                    <input type="text" id="project-name-input" class="input" />
+                </div>
+                <div>
+                    <div class="field-label">Address</div>
+                    <input type="text" id="project-address-input" class="input" />
+                </div>
+                <div>
+                    <div class="field-label">Project Type</div>
+                    <input type="text" id="project-type-input" class="input" />
+                </div>
+
+                <!-- Nuevos campos de metadatos de proyecto -->
+                <div>
+                    <div class="field-label">Total Area (SqFt)</div>
+                    <input type="text" id="project-total-area-input" class="input" />
+                </div>
+                <div>
+                    <div class="field-label">Habitable Area (SqFt)</div>
+                    <input type="text" id="project-habitable-area-input" class="input" />
+                </div>
+                <div>
+                    <div class="field-label">Non Habitable Area (SqFt)</div>
+                    <input type="text" id="project-nonhabitable-area-input" class="input" />
+                </div>
+                <div>
+                    <div class="field-label">Footings Type</div>
+                    <input type="text" id="project-footings-input" class="input" />
+                </div>
+
+                <div>
+                    <div class="field-label">Number of Rooms</div>
+                    <input type="text" id="project-rooms-input" class="input" />
+                </div>
+                <div>
+                    <div class="field-label">Number of Bathrooms</div>
+                    <input type="text" id="project-baths-input" class="input" />
+                </div>
+                <div>
+                    <div class="field-label">Number of Units</div>
+                    <input type="text" id="project-units-input" class="input" />
+                </div>
+                <div>
+                    <div class="field-label">Foundation Type</div>
+                    <input type="text" id="project-foundation-input" class="input" />
+                </div>
+                <div>
+                    <div class="field-label">Date</div>
+                    <input type="date" id="project-date-input" class="input" />
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="project-cancel-btn">
+                        Close
+                    </button>
+                    <button type="submit" class="btn-primary" id="project-save-btn">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL PARA COLUMNAS -->
+    <div id="columns-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-title">Visible Columns</div>
+            <form id="columns-form" class="modal-form">
+                <label class="field-label">
+                    <input type="checkbox" data-col="code" checked />
+                    Code
+                </label>
+                <label class="field-label">
+                    <input type="checkbox" data-col="image" checked />
+                    Image
+                </label>
+                <label class="field-label">
+                    <input type="checkbox" data-col="name" checked />
+                    Category / Concept
+                </label>
+                <label class="field-label">
+                    <input type="checkbox" data-col="qty" checked />
+                    QTY
+                </label>
+                <label class="field-label">
+                    <input type="checkbox" data-col="unit" checked />
+                    Unit
+                </label>
+                <label class="field-label">
+                    <input type="checkbox" data-col="unit-cost" checked />
+                    Unit Cost
+                </label>
+                <label class="field-label">
+                    <input type="checkbox" data-col="subtotal" checked />
+                    Subtotal
+                </label>
+                <label class="field-label">
+                    <input type="checkbox" data-col="total" checked />
+                    Total
+                </label>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="columns-cancel-btn">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary">
+                        Apply
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         SCRIPT: leer .ngm, colapsar grupos/subcats, editar proyecto,
+         toolbar, columnas, guardar, filtro dinámico
+    ============================================================== -->
+    <script>
+        const API_BASE_URL = "http://127.0.0.1:8000";
+
+        let currentEstimateData = null;
+        const groupState = {};
+        const subState = {};
+        let currentFilter = "";
+
+        function formatCurrency(value) {
+            const n = typeof value === "number" ? value : 0;
+            return new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency: "USD",
+                maximumFractionDigits: 0,
+            }).format(n);
+        }
+
+        function toggleGroup(indexCat) {
+            groupState[indexCat] = !groupState[indexCat];
+            // Reaplicar filtro / visibilidad
+            applyTableFilter(currentFilter);
+        }
+
+        function toggleSub(catIndex, subIndex) {
+            const key = catIndex + "-" + subIndex;
+            subState[key] = !subState[key];
+            applyTableFilter(currentFilter);
+        }
+
+        async function saveEstimateToServer() {
+            if (!currentEstimateData) return;
+
+            const statusEl = document.getElementById("estimator-status");
+            statusEl.textContent = "Saving…";
+
+            try {
+                const res = await fetch(API_BASE_URL + "/estimator/save", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(currentEstimateData),
+                });
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                statusEl.textContent = "Saved.";
+            } catch (err) {
+                console.error("Error saving estimate:", err);
+                statusEl.textContent = "Error saving estimate.ngm";
+            }
+        }
+
+        async function loadEstimatorFromNgm() {
+            const tbody = document.getElementById("estimator-body");
+            const statusEl = document.getElementById("estimator-status");
+            const feedbackEl = document.getElementById("estimator-feedback");
+            const projectTitleTextEl = document.getElementById("project-title-text");
+            const projectSubtitleEl = document.getElementById("project-subtitle");
+
+            const summaryProject = document.getElementById("summary-project");
+            const summarySubtotal = document.getElementById("summary-subtotal");
+            const summaryTotal = document.getElementById("summary-total");
+            const summaryOverhead = document.getElementById("summary-overhead");
+            const summaryDate = document.getElementById("summary-date");
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="table-cell-muted">
+                        Cargando estructura desde el servidor…
+                    </td>
+                </tr>
+            `;
+            statusEl.textContent = "Fetching /estimator/base-structure…";
+            feedbackEl.textContent = "";
+
+            try {
+                const res = await fetch(API_BASE_URL + "/estimator/base-structure");
+                if (!res.ok) throw new Error("HTTP " + res.status);
+
+                const data = await res.json();
+                console.log("NGM data:", data);
+                currentEstimateData = data;
+
+                const projectObj = data.project || {};
+                const projectName = data.project_name || projectObj["Project Name"] || "Untitled Project";
+                const projectDate = data.date || projectObj["Date"] || "";
+
+                // Topbar
+                projectTitleTextEl.textContent = projectName || "Untitled Project";
+                projectSubtitleEl.textContent = projectDate
+                    ? "Date: " + projectDate + " · Loaded from estimate.ngm"
+                    : "Loaded from estimate.ngm";
+
+                // Sidebar summary
+                const categories = Array.isArray(data.categories) ? data.categories : [];
+                let subtotal = 0;
+
+                categories.forEach(cat => {
+                    if (typeof cat.total_cost === "number") {
+                        subtotal += cat.total_cost;
+                    }
+                });
+
+                const overheadAmount = 0; // TODO: overhead real después
+                const totalWithOH = subtotal + overheadAmount;
+
+                summaryProject.textContent = projectName || "(Untitled)";
+                summarySubtotal.textContent = formatCurrency(subtotal);
+                summaryTotal.textContent = formatCurrency(totalWithOH);
+                summaryOverhead.textContent = overheadAmount ? formatCurrency(overheadAmount) : "—";
+                summaryDate.textContent = projectDate || "—";
+
+                // Tabla principal
+                if (!categories.length) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="table-cell-muted">
+                                No categories found in estimate.ngm (data.categories está vacío).
+                            </td>
+                        </tr>
+                    `;
+                    statusEl.textContent = "Loaded (0 categories)";
+                    return;
+                }
+
+                tbody.innerHTML = "";
+                let totalSubs = 0;
+
+                categories.forEach((cat, indexCat) => {
+                    const catName = cat.name || "Category " + (indexCat + 1);
+                    const catCode = cat.id || "C" + (indexCat + 1);
+                    const subcats = Array.isArray(cat.subcategories) ? cat.subcategories : [];
+
+                    groupState[indexCat] = true;
+
+                    // Fila CATEGORY (grupo, colapsable)
+                    const trGroup = document.createElement("tr");
+                    trGroup.classList.add("group-row");
+                    trGroup.dataset.groupIndex = String(indexCat);
+                    trGroup.innerHTML = `
+                        <td class="category-accnum col-code">${catCode}</td>
+                        <td class="image-cell col-image"></td>
+                        <td class="group-cell col-name" colspan="6">
+                            <span class="group-toggle-icon">▾</span>
+                            <span class="group-name">${catName}</span>
+                        </td>
+                    `;
+                    trGroup.addEventListener("click", () => toggleGroup(indexCat));
+                    tbody.appendChild(trGroup);
+
+                    if (!subcats.length) {
+                        const trEmpty = document.createElement("tr");
+                        trEmpty.classList.add("category-row");
+                        trEmpty.dataset.parentIndex = String(indexCat);
+                        trEmpty.innerHTML = `
+                            <td class="col-code"></td>
+                            <td class="image-cell col-image"></td>
+                            <td class="table-cell-muted col-name" colspan="6">No subcategories.</td>
+                        `;
+                        tbody.appendChild(trEmpty);
+                        return;
+                    }
+
+                    // Subcategorías
+                    subcats.forEach((sub, indexSub) => {
+                        totalSubs++;
+                        const subName = sub.name || "Subcategory " + (indexSub + 1);
+                        const items = Array.isArray(sub.items) ? sub.items : [];
+                        const subKey = indexCat + "-" + indexSub;
+                        subState[subKey] = true;
+
+                        const trSub = document.createElement("tr");
+                        trSub.classList.add("category-row");
+                        trSub.dataset.parentIndex = String(indexCat);
+                        trSub.dataset.subRow = String(indexSub);
+                        trSub.innerHTML = `
+                            <td class="category-accnum col-code"></td>
+                            <td class="image-cell col-image"></td>
+                            <td class="category-name col-name">
+                                ${
+                                    items.length
+                                        ? '<span class="group-toggle-icon sub-toggle-icon">▾</span>'
+                                        : ""
+                                }
+                                <span>${subName}</span>
+                            </td>
+                            <td class="table-cell-muted col-qty">—</td>
+                            <td class="table-cell-muted col-unit">—</td>
+                            <td class="table-cell-muted col-unit-cost">—</td>
+                            <td class="table-cell-muted col-subtotal">—</td>
+                            <td class="table-cell-muted col-total">—</td>
+                        `;
+                        if (items.length) {
+                            trSub.addEventListener("click", () => toggleSub(indexCat, indexSub));
+                        }
+                        tbody.appendChild(trSub);
+
+                        // Items dentro de la subcategory (conceptos)
+                        items.forEach((item, itemIdx) => {
+                            const code = item.id || item.code || "";
+                            const name = item.name || item.description || "Item " + (itemIdx + 1);
+                            const qty = item.qty ?? item.quantity ?? "";
+                            const unit = item.unit || "";
+                            const unitCost = item.unit_cost ?? item.base_cost ?? "";
+                            const subtotalItem = item.total ?? item.total_cost ?? "";
+                            const totalItem = subtotalItem; // overhead pendiente
+
+                            const trItem = document.createElement("tr");
+                            trItem.classList.add("item-row");
+                            trItem.dataset.catIndex = String(indexCat);
+                            trItem.dataset.subIndex = String(indexSub);
+                            trItem.innerHTML = `
+                                <td class="category-accnum col-code">${code}</td>
+                                <td class="image-cell col-image">—</td>
+                                <td class="item-name col-name">${name}</td>
+                                <td class="col-qty">${qty || "—"}</td>
+                                <td class="col-unit">${unit || "—"}</td>
+                                <td class="col-unit-cost">${unitCost !== "" ? unitCost : "—"}</td>
+                                <td class="col-subtotal">${subtotalItem !== "" ? subtotalItem : "—"}</td>
+                                <td class="col-total">${totalItem !== "" ? totalItem : "—"}</td>
+                            `;
+                            tbody.appendChild(trItem);
+                        });
+                    });
+                });
+
+                statusEl.textContent = "Loaded " + categories.length + " categories, " + totalSubs + " subcategories.";
+                feedbackEl.textContent = "Template loaded from estimate.ngm";
+
+                // Aplicar filtro actual (por si el usuario ya estaba filtrando)
+                applyTableFilter(currentFilter);
+            } catch (err) {
+                console.error("NGM error:", err);
+                statusEl.textContent = "Error loading .ngm";
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="table-cell-muted" style="color:#fca5a5;">
+                            Error loading estimate.ngm — check backend console.
+                        </td>
+                    </tr>
+                `;
+                feedbackEl.textContent = "";
+            }
+        }
+
+        function setupProjectInfoModal() {
+            const infoBtn = document.getElementById("project-info-btn");
+            const modal = document.getElementById("project-modal");
+            const form = document.getElementById("project-form");
+            const cancelBtn = document.getElementById("project-cancel-btn");
+            const manageBtn = document.getElementById("project-manage-btn");
+            const saveBtn = document.getElementById("project-save-btn");
+
+            const nameInput = document.getElementById("project-name-input");
+            const addressInput = document.getElementById("project-address-input");
+            const typeInput = document.getElementById("project-type-input");
+            const totalAreaInput = document.getElementById("project-total-area-input");
+            const habitableAreaInput = document.getElementById("project-habitable-area-input");
+            const nonHabitableAreaInput = document.getElementById("project-nonhabitable-area-input");
+            const footingsInput = document.getElementById("project-footings-input");
+            const roomsInput = document.getElementById("project-rooms-input");
+            const bathsInput = document.getElementById("project-baths-input");
+            const unitsInput = document.getElementById("project-units-input");
+            const foundationInput = document.getElementById("project-foundation-input");
+            const dateInput = document.getElementById("project-date-input");
+
+            const projectTitleTextEl = document.getElementById("project-title-text");
+            const summaryProject = document.getElementById("summary-project");
+            const summaryDate = document.getElementById("summary-date");
+            const projectSubtitleEl = document.getElementById("project-subtitle");
+
+            const allInputs = [
+                nameInput,
+                addressInput,
+                typeInput,
+                totalAreaInput,
+                habitableAreaInput,
+                nonHabitableAreaInput,
+                footingsInput,
+                roomsInput,
+                bathsInput,
+                unitsInput,
+                foundationInput,
+                dateInput
+            ];
+
+            let editMode = false;
+
+            function setEditMode(enabled) {
+                editMode = enabled;
+                allInputs.forEach(inp => {
+                    inp.readOnly = !enabled;
+                    inp.classList.toggle("input-readonly", !enabled);
+                });
+                saveBtn.disabled = !enabled;
+                manageBtn.textContent = enabled ? "✔ Done editing" : "✏️ Manage info";
+            }
+
+            function openModal() {
+                const proj = currentEstimateData?.project || {};
+
+                nameInput.value = proj["Project Name"] || currentEstimateData?.project_name || "";
+                addressInput.value = proj["Address"] || "";
+                typeInput.value = proj["Project Type"] || "";
+
+                totalAreaInput.value = proj["Total Area (SqFt)"] || "";
+                habitableAreaInput.value = proj["Habitable Area (SqFt)"] || "";
+                nonHabitableAreaInput.value = proj["Non Habitable Area (SqFt)"] || "";
+                footingsInput.value = proj["Footings Type"] || proj["Foundation Type"] || "";
+
+                roomsInput.value = proj["Number of Rooms"] || "";
+                bathsInput.value = proj["Number of Bathrooms"] || "";
+                unitsInput.value = proj["Number of Units"] || "";
+                foundationInput.value = proj["Foundation Type"] || "";
+                dateInput.value = proj["Date"] || currentEstimateData?.date || "";
+
+                modal.classList.remove("hidden");
+                // Modal abre en modo solo lectura
+                setEditMode(false);
+            }
+
+            function closeModal() {
+                modal.classList.add("hidden");
+            }
+
+            infoBtn.addEventListener("click", openModal);
+
+            manageBtn.addEventListener("click", () => {
+                setEditMode(!editMode);
+            });
+
+            cancelBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                closeModal();
+            });
+
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                // Si no estamos en modo edición, solo cerramos
+                if (!editMode) {
+                    closeModal();
+                    return;
+                }
+
+                if (!currentEstimateData) currentEstimateData = {};
+                if (!currentEstimateData.project) {
+                    currentEstimateData.project = {};
+                }
+
+                const proj = currentEstimateData.project;
+
+                proj["Project Name"] = nameInput.value;
+                proj["Address"] = addressInput.value;
+                proj["Project Type"] = typeInput.value;
+                proj["Total Area (SqFt)"] = totalAreaInput.value;
+                proj["Habitable Area (SqFt)"] = habitableAreaInput.value;
+                proj["Non Habitable Area (SqFt)"] = nonHabitableAreaInput.value;
+                proj["Footings Type"] = footingsInput.value;
+                proj["Number of Rooms"] = roomsInput.value;
+                proj["Number of Bathrooms"] = bathsInput.value;
+                proj["Number of Units"] = unitsInput.value;
+                proj["Foundation Type"] = foundationInput.value;
+                proj["Date"] = dateInput.value;
+
+                // Sincronizar campos “planos” del JSON
+                currentEstimateData.project_name = nameInput.value;
+                currentEstimateData.date = dateInput.value;
+
+                // Refrescar UI
+                projectTitleTextEl.textContent = nameInput.value || "Untitled Project";
+                summaryProject.textContent = nameInput.value || "(Untitled)";
+                summaryDate.textContent = dateInput.value || "—";
+                projectSubtitleEl.textContent = dateInput.value
+                    ? "Date: " + dateInput.value + " · Loaded from estimate.ngm"
+                    : "Loaded from estimate.ngm";
+
+                await saveEstimateToServer();
+                closeModal();
+            });
+
+            // Cerrar al hacer click fuera
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+        }
+
+        function setupToolbar() {
+            document.getElementById("btn-add-concept").addEventListener("click", () => {
+                alert("Add Concept: aquí luego abrimos el modal para insertar conceptos.");
+            });
+
+            document.getElementById("btn-overhead").addEventListener("click", () => {
+                alert("Overhead: cuando definamos sección overhead en el JSON, este botón abrirá su configurador.");
+            });
+
+            document.getElementById("btn-import-revit").addEventListener("click", () => {
+                alert("Import from Revit: aquí conectaremos la importación desde cantidades.");
+            });
+
+            document.getElementById("btn-export").addEventListener("click", () => {
+                alert("Export: aquí agregaremos la lógica para exportar a PDF / CSV / .ngm.");
+            });
+        }
+
+        function setupColumnsModal() {
+            const btn = document.getElementById("btn-columns");
+            const modal = document.getElementById("columns-modal");
+            const form = document.getElementById("columns-form");
+            const cancelBtn = document.getElementById("columns-cancel-btn");
+
+            function openModal() {
+                modal.classList.remove("hidden");
+            }
+
+            function closeModal() {
+                modal.classList.add("hidden");
+            }
+
+            btn.addEventListener("click", openModal);
+            cancelBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                closeModal();
+            });
+
+            form.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const checkboxes = form.querySelectorAll("input[type=checkbox][data-col]");
+
+                checkboxes.forEach(cb => {
+                    const col = cb.getAttribute("data-col"); // e.g. "code"
+                    const visible = cb.checked;
+                    const selector = ".col-" + col; // e.g. ".col-code"
+                    document.querySelectorAll(selector).forEach(el => {
+                        el.style.display = visible ? "" : "none";
+                    });
+                });
+
+                closeModal();
+            });
+
+            modal.addEventListener("click", (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+        }
+
+        // ===============================
+        // Filtro dinámico de la tabla
+        // ===============================
+        function applyTableFilter(rawTerm) {
+            currentFilter = (rawTerm || "").trim().toLowerCase();
+            const tbody = document.getElementById("estimator-body");
+            const rows = tbody.querySelectorAll("tr");
+
+            // Si no hay filtro → restaurar visibilidad según estados de grupo/sub
+            if (!currentFilter) {
+                rows.forEach(row => {
+                    const isGroup = row.classList.contains("group-row");
+                    const isCategoryRow = row.classList.contains("category-row");
+                    const isItemRow = row.classList.contains("item-row");
+
+                    let visible = true;
+
+                    if (isCategoryRow) {
+                        const parentIndex = row.dataset.parentIndex;
+                        if (typeof parentIndex !== "undefined") {
+                            visible = !!groupState[parentIndex];
+                        }
+                    }
+
+                    if (isItemRow) {
+                        const catIndex = row.dataset.catIndex;
+                        const subIndex = row.dataset.subIndex;
+                        if (typeof catIndex !== "undefined") {
+                            visible = !!groupState[catIndex];
+                        }
+                        if (visible && typeof catIndex !== "undefined" && typeof subIndex !== "undefined") {
+                            const key = catIndex + "-" + subIndex;
+                            if (key in subState) {
+                                visible = !!subState[key];
+                            }
+                        }
+                    }
+
+                    if (isGroup) {
+                        visible = true; // los headers de categoría siempre visibles si no hay filtro
+                    }
+
+                    row.style.display = visible ? "" : "none";
+                });
+                return;
+            }
+
+            // Filtro activo: mostramos solo filas que matchean + sus padres
+            rows.forEach(row => {
+                row.style.display = "none";
+            });
+
+            const shownGroups = new Set();
+            const shownSubRows = new Set();
+            const term = currentFilter;
+
+            // 1) Items
+            const itemRows = tbody.querySelectorAll("tr.item-row");
+            itemRows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                if (text.includes(term)) {
+                    row.style.display = "";
+                    const catIndex = row.dataset.catIndex;
+                    const subIndex = row.dataset.subIndex;
+                    if (typeof catIndex !== "undefined") {
+                        shownGroups.add(catIndex);
+                    }
+                    if (typeof catIndex !== "undefined" && typeof subIndex !== "undefined") {
+                        shownSubRows.add(catIndex + "-" + subIndex);
+                    }
+                }
+            });
+
+            // 2) Subcategorías (category-row con data-sub-row)
+            const subRows = tbody.querySelectorAll("tr.category-row[data-sub-row]");
+            subRows.forEach(row => {
+                const catIndex = row.dataset.parentIndex;
+                const subIndex = row.dataset.subRow;
+                const key = catIndex + "-" + subIndex;
+                const text = row.innerText.toLowerCase();
+
+                if (text.includes(term) || shownSubRows.has(key)) {
+                    row.style.display = "";
+                    if (typeof catIndex !== "undefined") {
+                        shownGroups.add(catIndex);
+                    }
+                }
+            });
+
+            // 3) Filas de categoría sin subcategorías explícitas (category-row sin data-sub-row)
+            const loneCatRows = tbody.querySelectorAll("tr.category-row:not([data-sub-row])");
+            loneCatRows.forEach(row => {
+                const catIndex = row.dataset.parentIndex;
+                const text = row.innerText.toLowerCase();
+                if (text.includes(term)) {
+                    row.style.display = "";
+                    if (typeof catIndex !== "undefined") {
+                        shownGroups.add(catIndex);
+                    }
+                }
+            });
+
+            // 4) Group rows (categorías principales)
+            const groupRows = tbody.querySelectorAll("tr.group-row");
+            groupRows.forEach(row => {
+                const catIndex = row.dataset.groupIndex;
+                const text = row.innerText.toLowerCase();
+
+                if (text.includes(term) || (typeof catIndex !== "undefined" && shownGroups.has(catIndex))) {
+                    row.style.display = "";
+                }
+            });
+        }
+
+        function setupSearchFilter() {
+            const input = document.getElementById("estimator-search-input");
+            if (!input) return;
+
+            input.addEventListener("input", (e) => {
+                applyTableFilter(e.target.value);
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadEstimatorFromNgm();
+            setupProjectInfoModal();
+            setupToolbar();
+            setupColumnsModal();
+            setupSearchFilter();
+        });
+    </script>
+
+</body>
+</html>

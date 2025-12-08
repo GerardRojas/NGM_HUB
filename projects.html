@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NGM HUB — Projects</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link 
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" 
+      rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+    <div class="app-layout">
+        
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="assets/img/logo.png" class="sidebar-logo-img" />
+            </div>
+
+            <div class="sidebar-title-block">
+                <p class="sidebar-title">NGM HUB</p>
+                <p class="sidebar-subtitle">Projects Manager</p>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">Overview</a>
+                <a href="expenses.html" class="nav-item">Expenses</a>
+                <a href="projects.html" class="nav-item nav-item-active">Projects</a>
+                <a href="#" class="nav-item">Finance</a>
+                <a href="#" class="nav-item">Estimator</a>
+            </nav>
+        </aside>
+
+        <!-- Main -->
+        <div class="main-area">
+
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h1 class="topbar-title">Projects</h1>
+                    <p class="topbar-subtitle">Central list of projects. Manage and organize the active operations.</p>
+                </div>
+                <div class="topbar-right">
+                    <span class="user-pill">Master User</span>
+                </div>
+            </header>
+
+            <main class="main-content">
+
+                <!-- Projects Table -->
+                <section class="data-section">
+
+                    <div class="panel panel-narrow">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 30%;">Project</th>
+                                    <th style="width: 18%;">Company</th>
+                                    <th style="width: 14%;">Client</th>
+                                    <th style="width: 12%;">City</th>
+                                    <th style="width: 12%;">Status</th>
+                                    <th style="width: 4%;">Actions</th>
+                                    <th style="width: 10%;">ID</th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="projectsTableBody"></tbody>
+                        </table>
+
+                        <!-- Botón de manage al final -->
+                        <div class="projects-actions">
+                            <button id="manageProjectsBtn" class="btn-secondary">
+                                Manage Projects
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script>
+    // =============================
+    // Configuración de la API
+    // =============================
+    const API_BASE = "http://127.0.0.1:8000"; // FastAPI local
+    const tbody = document.getElementById("projectsTableBody");
+    const manageBtn = document.getElementById("manageProjectsBtn");
+
+    // Estado en memoria
+    let projects = [];
+    let isManaging = false;
+
+    // Catálogos
+    let companiesOptions = [];  // { company_id, name }
+    let statusOptions = [];     // { status_id, status }
+
+    // =============================
+    // Helpers de UI
+    // =============================
+
+    function renderStatus(statusValue) {
+        const text = (statusValue || "").toString();
+        const normalized = text.trim().toLowerCase();
+        const isActive = normalized === "active";
+
+        const classes = isActive
+            ? "status-pill status-pill--active"
+            : "status-pill";
+
+        return `<span class="${classes}">${text || "-"}</span>`;
+    }
+
+    function buildCompanySelect(index, selectedId) {
+        const optionsHtml = companiesOptions.map(c => {
+            const sel = c.company_id === selectedId ? "selected" : "";
+            return `<option value="${c.company_id}" ${sel}>${c.name}</option>`;
+        }).join("");
+
+        return `
+            <select 
+                class="cell-input"
+                data-index="${index}"
+                data-field="source_company"
+            >
+                ${optionsHtml}
+            </select>
+        `;
+    }
+
+    function buildStatusSelect(index, selectedId) {
+        const optionsHtml = statusOptions.map(s => {
+            const sel = s.status_id === selectedId ? "selected" : "";
+            return `<option value="${s.status_id}" ${sel}>${s.status}</option>`;
+        }).join("");
+
+        return `
+            <select 
+                class="cell-input"
+                data-index="${index}"
+                data-field="status"
+            >
+                ${optionsHtml}
+            </select>
+        `;
+    }
+
+    function findCompanyNameById(id) {
+        const item = companiesOptions.find(c => c.company_id === id);
+        return item ? item.name : "-";
+    }
+
+    function findStatusNameById(id) {
+        const item = statusOptions.find(s => s.status_id === id);
+        return item ? s.status : "";
+    }
+
+    // =============================
+    // Cargar META (companies + statuses)
+    // =============================
+    async function loadMeta() {
+        try {
+            const res = await fetch(`${API_BASE}/projects/meta`);
+            if (!res.ok) {
+                console.error("Error loading meta:", await res.text());
+                return;
+            }
+            const json = await res.json();
+            companiesOptions = json.companies || [];
+            statusOptions = json.statuses || [];
+        } catch (err) {
+            console.error("Network error loading meta:", err);
+        }
+    }
+
+    // =============================
+    // Cargar proyectos desde la API
+    // =============================
+    async function loadProjects() {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7">Loading projects...</td>
+            </tr>
+        `;
+
+        try {
+            const res = await fetch(`${API_BASE}/projects/`);
+            if (!res.ok) {
+                const text = await res.text();
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7">Error: ${text}</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const json = await res.json();
+            projects = json.data || [];
+            renderTable();
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7">Network or server error.</td>
+                </tr>
+            `;
+        }
+    }
+
+    // =============================
+    // Render de tabla
+    // =============================
+    function renderTable() {
+        tbody.innerHTML = "";
+
+        if (!projects.length && !isManaging) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7">No projects found.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        projects.forEach((p, index) => {
+            const id = p.project_id || "(no id)";
+            const name = p.project_name || "(no name)";
+
+            const companyId = p.source_company || null;
+            const companyName = p.company_name || findCompanyNameById(companyId) || "-";
+
+            const client = p.client_name || p.client || "-";
+            const city = p.city || "-";
+
+            const statusId = p.status || null;
+            const statusName = p.status_name || findStatusNameById(statusId) || "";
+            const statusHtml = renderStatus(statusName);
+
+            const tr = document.createElement("tr");
+
+            if (!isManaging) {
+                // ===============================
+                // MODO SOLO LECTURA
+                // ===============================
+                tr.innerHTML = `
+                    <td>${name}</td>
+                    <td>${companyName}</td>
+                    <td>${client}</td>
+                    <td>${city}</td>
+                    <td>${statusHtml}</td>
+                    <td>
+                        <button class="btn-small" disabled>View</button>
+                    </td>
+                    <td>${id}</td>
+                `;
+            } else {
+                // ===============================
+                // MODO MANAGE / EDICIÓN LOCAL
+                // ===============================
+                const companySelect = buildCompanySelect(index, companyId);
+                const statusSelect = buildStatusSelect(index, statusId);
+
+                tr.innerHTML = `
+                    <td>
+                        <input 
+                            type="text" 
+                            class="cell-input" 
+                            data-index="${index}" 
+                            data-field="project_name" 
+                            value="${name}"
+                        >
+                    </td>
+                    <td>
+                        ${companySelect}
+                    </td>
+                    <td>${client}</td>
+                    <td>
+                        <input 
+                            type="text" 
+                            class="cell-input" 
+                            data-index="${index}" 
+                            data-field="city" 
+                            value="${city}"
+                        >
+                    </td>
+                    <td>
+                        ${statusSelect}
+                    </td>
+                    <td>
+                        <button class="btn-small delete-btn" data-index="${index}">Delete</button>
+                    </td>
+                    <td>${id}</td>
+                `;
+            }
+
+            tbody.appendChild(tr);
+        });
+
+        // Fila adicional para nuevo proyecto cuando está en modo Manage
+        if (isManaging) {
+            const newRow = document.createElement("tr");
+
+            const companySelectNew = companiesOptions.length
+                ? `
+                    <select class="cell-input" id="new-project-company">
+                        ${companiesOptions.map(c => `
+                            <option value="${c.company_id}">${c.name}</option>
+                        `).join("")}
+                    </select>
+                `
+                : `<span class="table-cell-muted">No companies</span>`;
+
+            const statusSelectNew = statusOptions.length
+                ? `
+                    <select class="cell-input" id="new-project-status">
+                        ${statusOptions.map(s => `
+                            <option value="${s.status_id}">${s.status}</option>
+                        `).join("")}
+                    </select>
+                `
+                : `<span class="table-cell-muted">No statuses</span>`;
+
+            newRow.innerHTML = `
+                <td class="table-cell-muted">
+                    <input 
+                        type="text" 
+                        class="cell-input" 
+                        id="new-project-name" 
+                        placeholder="New project name"
+                    >
+                </td>
+                <td>
+                    ${companySelectNew}
+                </td>
+                <td></td>
+                <td>
+                    <input 
+                        type="text" 
+                        class="cell-input" 
+                        id="new-project-city" 
+                        placeholder="City"
+                    >
+                </td>
+                <td>
+                    ${statusSelectNew}
+                </td>
+                <td>
+                    <button class="btn-small add-new-btn">Add</button>
+                </td>
+                <td class="table-cell-muted">New</td>
+            `;
+            tbody.appendChild(newRow);
+        }
+    }
+
+    // =============================
+    // Toggle Manage Mode
+    // =============================
+    manageBtn.addEventListener("click", () => {
+        isManaging = !isManaging;
+        manageBtn.textContent = isManaging ? "Done" : "Manage Projects";
+        renderTable();
+    });
+
+    // =============================
+    // Edición en celdas (local, sin Supabase todavía)
+    // =============================
+    function handleCellEdit(target) {
+        if (!target.classList.contains("cell-input")) return;
+
+        const index = target.dataset.index;
+        const field = target.dataset.field;
+        const value = target.value;
+
+        if (index === undefined || field === undefined) return;
+
+        const idx = Number(index);
+        if (!projects[idx]) return;
+
+        if (field === "project_name") {
+            projects[idx].project_name = value;
+        } else if (field === "city") {
+            projects[idx].city = value;
+        } else if (field === "source_company") {
+            projects[idx].source_company = value;
+            projects[idx].company_name = findCompanyNameById(value);
+        } else if (field === "status") {
+            projects[idx].status = value;
+            projects[idx].status_name = findStatusNameById(value);
+        }
+        // Después marcaremos el row como "dirty" para PATCH al backend
+    }
+
+    tbody.addEventListener("input", (e) => {
+        handleCellEdit(e.target);
+    });
+
+    tbody.addEventListener("change", (e) => {
+        handleCellEdit(e.target);
+    });
+
+    // =============================
+    // Clicks en botones de la tabla
+    // =============================
+    tbody.addEventListener("click", (e) => {
+        // Agregar nuevo proyecto (local)
+        if (e.target.classList.contains("add-new-btn")) {
+            const nameInput = document.getElementById("new-project-name");
+            const cityInput = document.getElementById("new-project-city");
+            const companySelect = document.getElementById("new-project-company");
+            const statusSelect = document.getElementById("new-project-status");
+
+            const name = nameInput?.value.trim() || "";
+            const city = cityInput?.value.trim() || "";
+            const companyId = companySelect?.value || null;
+            const statusId = statusSelect?.value || null;
+
+            if (!name) {
+                alert("Project name is required.");
+                return;
+            }
+
+            const fakeId = "LOCAL-" + String(projects.length + 1).padStart(3, "0");
+
+            const companyName = companyId ? findCompanyNameById(companyId) : "-";
+            const statusName = statusId ? findStatusNameById(statusId) : "";
+
+            projects.push({
+                project_id: fakeId,
+                project_name: name,
+                city,
+                source_company: companyId,
+                company_name: companyName,
+                status: statusId,
+                status_name: statusName,
+            });
+
+            if (nameInput) nameInput.value = "";
+            if (cityInput) cityInput.value = "";
+            renderTable();
+
+            // Aquí luego haremos POST /projects para guardar realmente en Supabase
+        }
+
+        // Eliminar proyecto (solo en memoria por ahora)
+        if (e.target.classList.contains("delete-btn")) {
+            const index = e.target.dataset.index;
+            const idx = Number(index);
+            if (!projects[idx]) return;
+
+            const confirmed = confirm("Delete this project from the local list? (No Supabase change yet)");
+            if (!confirmed) return;
+
+            projects.splice(idx, 1);
+            renderTable();
+
+            // Después conectaremos esto a un DELETE /projects/{id}
+        }
+    });
+
+    // =============================
+    // Init (cargar primero meta y luego projects)
+    // =============================
+    async function init() {
+        await loadMeta();
+        await loadProjects();
+    }
+
+    init();
+    </script>
+
+</body>
+</html>

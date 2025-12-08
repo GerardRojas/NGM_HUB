@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NGM HUB — Login</title>
+
+    <!-- Fuentes Inter + Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link 
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" 
+      rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+    <main class="login-screen">
+        <div class="login-panel">
+            <!-- Logo + branding -->
+            <div class="logo-block">
+                <img 
+                    src="assets/img/logo.png"
+                    alt="NGM HUB Logo" 
+                    class="logo-img"
+                    onerror="this.style.display='none'"
+                />
+            </div>
+
+            <!-- Formulario -->
+            <form id="loginForm" class="login-form">
+                <div class="field">
+                    <label class="field-label" for="user">User</label>
+                    <input 
+                        id="user"
+                        type="text" 
+                        placeholder="your.user" 
+                        class="input"
+                        required
+                    >
+                </div>
+
+                <div class="field">
+                    <label class="field-label" for="password">Password</label>
+                    <input 
+                        id="password"
+                        type="password" 
+                        placeholder="••••••••" 
+                        class="input"
+                        required
+                    >
+                </div>
+
+                <div class="form-footer">
+                    <button type="submit" class="btn-primary">
+                        Sign in
+                    </button>
+                </div>
+            </form>
+
+            <p class="brand-subtitle">
+                Data-Driven Management Platform
+            </p>            
+
+            <div class="footer-block">
+                <p class="legal-text">
+                    NGM HUB © <span id="year"></span> · Internal Access Only
+                </p>
+                <button class="support-link" type="button">
+                    Support
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script src="assets/js/main.js"></script>
+    <script>
+      // Año automático en el footer
+      document.getElementById("year").textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>

@@ -1,0 +1,639 @@
+/* ==========================================
+   01 — THEME & GLOBAL RESET
+   ========================================== */
+
+:root {
+    /* Paleta BLACK / GREY */
+    --bg-main: #000000;                  /* fondo casi negro absoluto */
+    --bg-panel: rgba(10, 10, 12, 0.55);  /* panel oscuro muy sutil */
+    --bg-input: #0b0c0e;                 /* negro carbón */
+    --bg-input-hover: #111214;           /* input hover */
+    --text-primary: #e5e7eb;             /* gris claro */
+    --text-secondary: #9ca3af;           /* gris medio */
+    --accent: #2974ff;                   /* azul discreto */
+    --accent-hover: #3c82ff;
+
+    --border-soft: #1a1b1e;
+
+    --radius-lg: 22px;
+    --radius-md: 10px;
+
+    --shadow-soft: 0 40px 120px rgba(0, 0, 0, 0.85);
+}
+
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+body {
+    background: var(--bg-main);
+    color: var(--text-primary);
+}
+
+/* ==========================================
+   02 — LAYOUT GLOBAL (APP, SIDEBAR, MAIN)
+   ========================================== */
+
+.app-layout {
+    min-height: 100vh;
+    display: flex;
+    background: #000000;
+}
+
+/* Sidebar */
+
+.sidebar {
+    width: 230px;
+    background: #020617;
+    border-right: 1px solid #111827;
+    display: flex;
+    flex-direction: column;
+    padding: 22px 18px;
+}
+
+.sidebar-logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 18px;
+}
+
+.sidebar-logo-img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+}
+
+.sidebar-title-block {
+    margin-top: 4px;
+}
+
+.sidebar-title {
+    font-size: 14px;
+    color: #e5e7eb;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.sidebar-subtitle {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+/* Navegación lateral */
+
+.sidebar-nav {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.nav-item {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #9ca3af;
+    text-decoration: none;
+    transition: 0.16s ease;
+}
+
+.nav-item:hover {
+    background: #020814;
+    color: #e5e7eb;
+}
+
+.nav-item-active {
+    background: #111827;
+    color: #e5e7eb;
+    border: 1px solid #1d4ed8;
+}
+
+/* Main area */
+
+.main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 55%),
+        #020617;
+}
+
+/* Topbar */
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 26px;
+    border-bottom: 1px solid #111827;
+}
+
+.topbar-title {
+    font-size: 20px;
+    color: #e5e7eb;
+}
+
+.topbar-subtitle {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 4px;
+}
+
+.user-pill {
+    font-size: 13px;
+    color: #e5e7eb;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid #374151;
+}
+
+/* Contenido principal */
+
+.main-content {
+    padding: 22px 26px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+}
+
+.section-title {
+    font-size: 14px;
+    color: #e5e7eb;
+    margin-bottom: 10px;
+}
+
+/* ==========================================
+   03 — COMPONENTES GENÉRICOS
+   (Inputs, Botones, Paneles, Tablas, Modal)
+   ========================================== */
+
+/* Inputs genéricos (login, formularios, etc.) */
+
+.input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: var(--bg-input);
+    border: 1px solid var(--border-soft);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: 0.2s ease;
+}
+
+.input:hover {
+    background: var(--bg-input-hover);
+}
+
+.input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(41, 116, 255, 0.25);
+}
+
+.input::placeholder {
+    color: #6b6c72;
+}
+
+/* Botones */
+
+.btn-primary {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: var(--bg-input-hover);
+    color: var(--text-primary);
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.18s ease;
+    box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5);
+}
+
+.btn-primary:hover {
+    background: #1a1b1e;
+}
+
+.btn-primary:active {
+    transform: translateY(1px);
+}
+
+.btn-secondary {
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: #1f2937;
+    color: #e5e7eb;
+    border: 1px solid #374151;
+    cursor: pointer;
+    font-size: 13px;
+    transition: 0.16s ease;
+}
+
+.btn-secondary:hover {
+    background: #374151;
+}
+
+/* Paneles / tarjetas de datos */
+
+.panel {
+    background: #020617;
+    border-radius: 12px;
+    border: 1px solid #111827;
+    padding: 18px 16px;
+}
+
+.panel-text {
+    font-size: 13px;
+    color: #9ca3af;
+}
+
+/* Panel angosto (para tablas pequeñas tipo Projects) */
+
+.panel-narrow {
+    max-width: 1000px;
+    margin-inline: auto;
+}
+
+/* Tablas genéricas */
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.table thead {
+    background: #020617;
+}
+
+.table th,
+.table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #111827;
+    text-align: left;
+}
+
+.table th {
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.table tbody tr:hover {
+    background: #020814;
+}
+
+/* Inputs dentro de tabla (modo edición, Projects) */
+.table td input.cell-input,
+.table td select.cell-input {
+    width: 100%;
+    padding: 4px 6px;                 /* más discreto, no deforma layout */
+    font-size: inherit;               /* igual que la tabla */
+    border-radius: 4px;
+
+    background-color: rgba(255, 255, 255, 0.05);  /* fondo sutil */
+    color: #ffffff;
+    border: 1px solid transparent;    /* no sobresale en modo normal */
+    outline: none;
+
+    transition:
+        border-color 0.15s ease,
+        background-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+/* Hover: apenas indicar que es editable */
+.table td input.cell-input:hover,
+.table td select.cell-input:hover {
+    border-color: rgba(100, 150, 255, 0.35);
+}
+
+/* Focus: borde + fondo un poco más claro */
+.table td input.cell-input:focus,
+.table td select.cell-input:focus {
+    border-color: #4da3ff;
+    background-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.25);
+}
+
+
+.table td input.cell-input:focus,
+.table td select.cell-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.45);
+}
+
+.table tfoot td {
+    font-size: 0.9rem;
+    color: #888;
+}
+
+/* Modal genérico */
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.70);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.modal-content {
+    width: 420px;
+    background: #020617;
+    padding: 24px 26px;
+    border-radius: 14px;
+    border: 1px solid #111827;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+}
+
+.modal-title {
+    color: #e5e7eb;
+    font-size: 18px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.modal-form {
+    display: grid;
+    gap: 14px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* Campos / grid de formularios */
+
+.field-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* ==========================================
+   04 — MÓDULO LOGIN
+   (Pantalla de acceso a NGM HUB)
+   ========================================== */
+
+.login-screen {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 32px 16px;
+    background:
+        radial-gradient(circle at 20% 20%, rgba(50, 70, 90, 0.2), transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(20, 30, 40, 0.15), transparent 55%),
+        var(--bg-main);
+}
+
+/* Panel sin bordes visibles */
+
+.login-panel {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 26px;
+    backdrop-filter: blur(25px);
+    background: var(--bg-panel);
+    padding: 36px 34px 28px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    border: none;
+}
+
+/* Branding login */
+
+.logo-block {
+    text-align: center;
+    margin-top: -180px; 
+    margin-bottom: -140px;
+}
+
+.logo-img {
+    width: 350px;
+    height: 350px;
+    object-fit: contain;
+    margin-bottom: 18px;
+}
+
+.brand-title {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+}
+
+.brand-subtitle {
+    text-align: center;
+    width: 100%;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-family: 'Roboto', sans-serif;
+}
+
+/* Form login */
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* Footer login */
+
+.footer-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.legal-text {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-family: 'Roboto', sans-serif;
+}
+
+.support-link {
+    font-size: 12px;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Roboto', sans-serif;
+    opacity: 0.85;
+    transition: 0.15s ease;
+    padding: 0;
+}
+
+.support-link:hover {
+    opacity: 1;
+}
+
+/* ==========================================
+   05 — MÓDULO DASHBOARD / HOME
+   (Tarjetas de módulos, etc.)
+   ========================================== */
+
+.modules-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.module-card {
+    background: #020617;
+    border-radius: 14px;
+    border: 1px solid #111827;
+    padding: 14px 14px 16px;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.18s ease;
+    color: #e5e7eb;
+}
+
+.module-card:hover {
+    border-color: #1d4ed8;
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.7);
+    transform: translateY(-1px);
+}
+
+.module-icon {
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.module-title {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.module-desc {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+/* ==========================================
+   06 — MÓDULO EXPENSES
+   (Forms & grid específicos)
+   ========================================== */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 14px;
+    align-items: flex-end;
+}
+
+.field-full {
+    grid-column: 1 / -1;
+}
+
+.form-footer-right {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+/* ==========================================
+   07 — MÓDULO PROJECTS (status + labels)
+   ========================================== */
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #e5e7eb;
+    background: #111827;
+    border: 1px solid #1f2937;
+}
+
+.status-pill--active {
+    color: #bbf7d0;              /* verde muy suave */
+    background: #064e3b;         /* verde oscuro */
+    border-color: #16a34a;
+    font-weight: 600;            /* bold extra */
+}
+
+.table-lock-label,
+.table-cell-muted {
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+/* Aquí podrías añadir cosas específicas para projects,
+   pero la mayor parte ya la resuelven .panel-narrow y .cell-input.
+   De momento lo dejamos como placeholder para crecer. */
+
+   /* ------------------------------------------------------
+   PROJECTS — Estilo minimalista para inputs de edición
+-------------------------------------------------------*/
+
+/* Al pasar el mouse */
+.table .cell-input:hover {
+    border-color: rgba(100, 150, 255, 0.4);
+}
+
+/* Al enfocar */
+.table .cell-input:focus {
+    border-color: #4da3ff;
+    background-color: rgba(255, 255, 255, 0.12);
+    outline: none;
+}
+
+/* Dropdown oscuro para Projects */
+.table td select.cell-input {
+    background-color: rgba(0, 0, 0, 0.35);
+    color: #ffffff;
+    border: 1px solid #2d2d2d;
+    padding: 4px 6px;
+    border-radius: 4px;
+    appearance: none; /* limpia estilos del navegador */
+}
+
+/* Hover */
+.table td select.cell-input:hover {
+    border-color: #4da3ff;
+}
+
+/* Focus */
+.table td select.cell-input:focus {
+    border-color: #4da3ff;
+    background-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 2px rgba(77,163,255,0.2);
+}
+
+/* Opciones del dropdown */
+.table td select.cell-input option {
+    background: #0f0f11;
+    color: #ffffff;
+}
+
+

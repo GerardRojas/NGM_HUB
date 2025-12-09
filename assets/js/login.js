@@ -1,106 +1,67 @@
 // assets/js/login.js
 
+// IMPORTANTE:
+// Aquí asumimos que config.js define una constante global API_BASE,
+// por ejemplo:
+//   const API_BASE = "http://127.0.0.1:8000";
+// ó en producción:
+//   const API_BASE = "https://tu-backend.onrender.com";
+
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("loginForm");
   const userInput = document.getElementById("user");
   const passwordInput = document.getElementById("password");
 
-  // Creamos (o reutilizamos) un contenedor para mensajes de error
-  let errorBox = document.querySelector(".login-error");
-  if (!errorBox) {
-    errorBox = document.createElement("div");
-    errorBox.className = "login-error";
-    errorBox.style.marginTop = "10px";
-    errorBox.style.fontSize = "0.9rem";
-    errorBox.style.color = "#f97373"; // rojo suave
-    errorBox.style.minHeight = "1.2em";
-    form.appendChild(errorBox);
+  if (!form || !userInput || !passwordInput) {
+    console.error("Login form or inputs not found in DOM.");
+    return;
   }
 
-  const submitButton = form.querySelector('button[type="submit"]');
-
-  function setLoading(isLoading) {
-    if (!submitButton) return;
-    submitButton.disabled = isLoading;
-    submitButton.textContent = isLoading ? "Signing in..." : "Sign in";
-  }
-
-  function showError(message) {
-    if (!errorBox) return;
-    errorBox.textContent = message || "";
-  }
-
-  async function handleLogin(event) {
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    showError("");
 
     const username = userInput.value.trim();
     const password = passwordInput.value.trim();
 
     if (!username || !password) {
-      showError("Please enter user and password.");
+      alert("Please enter user and password.");
       return;
     }
 
-    setLoading(true);
-
     try {
-      // Debug opcional
-      console.log("[LOGIN] Sending request to:", `${API_BASE}/auth/login`);
+      if (typeof API_BASE === "undefined") {
+        console.error("API_BASE is not defined. Check config.js");
+        alert("Login config error. Please contact support.");
+        return;
+      }
 
-      const resp = await fetch(`${API_BASE}/auth/login`, {
+      const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          username: username,
-          password: password,
-        }),
+        body: JSON.stringify({ username, password }),
       });
 
-      if (!resp.ok) {
-        let detail = "Invalid credentials or server error.";
-        try {
-          const errorData = await resp.json();
-          if (errorData && (errorData.detail || errorData.message)) {
-            detail = errorData.detail || errorData.message;
-          }
-        } catch (parseErr) {
-          // si no es JSON, dejamos el mensaje genérico
+      if (!res.ok) {
+        if (res.status === 401) {
+          alert("Invalid username or password.");
+        } else {
+          alert("Login failed. Please try again later.");
         }
-        showError(detail);
-        setLoading(false);
         return;
       }
 
-      const data = await resp.json();
-      console.log("[LOGIN] Response:", data);
+      const data = await res.json();
 
-      // Guardamos token y algo de info básica en localStorage
-      if (data.access_token) {
-        localStorage.setItem("ngm_token", data.access_token);
-      }
-      if (data.user) {
-        localStorage.setItem("ngm_user", data.user.username || username);
-        if (data.user.role) {
-          localStorage.setItem("ngm_role", data.user.role);
-        }
-      } else {
-        // fallback mínimo
-        localStorage.setItem("ngm_user", username);
-      }
+      // Guardamos el usuario en localStorage para usarlo en el dashboard
+      localStorage.setItem("ngmUser", JSON.stringify(data.user));
 
-      // TODO: aquí después podemos hacer routing según el rol (admin, coordinator, etc.)
-      // Por ahora lo mandamos al dashboard principal.
-      window.location.href = "projects.html";
-    } catch (error) {
-      console.error("[LOGIN] Network or unexpected error:", error);
-      showError("Error connecting to server. Please try again.");
-    } finally {
-      setLoading(false);
+      // Redirigimos al dashboard (ajusta el nombre si usas otro archivo)
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      console.error("Error in login:", err);
+      alert("Network error. Check your connection or contact support.");
     }
-  }
-
-  form.addEventListener("submit", handleLogin);
+  });
 });

@@ -17,7 +17,7 @@
 </head>
 <body>
     <div class="app-layout">
-        <!-- Sidebar simple (logo + label) -->
+        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-logo">
                 <img 
@@ -42,7 +42,7 @@
                     </p>
                 </div>
                 <div class="topbar-right">
-                    <span class="user-pill">Master User</span>
+                    <span id="user-pill" class="user-pill">User</span>
                 </div>
             </header>
 
@@ -51,53 +51,97 @@
                 <section class="modules-section">
                     <h2 class="section-title">Modules</h2>
                     <div class="modules-grid">
-                        <a class="module-card" href="expenses.html">
-                            <div class="module-icon">💸</div>
+
+                        <!-- Expenses Engine (activo) -->
+                        <a 
+                            class="module-card" 
+                            href="expenses.html"
+                            data-roles="COO,CEO,Accounting Manager,Bookkeeper"
+                            data-status="active"
+                        >
+                            <div class="module-icon">
+                                <span class="module-icon-badge">EE</span>
+                            </div>
                             <h3 class="module-title">Expenses Engine</h3>
                             <p class="module-desc">
                                 Capture, interpret and categorize expenses safely, without breaking formulas.
                             </p>
                         </a>
 
-                        <!-- Projects -->
-                        <button class="module-card" type="button">
-                            <div class="module-icon">📁</div>
+                        <!-- Projects (coming soon) -->
+                        <button 
+                            class="module-card" 
+                            type="button"
+                            data-roles="COO,CEO,General Cordinator,Project Cordinator,Accounting Manager,Bookkeeper"
+                            data-status="coming-soon"
+                        >
+                            <div class="module-icon">
+                                <span class="module-icon-badge">PR</span>
+                            </div>
                             <h3 class="module-title">Projects</h3>
                             <p class="module-desc">
                                 Manage active, paused and completed projects for all connected systems.
                             </p>
                         </button>
 
-                        <!-- Estimator -->
-                        <button class="module-card" type="button">
-                            <div class="module-icon">📐</div>
-                            <h3 class="module-title">Estimator</h3>
+                        <!-- Estimator Suite (materials DB, estimator, concept builder, doc builder) -->
+                        <button 
+                            class="module-card" 
+                            type="button"
+                            data-roles="COO,CEO,Estimator,Architect,Intern"
+                            data-status="coming-soon"
+                        >
+                            <div class="module-icon">
+                                <span class="module-icon-badge">ES</span>
+                            </div>
+                            <h3 class="module-title">Estimator Suite</h3>
                             <p class="module-desc">
-                                Connect cost structures and quantities into standardized, safe estimations.
+                                Materials database, estimator, concept builder and document builder in one place.
                             </p>
                         </button>
 
-                        <!-- Finance / BvA -->
-                        <button class="module-card" type="button">
-                            <div class="module-icon">📊</div>
-                            <h3 class="module-title">Finance / BvA</h3>
+                        <!-- Finance / Books Reporting -->
+                        <button 
+                            class="module-card" 
+                            type="button"
+                            data-roles="COO,CEO,Accounting Manager,Bookkeeper"
+                            data-status="coming-soon"
+                        >
+                            <div class="module-icon">
+                                <span class="module-icon-badge">FIN</span>
+                            </div>
+                            <h3 class="module-title">Finance & Books</h3>
                             <p class="module-desc">
-                                Budget vs Actuals, classes, accounts and financial signals in one place.
+                                Budget vs Actuals, accounts, classes and books reporting.
                             </p>
                         </button>
 
                         <!-- Automations & Bots -->
-                        <button class="module-card" type="button">
-                            <div class="module-icon">🤖</div>
+                        <button 
+                            class="module-card" 
+                            type="button"
+                            data-roles="COO,CEO"
+                            data-status="coming-soon"
+                        >
+                            <div class="module-icon">
+                                <span class="module-icon-badge">AUTO</span>
+                            </div>
                             <h3 class="module-title">Automations & Bots</h3>
                             <p class="module-desc">
                                 Orchestrate background processes, syncs and AI assistants like Arturito.
                             </p>
                         </button>
 
-                        <!-- Data Storage / Vault -->
-                        <button class="module-card" type="button">
-                            <div class="module-icon">🗄️</div>
+                        <!-- Data Vault -->
+                        <button 
+                            class="module-card" 
+                            type="button"
+                            data-roles="COO,CEO,Accounting Manager"
+                            data-status="coming-soon"
+                        >
+                            <div class="module-icon">
+                                <span class="module-icon-badge">VAULT</span>
+                            </div>
                             <h3 class="module-title">Data Vault</h3>
                             <p class="module-desc">
                                 Centralized storage, snapshots and access policies for your core datasets.
@@ -106,14 +150,31 @@
                     </div>
                 </section>
 
-                <!-- Placeholder para Data Navigator -->
+                <!-- Pipeline (para todos los roles) -->
+                <section class="pipeline-section">
+                    <div class="section-header-row">
+                        <div>
+                            <h2 class="section-title">Pipeline</h2>
+                            <p class="section-subtitle">
+                                Tasks assigned to you from the Pipeline Manager. Mark them as done in the pipeline view.
+                            </p>
+                        </div>
+                    </div>
+                    <div id="pipeline-tasks" class="panel">
+                        <p class="panel-text" id="pipeline-placeholder">
+                            No tasks loaded yet. This area will connect to the Pipeline Manager soon.
+                        </p>
+                        <!-- Aquí luego renderizamos tarjetas de tareas -->
+                    </div>
+                </section>
+
+                <!-- Data Navigator (coming soon) -->
                 <section class="data-section">
                     <h2 class="section-title">Data Navigator (coming soon)</h2>
                     <div class="panel">
                         <p class="panel-text">
                             Here you will browse the data generated by each module:
                             expenses logs, project registers, estimator outputs, financial snapshots, etc.
-                            We’ll experiment with views, filters and permissions until it feels truly useful.
                         </p>
                     </div>
                 </section>
@@ -121,6 +182,6 @@
         </div>
     </div>
 
-    <!-- Más adelante podemos tener un main-dashboard.js -->
+    <script src="assets/js/dashboard.js"></script>
 </body>
 </html>

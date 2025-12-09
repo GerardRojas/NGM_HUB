@@ -501,40 +501,73 @@ body {
 
 .modules-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 18px;
+    align-items: stretch;
 }
 
 .module-card {
-    background: #020617;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 18px 18px 16px;
     border-radius: 14px;
-    border: 1px solid #111827;
-    padding: 14px 14px 16px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.9), #020617);
+    box-shadow: 0 14px 35px rgba(15, 23, 42, 0.45);
     text-align: left;
     cursor: pointer;
-    transition: 0.18s ease;
-    color: #e5e7eb;
+    text-decoration: none;
+    transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, border-color 0.12s;
 }
 
 .module-card:hover {
-    border-color: #1d4ed8;
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.7);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.7);
+    border-color: rgba(94, 234, 212, 0.65);
 }
 
+.module-card:focus-visible {
+    outline: 2px solid #22d3ee;
+    outline-offset: 2px;
+}
+
+
+/* Icono/Badge cuadrado sobrio */
 .module-icon {
-    font-size: 20px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
+.module-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    height: 42px;
+    padding: 0 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.7);
+    background: linear-gradient(135deg, #020617, #0f172a);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e5e7eb;
+}
+
+
+/* Títulos y textos del módulo */
 .module-title {
-    font-size: 14px;
-    font-weight: 500;
-    margin-bottom: 4px;
+    margin: 0 0 6px;
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: #e5e7eb;
 }
 
 .module-desc {
-    font-size: 12px;
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.4;
     color: #9ca3af;
 }
 
@@ -640,3 +673,31 @@ body {
 }
 
 
+.pipeline-section {
+    margin-top: 32px;
+}
+
+.section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.section-subtitle {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+/* Módulos coming soon */
+.module-coming-soon {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.module-coming-soon:hover {
+    transform: none;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.3);
+    border-color: rgba(148, 163, 184, 0.5);
+}

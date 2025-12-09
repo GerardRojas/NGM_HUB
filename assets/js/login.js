@@ -1,13 +1,8 @@
 // assets/js/login.js
-
-// IMPORTANTE:
-// Aquí asumimos que config.js define una constante global API_BASE,
-// por ejemplo:
-//   const API_BASE = "http://127.0.0.1:8000";
-// ó en producción:
-//   const API_BASE = "https://tu-backend.onrender.com";
-
 document.addEventListener("DOMContentLoaded", () => {
+  // Asegurarnos de que usamos el valor global de config.js
+  const API = window.API_BASE || (typeof API_BASE !== "undefined" ? API_BASE : undefined);
+
   const form = document.getElementById("loginForm");
   const userInput = document.getElementById("user");
   const passwordInput = document.getElementById("password");
@@ -29,13 +24,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      if (typeof API_BASE === "undefined") {
+      if (!API) {
         console.error("API_BASE is not defined. Check config.js");
         alert("Login config error. Please contact support.");
         return;
       }
 
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await fetch(`${API}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -54,10 +49,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await res.json();
 
-      // Guardamos el usuario en localStorage para usarlo en el dashboard
       localStorage.setItem("ngmUser", JSON.stringify(data.user));
 
-      // Redirigimos al dashboard (ajusta el nombre si usas otro archivo)
       window.location.href = "dashboard.html";
     } catch (err) {
       console.error("Error in login:", err);

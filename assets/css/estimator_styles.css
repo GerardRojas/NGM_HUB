@@ -1,4 +1,13 @@
 /* ==========================================
+   VARIABLES GLOBALES SOLO PARA ESTIMATOR
+   ========================================== */
+
+:root {
+    --estimator-table-width: 100;  /* % del ancho útil después del sidebar */
+    --estimator-table-zoom: 100;   /* % de zoom de fuente de la tabla */
+}
+
+/* ==========================================
    OVERRIDES DE LAYOUT SOLO PARA ESTIMATOR
    ========================================== */
 
@@ -8,16 +17,20 @@
     overflow: hidden;
 }
 
-/* main-area ocupa todo y hace scroll solo en main-content */
+/* main-area ocupa todo y organiza en columna */
 .main-area {
     display: flex;
     flex-direction: column;
     height: 100vh;
 }
 
+/* main-content se queda con el scroll interno, no el body */
 .main-content {
     flex: 1;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 24px 24px;
+    overflow: hidden; /* el scroll lo maneja la tabla */
 }
 
 /* ==========================================
@@ -74,8 +87,7 @@
     color: #3b82f6;
 }
 
-/* Si quisieras volver a usar grid, aquí está
-   (de momento no es obligatorio usarlo) */
+/* Si quisieras volver a usar grid, aquí está */
 .summary-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -133,7 +145,7 @@
 }
 
 /* ==========================================
-   TOOLBAR ESTIMATOR + SEARCH
+   TOOLBAR ESTIMATOR + SEARCH + VIEW CONTROLS
    ========================================== */
 
 .estimator-toolbar {
@@ -191,26 +203,55 @@
     box-shadow: none;
 }
 
+/* Controles de vista (sliders) para width/zoom de la tabla */
+.estimator-view-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: 16px;
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.estimator-view-controls .view-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.estimator-view-controls input[type="range"] {
+    width: 90px;
+}
+
 /* ==========================================
    PANEL + TABLA ESTIMATOR (BLANCO)
    ========================================== */
 
-/* Panel principal del estimator (fondo blanco) */
+/* Panel principal del estimator (fondo blanco).
+   Ahora su ancho también depende del slider. */
 .estimator-panel {
     background: #ffffff !important;
     border-radius: 14px;
     border: 1px solid #e5e7eb !important;
     padding: 18px 16px;
     color: #111827;
+    max-width: 100%;
+    width: calc(var(--estimator-table-width, 100) * 1%);
+    margin-inline: 0;
 }
 
-/* Wrapper de tabla con scroll propio y header sticky */
+/* Wrapper de tabla con scroll propio y header sticky.
+   El ancho se alinea al panel; mejor scroll al fondo. */
 .estimator-table-wrapper {
     background: #ffffff;
     border-radius: 10px;
     border: 1px solid #e5e7eb;
-    overflow-y: auto;
-    max-height: calc(100vh - 260px); /* ajusta si hace falta */
+    overflow: auto;
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100vh - 230px); /* un poco más de espacio para ver el borde inferior */
+    box-sizing: border-box;
+    padding-bottom: 4px; /* deja ver el borde inferior al llegar hasta abajo */
 }
 
 /* Header fijo (sticky) dentro del scroll de la tabla */
@@ -221,13 +262,14 @@
     background: #f3f4f6;
 }
 
-/* Tabla base en blanco */
+/* Tabla base en blanco.
+   El zoom se controla con --estimator-table-zoom */
 .estimator-table {
     width: 100%;
     border-collapse: collapse;
     background: #ffffff;
     color: #111827;
-    font-size: 13px;
+    font-size: calc(0.85rem * (var(--estimator-table-zoom, 100) / 100));
 }
 
 .estimator-table th,
@@ -250,11 +292,13 @@
     cursor: pointer;
 }
 
+/* Codigo de categoría (columna Code en filas de grupo) */
 .group-row .category-accnum {
     font-weight: 600;
     color: #4b5563;
 }
 
+/* Celda principal de nombre de categoría */
 .group-row .group-cell {
     font-weight: 700;
     color: #1d4ed8;        /* azul en texto */
@@ -264,10 +308,23 @@
     gap: 6px;
 }
 
+/* Celdas “spacer” para las columnas QTY / Unit / Unit Cost / Subtotal / Total
+   en las filas de categoría: solo existen para mantener los bordes de la tabla coherentes */
+.group-spacer {
+    background: #ffffff;
+}
+
 /* Icono de toggle (▾ / ▸) */
 .group-toggle-icon {
     font-size: 10px;
     opacity: 0.7;
+}
+
+/* Hover consistente en toda la fila de categoría */
+.group-row:hover .group-cell,
+.group-row:hover .group-spacer,
+.group-row:hover .category-accnum {
+    background: #eff6ff;
 }
 
 /* Subcategoría con sangría (2 tabs aprox) */
@@ -325,29 +382,123 @@
 }
 
 /* ==========================================
-   MODAL PROJECT INFO (header + read-only)
+   MODAL PROJECT INFO — LOOK MODERNO
    ========================================== */
+
+.modal {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.65);
+    z-index: 50;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    width: min(960px, 90vw);
+    max-height: 90vh;
+    background: #020617;
+    border-radius: 16px;
+    padding: 24px 24px 16px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+}
 
 /* Header del modal de info: título + botón "Manage info" */
 .modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 16px;
     margin-bottom: 12px;
+}
+
+.modal-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+/* Formulario en 2 columnas en desktop */
+.modal-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px 24px;
+    margin-top: 12px;
+    padding-right: 4px;
+    overflow-y: auto;
+}
+
+/* Cada grupo label+input */
+.modal-form > div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.field-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
+}
+
+/* Inputs dentro del modal, estilo compacto y oscuro */
+.modal .input {
+    background: #020617;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    padding: 8px 10px;
+    color: #e5e7eb;
+    font-size: 0.85rem;
+}
+
+.modal .input::placeholder {
+    color: #6b7280;
+}
+
+.modal .input:focus {
+    outline: none;
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
 }
 
 /* Inputs en modo read-only (cuando no estás en "Manage info") */
 .input-readonly {
-    background: #f9fafb;
-    border-color: #e5e7eb;
-    color: #6b7280;
+    background: #020617;
+    border-color: rgba(148, 163, 184, 0.4);
+    color: #9ca3af;
     cursor: default;
+    border-style: dashed;
+    opacity: 0.8;
 }
 
 /* Evitar que en read-only cambie al foco como editable */
 .input-readonly:focus {
     outline: none;
     box-shadow: none;
-    border-color: #e5e7eb;
+}
+
+/* Footer del modal pegado abajo y a lo ancho */
+.modal-footer {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* Responsive: en pantallas chicas, una sola columna */
+@media (max-width: 900px) {
+    .modal-form {
+        grid-template-columns: 1fr;
+        max-height: 70vh;
+    }
 }

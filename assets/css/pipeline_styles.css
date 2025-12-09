@@ -1,0 +1,168 @@
+/* ==========================================
+   PIPELINE MANAGER — LAYOUT & WIDTH CONTROL
+   ========================================== */
+
+:root {
+    /* Ancho por defecto de toolbar + grupos dentro del área útil */
+    --pm-panel-width: 92%;
+}
+
+/* En pipeline queremos que la sección use todo el ancho disponible */
+.data-section {
+    max-width: none;
+}
+
+/* Wrapper general para centrar toolbar y grupos y que RESPONDAN al slider */
+.pm-toolbar-surface,
+.pm-groups-wrapper {
+    width: var(--pm-panel-width, 92%);
+    max-width: 1400px;
+    margin-inline: auto;
+}
+
+/* ==========================================
+   TOOLBAR (filtros + slider)
+   ========================================== */
+
+.pm-toolbar-surface {
+    background: #020617;
+    border-radius: 14px;
+    border: 1px solid #111827;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65);
+    padding: 10px 14px 12px;
+    margin-bottom: 18px;
+}
+
+.pm-toolbar-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Contenedor del slider de ancho */
+.pm-width-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #9ca3af;
+    white-space: nowrap;
+}
+
+.pm-width-control-label {
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.pm-width-control-value {
+    min-width: 42px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Slider */
+.pm-width-slider {
+    width: 160px;
+    accent-color: #3b82f6;
+}
+
+/* ==========================================
+   GRUPOS DE PIPELINE (cards)
+   ========================================== */
+
+/* Wrapper de todos los grupos */
+.pm-groups-wrapper {
+    padding-bottom: 24px;
+}
+
+/* Card por grupo */
+.pm-group {
+    position: relative;
+    margin: 22px auto 32px auto;
+    border-radius: 16px;
+    background: #020617;
+    border: 1px solid #111827;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.75);
+    padding: 10px 12px 12px;
+    overflow: visible; /* para que el rail no se corte */
+}
+
+/* Rails de color a izquierda y derecha por status */
+.pm-group::before,
+.pm-group::after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--pm-group-accent, #4b5563);
+}
+
+.pm-group::before {
+    left: -2px;
+}
+
+.pm-group::after {
+    right: -2px;
+}
+
+/* Header: título de grupo + contador */
+.pm-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+/* Cuerpo (tabla) */
+.pm-group-body {
+    margin-top: 6px;
+}
+
+/* Tabla interna */
+.pm-group .table {
+    background: #030712;
+}
+
+.pm-group .table thead {
+    background: #030712;
+}
+
+.pm-group .table tbody tr:hover {
+    background: rgba(15, 23, 42, 0.85);
+}
+
+/* Fila de "Add task" con un poco más de aire */
+.pm-add-row td {
+    padding-top: 10px;
+}
+
+/* ==========================================
+   ROWS & MANAGE MODE
+   ========================================== */
+
+/* Fila normal de pipeline */
+.pm-row td {
+    vertical-align: middle;
+}
+
+/* En manage mode, les damos un contorno dashed sutil */
+.pm-row-manage td > div {
+    border-radius: 6px;
+    border: 1px dashed #4b5563;
+    background: rgba(15, 23, 42, 0.75);
+}
+
+/* ==========================================
+   MODAL DE DETALLE DE TAREA
+   (por ahora la mayor parte va inline)
+   ========================================== */
+
+/* placeholder por si luego queremos estilos globales del modal */
+.pm-modal {
+    /* vacío de momento */
+}

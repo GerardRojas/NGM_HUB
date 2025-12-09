@@ -1,0 +1,178 @@
+{
+  "files": {
+    "estimator.html": {
+      "blocks": [
+        {
+          "id": "BLOQUE 0",
+          "type": "head",
+          "label": "Metadata + Fonts + CSS",
+          "purpose": "Define título, viewport, fuentes Google e incluye styles.css y estimator_styles.css.",
+          "edit_when": "Cambiar nombre de la página, agregar CSS global adicional o nuevas fuentes."
+        },
+        {
+          "id": "BLOQUE 1",
+          "type": "layout",
+          "label": "Layout general (Sidebar + Main Area)",
+          "purpose": "Estructura principal app-layout: sidebar del estimator a la izquierda y main-area a la derecha.",
+          "edit_when": "Modificar estructura general, añadir nuevos paneles al sidebar o cambiar la jerarquía global."
+        },
+        {
+          "id": "BLOQUE 2",
+          "type": "topbar",
+          "label": "Topbar",
+          "purpose": "Barra superior con nombre de proyecto, botón de info (modal) y pill de modo (Template Mode).",
+          "edit_when": "Cambiar copy del título, añadir botones globales, badges de estado o iconos extras."
+        },
+        {
+          "id": "BLOQUE 3",
+          "type": "main-content",
+          "label": "Toolbar + Tabla principal",
+          "purpose": "Toolbar con botones (Add Concept, Overhead, Import from Revit, Export, Columns), barra de búsqueda y sliders de Width/Zoom; panel con tabla principal de categorías/subcategorías/items.",
+          "edit_when": "Añadir nuevas acciones al estimator, cambiar columnas de la tabla o ajustar comportamiento visual de la tabla."
+        },
+        {
+          "id": "BLOQUE 4",
+          "type": "modal",
+          "label": "Modal Project Info",
+          "purpose": "Modal grande y moderno para ver/editar metadatos del proyecto (nombre, address, áreas, rooms, baths, etc.).",
+          "edit_when": "Agregar/quitar campos de proyecto o cambiar UX de edición (manage info / read-only)."
+        },
+        {
+          "id": "BLOQUE 5",
+          "type": "modal",
+          "label": "Modal Columns",
+          "purpose": "Modal simple para togglear visibilidad de columnas de la tabla mediante checkboxes (Code, Image, Unit, etc.).",
+          "edit_when": "Agregar nuevas columnas o cambiar qué columnas se pueden mostrar/ocultar."
+        },
+        {
+          "id": "BLOQUE 6",
+          "type": "script",
+          "label": "Script principal Estimator",
+          "purpose": "Toda la lógica del estimator en JS: carga de /estimator/base-structure, render de tabla, estados de colapso, modales, filtros y sliders.",
+          "subblocks": [
+            {
+              "id": "6.1",
+              "label": "Config + State",
+              "purpose": "Define API_BASE_URL, currentEstimateData, groupState, subState, currentFilter.",
+              "edit_when": "Cambiar endpoint base (puerto/IP) o añadir nuevos estados globales."
+            },
+            {
+              "id": "6.2",
+              "label": "Helpers",
+              "purpose": "Funciones auxiliares: formatCurrency, toggleGroup, toggleSub, saveEstimateToServer.",
+              "edit_when": "Cambiar formato de moneda, lógica de colapsar grupos/subcategorías o cómo se hace el POST de guardado."
+            },
+            {
+              "id": "6.3",
+              "label": "Load & Render estimate.ngm",
+              "purpose": "Llama a /estimator/base-structure, llena summary (sidebar), topbar y construye todas las filas de la tabla: categorías, subcategorías, items.",
+              "key_functions": ["loadEstimatorFromNgm"],
+              "edit_when": "Cambiar cómo se mappea el JSON a la UI (nuevos campos, nuevos niveles, totales por subcat, etc.)."
+            },
+            {
+              "id": "6.4",
+              "label": "Modal Project Info",
+              "purpose": "Configura apertura/cierre del modal de proyecto, modo lectura/edición, sincroniza cambios con currentEstimateData y llama a saveEstimateToServer.",
+              "key_functions": ["setupProjectInfoModal"],
+              "edit_when": "Modificar UX de edición, validaciones, o agregar nuevos campos de metadata de proyecto."
+            },
+            {
+              "id": "6.5",
+              "label": "Toolbar básica (botones izquierdos)",
+              "purpose": "Hooks para botones Add Concept, Overhead, Import from Revit, Export (por ahora alerts placeholders).",
+              "key_functions": ["setupToolbar"],
+              "edit_when": "Implementar lógica real para agregar conceptos, manejar overhead, importar de Revit o exportar."
+            },
+            {
+              "id": "6.6",
+              "label": "Modal Columns",
+              "purpose": "Lógica de abrir/cerrar modal de columnas y aplicar visibilidad de columnas por clase .col-xxx.",
+              "key_functions": ["setupColumnsModal"],
+              "edit_when": "Agregar nuevas columnas togglables o cambiar cómo se ocultan (display:none vs otra cosa)."
+            },
+            {
+              "id": "6.7",
+              "label": "Filtro dinámico de tabla",
+              "purpose": "Aplica filtro por texto a items, subcategorías y categorías, asegurando mostrar también sus padres; sin filtro, respeta estados de colapso.",
+              "key_functions": ["applyTableFilter", "setupSearchFilter"],
+              "edit_when": "Cambiar criterio de búsqueda (por columnas específicas, fuzzy match, etc.) o comportamiento del colapso con filtro."
+            },
+            {
+              "id": "6.8",
+              "label": "View Sliders (Width + Zoom)",
+              "purpose": "Conecta sliders de toolbar con CSS variables --estimator-table-width y --estimator-table-zoom.",
+              "key_functions": ["setupViewSliders"],
+              "edit_when": "Cambiar rango o comportamiento del zoom/ancho, o agregar más controles de vista."
+            },
+            {
+              "id": "6.9",
+              "label": "Init (DOMContentLoaded)",
+              "purpose": "Punto de entrada: ejecuta loadEstimatorFromNgm, setupProjectInfoModal, setupToolbar, setupColumnsModal, setupSearchFilter, setupViewSliders.",
+              "edit_when": "Agregar nuevos inicializadores globales o cambiar orden de inicialización si algo depende de otra cosa."
+            }
+          ]
+        }
+      ]
+    },
+    "assets/css/estimator_styles.css": {
+      "sections": [
+        {
+          "id": "S0",
+          "label": "Variables globales estimator",
+          "selectors": [":root"],
+          "purpose": "Define --estimator-table-width y --estimator-table-zoom (controlan ancho/zoom de la tabla desde JS).",
+          "edit_when": "Cambiar comportamiento visual global de ancho/zoom de la tabla o agregar nuevas custom properties."
+        },
+        {
+          "id": "S1",
+          "label": "Overrides de layout (app-layout, main-area, main-content)",
+          "selectors": [".app-layout", ".main-area", ".main-content"],
+          "purpose": "Hace que la app use 100vh, bloquea scroll del body y mueve scroll al área interna del estimator.",
+          "edit_when": "Cambiar cómo se comporta el scroll general o ajustar padding/margins de la zona principal."
+        },
+        {
+          "id": "S2",
+          "label": "Sidebar Estimator (Resumen + lista)",
+          "selectors": [".estimator-sidebar", ".estimator-summary-card", ".estimator-list-card", ".estimator-file"],
+          "purpose": "Estilos de tarjeta de resumen del estimate y lista de estimates en el sidebar.",
+          "edit_when": "Cambiar look del sidebar, colores, tamaño de textos o comportamiento de lista de estimates."
+        },
+        {
+          "id": "S3",
+          "label": "Toolbar + Search + View Controls",
+          "selectors": [".estimator-toolbar", ".estimator-search", ".search-input", ".estimator-view-controls"],
+          "purpose": "Estilos de la toolbar superior del estimator, barra de búsqueda y sliders de width/zoom.",
+          "edit_when": "Modificar apariencia de la toolbar, hacer la búsqueda más grande/pequeña o ajustar diseño de sliders."
+        },
+        {
+          "id": "S4",
+          "label": "Panel + Tabla Estimator",
+          "selectors": [".estimator-panel", ".estimator-table-wrapper", ".estimator-table"],
+          "purpose": "Define panel blanco principal, wrapper con scroll y header sticky; usa las variables de width/zoom.",
+          "edit_when": "Cambiar tamaño máximo de la tabla, estilo del header sticky, bordes o densidad de la tabla."
+        },
+        {
+          "id": "S5",
+          "label": "Categorías / Subcategorías",
+          "selectors": [".group-row", ".group-cell", ".category-row .category-name", ".category-accnum", ".table-cell-muted"],
+          "purpose": "Estilos de filas de categoría principal, subcategorías con sangría y celdas muteadas.",
+          "edit_when": "Cambiar jerarquía visual, colores de categorías/subcategorías o cómo se ve el estado colapsable."
+        },
+        {
+          "id": "S6",
+          "label": "Topbar Icon Button",
+          "selectors": [".editable-title", ".icon-button"],
+          "purpose": "Estilo del botón de info (ⓘ) junto al título de proyecto.",
+          "edit_when": "Cambiar icono, tamaño o interacción (hover) del botón de info."
+        },
+        {
+          "id": "S7",
+          "label": "Modal Project Info (look moderno)",
+          "selectors": [".modal", ".modal-content", ".modal-header", ".modal-form", ".modal-footer", ".modal .input", ".input-readonly"],
+          "purpose": "Estética completa del modal de proyecto: fondo oscuro, tarjeta ancha, formulario en 2 columnas, inputs oscuros.",
+          "edit_when": "Ajustar tamaño del modal, rejilla de formulario, colores o comportamiento responsive."
+        }
+      ]
+    }
+  }
+}

@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- =========================================================
+         BLOQUE 0: METADATA + FONTS + CSS
+    ========================================================== -->
     <meta charset="UTF-8" />
     <title>NGM HUB — Estimator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -20,11 +23,13 @@
 </head>
 
 <body>
+    <!-- =========================================================
+         BLOQUE 1: LAYOUT GENERAL (SIDEBAR + MAIN AREA)
+    ========================================================== -->
     <div class="app-layout">
         <!-- SIDEBAR ESPECIAL PARA ESTIMATOR -->
         <aside class="sidebar estimator-sidebar">
             <div class="sidebar-logo">
-                <!-- Logo más grande: se controla por .sidebar-logo-img en CSS -->
                 <img src="assets/img/logo.png" alt="NGM HUB" class="sidebar-logo-img">
             </div>
 
@@ -58,12 +63,11 @@
                 </div>
             </div>
 
-            <!-- Lista de estimates (scroll + card) -->
+            <!-- Lista de estimates -->
             <div class="estimator-list-card">
                 <div class="estimator-list-title">Estimates</div>
                 <div class="estimator-files-wrapper">
                     <ul id="estimator-files-list" class="estimator-files-list">
-                        <!-- Por ahora mockeado -->
                         <li class="estimator-file estimator-file--active">estimate.ngm</li>
                     </ul>
                 </div>
@@ -72,13 +76,13 @@
 
         <!-- MAIN AREA -->
         <main class="main-area">
-            <!-- TOPBAR -->
+            <!-- =====================================================
+                 BLOQUE 2: TOPBAR
+            ====================================================== -->
             <header class="topbar">
                 <div>
                     <div class="topbar-title editable-title">
-                        <!-- Solo nombre del proyecto -->
                         <span id="project-title-text">Untitled Project</span>
-                        <!-- Icono de info (reemplaza al lápiz) -->
                         <button id="project-info-btn" class="icon-button" title="Project info">
                             ⓘ
                         </button>
@@ -92,7 +96,9 @@
                 </div>
             </header>
 
-            <!-- CONTENIDO PRINCIPAL (SCROLL SOLO AQUÍ) -->
+            <!-- =====================================================
+                 BLOQUE 3: MAIN CONTENT (TOOLBAR + TABLA)
+            ====================================================== -->
             <section class="main-content">
                 <!-- TOOLBAR DEL ESTIMATOR -->
                 <div class="estimator-toolbar">
@@ -103,6 +109,7 @@
                         <button class="btn-secondary" id="btn-export">Export</button>
                         <button class="btn-secondary" id="btn-columns">Columns</button>
                     </div>
+
                     <div class="toolbar-right">
                         <!-- Barra de búsqueda / filtro -->
                         <div class="estimator-search">
@@ -114,9 +121,34 @@
                                 placeholder="Filter by code, name, unit…"
                             />
                         </div>
+
+                        <!-- Controles de vista (sliders) -->
+                        <div class="estimator-view-controls">
+                            <label class="view-control">
+                                Width
+                                <input
+                                    type="range"
+                                    id="table-width-slider"
+                                    min="60"
+                                    max="100"
+                                    value="100"
+                                />
+                            </label>
+                            <label class="view-control">
+                                Zoom
+                                <input
+                                    type="range"
+                                    id="table-zoom-slider"
+                                    min="90"
+                                    max="120"
+                                    value="100"
+                                />
+                            </label>
+                        </div>
                     </div>
                 </div>
 
+                <!-- PANEL PRINCIPAL (TABLA) -->
                 <div>
                     <div class="panel panel-narrow estimator-panel">
                         <div id="estimator-status" class="table-lock-label" style="margin-bottom: 8px;">
@@ -155,7 +187,9 @@
         </main>
     </div>
 
-    <!-- MODAL PARA INFO / EDITAR INFO DEL PROYECTO -->
+    <!-- =========================================================
+         BLOQUE 4: MODAL PROJECT INFO
+    ========================================================== -->
     <div id="project-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
@@ -179,7 +213,6 @@
                     <input type="text" id="project-type-input" class="input" />
                 </div>
 
-                <!-- Nuevos campos de metadatos de proyecto -->
                 <div>
                     <div class="field-label">Total Area (SqFt)</div>
                     <input type="text" id="project-total-area-input" class="input" />
@@ -230,7 +263,9 @@
         </div>
     </div>
 
-    <!-- MODAL PARA COLUMNAS -->
+    <!-- =========================================================
+         BLOQUE 5: MODAL COLUMNS
+    ========================================================== -->
     <div id="columns-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-title">Visible Columns</div>
@@ -280,11 +315,13 @@
         </div>
     </div>
 
-    <!-- ============================================================
-         SCRIPT: leer .ngm, colapsar grupos/subcats, editar proyecto,
-         toolbar, columnas, guardar, filtro dinámico
-    ============================================================== -->
+    <!-- =========================================================
+         BLOQUE 6: SCRIPT PRINCIPAL ESTIMATOR
+    ========================================================== -->
     <script>
+        // ======================================================
+        // BLOQUE 6.1: CONFIG + STATE
+        // ======================================================
         const API_BASE_URL = "http://127.0.0.1:8000";
 
         let currentEstimateData = null;
@@ -292,6 +329,9 @@
         const subState = {};
         let currentFilter = "";
 
+        // ======================================================
+        // BLOQUE 6.2: HELPERS
+        // ======================================================
         function formatCurrency(value) {
             const n = typeof value === "number" ? value : 0;
             return new Intl.NumberFormat("en-US", {
@@ -303,7 +343,6 @@
 
         function toggleGroup(indexCat) {
             groupState[indexCat] = !groupState[indexCat];
-            // Reaplicar filtro / visibilidad
             applyTableFilter(currentFilter);
         }
 
@@ -333,6 +372,9 @@
             }
         }
 
+        // ======================================================
+        // BLOQUE 6.3: LOAD & RENDER ESTIMATE.NGM
+        // ======================================================
         async function loadEstimatorFromNgm() {
             const tbody = document.getElementById("estimator-body");
             const statusEl = document.getElementById("estimator-status");
@@ -384,7 +426,7 @@
                     }
                 });
 
-                const overheadAmount = 0; // TODO: overhead real después
+                const overheadAmount = 0;
                 const totalWithOH = subtotal + overheadAmount;
 
                 summaryProject.textContent = projectName || "(Untitled)";
@@ -416,17 +458,22 @@
 
                     groupState[indexCat] = true;
 
-                    // Fila CATEGORY (grupo, colapsable)
+                    // Fila CATEGORY (grupo, colapsable) – SIN colspan, una celda por columna
                     const trGroup = document.createElement("tr");
                     trGroup.classList.add("group-row");
                     trGroup.dataset.groupIndex = String(indexCat);
                     trGroup.innerHTML = `
                         <td class="category-accnum col-code">${catCode}</td>
                         <td class="image-cell col-image"></td>
-                        <td class="group-cell col-name" colspan="6">
+                        <td class="group-cell col-name">
                             <span class="group-toggle-icon">▾</span>
                             <span class="group-name">${catName}</span>
                         </td>
+                        <td class="group-spacer col-qty"></td>
+                        <td class="group-spacer col-unit"></td>
+                        <td class="group-spacer col-unit-cost"></td>
+                        <td class="group-spacer col-subtotal"></td>
+                        <td class="group-spacer col-total"></td>
                     `;
                     trGroup.addEventListener("click", () => toggleGroup(indexCat));
                     tbody.appendChild(trGroup);
@@ -467,11 +514,11 @@
                                 }
                                 <span>${subName}</span>
                             </td>
-                            <td class="table-cell-muted col-qty">—</td>
-                            <td class="table-cell-muted col-unit">—</td>
-                            <td class="table-cell-muted col-unit-cost">—</td>
-                            <td class="table-cell-muted col-subtotal">—</td>
-                            <td class="table-cell-muted col-total">—</td>
+                            <td class="table-cell-muted col-qty"></td>
+                            <td class="table-cell-muted col-unit"></td>
+                            <td class="table-cell-muted col-unit-cost"></td>
+                            <td class="table-cell-muted col-subtotal"></td>
+                            <td class="table-cell-muted col-total"></td>
                         `;
                         if (items.length) {
                             trSub.addEventListener("click", () => toggleSub(indexCat, indexSub));
@@ -486,7 +533,7 @@
                             const unit = item.unit || "";
                             const unitCost = item.unit_cost ?? item.base_cost ?? "";
                             const subtotalItem = item.total ?? item.total_cost ?? "";
-                            const totalItem = subtotalItem; // overhead pendiente
+                            const totalItem = subtotalItem;
 
                             const trItem = document.createElement("tr");
                             trItem.classList.add("item-row");
@@ -510,7 +557,6 @@
                 statusEl.textContent = "Loaded " + categories.length + " categories, " + totalSubs + " subcategories.";
                 feedbackEl.textContent = "Template loaded from estimate.ngm";
 
-                // Aplicar filtro actual (por si el usuario ya estaba filtrando)
                 applyTableFilter(currentFilter);
             } catch (err) {
                 console.error("NGM error:", err);
@@ -526,6 +572,9 @@
             }
         }
 
+        // ======================================================
+        // BLOQUE 6.4: MODAL PROJECT INFO
+        // ======================================================
         function setupProjectInfoModal() {
             const infoBtn = document.getElementById("project-info-btn");
             const modal = document.getElementById("project-modal");
@@ -598,7 +647,6 @@
                 dateInput.value = proj["Date"] || currentEstimateData?.date || "";
 
                 modal.classList.remove("hidden");
-                // Modal abre en modo solo lectura
                 setEditMode(false);
             }
 
@@ -607,11 +655,7 @@
             }
 
             infoBtn.addEventListener("click", openModal);
-
-            manageBtn.addEventListener("click", () => {
-                setEditMode(!editMode);
-            });
-
+            manageBtn.addEventListener("click", () => setEditMode(!editMode));
             cancelBtn.addEventListener("click", (e) => {
                 e.preventDefault();
                 closeModal();
@@ -620,16 +664,13 @@
             form.addEventListener("submit", async (e) => {
                 e.preventDefault();
 
-                // Si no estamos en modo edición, solo cerramos
                 if (!editMode) {
                     closeModal();
                     return;
                 }
 
                 if (!currentEstimateData) currentEstimateData = {};
-                if (!currentEstimateData.project) {
-                    currentEstimateData.project = {};
-                }
+                if (!currentEstimateData.project) currentEstimateData.project = {};
 
                 const proj = currentEstimateData.project;
 
@@ -646,11 +687,9 @@
                 proj["Foundation Type"] = foundationInput.value;
                 proj["Date"] = dateInput.value;
 
-                // Sincronizar campos “planos” del JSON
                 currentEstimateData.project_name = nameInput.value;
                 currentEstimateData.date = dateInput.value;
 
-                // Refrescar UI
                 projectTitleTextEl.textContent = nameInput.value || "Untitled Project";
                 summaryProject.textContent = nameInput.value || "(Untitled)";
                 summaryDate.textContent = dateInput.value || "—";
@@ -662,14 +701,14 @@
                 closeModal();
             });
 
-            // Cerrar al hacer click fuera
             modal.addEventListener("click", (e) => {
-                if (e.target === modal) {
-                    closeModal();
-                }
+                if (e.target === modal) closeModal();
             });
         }
 
+        // ======================================================
+        // BLOQUE 6.5: TOOLBAR BÁSICA
+        // ======================================================
         function setupToolbar() {
             document.getElementById("btn-add-concept").addEventListener("click", () => {
                 alert("Add Concept: aquí luego abrimos el modal para insertar conceptos.");
@@ -688,6 +727,9 @@
             });
         }
 
+        // ======================================================
+        // BLOQUE 6.6: MODAL COLUMNS
+        // ======================================================
         function setupColumnsModal() {
             const btn = document.getElementById("btn-columns");
             const modal = document.getElementById("columns-modal");
@@ -713,33 +755,32 @@
                 const checkboxes = form.querySelectorAll("input[type=checkbox][data-col]");
 
                 checkboxes.forEach(cb => {
-                    const col = cb.getAttribute("data-col"); // e.g. "code"
+                    const col = cb.getAttribute("data-col");
                     const visible = cb.checked;
-                    const selector = ".col-" + col; // e.g. ".col-code"
+                    const selector = ".col-" + col;
                     document.querySelectorAll(selector).forEach(el => {
                         el.style.display = visible ? "" : "none";
                     });
                 });
 
+           
+
                 closeModal();
             });
 
             modal.addEventListener("click", (e) => {
-                if (e.target === modal) {
-                    closeModal();
-                }
+                if (e.target === modal) closeModal();
             });
         }
 
-        // ===============================
-        // Filtro dinámico de la tabla
-        // ===============================
+        // ======================================================
+        // BLOQUE 6.7: FILTRO DINÁMICO
+        // ======================================================
         function applyTableFilter(rawTerm) {
             currentFilter = (rawTerm || "").trim().toLowerCase();
             const tbody = document.getElementById("estimator-body");
             const rows = tbody.querySelectorAll("tr");
 
-            // Si no hay filtro → restaurar visibilidad según estados de grupo/sub
             if (!currentFilter) {
                 rows.forEach(row => {
                     const isGroup = row.classList.contains("group-row");
@@ -770,7 +811,7 @@
                     }
 
                     if (isGroup) {
-                        visible = true; // los headers de categoría siempre visibles si no hay filtro
+                        visible = true;
                     }
 
                     row.style.display = visible ? "" : "none";
@@ -778,7 +819,6 @@
                 return;
             }
 
-            // Filtro activo: mostramos solo filas que matchean + sus padres
             rows.forEach(row => {
                 row.style.display = "none";
             });
@@ -787,7 +827,6 @@
             const shownSubRows = new Set();
             const term = currentFilter;
 
-            // 1) Items
             const itemRows = tbody.querySelectorAll("tr.item-row");
             itemRows.forEach(row => {
                 const text = row.innerText.toLowerCase();
@@ -804,7 +843,6 @@
                 }
             });
 
-            // 2) Subcategorías (category-row con data-sub-row)
             const subRows = tbody.querySelectorAll("tr.category-row[data-sub-row]");
             subRows.forEach(row => {
                 const catIndex = row.dataset.parentIndex;
@@ -820,7 +858,6 @@
                 }
             });
 
-            // 3) Filas de categoría sin subcategorías explícitas (category-row sin data-sub-row)
             const loneCatRows = tbody.querySelectorAll("tr.category-row:not([data-sub-row])");
             loneCatRows.forEach(row => {
                 const catIndex = row.dataset.parentIndex;
@@ -833,7 +870,6 @@
                 }
             });
 
-            // 4) Group rows (categorías principales)
             const groupRows = tbody.querySelectorAll("tr.group-row");
             groupRows.forEach(row => {
                 const catIndex = row.dataset.groupIndex;
@@ -854,12 +890,38 @@
             });
         }
 
+        // ======================================================
+        // BLOQUE 6.8: VIEW SLIDERS (WIDTH + ZOOM)
+        // ======================================================
+        function setupViewSliders() {
+            const widthSlider = document.getElementById("table-width-slider");
+            const zoomSlider = document.getElementById("table-zoom-slider");
+
+            if (widthSlider) {
+                widthSlider.addEventListener("input", (e) => {
+                    const v = Number(e.target.value) || 100;
+                    document.documentElement.style.setProperty("--estimator-table-width", v);
+                });
+            }
+
+            if (zoomSlider) {
+                zoomSlider.addEventListener("input", (e) => {
+                    const v = Number(e.target.value) || 100;
+                    document.documentElement.style.setProperty("--estimator-table-zoom", v);
+                });
+            }
+        }
+
+        // ======================================================
+        // BLOQUE 6.9: INIT
+        // ======================================================
         document.addEventListener("DOMContentLoaded", () => {
             loadEstimatorFromNgm();
             setupProjectInfoModal();
             setupToolbar();
             setupColumnsModal();
             setupSearchFilter();
+            setupViewSliders();
         });
     </script>
 

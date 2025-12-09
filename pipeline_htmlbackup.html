@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- =====================================================
-       BLOQUE 1 — META, FUENTES Y CSS GLOBAL
-  ====================================================== -->
+  <!-- =======================================
+       01 — META & TITLE
+       ======================================= -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NGM HUB — Pipeline Manager</title>
 
-  <!-- Fonts -->
+  <!-- =======================================
+       02 — FONTS
+       ======================================= -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link 
@@ -16,153 +18,18 @@
     rel="stylesheet"
   >
 
-  <!-- CSS base del hub -->
+  <!-- =======================================
+       03 — CSS GLOBAL + PIPELINE
+       ======================================= -->
   <link rel="stylesheet" href="assets/css/styles.css" />
-
-  <!-- =====================================================
-       BLOQUE 2 — CSS ESPECÍFICO PIPELINE
-  ====================================================== -->
-  <style>
-    :root {
-      /* ancho máximo de los grupos / toolbar (lo controla el slider) */
-      --pm-panel-width: 96vw;
-    }
-
-    /* ---------- Toolbar “card” gris con sombra ---------- */
-    .pm-toolbar-surface {
-      max-width: var(--pm-panel-width);
-      width: 100%;
-      margin-inline: auto;
-
-      background: #0b1120;                /* gris más claro que el fondo */
-      border-radius: 16px;
-      border: 1px solid #1f2937;
-      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.6);
-      padding: 10px 14px;
-
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-
-      transition: max-width 0.12s ease-out;
-    }
-
-    .pm-toolbar-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .pm-toolbar-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-left: auto;
-      flex-wrap: wrap;
-    }
-
-    /* ---------- Card gris para cada grupo ---------- */
-    .pm-surface.panel-narrow {
-      max-width: var(--pm-panel-width);
-      width: 100%;
-      margin-inline: auto;
-
-      background: #0b1120;
-      border-radius: 16px;
-      border: 1px solid #1f2937;
-      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.6);
-      padding: 12px 14px 14px;
-
-      transition: max-width 0.12s ease-out;
-    }
-
-    /* cuerpo donde vive la tabla, gris tipo Monday */
-    .pm-group-body {
-      margin-top: 4px;
-      background: #111827;
-      border-radius: 12px;
-      padding: 8px 10px 10px;
-      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.6);
-    }
-
-    /* tabla dentro del grupo ligeramente más compacta */
-    .pm-group-body .table {
-      margin: 0;
-      background: transparent;
-      border-collapse: separate; /* importante para permitir líneas */
-      border-spacing: 0;
-    }
-
-    /* línea tenue bajo encabezado */
-    .pm-group-body .table thead th {
-      border-bottom: 1px solid hwb(219 11% 75%) !important;
-    }
-
-    /* Líneas horizontales tenues entre filas */
-    .pm-group-body .table tbody tr td {
-      border-top: 1px solid hwb(219 11% 75%) !important;
-    }
-
-    /* La primera fila sin línea superior */
-    .pm-group-body .table tbody tr:first-child td {
-      border-top: none !important;
-    }
-
-    /* Líneas verticales entre columnas (thead y tbody) */
-    .pm-group-body .table tbody tr td + td,
-    .pm-group-body .table thead th + th {
-      border-left: 1px solid hwb(219 11% 75%) !important;
-    }
-
-    .pm-group-body .table thead {
-      background: transparent;
-    }
-
-    /* Hover más contrastado */
-    .pm-group-body .table tbody tr:hover {
-      background: #1f2937;
-    }
-
-    /* ---------- Slider de ancho ---------- */
-    .pm-slider-label {
-      font-size: 11px;
-      color: #9ca3af;
-      margin-right: 4px;
-    }
-
-    .pm-width-slider {
-      width: 170px;
-      accent-color: #3b82f6;
-      cursor: pointer;
-    }
-
-
-    /* ---------- Modo manage: resaltar caja de cada celda ---------- */
-    .pm-row-manage td > div {
-      border-radius: 8px;
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px dashed rgba(75, 85, 99, 0.9);
-      padding: 4px 6px;
-    }
-
-        /* ---------- Espacio vertical entre grupos ---------- */
-    #pm-groups-container {
-      display: flex;
-      flex-direction: column;
-      gap: 25px;  
-    }
-
-  </style>
+  <link rel="stylesheet" href="assets/css/pipeline_styles.css" />
 </head>
 <body>
-  <!-- =====================================================
-       BLOQUE 3 — LAYOUT GENERAL (SIDEBAR + MAIN)
-  ====================================================== -->
   <div class="app-layout">
-    <!-- Sidebar -->
+    
+    <!-- =======================================
+         04 — SIDEBAR
+         ======================================= -->
     <aside class="sidebar">
       <div class="sidebar-logo">
         <img src="assets/img/logo.png" class="sidebar-logo-img" />
@@ -182,169 +49,187 @@
       </nav>
     </aside>
 
-    <!-- Main -->
+    <!-- =======================================
+         05 — MAIN AREA (TOPBAR + CONTENT)
+         ======================================= -->
     <div class="main-area">
-      <!-- Topbar -->
+
+      <!-- 05.1 TOPBAR -->
       <header class="topbar">
         <div class="topbar-left">
           <h1 class="topbar-title">Pipeline Manager</h1>
+          <p class="topbar-subtitle">Centralized control of tasks & status</p>
         </div>
         <div class="topbar-right">
           <span class="user-pill">Master User</span>
         </div>
       </header>
 
-      <!-- =====================================================
-           BLOQUE 4 — TOOLBAR (FILTROS + SLIDER + MANAGE)
-      ====================================================== -->
+      <!-- 05.2 CONTENIDO PRINCIPAL -->
       <main class="main-content">
+
+        <!-- =======================================
+             06 — TOOLBAR (FILTROS + COLUMNS + GROUPS + SLIDER)
+             ======================================= -->
         <section class="data-section">
           <div class="pm-toolbar-surface">
-            <!-- Lado izquierdo: filtros / columnas / grupos -->
-            <div class="pm-toolbar-left">
-              <!-- Dropdown de filtros -->
-              <div style="position: relative;">
-                <button id="pm-filters-toggle" class="btn-secondary" style="font-size: 12px; padding: 6px 10px;">
-                  Filters ▾
-                </button>
-                <div 
-                  id="pm-filters-panel" 
-                  class="panel" 
-                  style="
-                    position: absolute;
-                    left: 0;
-                    top: 110%;
-                    min-width: 260px;
-                    padding: 10px;
-                    z-index: 20;
-                    display: none;
-                  "
-                >
-                  <div style="display:flex; flex-direction:column; gap:8px;">
-                    <div>
-                      <label class="field-label" style="font-size:11px;">Project</label>
-                      <select id="pm-filter-project" class="input" style="padding: 6px 10px; font-size: 12px; width: 100%;">
-                        <option value="all">All projects</option>
-                      </select>
-                    </div>
+            <div class="pm-toolbar-row">
+              
+              <!-- 06.1 IZQUIERDA: Filters / Columns / Groups -->
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                
+                <!-- Dropdown de filtros -->
+                <div style="position: relative;">
+                  <button id="pm-filters-toggle" class="btn-secondary" style="font-size: 12px; padding: 6px 10px;">
+                    Filters ▾
+                  </button>
+                  <div 
+                    id="pm-filters-panel" 
+                    class="panel" 
+                    style="
+                      position: absolute;
+                      left: 0;
+                      top: 110%;
+                      min-width: 260px;
+                      padding: 10px;
+                      z-index: 20;
+                      display: none;
+                    "
+                  >
+                    <div style="display:flex; flex-direction:column; gap:8px;">
+                      <div>
+                        <label class="field-label" style="font-size:11px;">Project</label>
+                        <select id="pm-filter-project" class="input" style="padding: 6px 10px; font-size: 12px; width: 100%;">
+                          <option value="all">All projects</option>
+                        </select>
+                      </div>
 
-                    <div>
-                      <label class="field-label" style="font-size:11px;">Owner</label>
-                      <select id="pm-filter-owner" class="input" style="padding: 6px 10px; font-size: 12px; width: 100%;">
-                        <option value="all">All owners</option>
-                      </select>
-                    </div>
+                      <div>
+                        <label class="field-label" style="font-size:11px;">Owner</label>
+                        <select id="pm-filter-owner" class="input" style="padding: 6px 10px; font-size: 12px; width: 100%;">
+                          <option value="all">All owners</option>
+                        </select>
+                      </div>
 
-                    <div>
-                      <label class="field-label" style="font-size:11px;">Priority</label>
-                      <select id="pm-filter-priority" class="input" style="padding: 6px 10px; font-size: 12px; width: 100%;">
-                        <option value="all">All priorities</option>
-                      </select>
-                    </div>
+                      <div>
+                        <label class="field-label" style="font-size:11px;">Priority</label>
+                        <select id="pm-filter-priority" class="input" style="padding: 6px 10px; font-size: 12px; width: 100%;">
+                          <option value="all">All priorities</option>
+                        </select>
+                      </div>
 
-                    <div style="display:flex; justify-content:space-between; margin-top:4px;">
-                      <span class="table-cell-muted" style="font-size:11px;">Grouped by <strong>Status</strong></span>
-                      <button 
-                        id="pm-filters-reset" 
-                        class="btn-secondary" 
-                        style="font-size: 11px; padding: 4px 8px;"
-                      >
-                        Reset
-                      </button>
+                      <div style="display:flex; justify-content:space-between; margin-top:4px;">
+                        <span class="table-cell-muted" style="font-size:11px;">Grouped by <strong>Status</strong></span>
+                        <button 
+                          id="pm-filters-reset" 
+                          class="btn-secondary" 
+                          style="font-size: 11px; padding: 4px 8px;"
+                        >
+                          Reset
+                        </button>
+                      </div>
                     </div>
+                  </div>
+                </div>
+
+                <!-- Dropdown de columnas -->
+                <div style="position: relative;">
+                  <button id="pm-columns-toggle" class="btn-secondary" style="font-size: 12px; padding: 6px 10px;">
+                    Columns ▾
+                  </button>
+                  <div 
+                    id="pm-columns-panel" 
+                    class="panel" 
+                    style="
+                      position: absolute;
+                      right: 0;
+                      top: 110%;
+                      min-width: 220px;
+                      padding: 10px;
+                      z-index: 20;
+                      display: none;
+                    "
+                  >
+                    <!-- JS inyecta checkboxes aquí -->
+                  </div>
+                </div>
+
+                <!-- Dropdown de grupos -->
+                <div style="position: relative;">
+                  <button id="pm-groups-toggle" class="btn-secondary" style="font-size: 12px; padding: 6px 10px;">
+                    Groups ▾
+                  </button>
+                  <div 
+                    id="pm-groups-panel" 
+                    class="panel" 
+                    style="
+                      position: absolute;
+                      left: 0;
+                      top: 110%;
+                      min-width: 220px;
+                      padding: 10px;
+                      z-index: 20;
+                      display: none;
+                    "
+                  >
+                    <!-- JS inyecta grupos aquí -->
                   </div>
                 </div>
               </div>
 
-              <!-- Dropdown de columnas -->
-              <div style="position: relative;">
-                <button id="pm-columns-toggle" class="btn-secondary" style="font-size: 12px; padding: 6px 10px;">
-                  Columns ▾
-                </button>
-                <div 
-                  id="pm-columns-panel" 
-                  class="panel" 
-                  style="
-                    position: absolute;
-                    right: 0;
-                    top: 110%;
-                    min-width: 220px;
-                    padding: 10px;
-                    z-index: 20;
-                    display: none;
-                  "
-                >
-                  <!-- JS inyecta checkboxes aquí -->
+              <!-- 06.2 DERECHA: Slider ancho + Group info + Manage -->
+              <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                
+                <!-- Slider de ancho -->
+                <div class="pm-width-control">
+                  <span class="pm-width-control-label">Table width</span>
+                  <input
+                    id="pm-width-slider"
+                    type="range"
+                    min="70"
+                    max="100"
+                    value="92"
+                    class="pm-width-slider"
+                  />
+                  <span id="pm-width-value" class="pm-width-control-value">92%</span>
                 </div>
-              </div>
 
-              <!-- Dropdown de grupos -->
-              <div style="position: relative;">
-                <button id="pm-groups-toggle" class="btn-secondary" style="font-size: 12px; padding: 6px 10px;">
-                  Groups ▾
-                </button>
-                <div 
-                  id="pm-groups-panel" 
-                  class="panel" 
-                  style="
-                    position: absolute;
-                    left: 0;
-                    top: 110%;
-                    min-width: 220px;
-                    padding: 10px;
-                    z-index: 20;
-                    display: none;
-                  "
-                >
-                  <!-- JS inyecta grupos aquí -->
+                <!-- Texto Grouped by / Manage -->
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <span class="table-cell-muted" style="font-size: 12px;">
+                    Grouped by <strong>Status</strong>
+                  </span>
+                  <button id="pm-manage-toggle" class="btn-secondary" style="font-size: 12px; padding: 6px 10px;">
+                    Manage tasks
+                  </button>
                 </div>
-              </div>
-            </div>
-
-            <!-- Lado derecho: slider + manage -->
-            <div class="pm-toolbar-right">
-              <div style="display:flex; align-items:center; gap:6px;">
-                <span class="pm-slider-label">Table width</span>
-                <input
-                  type="range"
-                  id="pm-width-slider"
-                  class="pm-width-slider"
-                  min="70"
-                  max="100"
-                  value="96"
-                />
-              </div>
-
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span class="table-cell-muted" style="font-size: 12px;">
-                  Grouped by <strong>Status</strong>
-                </span>
-                <button id="pm-manage-toggle" class="btn-secondary" style="font-size: 12px; padding: 6px 10px;">
-                  Manage tasks
-                </button>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- =====================================================
-             BLOQUE 5 — CONTENEDOR DE GRUPOS
-        ====================================================== -->
+        <!-- =======================================
+             07 — CONTENEDOR DE GRUPOS
+             (se rellena desde la API / JS)
+             ======================================= -->
         <section class="data-section" id="pm-groups-container">
-          <div class="panel panel-narrow">
-            <p class="panel-text">Loading pipeline...</p>
+          <div class="pm-groups-wrapper">
+            <div class="pm-group">
+              <p class="panel-text">Loading pipeline...</p>
+            </div>
           </div>
         </section>
+
       </main>
     </div>
   </div>
 
-  <!-- =====================================================
-       BLOQUE 6 — SCRIPT PRINCIPAL PIPELINE
-  ====================================================== -->
+  <!-- =======================================
+       08 — SCRIPT PRINCIPAL PIPELINE
+       ======================================= -->
   <script>
     // =============================
-    // Config de la API
+    // 08.1 CONFIG BÁSICA / REF DOM
     // =============================
     const API_BASE = "http://127.0.0.1:8000"; // mismo que en projects
     const groupsContainer = document.getElementById("pm-groups-container");
@@ -364,12 +249,13 @@
 
     const manageToggleBtn = document.getElementById("pm-manage-toggle");
 
-    // slider de ancho
     const widthSlider = document.getElementById("pm-width-slider");
+    const widthValueLabel = document.getElementById("pm-width-value");
 
     let originalGroups = [];
     let manageMode = false;
 
+    // Orden deseado de grupos (por Status)
     const STATUS_ORDER = [
       "not started",
       "to do",
@@ -390,6 +276,7 @@
       "completed",
     ];
 
+    // Grupos que deben estar ON por defecto
     const DEFAULT_ON_GROUPS = [
       "not started",
       "working on it",
@@ -397,6 +284,7 @@
       "done",
     ];
 
+    // Columnas visibles (Task la dejamos siempre)
     const columnVisibility = {
       owner: true,
       collaborators: true,
@@ -425,10 +313,30 @@
       { key: "hours", label: "Est. hours" },
     ];
 
+    // Visibilidad de grupos (por status_id o nombre)
     const groupVisibility = {};
 
     // =============================
-    // Helpers UI (owners, collaborators, etc.)
+    // 08.2 SLIDER DE ANCHO (sin parpadeo)
+    // =============================
+    function applyPanelWidth(value) {
+      const raw = Number(value) || 90;
+      const clamped = Math.min(100, Math.max(70, raw)); // rango 70–100%
+      document.documentElement.style.setProperty("--pm-panel-width", clamped + "%");
+      if (widthValueLabel) {
+        widthValueLabel.textContent = clamped + "%";
+      }
+    }
+
+    if (widthSlider) {
+      applyPanelWidth(widthSlider.value || 92);
+      widthSlider.addEventListener("input", (e) => {
+        applyPanelWidth(e.target.value);
+      });
+    }
+
+    // =============================
+    // 08.3 HELPERS DE CELDAS (owner, priority, etc.)
     // =============================
     function renderOwnerCell(owner) {
       if (!owner || (!owner.name && !owner.id)) {
@@ -638,7 +546,9 @@
       const estHours = task.estimated_hours != null ? `${task.estimated_hours} h` : "-";
 
       const rowClass = manageMode ? "pm-row pm-row-manage" : "pm-row";
-      const boxStyle = ""; // el resalte ahora lo hace la clase pm-row-manage
+      const boxStyle = manageMode
+        ? "background:#020617;border-radius:6px;border:1px dashed #4b5563;padding:4px 6px;"
+        : "";
 
       return `
         <tr class="${rowClass}" data-task-id="${task.task_id || ""}" data-status-name="${statusName}">
@@ -690,68 +600,69 @@
     }
 
     // =============================
-    // Colores de grupos (Status)
+    // 08.4 COLORES DE GRUPOS (Status)
     // =============================
     function getStatusStyle(statusName) {
       const norm = (statusName || "").toLowerCase();
 
       if (norm.includes("not started") || norm.includes("backlog") || norm === "todo" || norm.includes("to do")) {
         return {
-          borderColor: "#eab308",
+          borderColor: "#eab308",   // yellow
           titleColor: "#fef9c3",
           dotColor: "#facc15",
         };
       }
       if (norm.includes("working on it") || norm.includes("in progress") || norm === "progress") {
         return {
-          borderColor: "#2563eb",
+          borderColor: "#2563eb",   // blue
           titleColor: "#bfdbfe",
           dotColor: "#3b82f6",
         };
       }
       if (norm.includes("correction") || norm.includes("fix") || norm.includes("changes")) {
         return {
-          borderColor: "#7c3aed",
+          borderColor: "#7c3aed",   // purple
           titleColor: "#ede9fe",
           dotColor: "#a855f7",
         };
       }
       if (norm.includes("resubmittal") || norm.includes("re-submittal") || norm.includes("resubmit")) {
         return {
-          borderColor: "#0d9488",
+          borderColor: "#0d9488",   // teal
           titleColor: "#ccfbf1",
           dotColor: "#14b8a6",
         };
       }
       if (norm.includes("awaiting approval") || norm.includes("waiting approval") || norm.includes("approval")) {
         return {
-          borderColor: "#f97316",
+          borderColor: "#f97316",   // orange
           titleColor: "#fed7aa",
           dotColor: "#fb923c",
         };
       }
       if (norm.includes("delayed") || norm.includes("delay")) {
         return {
-          borderColor: "#b91c1c",
+          borderColor: "#b91c1c",   // red
           titleColor: "#fecaca",
           dotColor: "#ef4444",
         };
       }
       if (norm.includes("on hold") || norm.includes("hold")) {
         return {
-          borderColor: "#78350f",
+          borderColor: "#78350f",   // brownish
           titleColor: "#fef3c7",
           dotColor: "#d97706",
         };
       }
       if (norm.includes("done") || norm.includes("completed")) {
         return {
-          borderColor: "#16a34a",
+          borderColor: "#16a34a",   // green
           titleColor: "#bbf7d0",
           dotColor: "#22c55e",
         };
       }
 
+      // Default / otros
       return {
         borderColor: "#4b5563",
         titleColor: "#e5e7eb",
@@ -812,14 +723,13 @@
 
       return `
         <div 
-          class="pm-surface panel-narrow pm-group" 
+          class="pm-group" 
           data-status-id="${group.status_id}" 
-          style="border-left: 3px solid ${style.borderColor};"
+          style="--pm-group-accent: ${style.borderColor};"
         >
           <div 
             class="pm-group-header" 
             data-group-id="${groupId}"
-            style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;"
           >
             <span 
               class="pm-group-toggle-icon" 
@@ -875,7 +785,7 @@
     }
 
     // =============================
-    // Columnas: panel de visibilidad
+    // 08.5 PANEL DE COLUMNAS
     // =============================
     function buildColumnsPanel() {
       columnsPanel.innerHTML = columnsConfig.map(c => `
@@ -915,7 +825,7 @@
     });
 
     // =============================
-    // Filtros: panel
+    // 08.6 FILTROS: PANEL
     // =============================
     filtersToggleBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -932,7 +842,7 @@
     });
 
     // =============================
-    // Grupos: panel de visibilidad
+    // 08.7 GRUPOS: PANEL DE VISIBILIDAD
     // =============================
     function buildGroupsPanel() {
       if (!originalGroups.length) {
@@ -1003,7 +913,7 @@
     });
 
     // =============================
-    // Filtros (lógica)
+    // 08.8 FILTROS (LÓGICA)
     // =============================
     function populateFilters(groups) {
       const projectMap = new Map();
@@ -1036,16 +946,19 @@
         });
       });
 
+      // Projects
       projectFilter.innerHTML = `<option value="all">All projects</option>`;
       projectMap.forEach((name, id) => {
         projectFilter.innerHTML += `<option value="${id}">${name}</option>`;
       });
 
+      // Owners
       ownerFilter.innerHTML = `<option value="all">All owners</option>`;
       ownerMap.forEach((name, id) => {
         ownerFilter.innerHTML += `<option value="${id}">${name}</option>`;
       });
 
+      // Priorities
       priorityFilter.innerHTML = `<option value="all">All priorities</option>`;
       priorityMap.forEach((name, key) => {
         priorityFilter.innerHTML += `<option value="${key}">${name}</option>`;
@@ -1060,12 +973,15 @@
       return groups.map(group => {
         const tasks = Array.isArray(group.tasks) ? group.tasks : [];
         const filteredTasks = tasks.filter(t => {
+          // Project filter
           const pid = t.project_id || t.project_name || "";
           const projectPass = selectedProject === "all" || pid === selectedProject;
 
+          // Owner filter
           const oid = t.owner?.id || t.owner?.name || "";
           const ownerPass = selectedOwner === "all" || oid === selectedOwner;
 
+          // Priority filter
           const pName = t.priority?.priority_name || t.priority?.priority_id || "";
           const pKey = pName.toString().toLowerCase();
           const priorityPass = selectedPriority === "all" || pKey === selectedPriority;
@@ -1081,40 +997,26 @@
     }
 
     // =============================
-    // Sort de grupos
-    // =============================
-    function sortGroupsByStatus(groups) {
-      return [...groups].sort((a, b) => {
-        const sa = (a.status_name || "").toLowerCase();
-        const sb = (b.status_name || "").toLowerCase();
-
-        const ia = STATUS_ORDER.findIndex(s => sa.includes(s));
-        const ib = STATUS_ORDER.findIndex(s => sb.includes(s));
-
-        const pa = ia === -1 ? 999 : ia;
-        const pb = ib === -1 ? 999 : ib;
-
-        if (pa !== pb) return pa - pb;
-        return sa.localeCompare(sb);
-      });
-    }
-
-    // =============================
-    // Modal de detalles
+    // 08.08.x CERRAR MODAL
     // =============================
     function closeTaskModal() {
       const backdrop = document.querySelector(".pm-modal-backdrop");
       if (backdrop) backdrop.remove();
     }
 
+    // =============================
+    // 08.09 MODAL DE DETALLES
+    // =============================
     function openTaskModal(task, statusName) {
       if (!task) return;
 
       const ownerName = task.owner?.name || "-";
-      const collaboratorsText = (task.collaborators || [])
-        .map(c => c.name || c.id)
-        .filter(Boolean)
-        .join(", ") || "-";
+      const collaboratorsText =
+        (task.collaborators || [])
+          .map(c => c.name || c.id)
+          .filter(Boolean)
+          .join(", ") || "-";
+
       const managerName = task.manager_obj?.name || "-";
 
       const priorityName = task.priority?.priority_name || "-";
@@ -1124,7 +1026,8 @@
       const start = formatDate(task.start_date) || "-";
       const due = formatDate(task.due_date) || "-";
       const deadline = formatDate(task.deadline) || "-";
-      const estHours = task.estimated_hours != null ? `${task.estimated_hours} h` : "-";
+      const estHours =
+        task.estimated_hours != null ? `${task.estimated_hours} h` : "-";
 
       const projectName = task.project_name || "-";
       const companyName = task.company_name || "-";
@@ -1162,7 +1065,17 @@
               box-shadow: 0 18px 45px rgba(0,0,0,0.6);
             "
           >
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px;">
+
+            <!-- Header del modal -->
+            <div 
+              style="
+                display:flex; 
+                justify-content:space-between; 
+                align-items:flex-start; 
+                gap:12px; 
+                margin-bottom:12px;
+              "
+            >
               <div>
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
                   <span 
@@ -1185,15 +1098,21 @@
                     ${statusName || "(no status)"}
                   </span>
                 </div>
+
                 <h2 style="font-size:16px; font-weight:600; margin:0 0 4px 0;">
                   ${task.task_description || "(no description)"}
                 </h2>
+
                 ${
                   task.task_notes
-                    ? `<p style="font-size:12px; color:#9ca3af; margin:0;">${task.task_notes}</p>`
+                    ? `<p style="font-size:12px; color:#9ca3af; margin:0;">
+                        ${task.task_notes}
+                      </p>`
                     : ""
                 }
               </div>
+
+              <!-- Botón cierre -->
               <button
                 type="button"
                 onclick="closeTaskModal()"
@@ -1201,14 +1120,14 @@
                   border:none;
                   background:transparent;
                   color:#9ca3af;
-                  font-size:18px;
+                  font-size:20px;
                   line-height:1;
                   cursor:pointer;
                 "
               >×</button>
-
             </div>
 
+            <!-- GRID MAIN INFO -->
             <div 
               style="
                 display:grid;
@@ -1217,6 +1136,7 @@
                 margin-bottom:8px;
               "
             >
+              <!-- LEFT CARD: SUMMARY -->
               <div
                 style="
                   background:#020617;
@@ -1225,10 +1145,26 @@
                   padding:10px 12px;
                 "
               >
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                  <h3 style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#6b7280; margin:0;">
+                <div 
+                  style="
+                    display:flex; 
+                    justify-content:space-between; 
+                    align-items:center; 
+                    margin-bottom:4px;
+                  "
+                >
+                  <h3 
+                    style="
+                      font-size:11px; 
+                      text-transform:uppercase; 
+                      letter-spacing:0.08em; 
+                      color:#6b7280; 
+                      margin:0;
+                    "
+                  >
                     Summary
                   </h3>
+
                   <span 
                     style="
                       font-size:11px;
@@ -1242,26 +1178,37 @@
                     ${statusName || "(no status)"}
                   </span>
                 </div>
-                <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:6px;">
+
+                <div 
+                  style="
+                    display:grid; 
+                    grid-template-columns: repeat(2, minmax(0,1fr)); 
+                    gap:6px;
+                  "
+                >
                   <div>
                     <div style="font-size:11px; color:#6b7280;">Project</div>
                     <div style="font-size:12px;">${projectName}</div>
                   </div>
+
                   <div>
                     <div style="font-size:11px; color:#6b7280;">Company</div>
                     <div style="font-size:12px;">${companyName}</div>
                   </div>
+
                   <div>
                     <div style="font-size:11px; color:#6b7280;">Priority</div>
                     <div style="font-size:12px;">${priorityName}</div>
                   </div>
+
                   <div>
-                    <div style="font-size:11px; color:#6b7280;">Finished status</div>
+                    <div style="font-size:11px; color:#6b7280;">Finished</div>
                     <div style="font-size:12px;">${finishedName}</div>
                   </div>
                 </div>
               </div>
 
+              <!-- RIGHT CARD: PEOPLE -->
               <div
                 style="
                   background:#020617;
@@ -1270,18 +1217,29 @@
                   padding:10px 12px;
                 "
               >
-                <h3 style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#6b7280; margin:0 0 4px 0;">
+                <h3 
+                  style="
+                    font-size:11px; 
+                    text-transform:uppercase; 
+                    letter-spacing:0.08em; 
+                    color:#6b7280; 
+                    margin:0 0 4px 0;
+                  "
+                >
                   People
                 </h3>
+
                 <div style="display:flex; flex-direction:column; gap:4px;">
                   <div>
                     <div style="font-size:11px; color:#6b7280;">Owner</div>
                     <div style="font-size:12px;">${ownerName}</div>
                   </div>
+
                   <div>
                     <div style="font-size:11px; color:#6b7280;">Collaborators</div>
                     <div style="font-size:12px;">${collaboratorsText}</div>
                   </div>
+
                   <div>
                     <div style="font-size:11px; color:#6b7280;">Manager</div>
                     <div style="font-size:12px;">${managerName}</div>
@@ -1290,66 +1248,119 @@
               </div>
             </div>
 
+            <!-- CARD: TIMING + LINKS -->
             <div
               style="
                 background:#020617;
                 border-radius:12px;
                 border:1px solid #1f2937;
                 padding:10px 12px;
+                margin-bottom:4px;
               "
             >
-              <h3 style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#6b7280; margin:0 0 6px 0;">
+              <h3 
+                style="
+                  font-size:11px; 
+                  text-transform:uppercase; 
+                  letter-spacing:0.08em; 
+                  color:#6b7280; 
+                  margin:0 0 6px 0;
+                "
+              >
                 Timing & Links
               </h3>
-              <div style="display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:6px; margin-bottom:6px;">
+
+              <div 
+                style="
+                  display:grid; 
+                  grid-template-columns: repeat(4, minmax(0,1fr)); 
+                  gap:6px; 
+                  margin-bottom:6px;
+                "
+              >
                 <div>
                   <div style="font-size:11px; color:#6b7280;">Arrival</div>
                   <div style="font-size:12px;">${arrival}</div>
                 </div>
+
                 <div>
                   <div style="font-size:11px; color:#6b7280;">Start date</div>
                   <div style="font-size:12px;">${start}</div>
                 </div>
+
                 <div>
-                  <div style="font-size:11px; color:#6b7280;">Due date</div>
+                  <div style="font-size:11px; color:#6b7280;">Due</div>
                   <div style="font-size:12px;">${due}</div>
                 </div>
+
                 <div>
                   <div style="font-size:11px; color:#6b7280;">Deadline</div>
                   <div style="font-size:12px;">${deadline}</div>
                 </div>
               </div>
-              <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+
+              <div 
+                style="
+                  display:flex; 
+                  justify-content:space-between; 
+                  align-items:center; 
+                  gap:8px;
+                "
+              >
                 <div>
                   <div style="font-size:11px; color:#6b7280;">Estimated hours</div>
                   <div style="font-size:12px;">${estHours}</div>
                 </div>
+
                 <div style="display:flex; gap:8px; justify-content:flex-end;">
                   ${
                     docsLink
-                      ? `<a href="${docsLink}" target="_blank" style="font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #4b5563; text-decoration:none; color:#e5e7eb;">Docs link</a>`
+                      ? `<a 
+                          href="${docsLink}" 
+                          target="_blank" 
+                          style="
+                            font-size:11px; 
+                            padding:4px 8px; 
+                            border-radius:999px; 
+                            border:1px solid #4b5563; 
+                            text-decoration:none; 
+                            color:#e5e7eb;
+                          "
+                        >Docs link</a>`
                       : ""
                   }
+
                   ${
                     resultLink
-                      ? `<a href="${resultLink}" target="_blank" style="font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #4b5563; text-decoration:none; color:#e5e7eb;">Result link</a>`
+                      ? `<a 
+                          href="${resultLink}" 
+                          target="_blank" 
+                          style="
+                            font-size:11px; 
+                            padding:4px 8px; 
+                            border-radius:999px; 
+                            border:1px solid #4b5563; 
+                            text-decoration:none; 
+                            color:#e5e7eb;
+                          "
+                        >Result link</a>`
                       : ""
                   }
                 </div>
               </div>
             </div>
+
           </div>
         </div>
       `;
 
       document.body.insertAdjacentHTML("beforeend", modalHtml);
 
+      // cierre del modal al click fuera
       const backdrop = document.querySelector(".pm-modal-backdrop");
       if (backdrop) {
-        backdrop.addEventListener("click", (e) => {
-          if (e.target === backdrop) {
-            closeTaskModal();
-          }
+        backdrop.addEventListener("click", e => {
+          if (e.target === backdrop) closeTaskModal();
         });
       }
     }
@@ -1359,6 +1370,7 @@
       rows.forEach(row => {
         row.addEventListener("click", () => {
           if (manageMode) {
+            // en modo manage dejamos este click libre para futuro inline-edit
             return;
           }
           const taskId = row.getAttribute("data-task-id");
@@ -1382,7 +1394,7 @@
     }
 
     // =============================
-    // Toggles de grupos
+    // 08.11 TOGGLES DE GRUPOS
     // =============================
     function attachGroupToggles() {
       const headers = document.querySelectorAll(".pm-group-header");
@@ -1404,13 +1416,13 @@
           e.stopPropagation();
           const statusId = btn.getAttribute("data-add-task-for-status");
           console.log("Add task clicked for status:", statusId);
-          alert("TODO: Abrir modal para crear nueva task en este grupo.");
+          alert("TODO: Abrir modal para crear nueva task en este group.");
         });
       });
     }
 
     // =============================
-    // Manage mode
+    // 08.12 MANAGE MODE
     // =============================
     manageToggleBtn.addEventListener("click", () => {
       manageMode = !manageMode;
@@ -1419,13 +1431,15 @@
     });
 
     // =============================
-    // Render principal
+    // 08.13 RENDER PRINCIPAL
     // =============================
     function renderGroups() {
       if (!originalGroups.length) {
         groupsContainer.innerHTML = `
-          <div class="panel panel-narrow">
-            <p class="panel-text">No tasks found in pipeline.</p>
+          <div class="pm-groups-wrapper">
+            <div class="pm-group">
+              <p class="panel-text">No tasks found in pipeline.</p>
+            </div>
           </div>
         `;
         return;
@@ -1444,37 +1458,49 @@
 
       if (!visible.length) {
         groupsContainer.innerHTML = `
-          <div class="panel panel-narrow">
-            <p class="panel-text">No groups visible. Adjust filters.</p>
+          <div class="pm-groups-wrapper">
+            <div class="pm-group">
+              <p class="panel-text">No groups visible. Adjust filters.</p>
+            </div>
           </div>
         `;
         return;
       }
 
-      groupsContainer.innerHTML = visible.map(renderGroupPanel).join("");
+      groupsContainer.innerHTML = `
+        <div class="pm-groups-wrapper">
+          ${visible.map(renderGroupPanel).join("")}
+        </div>
+      `;
       attachGroupToggles();
       attachRowClickHandlers();
     }
 
     // =============================
-    // Carga inicial desde API
+    // 08.14 CARGA INICIAL DESDE API
     // =============================
     async function loadPipeline() {
-      groupsContainer.innerHTML = `
-        <div class="panel panel-narrow">
-          <p class="panel-text">Loading pipeline...</p>
-        </div>
-      `;
+      // Estado inicial "Loading..."
+      groupsContainer.innerHTML =
+        '<div class="pm-groups-wrapper">' +
+          '<div class="pm-group">' +
+            '<p class="panel-text">Loading pipeline...</p>' +
+          '</div>' +
+        '</div>';
 
       try {
-        const res = await fetch(`${API_BASE}/pipeline/grouped`);
+        const res = await fetch(API_BASE + "/pipeline/grouped");
+
         if (!res.ok) {
           const text = await res.text();
-          groupsContainer.innerHTML = `
-            <div class="panel panel-narrow">
-              <p class="panel-text">Error loading pipeline: ${text}</p>
-            </div>
-          `;
+          groupsContainer.innerHTML =
+            '<div class="pm-groups-wrapper">' +
+              '<div class="pm-group">' +
+                '<p class="panel-text">Error loading pipeline: ' +
+                  String(text) +
+                '</p>' +
+              '</div>' +
+            '</div>';
           return;
         }
 
@@ -1488,34 +1514,19 @@
 
       } catch (err) {
         console.error("Error loading pipeline:", err);
-        groupsContainer.innerHTML = `
-          <div class="panel panel-narrow">
-            <p class="panel-text">Network or server error loading pipeline.</p>
-          </div>
-        `;
+        groupsContainer.innerHTML =
+          '<div class="pm-groups-wrapper">' +
+            '<div class="pm-group">' +
+              '<p class="panel-text">Network or server error loading pipeline.</p>' +
+            '</div>' +
+          '</div>';
       }
     }
 
+    // Eventos de filtros
     projectFilter.addEventListener("change", renderGroups);
     ownerFilter.addEventListener("change", renderGroups);
     priorityFilter.addEventListener("change", renderGroups);
-
-    // =============================
-    // Slider de ancho (solo CSS, sin re-render)
-    // =============================
-    function applyWidthFromSlider(val) {
-      const num = Number(val);
-      const clamped = Math.min(100, Math.max(70, Number.isNaN(num) ? 96 : num));
-      const widthValue = clamped + "vw";
-      document.documentElement.style.setProperty("--pm-panel-width", widthValue);
-    }
-
-    if (widthSlider) {
-      applyWidthFromSlider(widthSlider.value);
-      widthSlider.addEventListener("input", (e) => {
-        applyWidthFromSlider(e.target.value);
-      });
-    }
 
     // Init
     loadPipeline();

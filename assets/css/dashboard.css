@@ -1,0 +1,441 @@
+/* ==========================================
+   DASHBOARD — Supabase‑style layout
+   (topbar, modules grid, pipeline preview)
+   ========================================== */
+
+/* ---------- TOPBAR OVERRIDES SOLO PARA DASHBOARD ---------- */
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 24px;
+    border-bottom: 1px solid #20252c;
+    background: #0d0f12;
+}
+
+.topbar-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.topbar-title {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #e5e7eb;
+}
+
+.topbar-subtitle {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+/* Centro: barra de búsqueda */
+
+.topbar-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.topbar-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    border: 1px solid #20252c;
+    background: #020617;
+    min-width: min(420px, 100%);
+}
+
+.search-icon {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.search-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #e5e7eb;
+    font-size: 13px;
+    width: 100%;
+}
+
+.search-input::placeholder {
+    color: #6b7280;
+}
+
+/* Lado derecho: pills de usuario / rol */
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.topbar-pill {
+    font-size: 11px;
+    border-radius: 9999px;
+    padding: 5px 10px;
+    border: 1px solid #27272f;
+    background: #020617;
+    color: #e5e7eb;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.topbar-pill-label {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+.topbar-pill-value {
+    font-weight: 500;
+}
+
+.topbar-pill--role {
+    border-color: #334155;
+}
+
+.topbar-pill--user {
+    border-color: #22c55e;
+}
+
+/* ---------- CONTENIDO PRINCIPAL DEL DASHBOARD ---------- */
+
+.main-content.dashboard-main {
+    padding: 18px 26px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Pipeline arriba, módulos abajo */
+
+.pipeline-section {
+    margin-bottom: 8px;
+}
+
+.pipeline-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.pipeline-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.pipeline-subtitle {
+    margin-top: 2px;
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+/* Panel de pipeline más compacto, estilo card Supabase */
+
+.pipeline-panel {
+    margin-top: 10px;
+    padding: 14px 14px 12px;
+    border-radius: 10px;
+    background: #111318;
+    border: 1px solid #20252c;
+}
+
+.pipeline-empty-text {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+/* Separador visual entre pipeline y módulos */
+
+.dashboard-separator {
+    height: 1px;
+    width: 100%;
+    background: #20252c;
+    margin: 6px 0 14px;
+    border-radius: 999px;
+}
+
+/* ---------- GRID DE MÓDULOS ---------- */
+
+.modules-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.section-subtitle {
+    margin: 0;
+    font-size: 11px;
+    color: #9ca3af;
+}
+
+.modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    align-items: stretch;
+}
+
+/* Cards de módulo */
+
+.module-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    /* padding un poco más compacto */
+    padding: 14px 14px 12px;
+    border-radius: 10px; /* menos redondeado */
+
+    /* gris r=59 g=59 b=59 */
+    background: #3b3b3b;
+    border: 1px solid #2b2b2b;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+
+    text-align: left;
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+        transform 0.12s ease-out,
+        box-shadow 0.12s ease-out,
+        border-color 0.12s ease-out,
+        background-color 0.12s ease-out;
+}
+
+.module-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.9);
+    border-color: rgba(34, 197, 94, 0.85);  /* verde NGM */
+    background-color: #444444;
+}
+
+.module-card:focus-visible {
+    outline: 2px solid #22c55e;
+    outline-offset: 2px;
+}
+
+/* Icono/Badge cuadrado */
+
+.module-icon {
+    margin-bottom: 8px;
+}
+
+.module-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.7);
+    background: #090b10;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e5e7eb;
+}
+
+/* Títulos y textos del módulo */
+
+.module-title {
+    margin: 0 0 4px;
+    font-size: 0.94rem;
+    font-weight: 600;
+    color: #f9fafb;
+}
+
+.module-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: #9ca3af;
+}
+
+/* Estados especiales */
+
+.module-coming-soon {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.module-coming-soon:hover {
+    transform: none;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.3);
+    border-color: rgba(148, 163, 184, 0.5);
+}
+
+/* Responsive tweaks */
+
+@media (max-width: 900px) {
+    .topbar {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .topbar-center {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .topbar-search {
+        width: 100%;
+    }
+}
+
+/* Pipeline “card” en dashboard */
+.pipeline-card {
+    margin-top: 18px;
+}
+
+/* Por si en algún momento .panel pisa estilos,
+   reforzamos que el fondo sea el mismo que las module-card */
+#pipeline-tasks.pipeline-card {
+    background: #3b3b3b;
+    border-radius: 10px;
+    border-color: #2b2b2b;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+}
+
+/* Topbar solo para el dashboard */
+.topbar-dashboard {
+    background: #050509;              /* más oscuro que el fondo general */
+    border-bottom: 1px solid #202329;
+    padding: 10px 24px;
+}
+
+/* Alineación global */
+.global-bar-left {
+    display: flex;
+    align-items: center;
+}
+
+
+.dashboard-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dashboard-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    border: 1px solid #2b2b2b;
+    background: #3b3b3b; /* mismo que fondo de cards */
+}
+
+.dashboard-search-icon {
+    font-size: 0.8rem;
+    color: #b3b3b3;
+}
+
+.dashboard-search-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #e5e7eb;
+    font-size: 0.85rem;
+    min-width: 180px;
+}
+
+.dashboard-search-input::placeholder {
+    color: #9ca3af;
+}
+
+.global-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.brand-icon-small {
+    width: 24px;
+    height: 24px;
+    border-radius: 9999px;
+    background: #111111;
+    border: 1px solid #27272a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #22c55e; /* verde NGM */
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.brand-org {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+}
+
+.brand-context {
+    font-size: 0.8rem;
+    color: #e5e7eb;
+}
+
+.dashboard-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 8px;
+}
+
+.meta-pill {
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    border: 1px solid #27272a;
+    background: #111827;
+    color: #e5e7eb;
+    white-space: nowrap;
+}
+
+.meta-env {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #cbd5f5;
+}
+
+.meta-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.meta-status-live {
+    border-color: #22c55e;
+    color: #bbf7d0;
+}

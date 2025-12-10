@@ -1,0 +1,164 @@
+/* ==========================================
+   LOGIN — pantalla de acceso
+   ========================================== */
+
+.login-screen {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 32px 16px;
+    /* ÚNICO lugar con degradado, en escala de grises */
+    background:
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.06), transparent 55%),
+        radial-gradient(circle at 80% 80%, rgba(0, 0, 0, 0.85), transparent 65%),
+        var(--bg-main);
+}
+
+/* Panel principal */
+
+.login-panel {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 26px;
+    backdrop-filter: blur(25px);
+    background: var(--bg-panel);
+    padding: 36px 34px 28px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    border: none;
+}
+
+/* Branding login */
+
+.logo-block {
+    text-align: center;
+    margin-top: -110px;
+    margin-bottom: -140px;
+}
+
+.logo-img {
+    width: 350px;
+    height: 350px;
+    object-fit: contain;
+    margin-bottom: 18px;
+}
+
+.brand-title {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+}
+
+.brand-subtitle {
+    text-align: center;
+    width: 100%;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-family: 'Roboto', sans-serif;
+}
+
+/* Form login */
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.login-form .form-footer {
+    margin-top: 8px;
+    display: flex;
+    justify-content: center;
+}
+
+.login-form .btn-primary {
+    min-width: 120px;
+}
+
+/* Footer login */
+
+.footer-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.legal-text {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-family: 'Roboto', sans-serif;
+}
+
+.support-link {
+    font-size: 12px;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Roboto', sans-serif;
+    opacity: 0.85;
+    transition: 0.15s ease;
+    padding: 0;
+}
+
+.support-link:hover {
+    opacity: 1;
+}
+
+/* Estado de autenticación (mensajes) */
+
+.auth-message {
+    margin-top: 8px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.auth-message--error {
+    color: #f97373;
+}
+
+/* Botón con loading */
+
+.btn-primary--loading {
+    cursor: wait;
+    opacity: 0.9;
+}
+
+.btn-primary__inner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Spinner: OCULTO por defecto */
+.btn-primary__spinner {
+    display: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 2px solid rgba(15, 23, 42, 0.6);
+    border-top-color: #ffffff;
+}
+
+/* Solo se muestra y gira cuando el botón está en modo loading */
+.btn-primary--loading .btn-primary__spinner {
+    display: inline-block;
+    animation: spin-login 0.7s linear infinite;
+}
+
+
+@keyframes spin-login {
+    to {
+        transform: rotate(360deg);
+    }
+}

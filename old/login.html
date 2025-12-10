@@ -13,10 +13,7 @@
       rel="stylesheet"
     >
 
-    <!-- 1) Estilos base compartidos (layout, sidebar, inputs, botones genéricos) -->
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <!-- 2) Estilos específicos de login (degradado, panel, loading, mensajes) -->
-    <link rel="stylesheet" href="assets/css/login.css" />
 </head>
 <body>
     <main class="login-screen">
@@ -30,8 +27,7 @@
                     onerror="this.style.display='none'"
                 />
             </div>
-
-            <!-- Formulario de acceso -->
+            
             <form id="loginForm" class="login-form">
                 <div class="field">
                     <label class="field-label" for="user">User</label>
@@ -57,17 +53,14 @@
 
                 <div class="form-footer">
                     <button type="submit" class="btn-primary" id="loginButton">
-                        <span class="btn-primary__inner">
-                            <span class="btn-primary__label">Sign in</span>
-                            <!-- Spinner controlado por JS con la clase .btn-primary--loading -->
-                            <span class="btn-primary__spinner" aria-hidden="true"></span>
-                        </span>
+                        <span class="btn-label">Sign in</span>
+                        <span class="btn-spinner" aria-hidden="true"></span>
                     </button>
                 </div>
             </form>
 
-            <!-- Mensaje de estado (error, etc.) -->
-            <p id="loginMessage" class="auth-message" aria-live="polite"></p>
+            <p id="loginMessage" class="legal-text login-message"></p>
+
 
             <p class="brand-subtitle">
                 Data-Driven Management Platform
@@ -89,7 +82,7 @@
          ============================ -->
     <!-- 1) Config primero (ruta correcta) -->
     <script src="assets/js/config.js"></script>
-    <!-- 2) Luego la lógica de login (maneja loading y mensajes) -->
+    <!-- 2) Luego la lógica de login -->
     <script src="assets/js/login.js"></script>
 
     <script>

@@ -1,1524 +1,665 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- =====================================================
-       BLOQUE 1 — META, FUENTES Y CSS GLOBAL
-  ====================================================== -->
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NGM HUB — Pipeline Manager</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NGM HUB — Pipeline Manager</title>
 
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link 
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" 
-    rel="stylesheet"
-  >
+    <!-- mismas fuentes que login / dashboard -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link 
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" 
+      rel="stylesheet"
+    >
 
-  <!-- CSS base del hub -->
-  <link rel="stylesheet" href="assets/css/styles.css" />
-
-  <!-- =====================================================
-       BLOQUE 2 — CSS ESPECÍFICO PIPELINE
-  ====================================================== -->
-  <style>
-    :root {
-      /* ancho máximo de los grupos / toolbar (lo controla el slider) */
-      --pm-panel-width: 96vw;
-    }
-
-    /* ---------- Toolbar “card” gris con sombra ---------- */
-    .pm-toolbar-surface {
-      max-width: var(--pm-panel-width);
-      width: 100%;
-      margin-inline: auto;
-
-      background: #0b1120;                /* gris más claro que el fondo */
-      border-radius: 16px;
-      border: 1px solid #1f2937;
-      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.6);
-      padding: 10px 14px;
-
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-
-      transition: max-width 0.12s ease-out;
-    }
-
-    .pm-toolbar-left {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .pm-toolbar-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-left: auto;
-      flex-wrap: wrap;
-    }
-
-    /* ---------- Card gris para cada grupo ---------- */
-    .pm-surface.panel-narrow {
-      max-width: var(--pm-panel-width);
-      width: 100%;
-      margin-inline: auto;
-
-      background: #0b1120;
-      border-radius: 16px;
-      border: 1px solid #1f2937;
-      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.6);
-      padding: 12px 14px 14px;
-
-      transition: max-width 0.12s ease-out;
-    }
-
-    /* cuerpo donde vive la tabla, gris tipo Monday */
-    .pm-group-body {
-      margin-top: 4px;
-      background: #111827;
-      border-radius: 12px;
-      padding: 8px 10px 10px;
-      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.6);
-    }
-
-    /* tabla dentro del grupo ligeramente más compacta */
-    .pm-group-body .table {
-      margin: 0;
-      background: transparent;
-      border-collapse: separate; /* importante para permitir líneas */
-      border-spacing: 0;
-    }
-
-    /* línea tenue bajo encabezado */
-    .pm-group-body .table thead th {
-      border-bottom: 1px solid hwb(219 11% 75%) !important;
-    }
-
-    /* Líneas horizontales tenues entre filas */
-    .pm-group-body .table tbody tr td {
-      border-top: 1px solid hwb(219 11% 75%) !important;
-    }
-
-    /* La primera fila sin línea superior */
-    .pm-group-body .table tbody tr:first-child td {
-      border-top: none !important;
-    }
-
-    /* Líneas verticales entre columnas (thead y tbody) */
-    .pm-group-body .table tbody tr td + td,
-    .pm-group-body .table thead th + th {
-      border-left: 1px solid hwb(219 11% 75%) !important;
-    }
-
-    .pm-group-body .table thead {
-      background: transparent;
-    }
-
-    /* Hover más contrastado */
-    .pm-group-body .table tbody tr:hover {
-      background: #1f2937;
-    }
-
-    /* ---------- Slider de ancho ---------- */
-    .pm-slider-label {
-      font-size: 11px;
-      color: #9ca3af;
-      margin-right: 4px;
-    }
-
-    .pm-width-slider {
-      width: 170px;
-      accent-color: #3b82f6;
-      cursor: pointer;
-    }
-
-
-    /* ---------- Modo manage: resaltar caja de cada celda ---------- */
-    .pm-row-manage td > div {
-      border-radius: 8px;
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px dashed rgba(75, 85, 99, 0.9);
-      padding: 4px 6px;
-    }
-
-        /* ---------- Espacio vertical entre grupos ---------- */
-    #pm-groups-container {
-      display: flex;
-      flex-direction: column;
-      gap: 25px;  
-    }
-
-  </style>
+    <!-- Estilos base + dashboard + pipeline -->
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/dashboard.css" />
+    <link rel="stylesheet" href="assets/css/pipeline_styles.css" />
 </head>
 <body>
-  <!-- =====================================================
-       BLOQUE 3 — LAYOUT GENERAL (SIDEBAR + MAIN)
-  ====================================================== -->
-  <div class="app-layout">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-logo">
-        <img src="assets/img/logo.png" class="sidebar-logo-img" />
-      </div>
-
-      <div class="sidebar-title-block">
-        <p class="sidebar-title">NGM HUB</p>
-        <p class="sidebar-subtitle">Pipeline Manager</p>
-      </div>
-
-      <nav class="sidebar-nav">
-        <a href="dashboard.html" class="nav-item">Overview</a>
-        <a href="expenses.html" class="nav-item">Expenses</a>
-        <a href="projects.html" class="nav-item">Projects</a>
-        <a href="pipeline.html" class="nav-item nav-item-active">Pipeline</a>
-        <a href="estimator.html" class="nav-item">Estimator</a>
-      </nav>
-    </aside>
-
-    <!-- Main -->
-    <div class="main-area">
-      <!-- Topbar -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <h1 class="topbar-title">Pipeline Manager</h1>
-        </div>
-        <div class="topbar-right">
-          <span class="user-pill">Master User</span>
-        </div>
-      </header>
-
-      <!-- =====================================================
-           BLOQUE 4 — TOOLBAR (FILTROS + SLIDER + MANAGE)
-      ====================================================== -->
-      <main class="main-content">
-        <section class="data-section">
-          <div class="pm-toolbar-surface">
-            <!-- Lado izquierdo: filtros / columnas / grupos -->
-            <div class="pm-toolbar-left">
-              <!-- Dropdown de filtros -->
-              <div style="position: relative;">
-                <button id="pm-filters-toggle" class="btn-secondary" style="font-size: 12px; padding: 6px 10px;">
-                  Filters ▾
-                </button>
-                <div 
-                  id="pm-filters-panel" 
-                  class="panel" 
-                  style="
-                    position: absolute;
-                    left: 0;
-                    top: 110%;
-                    min-width: 260px;
-                    padding: 10px;
-                    z-index: 20;
-                    display: none;
-                  "
-                >
-                  <div style="display:flex; flex-direction:column; gap:8px;">
-                    <div>
-                      <label class="field-label" style="font-size:11px;">Project</label>
-                      <select id="pm-filter-project" class="input" style="padding: 6px 10px; font-size: 12px; width: 100%;">
-                        <option value="all">All projects</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label class="field-label" style="font-size:11px;">Owner</label>
-                      <select id="pm-filter-owner" class="input" style="padding: 6px 10px; font-size: 12px; width: 100%;">
-                        <option value="all">All owners</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label class="field-label" style="font-size:11px;">Priority</label>
-                      <select id="pm-filter-priority" class="input" style="padding: 6px 10px; font-size: 12px; width: 100%;">
-                        <option value="all">All priorities</option>
-                      </select>
-                    </div>
-
-                    <div style="display:flex; justify-content:space-between; margin-top:4px;">
-                      <span class="table-cell-muted" style="font-size:11px;">Grouped by <strong>Status</strong></span>
-                      <button 
-                        id="pm-filters-reset" 
-                        class="btn-secondary" 
-                        style="font-size: 11px; padding: 4px 8px;"
-                      >
-                        Reset
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Dropdown de columnas -->
-              <div style="position: relative;">
-                <button id="pm-columns-toggle" class="btn-secondary" style="font-size: 12px; padding: 6px 10px;">
-                  Columns ▾
-                </button>
-                <div 
-                  id="pm-columns-panel" 
-                  class="panel" 
-                  style="
-                    position: absolute;
-                    right: 0;
-                    top: 110%;
-                    min-width: 220px;
-                    padding: 10px;
-                    z-index: 20;
-                    display: none;
-                  "
-                >
-                  <!-- JS inyecta checkboxes aquí -->
-                </div>
-              </div>
-
-              <!-- Dropdown de grupos -->
-              <div style="position: relative;">
-                <button id="pm-groups-toggle" class="btn-secondary" style="font-size: 12px; padding: 6px 10px;">
-                  Groups ▾
-                </button>
-                <div 
-                  id="pm-groups-panel" 
-                  class="panel" 
-                  style="
-                    position: absolute;
-                    left: 0;
-                    top: 110%;
-                    min-width: 220px;
-                    padding: 10px;
-                    z-index: 20;
-                    display: none;
-                  "
-                >
-                  <!-- JS inyecta grupos aquí -->
-                </div>
-              </div>
-            </div>
-
-            <!-- Lado derecho: slider + manage -->
-            <div class="pm-toolbar-right">
-              <div style="display:flex; align-items:center; gap:6px;">
-                <span class="pm-slider-label">Table width</span>
-                <input
-                  type="range"
-                  id="pm-width-slider"
-                  class="pm-width-slider"
-                  min="70"
-                  max="100"
-                  value="96"
+    <div class="app-layout">
+        <!-- Sidebar con módulos dinámicos -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img 
+                    src="assets/img/logo.png" 
+                    alt="NGM HUB Logo"
+                    class="sidebar-logo-img"
                 />
-              </div>
-
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span class="table-cell-muted" style="font-size: 12px;">
-                  Grouped by <strong>Status</strong>
-                </span>
-                <button id="pm-manage-toggle" class="btn-secondary" style="font-size: 12px; padding: 6px 10px;">
-                  Manage tasks
-                </button>
-              </div>
             </div>
-          </div>
-        </section>
+            <div class="sidebar-title-block">
+                <p class="sidebar-title">NGM HUB</p>
+                <p class="sidebar-subtitle">Master Dashboard</p>
+            </div>
 
-        <!-- =====================================================
-             BLOQUE 5 — CONTENEDOR DE GRUPOS
-        ====================================================== -->
-        <section class="data-section" id="pm-groups-container">
-          <div class="panel panel-narrow">
-            <p class="panel-text">Loading pipeline...</p>
-          </div>
-        </section>
-      </main>
+            <nav class="sidebar-nav" id="sidebar-nav">
+                <!-- Módulos se inyectan desde JS -->
+            </nav>
+        </aside>
+
+        <!-- Zona principal -->
+        <div class="main-area">
+            <!-- Topbar igual al dashboard -->
+            <header class="topbar topbar-dashboard">
+                <div class="topbar-left global-bar-left">
+                    <div class="global-brand">
+                        <div class="brand-icon-small">
+                            <span>⚡</span>
+                        </div>
+                        <div class="brand-text">
+                            <span class="brand-org">Next Generation Management</span>
+                            <span class="brand-context">NGM Hub · Pipeline Manager</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="topbar-right dashboard-topbar-right">
+                    <div class="dashboard-meta">
+                        <span class="meta-pill meta-env">Environment · Local</span>
+                        <span class="meta-pill meta-status meta-status-live">API · 127.0.0.1:8000</span>
+                    </div>
+
+                    <form class="dashboard-search" role="search" onsubmit="return false;">
+                        <span class="dashboard-search-icon">⌕</span>
+                        <input
+                            id="pipeline-search-input"
+                            type="search"
+                            class="dashboard-search-input"
+                            placeholder="Search tasks, projects or owners…"
+                            aria-label="Search"
+                        />
+                    </form>
+
+                    <span id="user-pill" class="user-pill">User · Role</span>
+                </div>
+            </header>
+
+            <!-- Contenido principal: solo área útil del pipeline -->
+            <main class="main-content">
+                <section class="pipeline-section">
+                    <section class="data-section">
+                        <!-- TOOLBAR dividida en 2 cards -->
+                        <div class="pm-toolbar-grid">
+                            <!-- Card 1: filtros -->
+                            <div class="pm-toolbar-card pm-toolbar-card--filters">
+                                <div class="pm-toolbar-card-header">
+                                    <span class="section-title">Filters</span>
+                                </div>
+                                <div class="pm-toolbar-card-body">
+                                    <div class="pm-filters">
+                                        <label class="filter-label">
+                                            Project
+                                            <select id="project-filter" class="filter-select">
+                                                <option value="all">All</option>
+                                            </select>
+                                        </label>
+
+                                        <label class="filter-label">
+                                            Owner
+                                            <select id="owner-filter" class="filter-select">
+                                                <option value="all">All</option>
+                                            </select>
+                                        </label>
+
+                                        <label class="filter-label">
+                                            Priority
+                                            <select id="priority-filter" class="filter-select">
+                                                <option value="all">All</option>
+                                            </select>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Card 2: layout + manage mode -->
+                            <div class="pm-toolbar-card pm-toolbar-card--layout">
+                                <div class="pm-toolbar-card-header">
+                                    <span class="section-title">Layout</span>
+                                </div>
+                                <div class="pm-toolbar-card-body pm-toolbar-layout-body">
+                                    <button id="manage-mode-btn" type="button" class="btn-ghost btn-small btn-manage-tasks">
+                                        Manage tasks
+                                    </button>
+
+                                    <div class="pm-width-control">
+                                        <span class="pm-width-control-label">Panel width</span>
+                                        <input
+                                            id="pm-width-slider"
+                                            class="pm-width-slider"
+                                            type="range"
+                                            min="70"
+                                            max="100"
+                                            step="1"
+                                            value="92"
+                                        />
+                                        <span id="pm-width-value" class="pm-width-control-value">92%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Wrapper de grupos de pipeline -->
+                        <div id="pm-groups-wrapper" class="pm-groups-wrapper">
+                            <!-- Groups se renderizan por JS -->
+                        </div>
+                    </section>
+                </section>
+            </main>
+        </div>
     </div>
-  </div>
 
-  <!-- =====================================================
-       BLOQUE 6 — SCRIPT PRINCIPAL PIPELINE
-  ====================================================== -->
-  <script>
-    // =============================
-    // Config de la API
-    // =============================
-    const API_BASE = "https://ngm-backend.onrender.com";
-    const groupsContainer = document.getElementById("pm-groups-container");
+    <script>
+        // ================================
+        // Sidebar: módulos según accesos
+        // ================================
+        const sidebarNav = document.getElementById("sidebar-nav");
 
-    const filtersToggleBtn = document.getElementById("pm-filters-toggle");
-    const filtersPanel = document.getElementById("pm-filters-panel");
-    const projectFilter = document.getElementById("pm-filter-project");
-    const ownerFilter = document.getElementById("pm-filter-owner");
-    const priorityFilter = document.getElementById("pm-filter-priority");
-    const filtersResetBtn = document.getElementById("pm-filters-reset");
-
-    const columnsToggleBtn = document.getElementById("pm-columns-toggle");
-    const columnsPanel = document.getElementById("pm-columns-panel");
-
-    const groupsToggleBtn = document.getElementById("pm-groups-toggle");
-    const groupsPanel = document.getElementById("pm-groups-panel");
-
-    const manageToggleBtn = document.getElementById("pm-manage-toggle");
-
-    // slider de ancho
-    const widthSlider = document.getElementById("pm-width-slider");
-
-    let originalGroups = [];
-    let manageMode = false;
-
-    const STATUS_ORDER = [
-      "not started",
-      "to do",
-      "todo",
-      "backlog",
-      "working on it",
-      "in progress",
-      "progress",
-      "correction",
-      "resubmittal",
-      "re-submittal",
-      "awaiting approval",
-      "waiting approval",
-      "delayed",
-      "on hold",
-      "hold",
-      "done",
-      "completed",
-    ];
-
-    const DEFAULT_ON_GROUPS = [
-      "not started",
-      "working on it",
-      "awaiting approval",
-      "done",
-    ];
-
-    const columnVisibility = {
-      owner: true,
-      collaborators: true,
-      manager: true,
-      status: false,
-      priority: true,
-      arrival: true,
-      start: true,
-      due: true,
-      deadline: true,
-      finished: false,
-      hours: true,
-    };
-
-    const columnsConfig = [
-      { key: "owner", label: "Owner" },
-      { key: "collaborators", label: "Collaborators" },
-      { key: "manager", label: "Manager" },
-      { key: "status", label: "Status" },
-      { key: "priority", label: "Priority" },
-      { key: "arrival", label: "Arrival date" },
-      { key: "start", label: "Start date" },
-      { key: "due", label: "Due date" },
-      { key: "deadline", label: "Deadline" },
-      { key: "finished", label: "Finished" },
-      { key: "hours", label: "Est. hours" },
-    ];
-
-    const groupVisibility = {};
-
-    // =============================
-    // Helpers UI (owners, collaborators, etc.)
-    // =============================
-    function renderOwnerCell(owner) {
-      if (!owner || (!owner.name && !owner.id)) {
-        return '<span class="table-cell-muted">-</span>';
-      }
-      const initials = (owner.name || owner.id || "?")
-        .split(" ")
-        .map(p => p[0])
-        .join("")
-        .substring(0, 2)
-        .toUpperCase();
-
-      return `
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <div 
-            style="
-              width: 22px; 
-              height: 22px; 
-              border-radius: 999px; 
-              background: #2974ff; 
-              display: flex; 
-              align-items: center; 
-              justify-content: center; 
-              font-size: 11px;
-            "
-          >
-            ${initials}
-          </div>
-          <span style="font-size: 12px;">${owner.name || owner.id}</span>
-        </div>
-      `;
-    }
-
-    function renderCollaboratorsCell(collaborators) {
-      if (!Array.isArray(collaborators) || collaborators.length === 0) {
-        return '<span class="table-cell-muted">-</span>';
-      }
-
-      const first = collaborators[0];
-      const initials = (first.name || first.id || "?")
-        .split(" ")
-        .map(p => p[0])
-        .join("")
-        .substring(0, 2)
-        .toUpperCase();
-
-      const extraCount = collaborators.length - 1;
-      const extraLabel = extraCount > 0
-        ? `<span class="table-cell-muted" style="font-size: 10px;">+${extraCount}</span>`
-        : "";
-
-      return `
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <div 
-            style="
-              width: 22px; 
-              height: 22px; 
-              border-radius: 999px; 
-              background: #111827; 
-              display: flex; 
-              align-items: center; 
-              justify-content: center; 
-              font-size: 11px;
-            "
-          >
-            ${initials}
-          </div>
-          <span style="font-size: 12px;">${first.name || first.id}</span>
-          ${extraLabel}
-        </div>
-      `;
-    }
-
-    function renderManagerCell(manager) {
-      if (!manager || (!manager.name && !manager.id)) {
-        return '<span class="table-cell-muted">-</span>';
-      }
-      const initials = (manager.name || manager.id || "?")
-        .split(" ")
-        .map(p => p[0])
-        .join("")
-        .substring(0, 2)
-        .toUpperCase();
-
-      return `
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <div 
-            style="
-              width: 22px; 
-              height: 22px; 
-              border-radius: 999px; 
-              background: #0f172a; 
-              display: flex; 
-              align-items: center; 
-              justify-content: center; 
-              font-size: 11px;
-              border: 1px solid #4b5563;
-            "
-          >
-            ${initials}
-          </div>
-          <span style="font-size: 12px;">${manager.name || manager.id}</span>
-        </div>
-      `;
-    }
-
-    function renderPriority(priority) {
-      const name = priority?.priority_name || priority?.priority_id || "-";
-      const normalized = (name || "").toString().toLowerCase();
-
-      let bg = "#111827";
-      let border = "#1f2937";
-
-      if (normalized.includes("critical")) {
-        bg = "#450a0a";
-        border = "#ef4444";
-      } else if (normalized.includes("high")) {
-        bg = "#7f1d1d";
-        border = "#b91c1c";
-      } else if (normalized.includes("medium")) {
-        bg = "#78350f";
-        border = "#d97706";
-      } else if (normalized.includes("low")) {
-        bg = "#064e3b";
-        border = "#16a34a";
-      }
-
-      return `
-        <span class="status-pill" style="background:${bg}; border-color:${border}; font-size: 11px; padding: 2px 8px;">
-          ${name}
-        </span>
-      `;
-    }
-
-    function renderFinishedStatus(finished) {
-      const name = finished?.completed_status_name || finished?.completed_status_id || "-";
-      const normalized = (name || "").toString().toLowerCase();
-
-      let bg = "#111827";
-      let border = "#1f2937";
-
-      if (normalized.includes("done") || normalized.includes("completed")) {
-        bg = "#064e3b";
-        border = "#16a34a";
-      } else if (normalized.includes("stuck") || normalized.includes("blocked")) {
-        bg = "#7f1d1d";
-        border = "#b91c1c";
-      } else if (normalized.includes("working") || normalized.includes("progress")) {
-        bg = "#1e3a8a";
-        border = "#2563eb";
-      } else if (normalized.includes("on hold") || normalized.includes("hold")) {
-        bg = "#7c2d12";
-        border = "#ea580c";
-      }
-
-      return `
-        <span class="status-pill" style="background:${bg}; border-color:${border}; font-size: 11px; padding: 2px 8px;">
-          ${name}
-        </span>
-      `;
-    }
-
-    function formatDate(isoString) {
-      if (!isoString) return "";
-      const d = new Date(isoString);
-      if (Number.isNaN(d.getTime())) return isoString;
-      const options = { month: "short", day: "2-digit", year: "numeric" };
-      return d.toLocaleDateString("en-US", options);
-    }
-
-    function renderStatusCell(statusName) {
-      const style = getStatusStyle(statusName);
-      return `
-        <span 
-          class="status-pill" 
-          style="
-            background: rgba(15,23,42,0.7);
-            border-color: ${style.borderColor};
-            color: ${style.titleColor};
-            font-size: 11px; 
-            padding: 2px 8px;
-          "
-        >
-          ${statusName}
-        </span>
-      `;
-    }
-
-    function renderTaskRow(task, groupStatusName) {
-      const title = task.task_description || "(no description)";
-      const notes = task.task_notes || "";
-
-      const ownerHtml = renderOwnerCell(task.owner);
-      const collaboratorsHtml = renderCollaboratorsCell(task.collaborators);
-      const managerHtml = renderManagerCell(task.manager_obj);
-
-      const statusName = groupStatusName || task.status_name || "";
-      const statusHtml = renderStatusCell(statusName);
-
-      const priorityHtml = renderPriority(task.priority);
-      const finishedHtml = renderFinishedStatus(task.finished_status);
-
-      const arrival = formatDate(task.created_at);
-      const start = formatDate(task.start_date);
-      const due = formatDate(task.due_date);
-      const deadline = formatDate(task.deadline);
-      const estHours = task.estimated_hours != null ? `${task.estimated_hours} h` : "-";
-
-      const rowClass = manageMode ? "pm-row pm-row-manage" : "pm-row";
-      const boxStyle = ""; // el resalte ahora lo hace la clase pm-row-manage
-
-      return `
-        <tr class="${rowClass}" data-task-id="${task.task_id || ""}" data-status-name="${statusName}">
-          <td>
-            <div style="${boxStyle}">
-              <div style="font-weight: 500; font-size: 13px;">${title}</div>
-              ${
-                notes
-                  ? `<div class="table-cell-muted" style="font-size: 11px; margin-top: 2px;">${notes}</div>`
-                  : ""
-              }
-            </div>
-          </td>
-          <td data-col-key="owner" style="${columnVisibility.owner ? "" : "display:none;"}">
-            <div style="${boxStyle}">${ownerHtml}</div>
-          </td>
-          <td data-col-key="collaborators" style="${columnVisibility.collaborators ? "" : "display:none;"}">
-            <div style="${boxStyle}">${collaboratorsHtml}</div>
-          </td>
-          <td data-col-key="manager" style="${columnVisibility.manager ? "" : "display:none;"}">
-            <div style="${boxStyle}">${managerHtml}</div>
-          </td>
-          <td data-col-key="status" style="${columnVisibility.status ? "" : "display:none;"}">
-            <div style="${boxStyle}">${statusHtml}</div>
-          </td>
-          <td data-col-key="priority" style="${columnVisibility.priority ? "" : "display:none;"}">
-            <div style="${boxStyle}">${priorityHtml}</div>
-          </td>
-          <td data-col-key="arrival" style="${columnVisibility.arrival ? "" : "display:none;"}">
-            <div style="${boxStyle}">${arrival || "-"}</div>
-          </td>
-          <td data-col-key="start" style="${columnVisibility.start ? "" : "display:none;"}">
-            <div style="${boxStyle}">${start || "-"}</div>
-          </td>
-          <td data-col-key="due" style="${columnVisibility.due ? "" : "display:none;"}">
-            <div style="${boxStyle}">${due || "-"}</div>
-          </td>
-          <td data-col-key="deadline" style="${columnVisibility.deadline ? "" : "display:none;"}">
-            <div style="${boxStyle}">${deadline || "-"}</div>
-          </td>
-          <td data-col-key="finished" style="${columnVisibility.finished ? "" : "display:none;"}">
-            <div style="${boxStyle}">${finishedHtml}</div>
-          </td>
-          <td data-col-key="hours" style="${columnVisibility.hours ? "" : "display:none;"}">
-            <div style="${boxStyle}">${estHours}</div>
-          </td>
-        </tr>
-      `;
-    }
-
-    // =============================
-    // Colores de grupos (Status)
-    // =============================
-    function getStatusStyle(statusName) {
-      const norm = (statusName || "").toLowerCase();
-
-      if (norm.includes("not started") || norm.includes("backlog") || norm === "todo" || norm.includes("to do")) {
-        return {
-          borderColor: "#eab308",
-          titleColor: "#fef9c3",
-          dotColor: "#facc15",
+        const AVAILABLE_MODULES = {
+            dashboard: { key: "dashboard", label: "Dashboard", href: "dashboard.html", icon: "🏠" },
+            projects:  { key: "projects",  label: "Projects",  href: "projects.html",  icon: "📁" },
+            pipeline:  { key: "pipeline",  label: "Pipeline",  href: "pipeline.html",  icon: "📊" },
+            estimator: { key: "estimator", label: "Estimator", href: "#",              icon: "📐" },
+            expenses:  { key: "expenses",  label: "Expenses",  href: "#",              icon: "💸" },
+            settings:  { key: "settings",  label: "Settings",  href: "#",              icon: "⚙️" },
         };
-      }
-      if (norm.includes("working on it") || norm.includes("in progress") || norm === "progress") {
-        return {
-          borderColor: "#2563eb",
-          titleColor: "#bfdbfe",
-          dotColor: "#3b82f6",
-        };
-      }
-      if (norm.includes("correction") || norm.includes("fix") || norm.includes("changes")) {
-        return {
-          borderColor: "#7c3aed",
-          titleColor: "#ede9fe",
-          dotColor: "#a855f7",
-        };
-      }
-      if (norm.includes("resubmittal") || norm.includes("re-submittal") || norm.includes("resubmit")) {
-        return {
-          borderColor: "#0d9488",
-          titleColor: "#ccfbf1",
-          dotColor: "#14b8a6",
-        };
-      }
-      if (norm.includes("awaiting approval") || norm.includes("waiting approval") || norm.includes("approval")) {
-        return {
-          borderColor: "#f97316",
-          titleColor: "#fed7aa",
-          dotColor: "#fb923c",
-        };
-      }
-      if (norm.includes("delayed") || norm.includes("delay")) {
-        return {
-          borderColor: "#b91c1c",
-          titleColor: "#fecaca",
-          dotColor: "#ef4444",
-        };
-      }
-      if (norm.includes("on hold") || norm.includes("hold")) {
-        return {
-          borderColor: "#78350f",
-          titleColor: "#fef3c7",
-          dotColor: "#d97706",
-        };
-      }
-      if (norm.includes("done") || norm.includes("completed")) {
-        return {
-          borderColor: "#16a34a",
-          titleColor: "#bbf7d0",
-          dotColor: "#22c55e",
-        };
-      }
 
-      return {
-        borderColor: "#4b5563",
-        titleColor: "#e5e7eb",
-        dotColor: "#9ca3af",
-      };
-    }
+        // TODO: en producción esto vendrá del backend según el rol del usuario
+        const USER_MODULES = ["dashboard", "projects", "pipeline", "estimator", "expenses"];
 
-    function renderGroupPanel(group) {
-      const statusName = group.status_name || "(no status)";
-      const tasks = Array.isArray(group.tasks) ? group.tasks : [];
-      const style = getStatusStyle(statusName);
-      const groupId = group.status_id || statusName;
+        function renderSidebarModules(modulesKeys) {
+            if (!sidebarNav) return;
+            sidebarNav.innerHTML = "";
 
-      const rowsHtml = tasks.length
-        ? tasks.map(t => renderTaskRow(t, statusName)).join("")
-        : `
-          <tr>
-            <td colspan="12" class="table-cell-muted">
-              No tasks in this group.
-            </td>
-          </tr>
-        `;
+            modulesKeys.forEach(key => {
+                const mod = AVAILABLE_MODULES[key];
+                if (!mod) return;
 
-      const addRowHtml = `
-        <tr class="pm-add-row">
-          <td colspan="12">
-            <button 
-              class="btn-secondary" 
-              data-add-task-for-status="${group.status_id}" 
-              style="
-                font-size: 12px; 
-                padding: 5px 10px; 
-                display: inline-flex; 
-                align-items: center; 
-                gap: 6px;
-                background: transparent;
-                border-style: dashed;
-                border-color: #4b5563;
-              "
-            >
-              <span 
-                style="
-                  width: 18px;
-                  height: 18px;
-                  border-radius: 999px;
-                  border: 1px dashed #6b7280;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: 13px;
-                "
-              >+</span>
-              <span class="table-cell-muted">Add task to ${statusName}</span>
-            </button>
-          </td>
-        </tr>
-      `;
+                const a = document.createElement("a");
+                a.href = mod.href;
+                a.className = "nav-item" + (key === "pipeline" ? " nav-item-active" : "");
 
-      return `
-        <div 
-          class="pm-surface panel-narrow pm-group" 
-          data-status-id="${group.status_id}" 
-          style="border-left: 3px solid ${style.borderColor};"
-        >
-          <div 
-            class="pm-group-header" 
-            data-group-id="${groupId}"
-            style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;"
-          >
-            <span 
-              class="pm-group-toggle-icon" 
-              style="font-size: 16px; color: #9ca3af;"
-            >▾</span>
-            <div>
-              <h2 
-                class="section-title" 
-                style="margin-bottom: 2px; font-size: 13px; color: ${style.titleColor};"
-              >
-                <span 
-                  style="
-                    width: 8px;
-                    height: 8px;
-                    border-radius: 999px;
-                    background: ${style.dotColor};
-                    display: inline-block;
-                    margin-right: 6px;
-                  "
-                ></span>
-                ${statusName}
-              </h2>
-              <p class="panel-text" style="font-size: 11px;">${tasks.length} tasks</p>
-            </div>
-          </div>
+                const iconSpan = document.createElement("span");
+                iconSpan.className = "nav-icon";
+                iconSpan.textContent = mod.icon;
 
-          <div class="pm-group-body" data-group-id="${groupId}">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th style="width: 18%;">Task</th>
-                  <th data-col-key="owner" style="width: 12%; ${columnVisibility.owner ? "" : "display:none;"}">Owner</th>
-                  <th data-col-key="collaborators" style="width: 12%; ${columnVisibility.collaborators ? "" : "display:none;"}">Collaborators</th>
-                  <th data-col-key="manager" style="width: 12%; ${columnVisibility.manager ? "" : "display:none;"}">Manager</th>
-                  <th data-col-key="status" style="width: 8%; ${columnVisibility.status ? "" : "display:none;"}">Status</th>
-                  <th data-col-key="priority" style="width: 8%; ${columnVisibility.priority ? "" : "display:none;"}">Priority</th>
-                  <th data-col-key="arrival" style="width: 8%; ${columnVisibility.arrival ? "" : "display:none;"}">Arrival</th>
-                  <th data-col-key="start" style="width: 8%; ${columnVisibility.start ? "" : "display:none;"}">Start</th>
-                  <th data-col-key="due" style="width: 8%; ${columnVisibility.due ? "" : "display:none;"}">Due</th>
-                  <th data-col-key="deadline" style="width: 8%; ${columnVisibility.deadline ? "" : "display:none;"}">Deadline</th>
-                  <th data-col-key="finished" style="width: 6%; ${columnVisibility.finished ? "" : "display:none;"}">Finished</th>
-                  <th data-col-key="hours" style="width: 6%; ${columnVisibility.hours ? "" : "display:none;"}">Est. hours</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${rowsHtml}
-                ${addRowHtml}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-    }
+                const labelSpan = document.createElement("span");
+                labelSpan.className = "nav-label";
+                labelSpan.textContent = mod.label;
 
-    // =============================
-    // Columnas: panel de visibilidad
-    // =============================
-    function buildColumnsPanel() {
-      columnsPanel.innerHTML = columnsConfig.map(c => `
-        <label 
-          style="
-            display: flex; 
-            align-items: center; 
-            gap: 6px; 
-            font-size: 12px; 
-            margin-bottom: 4px;
-          "
-        >
-          <input 
-            type="checkbox" 
-            data-col-key="${c.key}" 
-            ${columnVisibility[c.key] ? "checked" : ""}
-          />
-          <span>${c.label}</span>
-        </label>
-      `).join("");
-
-      columnsPanel
-        .querySelectorAll('input[type="checkbox"]')
-        .forEach(chk => {
-          chk.addEventListener("change", (e) => {
-            const key = e.target.getAttribute("data-col-key");
-            columnVisibility[key] = e.target.checked;
-            renderGroups();
-          });
-        });
-    }
-
-    columnsToggleBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const isOpen = columnsPanel.style.display === "block";
-      columnsPanel.style.display = isOpen ? "none" : "block";
-    });
-
-    // =============================
-    // Filtros: panel
-    // =============================
-    filtersToggleBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const isOpen = filtersPanel.style.display === "block";
-      filtersPanel.style.display = isOpen ? "none" : "block";
-    });
-
-    filtersResetBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      projectFilter.value = "all";
-      ownerFilter.value = "all";
-      priorityFilter.value = "all";
-      renderGroups();
-    });
-
-    // =============================
-    // Grupos: panel de visibilidad
-    // =============================
-    function buildGroupsPanel() {
-      if (!originalGroups.length) {
-        groupsPanel.innerHTML = `<p class="panel-text" style="font-size:12px;">No groups.</p>`;
-        return;
-      }
-
-      const itemsHtml = originalGroups.map(g => {
-        const id = g.status_id || g.status_name;
-        const name = g.status_name || "(no status)";
-        const nameNorm = (name || "").toLowerCase();
-
-        if (!(id in groupVisibility)) {
-          const isDefaultOn = DEFAULT_ON_GROUPS.some(s => nameNorm.includes(s));
-          groupVisibility[id] = isDefaultOn;
+                a.appendChild(iconSpan);
+                a.appendChild(labelSpan);
+                sidebarNav.appendChild(a);
+            });
         }
 
-        return `
-          <label 
-            style="
-              display:flex;
-              align-items:center;
-              gap:6px;
-              font-size:12px;
-              margin-bottom:4px;
-            "
-          >
-            <input 
-              type="checkbox" 
-              data-group-id="${id}" 
-              ${groupVisibility[id] ? "checked" : ""}
-            />
-            <span>${name}</span>
-          </label>
-        `;
-      }).join("");
+        // ================================
+        // Pipeline: datos y lógica de UI
+        // ================================
 
-      groupsPanel.innerHTML = itemsHtml;
+        // 🔧 MODO LOCAL
+        const API_BASE = "http://127.0.0.1:8000";
 
-      groupsPanel
-        .querySelectorAll('input[type="checkbox"]')
-        .forEach(chk => {
-          chk.addEventListener("change", (e) => {
-            const id = e.target.getAttribute("data-group-id");
-            groupVisibility[id] = e.target.checked;
-            renderGroups();
-          });
-        });
-    }
+        const groupsWrapper = document.getElementById("pm-groups-wrapper");
+        const projectFilter = document.getElementById("project-filter");
+        const ownerFilter = document.getElementById("owner-filter");
+        const priorityFilter = document.getElementById("priority-filter");
+        const manageBtn = document.getElementById("manage-mode-btn");
+        const widthSlider = document.getElementById("pm-width-slider");
+        const widthValue = document.getElementById("pm-width-value");
+        const searchInput = document.getElementById("pipeline-search-input");
 
-    groupsToggleBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const isOpen = groupsPanel.style.display === "block";
-      groupsPanel.style.display = isOpen ? "none" : "block";
-    });
+        let rawGroups = [];
+        let searchQuery = "";
+        let manageMode = false;
 
-    // Cerrar paneles al click afuera
-    document.addEventListener("click", (e) => {
-      if (!columnsPanel.contains(e.target) && e.target !== columnsToggleBtn) {
-        columnsPanel.style.display = "none";
-      }
-      if (!filtersPanel.contains(e.target) && e.target !== filtersToggleBtn) {
-        filtersPanel.style.display = "none";
-      }
-      if (!groupsPanel.contains(e.target) && e.target !== groupsToggleBtn) {
-        groupsPanel.style.display = "none";
-      }
-    });
+        async function fetchPipeline() {
+            try {
+                const res = await fetch(`${API_BASE}/pipeline/grouped`);
+                if (!res.ok) throw new Error("Error loading pipeline");
+                const data = await res.json();
 
-    // =============================
-    // Filtros (lógica)
-    // =============================
-    function populateFilters(groups) {
-      const projectMap = new Map();
-      const ownerMap = new Map();
-      const priorityMap = new Map();
+                console.log("[PIPELINE] raw response:", data);
 
-      groups.forEach(g => {
-        (g.tasks || []).forEach(t => {
-          if (t.project_id || t.project_name) {
-            const pid = t.project_id || t.project_name;
-            const pname = t.project_name || t.project_id || "(No project name)";
-            if (!projectMap.has(pid)) {
-              projectMap.set(pid, pname);
-            }
-          }
-          if (t.owner && (t.owner.id || t.owner.name)) {
-            const oid = t.owner.id || t.owner.name;
-            const oname = t.owner.name || t.owner.id;
-            if (!ownerMap.has(oid)) {
-              ownerMap.set(oid, oname);
-            }
-          }
-          if (t.priority && (t.priority.priority_name || t.priority.priority_id)) {
-            const pname = t.priority.priority_name || t.priority.priority_id;
-            const key = (pname || "").toString().toLowerCase();
-            if (!priorityMap.has(key)) {
-              priorityMap.set(key, pname);
-            }
-          }
-        });
-      });
+                rawGroups = Array.isArray(data) ? data : (data.groups || []);
+                console.log("[PIPELINE] parsed groups:", rawGroups);
 
-      projectFilter.innerHTML = `<option value="all">All projects</option>`;
-      projectMap.forEach((name, id) => {
-        projectFilter.innerHTML += `<option value="${id}">${name}</option>`;
-      });
-
-      ownerFilter.innerHTML = `<option value="all">All owners</option>`;
-      ownerMap.forEach((name, id) => {
-        ownerFilter.innerHTML += `<option value="${id}">${name}</option>`;
-      });
-
-      priorityFilter.innerHTML = `<option value="all">All priorities</option>`;
-      priorityMap.forEach((name, key) => {
-        priorityFilter.innerHTML += `<option value="${key}">${name}</option>`;
-      });
-    }
-
-    function applyFilters(groups) {
-      const selectedProject = projectFilter.value;
-      const selectedOwner = ownerFilter.value;
-      const selectedPriority = priorityFilter.value;
-
-      return groups.map(group => {
-        const tasks = Array.isArray(group.tasks) ? group.tasks : [];
-        const filteredTasks = tasks.filter(t => {
-          const pid = t.project_id || t.project_name || "";
-          const projectPass = selectedProject === "all" || pid === selectedProject;
-
-          const oid = t.owner?.id || t.owner?.name || "";
-          const ownerPass = selectedOwner === "all" || oid === selectedOwner;
-
-          const pName = t.priority?.priority_name || t.priority?.priority_id || "";
-          const pKey = pName.toString().toLowerCase();
-          const priorityPass = selectedPriority === "all" || pKey === selectedPriority;
-
-          return projectPass && ownerPass && priorityPass;
-        });
-
-        return {
-          ...group,
-          tasks: filteredTasks,
-        };
-      });
-    }
-
-    // =============================
-    // Sort de grupos
-    // =============================
-    function sortGroupsByStatus(groups) {
-      return [...groups].sort((a, b) => {
-        const sa = (a.status_name || "").toLowerCase();
-        const sb = (b.status_name || "").toLowerCase();
-
-        const ia = STATUS_ORDER.findIndex(s => sa.includes(s));
-        const ib = STATUS_ORDER.findIndex(s => sb.includes(s));
-
-        const pa = ia === -1 ? 999 : ia;
-        const pb = ib === -1 ? 999 : ib;
-
-        if (pa !== pb) return pa - pb;
-        return sa.localeCompare(sb);
-      });
-    }
-
-    // =============================
-    // Modal de detalles
-    // =============================
-    function closeTaskModal() {
-      const backdrop = document.querySelector(".pm-modal-backdrop");
-      if (backdrop) backdrop.remove();
-    }
-
-    function openTaskModal(task, statusName) {
-      if (!task) return;
-
-      const ownerName = task.owner?.name || "-";
-      const collaboratorsText = (task.collaborators || [])
-        .map(c => c.name || c.id)
-        .filter(Boolean)
-        .join(", ") || "-";
-      const managerName = task.manager_obj?.name || "-";
-
-      const priorityName = task.priority?.priority_name || "-";
-      const finishedName = task.finished_status?.completed_status_name || "-";
-
-      const arrival = formatDate(task.created_at) || "-";
-      const start = formatDate(task.start_date) || "-";
-      const due = formatDate(task.due_date) || "-";
-      const deadline = formatDate(task.deadline) || "-";
-      const estHours = task.estimated_hours != null ? `${task.estimated_hours} h` : "-";
-
-      const projectName = task.project_name || "-";
-      const companyName = task.company_name || "-";
-
-      const docsLink = task.docs_link || "";
-      const resultLink = task.result_link || "";
-
-      const statusStyle = getStatusStyle(statusName);
-
-      const modalHtml = `
-        <div 
-          class="pm-modal-backdrop"
-          style="
-            position: fixed;
-            inset: 0;
-            background: rgba(15,23,42,0.7);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 40;
-          "
-        >
-          <div 
-            class="pm-modal"
-            style="
-              background: #020617;
-              border-radius: 16px;
-              border: 1px solid #1f2937;
-              padding: 16px 18px 18px;
-              width: 720px;
-              max-width: calc(100% - 32px);
-              max-height: calc(100% - 32px);
-              overflow-y: auto;
-              box-shadow: 0 18px 45px rgba(0,0,0,0.6);
-            "
-          >
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:12px;">
-              <div>
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                  <span 
-                    style="
-                      width: 8px;
-                      height: 8px;
-                      border-radius: 999px;
-                      background: ${statusStyle.dotColor};
-                      display: inline-block;
-                    "
-                  ></span>
-                  <span 
-                    style="
-                      font-size:11px;
-                      text-transform:uppercase;
-                      letter-spacing:0.08em;
-                      color:#9ca3af;
-                    "
-                  >
-                    ${statusName || "(no status)"}
-                  </span>
-                </div>
-                <h2 style="font-size:16px; font-weight:600; margin:0 0 4px 0;">
-                  ${task.task_description || "(no description)"}
-                </h2>
-                ${
-                  task.task_notes
-                    ? `<p style="font-size:12px; color:#9ca3af; margin:0;">${task.task_notes}</p>`
-                    : ""
+                populateFilters(rawGroups);
+                renderGroups();
+            } catch (err) {
+                console.error("[PIPELINE] fetch error:", err);
+                if (groupsWrapper) {
+                    groupsWrapper.innerHTML = "<p class='panel-text'>Error loading pipeline data.</p>";
                 }
-              </div>
-              <button
-                type="button"
-                onclick="closeTaskModal()"
-                style="
-                  border:none;
-                  background:transparent;
-                  color:#9ca3af;
-                  font-size:18px;
-                  line-height:1;
-                  cursor:pointer;
-                "
-              >×</button>
-
-            </div>
-
-            <div 
-              style="
-                display:grid;
-                grid-template-columns: 1.3fr 1fr;
-                gap:10px;
-                margin-bottom:8px;
-              "
-            >
-              <div
-                style="
-                  background:#020617;
-                  border-radius:12px;
-                  border:1px solid #1f2937;
-                  padding:10px 12px;
-                "
-              >
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                  <h3 style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#6b7280; margin:0;">
-                    Summary
-                  </h3>
-                  <span 
-                    style="
-                      font-size:11px;
-                      padding:2px 8px;
-                      border-radius:999px;
-                      border:1px solid ${statusStyle.borderColor};
-                      color:${statusStyle.titleColor};
-                      background:rgba(15,23,42,0.7);
-                    "
-                  >
-                    ${statusName || "(no status)"}
-                  </span>
-                </div>
-                <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:6px;">
-                  <div>
-                    <div style="font-size:11px; color:#6b7280;">Project</div>
-                    <div style="font-size:12px;">${projectName}</div>
-                  </div>
-                  <div>
-                    <div style="font-size:11px; color:#6b7280;">Company</div>
-                    <div style="font-size:12px;">${companyName}</div>
-                  </div>
-                  <div>
-                    <div style="font-size:11px; color:#6b7280;">Priority</div>
-                    <div style="font-size:12px;">${priorityName}</div>
-                  </div>
-                  <div>
-                    <div style="font-size:11px; color:#6b7280;">Finished status</div>
-                    <div style="font-size:12px;">${finishedName}</div>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                style="
-                  background:#020617;
-                  border-radius:12px;
-                  border:1px solid #1f2937;
-                  padding:10px 12px;
-                "
-              >
-                <h3 style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#6b7280; margin:0 0 4px 0;">
-                  People
-                </h3>
-                <div style="display:flex; flex-direction:column; gap:4px;">
-                  <div>
-                    <div style="font-size:11px; color:#6b7280;">Owner</div>
-                    <div style="font-size:12px;">${ownerName}</div>
-                  </div>
-                  <div>
-                    <div style="font-size:11px; color:#6b7280;">Collaborators</div>
-                    <div style="font-size:12px;">${collaboratorsText}</div>
-                  </div>
-                  <div>
-                    <div style="font-size:11px; color:#6b7280;">Manager</div>
-                    <div style="font-size:12px;">${managerName}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              style="
-                background:#020617;
-                border-radius:12px;
-                border:1px solid #1f2937;
-                padding:10px 12px;
-              "
-            >
-              <h3 style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:#6b7280; margin:0 0 6px 0;">
-                Timing & Links
-              </h3>
-              <div style="display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:6px; margin-bottom:6px;">
-                <div>
-                  <div style="font-size:11px; color:#6b7280;">Arrival</div>
-                  <div style="font-size:12px;">${arrival}</div>
-                </div>
-                <div>
-                  <div style="font-size:11px; color:#6b7280;">Start date</div>
-                  <div style="font-size:12px;">${start}</div>
-                </div>
-                <div>
-                  <div style="font-size:11px; color:#6b7280;">Due date</div>
-                  <div style="font-size:12px;">${due}</div>
-                </div>
-                <div>
-                  <div style="font-size:11px; color:#6b7280;">Deadline</div>
-                  <div style="font-size:12px;">${deadline}</div>
-                </div>
-              </div>
-              <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                <div>
-                  <div style="font-size:11px; color:#6b7280;">Estimated hours</div>
-                  <div style="font-size:12px;">${estHours}</div>
-                </div>
-                <div style="display:flex; gap:8px; justify-content:flex-end;">
-                  ${
-                    docsLink
-                      ? `<a href="${docsLink}" target="_blank" style="font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #4b5563; text-decoration:none; color:#e5e7eb;">Docs link</a>`
-                      : ""
-                  }
-                  ${
-                    resultLink
-                      ? `<a href="${resultLink}" target="_blank" style="font-size:11px; padding:4px 8px; border-radius:999px; border:1px solid #4b5563; text-decoration:none; color:#e5e7eb;">Result link</a>`
-                      : ""
-                  }
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-
-      document.body.insertAdjacentHTML("beforeend", modalHtml);
-
-      const backdrop = document.querySelector(".pm-modal-backdrop");
-      if (backdrop) {
-        backdrop.addEventListener("click", (e) => {
-          if (e.target === backdrop) {
-            closeTaskModal();
-          }
-        });
-      }
-    }
-
-    function attachRowClickHandlers() {
-      const rows = document.querySelectorAll(".pm-row");
-      rows.forEach(row => {
-        row.addEventListener("click", () => {
-          if (manageMode) {
-            return;
-          }
-          const taskId = row.getAttribute("data-task-id");
-          const statusName = row.getAttribute("data-status-name") || "";
-          if (!taskId) return;
-
-          let foundTask = null;
-          for (const g of originalGroups) {
-            for (const t of g.tasks || []) {
-              if (t.task_id === taskId) {
-                foundTask = t;
-                break;
-              }
             }
-            if (foundTask) break;
-          }
-
-          openTaskModal(foundTask, statusName);
-        });
-      });
-    }
-
-    // =============================
-    // Toggles de grupos
-    // =============================
-    function attachGroupToggles() {
-      const headers = document.querySelectorAll(".pm-group-header");
-      headers.forEach(header => {
-        header.addEventListener("click", () => {
-          const groupId = header.getAttribute("data-group-id");
-          const body = document.querySelector(`.pm-group-body[data-group-id="${groupId}"]`);
-          if (!body) return;
-          const isHidden = body.style.display === "none";
-          body.style.display = isHidden ? "" : "none";
-          const icon = header.querySelector(".pm-group-toggle-icon");
-          if (icon) icon.textContent = isHidden ? "▾" : "▸";
-        });
-      });
-
-      const addButtons = document.querySelectorAll("[data-add-task-for-status]");
-      addButtons.forEach(btn => {
-        btn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const statusId = btn.getAttribute("data-add-task-for-status");
-          console.log("Add task clicked for status:", statusId);
-          alert("TODO: Abrir modal para crear nueva task en este grupo.");
-        });
-      });
-    }
-
-    // =============================
-    // Manage mode
-    // =============================
-    manageToggleBtn.addEventListener("click", () => {
-      manageMode = !manageMode;
-      manageToggleBtn.textContent = manageMode ? "Exit manage mode" : "Manage tasks";
-      renderGroups();
-    });
-
-    // =============================
-    // Render principal
-    // =============================
-    function renderGroups() {
-      if (!originalGroups.length) {
-        groupsContainer.innerHTML = `
-          <div class="panel panel-narrow">
-            <p class="panel-text">No tasks found in pipeline.</p>
-          </div>
-        `;
-        return;
-      }
-
-      const filteredByTasks = applyFilters(originalGroups);
-      const sorted = sortGroupsByStatus(filteredByTasks);
-
-      const visible = sorted.filter(g => {
-        const id = g.status_id || g.status_name;
-        if (id in groupVisibility) {
-          return groupVisibility[id];
-        }
-        return true;
-      });
-
-      if (!visible.length) {
-        groupsContainer.innerHTML = `
-          <div class="panel panel-narrow">
-            <p class="panel-text">No groups visible. Adjust filters.</p>
-          </div>
-        `;
-        return;
-      }
-
-      groupsContainer.innerHTML = visible.map(renderGroupPanel).join("");
-      attachGroupToggles();
-      attachRowClickHandlers();
-    }
-
-    // =============================
-    // Carga inicial desde API
-    // =============================
-    async function loadPipeline() {
-      groupsContainer.innerHTML = `
-        <div class="panel panel-narrow">
-          <p class="panel-text">Loading pipeline...</p>
-        </div>
-      `;
-
-      try {
-        const res = await fetch(`${API_BASE}/pipeline/grouped`);
-        if (!res.ok) {
-          const text = await res.text();
-          groupsContainer.innerHTML = `
-            <div class="panel panel-narrow">
-              <p class="panel-text">Error loading pipeline: ${text}</p>
-            </div>
-          `;
-          return;
         }
 
-        const json = await res.json();
-        originalGroups = json.groups || [];
+        function populateFilters(groups) {
+            const projects = new Set();
+            const owners = new Set();
+            const priorities = new Set();
 
-        buildColumnsPanel();
-        buildGroupsPanel();
-        populateFilters(originalGroups);
-        renderGroups();
+            groups.forEach(group => {
+                const tasks = Array.isArray(group.tasks) ? group.tasks : [];
+                tasks.forEach(t => {
+                    // Proyecto: intenta varios campos comunes
+                    const projectValue =
+                        t.project_name ||
+                        t.project ||
+                        t.project_title ||
+                        t.project_id ||
+                        "";
 
-      } catch (err) {
-        console.error("Error loading pipeline:", err);
-        groupsContainer.innerHTML = `
-          <div class="panel panel-narrow">
-            <p class="panel-text">Network or server error loading pipeline.</p>
-          </div>
-        `;
-      }
-    }
+                    if (projectValue) {
+                        projects.add(projectValue);
+                    }
 
-    projectFilter.addEventListener("change", renderGroups);
-    ownerFilter.addEventListener("change", renderGroups);
-    priorityFilter.addEventListener("change", renderGroups);
+                    // Owner: intenta varios formatos
+                    const ownerValue =
+                        (t.owner && (t.owner.name || t.owner.username || t.owner.email)) ||
+                        t.owner_name ||
+                        t.assigned_to ||
+                        "";
 
-    // =============================
-    // Slider de ancho (solo CSS, sin re-render)
-    // =============================
-    function applyWidthFromSlider(val) {
-      const num = Number(val);
-      const clamped = Math.min(100, Math.max(70, Number.isNaN(num) ? 96 : num));
-      const widthValue = clamped + "vw";
-      document.documentElement.style.setProperty("--pm-panel-width", widthValue);
-    }
+                    if (ownerValue) {
+                        owners.add(ownerValue);
+                    }
 
-    if (widthSlider) {
-      applyWidthFromSlider(widthSlider.value);
-      widthSlider.addEventListener("input", (e) => {
-        applyWidthFromSlider(e.target.value);
-      });
-    }
+                    // Priority: varios nombres posibles
+                    const priorityValue =
+                        (t.priority && (t.priority.priority_name || t.priority.priority_id)) ||
+                        t.priority_name ||
+                        t.priority ||
+                        "";
 
-    // Init
-    loadPipeline();
-  </script>
+                    if (priorityValue) {
+                        priorities.add(priorityValue);
+                    }
+                });
+            });
+
+            function fillSelect(select, values) {
+                if (!select) return;
+                const current = select.value;
+                select.innerHTML = "<option value='all'>All</option>";
+                Array.from(values).sort().forEach(v => {
+                    const opt = document.createElement("option");
+                    opt.value = v.toString();
+                    opt.textContent = v.toString();
+                    select.appendChild(opt);
+                });
+                if (Array.from(values).includes(current)) {
+                    select.value = current;
+                }
+            }
+
+            fillSelect(projectFilter, projects);
+            fillSelect(ownerFilter, owners);
+
+            const mappedPriorities = new Map();
+            Array.from(priorities).forEach(p => {
+                mappedPriorities.set(p.toString().toLowerCase(), p);
+            });
+            const normalized = Array.from(mappedPriorities.entries())
+                .sort((a, b) => a[1].toString().localeCompare(b[1].toString()));
+
+            if (priorityFilter) {
+                priorityFilter.innerHTML = "<option value='all'>All</option>";
+                normalized.forEach(([key, label]) => {
+                    const opt = document.createElement("option");
+                    opt.value = key;
+                    opt.textContent = label.toString();
+                    priorityFilter.appendChild(opt);
+                });
+            }
+        }
+
+        function applyFilters(groups) {
+            const selectedProject = projectFilter ? projectFilter.value : "all";
+            const selectedOwner = ownerFilter ? ownerFilter.value : "all";
+            const selectedPriority = priorityFilter ? priorityFilter.value : "all";
+
+            return groups.map(group => {
+                const tasks = Array.isArray(group.tasks) ? group.tasks : [];
+                const filteredTasks = tasks.filter(t => {
+                    // Proyecto
+                    const pid =
+                        t.project_name ||
+                        t.project ||
+                        t.project_title ||
+                        t.project_id ||
+                        "";
+                    const projectPass =
+                        selectedProject === "all" || pid === selectedProject;
+
+                    // Owner
+                    const ownerName =
+                        (t.owner && (t.owner.name || t.owner.username || t.owner.email)) ||
+                        t.owner_name ||
+                        t.assigned_to ||
+                        "";
+                    const ownerPass =
+                        selectedOwner === "all" || ownerName === selectedOwner;
+
+                    // Priority
+                    const priorityLabel =
+                        (t.priority && (t.priority.priority_name || t.priority.priority_id)) ||
+                        t.priority_name ||
+                        t.priority ||
+                        "";
+                    const pKey = priorityLabel.toString().toLowerCase();
+                    const priorityPass =
+                        selectedPriority === "all" || pKey === selectedPriority;
+
+                    // Search
+                    const q = (searchQuery || "").trim().toLowerCase();
+                    let searchPass = true;
+                    if (q) {
+                        const haystack = [
+                            t.task_description,
+                            t.task_notes,
+                            pid,
+                            ownerName,
+                            priorityLabel,
+                        ]
+                            .filter(Boolean)
+                            .join(" ")
+                            .toLowerCase();
+
+                        searchPass = haystack.includes(q);
+                    }
+
+                    return projectPass && ownerPass && priorityPass && searchPass;
+                });
+
+                return {
+                    ...group,
+                    tasks: filteredTasks,
+                };
+            });
+        }
+
+        function renderGroups() {
+            if (!groupsWrapper) return;
+
+            const groups = applyFilters(rawGroups);
+            console.log("[PIPELINE] rendering groups:", groups);
+
+            groupsWrapper.innerHTML = "";
+
+            if (!groups.length) {
+                groupsWrapper.innerHTML = "<p class='panel-text'>No pipeline groups to display.</p>";
+                return;
+            }
+
+            // 🎨 Mapa de colores por status / nombre de grupo
+            const STATUS_ACCENTS = {
+                "not started": "#facc15",
+                "working on it": "#3b82f6",
+                "awaiting approval": "#fb923c",
+                "done": "#22c55e",
+                "on hold": "#a855f7",
+                "cancelled": "#ef4444",
+            };
+
+            groups.forEach(group => {
+                // Nunca filtramos el grupo aunque no tenga tasks
+                const tasks =
+                    Array.isArray(group.tasks) ? group.tasks :
+                    Array.isArray(group.items) ? group.items :
+                    Array.isArray(group.tasks_list) ? group.tasks_list :
+                    [];
+
+                const groupName =
+                    group.status_name ||
+                    group.group_name ||
+                    group.name ||
+                    "Group";
+
+                const groupElem = document.createElement("div");
+                groupElem.className = "pm-group";
+
+                // 🎨 Color del grupo (glow + título)
+                const key = groupName.trim().toLowerCase();
+                const accentColor = STATUS_ACCENTS[key] || "#3e4042";
+                groupElem.style.setProperty("--pm-group-accent", accentColor);
+
+                // Header (click para expandir/contraer)
+                const header = document.createElement("div");
+                header.className = "pm-group-header";
+                header.innerHTML = `
+                    <h3 class="section-title" style="color:${accentColor};">
+                        ${groupName}
+                    </h3>
+                    <span class="meta-pill">${tasks.length} tasks</span>
+                `;
+
+                const body = document.createElement("div");
+                body.className = "pm-group-body";
+
+                // 🔽 estado inicial: expandido
+                let isCollapsed = false;
+                header.addEventListener("click", () => {
+                    isCollapsed = !isCollapsed;
+                    body.style.display = isCollapsed ? "none" : "";
+                    header.classList.toggle("pm-group-header--collapsed", isCollapsed);
+                });
+
+                // ============= TABLA (SIEMPRE) =============
+                const table = document.createElement("table");
+                table.className = "table";
+
+                const thead = document.createElement("thead");
+                thead.innerHTML = `
+                    <tr>
+                        <th>Task</th>
+                        <th>Project</th>
+                        <th>Owner</th>
+                        <th>Collaborator</th>
+                        <th>Manager</th>
+                        <th>Company</th>
+                        <th>Start</th>
+                        <th>Est (h)</th>
+                        <th>Priority</th>
+                        <th>Finished</th>
+                        <th>Due</th>
+                        <th>Links</th>
+                    </tr>
+                `;
+                table.appendChild(thead);
+
+                const tbody = document.createElement("tbody");
+
+                if (!tasks.length) {
+                    // Grupo SIN tareas → tabla con fila placeholder
+                    const emptyRow = document.createElement("tr");
+                    emptyRow.className = "pm-empty-row";
+                    emptyRow.innerHTML = `
+                        <td colspan="12" class="pm-empty-cell">
+                            <div>No tasks in this group for the current filters.</div>
+                        </td>
+                    `;
+                    tbody.appendChild(emptyRow);
+                } else {
+                    // Grupo CON tareas → filas normales
+                    tasks.forEach(t => {
+                        const tr = document.createElement("tr");
+                        tr.className = "pm-row";
+                        if (manageMode) {
+                            tr.classList.add("pm-row-manage");
+                        }
+
+                        // ======================
+                        // CAMPOS PARA MOSTRAR EN TABLA
+                        // ======================
+                        const desc =
+                            t.task_description || t.title || "(No description)";
+
+                        const proj =
+                            t.project_name ||
+                            t.project ||
+                            t.project_title ||
+                            t.project_id ||
+                            "-";
+
+                        const owner =
+                            (t.owner && (t.owner.name || t.owner.username || t.owner.email)) ||
+                            t.owner_name ||
+                            t.assigned_to ||
+                            "-";
+
+                        const collaborator =
+                            (Array.isArray(t.collaborators) &&
+                            t.collaborators.length > 0 &&
+                            (t.collaborators[0].name || t.collaborators[0].id)) ||
+                            "-";
+
+                        const manager =
+                            (t.manager_obj && (t.manager_obj.name || t.manager_obj.id)) ||
+                            "-";
+
+                        const company =
+                            t.company_name || "-";
+
+                        const startDate = t.start_date || null;
+                        const startDisplay = startDate || "-";
+
+                        const estimatedHours = (typeof t.estimated_hours === "number")
+                            ? t.estimated_hours
+                            : (t.estimated_hours ?? null);
+                        const estDisplay = (estimatedHours != null) ? estimatedHours : "-";
+
+                        const pri =
+                            (t.priority && (t.priority.priority_name || t.priority.priority_id)) ||
+                            t.priority_name ||
+                            t.priority ||
+                            "-";
+
+                        const finished =
+                            (t.finished_status &&
+                                (t.finished_status.completed_status_name ||
+                                t.finished_status.completed_status_id)) ||
+                            "-";
+
+                        const due = t.due_date || t.due || t.deadline || "-";
+
+                        const docsLink = t.docs_link || null;
+                        const resultLink = t.result_link || null;
+
+                        let linksHtml = "-";
+                        if (docsLink || resultLink) {
+                            const parts = [];
+                            if (docsLink) {
+                                parts.push(`<a href="${docsLink}" target="_blank" rel="noopener noreferrer">Docs</a>`);
+                            }
+                            if (resultLink) {
+                                parts.push(`<a href="${resultLink}" target="_blank" rel="noopener noreferrer">Result</a>`);
+                            }
+                            linksHtml = parts.join(" · ");
+                        }
+
+                        // ======================
+                        // IDS Y EXTRA PARA MODALES / LÓGICA FUTURA
+                        // ======================
+                        const taskId = t.task_id || null;
+                        const taskNotes = t.task_notes || null;
+                        const companyManagement = t.company_management || null;
+
+                        const priorityId =
+                            (t.priority && t.priority.priority_id) ||
+                            t.task_priority ||
+                            null;
+
+                        const finishedStatusId =
+                            (t.finished_status && t.finished_status.completed_status_id) ||
+                            t.task_finished_status ||
+                            null;
+
+                        // ======================
+                        // PINTAR CELDAS VISIBLES
+                        // ======================
+                        tr.innerHTML = `
+                            <td class="pm-row"><div>${desc}</div></td>
+                            <td class="pm-row"><div>${proj}</div></td>
+                            <td class="pm-row"><div>${owner}</div></td>
+                            <td class="pm-row"><div>${collaborator}</div></td>
+                            <td class="pm-row"><div>${manager}</div></td>
+                            <td class="pm-row"><div>${company}</div></td>
+                            <td class="pm-row"><div>${startDisplay}</div></td>
+                            <td class="pm-row"><div>${estDisplay}</div></td>
+                            <td class="pm-row"><div>${pri}</div></td>
+                            <td class="pm-row"><div>${finished}</div></td>
+                            <td class="pm-row"><div>${due}</div></td>
+                            <td class="pm-row"><div>${linksHtml}</div></td>
+                        `;
+
+                        // ======================
+                        // GUARDAR DATA EXTRA EN EL <tr> PARA MODAL / TOGGLE DE COLUMNAS
+                        // ======================
+                        if (taskId) tr.dataset.taskId = String(taskId);
+                        if (startDate) tr.dataset.startDate = String(startDate);
+                        if (estimatedHours != null) tr.dataset.estimatedHours = String(estimatedHours);
+                        if (taskNotes) tr.dataset.taskNotes = String(taskNotes);
+                        if (docsLink) tr.dataset.docsLink = String(docsLink);
+                        if (resultLink) tr.dataset.resultLink = String(resultLink);
+                        if (companyManagement) tr.dataset.companyManagement = String(companyManagement);
+                        if (priorityId) tr.dataset.priorityId = String(priorityId);
+                        if (finishedStatusId) tr.dataset.finishedStatusId = String(finishedStatusId);
+
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                table.appendChild(tbody);
+                body.appendChild(table);
+
+                groupElem.appendChild(header);
+                groupElem.appendChild(body);
+                groupsWrapper.appendChild(groupElem);
+            });
+        }
+
+
+        // ================================
+        // Eventos de UI
+        // ================================
+        if (projectFilter) projectFilter.addEventListener("change", renderGroups);
+        if (ownerFilter) ownerFilter.addEventListener("change", renderGroups);
+        if (priorityFilter) priorityFilter.addEventListener("change", renderGroups);
+
+        if (manageBtn) {
+            manageBtn.addEventListener("click", () => {
+                manageMode = !manageMode;
+                manageBtn.classList.toggle("is-active", manageMode);
+                manageBtn.textContent = manageMode ? "Done managing" : "Manage tasks";
+                renderGroups();
+            });
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener("input", (e) => {
+                searchQuery = e.target.value.toLowerCase();
+                renderGroups();
+            });
+        }
+
+        if (widthSlider && widthValue) {
+            const applyWidth = () => {
+                const value = widthSlider.value;
+                widthValue.textContent = value + "%";
+                document.documentElement.style.setProperty("--pm-panel-width", value + "%");
+                console.log("[PIPELINE] panel width ->", value + "%");
+            };
+            widthSlider.addEventListener("input", applyWidth);
+            applyWidth();
+        }
+
+        // Init
+        document.addEventListener("DOMContentLoaded", () => {
+            renderSidebarModules(USER_MODULES);
+            fetchPipeline();
+        });
+    </script>
 </body>
 </html>

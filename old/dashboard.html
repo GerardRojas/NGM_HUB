@@ -13,10 +13,7 @@
       rel="stylesheet"
     >
 
-    <!-- 1) Estilos base compartidos (layout, sidebar, tipografía, componentes genéricos) -->
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <!-- 2) Estilos específicos del dashboard (cards, pipeline, separadores, etc.) -->
-    <link rel="stylesheet" href="assets/css/dashboard.css" />
 </head>
 <body>
     <div class="app-layout">
@@ -37,89 +34,23 @@
 
         <!-- Zona principal -->
         <div class="main-area">
-            <!-- Barra superior tipo Supabase -->
-            <header class="topbar topbar-dashboard">
-            <!-- LEFT: brand / contexto -->
-            <div class="topbar-left global-bar-left">
-                <div class="global-brand">
-                <div class="brand-icon-small">
-                    <!-- Aquí luego metemos tu ícono real -->
-                    <span>⚡</span>
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h1 class="topbar-title">Control Center</h1>
+                    <p class="topbar-subtitle">
+                        Select a module to open its webapp or review your assigned work.
+                    </p>
                 </div>
-                <div class="brand-text">
-                    <span class="brand-org">Next Generation Management</span>
-                    <span class="brand-context">NGM Hub · Dashboard</span>
+                <div class="topbar-right">
+                    <span id="user-pill" class="user-pill">User</span>
                 </div>
-                </div>
-            </div>
-
-            <!-- RIGHT: meta + search + user -->
-            <div class="topbar-right dashboard-topbar-right">
-                <div class="dashboard-meta">
-                <span class="meta-pill meta-env">Environment · Production</span>
-                <span class="meta-pill meta-status meta-status-live">Server · Live</span>
-                </div>
-
-                <!-- Search bar -->
-                <form class="dashboard-search" role="search">
-                <span class="dashboard-search-icon">⌕</span>
-                <input
-                    type="search"
-                    class="dashboard-search-input"
-                    placeholder="Search…"
-                    aria-label="Search"
-                />
-                </form>
-
-                <!-- Usuario / rol -->
-                <span id="user-pill" class="user-pill">User · Role</span>
-            </div>
             </header>
 
             <main class="main-content">
-                <!-- Pipeline (visor rápido) -->
-                <section class="pipeline-section">
-                <div class="section-header-row">
-                    <div>
-                    <h2 class="section-title">Pipeline</h2>
-                    <p class="section-subtitle">
-                        Tasks assigned to you from the Pipeline Manager. Mark them as done in the pipeline view.
-                    </p>
-                    </div>
-                </div>
-
-                <!-- Misma “card” visual que los módulos -->
-                <div id="pipeline-tasks" class="module-card pipeline-card">
-                    <p class="panel-text" id="pipeline-placeholder">
-                    No tasks loaded yet. This area will connect to the Pipeline Manager soon.
-                    </p>
-                    <!-- Aquí luego renderizamos tarjetas de tareas -->
-                </div>
-                </section>
-
-                <!-- Separador visual entre pipeline y módulos -->
-                <div class="section-divider"></div>
-
                 <!-- Grid de módulos (webapps) -->
                 <section class="modules-section">
                     <h2 class="section-title">Modules</h2>
                     <div class="modules-grid">
-
-                        <!-- My Work (activo, filtrado por usuario logeado) -->
-                        <a 
-                            class="module-card" 
-                            href="my-work.html"
-                            data-roles="COO,CEO,General Cordinator,Project Cordinator,Accounting Manager,Bookkeeper,Estimator,Architect,Intern"
-                            data-status="active"
-                        >
-                            <div class="module-icon">
-                                <span class="module-icon-badge">MY</span>
-                            </div>
-                            <h3 class="module-title">My Work</h3>
-                            <p class="module-desc">
-                                Central view for your tasks, tickets and pipeline items across all modules.
-                            </p>
-                        </a>
 
                         <!-- Expenses Engine (activo) -->
                         <a 
@@ -137,28 +68,28 @@
                             </p>
                         </a>
 
-                        <!-- Pipeline Manager (activo) -->
+                        <!-- My Work (activo, filtrado por usuario logeado) -->
                         <a 
                             class="module-card" 
-                            href="pipeline.html"
-                            data-roles="COO,CEO,General Cordinator,Project Cordinator"
+                            href="my-work.html"
+                            data-roles="COO,CEO,General Cordinator,Project Cordinator,Accounting Manager,Bookkeeper,Estimator,Architect,Intern"
                             data-status="active"
                         >
                             <div class="module-icon">
-                                <span class="module-icon-badge">PL</span>
+                                <span class="module-icon-badge">MY</span>
                             </div>
-                            <h3 class="module-title">Pipeline Manager</h3>
+                            <h3 class="module-title">My Work</h3>
                             <p class="module-desc">
-                                Manage tasks, sprints and delivery pipelines for all teams.
+                                Central view for your tasks, tickets and pipeline items across all modules.
                             </p>
                         </a>
 
-                        <!-- Projects (activo) -->
-                        <a 
+                        <!-- Projects (coming soon) -->
+                        <button 
                             class="module-card" 
-                            href="projects.html"
+                            type="button"
                             data-roles="COO,CEO,General Cordinator,Project Cordinator,Accounting Manager,Bookkeeper"
-                            data-status="active"
+                            data-status="coming-soon"
                         >
                             <div class="module-icon">
                                 <span class="module-icon-badge">PR</span>
@@ -167,14 +98,14 @@
                             <p class="module-desc">
                                 Manage active, paused and completed projects for all connected systems.
                             </p>
-                        </a>
+                        </button>
 
-                        <!-- Estimator Suite (activo) -->
-                        <a 
+                        <!-- Estimator Suite (materials DB, estimator, concept builder, doc builder) -->
+                        <button 
                             class="module-card" 
-                            href="estimator.html"
+                            type="button"
                             data-roles="COO,CEO,Estimator,Architect,Intern"
-                            data-status="active"
+                            data-status="coming-soon"
                         >
                             <div class="module-icon">
                                 <span class="module-icon-badge">ES</span>
@@ -183,49 +114,46 @@
                             <p class="module-desc">
                                 Materials database, estimator, concept builder and document builder in one place.
                             </p>
-                        </a>
+                        </button>
 
-                        <!-- Finance / Books Reporting (coming soon) -->
+                        <!-- Finance / Books Reporting -->
                         <button 
-                            class="module-card module-coming-soon" 
+                            class="module-card" 
                             type="button"
                             data-roles="COO,CEO,Accounting Manager,Bookkeeper"
                             data-status="coming-soon"
-                            disabled
                         >
                             <div class="module-icon">
                                 <span class="module-icon-badge">FIN</span>
                             </div>
-                            <h3 class="module-title">Finance &amp; Books</h3>
+                            <h3 class="module-title">Finance & Books</h3>
                             <p class="module-desc">
                                 Budget vs Actuals, accounts, classes and books reporting.
                             </p>
                         </button>
 
-                        <!-- Automations & Bots (coming soon) -->
+                        <!-- Automations & Bots -->
                         <button 
-                            class="module-card module-coming-soon" 
+                            class="module-card" 
                             type="button"
                             data-roles="COO,CEO"
                             data-status="coming-soon"
-                            disabled
                         >
                             <div class="module-icon">
                                 <span class="module-icon-badge">AUTO</span>
                             </div>
-                            <h3 class="module-title">Automations &amp; Bots</h3>
+                            <h3 class="module-title">Automations & Bots</h3>
                             <p class="module-desc">
                                 Orchestrate background processes, syncs and AI assistants like Arturito.
                             </p>
                         </button>
 
-                        <!-- Data Vault (coming soon) -->
+                        <!-- Data Vault -->
                         <button 
-                            class="module-card module-coming-soon" 
+                            class="module-card" 
                             type="button"
                             data-roles="COO,CEO,Accounting Manager"
                             data-status="coming-soon"
-                            disabled
                         >
                             <div class="module-icon">
                                 <span class="module-icon-badge">VAULT</span>
@@ -235,6 +163,27 @@
                                 Centralized storage, snapshots and access policies for your core datasets.
                             </p>
                         </button>
+                    </div>
+                </section>
+
+                <!-- Separador visual entre módulos y visor rápido de tasks -->
+                <div class="section-divider"></div>
+
+                <!-- Pipeline (para todos los roles) -->
+                <section class="pipeline-section">
+                    <div class="section-header-row">
+                        <div>
+                            <h2 class="section-title">Pipeline</h2>
+                            <p class="section-subtitle">
+                                Quick view of tasks assigned to you from the Pipeline Manager.
+                            </p>
+                        </div>
+                    </div>
+                    <div id="pipeline-tasks" class="panel">
+                        <p class="panel-text" id="pipeline-placeholder">
+                            No tasks loaded yet. This area will connect to the Pipeline Manager soon.
+                        </p>
+                        <!-- Aquí luego renderizamos tarjetas de tareas -->
                     </div>
                 </section>
             </main>

@@ -1,113 +1,250 @@
 /* ==========================================
-   PIPELINE MANAGER — LAYOUT & WIDTH CONTROL
+   PIPELINE MANAGER — layout & visual
    ========================================== */
 
+/* Variable local de ancho; no toca el theme global */
 :root {
-    /* Ancho por defecto de toolbar + grupos dentro del área útil */
     --pm-panel-width: 92%;
 }
 
-/* En pipeline queremos que la sección use todo el ancho disponible */
-.data-section {
+/* La sección de datos ocupa todo el ancho útil del main */
+.pipeline-section .data-section {
     max-width: none;
+    padding: 18px 24px 24px;
 }
 
-/* Wrapper general para centrar toolbar y grupos y que RESPONDAN al slider */
-.pm-toolbar-surface,
+/* Centrar toolbar y grupos dentro del viewport.
+   Ambos responden al slider de ancho (pm-panel-width). */
+.pm-toolbar-grid,
 .pm-groups-wrapper {
-    width: var(--pm-panel-width, 92%);
-    max-width: 1400px;
+    width: 100%;
+    max-width: 100%; /* remueve la restricción de 1200px */
     margin-inline: auto;
+
+    /* 🎯 CONTROLA EL PADDING LATERAL DEL ÁREA ÚTIL */
+    padding-left: var(--pm-area-padding, 24px);
+    padding-right: var(--pm-area-padding, 24px);
+}
+
+/* Wrapper de todos los grupos: un poco de aire abajo */
+.pm-groups-wrapper {
+    padding-bottom: 24px;
 }
 
 /* ==========================================
-   TOOLBAR (filtros + slider)
+   TOOLBAR SUPERIOR (filters + layout)
    ========================================== */
 
-.pm-toolbar-surface {
-    background: #020617;
-    border-radius: 14px;
-    border: 1px solid #111827;
-    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65);
-    padding: 10px 14px 12px;
+/* Grid de 2 cards: filtros / layout */
+.pm-toolbar-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+    gap: 12px;
     margin-bottom: 18px;
 }
 
-.pm-toolbar-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    align-items: center;
-    flex-wrap: wrap;
+/* Card genérica de toolbar (color, borde, sombra)
+   -----------------------------------------------
+   🔧 COLORES PRINCIPALES DE LAS CARDS DE TOOLBAR:
+   - background: var(--ngm-bg-card)
+   - border:     var(--ngm-border-card)
+   - shadow:     var(--ngm-shadow-strong)
+*/
+.pm-toolbar-card {
+    border-radius: var(--radius-md);
+    background: #0f0f0f;
+    border: 1px solid var(--ngm-border-card);
+    box-shadow: var(--ngm-shadow-strong);
+    padding: 2px 14px 12px;
 }
 
-/* Contenedor del slider de ancho */
+.pm-toolbar-card-header {
+    margin-bottom: -6px;
+}
+
+.pm-toolbar-card-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+}
+
+/* Filtros alineados a la izquierda */
+.pm-toolbar-card--filters .pm-toolbar-card-body {
+    align-items: flex-end;
+}
+
+/* Layout card: manage + slider alineados a la derecha */
+.pm-toolbar-card--layout .pm-toolbar-card-body {
+    align-items: center;
+    justify-content: flex-end;
+    gap: 11px;
+}
+
+/* CONTENEDOR DE FILTROS (para agrupar label+select) */
+.pm-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+/* ==========================================
+   DROPDOWNS DE FILTRO
+   ==========================================
+   🔧 Aquí puedes ajustar:
+   - fondo / borde de los selects
+   - color de texto / placeholder
+*/
+.pipeline-section .filter-label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--ngm-text-muted);
+}
+
+.pipeline-section .filter-select {
+    min-width: 130px;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+
+    background: rgb(88, 88, 88);
+    border-color: var(--ngm-border-card);
+    color: var(--text-primary);
+
+    outline: none;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pipeline-section .filter-select:hover {
+    background: var(--bg-input-hover);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(45, 90, 62, 0.5);
+}
+
+.pipeline-section .filter-select:focus-visible {
+    box-shadow: 0 0 0 1px var(--accent);
+}
+/* ==========================================
+   BOTÓN MANAGE TASKS
+   ==========================================
+   🔧 Ajusta colores de botón aquí.
+*/
+
+.btn-manage-tasks {
+    background: var(--ngm-bg-card);
+    border: 1px solid var(--ngm-border-card);
+    border-radius: 999px;
+
+    padding: 4px 10px;   /* MISMO padding que dropdowns */
+    font-size: 12px;
+    color: var(--text-primary);
+
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.btn-manage-tasks:hover {
+    background: var(--bg-input-hover);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(45, 90, 62, 0.5);
+}
+
+.btn-manage-tasks.is-active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(22, 101, 52, 0.08); /* leve highlight */
+}
+
+/* ==========================================
+   SLIDER DE ANCHO
+   ========================================== */
 .pm-width-control {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--text-secondary);
     white-space: nowrap;
 }
 
 .pm-width-control-label {
     font-size: 11px;
-    color: #9ca3af;
+    color: var(--text-secondary);
 }
 
 .pm-width-control-value {
     min-width: 42px;
     text-align: right;
     font-variant-numeric: tabular-nums;
+    color: var(--ngm-text-main);
 }
 
-/* Slider */
+/* El slider como tal; afecta al ancho del panel vía
+   la variable --pm-panel-width en el JS. */
 .pm-width-slider {
     width: 160px;
-    accent-color: #3b82f6;
+    accent-color: var(--accent); /* verde corporativo */
 }
 
 /* ==========================================
    GRUPOS DE PIPELINE (cards)
    ========================================== */
 
-/* Wrapper de todos los grupos */
-.pm-groups-wrapper {
-    padding-bottom: 24px;
-}
+/* Alineado al dashboard: mismas cards pero con rail de color */
+/* ===========================================
+   🟦 ESTILOS DEL CARD DE GRUPO
+   =========================================== */
 
-/* Card por grupo */
 .pm-group {
     position: relative;
     margin: 22px auto 32px auto;
-    border-radius: 16px;
-    background: #020617;
-    border: 1px solid #111827;
-    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.75);
-    padding: 10px 12px 12px;
-    overflow: visible; /* para que el rail no se corte */
+
+    border-radius: var(--radius-md);
+    background: #1b1b1d;                       /* Fondo del card */
+    border: 1px solid var(--ngm-border-card);
+    box-shadow: var(--ngm-shadow-strong);
+
+    padding: 14px 16px 16px;
+    overflow: visible;                          /* 👈 para que salga el glow */
+
+    --pm-group-accent: #3e4042;
+
+    --pm-table-bg: #373a3d;
+    --pm-table-head-bg: #2d2d31; 
+    --pm-table-border: #4c4c4c; 
+    --pm-table-row-hover: rgba(255, 255, 255, 0.05);
 }
 
-/* Rails de color a izquierda y derecha por status */
-.pm-group::before,
-.pm-group::after {
+/* Rail izquierdo con misma curva que el card + glow SOLO a la izquierda */
+.pm-group::before {
     content: "";
     position: absolute;
-    top: 8px;
-    bottom: 8px;
-    width: 3px;
-    border-radius: 999px;
-    background: var(--pm-group-accent, #4b5563);
-}
 
-.pm-group::before {
+    /* pegado al borde izquierdo del card */
+    top: 0;
+    bottom: 0;
     left: -2px;
+    width: 6px;
+
+    /* solo esquinas izquierdas redondeadas, igual que el card */
+    border-top-left-radius: var(--radius-md);
+    border-bottom-left-radius: var(--radius-md);
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+
+    background: var(--pm-group-accent);
+
+    /* glow hacia los lados, pero se nota sobre todo a la izquierda */
+    box-shadow:
+        -4px 0 10px var(--pm-group-accent),
+        -6px 0 18px rgba(0, 0, 0, 0.9);
+
+    pointer-events: none;
+    z-index: -1;  /* detrás del contenido del card */
 }
 
-.pm-group::after {
-    right: -2px;
-}
 
 /* Header: título de grupo + contador */
 .pm-group-header {
@@ -115,25 +252,65 @@
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
-    cursor: pointer;
+    cursor: default;
 }
 
-/* Cuerpo (tabla) */
-.pm-group-body {
-    margin-top: 6px;
+/* Puedes dar color distinto al título del grupo aquí */
+.pm-group-header .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ngm-text-main);
 }
 
-/* Tabla interna */
+/* La tabla ocupa todo el ancho del grupo */
 .pm-group .table {
-    background: #030712;
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--pm-table-bg);
+    border-radius: 10px;
+    overflow: hidden;
+    table-layout: fixed;
+    border-collapse: collapse;
 }
 
+/* Header de la tabla */
 .pm-group .table thead {
-    background: #030712;
+    background: var(--pm-table-head-bg);
 }
 
+.pm-group .table th,
+.pm-group .table td {
+    border: 1px solid var(--pm-table-border);
+}
+
+.pm-group .table thead th {
+    font-size: 11px;
+    text-align: center;
+    font-weight: 630;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 500;
+    padding: 6px 10px;
+    color: #dbdbdb;
+    border-bottom: 1px solid var(--pm-table-border);
+}
+
+/* Celdas del body */
+.pm-group .table tbody td {
+    padding: 6px 10px;
+    font-weight: 600;
+    font-size: 12px;
+    border-bottom: 1px solid var(--pm-table-border);
+    color: #aaaaaa;
+}
+
+.pm-group .table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Hover sutil de fila */
 .pm-group .table tbody tr:hover {
-    background: rgba(15, 23, 42, 0.85);
+    background: var(--pm-table-row-hover);
 }
 
 /* Fila de "Add task" con un poco más de aire */
@@ -150,19 +327,91 @@
     vertical-align: middle;
 }
 
-/* En manage mode, les damos un contorno dashed sutil */
+/* En manage mode, contorno dashed sutil dentro de la celda */
 .pm-row-manage td > div {
     border-radius: 6px;
     border: 1px dashed #4b5563;
     background: rgba(15, 23, 42, 0.75);
+    padding: 2px 4px;
 }
 
 /* ==========================================
-   MODAL DE DETALLE DE TAREA
-   (por ahora la mayor parte va inline)
-   ========================================== */
+   SEARCHBAR EN TOPBAR (derecha)
+   ==========================================
+   (Por si quieres que el search del pipeline tenga
+    un sabor ligeramente distinto, pero alineado al dashboard)
+*/
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-/* placeholder por si luego queremos estilos globales del modal */
-.pm-modal {
-    /* vacío de momento */
+/* Search unificada con dashboard pero ligeramente ajustada */
+.pipeline-search {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    border-radius: 9999px;
+
+    background: var(--ngm-bg-card);
+    border: 1px solid var(--ngm-border-card);
+}
+
+.pipeline-search-input {
+    background: transparent;
+    color: var(--ngm-text-main);
+}
+
+.pipeline-search-input::placeholder {
+    color: #9ca3af;
+}
+
+.pm-group-empty {
+    padding: 10px 8px 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+/* Hacer que la primera columna (Task) sea más ancha */
+.pm-group .table th:first-child,
+.pm-group .table td:first-child {
+    width: 30%;
+}
+
+/* Columns compactas: Due y Finished */
+.pm-group .table th:nth-last-child(-n+2),
+.pm-group .table td:nth-last-child(-n+2) {
+    white-space: nowrap;
+}
+
+.pm-empty-row td {
+    padding: 12px;
+    text-align: center;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: none;
+    font-style: italic;
+}
+
+.pm-empty-cell div {
+    opacity: 0.7;
+}
+
+/* ============================================
+   🔧 ALINEACIÓN DE COLUMNAS EN TABLA
+   ============================================ */
+
+/* 1) Columna 1 (Task) → alineada a la izquierda */
+.pm-group .table td:nth-child(1),
+.pm-group .table th:nth-child(1) {
+    text-align: left;
+}
+
+/* 2) Todas las demás columnas → centradas */
+.pm-group .table td:nth-child(n+2),
+.pm-group .table th:nth-child(n+2) {
+    text-align: center;
 }

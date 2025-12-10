@@ -76,7 +76,6 @@
                 </div>
             </header>
 
-            <!-- Contenido principal: solo área útil del pipeline -->
             <main class="main-content">
                 <section class="pipeline-section">
                     <section class="data-section">
@@ -119,25 +118,28 @@
                                     <span class="section-title">Layout</span>
                                 </div>
                                 <div class="pm-toolbar-card-body pm-toolbar-layout-body">
-                                    <button id="manage-mode-btn" type="button" class="btn-ghost btn-small btn-manage-tasks">
-                                        Manage tasks
-                                    </button>
+                                    <div class="pm-layout-actions">
+                                        <button
+                                            id="btnNewTask"
+                                            type="button"
+                                            class="pm-btn pm-btn-secondary btn-small btn-manage-tasks"
+                                        >
+                                            <span class="pm-btn-icon">＋</span>
+                                            <span>New task</span>
+                                        </button>
 
-                                    <div class="pm-width-control">
-                                        <span class="pm-width-control-label">Panel width</span>
-                                        <input
-                                            id="pm-width-slider"
-                                            class="pm-width-slider"
-                                            type="range"
-                                            min="70"
-                                            max="100"
-                                            step="1"
-                                            value="92"
-                                        />
-                                        <span id="pm-width-value" class="pm-width-control-value">92%</span>
+                                        <button
+                                            id="btnManageLayout"
+                                            type="button"
+                                            class="pm-btn pm-btn-secondary btn-small"
+                                        >
+                                            <span class="pm-btn-icon">⚙</span>
+                                            <span>Manage layout</span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
+
                         </div>
 
                         <!-- Wrapper de grupos de pipeline -->
@@ -147,6 +149,118 @@
                     </section>
                 </section>
             </main>
+        </div>
+    </div>
+
+        <!-- Modal: Manage layout -->
+    <div id="layoutModal" class="pm-modal" hidden>
+        <div class="pm-modal-backdrop"></div>
+
+        <div class="pm-modal-dialog">
+            <div class="pm-modal-header">
+                <h2 class="pm-modal-title">Manage layout</h2>
+                <button class="pm-modal-close" id="btnCloseLayoutModal">×</button>
+            </div>
+
+            <div class="pm-modal-body">
+                <!-- Ancho del panel / tabla -->
+                <section class="pm-modal-section">
+                    <h3 class="pm-modal-section-title">Panel width</h3>
+                    <div class="pm-width-options">
+                        <label class="pm-radio-pill">
+                            <input type="radio" name="pm-panel-width" value="compact">
+                            <span>Compact (80%)</span>
+                        </label>
+                        <label class="pm-radio-pill">
+                            <input type="radio" name="pm-panel-width" value="balanced">
+                            <span>Balanced (92%)</span>
+                        </label>
+                        <label class="pm-radio-pill">
+                            <input type="radio" name="pm-panel-width" value="full">
+                            <span>Full width (100%)</span>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Grupos visibles -->
+                <section class="pm-modal-section">
+                    <h3 class="pm-modal-section-title">Visible groups</h3>
+                    <div class="pm-checkbox-grid">
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-group-key="not started">
+                            <span>Not Started</span>
+                        </label>
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-group-key="working on it">
+                            <span>Working on It</span>
+                        </label>
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-group-key="awaiting approval">
+                            <span>Awaiting Approval</span>
+                        </label>
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-group-key="good to go">
+                            <span>Good to Go</span>
+                        </label>
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-group-key="correction">
+                            <span>Correction</span>
+                        </label>
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-group-key="resubmittal needed">
+                            <span>Resubmittal needed</span>
+                        </label>
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-group-key="done">
+                            <span>Done</span>
+                        </label>
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-group-key="delayed">
+                            <span>Delayed</span>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Columnas visibles -->
+                <section class="pm-modal-section">
+                    <h3 class="pm-modal-section-title">Visible columns</h3>
+                    <div class="pm-checkbox-grid pm-checkbox-grid--columns">
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-col-key="task">
+                            <span>Task</span>
+                        </label>
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-col-key="owner">
+                            <span>Owner</span>
+                        </label>
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-col-key="company">
+                            <span>Company</span>
+                        </label>
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-col-key="status">
+                            <span>Status</span>
+                        </label>
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-col-key="start">
+                            <span>Start date</span>
+                        </label>
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-col-key="est">
+                            <span>Estimated hours</span>
+                        </label>
+                        <label class="pm-checkbox">
+                            <input type="checkbox" data-col-key="due">
+                            <span>Due / Deadline</span>
+                        </label>
+                    </div>
+                </section>
+            </div>
+
+            <div class="pm-modal-footer">
+                <button class="pm-btn pm-btn-ghost" id="btnCancelLayout">Cancel</button>
+                <button class="pm-btn pm-btn-primary" id="btnApplyLayout">Apply</button>
+            </div>
         </div>
     </div>
 
@@ -167,6 +281,71 @@
 
         // TODO: en producción esto vendrá del backend según el rol del usuario
         const USER_MODULES = ["dashboard", "projects", "pipeline", "estimator", "expenses"];
+
+                function initLayoutControls() {
+            const modal = document.getElementById("layoutModal");
+            const btnOpen = document.getElementById("btnManageLayout");
+            if (!modal || !btnOpen) return;
+
+            const btnClose = document.getElementById("btnCloseLayoutModal");
+            const btnCancel = document.getElementById("btnCancelLayout");
+            const backdrop = modal.querySelector(".pm-modal-backdrop");
+            const btnApply = document.getElementById("btnApplyLayout");
+
+            const DEFAULT_GROUPS = [
+                "not started",
+                "working on it",
+                "awaiting approval",
+                "good to go",
+                "done",
+            ];
+
+            const DEFAULT_COLUMNS = {
+                task: true,
+                owner: true,
+                company: true,
+                status: true,
+                start: true,
+                est: true,
+                due: true,
+            };
+
+            function syncDefaultsToUI() {
+                const radios = modal.querySelectorAll('input[name="pm-panel-width"]');
+                radios.forEach(r => {
+                    r.checked = (r.value === "balanced");
+                });
+
+                modal.querySelectorAll("input[type='checkbox'][data-group-key]").forEach(cb => {
+                    const key = cb.getAttribute("data-group-key");
+                    cb.checked = DEFAULT_GROUPS.includes(key);
+                });
+
+                modal.querySelectorAll("input[type='checkbox'][data-col-key]").forEach(cb => {
+                    const key = cb.getAttribute("data-col-key");
+                    cb.checked = !!DEFAULT_COLUMNS[key];
+                });
+            }
+
+            function openModal() {
+                syncDefaultsToUI();
+                modal.hidden = false;
+            }
+
+            function closeModal() {
+                modal.hidden = true;
+            }
+
+            btnOpen.addEventListener("click", openModal);
+            btnClose?.addEventListener("click", closeModal);
+            btnCancel?.addEventListener("click", closeModal);
+            backdrop?.addEventListener("click", closeModal);
+
+            btnApply?.addEventListener("click", () => {
+                // luego conectamos esto a persistencia y layout real
+                closeModal();
+            });
+        }
 
         function renderSidebarModules(modulesKeys) {
             if (!sidebarNav) return;
@@ -205,9 +384,7 @@
         const projectFilter = document.getElementById("project-filter");
         const ownerFilter = document.getElementById("owner-filter");
         const priorityFilter = document.getElementById("priority-filter");
-        const manageBtn = document.getElementById("manage-mode-btn");
-        const widthSlider = document.getElementById("pm-width-slider");
-        const widthValue = document.getElementById("pm-width-value");
+        const manageBtn = document.getElementById("btnManageLayout");
         const searchInput = document.getElementById("pipeline-search-input");
 
         let rawGroups = [];
@@ -393,17 +570,76 @@
                 return;
             }
 
-            // 🎨 Mapa de colores por status / nombre de grupo
+            // 🎨 Mapa de colores por status / nombre de grupo (lista oficial)
             const STATUS_ACCENTS = {
-                "not started": "#facc15",
-                "working on it": "#3b82f6",
-                "awaiting approval": "#fb923c",
-                "done": "#22c55e",
-                "on hold": "#a855f7",
-                "cancelled": "#ef4444",
+                "working on it": "#3b82f6",       // azul
+                "done": "#22c55e",               // verde
+                "correction": "#f87171",         // rojo suave
+                "awaiting approval": "#fb923c",  // naranja
+                "resubmittal needed": "#eab308", // dorado intenso
+                "good to go": "#10b981",         // verde-mint
+                "not started": "#facc15",        // amarillo
+                "delayed": "#a855f7",            // morado
             };
 
-            groups.forEach(group => {
+            // 🎨 Mapa de clases CSS por status (para glow + estilos avanzados)
+            const STATUS_CLASS_MAP = {
+                "working on it": "pm-group--working-on-it",
+                "done": "pm-group--done",
+                "correction": "pm-group--correction",
+                "awaiting approval": "pm-group--awaiting-approval",
+                "resubmittal needed": "pm-group--resubmittal-needed",
+                "good to go": "pm-group--good-to-go",
+                "not started": "pm-group--not-started",
+                "delayed": "pm-group--delayed",
+            };
+
+            // 🔢 ORDEN OFICIAL DE STATUS
+            const STATUS_ORDER = [
+                "not started",
+                "working on it",
+                "awaiting approval",
+                "good to go",
+                "correction",
+                "resubmittal needed",
+                "done",
+                "delayed",
+            ];
+            const STATUS_RANK = {};
+            STATUS_ORDER.forEach((name, idx) => {
+                STATUS_RANK[name] = idx;
+            });
+
+            // Ordenar grupos según STATUS_ORDER
+            const sortedGroups = [...groups].sort((a, b) => {
+                const nameA = (
+                    a.status_name ||
+                    a.group_name ||
+                    a.name ||
+                    ""
+                ).trim().toLowerCase();
+
+                const nameB = (
+                    b.status_name ||
+                    b.group_name ||
+                    b.name ||
+                    ""
+                ).trim().toLowerCase();
+
+                const rankA = STATUS_RANK[nameA] ?? 999;
+                const rankB = STATUS_RANK[nameB] ?? 999;
+
+                if (rankA !== rankB) {
+                    return rankA - rankB;
+                }
+                // fallback alfabético si comparten rank
+                return nameA.localeCompare(nameB);
+            });
+
+            // ==========================
+            // RENDER DE CADA GRUPO
+            // ==========================
+            sortedGroups.forEach(group => {
                 // Nunca filtramos el grupo aunque no tenga tasks
                 const tasks =
                     Array.isArray(group.tasks) ? group.tasks :
@@ -420,12 +656,23 @@
                 const groupElem = document.createElement("div");
                 groupElem.className = "pm-group";
 
-                // 🎨 Color del grupo (glow + título)
-                const key = groupName.trim().toLowerCase();
-                const accentColor = STATUS_ACCENTS[key] || "#3e4042";
+                // Normalizar clave para status / color / clase
+                const statusRaw = groupName.trim();
+                const statusKey = statusRaw.toLowerCase();
+
+                // 🎨 Asignar clase CSS según status oficial
+                const cssClass = STATUS_CLASS_MAP[statusKey];
+                if (cssClass) {
+                    groupElem.classList.add(cssClass);
+                }
+
+                // 🎨 Color del grupo (línea + glow)
+                const accentColor = STATUS_ACCENTS[statusKey] || "#3e4042";
                 groupElem.style.setProperty("--pm-group-accent", accentColor);
 
-                // Header (click para expandir/contraer)
+                // ==========================
+                // HEADER
+                // ==========================
                 const header = document.createElement("div");
                 header.className = "pm-group-header";
                 header.innerHTML = `
@@ -446,7 +693,9 @@
                     header.classList.toggle("pm-group-header--collapsed", isCollapsed);
                 });
 
-                // ============= TABLA (SIEMPRE) =============
+                // ==========================
+                // TABLA
+                // ==========================
                 const table = document.createElement("table");
                 table.className = "table";
 
@@ -620,7 +869,6 @@
             });
         }
 
-
         // ================================
         // Eventos de UI
         // ================================
@@ -628,6 +876,8 @@
         if (ownerFilter) ownerFilter.addEventListener("change", renderGroups);
         if (priorityFilter) priorityFilter.addEventListener("change", renderGroups);
 
+        // (por ahora dejamos este manejador como está;
+        // luego lo cambiamos cuando convirtamos el botón a "New task" + modal)
         if (manageBtn) {
             manageBtn.addEventListener("click", () => {
                 manageMode = !manageMode;
@@ -644,22 +894,31 @@
             });
         }
 
-        if (widthSlider && widthValue) {
-            const applyWidth = () => {
-                const value = widthSlider.value;
-                widthValue.textContent = value + "%";
-                document.documentElement.style.setProperty("--pm-panel-width", value + "%");
-                console.log("[PIPELINE] panel width ->", value + "%");
-            };
-            widthSlider.addEventListener("input", applyWidth);
-            applyWidth();
-        }
+        // 🔥 Ya NO usamos slider de ancho, así que este bloque se puede eliminar.
+        // Lo quito para que no haya código muerto.
 
-        // Init
-        document.addEventListener("DOMContentLoaded", () => {
+        // ================================
+        // Init global
+        // ================================
+        window.addEventListener("DOMContentLoaded", () => {
+            // Sidebar + topbar
             renderSidebarModules(USER_MODULES);
+            if (typeof initTopbarUserPill === "function") {
+            initTopbarUserPill();
+            }
+
+            // Pipeline (datos + render)
+            // si tu lógica usa fetchPipeline directamente, déjalo así:
+            if (typeof fetchPipeline === "function") {
             fetchPipeline();
+            }
+            // o si lo tienes empaquetado en initPipeline, usa esa:
+            // initPipeline?.();
+
+            // Modal de Manage layout
+            initLayoutControls();
         });
+
     </script>
 </body>
 </html>

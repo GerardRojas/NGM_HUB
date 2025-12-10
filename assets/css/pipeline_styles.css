@@ -197,19 +197,28 @@
    🟦 ESTILOS DEL CARD DE GRUPO
    =========================================== */
 
+/* ==========================================
+   GROUP CARD + GLOW HÍBRIDO
+   ========================================== */
+
 .pm-group {
     position: relative;
     margin: 22px auto 32px auto;
 
     border-radius: var(--radius-md);
-    background: #1b1b1d;                       /* Fondo del card */
+    background: #1b1b1d;
     border: 1px solid var(--ngm-border-card);
     box-shadow: var(--ngm-shadow-strong);
 
     padding: 14px 16px 16px;
-    overflow: visible;                          /* 👈 para que salga el glow */
+    overflow: visible;
 
-    --pm-group-accent: #3e4042;
+    /* color del grupo */
+    --pm-group-accent: #facc15;
+    --pm-group-glow-strength: 0.35;  /* 👈 mando principal del glow */
+
+    /* 👇 ESTA ES LA LÍNEA QUE SIGUE LAS ESQUINAS */
+    border-left: 3px solid var(--pm-group-accent);
 
     --pm-table-bg: #373a3d;
     --pm-table-head-bg: #2d2d31; 
@@ -217,34 +226,32 @@
     --pm-table-row-hover: rgba(255, 255, 255, 0.05);
 }
 
-/* Rail izquierdo con misma curva que el card + glow SOLO a la izquierda */
+/* LÍNEA INVISIBLE QUE GENERA GLOW (ILUMINACIÓN) */
 .pm-group::before {
     content: "";
     position: absolute;
 
-    /* pegado al borde izquierdo del card */
-    top: 0;
-    bottom: 0;
-    left: -2px;
-    width: 6px;
+    /* un poco más corta para no meterse con los bordes superiores/inferiores */
+    top: 6px;
+    bottom: 6px;
 
-    /* solo esquinas izquierdas redondeadas, igual que el card */
-    border-top-left-radius: var(--radius-md);
-    border-bottom-left-radius: var(--radius-md);
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
+    /* pegada al borde izquierdo, pero un pelín hacia afuera */
+    left: -8px;
+    width: 10px;
 
+    /* misma forma curva que el card */
+    border-radius: inherit;
+
+    /* esta “línea” es la fuente de luz */
     background: var(--pm-group-accent);
 
-    /* glow hacia los lados, pero se nota sobre todo a la izquierda */
-    box-shadow:
-        -4px 0 10px var(--pm-group-accent),
-        -6px 0 18px rgba(0, 0, 0, 0.9);
+    /* truco: desenfocamos para que se vea como halo, no como bloque */
+    filter: blur(10px);
 
+    opacity: var(--pm-group-glow-strength);  /* 👈 intensidad del glow */
     pointer-events: none;
-    z-index: -1;  /* detrás del contenido del card */
+    z-index: 0; /* por encima del fondo, detrás del contenido */
 }
-
 
 /* Header: título de grupo + contador */
 .pm-group-header {
@@ -312,6 +319,8 @@
 .pm-group .table tbody tr:hover {
     background: var(--pm-table-row-hover);
 }
+
+
 
 /* Fila de "Add task" con un poco más de aire */
 .pm-add-row td {
@@ -387,6 +396,46 @@
     white-space: nowrap;
 }
 
+.pm-group--working-on-it {
+    --pm-group-accent: #3b82f6;
+    --pm-group-glow-strength: 0.3;
+}
+
+.pm-group--done {
+    --pm-group-accent: #22c55e;
+    --pm-group-glow-strength: 0.3;
+}
+
+.pm-group--correction {
+    --pm-group-accent: #f87171;
+    --pm-group-glow-strength: 0.3;
+}
+
+.pm-group--awaiting-approval {
+    --pm-group-accent: #fb923c;
+    --pm-group-glow-strength: 0.3;
+}
+
+.pm-group--resubmittal-needed {
+    --pm-group-accent: #eab308;
+    --pm-group-glow-strength: 0.3;
+}
+
+.pm-group--good-to-go {
+    --pm-group-accent: #10b981;
+    --pm-group-glow-strength: 0.3;
+}
+
+.pm-group--not-started {
+    --pm-group-accent: #a8a8a8;
+    --pm-group-glow-strength: 0.3;
+}
+
+.pm-group--delayed {
+    --pm-group-accent: #a855f7;
+    --pm-group-glow-strength: 0.3;
+}
+
 .pm-empty-row td {
     padding: 12px;
     text-align: center;
@@ -414,4 +463,198 @@
 .pm-group .table td:nth-child(n+2),
 .pm-group .table th:nth-child(n+2) {
     text-align: center;
+}
+
+/* ===============================
+   BOTONES GENÉRICOS (pm-btn)
+   =============================== */
+
+.pm-layout-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.pm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    background: #111827;
+    color: #e5e7eb;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, transform 0.08s ease;
+}
+
+.pm-btn:hover {
+    background: #1f2937;
+    border-color: rgba(34, 197, 94, 0.6);
+}
+
+.pm-btn:active {
+    transform: translateY(1px);
+}
+
+.pm-btn-icon {
+    font-size: 0.86rem;
+    opacity: 0.85;
+}
+
+.pm-btn-secondary {
+    border-color: rgba(148, 163, 184, 0.3);
+}
+
+.pm-btn-primary {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: white;
+}
+
+.pm-btn-primary:hover {
+    background: #22c55e;
+    border-color: #22c55e;
+}
+
+.pm-btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: #9ca3af;
+}
+
+.pm-btn-ghost:hover {
+    background: #020617;
+    border-color: rgba(148, 163, 184, 0.35);
+}
+
+/* ===============================
+   MODALES
+   =============================== */
+
+.pm-modal[hidden] {
+    display: none;
+}
+
+.pm-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+}
+
+.pm-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(4px);
+}
+
+.pm-modal-dialog {
+    position: relative;
+    max-width: 620px;
+    width: 100%;
+    margin: 40px auto;
+    border-radius: 18px;
+    background: #020617;
+    border: 1px solid rgba(148, 163, 184, 0.5);
+    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+}
+
+.pm-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+    background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.15), transparent 60%);
+}
+
+.pm-modal-title {
+    font-size: 0.96rem;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.pm-modal-close {
+    border: none;
+    background: transparent;
+    color: #9ca3af;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 2px 4px;
+}
+
+.pm-modal-close:hover {
+    color: #e5e7eb;
+}
+
+.pm-modal-body {
+    padding: 12px 16px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.pm-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 10px 16px 12px;
+    border-top: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.pm-modal-section-title {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #9ca3af;
+    margin-bottom: 6px;
+}
+
+.pm-width-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.pm-radio-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    font-size: 0.78rem;
+    color: #e5e7eb;
+    cursor: pointer;
+}
+
+.pm-radio-pill input[type="radio"] {
+    accent-color: #22c55e;
+}
+
+.pm-checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 4px 10px;
+}
+
+.pm-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: #e5e7eb;
+    cursor: pointer;
+    user-select: none;
+}
+
+.pm-checkbox input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: #22c55e;
 }

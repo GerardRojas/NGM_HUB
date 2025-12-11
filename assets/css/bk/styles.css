@@ -1,0 +1,1048 @@
+/* ==========================================
+   01 — THEME & GLOBAL RESET
+   ========================================== */
+
+:root {
+    /* Fondo global para TODOS los boards / dashboard */
+    --bg-main: #171717;             /* Supabase-style background */
+
+    /* Fondo específico para el panel de login (vidrio más negro) */
+    --bg-login-panel: rgba(9, 9, 11, 0.9);
+
+    /* Inputs */
+    --bg-input: #050509;
+    --bg-input-hover: #111111;
+
+    /* Texto */
+    --text-primary: #e5e7eb;
+    --text-secondary: #9ca3af;
+
+    /* Acento NGM (verde oscuro sobrio) */
+    --accent: #2d5a3e;
+    --accent-hover: #3f5b4a;
+
+    --border-soft: #2c3037;
+
+    --radius-lg: 22px;
+    --radius-md: 10px;
+
+    --shadow-soft: 0 40px 120px rgba(0, 0, 0, 0.85);
+    --ngm-bg-body: #020617;
+    --ngm-bg-topbar: #050509;
+    --ngm-bg-surface: #0d0f12;
+    --ngm-bg-surface-soft: #111318;
+
+    /* Cards */
+    --ngm-bg-card: #3b3b3b;
+    --ngm-border-subtle: #20252c;
+    --ngm-border-card: #2b2b2b;
+
+    /* Texto extra */
+    --ngm-text-main: #e5e7eb;
+    --ngm-text-muted: #9ca3af;
+    --ngm-text-soft: #6b7280;
+
+    /* Verde corporativo */
+    --ngm-brand-green: #22c55e;
+
+    /* Sombras globales */
+    --ngm-shadow-strong: 0 16px 40px rgba(0, 0, 0, 0.75);
+    --ngm-shadow-strong-hover: 0 22px 50px rgba(0, 0, 0, 0.9);
+}
+
+/* Reset básico */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+body {
+    background: var(--bg-main);
+    color: var(--text-primary);
+}
+
+/* ==========================================
+   02 — LAYOUT GLOBAL (APP, SIDEBAR, MAIN)
+   ========================================== */
+
+.app-layout {
+    min-height: 100vh;
+    display: flex;
+    background: var(--bg-main);
+}
+
+/* Sidebar */
+
+.sidebar {
+    width: 250px;
+    background: #171717;          /* mismo tono base del dashboard */
+    border-right: 1px solid #27292e;
+    display: flex;
+    flex-direction: column;
+    padding: 25px 10px 10px;
+}
+
+.sidebar-logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.sidebar-logo-img {
+    width: 180px;
+    height: 180px;
+    object-fit: contain;
+
+    margin-top: -35px;       /* controla margen superior */
+    margin-bottom: -20px;    /* controla margen inferior */
+}
+
+.sidebar-title-block {
+    margin-top: 4px;
+}
+
+.sidebar-title {
+    font-size: 14px;
+    color: #e5e7eb;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.sidebar-subtitle {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 4px;
+}
+
+/* Navegación lateral */
+
+.sidebar-nav {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.nav-item {
+    display: block;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #9ca3af;
+    text-decoration: none;
+    transition: 0.16s ease;
+}
+
+.nav-item:hover {
+    background: #020814;
+    color: #e5e7eb;
+}
+
+.nav-item-active {
+    background: #111827;
+    color: #e5e7eb;
+    border: 1px solid var(--accent);
+}
+
+/* Main area */
+
+.main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-main); /* fondo sólido negro */
+}
+
+/* Topbar */
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 26px;
+    border-bottom: 1px solid #111827;
+}
+
+.topbar-title {
+    font-size: 20px;
+    color: #e5e7eb;
+}
+
+.topbar-subtitle {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 4px;
+}
+
+.user-pill {
+    font-size: 13px;
+    color: #e5e7eb;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid #374151;
+}
+
+/* Contenido principal */
+
+.main-content {
+    padding: 22px 26px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+}
+
+.section-title {
+    font-size: 14px;
+    color: #e5e7eb;
+    margin-bottom: 10px;
+}
+
+/* ==========================================
+   03 — COMPONENTES GENÉRICOS
+   (Inputs, Botones, Paneles, Tablas, Modal)
+   ========================================== */
+
+/* Inputs genéricos (login, formularios, etc.) */
+
+.input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    background: var(--bg-input);
+    border: 1px solid var(--border-soft);
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: 0.2s ease;
+}
+
+.input:hover {
+    background: var(--bg-input-hover);
+}
+
+.input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(14, 57, 30, 0.15);
+}
+
+.input::placeholder {
+    color: #6b6c72;
+}
+
+/* Botones */
+
+.btn-primary {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: var(--accent);
+    color: #020617;
+    font-size: 15px;
+    cursor: pointer;
+    transition: 0.18s ease;
+    box-shadow: 0 20px 35px rgba(0, 0, 0, 0.5);
+}
+
+.btn-primary:hover {
+    background: var(--accent-hover);
+}
+
+.btn-primary:active {
+    transform: translateY(1px);
+}
+
+.btn-secondary {
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: #1f2937;
+    color: #e5e7eb;
+    border: 1px solid #374151;
+    cursor: pointer;
+    font-size: 13px;
+    transition: 0.16s ease;
+}
+
+.btn-secondary:hover {
+    background: #374151;
+}
+
+/* Paneles / tarjetas de datos */
+
+.panel {
+    background: #05070a;
+    border-radius: 12px;
+    border: 1px solid #1a1a1d;
+    padding: 18px 16px;
+}
+
+.panel-text {
+    font-size: 13px;
+    color: #9ca3af;
+}
+
+/* Panel angosto (para tablas pequeñas tipo Projects) */
+
+.panel-narrow {
+    max-width: 1000px;
+    margin-inline: auto;
+}
+
+/* Tablas genéricas */
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.table thead {
+    background: #050509;       /* o #0b0b0c si lo quieres un pelín más claro */
+}
+
+.table th,
+.table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #111827;
+    text-align: left;
+}
+
+.table th {
+    color: #9ca3af;
+    font-weight: 500;
+}
+
+.table tbody tr:hover {
+    background: #020814;
+}
+
+/* Inputs dentro de tabla (modo edición, Projects) */
+.table td input.cell-input,
+.table td select.cell-input {
+    width: 100%;
+    padding: 4px 6px;                 /* más discreto, no deforma layout */
+    font-size: inherit;               /* igual que la tabla */
+    border-radius: 4px;
+
+    background-color: rgba(255, 255, 255, 0.05);  /* fondo sutil */
+    color: #ffffff;
+    border: 1px solid transparent;    /* no sobresale en modo normal */
+    outline: none;
+
+    transition:
+        border-color 0.15s ease,
+        background-color 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+/* Hover: apenas indicar que es editable */
+.table td input.cell-input:hover,
+.table td select.cell-input:hover {
+    border-color: rgba(34, 197, 94, 0.45);
+}
+
+/* Focus: borde + fondo un poco más claro */
+.table td input.cell-input:focus,
+.table td select.cell-input:focus {
+    border-color: var(--accent);
+    background-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.45);
+}
+
+.table tfoot td {
+    font-size: 0.9rem;
+    color: #888;
+}
+
+/* Modal genérico */
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.70);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.modal-content {
+    width: 420px;
+    background: #050509;
+    padding: 24px 26px;
+    border-radius: 14px;
+    border: 1px solid #1a1a1d;
+    box-shadow: 0 0 40px rgba(0,0,0,0.7);
+}
+
+.modal-title {
+    color: #e5e7eb;
+    font-size: 18px;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.modal-form {
+    display: grid;
+    gap: 14px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* Campos / grid de formularios */
+
+.field-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* ==========================================
+   04 — MÓDULO LOGIN
+   (Pantalla de acceso a NGM HUB)
+   ========================================== */
+
+.login-screen {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 32px 16px;
+    /* ÚNICO lugar con degradado, pero en escala de grises */
+    background:
+        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.06), transparent 55%),
+        radial-gradient(circle at 80% 80%, rgba(0, 0, 0, 0.85), transparent 65%),
+        var(--bg-main);
+}
+
+/* Panel sin bordes visibles */
+
+.login-panel {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 26px;
+    backdrop-filter: blur(25px);
+    background: var(--bg-panel);
+    padding: 36px 34px 28px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-soft);
+    border: none;
+}
+
+/* Branding login */
+
+.logo-block {
+    text-align: center;
+    margin-top: -180px;
+    margin-bottom: -140px;
+}
+
+.logo-img {
+    width: 350px;
+    height: 350px;
+    object-fit: contain;
+    margin-bottom: 18px;
+}
+
+.brand-title {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+}
+
+.brand-subtitle {
+    text-align: center;
+    width: 100%;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-family: 'Roboto', sans-serif;
+}
+
+/* Form login */
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* Footer login */
+
+.footer-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.legal-text {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-family: 'Roboto', sans-serif;
+}
+
+.support-link {
+    font-size: 12px;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Roboto', sans-serif;
+    opacity: 0.85;
+    transition: 0.15s ease;
+    padding: 0;
+}
+
+.support-link:hover {
+    opacity: 1;
+}
+
+/* ==========================================
+   05 — MÓDULO DASHBOARD / HOME
+   (Tarjetas de módulos, etc.)
+   ========================================== */
+
+.modules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 18px;
+    align-items: stretch;
+}
+
+
+.module-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 18px 18px 16px;
+    border-radius: 14px;
+
+    border: 1px solid rgba(24, 24, 27, 0.95);   /* gris muy oscuro neutro */
+    background-color: #050509;                  /* negro/gris neutro, ya no slate azulado */
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.85);
+
+    text-align: left;
+    cursor: pointer;
+    text-decoration: none;
+    transition:
+        transform 0.12s ease-out,
+        box-shadow 0.12s ease-out,
+        border-color 0.12s ease-out,
+        background-color 0.12s ease-out;
+}
+
+
+
+.module-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 22px 55px rgba(0, 0, 0, 0.95);
+    border-color: rgba(34, 197, 94, 0.85);   /* verde NGM */
+    background-color: #07070c;
+}
+
+.module-card:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Icono/Badge cuadrado sobrio */
+.module-icon {
+    margin-bottom: 10px;
+}
+
+.module-icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    height: 42px;
+    padding: 0 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.7);
+    background: #05070a;             /* sin degradado, gris muy oscuro */
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e5e7eb;
+}
+
+/* Títulos y textos del módulo */
+.module-title {
+    margin: 0 0 6px;
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.module-desc {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: #9ca3af;
+}
+
+/* ==========================================
+   06 — MÓDULO EXPENSES
+   (Forms & grid específicos)
+   ========================================== */
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 14px;
+    align-items: flex-end;
+}
+
+.field-full {
+    grid-column: 1 / -1;
+}
+
+.form-footer-right {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 4px;
+}
+
+/* ==========================================
+   07 — MÓDULO PROJECTS (status + labels)
+   ========================================== */
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #e5e7eb;
+    background: #111827;
+    border: 1px solid #1f2937;
+}
+
+.status-pill--active {
+    color: #bbf7d0;              /* verde muy suave */
+    background: #064e3b;         /* verde oscuro */
+    border-color: #16a34a;
+    font-weight: 600;            /* bold extra */
+}
+
+.table-lock-label,
+.table-cell-muted {
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+/* ------------------------------------------------------
+   PROJECTS — Estilo minimalista para inputs de edición
+-------------------------------------------------------*/
+
+/* Al pasar el mouse */
+.table .cell-input:hover {
+    border-color: rgba(34, 197, 94, 0.5);
+}
+
+/* Al enfocar */
+.table .cell-input:focus {
+    border-color: var(--accent);
+    background-color: rgba(255, 255, 255, 0.12);
+    outline: none;
+}
+
+/* Dropdown oscuro para Projects */
+.table td select.cell-input {
+    background-color: rgba(0, 0, 0, 0.35);
+    color: #ffffff;
+    border: 1px solid #2d2d2d;
+    padding: 4px 6px;
+    border-radius: 4px;
+    appearance: none; /* limpia estilos del navegador */
+}
+
+/* Hover */
+.table td select.cell-input:hover {
+    border-color: var(--accent);
+}
+
+/* Focus */
+.table td select.cell-input:focus {
+    border-color: var(--accent);
+    background-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+}
+
+/* Opciones del dropdown */
+.table td select.cell-input option {
+    background: #0f0f11;
+    color: #ffffff;
+}
+
+/* Sección pipeline en el dashboard */
+
+.pipeline-section {
+    margin-top: 32px;
+}
+
+.section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.section-subtitle {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    color: #9ca3af;
+}
+
+/* Módulos coming soon */
+.module-coming-soon {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.module-coming-soon:hover {
+    transform: none;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.3);
+    border-color: rgba(148, 163, 184, 0.5);
+}
+
+/* ==========================================
+   LOGIN — ESTADO LOADING EN BOTÓN
+   ========================================== */
+
+.form-footer {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Estado deshabilitado */
+.btn-primary[disabled] {
+    opacity: 0.7;
+    cursor: wait;
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.7);
+}
+
+.btn-primary .btn-spinner {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    margin-top: -7px; /* la mitad del height del spinner (14px/2) */
+    
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+
+    border: 2px solid rgba(248, 250, 252, 0.2);
+    border-top-color: #22c55e;
+
+    animation: spin 0.7s linear infinite;
+
+    visibility: hidden;
+}
+
+/* En loading mostramos el spinner */
+.btn-primary--loading .btn-spinner {
+    visibility: visible;
+}
+
+/* Puedes bajar un poco la opacidad del texto si quieres feedback visual */
+.btn-primary--loading .btn-label {
+    opacity: 0.9;
+}
+
+/* Animación del spinner, si no la tienes ya */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Mensaje de error/info debajo del form */
+.login-message {
+    margin-top: 8px;
+    min-height: 18px; /* evita que salte el layout */
+    color: #f97373;   /* rojo muy suave para error sobre fondo oscuro */
+    text-align: right;
+}
+
+/* ==========================================
+   LOGIN — PRIMARY BUTTON (GREEN + CENTER)
+   ========================================== */
+
+/* Footer del form de login: centrado + separación vertical */
+.login-form .form-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 36px;   /* ← aquí mueves el botón hacia abajo (ajusta a gusto) */
+}
+
+/* Botón principal del login: verde sólido, texto centrado */
+.login-form .btn-primary {
+    min-width: 130px;
+    padding: 10px 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;                      /* sin espacio extra para el texto */
+    position: relative;          /* importante para posicionar el spinner */
+
+    background: #22c55e;         /* color principal del botón */
+    color: #020617;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+}
+
+/* Hover y activo solo para login */
+.login-form .btn-primary:hover {
+    background: #16a34a;
+}
+
+.login-form .btn-primary:active {
+    transform: translateY(1px);
+}
+
+
+.section-divider {
+    margin: 24px 0 18px;
+    border-top: 1px solid #111827;
+    opacity: 0.7;
+}
+
+/* ---------- SUPERFICIES / CARDS REUSABLES ---------- */
+
+.ngm-card {
+    border-radius: 10px;
+    background: var(--ngm-bg-card);
+    border: 1px solid var(--ngm-border-card);
+    box-shadow: var(--ngm-shadow-strong);
+}
+
+.ngm-card--hoverable {
+    cursor: pointer;
+    transition:
+        transform 0.12s ease-out,
+        box-shadow 0.12s ease-out,
+        border-color 0.12s ease-out,
+        background-color 0.12s ease-out;
+}
+
+.ngm-card--hoverable:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--ngm-shadow-strong-hover);
+    border-color: rgba(34, 197, 94, 0.85);  /* verde NGM */
+    background-color: #444444;
+}
+
+/* Variante para paneles tipo pipeline / preview */
+.ngm-panel {
+    border-radius: 10px;
+    background: var(--ngm-bg-surface-soft);
+    border: 1px solid var(--ngm-border-subtle);
+}
+
+/* ---------- TOPBAR GLOBAL REUTILIZABLE ---------- */
+
+.ngm-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 24px;
+    border-bottom: 1px solid #202329;
+    background: var(--ngm-bg-topbar);
+}
+
+.ngm-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.ngm-topbar-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ngm-text-main);
+}
+
+.ngm-topbar-subtitle {
+    font-size: 0.7rem;
+    color: var(--ngm-text-soft);
+}
+
+.ngm-topbar-center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.ngm-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ---------- SEARCH PILL GLOBAL ---------- */
+
+.ngm-search-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    border: 1px solid var(--ngm-border-subtle);
+    background: #020617;
+    min-width: min(420px, 100%);
+}
+
+.ngm-search-icon {
+    font-size: 13px;
+    color: var(--ngm-text-soft);
+}
+
+.ngm-search-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--ngm-text-main);
+    font-size: 13px;
+    width: 100%;
+}
+
+.ngm-search-input::placeholder {
+    color: var(--ngm-text-soft);
+}
+
+/* ---------- PILLS / BADGES GLOBALES ---------- */
+
+.ngm-pill {
+    font-size: 11px;
+    border-radius: 9999px;
+    padding: 4px 10px;
+    border: 1px solid #27272f;
+    background: #020617;
+    color: var(--ngm-text-main);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.ngm-pill-label {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 600;
+    color: var(--ngm-text-soft);
+}
+
+.ngm-pill-value {
+    font-weight: 500;
+}
+
+.ngm-pill--role {
+    border-color: #334155;
+}
+
+.ngm-pill--user {
+    border-color: var(--ngm-brand-green);
+}
+
+.ngm-pill--status-live {
+    border-color: var(--ngm-brand-green);
+    color: #bbf7d0;
+}
+
+/* ---------- BRAND GLOBAL (logo + organización + contexto) ---------- */
+
+.ngm-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ngm-brand-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 9999px;
+    background: #111111;
+    border: 1px solid #27272a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--ngm-brand-green);
+}
+
+.ngm-brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.ngm-brand-org {
+    font-size: 0.75rem;
+    color: var(--ngm-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+}
+
+.ngm-brand-context {
+    font-size: 0.8rem;
+    color: var(--ngm-text-main);
+}
+
+/* ---------- TEXTOS PEQUEÑOS / TITULARES ---------- */
+
+.ngm-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ngm-text-main);
+}
+
+.ngm-section-subtitle {
+    margin: 0;
+    font-size: 11px;
+    color: var(--ngm-text-muted);
+}
+
+/* ---------- UTILIDADES RESPONSIVE TOPBAR ---------- */
+
+@media (max-width: 900px) {
+    .ngm-topbar {
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .ngm-topbar-center {
+        order: 3;
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .ngm-search-pill {
+        width: 100%;
+    }
+}

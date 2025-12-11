@@ -13,7 +13,11 @@
       rel="stylesheet"
     >
 
+    <!-- Estilos base compartidos -->
     <link rel="stylesheet" href="assets/css/styles.css" />
+
+    <!-- Estilos específicos de Projects (clonamos el look del dashboard) -->
+    <link rel="stylesheet" href="assets/css/projects.css" />
 </head>
 <body>
     <div class="app-layout">
@@ -41,13 +45,42 @@
         <!-- Main -->
         <div class="main-area">
 
-            <header class="topbar">
-                <div class="topbar-left">
-                    <h1 class="topbar-title">Projects</h1>
-                    <p class="topbar-subtitle">Central list of projects. Manage and organize the active operations.</p>
+            <!-- Barra superior unificada estilo dashboard -->
+            <header class="topbar topbar-dashboard">
+                <!-- LEFT: brand / contexto -->
+                <div class="topbar-left global-bar-left">
+                    <div class="global-brand">
+                        <div class="brand-icon-small">
+                            <!-- Ícono placeholder; se puede reemplazar por el real -->
+                            <span>⚡</span>
+                        </div>
+                        <div class="brand-text">
+                            <span class="brand-org">Next Generation Management</span>
+                            <span class="brand-context">NGM Hub · Projects</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="topbar-right">
-                    <span class="user-pill">Master User</span>
+
+                <!-- RIGHT: meta + search + user -->
+                <div class="topbar-right dashboard-topbar-right">
+                    <div class="dashboard-meta">
+                        <span class="meta-pill meta-env">Environment · Production</span>
+                        <span class="meta-pill meta-status meta-status-live">Server · Live</span>
+                    </div>
+
+                    <!-- Search bar (por ahora solo visual, luego la conectamos a filtro de tabla) -->
+                    <form class="dashboard-search" role="search">
+                        <span class="dashboard-search-icon">⌕</span>
+                        <input
+                            type="search"
+                            class="dashboard-search-input"
+                            placeholder="Search projects…"
+                            aria-label="Search projects"
+                        />
+                    </form>
+
+                    <!-- Usuario / rol (luego se rellena vía JS de auth) -->
+                    <span id="user-pill" class="user-pill">User · Role</span>
                 </div>
             </header>
 
@@ -185,7 +218,7 @@
     async function loadProjects() {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7">Loading projects...</td>
+                <td colspan="7">Loading projects.</td>
             </tr>
         `;
 

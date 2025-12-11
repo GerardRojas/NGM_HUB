@@ -19,7 +19,7 @@
     <!-- CSS global -->
     <link rel="stylesheet" href="assets/css/styles.css">
     <!-- CSS específico del estimator -->
-    <link rel="stylesheet" href="assets/css/estimator_styles.css">
+    <link rel="stylesheet" href="assets/css/estimator.css">
 </head>
 
 <body>
@@ -74,34 +74,75 @@
             </div>
         </aside>
 
-        <!-- MAIN AREA -->
-        <main class="main-area">
+        <!-- MAIN AREA (MISMO MARCO QUE DASHBOARD/PROJECTS) -->
+        <div class="main-area">
+
             <!-- =====================================================
-                 BLOQUE 2: TOPBAR
+                 TOPBAR GLOBAL (ESTILO DASHBOARD)
             ====================================================== -->
-            <header class="topbar">
-                <div>
-                    <div class="topbar-title editable-title">
-                        <span id="project-title-text">Untitled Project</span>
-                        <button id="project-info-btn" class="icon-button" title="Project info">
-                            ⓘ
-                        </button>
-                    </div>
-                    <div class="topbar-subtitle" id="project-subtitle">
-                        Loaded from <code>estimate.ngm</code>.
+            <header class="topbar topbar-dashboard">
+                <!-- LEFT: brand / contexto -->
+                <div class="topbar-left global-bar-left">
+                    <div class="global-brand">
+                        <div class="brand-icon-small">
+                            <span>⚡</span>
+                        </div>
+                        <div class="brand-text">
+                            <span class="brand-org">Next Generation Management</span>
+                            <span class="brand-context">NGM Hub · Estimator</span>
+                        </div>
                     </div>
                 </div>
-                <div class="user-pill">
-                    Template Mode
+
+                <!-- RIGHT: meta + search + user -->
+                <div class="topbar-right dashboard-topbar-right">
+                    <div class="dashboard-meta">
+                        <span class="meta-pill meta-env">Environment · Production</span>
+                        <span class="meta-pill meta-status meta-status-live">Server · Live</span>
+                    </div>
+
+                    <!-- Search global del Estimator (usa la misma lógica de filtro) -->
+                    <form class="dashboard-search" role="search">
+                        <span class="dashboard-search-icon">⌕</span>
+                        <input
+                            type="search"
+                            id="estimator-search-input"
+                            class="dashboard-search-input"
+                            placeholder="Filter by code, name, unit…"
+                            aria-label="Filter estimator table"
+                        />
+                    </form>
+
+                    <span id="user-pill" class="user-pill">User · Role</span>
                 </div>
             </header>
 
             <!-- =====================================================
-                 BLOQUE 3: MAIN CONTENT (TOOLBAR + TABLA)
+                 CONTENIDO PRINCIPAL
             ====================================================== -->
-            <section class="main-content">
+            <main class="main-content">
+
+                <!-- SUBTOPBAR LOCAL DEL ESTIMATOR (TÍTULO + MODO) -->
+                <section class="estimator-header-bar">
+                    <div class="estimator-title-block">
+                        <div class="topbar-title editable-title">
+                            <span id="project-title-text">Untitled Project</span>
+                            <button id="project-info-btn" class="icon-button" title="Project info">
+                                ⓘ
+                            </button>
+                        </div>
+                        <div class="topbar-subtitle" id="project-subtitle">
+                            Loaded from <code>estimate.ngm</code>.
+                        </div>
+                    </div>
+
+                    <div class="user-pill estimator-mode-pill">
+                        Template Mode
+                    </div>
+                </section>
+
                 <!-- TOOLBAR DEL ESTIMATOR -->
-                <div class="estimator-toolbar">
+                <section class="estimator-toolbar">
                     <div class="toolbar-left">
                         <button class="btn-secondary" id="btn-add-concept">Add Concept</button>
                         <button class="btn-secondary" id="btn-overhead">Overhead</button>
@@ -111,17 +152,6 @@
                     </div>
 
                     <div class="toolbar-right">
-                        <!-- Barra de búsqueda / filtro -->
-                        <div class="estimator-search">
-                            <span class="search-icon">🔍</span>
-                            <input
-                                type="text"
-                                id="estimator-search-input"
-                                class="input search-input"
-                                placeholder="Filter by code, name, unit…"
-                            />
-                        </div>
-
                         <!-- Controles de vista (sliders) -->
                         <div class="estimator-view-controls">
                             <label class="view-control">
@@ -146,10 +176,10 @@
                             </label>
                         </div>
                     </div>
-                </div>
+                </section>
 
                 <!-- PANEL PRINCIPAL (TABLA) -->
-                <div>
+                <section class="estimator-main-panel">
                     <div class="panel panel-narrow estimator-panel">
                         <div id="estimator-status" class="table-lock-label" style="margin-bottom: 8px;">
                             Fetching /estimator/base-structure…
@@ -182,9 +212,9 @@
 
                         <div id="estimator-feedback" class="estimator-feedback"></div>
                     </div>
-                </div>
-            </section>
-        </main>
+                </section>
+            </main>
+        </div>
     </div>
 
     <!-- =========================================================
@@ -323,6 +353,7 @@
         // BLOQUE 6.1: CONFIG + STATE
         // ======================================================
         const API_BASE = "https://ngm-backend.onrender.com";
+        const API_BASE_URL = API_BASE; // fix para las llamadas que usan API_BASE_URL
 
         let currentEstimateData = null;
         const groupState = {};
@@ -374,7 +405,9 @@
 
         // ======================================================
         // BLOQUE 6.3: LOAD & RENDER ESTIMATE.NGM
+        // (resto del script igual que lo tenías)
         // ======================================================
+
         async function loadEstimatorFromNgm() {
             const tbody = document.getElementById("estimator-body");
             const statusEl = document.getElementById("estimator-status");
@@ -410,7 +443,7 @@
                 const projectName = data.project_name || projectObj["Project Name"] || "Untitled Project";
                 const projectDate = data.date || projectObj["Date"] || "";
 
-                // Topbar
+                // Topbar local
                 projectTitleTextEl.textContent = projectName || "Untitled Project";
                 projectSubtitleEl.textContent = projectDate
                     ? "Date: " + projectDate + " · Loaded from estimate.ngm"
@@ -458,7 +491,6 @@
 
                     groupState[indexCat] = true;
 
-                    // Fila CATEGORY (grupo, colapsable) – SIN colspan, una celda por columna
                     const trGroup = document.createElement("tr");
                     trGroup.classList.add("group-row");
                     trGroup.dataset.groupIndex = String(indexCat);
@@ -491,7 +523,6 @@
                         return;
                     }
 
-                    // Subcategorías
                     subcats.forEach((sub, indexSub) => {
                         totalSubs++;
                         const subName = sub.name || "Subcategory " + (indexSub + 1);
@@ -525,7 +556,6 @@
                         }
                         tbody.appendChild(trSub);
 
-                        // Items dentro de la subcategory (conceptos)
                         items.forEach((item, itemIdx) => {
                             const code = item.id || item.code || "";
                             const name = item.name || item.description || "Item " + (itemIdx + 1);
@@ -762,8 +792,6 @@
                         el.style.display = visible ? "" : "none";
                     });
                 });
-
-           
 
                 closeModal();
             });

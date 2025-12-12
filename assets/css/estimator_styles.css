@@ -24,13 +24,11 @@
     height: 100vh;
 }
 
-/* main-content se queda con el scroll interno, no el body */
-.main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 16px 24px 24px;
-    overflow: hidden; /* el scroll lo maneja la tabla */
+/* SOLO en Estimator: que main-content NO tenga max-width ni márgenes */
+.estimator-page .main-content {
+    max-width: none !important;
+    margin-inline: 0 !important;
+    width: 100% !important;
 }
 
 /* ==========================================
@@ -302,7 +300,7 @@
 /* Celda principal de nombre de categoría */
 .group-row .group-cell {
     font-weight: 700;
-    color: var(--accent);      /* verde corporativo en texto */
+    color: #213b82;      /* verde corporativo en texto */
     background: #ffffff;       /* fondo blanco */
     display: flex;
     align-items: center;
@@ -332,7 +330,7 @@
 .category-row .category-name {
     font-weight: 600;
     color: #111827;
-    padding-left: 32px;  /* sangría */
+    padding-left: 55px;  /* sangría */
 }
 
 /* Columna de código (ID / clave) */
@@ -382,34 +380,15 @@
     transform: translateY(-1px);
 }
 
-/* ==========================================
-   MODAL PROJECT INFO — LOOK MODERNO
-   ========================================== */
-
-.modal {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(15, 23, 42, 0.65);
-    z-index: 50;
-}
-
-.modal.hidden {
-    display: none;
-}
-
 .modal-content {
-    width: min(960px, 90vw);
     max-height: 90vh;
-    background: #020617;
+    background: #222222;
     border-radius: 16px;
     padding: 24px 24px 16px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
     display: flex;
     flex-direction: column;
-    border: 1px solid rgba(148, 163, 184, 0.25);
+    border: 1px solid rgba(75, 75, 75, 0.25);
 }
 
 /* Header del modal de info: título + botón "Manage info" */
@@ -444,6 +423,19 @@
     gap: 4px;
 }
 
+/* Layout específico para el modal de columnas */
+#columns-modal .modal-content {
+    width: min(520px, 80vw);   /* más compacto que Project Info */
+}
+
+
+/* Que checkbox + texto vayan alineados en fila */
+#columns-form .field-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .field-label {
     font-size: 0.75rem;
     text-transform: uppercase;
@@ -453,7 +445,7 @@
 
 /* Inputs dentro del modal, estilo compacto y oscuro */
 .modal .input {
-    background: #020617;
+    background: #555555;
     border-radius: 12px;
     border: 1px solid rgba(148, 163, 184, 0.35);
     padding: 8px 10px;
@@ -462,7 +454,7 @@
 }
 
 .modal .input::placeholder {
-    color: #6b7280;
+    color: #878787;
 }
 
 .modal .input:focus {
@@ -496,10 +488,270 @@
     margin-top: 12px;
 }
 
+/* Botones del footer del modal: mismo look que el toolbar */
+.modal-footer .btn-primary,
+.modal-footer .btn-secondary {
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 12px;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    border-width: 1px;
+    cursor: pointer;
+}
+
+/* Primario: CTA verde */
+.modal-footer .btn-primary {
+    background: var(--accent);
+    border-color: #16a34a;
+    color: #022c22;
+    font-weight: 500;
+}
+
+.modal-footer .btn-primary:hover {
+    background: #16a34a;
+    transform: translateY(-1px);
+}
+
+/* Secundario: oscuro coherente con el hub */
+.modal-footer .btn-secondary {
+    background: #020617;
+    border-color: #27272f;
+    color: #e5e7eb;
+}
+
+.modal-footer .btn-secondary:hover {
+    background: #0b1120;
+}
+
+/* Checkboxes del modal con acento NGM en lugar de azul del navegador */
+.modal input[type="checkbox"] {
+    accent-color: var(--accent);
+    width: 14px;
+    height: 14px;
+}
+
 /* Responsive: en pantallas chicas, una sola columna */
 @media (max-width: 900px) {
     .modal-form {
         grid-template-columns: 1fr;
         max-height: 70vh;
     }
+}
+
+/* ==========================================
+   HEADER DEL ESTIMATOR (botones + sliders)
+   ========================================== */
+
+.estimator-page .estimator-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+    padding: 8px 12px;
+    border-radius: 14px;
+    background: #232323;                 /* fondo oscuro tipo NGM */
+    border: 1px solid var(--border-soft);
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.65);
+    margin-bottom: 12px;
+}
+
+.estimator-page .estimator-toolbar .toolbar-left {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.estimator-page .estimator-toolbar .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+/* Botones de acción del estimator: pills compactos */
+.estimator-page .estimator-toolbar .btn-secondary {
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 12px;
+
+    /* Fondo un poco más claro para que se diferencie de la toolbar */
+    background: #2d2d2d;
+    border: 1px solid #3a3a3a;
+
+    color: #e5e7eb;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    transition: all 0.18s ease;
+}
+
+.estimator-page .estimator-toolbar .btn-secondary:hover {
+    background: #3b3b3b;
+    border-color: var(--accent); /* borde verde */
+    transform: translateY(-1px);
+}
+
+/* Meta-texto: estado / categorías / rows cargados */
+.estimator-page #estimator-status.table-lock-label {
+    font-size: 11px;
+    color: var(--ngm-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 6px !important; /* para ganarle al inline style */
+}
+
+.estimator-page #estimator-status.table-lock-label::before {
+    content: "●";
+    font-size: 10px;
+    color: var(--accent);       /* bolita verde tipo "status" */
+}
+
+/* Más espacio vertical para el título del proyecto */
+.estimator-page .estimator-header-bar {
+    padding: 16px 0 18px;   /* ↑ aquí das respiro arriba y abajo */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Overlay SOLO del Estimator */
+.estimator-page .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 15, 15, 0.72); /* o tu gris translúcido preferido */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300; /* arriba del layout */
+}
+
+.estimator-page .modal-backdrop.hidden {
+    display: none !important;
+}
+
+/* Tamaño de botones en modales del Estimator */
+.estimator-page .modal-footer .btn-primary,
+.estimator-page .modal-footer .btn-secondary {
+    width: 100px; /* ajusta aquí */
+    text-align: center;
+}
+
+/* Footer del modal centrado SOLO en Estimator */
+.estimator-page .modal-footer {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.estimator-page .modal {
+    margin: 0 auto;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+/* Layout del formulario de columnas: 3 columnas de checkboxes */
+#columns-form {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px 16px;
+}
+
+/* Footer del modal de columnas: ocupa todo el ancho del grid y centra botones */
+#columns-form .modal-footer {
+    grid-column: 1 / -1;   /* que abarque las 3 columnas */
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* ================================
+   BOTONES MODERNOS PARA LOS MODALES
+   ================================ */
+
+.modal-footer .modal-btn {
+    width: 170px; /* cambia aquí */
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 500;
+
+    background: #3a3a3a;              /* gris moderno */
+    border: 1px solid #4b4b4b;
+    color: #e5e5e5;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    transition: all 0.18s ease;
+    cursor: pointer;
+}
+
+/* Hover verde elegante */
+.modal-footer .modal-btn:hover {
+    background: #16a34a;             /* verde NGM */
+    border-color: #16a34a;
+    color: #383a39;                  /* texto verde oscuro */
+    transform: translateY(-1px);
+}
+
+/* Botón secundario (cancelar) */
+.modal-footer .modal-btn.cancel {
+    background: #2a2a2a;
+    border-color: #444;
+}
+
+.modal-footer .modal-btn.cancel:hover {
+    background: #636363;
+    border-color: #16a34a;
+    color: #e5e5e5;
+}
+
+.modal-footer {
+    width: 100%;
+    display: flex;
+    justify-content: center !important;
+    align-items: center;
+}
+
+/* =====================================================
+   BOTÓN MODERNO PARA EL HEADER DEL MODAL (Manage Info)
+   ===================================================== */
+
+.modal-header .modal-btn.header-action {
+    padding: 8px 16px;
+    background: #3a3a3a;
+    color: #e5e5e5;
+    border: 1px solid #4b4b4b;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    transition: all .18s ease;
+}
+
+/* Hover verde elegante */
+.modal-header .modal-btn.header-action:hover {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #022c22;
+    transform: translateY(-1px);
 }

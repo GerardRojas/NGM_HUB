@@ -13,9 +13,8 @@
       rel="stylesheet"
     >
 
-    <!-- Estilos base + dashboard + pipeline -->
+    <!-- Estilos base + pipeline -->
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <link rel="stylesheet" href="assets/css/dashboard.css" />
     <link rel="stylesheet" href="assets/css/pipeline_styles.css" />
 </head>
 <body>
@@ -31,7 +30,7 @@
             </div>
             <div class="sidebar-title-block">
                 <p class="sidebar-title">NGM HUB</p>
-                <p class="sidebar-subtitle">Master Dashboard</p>
+                <p class="sidebar-subtitle">Pipeline Manager</p>
             </div>
 
             <nav class="sidebar-nav" id="sidebar-nav">
@@ -41,256 +40,271 @@
 
         <!-- Zona principal -->
         <div class="main-area">
-            <!-- Topbar igual al dashboard -->
-            <header class="topbar topbar-dashboard">
-                <div class="topbar-left global-bar-left">
-                    <div class="global-brand">
-                        <div class="brand-icon-small">
-                            <span>⚡</span>
-                        </div>
-                        <div class="brand-text">
-                            <span class="brand-org">Next Generation Management</span>
-                            <span class="brand-context">NGM Hub · Pipeline Manager</span>
-                        </div>
-                    </div>
-                </div>
+<!-- Topbar igual al dashboard -->
+<header class="ngm-topbar">
+  <!-- LEFT: brand / contexto -->
+  <div class="ngm-bar-left">
+    <div class="ngm-brand">
+      <div class="ngm-brand-icon-small">
+        <span>⚡</span>
+      </div>
+      <div class="ngm-brand-text">
+        <span class="ngm-brand-org">Next Generation Management</span>
+        <span class="ngm-brand-context">NGM Hub · Pipeline Manager</span>
+      </div>
+    </div>
+  </div>
 
-                <div class="topbar-right dashboard-topbar-right">
-                    <div class="dashboard-meta">
-                        <span class="meta-pill meta-env">Environment · Local</span>
-                        <span class="meta-pill meta-status meta-status-live">API · 127.0.0.1:8000</span>
-                    </div>
-
-                    <form class="dashboard-search" role="search" onsubmit="return false;">
-                        <span class="dashboard-search-icon">⌕</span>
-                        <input
-                            id="pipeline-search-input"
-                            type="search"
-                            class="dashboard-search-input"
-                            placeholder="Search tasks, projects or owners…"
-                            aria-label="Search"
-                        />
-                    </form>
-
-                    <span id="user-pill" class="user-pill">User · Role</span>
-                </div>
-            </header>
-
-            <main class="main-content">
-                <section class="pipeline-section">
-                    <section class="data-section">
-                        <!-- TOOLBAR dividida en 2 cards -->
-                        <div class="pm-toolbar-grid">
-                            <!-- Card 1: filtros -->
-                            <div class="pm-toolbar-card pm-toolbar-card--filters">
-                                <div class="pm-toolbar-card-header">
-                                    <span class="section-title">Filters</span>
-                                </div>
-                                <div class="pm-toolbar-card-body">
-                                    <div class="pm-filters">
-                                        <label class="filter-label">
-                                            Project
-                                            <select id="project-filter" class="filter-select">
-                                                <option value="all">All</option>
-                                            </select>
-                                        </label>
-
-                                        <label class="filter-label">
-                                            Owner
-                                            <select id="owner-filter" class="filter-select">
-                                                <option value="all">All</option>
-                                            </select>
-                                        </label>
-
-                                        <label class="filter-label">
-                                            Priority
-                                            <select id="priority-filter" class="filter-select">
-                                                <option value="all">All</option>
-                                            </select>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Card 2: layout + manage mode -->
-                            <div class="pm-toolbar-card pm-toolbar-card--layout">
-                                <div class="pm-toolbar-card-header">
-                                    <span class="section-title">Layout</span>
-                                </div>
-                                <div class="pm-toolbar-card-body pm-toolbar-layout-body">
-                                    <div class="pm-layout-actions">
-                                        <button
-                                            id="btnNewTask"
-                                            type="button"
-                                            class="pm-btn pm-btn-secondary btn-small btn-manage-tasks"
-                                        >
-                                            <span class="pm-btn-icon">＋</span>
-                                            <span>New task</span>
-                                        </button>
-
-                                        <button
-                                            id="btnManageLayout"
-                                            type="button"
-                                            class="pm-btn pm-btn-secondary btn-small"
-                                        >
-                                            <span class="pm-btn-icon">⚙</span>
-                                            <span>Manage layout</span>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <!-- Wrapper de grupos de pipeline -->
-                        <div id="pm-groups-wrapper" class="pm-groups-wrapper">
-                            <!-- Groups se renderizan por JS -->
-                        </div>
-                    </section>
-                </section>
-            </main>
-        </div>
+  <!-- RIGHT: meta + search + user -->
+  <div class="ngm-topbar-right">
+    <div class="ngm-meta">
+      <span class="ngm-meta-pill ngm-meta-env">Environment · Local</span>
+      <span class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · 127.0.0.1:8000</span>
     </div>
 
-        <!-- Modal: Manage layout -->
-    <div id="layoutModal" class="pm-modal" hidden>
-        <div class="pm-modal-backdrop"></div>
+    <!-- Search bar -->
+    <form class="ngm-search" role="search" onsubmit="return false;">
+      <span class="ngm-global-search-icon">⌕</span>
+      <input
+        id="pipeline-search-input"
+        type="search"
+        class="ngm-search-input"
+        placeholder="Search…"
+        aria-label="Search"
+      />
+    </form>
 
-        <div class="pm-modal-dialog">
-            <div class="pm-modal-header">
-                <h2 class="pm-modal-title">Manage layout</h2>
-                <button class="pm-modal-close" id="btnCloseLayoutModal">×</button>
-            </div>
+    <!-- Usuario / rol -->
+    <span id="user-pill" class="user-pill">User · Role</span>
+  </div>
+</header>
 
-            <div class="pm-modal-body">
-                <!-- Ancho del panel / tabla -->
-                <section class="pm-modal-section">
-                    <h3 class="pm-modal-section-title">Panel width</h3>
-                    <div class="pm-width-options">
-                        <label class="pm-radio-pill">
-                            <input type="radio" name="pm-panel-width" value="compact">
-                            <span>Compact (80%)</span>
-                        </label>
-                        <label class="pm-radio-pill">
-                            <input type="radio" name="pm-panel-width" value="balanced">
-                            <span>Balanced (92%)</span>
-                        </label>
-                        <label class="pm-radio-pill">
-                            <input type="radio" name="pm-panel-width" value="full">
-                            <span>Full width (100%)</span>
-                        </label>
+
+        <main class="main-content">
+            <section class="pipeline-section">
+
+                <!-- ✅ Wrapper interno del pipeline -->
+                <div class="pm-panel">
+
+                    <!-- TOOLBAR dividida en 2 cards -->
+                    <div class="pm-toolbar-grid">
+                        <!-- Card 1: filtros -->
+                        <div class="pm-toolbar-card pm-toolbar-card--filters">
+                            <div class="pm-toolbar-card-header">
+                                <span class="section-title">Filters</span>
+                            </div>
+                            <div class="pm-toolbar-card-body">
+                                <div class="pm-filters">
+                                    <label class="filter-label">
+                                        Project
+                                        <select id="project-filter" class="filter-select">
+                                            <option value="all">All</option>
+                                        </select>
+                                    </label>
+
+                                    <label class="filter-label">
+                                        Owner
+                                        <select id="owner-filter" class="filter-select">
+                                            <option value="all">All</option>
+                                        </select>
+                                    </label>
+
+                                    <label class="filter-label">
+                                        Priority
+                                        <select id="priority-filter" class="filter-select">
+                                            <option value="all">All</option>
+                                        </select>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: layout + manage mode -->
+                        <div class="pm-toolbar-card pm-toolbar-card--layout">
+                            <div class="pm-toolbar-card-header">
+                                <span class="section-title">Layout</span>
+                            </div>
+                            <div class="pm-toolbar-card-body pm-toolbar-layout-body">
+                                <div class="pm-layout-actions">
+                                    <button id="btnNewTask" type="button" class="pm-btn pm-btn-secondary btn-small">
+                                    <span class="pm-btn-icon">＋</span>
+                                    <span>Manage Tasks</span>
+                                    </button>
+
+                                    <button
+                                        id="btnManageLayout"
+                                        type="button"
+                                        class="pm-btn pm-btn-secondary btn-small"
+                                    >
+                                        <span class="pm-btn-icon">⚙</span>
+                                        <span>Manage Layout</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </section>
 
-                <!-- Grupos visibles -->
-                <section class="pm-modal-section">
-                    <h3 class="pm-modal-section-title">Visible groups</h3>
-                    <div class="pm-checkbox-grid">
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-group-key="not started">
-                            <span>Not Started</span>
-                        </label>
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-group-key="working on it">
-                            <span>Working on It</span>
-                        </label>
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-group-key="awaiting approval">
-                            <span>Awaiting Approval</span>
-                        </label>
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-group-key="good to go">
-                            <span>Good to Go</span>
-                        </label>
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-group-key="correction">
-                            <span>Correction</span>
-                        </label>
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-group-key="resubmittal needed">
-                            <span>Resubmittal needed</span>
-                        </label>
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-group-key="done">
-                            <span>Done</span>
-                        </label>
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-group-key="delayed">
-                            <span>Delayed</span>
-                        </label>
+                    <!-- Wrapper de grupos de pipeline -->
+                    <div id="pm-groups-wrapper" class="pm-groups-wrapper">
+                        <!-- Groups se renderizan por JS -->
                     </div>
-                </section>
 
-                <!-- Columnas visibles -->
-                <section class="pm-modal-section">
-                    <h3 class="pm-modal-section-title">Visible columns</h3>
-                    <div class="pm-checkbox-grid pm-checkbox-grid--columns">
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-col-key="task">
-                            <span>Task</span>
-                        </label>
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-col-key="owner">
-                            <span>Owner</span>
-                        </label>
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-col-key="company">
-                            <span>Company</span>
-                        </label>
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-col-key="status">
-                            <span>Status</span>
-                        </label>
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-col-key="start">
-                            <span>Start date</span>
-                        </label>
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-col-key="est">
-                            <span>Estimated hours</span>
-                        </label>
-                        <label class="pm-checkbox">
-                            <input type="checkbox" data-col-key="due">
-                            <span>Due / Deadline</span>
-                        </label>
-                    </div>
-                </section>
-            </div>
-
-            <div class="pm-modal-footer">
-                <button class="pm-btn pm-btn-ghost" id="btnCancelLayout">Cancel</button>
-                <button class="pm-btn pm-btn-primary" id="btnApplyLayout">Apply</button>
-            </div>
-        </div>
+                </div>
+            </section>
+        </main>
     </div>
+</div>
+
+<!-- Modal: Manage layout (estilo global como Estimator) -->
+<div id="layoutModal" class="modal-backdrop hidden">
+
+  <div class="modal">
+
+    <div class="modal-header">
+      <div class="modal-title">Manage Layout</div>
+      <button type="button" class="modal-btn header-action" id="btnCloseLayoutModal">×</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Ancho del panel / tabla -->
+      <section class="pm-modal-section">
+        <h3 class="pm-modal-section-title">Panel width</h3>
+        <div class="pm-width-options">
+          <label class="pm-radio-pill">
+            <input type="radio" name="pm-panel-width" value="compact" />
+            <span>Compact (80%)</span>
+          </label>
+          <label class="pm-radio-pill">
+            <input type="radio" name="pm-panel-width" value="balanced" />
+            <span>Balanced (92%)</span>
+          </label>
+          <label class="pm-radio-pill">
+            <input type="radio" name="pm-panel-width" value="full" />
+            <span>Full width (100%)</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Grupos visibles -->
+      <section class="pm-modal-section">
+        <h3 class="pm-modal-section-title">Visible groups</h3>
+        <div class="pm-checkbox-grid">
+          <label class="pm-checkbox">
+            <input type="checkbox" data-group-key="not started" />
+            <span>Not Started</span>
+          </label>
+          <label class="pm-checkbox">
+            <input type="checkbox" data-group-key="working on it" />
+            <span>Working on It</span>
+          </label>
+          <label class="pm-checkbox">
+            <input type="checkbox" data-group-key="awaiting approval" />
+            <span>Awaiting Approval</span>
+          </label>
+          <label class="pm-checkbox">
+            <input type="checkbox" data-group-key="good to go" />
+            <span>Good to Go</span>
+          </label>
+          <label class="pm-checkbox">
+            <input type="checkbox" data-group-key="correction" />
+            <span>Correction</span>
+          </label>
+          <label class="pm-checkbox">
+            <input type="checkbox" data-group-key="resubmittal needed" />
+            <span>Resubmittal needed</span>
+          </label>
+          <label class="pm-checkbox">
+            <input type="checkbox" data-group-key="done" />
+            <span>Done</span>
+          </label>
+          <label class="pm-checkbox">
+            <input type="checkbox" data-group-key="delayed" />
+            <span>Delayed</span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Columnas visibles -->
+      <section class="pm-modal-section">
+        <h3 class="pm-modal-section-title">Visible columns</h3>
+        <div class="pm-checkbox-grid pm-checkbox-grid--columns">
+          <label class="pm-checkbox">
+            <input type="checkbox" data-col-key="task" />
+            <span>Task</span>
+          </label>
+          <label class="pm-checkbox">
+            <input type="checkbox" data-col-key="owner" />
+            <span>Owner</span>
+          </label>
+          <label class="pm-checkbox">
+            <input type="checkbox" data-col-key="company" />
+            <span>Company</span>
+          </label>
+          <label class="pm-checkbox">
+            <input type="checkbox" data-col-key="status" />
+            <span>Status</span>
+          </label>
+          <label class="pm-checkbox">
+            <input type="checkbox" data-col-key="start" />
+            <span>Start date</span>
+          </label>
+          <label class="pm-checkbox">
+            <input type="checkbox" data-col-key="est" />
+            <span>Estimated hours</span>
+          </label>
+          <label class="pm-checkbox">
+            <input type="checkbox" data-col-key="due" />
+            <span>Due / Deadline</span>
+          </label>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" id="btnCancelLayout">Cancel</button>
+      <button type="button" class="btn-primary" id="btnApplyLayout">Apply</button>
+    </div>
+
+  </div>
+</div>
+
 
     <script>
-        // ================================
-        // Sidebar: módulos según accesos
-        // ================================
-        const sidebarNav = document.getElementById("sidebar-nav");
+            // ================================
+            // Sidebar: módulos según accesos
+            // ================================
+            const sidebarNav = document.getElementById("sidebar-nav");
 
-        const AVAILABLE_MODULES = {
-            dashboard: { key: "dashboard", label: "Dashboard", href: "dashboard.html", icon: "🏠" },
-            projects:  { key: "projects",  label: "Projects",  href: "projects.html",  icon: "📁" },
-            pipeline:  { key: "pipeline",  label: "Pipeline",  href: "pipeline.html",  icon: "📊" },
-            estimator: { key: "estimator", label: "Estimator", href: "#",              icon: "📐" },
-            expenses:  { key: "expenses",  label: "Expenses",  href: "#",              icon: "💸" },
-            settings:  { key: "settings",  label: "Settings",  href: "#",              icon: "⚙️" },
-        };
+            const AVAILABLE_MODULES = {
+            dashboard: { key: "dashboard", label: "Dashboard", href: "dashboard.html" },
+            projects:  { key: "projects",  label: "Projects",  href: "projects.html" },
+            pipeline:  { key: "pipeline",  label: "Pipeline",  href: "pipeline.html" },
+            estimator: { key: "estimator", label: "Estimator", href: "#" },
+            expenses:  { key: "expenses",  label: "Expenses",  href: "#" },
+            settings:  { key: "settings",  label: "Settings",  href: "#" },
+            };
 
-        // TODO: en producción esto vendrá del backend según el rol del usuario
-        const USER_MODULES = ["dashboard", "projects", "pipeline", "estimator", "expenses"];
+            // TODO: en producción esto vendrá del backend según el rol del usuario
+            const USER_MODULES = ["dashboard", "projects", "pipeline", "estimator", "expenses"];
 
-                function initLayoutControls() {
+            function initLayoutControls() {
             const modal = document.getElementById("layoutModal");
             const btnOpen = document.getElementById("btnManageLayout");
             if (!modal || !btnOpen) return;
 
             const btnClose = document.getElementById("btnCloseLayoutModal");
             const btnCancel = document.getElementById("btnCancelLayout");
-            const backdrop = modal.querySelector(".pm-modal-backdrop");
+
+            // ✅ nuevo backdrop (modal global)
+            const backdrop = modal; // ahora el backdrop ES #layoutModal
+
             const btnApply = document.getElementById("btnApplyLayout");
+            // ⛔ evita que el click dentro del modal cierre el backdrop
+            modal.querySelector(".modal")?.addEventListener("click", (e) => {
+                e.stopPropagation();
+            });
 
             const DEFAULT_GROUPS = [
                 "not started",
@@ -310,67 +324,47 @@
                 due: true,
             };
 
-            function syncDefaultsToUI() {
-                const radios = modal.querySelectorAll('input[name="pm-panel-width"]');
-                radios.forEach(r => {
-                    r.checked = (r.value === "balanced");
-                });
+            // ✅ helpers (modal global usa class "hidden")
+            const openModal = () => modal.classList.remove("hidden");
+            const closeModal = () => modal.classList.add("hidden");
 
-                modal.querySelectorAll("input[type='checkbox'][data-group-key]").forEach(cb => {
-                    const key = cb.getAttribute("data-group-key");
-                    cb.checked = DEFAULT_GROUPS.includes(key);
-                });
+            // Abrir
+            btnOpen.addEventListener("click", () => {
+                openModal();
+                // (tu lógica actual de cargar defaults / estados va aquí sin cambios)
+            });
 
-                modal.querySelectorAll("input[type='checkbox'][data-col-key]").forEach(cb => {
-                    const key = cb.getAttribute("data-col-key");
-                    cb.checked = !!DEFAULT_COLUMNS[key];
-                });
-            }
-
-            function openModal() {
-                syncDefaultsToUI();
-                modal.hidden = false;
-            }
-
-            function closeModal() {
-                modal.hidden = true;
-            }
-
-            btnOpen.addEventListener("click", openModal);
+            // Cerrar (X / Cancel / backdrop)
             btnClose?.addEventListener("click", closeModal);
             btnCancel?.addEventListener("click", closeModal);
             backdrop?.addEventListener("click", closeModal);
 
+            // Apply (mantén tu lógica y luego cierra)
             btnApply?.addEventListener("click", () => {
-                // luego conectamos esto a persistencia y layout real
+                // (tu lógica actual de apply va aquí sin cambios)
                 closeModal();
             });
-        }
+            }
 
         function renderSidebarModules(modulesKeys) {
-            if (!sidebarNav) return;
-            sidebarNav.innerHTML = "";
+        if (!sidebarNav) return;
+        sidebarNav.innerHTML = "";
 
-            modulesKeys.forEach(key => {
-                const mod = AVAILABLE_MODULES[key];
-                if (!mod) return;
+        modulesKeys.forEach((key) => {
+            const mod = AVAILABLE_MODULES[key];
+            if (!mod) return;
 
-                const a = document.createElement("a");
-                a.href = mod.href;
-                a.className = "nav-item" + (key === "pipeline" ? " nav-item-active" : "");
+            const a = document.createElement("a");
+            a.href = mod.href;
+            a.className = "nav-item" + (key === "pipeline" ? " nav-item-active" : "");
 
-                const iconSpan = document.createElement("span");
-                iconSpan.className = "nav-icon";
-                iconSpan.textContent = mod.icon;
+            const labelSpan = document.createElement("span");
+            labelSpan.className = "nav-item-label";
+            labelSpan.textContent = mod.label;
 
-                const labelSpan = document.createElement("span");
-                labelSpan.className = "nav-label";
-                labelSpan.textContent = mod.label;
-
-                a.appendChild(iconSpan);
-                a.appendChild(labelSpan);
-                sidebarNav.appendChild(a);
-            });
+            a.appendChild(labelSpan);
+            sidebarNav.appendChild(a);
+        });
         }
 
         // ================================
@@ -384,7 +378,7 @@
         const projectFilter = document.getElementById("project-filter");
         const ownerFilter = document.getElementById("owner-filter");
         const priorityFilter = document.getElementById("priority-filter");
-        const manageBtn = document.getElementById("btnManageLayout");
+        const manageBtn = document.getElementById("btnNewTask");
         const searchInput = document.getElementById("pipeline-search-input");
 
         let rawGroups = [];
@@ -679,7 +673,7 @@
                     <h3 class="section-title" style="color:${accentColor};">
                         ${groupName}
                     </h3>
-                    <span class="meta-pill">${tasks.length} tasks</span>
+                    <span class="ngm-pill"><span class="ngm-pill-value">${tasks.length} tasks</span></span>
                 `;
 
                 const body = document.createElement("div");
@@ -882,7 +876,7 @@
             manageBtn.addEventListener("click", () => {
                 manageMode = !manageMode;
                 manageBtn.classList.toggle("is-active", manageMode);
-                manageBtn.textContent = manageMode ? "Done managing" : "Manage tasks";
+                manageBtn.querySelector("span:last-child").textContent = manageMode ? "Done managing" : "Manage Tasks";
                 renderGroups();
             });
         }
@@ -903,8 +897,13 @@
         window.addEventListener("DOMContentLoaded", () => {
             // Sidebar + topbar
             renderSidebarModules(USER_MODULES);
+
+            try {
             if (typeof initTopbarUserPill === "function") {
-            initTopbarUserPill();
+                initTopbarUserPill();
+            }
+            } catch (err) {
+            console.warn("[TOPBAR] initTopbarUserPill failed:", err);
             }
 
             // Pipeline (datos + render)

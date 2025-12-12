@@ -7,10 +7,10 @@
     --pm-panel-width: 92%;
 }
 
-/* La sección de datos ocupa todo el ancho útil del main */
-.pipeline-section .data-section {
+/* Wrapper interno del pipeline (no toca layout global) */
+.pipeline-section .pm-panel {
     max-width: none;
-    padding: 18px 24px 24px;
+    padding: 0; /* padding lo controlan pm-toolbar-grid / pm-groups-wrapper */
 }
 
 /* Centrar toolbar y grupos dentro del viewport.
@@ -55,11 +55,11 @@
     background: #0f0f0f;
     border: 1px solid var(--ngm-border-card);
     box-shadow: var(--ngm-shadow-strong);
-    padding: 2px 14px 12px;
+    padding: 12px 16px 50px;
 }
 
 .pm-toolbar-card-header {
-    margin-bottom: -6px;
+    margin-bottom: 16px;
 }
 
 .pm-toolbar-card-body {
@@ -88,12 +88,9 @@
 }
 
 /* ==========================================
-   DROPDOWNS DE FILTRO
-   ==========================================
-   🔧 Aquí puedes ajustar:
-   - fondo / borde de los selects
-   - color de texto / placeholder
-*/
+   DROPDOWNS DE FILTRO (Option B / Modern)
+   ========================================== */
+
 .pipeline-section .filter-label {
     display: flex;
     flex-direction: column;
@@ -104,28 +101,36 @@
 
 .pipeline-section .filter-select {
     min-width: 130px;
-    border-radius: 999px;
-    padding: 4px 10px;
+    height: 32px; /* ⬅️ igual que pm-btn */
+
+    padding: 0 12px;
     font-size: 12px;
 
-    background: rgb(88, 88, 88);
-    border-color: var(--ngm-border-card);
-    color: var(--text-primary);
+    border-radius: var(--radius-md); /* ⬅️ NO pill */
+    border: 1px solid var(--border-soft);
+
+    background: var(--ngm-bg-surface-soft);
+    color: var(--ngm-text-main);
 
     outline: none;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease;
 }
 
 .pipeline-section .filter-select:hover {
-    background: var(--bg-input-hover);
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px rgba(45, 90, 62, 0.5);
+    background: #1f2937;
+    border-color: #374151;
 }
 
 .pipeline-section .filter-select:focus-visible {
-    box-shadow: 0 0 0 1px var(--accent);
+    border-color: #4b5563;
+    box-shadow: 0 0 0 2px rgba(75, 85, 99, 0.35); /* focus limpio, no glow */
 }
+
 /* ==========================================
    BOTÓN MANAGE TASKS
    ==========================================
@@ -339,42 +344,9 @@
 /* En manage mode, contorno dashed sutil dentro de la celda */
 .pm-row-manage td > div {
     border-radius: 6px;
-    border: 1px dashed #4b5563;
-    background: rgba(15, 23, 42, 0.75);
+    border: 1px dashed #3a3a3a;
+    background: rgba(99, 99, 99, 0.75);
     padding: 2px 4px;
-}
-
-/* ==========================================
-   SEARCHBAR EN TOPBAR (derecha)
-   ==========================================
-   (Por si quieres que el search del pipeline tenga
-    un sabor ligeramente distinto, pero alineado al dashboard)
-*/
-.topbar-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-/* Search unificada con dashboard pero ligeramente ajustada */
-.pipeline-search {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 10px;
-    border-radius: 9999px;
-
-    background: var(--ngm-bg-card);
-    border: 1px solid var(--ngm-border-card);
-}
-
-.pipeline-search-input {
-    background: transparent;
-    color: var(--ngm-text-main);
-}
-
-.pipeline-search-input::placeholder {
-    color: #9ca3af;
 }
 
 .pm-group-empty {
@@ -480,39 +452,54 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
-    border-radius: 999px;
-    font-size: 0.82rem;
+
+    padding: 7px 14px;
+    border-radius: var(--radius-md); /* ⬅️ NO pill */
+
+    font-size: 12px;
     font-weight: 500;
-    border: 1px solid transparent;
-    background: #111827;
-    color: #e5e7eb;
+
+    background: var(--ngm-bg-surface-soft);
+    color: var(--ngm-text-main);
+
+    border: 1px solid var(--border-soft);
     cursor: pointer;
-    transition: background 0.16s ease, border-color 0.16s ease, transform 0.08s ease;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.08s ease;
 }
 
 .pm-btn:hover {
     background: #1f2937;
-    border-color: rgba(34, 197, 94, 0.6);
+    border-color: #374151;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35); /* lift sutil */
 }
 
 .pm-btn:active {
     transform: translateY(1px);
+    box-shadow: none;
 }
 
+/* Icono dentro del botón */
 .pm-btn-icon {
-    font-size: 0.86rem;
-    opacity: 0.85;
+    font-size: 0.9rem;
+    opacity: 0.8;
 }
 
+/* Secondary (default toolbar buttons) */
 .pm-btn-secondary {
-    border-color: rgba(148, 163, 184, 0.3);
+    background: var(--ngm-bg-surface-soft);
+    border-color: var(--border-soft);
 }
 
+/* Primary (acciones fuertes, pocas) */
 .pm-btn-primary {
     background: #16a34a;
     border-color: #16a34a;
-    color: white;
+    color: #ecfdf5;
 }
 
 .pm-btn-primary:hover {
@@ -520,141 +507,223 @@
     border-color: #22c55e;
 }
 
+/* Ghost (acciones ligeras) */
 .pm-btn-ghost {
     background: transparent;
     border-color: transparent;
-    color: #9ca3af;
+    color: var(--ngm-text-soft);
 }
 
 .pm-btn-ghost:hover {
     background: #020617;
-    border-color: rgba(148, 163, 184, 0.35);
+    border-color: var(--border-soft);
 }
 
-/* ===============================
-   MODALES
-   =============================== */
+/* Títulos de cards en toolbar */
+.pipeline-section .section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 
-.pm-modal[hidden] {
-    display: none;
+    color: var(--ngm-text-muted);
 }
 
-.pm-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 40;
+.modal-backdrop.hidden { display: none; }
+
+/* ==========================================
+   PIPELINE — MODAL (estilo tipo Estimator)
+   Scope: SOLO Manage Layout
+   ========================================== */
+
+/* 🔧 FORZAR CARD GRIS (no azul) — Pipeline modal */
+#layoutModal .modal {
+    background: #111318;           /* gris oscuro NGM */
+    border: 1px solid #595959;
+    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.75);
 }
 
-.pm-modal-backdrop {
-    position: absolute;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.75);
+/* ---------- HEADER ---------- */
+/* Header / footer: mismo gris que el card */
+#layoutModal .modal-header,
+#layoutModal .modal-footer {
+  background: #242424 !important;
+  border-color: rgba(82, 82, 82, 0.18);
+}
+
+#layoutModal .modal-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ngm-text-main);
+}
+
+/* botón X */
+#layoutModal .modal-btn {
+    background: transparent;
+    border: none;
+    color: var(--ngm-text-muted);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+#layoutModal .modal-btn:hover {
+    color: var(--ngm-text-main);
+}
+
+/* ---------- BODY ---------- */
+#layoutModal .modal-body {
+    padding: 16px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+/* ---------- FOOTER ---------- */
+#layoutModal .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+
+    padding: 14px 18px;
+    border-top: 1px solid var(--border-soft);
+    background: #212121 !important;
+}
+
+/* Backdrop negro (tipo Estimator) */
+#layoutModal.modal-backdrop {
+    background: rgba(0, 0, 0, 0.75);
     backdrop-filter: blur(4px);
 }
 
-.pm-modal-dialog {
-    position: relative;
-    max-width: 620px;
-    width: 100%;
-    margin: 40px auto;
-    border-radius: 18px;
-    background: #020617;
-    border: 1px solid rgba(148, 163, 184, 0.5);
-    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
-    overflow: hidden;
+/* Asegurar que el card sea redondeado */
+#layoutModal .modal {
+    border-radius: 18px; /* fuerza el radio */
+    overflow: hidden;    /* para que header/footer respeten las esquinas */
+    background: #202020; /* asegura fondo oscuro */
 }
 
-.pm-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.35);
-    background: radial-gradient(circle at top left, rgba(34, 197, 94, 0.15), transparent 60%);
+/* ==========================================
+   PIPELINE — Manage Layout modal UI (NGM)
+   ========================================== */
+
+/* Card interior gris oscuro (no azul) */
+#layoutModal .modal {
+  background: #212121 !important; 
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
 }
 
-.pm-modal-title {
-    font-size: 0.96rem;
-    font-weight: 600;
-    color: #e5e7eb;
+/* Secciones */
+#layoutModal .pm-modal-section {
+  padding: 12px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(90, 90, 90, 0.18);
 }
 
-.pm-modal-close {
-    border: none;
-    background: transparent;
-    color: #9ca3af;
-    font-size: 1.1rem;
-    cursor: pointer;
-    padding: 2px 4px;
+#layoutModal .pm-modal-section-title {
+  margin: 0 0 10px 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ngm-text-muted);
 }
 
-.pm-modal-close:hover {
-    color: #e5e7eb;
+/* Grid para checkboxes */
+#layoutModal .pm-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.pm-modal-body {
-    padding: 12px 16px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+#layoutModal .pm-checkbox-grid--columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.pm-modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 10px 16px 12px;
-    border-top: 1px solid rgba(148, 163, 184, 0.35);
+/* Checkbox row (label completo clickeable) */
+#layoutModal .pm-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  background: rgba(23, 23, 23, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+
+  color: var(--ngm-text-main);
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.08s ease;
 }
 
-.pm-modal-section-title {
-    font-size: 0.82rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #9ca3af;
-    margin-bottom: 6px;
+#layoutModal .pm-checkbox:hover {
+  background: rgba(23, 23, 23, 0.55);
+  border-color: rgba(34, 197, 94, 0.45); /* verde suave */
 }
 
-.pm-width-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+#layoutModal .pm-checkbox:active {
+  transform: translateY(1px);
 }
 
-.pm-radio-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(148, 163, 184, 0.4);
-    font-size: 0.78rem;
-    color: #e5e7eb;
-    cursor: pointer;
+/* ✅ CHECKBOX / RADIO verdes */
+#layoutModal input[type="checkbox"],
+#layoutModal input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
 }
 
-.pm-radio-pill input[type="radio"] {
-    accent-color: #22c55e;
+/* Pills para radios */
+#layoutModal .pm-width-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
-.pm-checkbox-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 4px 10px;
+#layoutModal .pm-radio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 10px 12px;
+  border-radius: 999px;
+
+  background: rgba(23, 23, 23, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+
+  color: var(--ngm-text-main);
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.pm-checkbox {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.8rem;
-    color: #e5e7eb;
-    cursor: pointer;
-    user-select: none;
+#layoutModal .pm-radio-pill:hover {
+  background: rgba(30, 30, 30, 0.75);
+  border-color: rgba(34, 197, 94, 0.45);
 }
 
-.pm-checkbox input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
-    accent-color: #22c55e;
+/* FORCE: modal card background (pipeline) */
+#layoutModal.modal-backdrop > .modal {
+  background: #212121 !important;
+}
+
+/* Botones del footer: mantener estilo NGM (no azules) */
+#layoutModal .modal-footer .btn-secondary,
+#layoutModal .modal-footer .btn-primary {
+  border-radius: 12px;
+}
+
+#layoutModal #btnCloseLayoutModal {
+  color: var(--ngm-text-muted);
+}
+
+#layoutModal #btnCloseLayoutModal:hover {
+  color: var(--ngm-text-main);
 }

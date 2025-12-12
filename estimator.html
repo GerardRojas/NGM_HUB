@@ -19,10 +19,10 @@
     <!-- CSS global -->
     <link rel="stylesheet" href="assets/css/styles.css">
     <!-- CSS específico del estimator -->
-    <link rel="stylesheet" href="assets/css/estimator.css">
+    <link rel="stylesheet" href="assets/css/estimator_styles.css">
 </head>
 
-<body>
+<body class="estimator-page">
     <!-- =========================================================
          BLOQUE 1: LAYOUT GENERAL (SIDEBAR + MAIN AREA)
     ========================================================== -->
@@ -80,34 +80,35 @@
             <!-- =====================================================
                  TOPBAR GLOBAL (ESTILO DASHBOARD)
             ====================================================== -->
-            <header class="topbar topbar-dashboard">
+            <header class="ngm-topbar">
                 <!-- LEFT: brand / contexto -->
-                <div class="topbar-left global-bar-left">
-                    <div class="global-brand">
-                        <div class="brand-icon-small">
+                <div class="ngm-bar-left">
+                    <div class="ngm-brand">
+                        <div class="ngm-brand-icon-small">
                             <span>⚡</span>
                         </div>
-                        <div class="brand-text">
-                            <span class="brand-org">Next Generation Management</span>
-                            <span class="brand-context">NGM Hub · Estimator</span>
+                        <div class="ngm-brand-text">
+                            <span class="ngm-brand-org">Next Generation Management</span>
+                            <span class="ngm-brand-context">NGM Hub · Estimator</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- RIGHT: meta + search + user -->
-                <div class="topbar-right dashboard-topbar-right">
-                    <div class="dashboard-meta">
-                        <span class="meta-pill meta-env">Environment · Production</span>
-                        <span class="meta-pill meta-status meta-status-live">Server · Live</span>
+                <div class="ngm-topbar-right">
+                    <div class="ngm-meta">
+                        <span class="ngm-meta-pill ngm-meta-env">Environment · Production</span>
+                        <span class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · Live</span>
                     </div>
 
-                    <!-- Search global del Estimator (usa la misma lógica de filtro) -->
-                    <form class="dashboard-search" role="search">
-                        <span class="dashboard-search-icon">⌕</span>
+                    <!-- Search visualmente igual al dashboard,
+                        pero con la lógica del estimator (id mantiene) -->
+                    <form class="ngm-search" role="search">
+                        <span class="ngm-global-search-icon">⌕</span>
                         <input
                             type="search"
                             id="estimator-search-input"
-                            class="dashboard-search-input"
+                            class="ngm-search-input"
                             placeholder="Filter by code, name, unit…"
                             aria-label="Filter estimator table"
                         />
@@ -116,6 +117,8 @@
                     <span id="user-pill" class="user-pill">User · Role</span>
                 </div>
             </header>
+
+
 
             <!-- =====================================================
                  CONTENIDO PRINCIPAL
@@ -135,10 +138,6 @@
                             Loaded from <code>estimate.ngm</code>.
                         </div>
                     </div>
-
-                    <div class="user-pill estimator-mode-pill">
-                        Template Mode
-                    </div>
                 </section>
 
                 <!-- TOOLBAR DEL ESTIMATOR -->
@@ -152,6 +151,7 @@
                     </div>
 
                     <div class="toolbar-right">
+
                         <!-- Controles de vista (sliders) -->
                         <div class="estimator-view-controls">
                             <label class="view-control">
@@ -164,6 +164,7 @@
                                     value="100"
                                 />
                             </label>
+
                             <label class="view-control">
                                 Zoom
                                 <input
@@ -175,7 +176,9 @@
                                 />
                             </label>
                         </div>
+
                     </div>
+
                 </section>
 
                 <!-- PANEL PRINCIPAL (TABLA) -->
@@ -220,130 +223,149 @@
     <!-- =========================================================
          BLOQUE 4: MODAL PROJECT INFO
     ========================================================== -->
-    <div id="project-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Project Info</div>
-                <button type="button" class="btn-secondary" id="project-manage-btn">
-                    ✏️ Manage info
-                </button>
+    <div id="project-modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <div class="modal-title">Project Info</div>
+                    <button type="button" class="modal-btn header-action" id="manage-info-btn">
+                        Manage info
+                    </button>
+                </div>
+
+                <form id="project-form" class="modal-form">
+                    <div>
+                        <div class="field-label">Project Name</div>
+                        <input type="text" id="project-name-input" class="input" />
+                    </div>
+                    <div>
+                        <div class="field-label">Address</div>
+                        <input type="text" id="project-address-input" class="input" />
+                    </div>
+                    <div>
+                        <div class="field-label">Project Type</div>
+                        <input type="text" id="project-type-input" class="input" />
+                    </div>
+
+                    <div>
+                        <div class="field-label">Total Area (SqFt)</div>
+                        <input type="text" id="project-total-area-input" class="input" />
+                    </div>
+                    <div>
+                        <div class="field-label">Habitable Area (SqFt)</div>
+                        <input type="text" id="project-habitable-area-input" class="input" />
+                    </div>
+                    <div>
+                        <div class="field-label">Non Habitable Area (SqFt)</div>
+                        <input type="text" id="project-nonhabitable-area-input" class="input" />
+                    </div>
+                    <div>
+                        <div class="field-label">Footings Type</div>
+                        <input type="text" id="project-footings-input" class="input" />
+                    </div>
+
+                    <div>
+                        <div class="field-label">Number of Rooms</div>
+                        <input type="text" id="project-rooms-input" class="input" />
+                    </div>
+                    <div>
+                        <div class="field-label">Number of Bathrooms</div>
+                        <input type="text" id="project-baths-input" class="input" />
+                    </div>
+                    <div>
+                        <div class="field-label">Number of Units</div>
+                        <input type="text" id="project-units-input" class="input" />
+                    </div>
+                    <div>
+                        <div class="field-label">Foundation Type</div>
+                        <input type="text" id="project-foundation-input" class="input" />
+                    </div>
+                    <div>
+                        <div class="field-label">Date</div>
+                        <input type="date" id="project-date-input" class="input" />
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="modal-btn cancel" id="project-cancel-btn">
+                            Close
+                        </button>
+                        <button type="submit" class="modal-btn" id="project-save-btn">
+                            Save
+                        </button>
+                    </div>
+                </form>
+
             </div>
-
-            <form id="project-form" class="modal-form">
-                <div>
-                    <div class="field-label">Project Name</div>
-                    <input type="text" id="project-name-input" class="input" />
-                </div>
-                <div>
-                    <div class="field-label">Address</div>
-                    <input type="text" id="project-address-input" class="input" />
-                </div>
-                <div>
-                    <div class="field-label">Project Type</div>
-                    <input type="text" id="project-type-input" class="input" />
-                </div>
-
-                <div>
-                    <div class="field-label">Total Area (SqFt)</div>
-                    <input type="text" id="project-total-area-input" class="input" />
-                </div>
-                <div>
-                    <div class="field-label">Habitable Area (SqFt)</div>
-                    <input type="text" id="project-habitable-area-input" class="input" />
-                </div>
-                <div>
-                    <div class="field-label">Non Habitable Area (SqFt)</div>
-                    <input type="text" id="project-nonhabitable-area-input" class="input" />
-                </div>
-                <div>
-                    <div class="field-label">Footings Type</div>
-                    <input type="text" id="project-footings-input" class="input" />
-                </div>
-
-                <div>
-                    <div class="field-label">Number of Rooms</div>
-                    <input type="text" id="project-rooms-input" class="input" />
-                </div>
-                <div>
-                    <div class="field-label">Number of Bathrooms</div>
-                    <input type="text" id="project-baths-input" class="input" />
-                </div>
-                <div>
-                    <div class="field-label">Number of Units</div>
-                    <input type="text" id="project-units-input" class="input" />
-                </div>
-                <div>
-                    <div class="field-label">Foundation Type</div>
-                    <input type="text" id="project-foundation-input" class="input" />
-                </div>
-                <div>
-                    <div class="field-label">Date</div>
-                    <input type="date" id="project-date-input" class="input" />
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn-secondary" id="project-cancel-btn">
-                        Close
-                    </button>
-                    <button type="submit" class="btn-primary" id="project-save-btn">
-                        Save
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 
     <!-- =========================================================
          BLOQUE 5: MODAL COLUMNS
     ========================================================== -->
-    <div id="columns-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-title">Visible Columns</div>
-            <form id="columns-form" class="modal-form">
-                <label class="field-label">
-                    <input type="checkbox" data-col="code" checked />
-                    Code
-                </label>
-                <label class="field-label">
-                    <input type="checkbox" data-col="image" checked />
-                    Image
-                </label>
-                <label class="field-label">
-                    <input type="checkbox" data-col="name" checked />
-                    Category / Concept
-                </label>
-                <label class="field-label">
-                    <input type="checkbox" data-col="qty" checked />
-                    QTY
-                </label>
-                <label class="field-label">
-                    <input type="checkbox" data-col="unit" checked />
-                    Unit
-                </label>
-                <label class="field-label">
-                    <input type="checkbox" data-col="unit-cost" checked />
-                    Unit Cost
-                </label>
-                <label class="field-label">
-                    <input type="checkbox" data-col="subtotal" checked />
-                    Subtotal
-                </label>
-                <label class="field-label">
-                    <input type="checkbox" data-col="total" checked />
-                    Total
-                </label>
+    <div id="columns-modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-content">
 
-                <div class="modal-footer">
-                    <button type="button" class="btn-secondary" id="columns-cancel-btn">
-                        Cancel
-                    </button>
-                    <button type="submit" class="btn-primary">
-                        Apply
-                    </button>
-                </div>
-            </form>
+                <div class="modal-title">Visible Columns</div>
+
+                <form id="columns-form" class="modal-form">
+
+                    <label class="field-label">
+                        <input type="checkbox" data-col="code" checked />
+                        Code
+                    </label>
+
+                    <label class="field-label">
+                        <input type="checkbox" data-col="image" checked />
+                        Image
+                    </label>
+
+                    <label class="field-label">
+                        <input type="checkbox" data-col="name" checked />
+                        Category / Concept
+                    </label>
+
+                    <label class="field-label">
+                        <input type="checkbox" data-col="qty" checked />
+                        QTY
+                    </label>
+
+                    <label class="field-label">
+                        <input type="checkbox" data-col="unit" checked />
+                        Unit
+                    </label>
+
+                    <label class="field-label">
+                        <input type="checkbox" data-col="unit-cost" checked />
+                        Unit Cost
+                    </label>
+
+                    <label class="field-label">
+                        <input type="checkbox" data-col="subtotal" checked />
+                        Subtotal
+                    </label>
+
+                    <label class="field-label">
+                        <input type="checkbox" data-col="total" checked />
+                        Total
+                    </label>
+
+                    <div class="modal-footer">
+                        <button type="button" class="modal-btn cancel" id="columns-cancel-btn">
+                            Cancel
+                        </button>
+                        <button type="submit" class="modal-btn">
+                            Apply
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
         </div>
     </div>
+
 
     <!-- =========================================================
          BLOQUE 6: SCRIPT PRINCIPAL ESTIMATOR
@@ -610,7 +632,7 @@
             const modal = document.getElementById("project-modal");
             const form = document.getElementById("project-form");
             const cancelBtn = document.getElementById("project-cancel-btn");
-            const manageBtn = document.getElementById("project-manage-btn");
+            const manageBtn = document.getElementById("manage-info-btn");
             const saveBtn = document.getElementById("project-save-btn");
 
             const nameInput = document.getElementById("project-name-input");

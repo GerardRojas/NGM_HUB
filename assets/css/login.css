@@ -24,12 +24,23 @@
     flex-direction: column;
     align-items: stretch;
     gap: 26px;
+
+    /* Blur + card oscuro */
     backdrop-filter: blur(25px);
-    background: var(--bg-login-panel); 
+    background: var(--ngm-bg-card); 
     padding: 36px 34px 28px;
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-soft);
-    border: none;
+    box-shadow: var(--ngm-shadow-soft);
+     border: 1px solid var(--border-soft);    /* leve borde para separarlo */
+}
+
+.login-screen label {
+    display: block;
+    font-size: 0.80rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.75);
+    margin-bottom: 6px;       /* separación entre label e input */
+    letter-spacing: 0.3px;
 }
 
 /* Branding login */
@@ -69,7 +80,7 @@
 .login-form {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 28px;
 }
 
 .login-form .form-footer {
@@ -161,4 +172,75 @@
     to {
         transform: rotate(360deg);
     }
+}
+
+/* ==================================================
+   BOTÓN PRINCIPAL SOLO PARA LOGIN
+   (sobreescribe el .btn-primary global dentro de .login-screen)
+   ================================================== */
+
+.login-screen .btn-primary {
+    /* Gana en especificidad sobre .btn-primary global */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: auto;
+    margin: 16px auto 0 auto;   /* ← AQUÍ SE CONTROLA TODO EL ESPACIADO */
+    border: none;
+    cursor: pointer;
+
+    border-radius: 14px; /* más premium */
+    padding: 0;
+
+    background: linear-gradient(135deg, #22c55e, #15803d);
+    color: #0f2a1e;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35);
+
+    transition:
+        transform 0.12s ease-out,
+        box-shadow 0.12s ease-out,
+        background 0.2s ease-out;
+}
+
+.login-screen .btn-primary__inner {
+    width: 100%;
+    padding: 10px 16px; /* más corto */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+/* Hover / active solo en login */
+.login-screen .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.38);
+}
+
+.login-screen .btn-primary:active {
+    transform: translateY(0);
+    box-shadow: 0 6px 10px rgba(0,0,0,0.28);
+}
+
+/* Inputs base */
+
+.input {
+    width: 100%;
+    padding: 10px 10px;
+    border-radius: 8px;
+    border: 1px solid #27272f;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.input:focus {
+    border-color: var(--accent);
+    background: var(--bg-input-hover);
 }

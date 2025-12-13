@@ -356,7 +356,9 @@
         // ================================
 
         // 🔧 MODO LOCAL
-        const API_BASE = "http://127.0.0.1:8000";
+        // API base (prod desde config.js, fallback local solo si no existe)
+        const API_BASE =
+            window.API_BASE || (typeof API_BASE !== "undefined" ? API_BASE : "http://127.0.0.1:8000");
 
         const groupsWrapper = document.getElementById("pm-groups-wrapper");
         const projectFilter = document.getElementById("project-filter");

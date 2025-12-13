@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 3) Filtrar módulos por rol y marcar coming soon
-  const userRole = (user.role || "").trim(); // Usamos el texto tal cual viene de Supabase
+  const userRole = String(user.role || user.role_id || "").trim();
 
   document.querySelectorAll(".module-card").forEach((card) => {
     const rolesAttr = card.getAttribute("data-roles") || "";

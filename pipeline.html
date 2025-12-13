@@ -527,7 +527,26 @@
 
                 console.log("[PIPELINE] raw response:", data);
 
-                rawGroups = Array.isArray(data) ? data : (data.groups || []);
+                if (Array.isArray(data)) {
+                rawGroups = data;
+                } else if (Array.isArray(data.groups)) {
+                rawGroups = data.groups;
+                } else if (data.groups && typeof data.groups === "object") {
+                // 👈 caso FastAPI agrupado por status
+                rawGroups = Object.entries(data.groups).map(([status, tasks]) => ({
+                    status_name: status,
+                    tasks: Array.isArray(tasks) ? tasks : [],
+                }));
+                } else if (typeof data === "object") {
+                // 👈 fallback ultra defensivo
+                rawGroups = Object.entries(data).map(([status, tasks]) => ({
+                    status_name: status,
+                    tasks: Array.isArray(tasks) ? tasks : [],
+                }));
+                } else {
+                rawGroups = [];
+                }
+
                 console.log("[PIPELINE] parsed groups:", rawGroups);
 
                 populateFilters(rawGroups);

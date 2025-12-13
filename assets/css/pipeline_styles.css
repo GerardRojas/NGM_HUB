@@ -2,11 +2,6 @@
    PIPELINE MANAGER — layout & visual
    ========================================== */
 
-/* Variable local de ancho; no toca el theme global */
-:root {
-    --pm-panel-width: 92%;
-}
-
 /* Wrapper interno del pipeline (no toca layout global) */
 .pipeline-section .pm-panel {
     max-width: none;
@@ -186,8 +181,6 @@
     color: var(--ngm-text-main);
 }
 
-/* El slider como tal; afecta al ancho del panel vía
-   la variable --pm-panel-width en el JS. */
 .pm-width-slider {
     width: 160px;
     accent-color: var(--accent); /* verde corporativo */
@@ -196,16 +189,6 @@
 /* ==========================================
    GRUPOS DE PIPELINE (cards)
    ========================================== */
-
-/* Alineado al dashboard: mismas cards pero con rail de color */
-/* ===========================================
-   🟦 ESTILOS DEL CARD DE GRUPO
-   =========================================== */
-
-/* ==========================================
-   GROUP CARD + GLOW HÍBRIDO
-   ========================================== */
-
 .pm-group {
     position: relative;
     margin: 22px auto 32px auto;
@@ -296,7 +279,7 @@
 }
 
 .pm-group .table thead th {
-    font-size: 11px;
+    font-size: 9px;
     text-align: center;
     font-weight: 630;
     text-transform: uppercase;
@@ -531,18 +514,6 @@
 
 .modal-backdrop.hidden { display: none; }
 
-/* ==========================================
-   PIPELINE — MODAL (estilo tipo Estimator)
-   Scope: SOLO Manage Layout
-   ========================================== */
-
-/* 🔧 FORZAR CARD GRIS (no azul) — Pipeline modal */
-#layoutModal .modal {
-    background: #111318;           /* gris oscuro NGM */
-    border: 1px solid #595959;
-    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.75);
-}
-
 /* ---------- HEADER ---------- */
 /* Header / footer: mismo gris que el card */
 #layoutModal .modal-header,
@@ -581,8 +552,8 @@
 /* ---------- FOOTER ---------- */
 #layoutModal .modal-footer {
     display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+    justify-content: center;
+    gap: 15px;
 
     padding: 14px 18px;
     border-top: 1px solid var(--border-soft);
@@ -593,13 +564,6 @@
 #layoutModal.modal-backdrop {
     background: rgba(0, 0, 0, 0.75);
     backdrop-filter: blur(4px);
-}
-
-/* Asegurar que el card sea redondeado */
-#layoutModal .modal {
-    border-radius: 18px; /* fuerza el radio */
-    overflow: hidden;    /* para que header/footer respeten las esquinas */
-    background: #202020; /* asegura fondo oscuro */
 }
 
 /* ==========================================
@@ -726,4 +690,198 @@
 
 #layoutModal #btnCloseLayoutModal:hover {
   color: var(--ngm-text-main);
+}
+
+/* ===== Fix: modal no se corta en laptop ===== */
+#layoutModal.modal-backdrop{
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* clave: aire + scroll cuando el viewport es bajo */
+  padding: clamp(12px, 3vh, 28px);
+  overflow-y: auto;
+}
+
+/* el card se limita al viewport y usa layout interno */
+#layoutModal.modal-backdrop > .modal{
+  width: min(980px, 100%);
+  max-height: calc(100vh - 2 * clamp(12px, 3vh, 28px));
+  display: flex;
+  flex-direction: column;
+}
+
+/* el scroll ocurre dentro del body, el footer siempre queda visible */
+#layoutModal .modal-body{
+  overflow: auto;
+}
+
+/* FIX: que "hidden" sí apague el layout modal aunque tenga reglas con #layoutModal */
+#layoutModal.modal-backdrop.hidden {
+  display: none !important;
+}
+
+/* ===== Scrollbar gris para Layout Modal ===== */
+
+/* Chrome, Edge, Brave, Safari */
+#layoutModal .modal-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+#layoutModal .modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+}
+
+#layoutModal .modal-body::-webkit-scrollbar-thumb {
+  background-color: rgba(180, 180, 180, 0.35);
+  border-radius: 8px;
+  border: 2px solid rgba(0, 0, 0, 0.4);
+}
+
+#layoutModal .modal-body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(200, 200, 200, 0.5);
+}
+
+/* Firefox */
+#layoutModal .modal-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 180, 180, 0.35) rgba(255, 255, 255, 0.04);
+}
+
+/* Base común */
+#layoutModal .modal-footer .btn-secondary,
+#layoutModal .modal-footer .btn-primary {
+  appearance: none;
+  border-radius: 14px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.05s ease,
+    opacity 0.15s ease;
+}
+
+/* Secondary — Cancel */
+#layoutModal .modal-footer .btn-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+#layoutModal .modal-footer .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+/* Primary — Apply */
+#layoutModal .modal-footer .btn-primary {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+#layoutModal .modal-footer .btn-primary:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+/* Active feedback */
+#layoutModal .modal-footer .btn-secondary:active,
+#layoutModal .modal-footer .btn-primary:active {
+  transform: translateY(1px);
+}
+
+/* Disabled */
+#layoutModal .modal-footer .btn-secondary:disabled,
+#layoutModal .modal-footer .btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ===== NGM Accent: Save hover green ===== */
+#layoutModal .modal-footer .btn-primary:hover {
+  background: rgba(34, 197, 94, 0.22);   /* verde suave */
+  border-color: rgba(34, 197, 94, 0.55);
+  color: #eafff3;
+}
+
+/* ==========================
+   TABLE WIDTH (slider)
+   ========================== */
+
+/* el body del grupo puede scrollear horizontalmente si la tabla es más ancha */
+.pm-group-body {
+  overflow-x: auto;
+}
+
+/* ancho mínimo controlado por variable (por defecto 1200px) */
+.pm-group .table {
+  min-width: var(--pm-table-min-width, 1200px);
+}
+
+/* opcional: que el scroll se vea “gris” */
+.pm-group-body::-webkit-scrollbar {
+  height: 10px;
+}
+.pm-group-body::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+}
+.pm-group-body::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 999px;
+}
+.pm-group-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.28);
+}
+
+/* Evita que el texto se pise: permite wrap */
+.table th,
+.table td {
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Da un ancho mínimo razonable a todas las columnas */
+.table th,
+.table td {
+  min-width: 140px;
+}
+
+/* Pero deja "Task" más flexible (más ancha) */
+.table th[data-col="task"],
+.table td[data-col="task"] {
+  min-width: 300px;
+}
+ 
+/* Avatar inicial + nombre (Owner/Collaborator) */
+.pm-person {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pm-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1;
+  background: rgba(148, 163, 184, 0.18);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: rgba(226, 232, 240, 0.95);
+  flex: 0 0 auto;
 }

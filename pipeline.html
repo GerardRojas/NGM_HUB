@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NGM HUB — Pipeline Manager</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NGM HUB — Pipeline Manager</title>
 
-    <!-- mismas fuentes que login / dashboard -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link 
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" 
-      rel="stylesheet"
-    >
+  <!-- Fonts: Inter + Roboto (NGM standard) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap"
+    rel="stylesheet"
+  />
 
-    <!-- Estilos base + pipeline -->
-    <link rel="stylesheet" href="assets/css/styles.css" />
-    <link rel="stylesheet" href="assets/css/pipeline_styles.css" />
+  <!-- Base layout + Pipeline styles -->
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/pipeline_styles.css" />
 </head>
 <body>
     <div class="app-layout">
@@ -167,24 +167,25 @@
 
     <div class="modal-body">
 
-      <!-- Ancho del panel / tabla -->
-      <section class="pm-modal-section">
+        <!-- Ancho del panel / tabla -->
+        <section class="pm-modal-section">
         <h3 class="pm-modal-section-title">Panel width</h3>
-        <div class="pm-width-options">
-          <label class="pm-radio-pill">
-            <input type="radio" name="pm-panel-width" value="compact" />
-            <span>Compact (80%)</span>
-          </label>
-          <label class="pm-radio-pill">
-            <input type="radio" name="pm-panel-width" value="balanced" />
-            <span>Balanced (92%)</span>
-          </label>
-          <label class="pm-radio-pill">
-            <input type="radio" name="pm-panel-width" value="full" />
-            <span>Full width (100%)</span>
-          </label>
+
+        <div class="pm-width-control">
+            <span class="pm-width-control-label">Min table width</span>
+            <input
+            id="pm-width-slider"
+            class="pm-width-slider"
+            type="range"
+            min="900"
+            max="1900"
+            step="50"
+            value="1200"
+            />
+            <span id="pm-width-value" class="pm-width-control-value">1200px</span>
         </div>
-      </section>
+        </section>
+
 
       <!-- Grupos visibles -->
       <section class="pm-modal-section">
@@ -225,40 +226,22 @@
         </div>
       </section>
 
-      <!-- Columnas visibles -->
-      <section class="pm-modal-section">
-        <h3 class="pm-modal-section-title">Visible columns</h3>
-        <div class="pm-checkbox-grid pm-checkbox-grid--columns">
-          <label class="pm-checkbox">
-            <input type="checkbox" data-col-key="task" />
-            <span>Task</span>
-          </label>
-          <label class="pm-checkbox">
-            <input type="checkbox" data-col-key="owner" />
-            <span>Owner</span>
-          </label>
-          <label class="pm-checkbox">
-            <input type="checkbox" data-col-key="company" />
-            <span>Company</span>
-          </label>
-          <label class="pm-checkbox">
-            <input type="checkbox" data-col-key="status" />
-            <span>Status</span>
-          </label>
-          <label class="pm-checkbox">
-            <input type="checkbox" data-col-key="start" />
-            <span>Start date</span>
-          </label>
-          <label class="pm-checkbox">
-            <input type="checkbox" data-col-key="est" />
-            <span>Estimated hours</span>
-          </label>
-          <label class="pm-checkbox">
-            <input type="checkbox" data-col-key="due" />
-            <span>Due / Deadline</span>
-          </label>
-        </div>
-      </section>
+    
+    <!-- Columnas visibles -->
+    <section class="pm-modal-section">
+    <h3 class="pm-modal-section-title">Visible columns</h3>
+
+    <!--
+        ⚠️ IMPORTANTE:
+        Este contenedor se llena dinámicamente desde JS
+        usando la definición global COLUMNS
+    -->
+    <div
+        id="pm-columns-list"
+        class="pm-checkbox-grid pm-checkbox-grid--columns"
+    ></div>
+    </section>
+
 
     </div>
 
@@ -290,61 +273,62 @@
             const USER_MODULES = ["dashboard", "projects", "pipeline", "estimator", "expenses"];
 
             function initLayoutControls() {
-            const modal = document.getElementById("layoutModal");
-            const btnOpen = document.getElementById("btnManageLayout");
-            if (!modal || !btnOpen) return;
+            const overlay = document.getElementById("layoutModal");           // overlay/backdrop
+            const btnOpen = document.getElementById("btnManageLayout");       // abre modal
+            if (!overlay || !btnOpen) return;
 
-            const btnClose = document.getElementById("btnCloseLayoutModal");
-            const btnCancel = document.getElementById("btnCancelLayout");
+            const modalCard = overlay.querySelector(".modal");               // card interna
+            const btnClose = document.getElementById("btnCloseLayoutModal"); // X (si existe)
+            const btnCancel = document.getElementById("btnCancelLayout");    // Cancel
+            const btnApply = document.getElementById("btnApplyLayout");      // Apply
 
-            // ✅ nuevo backdrop (modal global)
-            const backdrop = modal; // ahora el backdrop ES #layoutModal
+            const openModal = () => overlay.classList.remove("hidden");
+            const closeModal = () => overlay.classList.add("hidden");
 
-            const btnApply = document.getElementById("btnApplyLayout");
-            // ⛔ evita que el click dentro del modal cierre el backdrop
-            modal.querySelector(".modal")?.addEventListener("click", (e) => {
-                e.stopPropagation();
-            });
+            // Evita cerrar al click dentro del card
+            modalCard?.addEventListener("click", (e) => e.stopPropagation());
 
-            const DEFAULT_GROUPS = [
-                "not started",
-                "working on it",
-                "awaiting approval",
-                "good to go",
-                "done",
-            ];
-
-            const DEFAULT_COLUMNS = {
-                task: true,
-                owner: true,
-                company: true,
-                status: true,
-                start: true,
-                est: true,
-                due: true,
-            };
-
-            // ✅ helpers (modal global usa class "hidden")
-            const openModal = () => modal.classList.remove("hidden");
-            const closeModal = () => modal.classList.add("hidden");
+            // Cerrar al click en overlay
+            overlay.addEventListener("click", closeModal);
 
             // Abrir
-            btnOpen.addEventListener("click", () => {
+            btnOpen.addEventListener("click", (e) => {
+                e.preventDefault();
                 openModal();
-                // (tu lógica actual de cargar defaults / estados va aquí sin cambios)
+
+                // ✅ Pintar columnas (dinámico)
+                const visibleMap = loadVisibleCols(COLUMNS);
+                buildColumnsModal(COLUMNS, visibleMap);
+                // ✅ sync groups checks desde persistencia
+                syncGroupsCheckboxesInModal(loadVisibleGroups());
             });
 
-            // Cerrar (X / Cancel / backdrop)
-            btnClose?.addEventListener("click", closeModal);
-            btnCancel?.addEventListener("click", closeModal);
-            backdrop?.addEventListener("click", closeModal);
+            // Cerrar
+            btnClose?.addEventListener("click", (e) => {
+                e.preventDefault();
+                closeModal();
+            });
 
-            // Apply (mantén tu lógica y luego cierra)
-            btnApply?.addEventListener("click", () => {
-                // (tu lógica actual de apply va aquí sin cambios)
+            // Apply
+            btnApply?.addEventListener("click", (e) => {
+                e.preventDefault();
+
+                const newMap = readColumnsModalState(COLUMNS);
+                saveVisibleCols(newMap);
+                applyVisibleColsToTables(newMap);
+
+                // ✅ guardar grupos visibles
+                const newGroupsMap = readGroupsFromModal();
+                saveVisibleGroups(newGroupsMap);
+
+                // ✅ re-render para aplicar el filtro de grupos
+                renderGroups();
+
                 closeModal();
             });
             }
+
+
 
         function renderSidebarModules(modulesKeys) {
         if (!sidebarNav) return;
@@ -380,6 +364,153 @@
         const priorityFilter = document.getElementById("priority-filter");
         const manageBtn = document.getElementById("btnNewTask");
         const searchInput = document.getElementById("pipeline-search-input");
+
+        // 🔑 storage key
+        const PM_COLS_STORAGE_KEY = "pm_visible_columns_v1";
+        const PM_GROUPS_STORAGE_KEY = "pm_visible_groups_v1";
+
+        const COLUMNS = [
+            { key: "task", label: "Task" },
+            { key: "project", label: "Project" },
+            { key: "owner", label: "Owner" },
+            { key: "collaborator", label: "Collaborator" },
+            { key: "manager", label: "Manager" },
+            { key: "company", label: "Company" },
+
+            // backend
+            { key: "department", label: "Department" },
+            { key: "type", label: "Type" },
+            { key: "time_start", label: "Time Start" },
+            { key: "time_finish", label: "Time Finish" },
+
+            { key: "start", label: "Start" },
+            { key: "est", label: "Est (h)" },
+            { key: "priority", label: "Priority" },
+            { key: "finished", label: "Finished" },
+            { key: "due", label: "Due" },
+            { key: "links", label: "Links" },
+        ];
+
+        function getDefaultVisibleGroups() {
+        // default: todos los grupos visibles (los keys deben coincidir con data-group-key)
+        return {
+            "not started": true,
+            "working on it": true,
+            "awaiting approval": true,
+            "good to go": true,
+            "correction": true,
+            "resubmittal needed": true,
+            "done": true,
+            "delayed": true,
+        };
+        }
+
+        function loadVisibleGroups() {
+        try {
+            const raw = localStorage.getItem(PM_GROUPS_STORAGE_KEY);
+            if (!raw) return getDefaultVisibleGroups();
+
+            const parsed = JSON.parse(raw);
+            const merged = getDefaultVisibleGroups();
+
+            Object.keys(parsed || {}).forEach(k => {
+            if (k in merged) merged[k] = !!parsed[k];
+            });
+
+            return merged;
+        } catch (e) {
+            console.warn("[PIPELINE] loadVisibleGroups failed:", e);
+            return getDefaultVisibleGroups();
+        }
+        }
+
+        function saveVisibleGroups(map) {
+        localStorage.setItem(PM_GROUPS_STORAGE_KEY, JSON.stringify(map));
+        }
+
+        function syncGroupsCheckboxesInModal(visibleGroupsMap) {
+        // busca los checks existentes en tu HTML (data-group-key)
+        document.querySelectorAll('#layoutModal input[type="checkbox"][data-group-key]').forEach(cb => {
+            const key = (cb.getAttribute("data-group-key") || "").trim().toLowerCase();
+            if (!key) return;
+            cb.checked = !!visibleGroupsMap[key];
+        });
+        }
+
+        function readGroupsFromModal() {
+        const map = getDefaultVisibleGroups();
+
+        document.querySelectorAll('#layoutModal input[type="checkbox"][data-group-key]').forEach(cb => {
+            const key = (cb.getAttribute("data-group-key") || "").trim().toLowerCase();
+            if (!key) return;
+            map[key] = cb.checked;
+        });
+
+        return map;
+        }
+
+        function getDefaultVisibleCols(COLUMNS) {
+            const map = {};
+            COLUMNS.forEach(c => (map[c.key] = true));
+            return map;
+        }
+
+        function loadVisibleCols(COLUMNS) {
+            try {
+                const raw = localStorage.getItem(PM_COLS_STORAGE_KEY);
+                if (!raw) return getDefaultVisibleCols(COLUMNS);
+
+                const parsed = JSON.parse(raw);
+                const merged = getDefaultVisibleCols(COLUMNS);
+
+                Object.keys(parsed || {}).forEach(k => {
+                    if (k in merged) merged[k] = !!parsed[k];
+                });
+
+                return merged;
+            } catch (e) {
+                console.warn("[PIPELINE] loadVisibleCols failed:", e);
+                return getDefaultVisibleCols(COLUMNS);
+            }
+        }
+
+        function saveVisibleCols(map) {
+            localStorage.setItem(PM_COLS_STORAGE_KEY, JSON.stringify(map));
+        }
+
+        function applyVisibleColsToTables(visibleMap) {
+            document.querySelectorAll(".pm-group .table [data-col]").forEach(el => {
+                const key = el.getAttribute("data-col");
+                if (!key) return;
+                el.style.display = visibleMap[key] ? "" : "none";
+            });
+        }
+
+        function buildColumnsModal(COLUMNS, visibleMap) {
+        const list = document.getElementById("pm-columns-list");
+        if (!list) return;
+
+        list.innerHTML = COLUMNS.map(c => `
+            <label class="pm-checkbox">
+            <input type="checkbox" data-col="${c.key}" ${visibleMap[c.key] ? "checked" : ""} />
+            <span>${c.label}</span>
+            </label>
+        `).join("");
+        }
+
+        function readColumnsModalState(COLUMNS) {
+            const list = document.getElementById("pm-columns-list");
+            const map = {};
+            COLUMNS.forEach(c => (map[c.key] = true));
+
+            if (!list) return map;
+
+            list.querySelectorAll("input[data-col]").forEach(cb => {
+                map[cb.dataset.col] = cb.checked;
+            });
+
+            return map;
+        }
 
         let rawGroups = [];
         let searchQuery = "";
@@ -564,19 +695,151 @@
                 return;
             }
 
+            function escapeHtml(s) {
+                return String(s)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            function getInitial(name) {
+            const s = String(name || "").trim();
+            if (!s) return "?";
+            return s[0].toUpperCase();
+            }
+
+            function renderPerson(name) {
+            const safeName = escapeHtml(name || "-");
+            const initial = escapeHtml(getInitial(name));
+            return `<span class="pm-person"><span class="pm-avatar">${initial}</span><span>${safeName}</span></span>`;
+            }
+
+
+            function formatMaybeDate(v) {
+                if (!v) return "-";
+                // si viene como string ISO, lo mostramos “corto” para tabla
+                const s = String(v);
+                // 2025-12-07T06:21:42.156005Z -> 2025-12-07
+                if (s.includes("T")) return s.split("T")[0];
+                return s;
+            }
+
+            function getCellValue(t, key) {
+                switch (key) {
+                    case "task":
+                        return escapeHtml(t.task_description || t.title || "(No description)");
+
+                    case "project":
+                        return escapeHtml(
+                            t.project_name ||
+                            t.project ||
+                            t.project_title ||
+                            t.project_id ||
+                            "-"
+                        );
+
+                    case "owner": {
+                        const name =
+                            (t.owner && (t.owner.name || t.owner.username || t.owner.email)) ||
+                            t.owner_name ||
+                            t.assigned_to ||
+                            "";
+                        return renderPerson(name || "-");
+                    }
+
+                    case "collaborator": {
+                        const name =
+                            (Array.isArray(t.collaborators) &&
+                                t.collaborators.length > 0 &&
+                                (t.collaborators[0].name || t.collaborators[0].id)) ||
+                            "";
+                        return renderPerson(name || "-");
+                    }
+
+
+                    case "company":
+                        return escapeHtml(t.company_name || "-");
+
+                    // ✅ nuevas columnas del JSON (t.*)
+                    case "department":
+                        return escapeHtml(t.department || "-");
+
+                    case "type":
+                        return escapeHtml(t.type || "-");
+
+                    case "time_start":
+                        return escapeHtml(t.time_start || "-");
+
+                    case "time_finish":
+                        return escapeHtml(t.time_finish || "-");
+
+                    case "start":
+                        return escapeHtml(formatMaybeDate(t.start_date));
+
+                    case "est": {
+                        const v = (typeof t.estimated_hours === "number")
+                            ? t.estimated_hours
+                            : (t.estimated_hours ?? null);
+                        return escapeHtml(v != null ? v : "-");
+                    }
+
+                    case "priority":
+                        return escapeHtml(
+                            (t.priority && (t.priority.priority_name || t.priority.priority_id)) ||
+                            t.priority_name ||
+                            t.priority ||
+                            "-"
+                        );
+
+                    case "finished":
+                        return escapeHtml(
+                            (t.finished_status &&
+                                (t.finished_status.completed_status_name ||
+                                t.finished_status.completed_status_id)) ||
+                            t.finished_status_name ||
+                            "-"
+                        );
+
+                    case "due":
+                        // prefiero due_date -> deadline -> fallback
+                        return escapeHtml(formatMaybeDate(t.due_date || t.deadline || t.due));
+
+                    case "links": {
+                        const docsLink = t.docs_link || null;
+                        const resultLink = t.result_link || null;
+
+                        if (!docsLink && !resultLink) return "-";
+
+                        const parts = [];
+                        if (docsLink) {
+                            parts.push(`<a href="${escapeHtml(docsLink)}" target="_blank" rel="noopener noreferrer">Docs</a>`);
+                        }
+                        if (resultLink) {
+                            parts.push(`<a href="${escapeHtml(resultLink)}" target="_blank" rel="noopener noreferrer">Result</a>`);
+                        }
+                        return parts.join(" · ");
+                    }
+
+                    default:
+                        return "-";
+                }
+            }
+
             // 🎨 Mapa de colores por status / nombre de grupo (lista oficial)
             const STATUS_ACCENTS = {
-                "working on it": "#3b82f6",       // azul
-                "done": "#22c55e",               // verde
-                "correction": "#f87171",         // rojo suave
-                "awaiting approval": "#fb923c",  // naranja
-                "resubmittal needed": "#eab308", // dorado intenso
-                "good to go": "#10b981",         // verde-mint
-                "not started": "#facc15",        // amarillo
-                "delayed": "#a855f7",            // morado
+                "working on it": "#3b82f6",
+                "done": "#22c55e",
+                "correction": "#f87171",
+                "awaiting approval": "#fb923c",
+                "resubmittal needed": "#eab308",
+                "good to go": "#10b981",
+                "not started": "#facc15",
+                "delayed": "#a855f7",
             };
 
-            // 🎨 Mapa de clases CSS por status (para glow + estilos avanzados)
+            // 🎨 Mapa de clases CSS por status
             const STATUS_CLASS_MAP = {
                 "working on it": "pm-group--working-on-it",
                 "done": "pm-group--done",
@@ -600,33 +863,25 @@
                 "delayed",
             ];
             const STATUS_RANK = {};
-            STATUS_ORDER.forEach((name, idx) => {
-                STATUS_RANK[name] = idx;
+            STATUS_ORDER.forEach((name, idx) => { STATUS_RANK[name] = idx; });
+
+            const visibleGroupsMap = loadVisibleGroups();
+
+            const filteredGroups = groups.filter(g => {
+                const name = (g.status_name || g.group_name || g.name || "").trim().toLowerCase();
+                // si es un status conocido, respeta visibilidad; si no es conocido, lo dejamos visible
+                if (name in visibleGroupsMap) return !!visibleGroupsMap[name];
+                return true;
             });
 
-            // Ordenar grupos según STATUS_ORDER
-            const sortedGroups = [...groups].sort((a, b) => {
-                const nameA = (
-                    a.status_name ||
-                    a.group_name ||
-                    a.name ||
-                    ""
-                ).trim().toLowerCase();
-
-                const nameB = (
-                    b.status_name ||
-                    b.group_name ||
-                    b.name ||
-                    ""
-                ).trim().toLowerCase();
+            const sortedGroups = [...filteredGroups].sort((a, b) => {
+                const nameA = (a.status_name || a.group_name || a.name || "").trim().toLowerCase();
+                const nameB = (b.status_name || b.group_name || b.name || "").trim().toLowerCase();
 
                 const rankA = STATUS_RANK[nameA] ?? 999;
                 const rankB = STATUS_RANK[nameB] ?? 999;
 
-                if (rankA !== rankB) {
-                    return rankA - rankB;
-                }
-                // fallback alfabético si comparten rank
+                if (rankA !== rankB) return rankA - rankB;
                 return nameA.localeCompare(nameB);
             });
 
@@ -634,7 +889,6 @@
             // RENDER DE CADA GRUPO
             // ==========================
             sortedGroups.forEach(group => {
-                // Nunca filtramos el grupo aunque no tenga tasks
                 const tasks =
                     Array.isArray(group.tasks) ? group.tasks :
                     Array.isArray(group.items) ? group.items :
@@ -650,23 +904,14 @@
                 const groupElem = document.createElement("div");
                 groupElem.className = "pm-group";
 
-                // Normalizar clave para status / color / clase
-                const statusRaw = groupName.trim();
-                const statusKey = statusRaw.toLowerCase();
+                const statusKey = groupName.trim().toLowerCase();
 
-                // 🎨 Asignar clase CSS según status oficial
                 const cssClass = STATUS_CLASS_MAP[statusKey];
-                if (cssClass) {
-                    groupElem.classList.add(cssClass);
-                }
+                if (cssClass) groupElem.classList.add(cssClass);
 
-                // 🎨 Color del grupo (línea + glow)
                 const accentColor = STATUS_ACCENTS[statusKey] || "#3e4042";
                 groupElem.style.setProperty("--pm-group-accent", accentColor);
 
-                // ==========================
-                // HEADER
-                // ==========================
                 const header = document.createElement("div");
                 header.className = "pm-group-header";
                 header.innerHTML = `
@@ -679,7 +924,6 @@
                 const body = document.createElement("div");
                 body.className = "pm-group-body";
 
-                // 🔽 estado inicial: expandido
                 let isCollapsed = false;
                 header.addEventListener("click", () => {
                     isCollapsed = !isCollapsed;
@@ -687,127 +931,51 @@
                     header.classList.toggle("pm-group-header--collapsed", isCollapsed);
                 });
 
-                // ==========================
-                // TABLA
-                // ==========================
                 const table = document.createElement("table");
                 table.className = "table";
 
                 const thead = document.createElement("thead");
                 thead.innerHTML = `
-                    <tr>
-                        <th>Task</th>
-                        <th>Project</th>
-                        <th>Owner</th>
-                        <th>Collaborator</th>
-                        <th>Manager</th>
-                        <th>Company</th>
-                        <th>Start</th>
-                        <th>Est (h)</th>
-                        <th>Priority</th>
-                        <th>Finished</th>
-                        <th>Due</th>
-                        <th>Links</th>
-                    </tr>
+                <tr>
+                    ${COLUMNS.map(c => `<th data-col="${escapeHtml(c.key)}">${escapeHtml(c.label)}</th>`).join("")}
+                </tr>
                 `;
                 table.appendChild(thead);
 
                 const tbody = document.createElement("tbody");
 
                 if (!tasks.length) {
-                    // Grupo SIN tareas → tabla con fila placeholder
                     const emptyRow = document.createElement("tr");
                     emptyRow.className = "pm-empty-row";
                     emptyRow.innerHTML = `
-                        <td colspan="12" class="pm-empty-cell">
+                        <td colspan="${COLUMNS.length}" class="pm-empty-cell">
                             <div>No tasks in this group for the current filters.</div>
                         </td>
                     `;
                     tbody.appendChild(emptyRow);
                 } else {
-                    // Grupo CON tareas → filas normales
                     tasks.forEach(t => {
                         const tr = document.createElement("tr");
                         tr.className = "pm-row";
-                        if (manageMode) {
-                            tr.classList.add("pm-row-manage");
-                        }
+                        if (manageMode) tr.classList.add("pm-row-manage");
 
-                        // ======================
-                        // CAMPOS PARA MOSTRAR EN TABLA
-                        // ======================
-                        const desc =
-                            t.task_description || t.title || "(No description)";
+                        tr.innerHTML = COLUMNS.map(col => {
+                        const html = getCellValue(t, col.key);
+                        return `<td class="pm-row" data-col="${escapeHtml(col.key)}"><div>${html}</div></td>`;
+                        }).join("")
 
-                        const proj =
-                            t.project_name ||
-                            t.project ||
-                            t.project_title ||
-                            t.project_id ||
-                            "-";
-
-                        const owner =
-                            (t.owner && (t.owner.name || t.owner.username || t.owner.email)) ||
-                            t.owner_name ||
-                            t.assigned_to ||
-                            "-";
-
-                        const collaborator =
-                            (Array.isArray(t.collaborators) &&
-                            t.collaborators.length > 0 &&
-                            (t.collaborators[0].name || t.collaborators[0].id)) ||
-                            "-";
-
-                        const manager =
-                            (t.manager_obj && (t.manager_obj.name || t.manager_obj.id)) ||
-                            "-";
-
-                        const company =
-                            t.company_name || "-";
-
+                        // ===== dataset para futuro (persistencia / modal) =====
+                        const taskId = t.task_id || null;
+                        const taskNotes = t.task_notes || null;
+                        const companyManagement = t.company_management || null;
                         const startDate = t.start_date || null;
-                        const startDisplay = startDate || "-";
 
                         const estimatedHours = (typeof t.estimated_hours === "number")
                             ? t.estimated_hours
                             : (t.estimated_hours ?? null);
-                        const estDisplay = (estimatedHours != null) ? estimatedHours : "-";
-
-                        const pri =
-                            (t.priority && (t.priority.priority_name || t.priority.priority_id)) ||
-                            t.priority_name ||
-                            t.priority ||
-                            "-";
-
-                        const finished =
-                            (t.finished_status &&
-                                (t.finished_status.completed_status_name ||
-                                t.finished_status.completed_status_id)) ||
-                            "-";
-
-                        const due = t.due_date || t.due || t.deadline || "-";
 
                         const docsLink = t.docs_link || null;
                         const resultLink = t.result_link || null;
-
-                        let linksHtml = "-";
-                        if (docsLink || resultLink) {
-                            const parts = [];
-                            if (docsLink) {
-                                parts.push(`<a href="${docsLink}" target="_blank" rel="noopener noreferrer">Docs</a>`);
-                            }
-                            if (resultLink) {
-                                parts.push(`<a href="${resultLink}" target="_blank" rel="noopener noreferrer">Result</a>`);
-                            }
-                            linksHtml = parts.join(" · ");
-                        }
-
-                        // ======================
-                        // IDS Y EXTRA PARA MODALES / LÓGICA FUTURA
-                        // ======================
-                        const taskId = t.task_id || null;
-                        const taskNotes = t.task_notes || null;
-                        const companyManagement = t.company_management || null;
 
                         const priorityId =
                             (t.priority && t.priority.priority_id) ||
@@ -819,27 +987,6 @@
                             t.task_finished_status ||
                             null;
 
-                        // ======================
-                        // PINTAR CELDAS VISIBLES
-                        // ======================
-                        tr.innerHTML = `
-                            <td class="pm-row"><div>${desc}</div></td>
-                            <td class="pm-row"><div>${proj}</div></td>
-                            <td class="pm-row"><div>${owner}</div></td>
-                            <td class="pm-row"><div>${collaborator}</div></td>
-                            <td class="pm-row"><div>${manager}</div></td>
-                            <td class="pm-row"><div>${company}</div></td>
-                            <td class="pm-row"><div>${startDisplay}</div></td>
-                            <td class="pm-row"><div>${estDisplay}</div></td>
-                            <td class="pm-row"><div>${pri}</div></td>
-                            <td class="pm-row"><div>${finished}</div></td>
-                            <td class="pm-row"><div>${due}</div></td>
-                            <td class="pm-row"><div>${linksHtml}</div></td>
-                        `;
-
-                        // ======================
-                        // GUARDAR DATA EXTRA EN EL <tr> PARA MODAL / TOGGLE DE COLUMNAS
-                        // ======================
                         if (taskId) tr.dataset.taskId = String(taskId);
                         if (startDate) tr.dataset.startDate = String(startDate);
                         if (estimatedHours != null) tr.dataset.estimatedHours = String(estimatedHours);
@@ -849,6 +996,12 @@
                         if (companyManagement) tr.dataset.companyManagement = String(companyManagement);
                         if (priorityId) tr.dataset.priorityId = String(priorityId);
                         if (finishedStatusId) tr.dataset.finishedStatusId = String(finishedStatusId);
+
+                        // ✅ también guardamos las nuevas por si el modal las ocupa después
+                        if (t.department) tr.dataset.department = String(t.department);
+                        if (t.type) tr.dataset.type = String(t.type);
+                        if (t.time_start) tr.dataset.timeStart = String(t.time_start);
+                        if (t.time_finish) tr.dataset.timeFinish = String(t.time_finish);
 
                         tbody.appendChild(tr);
                     });
@@ -916,8 +1069,12 @@
 
             // Modal de Manage layout
             initLayoutControls();
+            if (typeof initTableWidthSlider === "function") {
+            initTableWidthSlider();
+            }
         });
 
     </script>
+    <script src="assets/js/pipeline_layout.js"></script>
 </body>
 </html>

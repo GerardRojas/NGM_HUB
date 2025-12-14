@@ -81,6 +81,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await res.json();
 
+      localStorage.setItem("access_token", data.access_token);
+
       // Guarda usuario en localStorage para que el dashboard lo lea
       try {
         localStorage.setItem("ngmUser", JSON.stringify(data.user));

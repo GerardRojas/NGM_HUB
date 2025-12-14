@@ -252,7 +252,7 @@
 
 /* Puedes dar color distinto al título del grupo aquí */
 .pm-group-header .section-title {
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 600;
     color: var(--ngm-text-main);
 }

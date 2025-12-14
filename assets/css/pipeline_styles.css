@@ -291,6 +291,8 @@
     padding: 6px 10px;
     color: #dbdbdb;
     border-bottom: 1px solid var(--pm-table-border);
+    border-right: 1px solid var(--pm-table-col-border, rgba(148, 163, 184, 0.25));
+    min-width: 140px; /* base */
 }
 
 /* Celdas del body */

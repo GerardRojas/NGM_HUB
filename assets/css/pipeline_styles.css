@@ -212,6 +212,7 @@
     --pm-table-head-bg: #2d2d31; 
     --pm-table-border: #4c4c4c; 
     --pm-table-row-hover: rgba(255, 255, 255, 0.05);
+    --pm-table-col-border: rgba(148, 163, 184, 0.25); /* separador vertical */
 }
 
 /* LÍNEA INVISIBLE QUE GENERA GLOW (ILUMINACIÓN) */
@@ -846,25 +847,26 @@
   background: rgba(255,255,255,0.28);
 }
 
-/* Evita que el texto se pise: permite wrap */
-.table th,
-.table td {
+/* SOLO pipeline: por default NO se parte texto */
+.pm-group .table th,
+.pm-group .table td {
+  min-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+}
+
+/* Task: sí puede partirse (clamp 2 líneas lo controla) */
+.pm-group .table th[data-col="task"],
+.pm-group .table td[data-col="task"] {
+  min-width: 300px;
   white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
   word-break: break-word;
 }
 
-/* Da un ancho mínimo razonable a todas las columnas */
-.table th,
-.table td {
-  min-width: 140px;
-}
-
-/* Pero deja "Task" más flexible (más ancha) */
-.table th[data-col="task"],
-.table td[data-col="task"] {
-  min-width: 300px;
-}
- 
 /* Avatar inicial + nombre (Owner/Collaborator) */
 
 .pm-person {
@@ -919,3 +921,20 @@
     white-space: nowrap;
 }
 
+/* Ellipsis limpio para columnas no-task */
+.pm-group .table td:not([data-col="task"]) > div {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-group .table td > div {
+  max-width: 100%;
+}
+
+.pm-group .table td[data-col="task"] > div {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

@@ -380,6 +380,18 @@ button {
     color: var(--ngm-text-muted);
 }
 
+.user-pill-text .user-name {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.user-pill-text .user-role {
+    font-size: 11px;
+    opacity: 0.7;
+    line-height: 1.1;
+}
+
 /* ---------- Responsive topbar ---------- */
 
 @media (max-width: 900px) {

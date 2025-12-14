@@ -212,7 +212,7 @@
     --pm-table-head-bg: #2d2d31; 
     --pm-table-border: #4c4c4c; 
     --pm-table-row-hover: rgba(255, 255, 255, 0.05);
-    --pm-table-col-border: rgba(148, 163, 184, 0.25); /* separador vertical */
+    --pm-table-col-border: rgba(220, 222, 225, 0.25); /* separador vertical */
 }
 
 /* LÍNEA INVISIBLE QUE GENERA GLOW (ILUMINACIÓN) */
@@ -302,6 +302,7 @@
     font-size: 12px;
     border-bottom: 1px solid var(--pm-table-border);
     color: #aaaaaa;
+    border-right: 1px solid var(--pm-table-col-border);
 }
 
 .pm-group .table tbody tr:last-child td {
@@ -313,7 +314,9 @@
     background: var(--pm-table-row-hover);
 }
 
-
+.pm-group .table tbody td:last-child {
+    border-right: none;
+}
 
 /* Fila de "Add task" con un poco más de aire */
 .pm-add-row td {

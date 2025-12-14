@@ -732,11 +732,32 @@
             return s[0].toUpperCase();
             }
 
-            function renderPerson(name) {
-            const safeName = escapeHtml(name || "-");
-            const initial = escapeHtml(getInitial(name));
-            return `<span class="pm-person"><span class="pm-avatar">${initial}</span><span>${safeName}</span></span>`;
+            function hashStringToHue(str) {
+            // hash simple y estable -> hue 0..359
+            let h = 0;
+            for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+            return h % 360;
             }
+
+            function renderPerson(name) {
+            const raw = String(name || "").trim();
+            const safeName = escapeHtml(raw || "-");
+            const initial = escapeHtml(getInitial(raw || "-"));
+
+            const key = raw ? raw.toLowerCase() : "__unknown__";
+            const hue = hashStringToHue(key);
+
+            const bg = raw ? `hsl(${hue} 55% 35%)` : "#334155";
+            const ring = raw ? `hsl(${hue} 65% 55%)` : "rgba(148, 163, 184, 0.6)";
+
+            return `
+                <span class="pm-person" title="${safeName}">
+                <span class="pm-avatar" style="--av-bg:${bg}; --av-ring:${ring};">${initial}</span>
+                <span class="pm-person-name">${safeName}</span>
+                </span>
+            `;
+            }
+
 
 
             function formatMaybeDate(v) {

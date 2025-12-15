@@ -949,3 +949,151 @@
   cursor: pointer;
   background: rgba(148, 163, 184, 0.08);
 }
+/* =========================================================
+   PIPELINE — Shared modal skin (Layout + New Task)
+   ========================================================= */
+
+/* Backdrop negro + blur (shared) */
+:is(#layoutModal, #newTaskModal).modal-backdrop {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+}
+
+/* Centrado + scroll seguro en laptops (shared) */
+:is(#layoutModal, #newTaskModal).modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: clamp(12px, 3vh, 28px);
+  overflow-y: auto;
+}
+
+/* Card interior (shared) */
+:is(#layoutModal, #newTaskModal).modal-backdrop > .modal {
+  width: min(980px, 100%);
+  max-height: calc(100vh - 2 * clamp(12px, 3vh, 28px));
+  display: flex;
+  flex-direction: column;
+
+  background: #212121 !important;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
+}
+
+/* Header / Footer (shared) */
+:is(#layoutModal, #newTaskModal) .modal-header,
+:is(#layoutModal, #newTaskModal) .modal-footer {
+  background: #242424 !important;
+  border-color: rgba(82, 82, 82, 0.18);
+}
+
+/* Title (shared) */
+:is(#layoutModal, #newTaskModal) .modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ngm-text-main);
+}
+
+/* Close button (shared) */
+:is(#layoutModal, #newTaskModal) .modal-btn {
+  background: transparent;
+  border: none;
+  color: var(--ngm-text-muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+:is(#layoutModal, #newTaskModal) .modal-btn:hover {
+  color: var(--ngm-text-main);
+}
+
+/* Body padding + internal scroll (shared) */
+:is(#layoutModal, #newTaskModal) .modal-body {
+  padding: 16px 18px 20px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Footer buttons style (shared) */
+:is(#layoutModal, #newTaskModal) .modal-footer {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border-soft);
+  background: #212121 !important;
+}
+
+:is(#layoutModal, #newTaskModal) .modal-footer .btn-secondary,
+:is(#layoutModal, #newTaskModal) .modal-footer .btn-primary {
+  appearance: none;
+  border-radius: 14px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.05s ease,
+    opacity 0.15s ease;
+}
+
+:is(#layoutModal, #newTaskModal) .modal-footer .btn-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+}
+:is(#layoutModal, #newTaskModal) .modal-footer .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+:is(#layoutModal, #newTaskModal) .modal-footer .btn-primary {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+:is(#layoutModal, #newTaskModal) .modal-footer .btn-primary:hover {
+  background: rgba(34, 197, 94, 0.22);
+  border-color: rgba(34, 197, 94, 0.55);
+  color: #eafff3;
+}
+
+:is(#layoutModal, #newTaskModal) .modal-footer .btn-secondary:active,
+:is(#layoutModal, #newTaskModal) .modal-footer .btn-primary:active {
+  transform: translateY(1px);
+}
+
+/* Hidden must always win (shared) */
+:is(#layoutModal, #newTaskModal).modal-backdrop.hidden {
+  display: none !important;
+}
+
+/* Scrollbar (shared) */
+:is(#layoutModal, #newTaskModal) .modal-body::-webkit-scrollbar {
+  width: 10px;
+}
+:is(#layoutModal, #newTaskModal) .modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+}
+:is(#layoutModal, #newTaskModal) .modal-body::-webkit-scrollbar-thumb {
+  background-color: rgba(180, 180, 180, 0.35);
+  border-radius: 8px;
+  border: 2px solid rgba(0, 0, 0, 0.4);
+}
+:is(#layoutModal, #newTaskModal) .modal-body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(200, 200, 200, 0.5);
+}
+:is(#layoutModal, #newTaskModal) .modal-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 180, 180, 0.35) rgba(255, 255, 255, 0.04);
+}

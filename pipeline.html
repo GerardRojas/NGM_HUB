@@ -421,6 +421,24 @@
             { key: "links", label: "Links" },
         ];
 
+        
+        // ================================
+        // Column layout (shared by all tables)
+        // ================================
+        function buildColGroup() {
+        return `
+            <colgroup>
+            ${COLUMNS.map(col => {
+                const width =
+                col.key === "task" ? "320px" :
+                col.key === "project" ? "220px" :
+                "160px";
+                return `<col style="width:${width}">`;
+            }).join("")}
+            </colgroup>
+        `;
+        }
+
         function getDefaultVisibleGroups() {
         // default: todos los grupos visibles (los keys deben coincidir con data-group-key)
         return {
@@ -1002,6 +1020,8 @@
 
                 const table = document.createElement("table");
                 table.className = "table";
+
+                table.insertAdjacentHTML("afterbegin", buildColGroup());
 
                 const thead = document.createElement("thead");
                 thead.innerHTML = `

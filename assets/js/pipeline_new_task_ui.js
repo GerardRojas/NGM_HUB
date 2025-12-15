@@ -105,10 +105,6 @@
             This will be connected to Supabase Storage later.
         </div>
         </section>
-
-        <div class="pm-hint">
-        New tasks always start as <b>Not Started</b>.
-        </div>
     `;
   }
 

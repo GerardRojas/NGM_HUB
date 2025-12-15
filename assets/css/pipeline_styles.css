@@ -261,12 +261,14 @@
 /* La tabla ocupa todo el ancho del grupo */
 .pm-group .table {
     width: 100%;
+    min-width: var(--pm-table-min-width, 1200px);
+
+    table-layout: fixed;      /* clave para colgroup */
     border-collapse: collapse;
+
     background: var(--pm-table-bg);
     border-radius: 10px;
     overflow: hidden;
-    table-layout: fixed;
-    border-collapse: collapse;
 }
 
 /* Header de la tabla */
@@ -832,11 +834,6 @@
   overflow-x: auto;
 }
 
-/* ancho mínimo controlado por variable (por defecto 1200px) */
-.pm-group .table {
-  min-width: var(--pm-table-min-width, 1200px);
-}
-
 /* opcional: que el scroll se vea “gris” */
 .pm-group-body::-webkit-scrollbar {
   height: 10px;
@@ -853,14 +850,12 @@
   background: rgba(255,255,255,0.28);
 }
 
-/* SOLO pipeline: por default NO se parte texto */
 .pm-group .table th,
 .pm-group .table td {
-  min-width: 140px;
+  min-width: 140px; /* fallback si colgroup no aplica */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  word-break: normal;
 }
 
 /* Task: sí puede partirse (clamp 2 líneas lo controla) */

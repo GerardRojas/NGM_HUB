@@ -913,17 +913,19 @@
 /* Columna Collaborator: más ancho + no wrap */
 .pm-group .table th[data-col="collaborator"],
 .pm-group .table td[data-col="collaborator"] {
-    min-width: 180px;
-    max-width: 220px;
+    min-width: 220px;
+    max-width: 280px;
     white-space: nowrap;
+    overflow: visible;
 }
 
 /* Columna Owner: ancho mínimo para avatar + nombre */
 .pm-group .table th[data-col="owner"],
 .pm-group .table td[data-col="owner"] {
-    min-width: 180px;
-    max-width: 220px;
+    min-width: 220px;
+    max-width: 280px;
     white-space: nowrap;
+    overflow: visible;
 }
 
 /* Ellipsis limpio para columnas no-task */

@@ -26,69 +26,92 @@
     if (!form) return;
 
     form.innerHTML = `
-      <div class="pm-form-grid">
-        <label class="pm-field pm-field--full">
-          <span class="pm-field-label">Task Description <b>*</b></span>
-          <input id="nt_task" class="pm-input" type="text" placeholder="Describe the task…" required />
-        </label>
+        <!-- BASICS -->
+        <section class="pm-modal-section">
+        <h3 class="pm-modal-section-title">Basics</h3>
 
-        <label class="pm-field">
-          <span class="pm-field-label">Company <b>*</b></span>
-          <input id="nt_company" class="pm-input" type="text" placeholder="e.g. NGM" required />
-        </label>
+        <div class="pm-form-grid">
+            <label class="pm-field pm-field--full">
+            <span class="pm-field-label">Task Description <b>*</b></span>
+            <input id="nt_task" class="pm-input" type="text" placeholder="Describe the task…" required />
+            </label>
 
-        <label class="pm-field">
-          <span class="pm-field-label">Project</span>
-          <input id="nt_project" class="pm-input" type="text" placeholder="Project name" />
-        </label>
+            <label class="pm-field">
+            <span class="pm-field-label">Company <b>*</b></span>
+            <input id="nt_company" class="pm-input" type="text" placeholder="e.g. NGM" required />
+            </label>
 
-        <label class="pm-field">
-          <span class="pm-field-label">Owner <b>*</b></span>
-          <input id="nt_owner" class="pm-input" type="text" placeholder="Owner name" required />
-        </label>
+            <label class="pm-field">
+            <span class="pm-field-label">Project</span>
+            <input id="nt_project" class="pm-input" type="text" placeholder="Project name" />
+            </label>
 
-        <label class="pm-field">
-          <span class="pm-field-label">Collaborator</span>
-          <input id="nt_collaborator" class="pm-input" type="text" placeholder="Collaborator (optional)" />
-        </label>
+            <label class="pm-field">
+            <span class="pm-field-label">Department <b>*</b></span>
+            <input id="nt_department" class="pm-input" type="text" placeholder="e.g. Construction" required />
+            </label>
 
-        <label class="pm-field">
-          <span class="pm-field-label">Type <b>*</b></span>
-          <input id="nt_type" class="pm-input" type="text" placeholder="e.g. Admin / Field / Design…" required />
-        </label>
-
-        <label class="pm-field">
-          <span class="pm-field-label">Department <b>*</b></span>
-          <input id="nt_department" class="pm-input" type="text" placeholder="e.g. Construction" required />
-        </label>
-
-        <label class="pm-field">
-          <span class="pm-field-label">Due Date</span>
-          <input id="nt_due" class="pm-input" type="date" />
-        </label>
-
-        <label class="pm-field">
-          <span class="pm-field-label">Deadline</span>
-          <input id="nt_deadline" class="pm-input" type="date" />
-        </label>
-
-        <div class="pm-field pm-field--full">
-          <span class="pm-field-label">Initial Info Link</span>
-          <button type="button" class="pm-btn pm-btn-secondary btn-small" id="nt_attach_link">
-            <span class="pm-btn-icon">🔗</span>
-            <span>Add Link (soon)</span>
-          </button>
-          <div class="pm-hint" style="margin-top:8px; opacity:.75;">
-            This will be connected to Supabase Storage later.
-          </div>
+            <label class="pm-field">
+            <span class="pm-field-label">Type <b>*</b></span>
+            <input id="nt_type" class="pm-input" type="text" placeholder="e.g. Admin / Field / Design…" required />
+            </label>
         </div>
-      </div>
+        </section>
 
-      <div class="pm-hint">
+        <!-- PEOPLE -->
+        <section class="pm-modal-section">
+        <h3 class="pm-modal-section-title">People</h3>
+
+        <div class="pm-form-grid">
+            <label class="pm-field">
+            <span class="pm-field-label">Owner <b>*</b></span>
+            <input id="nt_owner" class="pm-input" type="text" placeholder="Owner name" required />
+            </label>
+
+            <label class="pm-field">
+            <span class="pm-field-label">Collaborator</span>
+            <input id="nt_collaborator" class="pm-input" type="text" placeholder="Collaborator (optional)" />
+            </label>
+        </div>
+        </section>
+
+        <!-- SCHEDULE -->
+        <section class="pm-modal-section">
+        <h3 class="pm-modal-section-title">Schedule</h3>
+
+        <div class="pm-form-grid">
+            <label class="pm-field">
+            <span class="pm-field-label">Due Date</span>
+            <input id="nt_due" class="pm-input" type="date" />
+            </label>
+
+            <label class="pm-field">
+            <span class="pm-field-label">Deadline</span>
+            <input id="nt_deadline" class="pm-input" type="date" />
+            </label>
+        </div>
+        </section>
+
+        <!-- LINKS -->
+        <section class="pm-modal-section">
+        <h3 class="pm-modal-section-title">Links</h3>
+
+        <button type="button" class="pm-btn pm-btn-secondary btn-small" id="nt_attach_link">
+            <span class="pm-btn-icon">🔗</span>
+            <span>Add Initial Info Link (soon)</span>
+        </button>
+
+        <div class="pm-hint" style="margin-top:10px; opacity:.75;">
+            This will be connected to Supabase Storage later.
+        </div>
+        </section>
+
+        <div class="pm-hint">
         New tasks always start as <b>Not Started</b>.
-      </div>
+        </div>
     `;
   }
+
 
   // ================================
   // Build + validate payload

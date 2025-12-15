@@ -179,7 +179,7 @@
             id="pm-width-slider"
             class="pm-width-slider"
             type="range"
-            min="900"
+            min="450"
             max="1900"
             step="50"
             value="1200"
@@ -427,19 +427,18 @@
         // ================================
 
         function buildColGroup() {
-          return `
+        return `
             <colgroup>
             ${COLUMNS.map(col => {
                 const width =
-                 col.key === "task" ? "320px" :
-                 col.key === "project" ? "220px" :
-                 "160px";
+                col.key === "task" ? "260px" :
+                col.key === "project" ? "180px" :
+                "120px";
                 return `<col data-col="${col.key}" style="width:${width}">`;
             }).join("")}
             </colgroup>
-          `;
+        `;
         }
-
 
         function getDefaultVisibleGroups() {
         // default: todos los grupos visibles (los keys deben coincidir con data-group-key)

@@ -849,7 +849,7 @@
 
 .pm-group .table th,
 .pm-group .table td {
-  min-width: var(--pm-cell-min, 140px);
+  min-width: var(--pm-cell-min, 110px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

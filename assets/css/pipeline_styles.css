@@ -1182,13 +1182,6 @@
   }
 }
 
-/* Espacio entre cards internas en modales */
-:is(#layoutModal, #newTaskModal) .modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 14px; /* ajusta a 16-18 si quieres más aire */
-}
-
 /* Card interna reusable */
 :is(#layoutModal, #newTaskModal) .pm-modal-section {
   background: rgba(255, 255, 255, 0.03);
@@ -1204,4 +1197,37 @@
   font-weight: 700;
   letter-spacing: 0.3px;
   color: rgba(255, 255, 255, 0.75);
+}
+
+/* New Task: el gap entre las "cards" vive en el FORM, no en .modal-body */
+#newTaskModal .pm-newtask-form{
+  display: flex;
+  flex-direction: column;
+  gap: 18px; /* usa el mismo valor que el layout modal-body */
+}
+
+/* Normalize PM buttons (kill browser blue styles) */
+#newTaskModal .pm-btn,
+#layoutModal .pm-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  background-clip: padding-box;
+}
+
+#newTaskModal #nt_attach_link {
+  background: var(--ngm-bg-surface-soft);
+  color: var(--ngm-text-main);
+  border: 1px solid var(--border-soft);
+}
+
+#newTaskModal #nt_attach_link:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(148,163,184,0.35);
+}
+
+#newTaskModal #nt_attach_link:focus,
+#newTaskModal #nt_attach_link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-color: rgba(34,197,94,0.65);
 }

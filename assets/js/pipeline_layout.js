@@ -22,8 +22,8 @@
     }
 
     function applyTableWidth(px) {
-      // Slider controla el ancho mínimo TOTAL de la tabla (no columnas)
-      document.documentElement.style.setProperty("--pm-table-min-width", `${px}px`);
+      // Slider controla el ancho VISIBLE del grupo (área útil)
+      document.documentElement.style.setProperty("--pm-group-body-max", `${px}px`);
       if (label) label.textContent = `${px}px`;
     }
 

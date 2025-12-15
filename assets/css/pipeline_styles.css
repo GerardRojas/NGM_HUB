@@ -826,8 +826,10 @@
 
 /* el body del grupo puede scrollear horizontalmente si la tabla es más ancha */
 .pm-group-body {
+  width: 100%;
   padding-bottom: 6px; /* 👈 SEPARA LA TABLA DEL SCROLLBAR */
   overflow-x: auto;
+  max-width: var(--pm-group-body-max, 100%);
 }
 
 /* opcional: que el scroll se vea “gris” */

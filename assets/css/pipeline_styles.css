@@ -944,3 +944,8 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+.pm-group .table td[data-col]:hover {
+  cursor: pointer;
+  background: rgba(148, 163, 184, 0.08);
+}

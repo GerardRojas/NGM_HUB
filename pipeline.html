@@ -258,13 +258,22 @@
     <!-- Root donde vamos a inyectar modales (partials) -->
     <div id="modals-root"></div>
 
+    <!-- UI handlers del modal (abre/cierra/bind) -->
+    <script src="assets/js/pipeline_new_task_ui.js"></script>
+
+    <!-- Carga del partial + bind SOLO cuando ya existe en el DOM -->
     <script type="module">
      import { loadHtmlFragment } from "./assets/js/html_loader.js";
 
-     loadHtmlFragment("./partials/new_task_modal.html", "#modals-root")
-        .then(() => console.log("[PARTIAL] New Task modal loaded"))
-        .catch(err => console.error("[PARTIAL] load failed:", err));
+    loadHtmlFragment("./partials/new_task_modal.html", "#modals-root")
+        .then(() => {
+         console.log("[PARTIAL] New Task modal loaded");
+         window.PM_NewTask?.bind();
+        })
+        .catch((err) => console.error("[PARTIAL] load failed:", err));
     </script>
+
+    <script src="assets/js/pipeline_table_interactions.js"></script>
 
     <script>
             // ================================
@@ -376,6 +385,14 @@
         const ownerFilter = document.getElementById("owner-filter");
         const priorityFilter = document.getElementById("priority-filter");
         const manageBtn = document.getElementById("btnNewTask");
+        if (manageBtn) {
+         manageBtn.addEventListener("click", () => {
+            // New Task → abre modal
+            window.PM_NewTask?.open?.(); // o si tu UI expone open()
+            // si tu UI solo tiene bind(), entonces:
+            // document.getElementById("newTaskModal")?.classList.remove("hidden");
+        });
+        }
         const searchInput = document.getElementById("pipeline-search-input");
 
         // 🔑 storage key
@@ -527,7 +544,6 @@
 
         let rawGroups = [];
         let searchQuery = "";
-        let manageMode = false;
 
         async function fetchPipeline() {
             try {
@@ -1007,15 +1023,19 @@
                     `;
                     tbody.appendChild(emptyRow);
                 } else {
-                    tasks.forEach(t => {
-                        const tr = document.createElement("tr");
-                        tr.className = "pm-row";
-                        if (manageMode) tr.classList.add("pm-row-manage");
+                        tasks.forEach(t => {
+                         const tr = document.createElement("tr");
+                         tr.className = "pm-row";
+                         tr.dataset.taskId = t.id || t.task_id || "";
 
-                        tr.innerHTML = COLUMNS.map(col => {
-                        const html = getCellValue(t, col.key);
-                        return `<td class="pm-row" data-col="${escapeHtml(col.key)}"><div>${html}</div></td>`;
-                        }).join("")
+                         tr.innerHTML = COLUMNS.map(col => {
+                            const html = getCellValue(t, col.key);
+                            return `
+                             <td data-col="${escapeHtml(col.key)}">
+                                <div>${html}</div>
+                             </td>
+                            `;
+                        }).join("");
 
                         // ===== dataset para futuro (persistencia / modal) =====
                         const taskId = t.task_id || null;
@@ -1077,18 +1097,6 @@
         if (projectFilter) projectFilter.addEventListener("change", renderGroups);
         if (ownerFilter) ownerFilter.addEventListener("change", renderGroups);
         if (priorityFilter) priorityFilter.addEventListener("change", renderGroups);
-
-        // (por ahora dejamos este manejador como está;
-        // luego lo cambiamos cuando convirtamos el botón a "New task" + modal)
-        if (manageBtn) {
-            manageBtn.addEventListener("click", () => {
-                manageMode = !manageMode;
-                manageBtn.classList.toggle("is-active", manageMode);
-                manageBtn.querySelector("span:last-child").textContent = manageMode ? "Done managing" : "Manage Tasks";
-                renderGroups();
-            });
-        }
-
         if (searchInput) {
             searchInput.addEventListener("input", (e) => {
                 searchQuery = e.target.value.toLowerCase();

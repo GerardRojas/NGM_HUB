@@ -8,17 +8,21 @@
     const KEY = "pmTableMinWidth";
 
     function applyTableMinWidth(px) {
-      // 1) variable global para que la usen TODAS las tablas del pipeline
-      document.documentElement.style.setProperty("--pm-table-min-width", `${px}px`);
+      // variable global (la puedes seguir usando si la ocupas en CSS)
+      document.documentElement.style.setProperty("--pm-table-width", `${px}px`);
 
-      // 2) refuerzo: por si alguna regla está pisando, lo aplicamos inline a cada tabla
+      // opcional: cuando la tabla sea más angosta, también baja el min-width de celdas
+      // (así el slider "sí se siente" al mínimo)
+      const cellMin = Math.max(90, Math.floor(px / 14)); // ajusta 14 según # cols típicas
+      document.documentElement.style.setProperty("--pm-cell-min", `${cellMin}px`);
+
       document.querySelectorAll(".pm-group .table").forEach((tbl) => {
-        tbl.style.minWidth = `${px}px`;
-        tbl.style.width = "max-content";
-        tbl.style.tableLayout = "auto";
+        tbl.style.width = `${px}px`;      // 👈 clave
+        tbl.style.minWidth = "0px";       // 👈 evita que se quede grande por minWidth
+        tbl.style.tableLayout = "fixed";  // 👈 clave para que estire columnas y no haya huecos
       });
     }
-
+    
     const apply = (px) => {
       applyTableMinWidth(px);
       if (label) label.textContent = `${px}px`;

@@ -258,17 +258,14 @@
     color: var(--ngm-text-main);
 }
 
-/* La tabla ocupa todo el ancho del grupo */
+/* Pipeline table: el ancho lo controla el slider (JS) */
 .pm-group .table {
-    width: 100%;
-    min-width: var(--pm-table-min-width, 1200px);
-
-    table-layout: fixed;      /* clave para colgroup */
-    border-collapse: collapse;
-
-    background: var(--pm-table-bg);
-    border-radius: 10px;
-    overflow: hidden;
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--pm-table-bg);
+  border-radius: 10px;
+  overflow: hidden;
+  table-layout: fixed;
 }
 
 /* Header de la tabla */
@@ -852,7 +849,7 @@
 
 .pm-group .table th,
 .pm-group .table td {
-  min-width: 140px; /* fallback si colgroup no aplica */
+  min-width: var(--pm-cell-min, 140px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

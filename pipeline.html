@@ -258,9 +258,10 @@
     <!-- Root donde vamos a inyectar modales (partials) -->
     <div id="modals-root"></div>
 
-    <script src="assets/js/html_loader.js"></script>
-    <script>
-     window.loadHtmlFragment("./partials/new_task_modal.html", "#modals-root")
+    <script type="module">
+     import { loadHtmlFragment } from "./assets/js/html_loader.js";
+
+     loadHtmlFragment("./partials/new_task_modal.html", "#modals-root")
         .then(() => console.log("[PARTIAL] New Task modal loaded"))
         .catch(err => console.error("[PARTIAL] load failed:", err));
     </script>

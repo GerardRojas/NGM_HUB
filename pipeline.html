@@ -128,9 +128,9 @@
                             </div>
                             <div class="pm-toolbar-card-body pm-toolbar-layout-body">
                                 <div class="pm-layout-actions">
-                                    <button id="btnNewTask" type="button" class="pm-btn pm-btn-secondary btn-small">
-                                    <span class="pm-btn-icon">＋</span>
-                                    <span>Manage Tasks</span>
+                                    <button id="btnNewTask" type="button" class="pm-btn pm-btn-secondary btn-small"> 
+                                     <span class="pm-btn-icon">＋</span>
+                                     <span>New Task</span>
                                     </button>
 
                                     <button
@@ -255,6 +255,15 @@
   </div>
 </div>
 
+    <!-- Root donde vamos a inyectar modales (partials) -->
+    <div id="modals-root"></div>
+
+    <script src="assets/js/html_loader.js"></script>
+    <script>
+     window.loadHtmlFragment("./partials/new_task_modal.html", "#modals-root")
+        .then(() => console.log("[PARTIAL] New Task modal loaded"))
+        .catch(err => console.error("[PARTIAL] load failed:", err));
+    </script>
 
     <script>
             // ================================

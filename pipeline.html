@@ -425,19 +425,21 @@
         // ================================
         // Column layout (shared by all tables)
         // ================================
+
         function buildColGroup() {
-        return `
+          return `
             <colgroup>
             ${COLUMNS.map(col => {
                 const width =
-                col.key === "task" ? "320px" :
-                col.key === "project" ? "220px" :
-                "160px";
-                return `<col style="width:${width}">`;
+                 col.key === "task" ? "320px" :
+                 col.key === "project" ? "220px" :
+                 "160px";
+                return `<col data-col="${col.key}" style="width:${width}">`;
             }).join("")}
             </colgroup>
-        `;
+          `;
         }
+
 
         function getDefaultVisibleGroups() {
         // default: todos los grupos visibles (los keys deben coincidir con data-group-key)
@@ -527,12 +529,25 @@
         }
 
         function applyVisibleColsToTables(visibleMap) {
-            document.querySelectorAll(".pm-group .table [data-col]").forEach(el => {
-                const key = el.getAttribute("data-col");
-                if (!key) return;
-                el.style.display = visibleMap[key] ? "" : "none";
+          document.querySelectorAll(".pm-group .table").forEach(table => {
+
+            // th + td
+            table.querySelectorAll("th[data-col], td[data-col]").forEach(el => {
+              const key = el.dataset.col;
+              el.style.display = visibleMap[key] ? "" : "none";
             });
+
+            // colgroup (CLAVE para eliminar el hueco)
+            table.querySelectorAll("col[data-col]").forEach(col => {
+              const key = col.dataset.col;
+              col.style.display = visibleMap[key] ? "" : "none";
+            });
+        });
+
+        // fuerza recálculo de ancho
+        window.refreshPipelineTables?.();
         }
+
 
         function buildColumnsModal(COLUMNS, visibleMap) {
         const list = document.getElementById("pm-columns-list");

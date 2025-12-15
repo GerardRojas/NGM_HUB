@@ -9,10 +9,8 @@
     const KEY = "pmTableWidth";
 
     function computeMaxUsefulWidth() {
-      // mide un contenedor NO limitado por --pm-group-body-max
-      const main = document.querySelector("main");
+      const main = document.querySelector("main.main-content");
       if (!main) return 1900;
-
       const rect = main.getBoundingClientRect();
       return Math.max(800, Math.floor(rect.width - 24));
     }
@@ -22,8 +20,7 @@
     }
 
     function applyTableWidth(px) {
-      // Slider controla el ancho VISIBLE del grupo (área útil)
-      document.documentElement.style.setProperty("--pm-group-body-max", `${px}px`);
+      document.documentElement.style.setProperty("--pm-layout-max", `${px}px`);
       if (label) label.textContent = `${px}px`;
     }
 

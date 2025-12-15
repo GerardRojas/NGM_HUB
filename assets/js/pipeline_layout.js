@@ -9,11 +9,11 @@
     const KEY = "pmTableWidth";
 
     function computeMaxUsefulWidth() {
-      // Área útil real del grupo (contenedor que scrollea la tabla)
-      const body = document.querySelector(".pm-group-body");
-      if (!body) return 1900; // fallback si aún no renderiza
-      const rect = body.getBoundingClientRect();
-      // margen para padding/bordes
+      // mide un contenedor NO limitado por --pm-group-body-max
+      const main = document.querySelector("main");
+      if (!main) return 1900;
+
+      const rect = main.getBoundingClientRect();
       return Math.max(800, Math.floor(rect.width - 24));
     }
 
@@ -35,8 +35,8 @@
     const minAllowed = Number(slider.min) || 260;
 
     // Carga preferencia guardada y clámpea al rango actual
-    const savedRaw = Number(localStorage.getItem(KEY) || slider.value || 1200);
-    const saved = clamp(savedRaw, minAllowed, maxUseful);
+    const savedRaw = Number(localStorage.getItem(KEY) || slider.value || maxUseful);
+    const saved = Math.max(minAllowed, Math.min(savedRaw, maxUseful));
 
     slider.value = String(saved);
     applyTableWidth(saved);

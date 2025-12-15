@@ -291,7 +291,6 @@
     color: #dbdbdb;
     border-bottom: 1px solid var(--pm-table-border);
     border-right: 1px solid var(--pm-table-col-border, rgba(148, 163, 184, 0.25));
-    min-width: 350px; /* base */
 }
 
 /* Celdas del body */
@@ -914,6 +913,14 @@
 /* Columna Collaborator: más ancho + no wrap */
 .pm-group .table th[data-col="collaborator"],
 .pm-group .table td[data-col="collaborator"] {
+    min-width: 180px;
+    max-width: 220px;
+    white-space: nowrap;
+}
+
+/* Columna Owner: ancho mínimo para avatar + nombre */
+.pm-group .table th[data-col="owner"],
+.pm-group .table td[data-col="owner"] {
     min-width: 180px;
     max-width: 220px;
     white-space: nowrap;

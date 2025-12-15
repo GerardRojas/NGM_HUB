@@ -17,9 +17,6 @@
 
       // aplica ancho real a todas las tablas existentes
       document.querySelectorAll(".pm-group .table").forEach((tbl) => {
-        tbl.style.width = `${px}px`;          // <- el slider manda aquí
-        tbl.style.minWidth = "0px";
-        tbl.style.tableLayout = "fixed";
       });
 
       if (label) label.textContent = `${px}px`;

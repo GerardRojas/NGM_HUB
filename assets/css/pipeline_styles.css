@@ -1181,3 +1181,27 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Espacio entre cards internas en modales */
+:is(#layoutModal, #newTaskModal) .modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px; /* ajusta a 16-18 si quieres más aire */
+}
+
+/* Card interna reusable */
+:is(#layoutModal, #newTaskModal) .pm-modal-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  padding: 14px 14px;
+}
+
+/* Título de card */
+:is(#layoutModal, #newTaskModal) .pm-modal-section-title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: rgba(255, 255, 255, 0.75);
+}

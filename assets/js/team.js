@@ -212,9 +212,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const initials = escapeHtml(getInitial(u.user_name));
       const bg = u.color || "#a3a3a3";
 
-      // pass accent to CSS (optional, used by .team-card-back)
-      stack.style.setProperty("--team-accent", bg);
-
       const avatarHtml = u.user_photo
         ? `<img src="${escapeHtml(u.user_photo)}" alt="${safeName}" />`
         : `${initials}`;

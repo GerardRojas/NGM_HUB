@@ -353,38 +353,39 @@
   border-color: rgba(34, 197, 94, 0.36);
 }
 
-/* Backplate / depth behind each user card */
+/* Depth plate detrás de cada user card (gris, alineado) */
 .team-card-stack{
   position: relative;
   overflow: visible;
+
+  /* tweaks */
+  --team-card-radius: 18px;
+  --team-back-inset: 10px;   /* cuánto “crece” la placa alrededor */
+  --team-back-offset: 6px;   /* micro-offset para profundidad (opcional) */
 }
 
 .team-card-back{
   position: absolute;
-  inset: 0;
-  border-radius: 18px;            /* ajusta al radius real de tu card */
-  transform: translate(10px, 10px);
+  inset: calc(var(--team-back-inset) * -1);
+  border-radius: calc(var(--team-card-radius) + var(--team-back-inset));
   pointer-events: none;
   z-index: 0;
 
-  /* look: “card atrás” */
+  /* gris neutro (sin colores por user) */
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.06);
-  box-shadow: 0 18px 30px rgba(0,0,0,0.35);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
 
-  /* si quieres un toque de color por usuario (usa --team-accent) */
-  background: color-mix(in srgb, var(--team-accent, #60a5fa) 6%, rgba(255,255,255,0.03));
-  border-color: color-mix(in srgb, var(--team-accent, #60a5fa) 18%, rgba(255,255,255,0.06));
+  transform: translate(var(--team-back-offset), var(--team-back-offset));
 }
 
 .team-card-stack .team-card{
   position: relative;
   z-index: 1;
-  overflow: visible; /* por si tu card tenía overflow hidden en algún lado */
+  border-radius: var(--team-card-radius);
 }
 
+/* Hover suave */
 .team-card-stack:hover .team-card-back{
-  transform: translate(12px, 12px);
+  transform: translate(calc(var(--team-back-offset) + 2px), calc(var(--team-back-offset) + 2px));
 }
-
-/* Tip: si se enciman por el offset, baja el translate a 6px o sube gap del grid */

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NGM HUB — Team Management</title>
+
+  <!-- Fonts: Inter + Roboto (NGM standard) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Base layout + Team styles -->
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/team_styles.css" />
+
+  <!-- Env/server pills (same approach as pipeline.html) -->
+  <script src="assets/js/config.js" defer></script>
+  <script src="assets/js/pills.js" defer></script>
+
+  <!-- Page logic -->
+  <script src="assets/js/team.js" defer></script>
+</head>
+
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img
+          src="assets/img/logo.png"
+          alt="NGM HUB Logo"
+          class="sidebar-logo-img"
+        />
+      </div>
+
+      <div class="sidebar-title-block">
+        <p class="sidebar-title">NGM HUB</p>
+        <p class="sidebar-subtitle">Team Management</p>
+      </div>
+
+      <!-- Optional: dynamic modules like pipeline (inject from JS) -->
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <!-- modules injected from JS -->
+      </nav>
+    </aside>
+
+    <!-- Main area -->
+    <div class="main-area">
+      <!-- Topbar (same structure as pipeline; “equal to dashboard”) -->
+      <header class="ngm-topbar">
+        <!-- LEFT -->
+        <div class="ngm-bar-left">
+          <div class="ngm-brand">
+            <div class="ngm-brand-icon-small">
+              <span>⚡</span>
+            </div>
+            <div class="ngm-brand-text">
+              <span class="ngm-brand-org">Next Generation Management</span>
+              <span class="ngm-brand-context">NGM Hub · Team Management</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div class="ngm-topbar-right">
+          <div class="ngm-meta">
+            <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
+            <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · —</span>
+          </div>
+
+          <!-- Search bar -->
+          <form class="ngm-search" role="search" onsubmit="return false;">
+            <span class="ngm-global-search-icon">⌕</span>
+            <input
+              id="team-search-input"
+              type="search"
+              class="ngm-search-input"
+              placeholder="Search users…"
+              aria-label="Search users"
+            />
+          </form>
+
+          <!-- User pill -->
+          <span id="user-pill" class="user-pill">User · —</span>
+        </div>
+      </header>
+
+      <!-- Content -->
+      <main class="main-content">
+        <section class="team-section">
+          <div class="section-header-row">
+            <div>
+              <h2 class="section-title">Team Management</h2>
+              <p class="section-subtitle">
+                Manage users, roles and access. Create, edit or deactivate users.
+              </p>
+            </div>
+
+            <div class="team-actions">
+              <button type="button" class="btn-secondary" id="btn-refresh-team">Refresh</button>
+              <button type="button" class="btn-primary" id="btn-add-user">Add User</button>
+            </div>
+          </div>
+
+          <!-- Kanban container (team.js will render columns + user cards here) -->
+          <div id="team-board" class="team-board">
+            <div id="team-placeholder" class="team-placeholder">
+              Loading team…
+            </div>
+          </div>
+        </section>
+
+        <!-- Root for modals (add/edit user) -->
+        <div id="modals-root"></div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

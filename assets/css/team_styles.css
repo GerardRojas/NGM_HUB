@@ -1,0 +1,217 @@
+/* ===========================
+   TEAM MANAGEMENT (scoped)
+   =========================== */
+
+.team-section {
+  padding: 16px 18px 26px;
+}
+
+/* Header row */
+.team-section .section-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.team-section .section-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.team-section .section-subtitle {
+  margin: 6px 0 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.team-section .team-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Board */
+.team-board {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+
+  /* horizontal kanban scroll */
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  padding: 10px 6px 18px;
+  border-radius: var(--radius-md);
+
+  /* helps on Mac trackpads */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Placeholder */
+.team-placeholder {
+  width: 100%;
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--radius-md);
+}
+
+/* Column (lane) */
+.team-column {
+  flex: 0 0 340px;
+  max-width: 380px;
+
+  background: var(--ngm-bg-card, #18181b);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  box-shadow: var(--ngm-shadow-soft);
+
+  padding: 12px;
+}
+
+.team-column-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.team-column-title {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.2px;
+  margin: 0;
+}
+
+.team-column-count {
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+/* Cards list */
+.team-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* User card */
+.team-card {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 10px;
+
+  background: var(--ngm-bg-surface, #0d0f12);
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  padding: 10px 10px;
+
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.team-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: var(--ngm-shadow-soft);
+}
+
+/* Avatar */
+.team-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+
+  display: grid;
+  place-items: center;
+
+  font-weight: 800;
+  font-size: 13px;
+  color: #0b0b0c;
+
+  /* default if no user color provided */
+  background: #a3a3a3;
+
+  /* optional ring */
+  outline: 2px solid rgba(255, 255, 255, 0.10);
+  outline-offset: 1px;
+}
+
+.team-card-main {
+  min-width: 0;
+}
+
+.team-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.team-name {
+  font-weight: 700;
+  font-size: 13px;
+  margin: 0;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.team-meta {
+  margin: 2px 0 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.team-badges {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.team-badge {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+/* Right-side mini actions (Edit/Deactivate) — optional */
+.team-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.team-action-btn {
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.team-action-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+}

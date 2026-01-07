@@ -61,6 +61,20 @@ document.addEventListener("DOMContentLoaded", () => {
       color: "#22c55e",
     },
     {
+      user_id: "3f3c9b70-1b1a-4b5b-9d8a-111111111111",
+      user_name: "Gerard Roja22s",
+      user_role_id: "role-ceo-uuid",
+      user_role_name: "CEO",
+      user_seniority_id: "senior-uuid",
+      user_seniority_name: "Senior",
+      user_birthday: "1993-05-12",
+      user_address: "San Diego, CA",
+      user_photo: "", // url opcional
+      user_status_id: "status-active-uuid",
+      user_status_name: "Active",
+      color: "#22c55e",
+    }, 
+    {
       user_id: "8c4b2f10-2a3b-4c5d-8e9f-222222222222",
       user_name: "Project Coordinator",
       user_role_id: "role-pc-uuid",

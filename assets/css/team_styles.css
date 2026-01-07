@@ -389,3 +389,59 @@
 .team-card-stack:hover .team-card-back{
   transform: translate(calc(var(--team-back-offset) + 2px), calc(var(--team-back-offset) + 2px));
 }
+
+/* ===== TEAM MANAGER — FINAL OVERRIDES (NO LANES) ===== */
+
+/* Grid real (sin .team-column) */
+#team-board .team-cards{
+  display: grid;
+  gap: 12px;
+  justify-content: start;
+  justify-items: start;  /* clave: evita stretch raro */
+  align-items: start;
+}
+
+/* Stack base */
+#team-board .team-card-stack{
+  position: relative;
+  overflow: visible;
+
+  --team-card-radius: 14px;  /* igual que la card */
+  --team-back-offset: 8px;   /* “desfase” */
+}
+
+/* Backplate: MISMO tamaño, solo desfasado, y OPACO */
+#team-board .team-card-back{
+  position: absolute;
+  inset: 0; /* mismo size que la card */
+  border-radius: var(--team-card-radius);
+  pointer-events: none;
+  z-index: 0;
+
+  background: #1b2028; /* <- opaco gris */
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+
+  transform: translate(var(--team-back-offset), var(--team-back-offset));
+}
+
+#team-board .team-card-stack:hover .team-card-back{
+  transform: translate(
+    calc(var(--team-back-offset) + 2px),
+    calc(var(--team-back-offset) + 2px)
+  );
+}
+
+/* Card: fija y alineada con el backplate */
+#team-board .team-card{
+  width: 260px;
+  min-height: 320px;
+  border-radius: var(--team-card-radius);
+  position: relative;
+  z-index: 1;
+}
+
+/* Empuja acciones al fondo */
+#team-board .team-card-actions{
+  margin-top: auto;
+}

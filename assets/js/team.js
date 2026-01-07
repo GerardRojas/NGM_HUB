@@ -18,12 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const role = String(user.role || user.role_id || "").trim();
-  const allowedRoles = new Set([
-    "COO",
-    "CEO",
-    "General Coordinator",
-    "Project Coordinator",
-  ]);
+  const allowedRoles = new Set(["COO", "CEO", "General Coordinator", "Project Coordinator"]);
 
   // Update topbar user pill (best-effort)
   const userPill = document.getElementById("user-pill");
@@ -51,70 +46,55 @@ document.addEventListener("DOMContentLoaded", () => {
     {
       user_id: "3f3c9b70-1b1a-4b5b-9d8a-111111111111",
       user_name: "Gerard Rojas",
-      user_role_id: "role-ceo-uuid",
       user_role_name: "CEO",
-      user_seniority_id: "senior-uuid",
       user_seniority_name: "Senior",
       user_birthday: "1993-05-12",
       user_address: "San Diego, CA",
       user_photo: "",
-      user_status_id: "status-active-uuid",
       user_status_name: "Active",
       color: "#22c55e",
     },
     {
       user_id: "3f3c9b70-1b1a-4b5b-9d8a-111111111112",
       user_name: "Gerard Rojas 2",
-      user_role_id: "role-ceo-uuid",
       user_role_name: "CEO",
-      user_seniority_id: "senior-uuid",
       user_seniority_name: "Senior",
       user_birthday: "1993-05-12",
       user_address: "San Diego, CA",
       user_photo: "",
-      user_status_id: "status-active-uuid",
       user_status_name: "Active",
       color: "#22c55e",
     },
     {
       user_id: "8c4b2f10-2a3b-4c5d-8e9f-222222222222",
       user_name: "Mariangela",
-      user_role_id: "role-pc-uuid",
       user_role_name: "Project Coordinator",
-      user_seniority_id: "mid-uuid",
       user_seniority_name: "Mid",
       user_birthday: "1998-02-01",
       user_address: "Mazatlán, MX",
       user_photo: "",
-      user_status_id: "status-active-uuid",
       user_status_name: "Active",
       color: "#60a5fa",
     },
     {
       user_id: "b6c7d8e9-1111-2222-3333-444444444444",
       user_name: "Aida",
-      user_role_id: "role-gc-uuid",
       user_role_name: "General Coordinator",
-      user_seniority_id: "senior-uuid",
       user_seniority_name: "Senior",
       user_birthday: "1996-10-21",
       user_address: "Austin, TX",
       user_photo: "",
-      user_status_id: "status-active-uuid",
       user_status_name: "Active",
       color: "#f59e0b",
     },
     {
       user_id: "c1c2c3c4-aaaa-bbbb-cccc-555555555555",
       user_name: "COO User",
-      user_role_id: "role-coo-uuid",
       user_role_name: "COO",
-      user_seniority_id: "exec-uuid",
       user_seniority_name: "Executive",
       user_birthday: "1991-07-07",
       user_address: "Los Angeles, CA",
       user_photo: "",
-      user_status_id: "status-active-uuid",
       user_status_name: "Active",
       color: "#a78bfa",
     },
@@ -141,7 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function computeColsWanted(n) {
-    // rule of thumb: 4 => 2 cols, 6 => 3 cols (and scale a bit)
+    // 4 => 2 cols, 6 => 3 cols
     if (n >= 9) return 4;
     if (n >= 6) return 3;
     if (n >= 4) return 2;
@@ -173,6 +153,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function getBoardWidth() {
+    return (
+      board.clientWidth ||
+      board.parentElement?.clientWidth ||
+      document.documentElement.clientWidth ||
+      window.innerWidth ||
+      0
+    );
+  }
+
   // 5) Render grid (no lanes)
   function render(list) {
     board.innerHTML = "";
@@ -183,17 +173,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const n = list.length;
     const colsWanted = computeColsWanted(n);
 
-    // Cap columns by available width so it stays clean on smaller screens
     const cardW = 260;
     const gap = 12;
-    const available = Math.max(320, board.clientWidth - 24);
+
+    const available = Math.max(320, getBoardWidth() - 24);
     const maxCols = computeMaxCols(available, cardW, gap);
     const cols = Math.min(colsWanted, maxCols);
 
-    wrap.style.gridTemplateColumns = `repeat(${cols}, minmax(${cardW}px, 1fr))`;
+    // columnas FIJAS para mantener la retícula “tight” (y evitar backplate gigante)
+    wrap.style.gridTemplateColumns = `repeat(${cols}, ${cardW}px)`;
+    wrap.style.gap = `${gap}px`;
+    wrap.style.justifyContent = "start";
 
     list.forEach((u) => {
-      // STACK (adds the “back card” depth effect)
       const stack = document.createElement("div");
       stack.className = "team-card-stack";
 
@@ -254,6 +246,11 @@ document.addEventListener("DOMContentLoaded", () => {
     board.appendChild(wrap);
   }
 
+  function rerender() {
+    const list = filterUsers(searchInput?.value || "");
+    render(list);
+  }
+
   // 6) Actions (mock)
   board.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-action]");
@@ -273,9 +270,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!ok) return;
 
       usersStore = usersStore.filter((u) => u.user_id !== id);
-      const list = filterUsers(searchInput?.value || "");
-      render(list);
-      return;
+      rerender();
     }
   });
 
@@ -283,24 +278,22 @@ document.addEventListener("DOMContentLoaded", () => {
   let searchT = null;
   function onSearchInput() {
     clearTimeout(searchT);
-    searchT = setTimeout(() => {
-      const list = filterUsers(searchInput?.value || "");
-      render(list);
-    }, 80);
+    searchT = setTimeout(() => rerender(), 80);
   }
 
-  if (searchInput) {
-    searchInput.addEventListener("input", onSearchInput);
-  }
+  if (searchInput) searchInput.addEventListener("input", onSearchInput);
 
   // 8) Top buttons
-  document.getElementById("btn-refresh-team")?.addEventListener("click", () => {
-    const list = filterUsers(searchInput?.value || "");
-    render(list);
-  });
-
+  document.getElementById("btn-refresh-team")?.addEventListener("click", rerender);
   document.getElementById("btn-add-user")?.addEventListener("click", () => {
     alert("Add User (mock) — next step: open modal + POST to API");
+  });
+
+  // Reflow on resize (debounced)
+  let resizeT = null;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeT);
+    resizeT = setTimeout(() => rerender(), 120);
   });
 
   // Initial render

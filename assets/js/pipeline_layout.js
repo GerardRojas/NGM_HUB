@@ -2,35 +2,66 @@
 (function () {
   function initTableWidthSlider() {
     const slider = document.getElementById("pm-width-slider");
-    const label  = document.getElementById("pm-width-value");
+    const label = document.getElementById("pm-width-value");
+
     if (!slider) return;
 
     const KEY = "pmTableWidth";
 
+    function computeMaxUsefulWidth() {
+      const main = document.querySelector("main.main-content");
+      if (!main) return 1900;
+      const rect = main.getBoundingClientRect();
+      return Math.max(800, Math.floor(rect.width - 24));
+    }
+
+    function clamp(n, min, max) {
+      return Math.max(min, Math.min(max, n));
+    }
+
     function applyTableWidth(px) {
-      // ancho global (por si lo quieres usar en CSS o debug)
-      document.documentElement.style.setProperty("--pm-table-width", `${px}px`);
-
-      // ajusta mínimo de celdas para que el slider “se sienta”
-      const cellMin = Math.max(90, Math.floor(px / 14));
-      document.documentElement.style.setProperty("--pm-cell-min", `${cellMin}px`);
-
-      // aplica ancho real a todas las tablas existentes
-      document.querySelectorAll(".pm-group .table").forEach((tbl) => {
-        tbl.style.width = `${px}px`;          // <- el slider manda aquí
-        tbl.style.minWidth = "0px";
-        tbl.style.tableLayout = "fixed";
-      });
-
+      document.documentElement.style.setProperty("--pm-layout-max", `${px}px`);
       if (label) label.textContent = `${px}px`;
     }
 
-    const saved = Number(localStorage.getItem(KEY) || slider.value || 1200);
+    // Ajusta límites del slider al inicializar
+    const maxUseful = computeMaxUsefulWidth();
+    slider.max = String(maxUseful);
+
+    // Puedes ajustar este mínimo a 1100/1200 si quieres “mínimo legible”
+    const minAllowed = Number(slider.min) || 260;
+
+    // Carga preferencia guardada y clámpea al rango actual
+    const savedRaw = Number(localStorage.getItem(KEY) || slider.value || maxUseful);
+    const saved = Math.max(minAllowed, Math.min(savedRaw, maxUseful));
+
     slider.value = String(saved);
     applyTableWidth(saved);
 
     slider.addEventListener("input", () => {
-      const px = Number(slider.value) || 1200;
+      const currentMax = computeMaxUsefulWidth();
+      slider.max = String(currentMax);
+
+      const pxRaw = Number(slider.value) || 1200;
+      const px = clamp(pxRaw, minAllowed, currentMax);
+
+      // Si se salió del rango (por resize), lo corregimos
+      if (String(px) !== slider.value) slider.value = String(px);
+
+      applyTableWidth(px);
+      localStorage.setItem(KEY, String(px));
+    });
+
+    // Mantén el MAX alineado al área útil cuando cambie el viewport
+    window.addEventListener("resize", () => {
+      const newMax = computeMaxUsefulWidth();
+      slider.max = String(newMax);
+
+      const pxRaw = Number(slider.value) || 1200;
+      const px = clamp(pxRaw, minAllowed, newMax);
+
+      if (String(px) !== slider.value) slider.value = String(px);
+
       applyTableWidth(px);
       localStorage.setItem(KEY, String(px));
     });

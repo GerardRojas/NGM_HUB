@@ -430,16 +430,12 @@
         return `
             <colgroup>
             ${COLUMNS.map(col => {
-                const width =
-                col.key === "task" ? "260px" :
-                col.key === "project" ? "180px" :
-                "120px";
-                return `<col data-col="${col.key}" style="width:${width}">`;
+                return `<col data-col="${col.key}">`;
             }).join("")}
             </colgroup>
         `;
         }
-
+        
         function getDefaultVisibleGroups() {
         // default: todos los grupos visibles (los keys deben coincidir con data-group-key)
         return {

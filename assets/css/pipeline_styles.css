@@ -291,7 +291,6 @@
     color: #dbdbdb;
     border-bottom: 1px solid var(--pm-table-border);
     border-right: 1px solid var(--pm-table-col-border, rgba(148, 163, 184, 0.25));
-    min-width: 350px; /* base */
 }
 
 /* Celdas del body */
@@ -827,8 +826,10 @@
 
 /* el body del grupo puede scrollear horizontalmente si la tabla es más ancha */
 .pm-group-body {
+  width: 100%;
   padding-bottom: 6px; /* 👈 SEPARA LA TABLA DEL SCROLLBAR */
   overflow-x: auto;
+  max-width: var(--pm-group-body-max, 100%);
 }
 
 /* opcional: que el scroll se vea “gris” */
@@ -914,9 +915,19 @@
 /* Columna Collaborator: más ancho + no wrap */
 .pm-group .table th[data-col="collaborator"],
 .pm-group .table td[data-col="collaborator"] {
-    min-width: 180px;
-    max-width: 220px;
+    min-width: 220px;
+    max-width: 280px;
     white-space: nowrap;
+    overflow: visible;
+}
+
+/* Columna Owner: ancho mínimo para avatar + nombre */
+.pm-group .table th[data-col="owner"],
+.pm-group .table td[data-col="owner"] {
+    min-width: 220px;
+    max-width: 280px;
+    white-space: nowrap;
+    overflow: visible;
 }
 
 /* Ellipsis limpio para columnas no-task */
@@ -1222,4 +1233,11 @@
   outline: none;
   box-shadow: 0 0 0 3px var(--accent-soft);
   border-color: rgba(34,197,94,0.65);
+}
+
+/* Layout width controlled by Manage Layout slider */
+.pipeline-section{
+  width: 100%;
+  max-width: var(--pm-layout-max, 100%);
+  margin: 0 auto;
 }

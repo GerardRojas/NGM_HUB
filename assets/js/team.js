@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
     },
     {
       user_id: "8c4b2f10-2a3b-4c5d-8e9f-222222222222",
-      user_name: "Project Coordinator",
+      user_name: "Mariangela",
       user_role_id: "role-pc-uuid",
       user_role_name: "Project Coordinator",
       user_seniority_id: "mid-uuid",
@@ -92,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
     },
     {
       user_id: "b6c7d8e9-1111-2222-3333-444444444444",
-      user_name: "General Coordinator",
+      user_name: "Aida",
       user_role_id: "role-gc-uuid",
       user_role_name: "General Coordinator",
       user_seniority_id: "senior-uuid",

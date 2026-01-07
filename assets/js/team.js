@@ -33,7 +33,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (!allowedRoles.has(role)) {
-    // You can redirect or show a message; redirect keeps it consistent.
     alert("Access denied.");
     window.location.href = "dashboard.html";
     return;
@@ -47,13 +46,66 @@ document.addEventListener("DOMContentLoaded", () => {
   if (placeholder) placeholder.remove();
 
   const mockUsers = [
-    { id: "u1", name: "Gerard Rojas", email: "gerard@ngm.com", role: "CEO", color: "#22c55e", status: "Active" },
-    { id: "u2", name: "Project Coord", email: "pc@ngm.com", role: "Project Coordinator", color: "#60a5fa", status: "Active" },
-    { id: "u3", name: "General Coord", email: "gc@ngm.com", role: "General Coordinator", color: "#f59e0b", status: "Active" },
-    { id: "u4", name: "COO User", email: "coo@ngm.com", role: "COO", color: "#a78bfa", status: "Active" },
+    {
+      user_id: "3f3c9b70-1b1a-4b5b-9d8a-111111111111",
+      user_name: "Gerard Rojas",
+      user_role_id: "role-ceo-uuid",
+      user_role_name: "CEO",
+      user_seniority_id: "senior-uuid",
+      user_seniority_name: "Senior",
+      user_birthday: "1993-05-12",
+      user_address: "San Diego, CA",
+      user_photo: "", // url opcional
+      user_status_id: "status-active-uuid",
+      user_status_name: "Active",
+      color: "#22c55e",
+    },
+    {
+      user_id: "8c4b2f10-2a3b-4c5d-8e9f-222222222222",
+      user_name: "Project Coordinator",
+      user_role_id: "role-pc-uuid",
+      user_role_name: "Project Coordinator",
+      user_seniority_id: "mid-uuid",
+      user_seniority_name: "Mid",
+      user_birthday: "1998-02-01",
+      user_address: "Mazatlán, MX",
+      user_photo: "",
+      user_status_id: "status-active-uuid",
+      user_status_name: "Active",
+      color: "#60a5fa",
+    },
+    {
+      user_id: "b6c7d8e9-1111-2222-3333-444444444444",
+      user_name: "General Coordinator",
+      user_role_id: "role-gc-uuid",
+      user_role_name: "General Coordinator",
+      user_seniority_id: "senior-uuid",
+      user_seniority_name: "Senior",
+      user_birthday: "1996-10-21",
+      user_address: "Austin, TX",
+      user_photo: "",
+      user_status_id: "status-active-uuid",
+      user_status_name: "Active",
+      color: "#f59e0b",
+    },
+    {
+      user_id: "c1c2c3c4-aaaa-bbbb-cccc-555555555555",
+      user_name: "COO User",
+      user_role_id: "role-coo-uuid",
+      user_role_name: "COO",
+      user_seniority_id: "exec-uuid",
+      user_seniority_name: "Executive",
+      user_birthday: "1991-07-07",
+      user_address: "Los Angeles, CA",
+      user_photo: "",
+      user_status_id: "status-active-uuid",
+      user_status_name: "Active",
+      color: "#a78bfa",
+    },
   ];
 
-  const lanes = [
+  // Lanes (sections)
+  const TEAM_LANES = [
     { key: "CEO", title: "CEO" },
     { key: "COO", title: "COO" },
     { key: "General Coordinator", title: "General Coordinator" },
@@ -69,8 +121,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function render() {
     board.innerHTML = "";
 
-    lanes.forEach((lane) => {
-      const users = mockUsers.filter((u) => u.role === lane.key);
+    TEAM_LANES.forEach((lane) => {
+      const users = mockUsers.filter((u) => u.user_role_name === lane.key);
 
       const col = document.createElement("div");
       col.className = "team-column";
@@ -89,30 +141,41 @@ document.addEventListener("DOMContentLoaded", () => {
         const card = document.createElement("div");
         card.className = "team-card";
 
-        const safeName = escapeHtml(u.name);
-        const safeEmail = escapeHtml(u.email);
-        const safeRole = escapeHtml(u.role);
-        const initials = escapeHtml(getInitial(u.name));
+        const safeName = escapeHtml(u.user_name);
+        const safeRole = escapeHtml(u.user_role_name);
+        const safeStatus = escapeHtml(u.user_status_name || "—");
+        const safeSeniority = escapeHtml(u.user_seniority_name || "—");
+        const safeBday = escapeHtml(u.user_birthday || "—");
+        const safeAddr = escapeHtml(u.user_address || "—");
+        const initials = escapeHtml(getInitial(u.user_name));
         const bg = u.color || "#a3a3a3";
+
+        const avatarHtml = u.user_photo
+          ? `<img src="${escapeHtml(u.user_photo)}" alt="${safeName}" />`
+          : `${initials}`;
 
         card.innerHTML = `
           <div class="team-avatar" style="background:${bg};" title="${safeName}">
-            ${initials}
+            ${avatarHtml}
           </div>
+
           <div class="team-card-main">
             <div class="team-name-row">
               <p class="team-name" title="${safeName}">${safeName}</p>
             </div>
-            <p class="team-meta" title="${safeEmail}">${safeEmail}</p>
 
             <div class="team-badges">
               <span class="team-badge">${safeRole}</span>
-              <span class="team-badge">${escapeHtml(u.status || "—")}</span>
+              <span class="team-badge">${safeSeniority}</span>
+              <span class="team-badge">${safeStatus}</span>
             </div>
 
+            <p class="team-meta" title="Birthday">${safeBday}</p>
+            <p class="team-meta" title="${safeAddr}">${safeAddr}</p>
+
             <div class="team-card-actions">
-              <button class="team-action-btn" data-action="edit" data-id="${escapeHtml(u.id)}">Edit</button>
-              <button class="team-action-btn" data-action="deactivate" data-id="${escapeHtml(u.id)}">Deactivate</button>
+              <button class="team-action-btn" data-action="edit" data-id="${escapeHtml(u.user_id)}">Edit</button>
+              <button class="team-action-btn" data-action="delete" data-id="${escapeHtml(u.user_id)}">Delete</button>
             </div>
           </div>
         `;

@@ -301,3 +301,54 @@
 @media (max-width: 620px) {
   .team-cards { --team-cols: 1; }
 }
+
+/* FORCE Team cards as portrait grid (paste at very end) */
+.team-column .team-cards {
+  display: grid !important;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 240px));
+  justify-content: start;  /* no estirar */
+}
+
+.team-column .team-card {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 240px;
+  min-height: 300px;
+  padding: 12px;
+}
+
+.team-column .team-card-actions {
+  margin-top: auto;
+}
+
+/* Style top buttons (Add/Refresh) similar to your card buttons */
+.team-actions .btn-primary,
+.team-actions .btn-secondary {
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.team-actions .btn-primary:hover,
+.team-actions .btn-secondary:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.16);
+  transform: translateY(-1px);
+}
+
+/* Optional: Make Add User feel “primary” */
+.team-actions .btn-primary {
+  background: rgba(34, 197, 94, 0.14);
+  border-color: rgba(34, 197, 94, 0.28);
+}
+.team-actions .btn-primary:hover {
+  background: rgba(34, 197, 94, 0.20);
+  border-color: rgba(34, 197, 94, 0.36);
+}

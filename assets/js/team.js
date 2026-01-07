@@ -38,14 +38,16 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // 2) Render (mock for now)
+  // 2) DOM refs
   const board = document.getElementById("team-board");
   const placeholder = document.getElementById("team-placeholder");
-  if (!board) return;
+  const searchInput = document.getElementById("team-search-input");
 
+  if (!board) return;
   if (placeholder) placeholder.remove();
 
-  const mockUsers = [
+  // 3) Mock users (replace later with API)
+  let usersStore = [
     {
       user_id: "3f3c9b70-1b1a-4b5b-9d8a-111111111111",
       user_name: "Gerard Rojas",
@@ -55,25 +57,25 @@ document.addEventListener("DOMContentLoaded", () => {
       user_seniority_name: "Senior",
       user_birthday: "1993-05-12",
       user_address: "San Diego, CA",
-      user_photo: "", // url opcional
+      user_photo: "",
       user_status_id: "status-active-uuid",
       user_status_name: "Active",
       color: "#22c55e",
     },
     {
-      user_id: "3f3c9b70-1b1a-4b5b-9d8a-111111111111",
-      user_name: "Gerard Roja22s",
+      user_id: "3f3c9b70-1b1a-4b5b-9d8a-111111111112",
+      user_name: "Gerard Rojas 2",
       user_role_id: "role-ceo-uuid",
       user_role_name: "CEO",
       user_seniority_id: "senior-uuid",
       user_seniority_name: "Senior",
       user_birthday: "1993-05-12",
       user_address: "San Diego, CA",
-      user_photo: "", // url opcional
+      user_photo: "",
       user_status_id: "status-active-uuid",
       user_status_name: "Active",
       color: "#22c55e",
-    }, 
+    },
     {
       user_id: "8c4b2f10-2a3b-4c5d-8e9f-222222222222",
       user_name: "Project Coordinator",
@@ -118,97 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
     },
   ];
 
-  // Lanes (sections)
-  const TEAM_LANES = [
-    { key: "CEO", title: "CEO" },
-    { key: "COO", title: "COO" },
-    { key: "General Coordinator", title: "General Coordinator" },
-    { key: "Project Coordinator", title: "Project Coordinator" },
-  ];
-
-  function getInitial(name) {
-    const s = String(name || "").trim();
-    if (!s) return "?";
-    return s[0].toUpperCase();
-  }
-
-  function render() {
-    board.innerHTML = "";
-
-    TEAM_LANES.forEach((lane) => {
-      const users = mockUsers.filter((u) => u.user_role_name === lane.key);
-
-      const col = document.createElement("div");
-      col.className = "team-column";
-
-      col.innerHTML = `
-        <div class="team-column-header">
-          <h3 class="team-column-title">${lane.title}</h3>
-          <span class="team-column-count">${users.length}</span>
-        </div>
-        <div class="team-cards"></div>
-      `;
-
-      const cardsWrap = col.querySelector(".team-cards");
-
-      const n = users.length;
-      let cols = 1;
-      if (n >= 6) cols = 3;
-      else if (n >= 4) cols = 2;
-      else if (n >= 2) cols = 2;
-
-      cardsWrap.style.gridTemplateColumns = `repeat(${cols}, minmax(260px, 1fr))`;
-
-      users.forEach((u) => {
-        const card = document.createElement("div");
-        card.className = "team-card";
-
-        const safeName = escapeHtml(u.user_name);
-        const safeRole = escapeHtml(u.user_role_name);
-        const safeStatus = escapeHtml(u.user_status_name || "—");
-        const safeSeniority = escapeHtml(u.user_seniority_name || "—");
-        const safeBday = escapeHtml(u.user_birthday || "—");
-        const safeAddr = escapeHtml(u.user_address || "—");
-        const initials = escapeHtml(getInitial(u.user_name));
-        const bg = u.color || "#a3a3a3";
-
-        const avatarHtml = u.user_photo
-          ? `<img src="${escapeHtml(u.user_photo)}" alt="${safeName}" />`
-          : `${initials}`;
-
-        card.innerHTML = `
-          <div class="team-avatar" style="background:${bg};" title="${safeName}">
-            ${avatarHtml}
-          </div>
-
-          <div class="team-card-main">
-            <div class="team-name-row">
-              <p class="team-name" title="${safeName}">${safeName}</p>
-            </div>
-
-            <div class="team-badges">
-              <span class="team-badge">${safeRole}</span>
-              <span class="team-badge">${safeSeniority}</span>
-              <span class="team-badge">${safeStatus}</span>
-            </div>
-
-            <p class="team-meta" title="Birthday">${safeBday}</p>
-            <p class="team-meta" title="${safeAddr}">${safeAddr}</p>
-
-            <div class="team-card-actions">
-              <button class="team-action-btn" data-action="edit" data-id="${escapeHtml(u.user_id)}">Edit</button>
-              <button class="team-action-btn" data-action="delete" data-id="${escapeHtml(u.user_id)}">Delete</button>
-            </div>
-          </div>
-        `;
-
-        cardsWrap.appendChild(card);
-      });
-
-      board.appendChild(col);
-    });
-  }
-
+  // 4) Helpers
   function escapeHtml(str) {
     return String(str ?? "")
       .replace(/&/g, "&amp;")
@@ -218,26 +130,170 @@ document.addEventListener("DOMContentLoaded", () => {
       .replace(/'/g, "&#039;");
   }
 
-  // simple action handler (placeholder)
+  function getInitial(name) {
+    const s = String(name || "").trim();
+    if (!s) return "?";
+    return s[0].toUpperCase();
+  }
+
+  function normalize(s) {
+    return String(s || "").toLowerCase().trim();
+  }
+
+  function computeColsWanted(n) {
+    // rule of thumb: 4 => 2 cols, 6 => 3 cols (and scale a bit)
+    if (n >= 9) return 4;
+    if (n >= 6) return 3;
+    if (n >= 4) return 2;
+    if (n >= 2) return 2;
+    return 1;
+  }
+
+  function computeMaxCols(availablePx, cardW, gap) {
+    return Math.max(1, Math.floor((availablePx + gap) / (cardW + gap)));
+  }
+
+  function filterUsers(query) {
+    const q = normalize(query);
+    if (!q) return usersStore.slice();
+
+    return usersStore.filter((u) => {
+      const hay = [
+        u.user_name,
+        u.user_role_name,
+        u.user_seniority_name,
+        u.user_status_name,
+        u.user_address,
+        u.user_birthday,
+      ]
+        .map(normalize)
+        .join(" • ");
+
+      return hay.includes(q);
+    });
+  }
+
+  // 5) Render grid (no lanes)
+  function render(list) {
+    board.innerHTML = "";
+
+    const wrap = document.createElement("div");
+    wrap.className = "team-cards";
+
+    const n = list.length;
+    const colsWanted = computeColsWanted(n);
+
+    // Cap columns by available width so it stays clean on smaller screens
+    const cardW = 260;
+    const gap = 12;
+    const available = Math.max(320, board.clientWidth - 24);
+    const maxCols = computeMaxCols(available, cardW, gap);
+    const cols = Math.min(colsWanted, maxCols);
+
+    wrap.style.gridTemplateColumns = `repeat(${cols}, minmax(${cardW}px, 1fr))`;
+
+    list.forEach((u) => {
+      const card = document.createElement("div");
+      card.className = "team-card";
+
+      const safeName = escapeHtml(u.user_name);
+      const safeRole = escapeHtml(u.user_role_name);
+      const safeStatus = escapeHtml(u.user_status_name || "—");
+      const safeSeniority = escapeHtml(u.user_seniority_name || "—");
+      const safeBday = escapeHtml(u.user_birthday || "—");
+      const safeAddr = escapeHtml(u.user_address || "—");
+      const initials = escapeHtml(getInitial(u.user_name));
+      const bg = u.color || "#a3a3a3";
+
+      const avatarHtml = u.user_photo
+        ? `<img src="${escapeHtml(u.user_photo)}" alt="${safeName}" />`
+        : `${initials}`;
+
+      card.innerHTML = `
+        <div class="team-avatar" style="background:${bg};" title="${safeName}">
+          ${avatarHtml}
+        </div>
+
+        <div class="team-card-main">
+          <div class="team-name-row">
+            <p class="team-name" title="${safeName}">${safeName}</p>
+          </div>
+
+          <div class="team-badges">
+            <span class="team-badge">${safeRole}</span>
+            <span class="team-badge">${safeSeniority}</span>
+            <span class="team-badge">${safeStatus}</span>
+          </div>
+
+          <p class="team-meta" title="Birthday">${safeBday}</p>
+          <p class="team-meta" title="${safeAddr}">${safeAddr}</p>
+
+          <div class="team-card-actions">
+            <button class="team-action-btn" data-action="edit" data-id="${escapeHtml(
+              u.user_id
+            )}">Edit</button>
+            <button class="team-action-btn" data-action="delete" data-id="${escapeHtml(
+              u.user_id
+            )}">Delete</button>
+          </div>
+        </div>
+      `;
+
+      wrap.appendChild(card);
+    });
+
+    board.appendChild(wrap);
+  }
+
+  // 6) Actions (mock)
   board.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-action]");
     if (!btn) return;
 
     const action = btn.getAttribute("data-action");
     const id = btn.getAttribute("data-id");
-    console.log("[TEAM] action:", action, "id:", id);
 
-    alert(`Action: ${action} · ${id} (mock)`);
+    if (action === "edit") {
+      console.log("[TEAM] edit:", id);
+      alert(`Edit user: ${id} (mock)`);
+      return;
+    }
+
+    if (action === "delete") {
+      const ok = confirm("Delete this user? (mock)");
+      if (!ok) return;
+
+      usersStore = usersStore.filter((u) => u.user_id !== id);
+      const list = filterUsers(searchInput?.value || "");
+      render(list);
+      return;
+    }
   });
 
-  render();
+  // 7) Search
+  let searchT = null;
+  function onSearchInput() {
+    clearTimeout(searchT);
+    searchT = setTimeout(() => {
+      const list = filterUsers(searchInput?.value || "");
+      render(list);
+    }, 80);
+  }
 
-  // Refresh button (mock)
+  if (searchInput) {
+    searchInput.addEventListener("input", onSearchInput);
+  }
+
+  // 8) Top buttons
   document.getElementById("btn-refresh-team")?.addEventListener("click", () => {
-    render();
+    const list = filterUsers(searchInput?.value || "");
+    render(list);
   });
 
   document.getElementById("btn-add-user")?.addEventListener("click", () => {
     alert("Add User (mock) — next step: open modal + POST to API");
   });
+
+  // Initial render
+  render(usersStore);
 });

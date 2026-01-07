@@ -205,3 +205,99 @@
   background: rgba(255, 255, 255, 0.07);
 }
 
+/* ===========================
+   TEAM OVERRIDES (portrait grid)
+   Pegar al FINAL del archivo
+   =========================== */
+
+/* Cada sección por rol (lane) sigue full width */
+.team-column {
+  width: 100%;
+}
+
+/* Grid real con cards de ancho fijo (evita que se estiren) */
+.team-cards {
+  --team-cols: 2;            /* default: 2 por fila */
+  --team-card-w: 240px;      /* ancho fijo card */
+  --team-gap: 12px;
+
+  display: grid;
+  grid-template-columns: repeat(var(--team-cols), var(--team-card-w));
+  gap: var(--team-gap);
+
+  justify-content: start;    /* NO estirar */
+  align-content: start;
+}
+
+/* Card retrato / vertical */
+.team-card {
+  width: var(--team-card-w);
+  min-height: 280px;         /* alargada vertical */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  padding: 12px;
+  border-radius: 14px;
+}
+
+/* Avatar grande arriba */
+.team-avatar {
+  width: 56px;
+  height: 56px;
+  font-size: 18px;
+}
+
+.team-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Empuja acciones hacia abajo para que no brinquen */
+.team-card-actions {
+  margin-top: auto;
+  display: flex;
+  gap: 8px;
+}
+
+/* Botones estilo NGM (no default) */
+.team-card .team-action-btn {
+  flex: 1 1 auto;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.team-card .team-action-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+
+/* Delete con look "danger" suave */
+.team-card .team-action-btn[data-action="delete"] {
+  background: rgba(239, 68, 68, 0.10);
+  border-color: rgba(239, 68, 68, 0.22);
+}
+
+.team-card .team-action-btn[data-action="delete"]:hover {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.30);
+}
+
+/* Responsive: en pantallas chicas baja columnas */
+@media (max-width: 900px) {
+  .team-cards { --team-cols: 2; }
+}
+@media (max-width: 620px) {
+  .team-cards { --team-cols: 1; }
+}

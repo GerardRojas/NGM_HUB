@@ -137,6 +137,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const cardsWrap = col.querySelector(".team-cards");
 
+      // Ajusta # de columnas según cantidad de usuarios en este rol
+      const count = users.length;
+
+      // Regla que pediste: ~4 => 2 cols, ~6 => 3 cols
+      let colsWanted = 1;
+      if (count >= 6) colsWanted = 3;
+      else if (count >= 4) colsWanted = 2;
+      else if (count >= 2) colsWanted = 2;
+
+      // Cap por espacio disponible (evita overflow feo en pantallas pequeñas)
+      const cardW = 240;  // debe coincidir con --team-card-w
+      const gap = 12;
+      const available = col.clientWidth - 24; // padding aproximado del contenedor
+      const maxCols = Math.max(1, Math.floor((available + gap) / (cardW + gap)));
+
+      const cols = Math.min(colsWanted, maxCols);
+      cardsWrap.style.setProperty("--team-cols", String(cols));
+
+
       users.forEach((u) => {
         const card = document.createElement("div");
         card.className = "team-card";

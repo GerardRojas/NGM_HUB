@@ -8,63 +8,57 @@
 
     const KEY = "pmTableWidth";
 
-    function computeMaxUsefulWidth() {
-      const main = document.querySelector("main.main-content");
-      if (!main) return 1900;
-      const rect = main.getBoundingClientRect();
-      return Math.max(800, Math.floor(rect.width - 24));
-    }
-
     function clamp(n, min, max) {
       return Math.max(min, Math.min(max, n));
     }
 
+    /**
+     * Aplica el ancho a TODAS las tablas del pipeline.
+     * Importante: NO tocar el layout del panel (no --pm-layout-max),
+     * para evitar que el workspace se "encajone".
+     */
     function applyTableWidth(px) {
-      document.documentElement.style.setProperty("--pm-layout-max", `${px}px`);
+      // variables útiles si quieres usarlas en CSS/debug
+      document.documentElement.style.setProperty("--pm-table-width", `${px}px`);
+
+      // min de celda (sensación del slider); no afecta layout general
+      const cellMin = Math.max(90, Math.floor(px / 14));
+      document.documentElement.style.setProperty("--pm-cell-min", `${cellMin}px`);
+
+      // Aplica ancho real a las tablas existentes
+      document.querySelectorAll(".pm-group .table").forEach((tbl) => {
+        tbl.style.width = `${px}px`;
+        tbl.style.minWidth = "0px";
+        tbl.style.tableLayout = "fixed";
+      });
+
       if (label) label.textContent = `${px}px`;
     }
 
-    // Ajusta límites del slider al inicializar
-    const maxUseful = computeMaxUsefulWidth();
-    slider.max = String(maxUseful);
-
-    // Puedes ajustar este mínimo a 1100/1200 si quieres “mínimo legible”
+    // Respeta rango del HTML
     const minAllowed = Number(slider.min) || 260;
+    const maxAllowed = Number(slider.max) || 1900;
 
     // Carga preferencia guardada y clámpea al rango actual
-    const savedRaw = Number(localStorage.getItem(KEY) || slider.value || maxUseful);
-    const saved = Math.max(minAllowed, Math.min(savedRaw, maxUseful));
+    const savedRaw = Number(localStorage.getItem(KEY) || slider.value || 1200);
+    const saved = clamp(savedRaw, minAllowed, maxAllowed);
 
     slider.value = String(saved);
     applyTableWidth(saved);
 
     slider.addEventListener("input", () => {
-      const currentMax = computeMaxUsefulWidth();
-      slider.max = String(currentMax);
-
       const pxRaw = Number(slider.value) || 1200;
-      const px = clamp(pxRaw, minAllowed, currentMax);
+      const px = clamp(pxRaw, minAllowed, maxAllowed);
 
-      // Si se salió del rango (por resize), lo corregimos
+      // Si se salió del rango, corrige el input visualmente
       if (String(px) !== slider.value) slider.value = String(px);
 
       applyTableWidth(px);
       localStorage.setItem(KEY, String(px));
     });
 
-    // Mantén el MAX alineado al área útil cuando cambie el viewport
-    window.addEventListener("resize", () => {
-      const newMax = computeMaxUsefulWidth();
-      slider.max = String(newMax);
-
-      const pxRaw = Number(slider.value) || 1200;
-      const px = clamp(pxRaw, minAllowed, newMax);
-
-      if (String(px) !== slider.value) slider.value = String(px);
-
-      applyTableWidth(px);
-      localStorage.setItem(KEY, String(px));
-    });
+    // Nota: ya NO alineamos max al viewport en resize.
+    // Si el usuario pone una tabla muy ancha, debe poder scrollear horizontalmente.
   }
 
   function refreshPipelineTables() {

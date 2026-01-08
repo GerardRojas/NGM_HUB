@@ -445,3 +445,186 @@
 #team-board .team-card-actions{
   margin-top: auto;
 }
+
+/* ===== TEAM CARD INFO LIST + STATUS PILL (paste at END) ===== */
+
+#team-board .team-card-main{
+  gap: 10px;
+}
+
+/* Lista vertical */
+#team-board .team-info{
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#team-board .team-info-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 8px 10px;
+  border-radius: 12px;
+
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+#team-board .team-info-label{
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.35px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+#team-board .team-info-value{
+  font-size: 12px;
+  color: var(--text-primary);
+  text-align: right;
+
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Status pill */
+#team-board .team-status-pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+
+#team-board .team-status-dot{
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.35);
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.35);
+}
+
+/* Active = glow verde */
+#team-board .team-status--active{
+  border-color: rgba(34,197,94,0.35);
+  background: rgba(34,197,94,0.14);
+  box-shadow: 0 0 0 1px rgba(34,197,94,0.12), 0 0 14px rgba(34,197,94,0.20);
+}
+
+#team-board .team-status--active .team-status-dot{
+  background: rgba(34,197,94,0.95);
+  box-shadow: 0 0 0 2px rgba(34,197,94,0.18), 0 0 10px rgba(34,197,94,0.45);
+}
+
+/* Inactive (o cualquier otro) = gris */
+#team-board .team-status--inactive{
+  border-color: rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.04);
+  box-shadow: none;
+}
+
+#team-board .team-status--inactive .team-status-dot{
+  background: rgba(255,255,255,0.35);
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.35);
+}
+
+/* Más aire entre cards */
+#team-board .team-cards{
+  gap: 18px;              /* antes 12px */
+}
+
+#team-board{
+  margin-left: -18px;     /* cancela el padding del workspace */
+  padding-left: 18px;     /* mantiene respiración interna */
+}
+
+/* Header del card (status arriba) */
+#team-board .team-card-top{
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* Centrar avatar sin centrar el resto */
+#team-board .team-avatar-wrap{
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+/* Si quieres que el nombre quede centrado también */
+#team-board .team-name-row{
+  justify-content: center;
+  text-align: center;
+}
+#team-board .team-name{
+  text-align: center;
+}
+
+/* Avatar más grande */
+#team-board .team-avatar{
+  width: 68px;           /* antes (probablemente 52-56) */
+  height: 68px;
+  font-size: 20px;       /* inicial más grande */
+}
+
+/* Si usas img dentro */
+#team-board .team-avatar img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+/* Status más pequeño */
+#team-board .team-card-top{
+  margin-bottom: 4px;    /* opcional: menos aire arriba */
+}
+
+#team-board .team-status-pill{
+  padding: 4px 8px;      /* más compacto */
+  font-size: 11px;
+  font-weight: 700;
+  gap: 6px;
+}
+
+#team-board .team-status-dot{
+  width: 6px;
+  height: 6px;
+}
+
+/* TEAM: quitar wrapper centrado del layout global */
+body:has(#team-board) .main-content{
+  max-width: none !important;
+  width: 100% !important;
+  margin-inline: 0 !important;
+
+  /* si lo quieres pegado al sidebar */
+  padding-left: 0 !important;
+
+  /* conserva el padding derecho si quieres respiración */
+  /* padding-right: 24px !important; */
+}
+
+/* Extra: asegura que el grid no se centre por nada */
+body:has(#team-board) #team-board,
+body:has(#team-board) #team-board .team-cards{
+  justify-content: flex-start !important;
+  justify-items: start !important;
+}

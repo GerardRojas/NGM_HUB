@@ -54,6 +54,19 @@ document.addEventListener("DOMContentLoaded", () => {
       user_status_name: "Active",
       color: "#22c55e",
     },
+
+    {
+      user_id: "3f3c9b70-1b1a-4b5b-9d8a-111111111111",
+      user_name: "Gerard Rojas22",
+      user_role_name: "CEO",
+      user_seniority_name: "Senior",
+      user_birthday: "1993-05-12",
+      user_address: "San Diego, CA",
+      user_photo: "",
+      user_status_name: "Active",
+      color: "#22c55e",
+    },
+    
     {
       user_id: "3f3c9b70-1b1a-4b5b-9d8a-111111111112",
       user_name: "Gerard Rojas 2",
@@ -174,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const colsWanted = computeColsWanted(n);
 
     const cardW = 260;
-    const gap = 12;
+    const gap = 18;
 
     const available = Math.max(320, getBoardWidth() - 24);
     const maxCols = computeMaxCols(available, cardW, gap);
@@ -208,9 +221,22 @@ document.addEventListener("DOMContentLoaded", () => {
         ? `<img src="${escapeHtml(u.user_photo)}" alt="${safeName}" />`
         : `${initials}`;
 
+      const statusKey = normalize(u.user_status_name);
+      const statusClass = statusKey === "active" ? "team-status--active" : "team-status--inactive";
+      const safePhone = escapeHtml(u.user_phone || u.phone || u.phone_number || "-");
+
       card.innerHTML = `
-        <div class="team-avatar" style="background:${bg};" title="${safeName}">
-          ${avatarHtml}
+        <div class="team-card-top">
+          <span class="team-status-pill ${statusClass}">
+            <span class="team-status-dot" aria-hidden="true"></span>
+            ${safeStatus}
+          </span>
+        </div>
+
+        <div class="team-avatar-wrap">
+          <div class="team-avatar" style="background:${bg};" title="${safeName}">
+            ${avatarHtml}
+          </div>
         </div>
 
         <div class="team-card-main">
@@ -218,25 +244,41 @@ document.addEventListener("DOMContentLoaded", () => {
             <p class="team-name" title="${safeName}">${safeName}</p>
           </div>
 
-          <div class="team-badges">
-            <span class="team-badge">${safeRole}</span>
-            <span class="team-badge">${safeSeniority}</span>
-            <span class="team-badge">${safeStatus}</span>
+          <div class="team-info">
+            <div class="team-info-row">
+              <span class="team-info-label">Role</span>
+              <span class="team-info-value" title="${safeRole}">${safeRole}</span>
+            </div>
+
+            <div class="team-info-row">
+              <span class="team-info-label">Seniority</span>
+              <span class="team-info-value">${safeSeniority}</span>
+            </div>
+
+            <div class="team-info-row">
+              <span class="team-info-label">Phone</span>
+              <span class="team-info-value" title="${safePhone}">${safePhone}</span>
+            </div>
+
+            <div class="team-info-row">
+              <span class="team-info-label">Birthday</span>
+              <span class="team-info-value">${safeBday}</span>
+            </div>
+
+            <div class="team-info-row">
+              <span class="team-info-label">Location</span>
+              <span class="team-info-value" title="${safeAddr}">${safeAddr}</span>
+            </div>
           </div>
 
-          <p class="team-meta" title="Birthday">${safeBday}</p>
-          <p class="team-meta" title="${safeAddr}">${safeAddr}</p>
-
           <div class="team-card-actions">
-            <button class="team-action-btn" data-action="edit" data-id="${escapeHtml(
-              u.user_id
-            )}">Edit</button>
-            <button class="team-action-btn" data-action="delete" data-id="${escapeHtml(
-              u.user_id
-            )}">Delete</button>
+            <button class="team-action-btn" data-action="edit" data-id="${escapeHtml(u.user_id)}">Edit</button>
+            <button class="team-action-btn" data-action="delete" data-id="${escapeHtml(u.user_id)}">Delete</button>
           </div>
         </div>
       `;
+
+
 
       stack.appendChild(back);
       stack.appendChild(card);
@@ -298,4 +340,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initial render
   render(usersStore);
+
+  // Reflow extra (por si el layout termina de acomodarse después del DOMContentLoaded)
+  requestAnimationFrame(() => requestAnimationFrame(() => rerender()));
+
+  // Auto re-render cuando el contenedor cambie de tamaño (sidebar, resize, etc.)
+  let roT = null;
+  const ro = new ResizeObserver(() => {
+    clearTimeout(roT);
+    roT = setTimeout(() => rerender(), 80);
+  });
+  ro.observe(board);
+
 });

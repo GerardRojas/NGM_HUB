@@ -41,66 +41,44 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!board) return;
   if (placeholder) placeholder.remove();
 
-  // 3) Mock users (replace later with API)
-  let usersStore = [
-    {
-      user_id: "3f3c9b70-1b1a-4b5b-9d8a-111111111111",
-      user_name: "Gerard Rojas",
-      user_role_name: "CEO",
-      user_seniority_name: "Senior",
-      user_birthday: "1993-05-12",
-      user_address: "San Diego, CA",
-      user_photo: "",
-      user_status_name: "Active",
-      color: "#22c55e",
-    },
-    {
-      user_id: "3f3c9b70-1b1a-4b5b-9d8a-111111111112",
-      user_name: "Gerard Rojas 2",
-      user_role_name: "CEO",
-      user_seniority_name: "Senior",
-      user_birthday: "1993-05-12",
-      user_address: "San Diego, CA",
-      user_photo: "",
-      user_status_name: "Active",
-      color: "#22c55e",
-    },
-    {
-      user_id: "8c4b2f10-2a3b-4c5d-8e9f-222222222222",
-      user_name: "Mariangela",
-      user_role_name: "Project Coordinator",
-      user_seniority_name: "Mid",
-      user_birthday: "1998-02-01",
-      user_address: "Mazatlán, MX",
-      user_photo: "",
-      user_status_name: "Active",
-      color: "#60a5fa",
-    },
-    {
-      user_id: "b6c7d8e9-1111-2222-3333-444444444444",
-      user_name: "Aida",
-      user_role_name: "General Coordinator",
-      user_seniority_name: "Senior",
-      user_birthday: "1996-10-21",
-      user_address: "Austin, TX",
-      user_photo: "",
-      user_status_name: "Active",
-      color: "#f59e0b",
-    },
-    {
-      user_id: "c1c2c3c4-aaaa-bbbb-cccc-555555555555",
-      user_name: "COO User",
-      user_role_name: "COO",
-      user_seniority_name: "Executive",
-      user_birthday: "1991-07-07",
-      user_address: "Los Angeles, CA",
-      user_photo: "",
-      user_status_name: "Active",
-      color: "#a78bfa",
-    },
-  ];
+  // 2.5) Bind modal (must exist in DOM + ui script loaded BEFORE this file)
+  try {
+    window.TeamUserModal?.bind?.();
+  } catch (e) {
+    console.warn("[TEAM] TeamUserModal.bind() failed (modal not loaded yet?)", e);
+  }
 
-  // 4) Helpers
+  // 3) API helpers
+  function getApiBase() {
+    const base = window.API_BASE || window.apiBase || "";
+    return String(base || "").replace(/\/+$/, "");
+  }
+
+  async function apiJson(url, options = {}) {
+    const res = await fetch(url, { credentials: "include", ...options });
+    const text = await res.text().catch(() => "");
+    if (!res.ok) {
+      throw new Error(`${options.method || "GET"} ${url} failed (${res.status}): ${text}`);
+    }
+    return text ? JSON.parse(text) : null;
+  }
+
+  async function fetchTeamUsers(q = "") {
+    const base = getApiBase();
+    if (!base) throw new Error("API_BASE no está definido. Revisa assets/js/config.js");
+
+    const url = new URL(`${base}/team/users`);
+    if (q) url.searchParams.set("q", q);
+
+    return await apiJson(url.toString());
+  }
+
+  async function apiDeleteUser(userId) {
+    const base = getApiBase();
+    return await apiJson(`${base}/team/users/${userId}`, { method: "DELETE" });
+  }
+
+  // 4) Helpers (UI)
   function escapeHtml(str) {
     return String(str ?? "")
       .replace(/&/g, "&amp;")
@@ -120,8 +98,48 @@ document.addEventListener("DOMContentLoaded", () => {
     return String(s || "").toLowerCase().trim();
   }
 
+  function clamp(n, a, b) {
+    return Math.max(a, Math.min(b, n));
+  }
+
+  // Stable hue from string (user_id or name)
+  function stableHueFromString(str) {
+    const s = String(str || "");
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    }
+    return h % 360;
+  }
+
+  function colorFromUser(u) {
+    // Prefer avatar_color if provided (assumed 0..360)
+    const ac = Number(u.avatar_color);
+    const hue = Number.isFinite(ac) ? clamp(ac, 0, 360) : stableHueFromString(u.user_id || u.user_name);
+    return `hsl(${hue} 70% 45%)`;
+  }
+
+  // Adapt API payload -> fields your existing render expects
+  // IMPORTANT: keep role/seniority/status objects intact for the modal.
+  function adaptUser(u) {
+    const roleName = u?.role?.name || "-";
+    const seniorityName = u?.seniority?.name || "-";
+    const statusName = u?.status?.name || "-";
+
+    return {
+      ...u,
+      user_role_name: roleName,
+      user_seniority_name: seniorityName,
+      user_status_name: statusName,
+      color: colorFromUser(u),
+    };
+  }
+
+  // 5) Store (real)
+  let usersStore = [];
+
+  // 6) Grid math
   function computeColsWanted(n) {
-    // 4 => 2 cols, 6 => 3 cols
     if (n >= 9) return 4;
     if (n >= 6) return 3;
     if (n >= 4) return 2;
@@ -133,6 +151,17 @@ document.addEventListener("DOMContentLoaded", () => {
     return Math.max(1, Math.floor((availablePx + gap) / (cardW + gap)));
   }
 
+  function getBoardWidth() {
+    return (
+      board.clientWidth ||
+      board.parentElement?.clientWidth ||
+      document.documentElement.clientWidth ||
+      window.innerWidth ||
+      0
+    );
+  }
+
+  // 7) Filtering (local, fast)
   function filterUsers(query) {
     const q = normalize(query);
     if (!q) return usersStore.slice();
@@ -153,17 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function getBoardWidth() {
-    return (
-      board.clientWidth ||
-      board.parentElement?.clientWidth ||
-      document.documentElement.clientWidth ||
-      window.innerWidth ||
-      0
-    );
-  }
-
-  // 5) Render grid (no lanes)
+  // 8) Render grid (no lanes)
   function render(list) {
     board.innerHTML = "";
 
@@ -173,14 +192,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const n = list.length;
     const colsWanted = computeColsWanted(n);
 
-    const cardW = 260;
-    const gap = 12;
+    const cardW = 280;
+    const gap = 18;
 
     const available = Math.max(320, getBoardWidth() - 24);
     const maxCols = computeMaxCols(available, cardW, gap);
     const cols = Math.min(colsWanted, maxCols);
 
-    // columnas FIJAS para mantener la retícula “tight” (y evitar backplate gigante)
     wrap.style.gridTemplateColumns = `repeat(${cols}, ${cardW}px)`;
     wrap.style.gap = `${gap}px`;
     wrap.style.justifyContent = "start";
@@ -196,13 +214,26 @@ document.addEventListener("DOMContentLoaded", () => {
       card.className = "team-card";
 
       const safeName = escapeHtml(u.user_name);
-      const safeRole = escapeHtml(u.user_role_name);
-      const safeStatus = escapeHtml(u.user_status_name || "—");
-      const safeSeniority = escapeHtml(u.user_seniority_name || "—");
-      const safeBday = escapeHtml(u.user_birthday || "—");
-      const safeAddr = escapeHtml(u.user_address || "—");
+
+      const roleVal = u.user_role_name || u.role?.name || "—";
+      const seniorityVal = u.user_seniority_name || u.seniority?.name || "—";
+      const statusVal = u.user_status_name || u.status?.name || "—";
+      const phoneVal = u.user_phone_number || "—";
+      const bdayVal = u.user_birthday || "—";
+      const addrVal = u.user_address || "—";
+
+      const safeRole = escapeHtml(roleVal);
+      const safeSeniority = escapeHtml(seniorityVal);
+      const safeStatus = escapeHtml(statusVal);
+      const safePhone = escapeHtml(phoneVal);
+      const safeBday = escapeHtml(bdayVal);
+      const safeAddr = escapeHtml(addrVal);
+
       const initials = escapeHtml(getInitial(u.user_name));
       const bg = u.color || "#a3a3a3";
+
+      const statusNorm = String(statusVal || "").trim().toLowerCase();
+      const statusClass = statusNorm === "active" ? "is-active" : statusNorm ? "is-inactive" : "";
 
       const avatarHtml = u.user_photo
         ? `<img src="${escapeHtml(u.user_photo)}" alt="${safeName}" />`
@@ -214,26 +245,41 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
         <div class="team-card-main">
-          <div class="team-name-row">
+          <div class="team-head">
             <p class="team-name" title="${safeName}">${safeName}</p>
+            <span class="team-status-pill ${statusClass}" title="Status">${safeStatus}</span>
           </div>
 
-          <div class="team-badges">
-            <span class="team-badge">${safeRole}</span>
-            <span class="team-badge">${safeSeniority}</span>
-            <span class="team-badge">${safeStatus}</span>
-          </div>
+          <div class="team-fields">
+            <div class="team-field">
+              <span class="team-field-label">Role</span>
+              <span class="team-field-value">${safeRole}</span>
+            </div>
 
-          <p class="team-meta" title="Birthday">${safeBday}</p>
-          <p class="team-meta" title="${safeAddr}">${safeAddr}</p>
+            <div class="team-field">
+              <span class="team-field-label">Seniority</span>
+              <span class="team-field-value">${safeSeniority}</span>
+            </div>
+
+            <div class="team-field">
+              <span class="team-field-label">Phone</span>
+              <span class="team-field-value">${safePhone}</span>
+            </div>
+
+            <div class="team-field">
+              <span class="team-field-label">Birthday</span>
+              <span class="team-field-value">${safeBday}</span>
+            </div>
+
+            <div class="team-field">
+              <span class="team-field-label">Address</span>
+              <span class="team-field-value">${safeAddr}</span>
+            </div>
+          </div>
 
           <div class="team-card-actions">
-            <button class="team-action-btn" data-action="edit" data-id="${escapeHtml(
-              u.user_id
-            )}">Edit</button>
-            <button class="team-action-btn" data-action="delete" data-id="${escapeHtml(
-              u.user_id
-            )}">Delete</button>
+            <button class="team-action-btn" data-action="edit" data-id="${escapeHtml(u.user_id)}">Edit</button>
+            <button class="team-action-btn" data-action="delete" data-id="${escapeHtml(u.user_id)}">Delete</button>
           </div>
         </div>
       `;
@@ -251,8 +297,22 @@ document.addEventListener("DOMContentLoaded", () => {
     render(list);
   }
 
-  // 6) Actions (mock)
-  board.addEventListener("click", (e) => {
+  // 9) Load from API
+  async function loadUsersFromApi({ keepQuery = true } = {}) {
+    const currentQ = keepQuery ? (searchInput?.value || "") : "";
+    try {
+      const data = await fetchTeamUsers("");
+      usersStore = Array.isArray(data) ? data.map(adaptUser) : [];
+      if (keepQuery && searchInput) searchInput.value = currentQ;
+      rerender();
+    } catch (err) {
+      console.error("[TEAM] loadUsersFromApi failed:", err);
+      alert("Failed to load team users. Check console.");
+    }
+  }
+
+  // 10) Actions (Edit -> modal, Delete -> API)
+  board.addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-action]");
     if (!btn) return;
 
@@ -260,33 +320,58 @@ document.addEventListener("DOMContentLoaded", () => {
     const id = btn.getAttribute("data-id");
 
     if (action === "edit") {
-      console.log("[TEAM] edit:", id);
-      alert(`Edit user: ${id} (mock)`);
+      const current = usersStore.find((x) => x.user_id === id);
+      if (!current) {
+        alert("User not found. Refresh and try again.");
+        return;
+      }
+
+      window.TeamUserModal?.open({
+        mode: "edit",
+        user: current,
+        onSaved: async () => {
+          await loadUsersFromApi({ keepQuery: true });
+        },
+        onDeleted: async () => {
+          await loadUsersFromApi({ keepQuery: true });
+        },
+      });
+
       return;
     }
 
     if (action === "delete") {
-      const ok = confirm("Delete this user? (mock)");
+      const ok = confirm("Delete this user?");
       if (!ok) return;
 
-      usersStore = usersStore.filter((u) => u.user_id !== id);
-      rerender();
+      try {
+        await apiDeleteUser(id);
+        await loadUsersFromApi({ keepQuery: true });
+      } catch (err) {
+        console.error("[TEAM] delete failed:", err);
+        alert("Delete failed. Check console.");
+      }
     }
   });
 
-  // 7) Search
+  // 11) Search (debounced, local)
   let searchT = null;
   function onSearchInput() {
     clearTimeout(searchT);
     searchT = setTimeout(() => rerender(), 80);
   }
-
   if (searchInput) searchInput.addEventListener("input", onSearchInput);
 
-  // 8) Top buttons
-  document.getElementById("btn-refresh-team")?.addEventListener("click", rerender);
+  // 12) Top buttons
+  document.getElementById("btn-refresh-team")?.addEventListener("click", () => loadUsersFromApi());
+
   document.getElementById("btn-add-user")?.addEventListener("click", () => {
-    alert("Add User (mock) — next step: open modal + POST to API");
+    window.TeamUserModal?.open({
+      mode: "create",
+      onSaved: async () => {
+        await loadUsersFromApi({ keepQuery: true });
+      },
+    });
   });
 
   // Reflow on resize (debounced)
@@ -296,6 +381,6 @@ document.addEventListener("DOMContentLoaded", () => {
     resizeT = setTimeout(() => rerender(), 120);
   });
 
-  // Initial render
-  render(usersStore);
+  // Initial load
+  loadUsersFromApi({ keepQuery: false });
 });

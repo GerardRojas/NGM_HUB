@@ -1,6 +1,14 @@
 // assets/js/team_user_modal_ui.js
 (function () {
+  console.log("[TeamUserModal] UI v2 loaded"); // <- te sirve para validar que sí corrió el nuevo
+
   const qs = (id) => document.getElementById(id);
+
+  const MODAL_ID = "teamUserModal";
+  const PARTIAL_URL = "./partials/team_user_modal.html";
+
+  let _mountPromise = null;
+  let _bound = false;
 
   const state = {
     mode: "create", // "create" | "edit"
@@ -51,9 +59,59 @@
     return await apiJson(`${base}/team/users/${userId}`, { method: "DELETE" });
   }
 
-  function open({ mode = "create", user = null, onSaved = null, onDeleted = null } = {}) {
-    const modal = qs("teamUserModal");
-    if (!modal) return console.warn("[TeamUserModal] teamUserModal not found (partial not loaded?)");
+  async function ensureModalMounted() {
+    const existing = qs(MODAL_ID);
+    if (existing) return existing;
+
+    if (_mountPromise) return _mountPromise;
+
+    _mountPromise = (async () => {
+      const res = await fetch(PARTIAL_URL, { cache: "no-store" });
+      if (!res.ok) throw new Error(`[TeamUserModal] partial load failed (${res.status})`);
+
+      const html = await res.text();
+
+      const mount = document.getElementById("modals-root") || document.body;
+      mount.insertAdjacentHTML("beforeend", html);
+
+      const modal = qs(MODAL_ID);
+      if (!modal) throw new Error(`[TeamUserModal] injected but #${MODAL_ID} not found`);
+
+      return modal;
+    })();
+
+    try {
+      return await _mountPromise;
+    } finally {
+      _mountPromise = null;
+    }
+  }
+
+  function showModal(modal) {
+    // Soporta ambos nombres (tu partial usa "hid")
+    modal.classList.remove("hidden", "hid");
+    modal.classList.add("open");
+  }
+
+  function hideModal(modal) {
+    modal.classList.remove("open");
+    modal.classList.add("hidden");
+    modal.classList.add("hid");
+  }
+
+  async function open({ mode = "create", user = null, onSaved = null, onDeleted = null } = {}) {
+    let modal = qs(MODAL_ID);
+    if (!modal) {
+      try {
+        modal = await ensureModalMounted();
+      } catch (e) {
+        console.warn("[TeamUserModal] could not mount modal:", e);
+        return;
+      }
+    }
+
+    // bind SOLO cuando ya existe el modal
+    bind();
 
     state.mode = mode;
     state.user = user;
@@ -61,17 +119,18 @@
     state.onSaved = onSaved;
     state.onDeleted = onDeleted;
 
-    render().then(() => {
-      modal.classList.remove("hidden");
-      const first = modal.querySelector("input, textarea, select, button");
-      if (first) setTimeout(() => first.focus(), 30);
-    });
+    await render();
+
+    showModal(modal);
+
+    const first = modal.querySelector("input, textarea, select, button");
+    if (first) setTimeout(() => first.focus(), 30);
   }
 
   function close() {
-    const modal = qs("teamUserModal");
+    const modal = qs(MODAL_ID);
     if (!modal) return;
-    modal.classList.add("hidden");
+    hideModal(modal);
   }
 
   function escapeHtml(s) {
@@ -117,16 +176,13 @@
     const title = qs("teamUserModalTitle");
     const btnDelete = qs("btnDeleteTeamUser");
     if (title) title.textContent = state.mode === "edit" ? "Edit Team Member" : "New Team Member";
-    if (btnDelete) {
-      btnDelete.classList.toggle("hidden", state.mode !== "edit");
-    }
+    if (btnDelete) btnDelete.classList.toggle("hidden", state.mode !== "edit");
 
     const u = state.user || {};
     const roleId = u?.role?.id || "";
     const seniorityId = u?.seniority?.id || "";
     const statusId =
-      u?.status?.id ||
-      (state.mode === "create" ? getStatusIdByName(state.meta, "Active") : "");
+      u?.status?.id || (state.mode === "create" ? getStatusIdByName(state.meta, "Active") : "");
 
     form.innerHTML = `
       <section class="tm-modal-section">
@@ -259,7 +315,11 @@
   }
 
   function bind() {
-    // Close buttons
+    const modal = qs(MODAL_ID);
+    if (!modal) return;         // <- IMPORTANT: no “quemar” bind si aún no existe
+    if (_bound) return;
+    _bound = true;
+
     qs("btnCloseTeamUserModal")?.addEventListener("click", (e) => {
       e.preventDefault();
       close();
@@ -270,18 +330,16 @@
       close();
     });
 
-    // Backdrop click to close
-    const modal = qs("teamUserModal");
-    if (modal) {
-      modal.addEventListener("click", close);
-      modal.querySelector(".modal")?.addEventListener("click", (ev) => ev.stopPropagation());
-    }
+    // Backdrop click: solo si el target ES el backdrop
+    modal.addEventListener("click", (ev) => {
+      if (ev.target === modal) close();
+    });
 
     // Escape closes
     document.addEventListener("keydown", (ev) => {
       if (ev.key === "Escape") {
-        const m = qs("teamUserModal");
-        if (m && !m.classList.contains("hidden")) close();
+        const m = qs(MODAL_ID);
+        if (m && !(m.classList.contains("hidden") || m.classList.contains("hid"))) close();
       }
     });
 
@@ -297,11 +355,8 @@
 
       try {
         let out = null;
-        if (state.mode === "edit" && state.userId) {
-          out = await patchUser(state.userId, payload);
-        } else {
-          out = await createUser(payload);
-        }
+        if (state.mode === "edit" && state.userId) out = await patchUser(state.userId, payload);
+        else out = await createUser(payload);
 
         close();
         if (typeof state.onSaved === "function") await state.onSaved(out);
@@ -318,8 +373,7 @@
       e.preventDefault();
       if (!state.userId) return;
 
-      const ok = confirm("Delete this user?");
-      if (!ok) return;
+      if (!confirm("Delete this user?")) return;
 
       const btn = qs("btnDeleteTeamUser");
       btn && (btn.disabled = true);
@@ -337,5 +391,6 @@
     });
   }
 
+  // Expose
   window.TeamUserModal = { open, close, bind };
 })();

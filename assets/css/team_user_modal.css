@@ -1,0 +1,278 @@
+/* =========================================
+   TEAM — User Modal (scoped)
+   Basado en Pipeline modal skin
+   ========================================= */
+
+/* Hidden must always win */
+#teamUserModal.modal-backdrop.hidden,
+#teamUserModal.modal-backdrop.hid {
+  display: none !important;
+}
+
+/* Backdrop negro + blur (como Pipeline) */
+#teamUserModal.modal-backdrop {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: clamp(12px, 3vh, 28px);
+  overflow-y: auto;
+}
+
+/* Card interior */
+#teamUserModal.modal-backdrop > .modal {
+  width: min(980px, 100%);
+  max-height: calc(100vh - 2 * clamp(12px, 3vh, 28px));
+  display: flex;
+  flex-direction: column;
+
+  background: #212121 !important;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* Header / Footer */
+#teamUserModal .modal-header,
+#teamUserModal .modal-footer {
+  background: #242424 !important;
+  border-color: rgba(82, 82, 82, 0.18);
+}
+
+#teamUserModal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+}
+
+#teamUserModal .modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ngm-text-main);
+}
+
+#teamUserModal .modal-btn {
+  background: transparent;
+  border: none;
+  color: var(--ngm-text-muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+#teamUserModal .modal-btn:hover {
+  color: var(--ngm-text-main);
+}
+
+/* Body padding + internal scroll */
+#teamUserModal .modal-body {
+  padding: 18px 18px 20px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+/* Footer buttons */
+#teamUserModal .modal-footer {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border-soft);
+  background: #212121 !important;
+}
+
+#teamUserModal .modal-footer .btn-secondary,
+#teamUserModal .modal-footer .btn-primary {
+  appearance: none;
+  border-radius: 14px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.05s ease,
+    opacity 0.15s ease;
+}
+
+#teamUserModal .modal-footer .btn-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+}
+#teamUserModal .modal-footer .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+#teamUserModal .modal-footer .btn-primary {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.95);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+#teamUserModal .modal-footer .btn-primary:hover {
+  background: rgba(34, 197, 94, 0.22);
+  border-color: rgba(34, 197, 94, 0.55);
+  color: #eafff3;
+}
+
+#teamUserModal .modal-footer .btn-secondary:active,
+#teamUserModal .modal-footer .btn-primary:active {
+  transform: translateY(1px);
+}
+
+#teamUserModal .modal-footer .btn-secondary:disabled,
+#teamUserModal .modal-footer .btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Scrollbar (como Pipeline) */
+#teamUserModal .modal-body::-webkit-scrollbar { width: 10px; }
+#teamUserModal .modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+}
+#teamUserModal .modal-body::-webkit-scrollbar-thumb {
+  background-color: rgba(180, 180, 180, 0.35);
+  border-radius: 8px;
+  border: 2px solid rgba(0, 0, 0, 0.4);
+}
+#teamUserModal .modal-body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(200, 200, 200, 0.5);
+}
+#teamUserModal .modal-body {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 180, 180, 0.35) rgba(255, 255, 255, 0.04);
+}
+
+/* =========================================
+   TEAM — Form skin (tm-*)
+   ========================================= */
+
+#teamUserModal .tm-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 14px;
+}
+
+#teamUserModal .tm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+#teamUserModal .tm-field--full {
+  grid-column: 1 / -1;
+}
+
+#teamUserModal .tm-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
+  letter-spacing: 0.2px;
+}
+
+#teamUserModal .tm-input,
+#teamUserModal select.tm-input,
+#teamUserModal .tm-select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  color: rgba(255, 255, 255, 0.92);
+
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+#teamUserModal .tm-input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+#teamUserModal .tm-input:focus,
+#teamUserModal .tm-select:focus {
+  border-color: rgba(34, 197, 94, 0.65);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+#teamUserModal textarea.tm-input {
+  resize: vertical;
+  min-height: 110px;
+}
+
+/* select arrow */
+#teamUserModal select.tm-input,
+#teamUserModal select.tm-select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.65) 50%),
+    linear-gradient(135deg, rgba(255,255,255,0.65) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 12px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 34px;
+}
+
+#teamUserModal .tm-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.35;
+}
+
+/* Section cards */
+#teamUserModal .tm-modal-section {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 16px;
+  padding: 14px 14px;
+}
+
+#teamUserModal .tm-modal-section-title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: rgba(255, 255, 255, 0.75);
+  text-transform: uppercase;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  #teamUserModal .tm-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Opciones del <select> (menú desplegable) */
+#teamUserModal select option {
+  background: #1f1f1f;
+  color: #ffffff;
+}
+#teamUserModal select optgroup {
+  background: #1f1f1f;
+  color: #ffffff;
+}
+
+#teamUserModal select {
+  color-scheme: dark;
+}

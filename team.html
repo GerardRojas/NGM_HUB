@@ -16,19 +16,18 @@
   <!-- Base layout + Team styles -->
   <link rel="stylesheet" href="assets/css/styles.css" />
   <link rel="stylesheet" href="assets/css/team_styles.css" />
+  <link rel="stylesheet" href="assets/css/team_user_modal.css" />
 
-  <!-- Env/server pills (same approach as pipeline.html) -->
+  <!-- Global env/server pills -->
   <script src="assets/js/config.js" defer></script>
   <script src="assets/js/pills.js" defer></script>
-  <script src="assets/js/team_user_modal_ui.js"></script>
-  
-  <!-- Page logic -->
+
+  <!-- Modal UI + page logic -->
+  <script src="assets/js/team_user_modal_ui.js" defer></script>
   <script src="assets/js/team.js" defer></script>
 </head>
 
-<body class="page-team"></body>
-
-<body>
+<body class="page-team">
   <div class="app-layout">
     <!-- Sidebar -->
     <aside class="sidebar">
@@ -45,22 +44,17 @@
         <p class="sidebar-subtitle">Team Management</p>
       </div>
 
-      <!-- Optional: dynamic modules like pipeline (inject from JS) -->
-      <nav class="sidebar-nav" id="sidebar-nav">
-        <!-- modules injected from JS -->
-      </nav>
+      <!-- Dynamic modules (if empty, team.js will inject a basic map) -->
+      <nav class="sidebar-nav" id="sidebar-nav"></nav>
     </aside>
 
     <!-- Main area -->
     <div class="main-area">
-      <!-- Topbar (same structure as pipeline; “equal to dashboard”) -->
+      <!-- Topbar -->
       <header class="ngm-topbar">
-        <!-- LEFT -->
         <div class="ngm-bar-left">
           <div class="ngm-brand">
-            <div class="ngm-brand-icon-small">
-              <span>⚡</span>
-            </div>
+            <div class="ngm-brand-icon-small"><span>⚡</span></div>
             <div class="ngm-brand-text">
               <span class="ngm-brand-org">Next Generation Management</span>
               <span class="ngm-brand-context">NGM Hub · Team Management</span>
@@ -68,7 +62,6 @@
           </div>
         </div>
 
-        <!-- RIGHT -->
         <div class="ngm-topbar-right">
           <div class="ngm-meta">
             <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
@@ -87,12 +80,10 @@
             />
           </form>
 
-          <!-- User pill -->
           <span id="user-pill" class="user-pill">User · —</span>
         </div>
       </header>
 
-      <!-- Content -->
       <main class="main-content">
         <section class="team-section">
           <div class="section-header-row">
@@ -104,20 +95,17 @@
             </div>
 
             <div class="team-actions">
-              <button type="button" class="btn-secondary" id="btn-refresh-team">Refresh</button>
+              <button type="button" class="btn-secondary" id="btn-manage-roles">Manage Roles</button>
               <button type="button" class="btn-primary" id="btn-add-user">Add User</button>
             </div>
           </div>
 
-          <!-- Kanban container (team.js will render columns + user cards here) -->
           <div id="team-board" class="team-board">
-            <div id="team-placeholder" class="team-placeholder">
-              Loading team…
-            </div>
+            <div id="team-placeholder" class="team-placeholder">Loading team…</div>
           </div>
         </section>
 
-        <!-- Root for modals (add/edit user) -->
+        <!-- Root for modals -->
         <div id="modals-root"></div>
       </main>
     </div>

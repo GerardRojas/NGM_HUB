@@ -1,6 +1,6 @@
 // assets/js/team.js
 document.addEventListener("DOMContentLoaded", () => {
-  // 1) Auth / role gate (same pattern as dashboard.js)
+  // 1) Auth / role gate
   const userRaw = localStorage.getItem("ngmUser");
   if (!userRaw) {
     window.location.href = "login.html";
@@ -33,6 +33,30 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  // Sidebar map (fallback). If another script already injects modules, this won't override.
+  function injectSidebarMapIfEmpty() {
+    const nav = document.getElementById("sidebar-nav");
+    if (!nav) return;
+    if (nav.children && nav.children.length) return;
+
+    const current = (location.pathname.split("/").pop() || "").toLowerCase();
+    const items = [
+      { label: "Dashboard", href: "dashboard.html" },
+      { label: "Pipeline", href: "pipeline.html" },
+      { label: "Team", href: "team.html" },
+      { label: "Estimator", href: "estimator.html" },
+    ];
+
+    nav.innerHTML = items
+      .map((it) => {
+        const isActive = current === it.href.toLowerCase();
+        // Add multiple class names so it fits whatever global CSS you already have
+        return `<a href="${it.href}" class="sidebar-link sidebar-nav-item ${isActive ? "active is-active" : ""}">${it.label}</a>`;
+      })
+      .join("");
+  }
+  injectSidebarMapIfEmpty();
+
   // 2) DOM refs
   const board = document.getElementById("team-board");
   const placeholder = document.getElementById("team-placeholder");
@@ -40,13 +64,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!board) return;
   if (placeholder) placeholder.remove();
-
-  // 2.5) Bind modal (must exist in DOM + ui script loaded BEFORE this file)
-  try {
-    window.TeamUserModal?.bind?.();
-  } catch (e) {
-    console.warn("[TEAM] TeamUserModal.bind() failed (modal not loaded yet?)", e);
-  }
 
   // 3) API helpers
   function getApiBase() {
@@ -76,6 +93,19 @@ document.addEventListener("DOMContentLoaded", () => {
   async function apiDeleteUser(userId) {
     const base = getApiBase();
     return await apiJson(`${base}/team/users/${userId}`, { method: "DELETE" });
+  }
+
+  // Manage Roles: prompt + POST to backend
+  async function apiCreateRole(roleName) {
+    const base = getApiBase();
+    const name = String(roleName || "").trim();
+    if (!name) throw new Error("Role name is empty");
+
+    return await apiJson(`${base}/team/rols`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rol_name: name }),
+    });
   }
 
   // 4) Helpers (UI)
@@ -113,14 +143,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function colorFromUser(u) {
-    // Prefer avatar_color if provided (assumed 0..360)
     const ac = Number(u.avatar_color);
     const hue = Number.isFinite(ac) ? clamp(ac, 0, 360) : stableHueFromString(u.user_id || u.user_name);
     return `hsl(${hue} 70% 45%)`;
   }
 
-  // Adapt API payload -> fields your existing render expects
-  // IMPORTANT: keep role/seniority/status objects intact for the modal.
   function adaptUser(u) {
     const roleName = u?.role?.name || "-";
     const seniorityName = u?.seniority?.name || "-";
@@ -135,7 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  // 5) Store (real)
+  // 5) Store
   let usersStore = [];
 
   // 6) Grid math
@@ -161,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  // 7) Filtering (local, fast)
+  // 7) Filtering
   function filterUsers(query) {
     const q = normalize(query);
     if (!q) return usersStore.slice();
@@ -182,7 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 8) Render grid (no lanes)
+  // 8) Render grid
   function render(list) {
     board.innerHTML = "";
 
@@ -218,6 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const roleVal = u.user_role_name || u.role?.name || "—";
       const seniorityVal = u.user_seniority_name || u.seniority?.name || "—";
       const statusVal = u.user_status_name || u.status?.name || "—";
+
       const phoneVal = u.user_phone_number || "—";
       const bdayVal = u.user_birthday || "—";
       const addrVal = u.user_address || "—";
@@ -311,7 +339,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 10) Actions (Edit -> modal, Delete -> API)
+  // 10) Actions
   board.addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-action]");
     if (!btn) return;
@@ -336,7 +364,6 @@ document.addEventListener("DOMContentLoaded", () => {
           await loadUsersFromApi({ keepQuery: true });
         },
       });
-
       return;
     }
 
@@ -354,7 +381,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 11) Search (debounced, local)
+  // 11) Search
   let searchT = null;
   function onSearchInput() {
     clearTimeout(searchT);
@@ -363,8 +390,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (searchInput) searchInput.addEventListener("input", onSearchInput);
 
   // 12) Top buttons
-  document.getElementById("btn-refresh-team")?.addEventListener("click", () => loadUsersFromApi());
-
   document.getElementById("btn-add-user")?.addEventListener("click", () => {
     window.TeamUserModal?.open({
       mode: "create",
@@ -374,7 +399,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Reflow on resize (debounced)
+  document.getElementById("btn-manage-roles")?.addEventListener("click", async () => {
+    const roleName = prompt("Enter new role name:");
+    if (!roleName) return;
+
+    const name = roleName.trim();
+    if (!name) return;
+
+    try {
+      await apiCreateRole(name);
+      alert(`Role created: ${name}\n\nTip: reopen the user modal to see it in dropdowns.`);
+    } catch (err) {
+      console.error("[TEAM] create role failed:", err);
+      alert("Create role failed. Check console.\n\nIf you see 404, backend endpoint /team/roles is missing.");
+    }
+  });
+
+  // Reflow on resize
   let resizeT = null;
   window.addEventListener("resize", () => {
     clearTimeout(resizeT);

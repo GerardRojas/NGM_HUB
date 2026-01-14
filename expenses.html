@@ -14,8 +14,14 @@
     >
 
     <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/expenses_styles.css" />
+
+    <!-- Global env/server/user pills -->
+    <script src="assets/js/config.js" defer></script>
+    <script src="assets/js/pills.js" defer></script>
+
 </head>
-<body>
+<body class="page-expenses">
     <div class="app-layout">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -31,118 +37,148 @@
                 <p class="sidebar-subtitle">Expenses Engine</p>
             </div>
 
-            <nav class="sidebar-nav">
+            <!-- Sidebar nav (fallback static for now; later sidebar.js can override by id) -->
+            <nav class="sidebar-nav" id="sidebar-nav">
                 <a href="dashboard.html" class="nav-item">Overview</a>
                 <a href="expenses.html" class="nav-item nav-item-active">Expenses</a>
                 <a href="projects.html" class="nav-item">Projects</a>
+                <a href="pipeline.html" class="nav-item">Pipeline</a>
+                <a href="team.html" class="nav-item">Team</a>
+                <a href="users.html" class="nav-item">Users</a>
                 <a href="#" class="nav-item">Finance</a>
                 <a href="#" class="nav-item">Estimator</a>
             </nav>
         </aside>
 
-        <!-- Main -->
+        <!-- Main area -->
         <div class="main-area">
-            <header class="topbar">
-                <div class="topbar-left">
-                    <h1 class="topbar-title">Expenses Engine</h1>
-                    <p class="topbar-subtitle">
-                        Safely capture and classify expenses without breaking any spreadsheet.
-                    </p>
+
+            <!-- Topbar (system standard) -->
+            <header class="ngm-topbar">
+                <div class="ngm-bar-left">
+                    <div class="ngm-brand">
+                        <div class="ngm-brand-icon-small"><span>⚡</span></div>
+                        <div class="ngm-brand-text">
+                            <span class="ngm-brand-org">Next Generation Management</span>
+                            <span class="ngm-brand-context">NGM Hub · Expenses Engine</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="topbar-right">
-                    <span class="user-pill">Master User</span>
+
+                <div class="ngm-topbar-right">
+                    <div class="ngm-meta">
+                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
+                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · —</span>
+                    </div>
+
+                    <form class="ngm-search" role="search" onsubmit="return false;">
+                        <span class="ngm-global-search-icon">⌕</span>
+                        <input
+                            id="expenses-search-input"
+                            type="search"
+                            class="ngm-search-input"
+                            placeholder="Search expenses…"
+                            aria-label="Search expenses"
+                        />
+                    </form>
+
+                    <span id="user-pill" class="user-pill">User · —</span>
                 </div>
             </header>
 
             <main class="main-content">
-                
-                <!-- Formulario de nuevo gasto -->
-                <section>
-                    <h2 class="section-title">New Expense</h2>
-                    <div class="panel">
-                        <form id="expenseForm" class="form-grid">
-                            
-                            <div class="field">
-                                <label class="field-label" for="exp-date">Date</label>
-                                <input 
-                                    id="exp-date"
-                                    type="date"
-                                    class="input"
-                                    required
-                                >
-                            </div>
+                <div class="workspace">
 
-                            <div class="field">
-                                <label class="field-label" for="exp-project">Project</label>
-                                <select id="exp-project" class="input" required>
-                                    <option value="">Select a project</option>
-                                </select>
-                            </div>
+                    <!-- Formulario de nuevo gasto -->
+                    <section>
+                        <h2 class="section-title">New Expense</h2>
 
-                            <div class="field">
-                                <label class="field-label" for="exp-amount">Amount</label>
-                                <input 
-                                    id="exp-amount"
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    placeholder="0.00"
-                                    class="input"
-                                    required
-                                >
-                            </div>
+                        <div class="ngm-card">
+                            <form id="expenseForm" class="form-grid">
+                                
+                                <div class="field">
+                                    <label class="field-label" for="exp-date">Date</label>
+                                    <input 
+                                        id="exp-date"
+                                        type="date"
+                                        class="input"
+                                        required
+                                    >
+                                </div>
 
-                            <div class="field field-full">
-                                <label class="field-label" for="exp-desc">Description</label>
-                                <input 
-                                    id="exp-desc"
-                                    type="text"
-                                    placeholder="Vendor, concept, payment method, etc."
-                                    class="input"
-                                    required
-                                >
-                            </div>
+                                <div class="field">
+                                    <label class="field-label" for="exp-project">Project</label>
+                                    <select id="exp-project" class="input" required>
+                                        <option value="">Select a project</option>
+                                    </select>
+                                </div>
 
-                            <div class="form-footer form-footer-right">
-                                <button type="submit" class="btn-primary">
-                                    Save Expense
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </section>
+                                <div class="field">
+                                    <label class="field-label" for="exp-amount">Amount</label>
+                                    <input 
+                                        id="exp-amount"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        placeholder="0.00"
+                                        class="input"
+                                        required
+                                    >
+                                </div>
 
-                <!-- Entradas recientes (mock por ahora) -->
-                <section class="data-section">
-                    <h2 class="section-title">Recent Entries (mock)</h2>
-                    <div class="panel">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Project</th>
-                                    <th>Amount</th>
-                                    <th>Description</th>
-                                </tr>
-                            </thead>
-                            <tbody id="expensesTableBody">
-                                <tr>
-                                    <td>2025-12-01</td>
-                                    <td>Del Rio ADU</td>
-                                    <td>$1,250.00</td>
-                                    <td>Framing materials — paid with Amex</td>
-                                </tr>
-                                <tr>
-                                    <td>2025-12-02</td>
-                                    <td>San Diego Duplex</td>
-                                    <td>$420.50</td>
-                                    <td>Site visit + permits fee</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-            
+                                <div class="field field-full">
+                                    <label class="field-label" for="exp-desc">Description</label>
+                                    <input 
+                                        id="exp-desc"
+                                        type="text"
+                                        placeholder="Vendor, concept, payment method, etc."
+                                        class="input"
+                                        required
+                                    >
+                                </div>
+
+                                <div class="form-footer form-footer-right">
+                                    <button type="submit" class="btn-primary">
+                                        Save Expense
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </section>
+
+                    <!-- Entradas recientes (mock por ahora) -->
+                    <section class="data-section">
+                        <h2 class="section-title">Recent Entries (mock)</h2>
+
+                        <div class="ngm-sheet">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Project</th>
+                                        <th>Amount</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="expensesTableBody">
+                                    <tr>
+                                        <td>2025-12-01</td>
+                                        <td>Del Rio ADU</td>
+                                        <td>$1,250.00</td>
+                                        <td>Framing materials — paid with Amex</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2025-12-02</td>
+                                        <td>San Diego Duplex</td>
+                                        <td>$420.50</td>
+                                        <td>Site visit + permits fee</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                </div>
             </main>
         </div>
     </div>
@@ -163,11 +199,11 @@
             });
         }
 
-        // --- Lógica del formulario ---
+        // --- Handler de "Save Expense" (mock) ---
         const expenseForm = document.getElementById('expenseForm');
         const tbody = document.getElementById('expensesTableBody');
 
-        expenseForm.addEventListener('submit', function (e) {
+        expenseForm.addEventListener('submit', (e) => {
             e.preventDefault();
 
             const date = document.getElementById('exp-date').value;
@@ -188,9 +224,14 @@
             `;
             tbody.prepend(tr);
 
-            console.log("New expense (mock):", { date, projectId, projectName, amount, desc });
-
             expenseForm.reset();
+        });
+    </script>
+
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            if (window.initTopbarPills) window.initTopbarPills();
+            if (window.initSidebar) window.initSidebar(); // futuro sidebar.js
         });
     </script>
 

@@ -1,0 +1,107 @@
+/* ==========================================
+   Expenses Engine (scoped)
+   ========================================== */
+
+.page-expenses .main-content{
+  max-width: none;     /* workspace flexible */
+  width: 100%;
+}
+
+.page-expenses .workspace{
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Titles */
+.page-expenses .section-title{
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ngm-text-main);
+}
+
+/* Form */
+.page-expenses .form-grid{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+.page-expenses .field-full{
+  grid-column: 1 / -1;
+}
+
+.page-expenses .field-label{
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ngm-text-soft);
+}
+
+.page-expenses .input{
+  width: 100%;
+  height: 40px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: var(--bg-input);
+  color: var(--ngm-text-main);
+  outline: none;
+}
+
+.page-expenses select.input{
+  cursor: pointer;
+}
+
+.page-expenses .input::placeholder{
+  color: var(--ngm-text-muted);
+}
+
+.page-expenses .input:focus{
+  border-color: rgba(34, 197, 94, .55);
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, .14);
+}
+
+.page-expenses .form-footer{
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  display: flex;
+}
+
+.page-expenses .form-footer-right{
+  justify-content: flex-end;
+}
+
+/* White “doc” surface for tables */
+.page-expenses .ngm-sheet{
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, .08);
+  box-shadow: 0 18px 40px rgba(0,0,0,.35);
+  overflow: hidden;
+}
+
+/* Table overrides only inside white sheet */
+.page-expenses .ngm-sheet .table{
+  font-size: 13px;
+}
+
+.page-expenses .ngm-sheet .table thead{
+  background: #f8fafc;
+}
+
+.page-expenses .ngm-sheet .table th{
+  color: #334155;
+  padding: 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, .10);
+}
+
+.page-expenses .ngm-sheet .table td{
+  color: #0f172a;
+  padding: 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, .08);
+}

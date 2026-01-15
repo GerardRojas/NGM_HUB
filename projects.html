@@ -13,10 +13,7 @@
       rel="stylesheet"
     >
 
-    <!-- Estilos base compartidos -->
     <link rel="stylesheet" href="assets/css/styles.css" />
-
-    <!-- Estilos específicos de Projects (clonamos el look del dashboard) -->
     <link rel="stylesheet" href="assets/css/projects.css" />
 </head>
 <body>
@@ -44,43 +41,15 @@
 
         <!-- Main -->
         <div class="main-area">
-
-            <!-- Barra superior unificada estilo dashboard -->
-            <header class="topbar topbar-dashboard">
-                <!-- LEFT: brand / contexto -->
-                <div class="topbar-left global-bar-left">
-                    <div class="global-brand">
-                        <div class="brand-icon-small">
-                            <!-- Ícono placeholder; se puede reemplazar por el real -->
-                            <span>⚡</span>
-                        </div>
-                        <div class="brand-text">
-                            <span class="brand-org">Next Generation Management</span>
-                            <span class="brand-context">NGM Hub · Projects</span>
-                        </div>
-                    </div>
+            <header class="topbar">
+                <div class="topbar-left">
+                    <h1 class="topbar-title">Projects Manager</h1>
+                    <p class="topbar-subtitle">
+                        View, create and manage all your construction projects in one place.
+                    </p>
                 </div>
-
-                <!-- RIGHT: meta + search + user -->
-                <div class="topbar-right dashboard-topbar-right">
-                    <div class="dashboard-meta">
-                        <span class="meta-pill meta-env">Environment · Production</span>
-                        <span class="meta-pill meta-status meta-status-live">Server · Live</span>
-                    </div>
-
-                    <!-- Search bar (por ahora solo visual, luego la conectamos a filtro de tabla) -->
-                    <form class="dashboard-search" role="search">
-                        <span class="dashboard-search-icon">⌕</span>
-                        <input
-                            type="search"
-                            class="dashboard-search-input"
-                            placeholder="Search projects…"
-                            aria-label="Search projects"
-                        />
-                    </form>
-
-                    <!-- Usuario / rol (luego se rellena vía JS de auth) -->
-                    <span id="user-pill" class="user-pill">User · Role</span>
+                <div class="topbar-right">
+                    <span class="user-pill">Master User</span>
                 </div>
             </header>
 
@@ -442,8 +411,8 @@
     // =============================
     // Clicks en botones de la tabla
     // =============================
-    tbody.addEventListener("click", (e) => {
-        // Agregar nuevo proyecto (local)
+    tbody.addEventListener("click", async (e) => {
+        // Agregar nuevo proyecto -> POST al backend
         if (e.target.classList.contains("add-new-btn")) {
             const nameInput = document.getElementById("new-project-name");
             const cityInput = document.getElementById("new-project-city");
@@ -460,41 +429,79 @@
                 return;
             }
 
-            const fakeId = "LOCAL-" + String(projects.length + 1).padStart(3, "0");
+            if (!companyId) {
+                alert("Company is required.");
+                return;
+            }
 
-            const companyName = companyId ? findCompanyNameById(companyId) : "-";
-            const statusName = statusId ? findStatusNameById(statusId) : "";
+            // Deshabilitar botón mientras se guarda
+            e.target.disabled = true;
+            e.target.textContent = "Saving...";
 
-            projects.push({
-                project_id: fakeId,
-                project_name: name,
-                city,
-                source_company: companyId,
-                company_name: companyName,
-                status: statusId,
-                status_name: statusName,
-            });
+            try {
+                const res = await fetch(`${API_BASE}/projects/`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        project_name: name,
+                        source_company: companyId,
+                        city: city || null,
+                        status: statusId || null
+                    })
+                });
 
-            if (nameInput) nameInput.value = "";
-            if (cityInput) cityInput.value = "";
-            renderTable();
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText);
+                }
 
-            // Aquí luego haremos POST /projects para guardar realmente en Supabase
+                // Limpiar inputs y recargar tabla desde el servidor
+                if (nameInput) nameInput.value = "";
+                if (cityInput) cityInput.value = "";
+                await loadProjects();
+
+            } catch (err) {
+                console.error("Error creating project:", err);
+                alert("Error creating project: " + err.message);
+            } finally {
+                e.target.disabled = false;
+                e.target.textContent = "Add";
+            }
         }
 
-        // Eliminar proyecto (solo en memoria por ahora)
+        // Eliminar proyecto -> DELETE al backend
         if (e.target.classList.contains("delete-btn")) {
             const index = e.target.dataset.index;
             const idx = Number(index);
             if (!projects[idx]) return;
 
-            const confirmed = confirm("Delete this project from the local list? (No Supabase change yet)");
+            const projectId = projects[idx].project_id;
+            const projectName = projects[idx].project_name;
+
+            const confirmed = confirm(`Delete project "${projectName}"? This cannot be undone.`);
             if (!confirmed) return;
 
-            projects.splice(idx, 1);
-            renderTable();
+            e.target.disabled = true;
+            e.target.textContent = "...";
 
-            // Después conectaremos esto a un DELETE /projects/{id}
+            try {
+                const res = await fetch(`${API_BASE}/projects/${projectId}`, {
+                    method: "DELETE"
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText);
+                }
+
+                await loadProjects();
+
+            } catch (err) {
+                console.error("Error deleting project:", err);
+                alert("Error deleting project: " + err.message);
+                e.target.disabled = false;
+                e.target.textContent = "Delete";
+            }
         }
     });
 

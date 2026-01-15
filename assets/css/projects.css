@@ -274,6 +274,19 @@
    SECTION STYLING
    ========================================== */
 
+.page-projects .workspace {
+    padding-top: 24px;
+}
+
+.page-projects .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary, #e5e7eb);
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-soft, #27272f);
+}
+
 .data-section {
     max-width: 1000px;
     margin-inline: auto;

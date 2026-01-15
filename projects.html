@@ -8,21 +8,25 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link 
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" 
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap"
       rel="stylesheet"
     >
 
     <link rel="stylesheet" href="assets/css/styles.css" />
     <link rel="stylesheet" href="assets/css/projects.css" />
+
+    <!-- Global env/server/user pills -->
+    <script src="assets/js/config.js" defer></script>
+    <script src="assets/js/pills.js" defer></script>
 </head>
-<body>
+<body class="page-projects">
     <div class="app-layout">
-        
+
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-logo">
-                <img src="assets/img/logo.png" class="sidebar-logo-img" />
+                <img src="assets/img/logo.png" alt="NGM HUB Logo" class="sidebar-logo-img" />
             </div>
 
             <div class="sidebar-title-block">
@@ -30,10 +34,13 @@
                 <p class="sidebar-subtitle">Projects Manager</p>
             </div>
 
-            <nav class="sidebar-nav">
+            <nav class="sidebar-nav" id="sidebar-nav">
                 <a href="dashboard.html" class="nav-item">Overview</a>
                 <a href="expenses.html" class="nav-item">Expenses</a>
                 <a href="projects.html" class="nav-item nav-item-active">Projects</a>
+                <a href="pipeline.html" class="nav-item">Pipeline</a>
+                <a href="team.html" class="nav-item">Team</a>
+                <a href="users.html" class="nav-item">Users</a>
                 <a href="#" class="nav-item">Finance</a>
                 <a href="#" class="nav-item">Estimator</a>
             </nav>
@@ -41,48 +48,74 @@
 
         <!-- Main -->
         <div class="main-area">
-            <header class="topbar">
-                <div class="topbar-left">
-                    <h1 class="topbar-title">Projects Manager</h1>
-                    <p class="topbar-subtitle">
-                        View, create and manage all your construction projects in one place.
-                    </p>
+
+            <!-- Topbar (system standard) -->
+            <header class="ngm-topbar">
+                <div class="ngm-bar-left">
+                    <div class="ngm-brand">
+                        <div class="ngm-brand-icon-small"><span>⚡</span></div>
+                        <div class="ngm-brand-text">
+                            <span class="ngm-brand-org">Next Generation Management</span>
+                            <span class="ngm-brand-context">NGM Hub · Projects Manager</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="topbar-right">
-                    <span class="user-pill">Master User</span>
+
+                <div class="ngm-topbar-right">
+                    <div class="ngm-meta">
+                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
+                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · —</span>
+                    </div>
+
+                    <form class="ngm-search" role="search" onsubmit="return false;">
+                        <span class="ngm-global-search-icon">⌕</span>
+                        <input
+                            id="projects-search-input"
+                            type="search"
+                            class="ngm-search-input"
+                            placeholder="Search projects..."
+                            aria-label="Search projects"
+                        />
+                    </form>
+
+                    <span id="user-pill" class="user-pill">User · —</span>
                 </div>
             </header>
 
             <main class="main-content">
+                <div class="workspace">
 
-                <!-- Projects Table -->
-                <section class="data-section">
+                    <!-- Projects Table -->
+                    <section class="data-section">
+                        <h2 class="section-title">Projects</h2>
 
-                    <div class="panel panel-narrow">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 30%;">Project</th>
-                                    <th style="width: 18%;">Company</th>
-                                    <th style="width: 14%;">Client</th>
-                                    <th style="width: 12%;">City</th>
-                                    <th style="width: 12%;">Status</th>
-                                    <th style="width: 4%;">Actions</th>
-                                    <th style="width: 10%;">ID</th>
-                                </tr>
-                            </thead>
+                        <div class="ngm-sheet">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 30%;">Project</th>
+                                        <th style="width: 18%;">Company</th>
+                                        <th style="width: 14%;">Client</th>
+                                        <th style="width: 12%;">City</th>
+                                        <th style="width: 12%;">Status</th>
+                                        <th style="width: 4%;">Actions</th>
+                                        <th style="width: 10%;">ID</th>
+                                    </tr>
+                                </thead>
 
-                            <tbody id="projectsTableBody"></tbody>
-                        </table>
+                                <tbody id="projectsTableBody"></tbody>
+                            </table>
 
-                        <!-- Botón de manage al final -->
-                        <div class="projects-actions">
-                            <button id="manageProjectsBtn" class="btn-secondary">
-                                Manage Projects
-                            </button>
+                            <!-- Botón de manage al final -->
+                            <div class="projects-actions">
+                                <button id="manageProjectsBtn" class="btn-secondary">
+                                    Manage Projects
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+
+                </div>
             </main>
         </div>
     </div>
@@ -514,6 +547,13 @@
     }
 
     init();
+    </script>
+
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            if (window.initTopbarPills) window.initTopbarPills();
+            if (window.initSidebar) window.initSidebar();
+        });
     </script>
 
 </body>

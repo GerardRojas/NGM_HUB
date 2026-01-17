@@ -27,7 +27,7 @@
 
 /* Card interior */
 #addExpenseModal .modal {
-  width: min(1400px, 100%);
+  width: min(1600px, 95%);
   max-height: calc(100vh - 2 * clamp(12px, 3vh, 28px));
   display: flex;
   flex-direction: column;
@@ -108,13 +108,16 @@
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 /* Expense rows table */
 #addExpenseModal .expense-rows-table {
   width: 100%;
+  min-width: 1300px;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 #addExpenseModal .expense-rows-table thead {
@@ -122,7 +125,7 @@
 }
 
 #addExpenseModal .expense-rows-table th {
-  padding: 10px 8px;
+  padding: 12px 10px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -132,8 +135,18 @@
   border-bottom: 1px solid rgba(148, 163, 184, 0.18);
 }
 
+/* Column widths */
+#addExpenseModal .expense-rows-table th:nth-child(1) { width: 140px; } /* Date */
+#addExpenseModal .expense-rows-table th:nth-child(2) { width: 140px; } /* Type */
+#addExpenseModal .expense-rows-table th:nth-child(3) { width: 160px; } /* Vendor */
+#addExpenseModal .expense-rows-table th:nth-child(4) { width: 140px; } /* Payment */
+#addExpenseModal .expense-rows-table th:nth-child(5) { width: 140px; } /* Account */
+#addExpenseModal .expense-rows-table th:nth-child(6) { width: 120px; } /* Amount */
+#addExpenseModal .expense-rows-table th:nth-child(7) { width: auto; }   /* Description - takes remaining space */
+#addExpenseModal .expense-rows-table th:nth-child(8) { width: 50px; }   /* Remove button */
+
 #addExpenseModal .expense-rows-table td {
-  padding: 8px 6px;
+  padding: 10px 8px;
   vertical-align: middle;
   border-bottom: 1px solid rgba(148, 163, 184, 0.10);
 }
@@ -186,7 +199,7 @@
 
 /* Input widths */
 #addExpenseModal .exp-input--date {
-  min-width: 130px;
+  min-width: 120px;
 }
 
 #addExpenseModal .exp-input--amount {
@@ -195,7 +208,7 @@
 }
 
 #addExpenseModal .exp-input--desc {
-  min-width: 150px;
+  min-width: 200px;
 }
 
 /* Remove row button */
@@ -297,26 +310,32 @@
 }
 
 /* Scrollbar */
-#addExpenseModal .modal-body::-webkit-scrollbar {
+#addExpenseModal .modal-body::-webkit-scrollbar,
+#addExpenseModal .modal-table-container::-webkit-scrollbar {
   width: 10px;
+  height: 10px;
 }
 
-#addExpenseModal .modal-body::-webkit-scrollbar-track {
+#addExpenseModal .modal-body::-webkit-scrollbar-track,
+#addExpenseModal .modal-table-container::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.04);
   border-radius: 8px;
 }
 
-#addExpenseModal .modal-body::-webkit-scrollbar-thumb {
+#addExpenseModal .modal-body::-webkit-scrollbar-thumb,
+#addExpenseModal .modal-table-container::-webkit-scrollbar-thumb {
   background-color: rgba(180, 180, 180, 0.35);
   border-radius: 8px;
   border: 2px solid rgba(0, 0, 0, 0.4);
 }
 
-#addExpenseModal .modal-body::-webkit-scrollbar-thumb:hover {
+#addExpenseModal .modal-body::-webkit-scrollbar-thumb:hover,
+#addExpenseModal .modal-table-container::-webkit-scrollbar-thumb:hover {
   background-color: rgba(200, 200, 200, 0.5);
 }
 
-#addExpenseModal .modal-body {
+#addExpenseModal .modal-body,
+#addExpenseModal .modal-table-container {
   scrollbar-width: thin;
   scrollbar-color: rgba(180, 180, 180, 0.35) rgba(255, 255, 255, 0.04);
 }

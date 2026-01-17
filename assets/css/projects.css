@@ -8,9 +8,12 @@
    ========================================== */
 
 .projects-list {
+    --table-padding: 0px; /* Configurable padding for table width adjustment */
     display: flex;
     flex-direction: column;
     gap: 12px;
+    width: 100%;
+    padding-inline: var(--table-padding);
 }
 
 /* ==========================================
@@ -242,11 +245,32 @@
 
 .projects-loading {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 48px;
+    gap: 16px;
+    padding: 60px 48px;
+    background: var(--ngm-bg-card, #18181b);
+    border: 1px solid var(--border-soft, #27272f);
+    border-radius: 12px;
     color: var(--text-secondary, #9ca3af);
     font-size: 13px;
+}
+
+/* Loading spinner */
+.spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(34, 197, 94, 0.1);
+    border-top-color: #22c55e;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* ==========================================
@@ -288,8 +312,8 @@
 }
 
 .data-section {
-    max-width: 1000px;
-    margin-inline: auto;
+    max-width: none;
+    width: 100%;
 }
 
 /* ==========================================

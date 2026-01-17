@@ -667,3 +667,8 @@ button {
     border-color: #22c55e;
     color: #bbf7d0;
 }
+
+.ngm-meta-status-offline {
+    border-color: #ef4444;
+    color: #fca5a5;
+}

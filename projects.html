@@ -91,7 +91,10 @@
 
                         <!-- Projects rendered as cards -->
                         <div id="projectsList" class="projects-list">
-                            <div class="projects-loading">Loading projects...</div>
+                            <div class="projects-loading">
+                                <div class="spinner"></div>
+                                <span>Loading projects...</span>
+                            </div>
                         </div>
 
                         <!-- Manage button -->
@@ -183,7 +186,12 @@
     // Cargar proyectos desde la API
     // =============================
     async function loadProjects() {
-        listContainer.innerHTML = `<div class="projects-loading">Loading projects...</div>`;
+        listContainer.innerHTML = `
+            <div class="projects-loading">
+                <div class="spinner"></div>
+                <span>Loading projects...</span>
+            </div>
+        `;
 
         try {
             const res = await fetch(`${API_BASE}/projects/`);
@@ -388,15 +396,33 @@
         try {
             // Send PATCH request for each changed project
             for (const update of updates) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
                 const res = await fetch(`${API_BASE}/projects/${update.id}`, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(update.data)
+                    body: JSON.stringify({
+                        project_name: update.data.project_name,
+                        source_company: parseInt(update.data.source_company, 10),
+                        city: update.data.city || null,
+                        status: update.data.status ? parseInt(update.data.status, 10) : null
+                    }),
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
 
                 if (!res.ok) {
                     const errText = await res.text();
-                    throw new Error(`Error updating project: ${errText}`);
+                    let errorMessage = errText;
+                    try {
+                        const errJson = JSON.parse(errText);
+                        errorMessage = errJson.detail || errJson.message || errText;
+                    } catch (e) {
+                        // Use text as-is
+                    }
+                    throw new Error(`Error updating project: ${errorMessage}`);
                 }
             }
 
@@ -407,7 +433,11 @@
 
         } catch (err) {
             console.error("Error saving changes:", err);
-            alert("Error saving changes: " + err.message);
+            if (err.name === 'AbortError') {
+                alert("Request timeout. The server is taking too long to respond. Please try again.");
+            } else {
+                alert("Error saving changes: " + err.message);
+            }
         } finally {
             manageBtn.disabled = false;
         }
@@ -491,30 +521,53 @@
             e.target.textContent = "Saving...";
 
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
                 const res = await fetch(`${API_BASE}/projects/`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         project_name: name,
-                        source_company: companyId,
+                        source_company: parseInt(companyId, 10),
                         city: city || null,
-                        status: statusId || null
-                    })
+                        status: statusId ? parseInt(statusId, 10) : null
+                    }),
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
 
                 if (!res.ok) {
                     const errText = await res.text();
-                    throw new Error(errText);
+                    let errorMessage = errText;
+                    try {
+                        const errJson = JSON.parse(errText);
+                        errorMessage = errJson.detail || errJson.message || errText;
+                    } catch (e) {
+                        // Use text as-is
+                    }
+                    throw new Error(errorMessage);
                 }
+
+                const result = await res.json();
+                console.log("Project created successfully:", result);
 
                 // Limpiar inputs y recargar tabla desde el servidor
                 if (nameInput) nameInput.value = "";
                 if (cityInput) cityInput.value = "";
+                if (companySelect) companySelect.selectedIndex = 0;
+                if (statusSelect) statusSelect.selectedIndex = 0;
+
                 await loadProjects();
 
             } catch (err) {
                 console.error("Error creating project:", err);
-                alert("Error creating project: " + err.message);
+                if (err.name === 'AbortError') {
+                    alert("Request timeout. The server is taking too long to respond. Please try again.");
+                } else {
+                    alert("Error creating project: " + err.message);
+                }
             } finally {
                 e.target.disabled = false;
                 e.target.textContent = "Add Project";

@@ -217,6 +217,12 @@
   background: rgba(255, 255, 255, 0.02);
 }
 
+/* Description column */
+.expenses-table .col-description {
+  min-width: 250px;
+  max-width: 400px;
+}
+
 /* Amount column */
 .expenses-table .col-amount {
   font-weight: 500;
@@ -254,6 +260,10 @@
 .edit-input--amount {
   text-align: right;
   min-width: 100px;
+}
+
+.edit-input--description {
+  min-width: 200px;
 }
 
 select.edit-input {

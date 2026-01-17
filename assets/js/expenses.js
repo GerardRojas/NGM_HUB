@@ -282,9 +282,9 @@
     // Add total row
     const totalRow = `
       <tr class="total-row">
-        <td colspan="5" class="total-label">Total</td>
+        <td colspan="6" class="total-label">Total</td>
         <td class="col-amount total-amount">$${total.toFixed(2)}</td>
-        <td colspan="2"></td>
+        <td class="col-actions"></td>
       </tr>
     `;
 
@@ -293,22 +293,22 @@
 
   function renderReadOnlyRow(exp, index) {
     const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
+    const description = exp.LineDescription || '—';
     const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'txn_type_name') || '—';
     const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
     const payment = exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '—';
     const account = exp.account_name || findMetaName('accounts', exp.account_id, 'id', 'account_name') || '—';
     const amount = exp.Amount ? `$${Number(exp.Amount).toFixed(2)}` : '$0.00';
-    const description = exp.LineDescription || '—';
 
     return `
       <tr data-index="${index}" data-id="${exp.id || ''}">
         <td>${date}</td>
+        <td class="col-description">${description}</td>
         <td>${type}</td>
         <td>${vendor}</td>
         <td>${payment}</td>
         <td>${account}</td>
         <td class="col-amount">${amount}</td>
-        <td>${description}</td>
         <td class="col-actions"></td>
       </tr>
     `;
@@ -321,6 +321,9 @@
       <tr data-index="${index}" data-id="${exp.id || ''}">
         <td>
           <input type="date" class="edit-input" data-field="TxnDate" value="${dateVal}">
+        </td>
+        <td>
+          <input type="text" class="edit-input edit-input--description" data-field="LineDescription" value="${exp.LineDescription || ''}">
         </td>
         <td>
           ${buildSelectHtml('txn_type', exp.txn_type, metaData.txn_types, 'TnxType_id', 'txn_type_name')}
@@ -336,9 +339,6 @@
         </td>
         <td>
           <input type="number" class="edit-input edit-input--amount" data-field="Amount" step="0.01" min="0" value="${exp.Amount || ''}">
-        </td>
-        <td>
-          <input type="text" class="edit-input" data-field="LineDescription" value="${exp.LineDescription || ''}">
         </td>
         <td class="col-actions">
           <button type="button" class="btn-row-delete" data-index="${index}" title="Delete">×</button>
@@ -400,16 +400,24 @@
 
   async function saveEditChanges() {
     const apiBase = getApiBase();
-    const rows = els.expensesTableBody.querySelectorAll('tr[data-index]');
+    const displayExpenses = filteredExpenses.length > 0 || Object.values(columnFilters).some(f => f) ? filteredExpenses : expenses;
+    const rows = els.expensesTableBody.querySelectorAll('tr[data-index]:not(.total-row)');
     const updates = [];
-    const deletes = [];
+
+    console.log('[EDIT] Starting save process...');
+    console.log('[EDIT] Number of rows to check:', rows.length);
 
     // Collect changes from DOM
     rows.forEach(row => {
       const index = parseInt(row.dataset.index, 10);
       const expenseId = row.dataset.id;
 
-      if (!expenseId) return; // Skip rows without ID
+      console.log(`[EDIT] Checking row ${index}, ID: ${expenseId}`);
+
+      if (!expenseId) {
+        console.warn(`[EDIT] Row ${index} has no ID, skipping`);
+        return;
+      }
 
       const updatedData = {};
       row.querySelectorAll('.edit-input').forEach(input => {
@@ -423,12 +431,22 @@
         updatedData[field] = value || null;
       });
 
+      console.log(`[EDIT] Row ${index} updated data:`, updatedData);
+
       // Check if data changed
       const original = originalExpenses[index];
+      console.log(`[EDIT] Row ${index} original data:`, original);
+
       if (original && hasChanges(original, updatedData)) {
+        console.log(`[EDIT] Row ${index} has changes, adding to update list`);
         updates.push({ id: expenseId, data: updatedData });
+      } else {
+        console.log(`[EDIT] Row ${index} has no changes`);
       }
     });
+
+    console.log('[EDIT] Total updates to send:', updates.length);
+    console.log('[EDIT] Updates:', updates);
 
     if (updates.length === 0) {
       alert('No changes to save.');
@@ -443,11 +461,13 @@
     try {
       // Send PATCH requests for each update
       for (const update of updates) {
-        await apiJson(`${apiBase}/expenses/${update.id}`, {
+        console.log(`[EDIT] Sending PATCH for expense ${update.id}:`, update.data);
+        const response = await apiJson(`${apiBase}/expenses/${update.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(update.data)
         });
+        console.log(`[EDIT] PATCH response for ${update.id}:`, response);
       }
 
       alert(`${updates.length} expense(s) updated successfully!`);
@@ -458,6 +478,7 @@
 
     } catch (err) {
       console.error('[EXPENSES] Error saving changes:', err);
+      console.error('[EXPENSES] Error stack:', err.stack);
       alert('Error saving changes: ' + err.message);
     } finally {
       els.btnSaveChanges.disabled = false;

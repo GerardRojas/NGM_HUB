@@ -150,9 +150,26 @@
       showEmptyState('Loading expenses...');
 
       const url = `${apiBase}/expenses?project=${projectId}`;
-      const result = await apiJson(url);
+      console.log('[EXPENSES] Fetching from:', url);
 
-      expenses = Array.isArray(result) ? result : [];
+      const result = await apiJson(url);
+      console.log('[EXPENSES] API Response:', result);
+      console.log('[EXPENSES] Response type:', typeof result);
+      console.log('[EXPENSES] Is Array?', Array.isArray(result));
+
+      // Handle different response formats
+      if (Array.isArray(result)) {
+        expenses = result;
+      } else if (result && Array.isArray(result.data)) {
+        expenses = result.data;
+      } else if (result && Array.isArray(result.expenses)) {
+        expenses = result.expenses;
+      } else {
+        expenses = [];
+      }
+
+      console.log('[EXPENSES] Processed expenses count:', expenses.length);
+      console.log('[EXPENSES] First expense:', expenses[0]);
 
       if (expenses.length === 0) {
         showEmptyState('No expenses found for this project');
@@ -162,7 +179,8 @@
 
     } catch (err) {
       console.error('[EXPENSES] Error loading expenses:', err);
-      showEmptyState('Error loading expenses');
+      console.error('[EXPENSES] Error details:', err.message);
+      showEmptyState('Error loading expenses: ' + err.message);
     }
   }
 
@@ -259,7 +277,10 @@
   function buildSelectHtml(field, selectedValue, options, valueKey, textKey) {
     const optionsHtml = options.map(opt => {
       const val = opt[valueKey];
-      const text = opt[textKey] || opt.name || 'Unnamed';
+      // Try multiple possible name fields
+      const text = opt[textKey] || opt.name || opt.vendor_name || opt.account_name ||
+                   opt.payment_method_name || opt.txn_type_name ||
+                   `Unnamed (${val})`;
       const selected = val == selectedValue ? 'selected' : '';
       return `<option value="${val}" ${selected}>${text}</option>`;
     }).join('');
@@ -477,13 +498,40 @@
   }
 
   function buildModalSelectHtml(field, options, valueKey, textKey) {
+    const datalistId = `datalist-${field}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     const optionsHtml = options.map(opt => {
       const val = opt[valueKey];
-      const text = opt[textKey] || opt.name || 'Unnamed';
-      return `<option value="${val}">${text}</option>`;
+      // Try multiple possible name fields
+      const text = opt[textKey] || opt.name || opt.vendor_name || opt.account_name ||
+                   opt.payment_method_name || opt.txn_type_name ||
+                   `Unnamed (${val})`;
+      return `<option value="${text}" data-value-id="${val}">${text}</option>`;
     }).join('');
 
-    return `<select class="exp-input" data-field="${field}"><option value="">Select...</option>${optionsHtml}</select>`;
+    // Store mapping in data attribute for later retrieval
+    const mappingJson = JSON.stringify(
+      options.map(opt => ({
+        text: opt[textKey] || opt.name || opt.vendor_name || opt.account_name ||
+              opt.payment_method_name || opt.txn_type_name || `Unnamed (${opt[valueKey]})`,
+        id: opt[valueKey]
+      }))
+    );
+
+    return `
+      <input
+        type="text"
+        class="exp-input exp-input-searchable"
+        data-field="${field}"
+        data-mapping='${mappingJson.replace(/'/g, '&apos;')}'
+        list="${datalistId}"
+        placeholder="Type or select..."
+        autocomplete="off"
+      >
+      <datalist id="${datalistId}">
+        ${optionsHtml}
+      </datalist>
+    `;
   }
 
   function removeModalRow(rowIndex) {
@@ -509,7 +557,18 @@
         const field = input.dataset.field;
         let value = input.value;
 
-        if (field === 'Amount') {
+        // For searchable inputs, convert text back to ID
+        if (input.classList.contains('exp-input-searchable') && input.dataset.mapping) {
+          try {
+            const mapping = JSON.parse(input.dataset.mapping);
+            const match = mapping.find(m => m.text === value);
+            if (match) {
+              value = match.id;
+            }
+          } catch (e) {
+            console.warn('Failed to parse mapping for field:', field, e);
+          }
+        } else if (field === 'Amount') {
           value = value ? parseFloat(value) : null;
         }
 

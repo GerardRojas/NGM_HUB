@@ -27,7 +27,8 @@
 
 /* Card interior */
 #addExpenseModal .modal {
-  width: min(1600px, 95%);
+  width: min(1800px, 98%) !important;
+  max-width: 1800px !important;
   max-height: calc(100vh - 2 * clamp(12px, 3vh, 28px));
   display: flex;
   flex-direction: column;
@@ -166,6 +167,19 @@
   font-size: 13px;
   outline: none;
   transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* Searchable input specific styles */
+#addExpenseModal .exp-input-searchable {
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.5) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 8px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 28px;
 }
 
 #addExpenseModal .exp-input::placeholder {

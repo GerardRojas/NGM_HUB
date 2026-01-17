@@ -138,12 +138,12 @@
 
 /* Column widths */
 #addExpenseModal .expense-rows-table th:nth-child(1) { width: 140px; } /* Date */
-#addExpenseModal .expense-rows-table th:nth-child(2) { width: 140px; } /* Type */
-#addExpenseModal .expense-rows-table th:nth-child(3) { width: 160px; } /* Vendor */
-#addExpenseModal .expense-rows-table th:nth-child(4) { width: 140px; } /* Payment */
-#addExpenseModal .expense-rows-table th:nth-child(5) { width: 140px; } /* Account */
-#addExpenseModal .expense-rows-table th:nth-child(6) { width: 120px; } /* Amount */
-#addExpenseModal .expense-rows-table th:nth-child(7) { width: auto; }   /* Description - takes remaining space */
+#addExpenseModal .expense-rows-table th:nth-child(2) { width: auto; }   /* Description - takes remaining space */
+#addExpenseModal .expense-rows-table th:nth-child(3) { width: 140px; } /* Type */
+#addExpenseModal .expense-rows-table th:nth-child(4) { width: 160px; } /* Vendor */
+#addExpenseModal .expense-rows-table th:nth-child(5) { width: 140px; } /* Payment */
+#addExpenseModal .expense-rows-table th:nth-child(6) { width: 140px; } /* Account */
+#addExpenseModal .expense-rows-table th:nth-child(7) { width: 120px; } /* Amount */
 #addExpenseModal .expense-rows-table th:nth-child(8) { width: 50px; }   /* Remove button */
 
 #addExpenseModal .expense-rows-table td {

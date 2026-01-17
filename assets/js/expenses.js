@@ -20,13 +20,17 @@
   let selectedProjectId = null;
   let modalRowCounter = 0;
   let columnFilters = {
-    date: '',
-    type: '',
-    vendor: '',
-    payment: '',
-    account: '',
-    description: ''
+    date: [],
+    type: [],
+    vendor: [],
+    payment: [],
+    account: [],
+    description: []
   };
+
+  // Filter dropdown state
+  let currentFilterColumn = null;
+  let tempFilterSelections = {};
 
   // ================================
   // DOM ELEMENTS
@@ -52,6 +56,10 @@
     els.btnCloseExpenseModal = document.getElementById('btnCloseExpenseModal');
     els.btnCancelExpenses = document.getElementById('btnCancelExpenses');
     els.btnSaveAllExpenses = document.getElementById('btnSaveAllExpenses');
+
+    // Filter dropdown elements
+    els.filterDropdown = document.getElementById('filterDropdown');
+    els.filterDropdownOptions = document.getElementById('filterDropdownOptions');
   }
 
   // ================================
@@ -119,6 +127,12 @@
       metaData.vendors = meta.vendors || [];
       metaData.payment_methods = meta.payment_methods || [];
       metaData.accounts = meta.accounts || [];
+
+      // Debug: Log metadata structure to help identify correct column names
+      console.log('[METADATA] txn_types sample:', metaData.txn_types[0]);
+      console.log('[METADATA] accounts sample:', metaData.accounts[0]);
+      console.log('[METADATA] vendors sample:', metaData.vendors[0]);
+      console.log('[METADATA] payment_methods sample:', metaData.payment_methods[0]);
 
       // Populate project filter dropdown
       populateProjectFilter();
@@ -209,39 +223,39 @@
   function applyFilters() {
     filteredExpenses = expenses.filter(exp => {
       // Date filter
-      if (columnFilters.date) {
-        const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString().toLowerCase() : '';
-        if (!date.includes(columnFilters.date.toLowerCase())) return false;
+      if (columnFilters.date.length > 0) {
+        const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
+        if (!columnFilters.date.includes(date)) return false;
       }
 
       // Type filter
-      if (columnFilters.type) {
-        const type = (exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'txn_type_name') || '').toLowerCase();
-        if (!type.includes(columnFilters.type.toLowerCase())) return false;
+      if (columnFilters.type.length > 0) {
+        const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'id', 'TnxType_name') || '—';
+        if (!columnFilters.type.includes(type)) return false;
       }
 
       // Vendor filter
-      if (columnFilters.vendor) {
-        const vendor = (exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '').toLowerCase();
-        if (!vendor.includes(columnFilters.vendor.toLowerCase())) return false;
+      if (columnFilters.vendor.length > 0) {
+        const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
+        if (!columnFilters.vendor.includes(vendor)) return false;
       }
 
       // Payment filter
-      if (columnFilters.payment) {
-        const payment = (exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '').toLowerCase();
-        if (!payment.includes(columnFilters.payment.toLowerCase())) return false;
+      if (columnFilters.payment.length > 0) {
+        const payment = exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '—';
+        if (!columnFilters.payment.includes(payment)) return false;
       }
 
       // Account filter
-      if (columnFilters.account) {
-        const account = (exp.account_name || findMetaName('accounts', exp.account_id, 'id', 'account_name') || '').toLowerCase();
-        if (!account.includes(columnFilters.account.toLowerCase())) return false;
+      if (columnFilters.account.length > 0) {
+        const account = exp.account_name || findMetaName('accounts', exp.account_id, 'account_id', 'Name') || '—';
+        if (!columnFilters.account.includes(account)) return false;
       }
 
       // Description filter
-      if (columnFilters.description) {
-        const desc = (exp.LineDescription || '').toLowerCase();
-        if (!desc.includes(columnFilters.description.toLowerCase())) return false;
+      if (columnFilters.description.length > 0) {
+        const desc = exp.LineDescription || '—';
+        if (!columnFilters.description.includes(desc)) return false;
       }
 
       return true;
@@ -279,11 +293,11 @@
       return sum + amount;
     }, 0);
 
-    // Add total row
+    // Add total row with currency formatting
     const totalRow = `
       <tr class="total-row">
         <td colspan="6" class="total-label">Total</td>
-        <td class="col-amount total-amount">$${total.toFixed(2)}</td>
+        <td class="col-amount total-amount">${formatCurrency(total)}</td>
         <td class="col-actions"></td>
       </tr>
     `;
@@ -294,11 +308,11 @@
   function renderReadOnlyRow(exp, index) {
     const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
     const description = exp.LineDescription || '—';
-    const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'txn_type_name') || '—';
+    const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'id', 'TnxType_name') || '—';
     const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
     const payment = exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '—';
-    const account = exp.account_name || findMetaName('accounts', exp.account_id, 'id', 'account_name') || '—';
-    const amount = exp.Amount ? `$${Number(exp.Amount).toFixed(2)}` : '$0.00';
+    const account = exp.account_name || findMetaName('accounts', exp.account_id, 'account_id', 'Name') || '—';
+    const amount = exp.Amount ? formatCurrency(Number(exp.Amount)) : '$0.00';
 
     return `
       <tr data-index="${index}" data-id="${exp.id || ''}">
@@ -326,7 +340,7 @@
           <input type="text" class="edit-input edit-input--description" data-field="LineDescription" value="${exp.LineDescription || ''}">
         </td>
         <td>
-          ${buildSelectHtml('txn_type', exp.txn_type, metaData.txn_types, 'TnxType_id', 'txn_type_name')}
+          ${buildSelectHtml('txn_type', exp.txn_type, metaData.txn_types, 'id', 'TnxType_name')}
         </td>
         <td>
           ${buildSelectHtml('vendor_id', exp.vendor_id, metaData.vendors, 'id', 'vendor_name')}
@@ -335,7 +349,7 @@
           ${buildSelectHtml('payment_type', exp.payment_type, metaData.payment_methods, 'id', 'payment_method_name')}
         </td>
         <td>
-          ${buildSelectHtml('account_id', exp.account_id, metaData.accounts, 'id', 'account_name')}
+          ${buildSelectHtml('account_id', exp.account_id, metaData.accounts, 'account_id', 'Name')}
         </td>
         <td>
           <input type="number" class="edit-input edit-input--amount" data-field="Amount" step="0.01" min="0" value="${exp.Amount || ''}">
@@ -350,9 +364,9 @@
   function buildSelectHtml(field, selectedValue, options, valueKey, textKey) {
     const optionsHtml = options.map(opt => {
       const val = opt[valueKey];
-      // Try multiple possible name fields
-      const text = opt[textKey] || opt.name || opt.vendor_name || opt.account_name ||
-                   opt.payment_method_name || opt.txn_type_name ||
+      // Try multiple possible name fields - prioritize textKey, then common alternatives
+      const text = opt[textKey] || opt.Name || opt.name || opt.vendor_name || opt.account_name ||
+                   opt.payment_method_name || opt.txn_type_name || opt.TnxType_name ||
                    `Unnamed (${val})`;
       const selected = val == selectedValue ? 'selected' : '';
       return `<option value="${val}" ${selected}>${text}</option>`;
@@ -365,6 +379,15 @@
     if (!value) return null;
     const item = metaData[category]?.find(i => i[valueKey] == value);
     return item ? item[textKey] : null;
+  }
+
+  function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
   }
 
   // ================================
@@ -566,7 +589,10 @@
         <input type="date" class="exp-input exp-input--date" data-field="TxnDate" value="${today}">
       </td>
       <td>
-        ${buildModalSelectHtml('txn_type', metaData.txn_types, 'TnxType_id', 'txn_type_name')}
+        <input type="text" class="exp-input exp-input--desc" data-field="LineDescription" placeholder="Description">
+      </td>
+      <td>
+        ${buildModalSelectHtml('txn_type', metaData.txn_types, 'id', 'TnxType_name')}
       </td>
       <td>
         ${buildModalSelectHtml('vendor_id', metaData.vendors, 'id', 'vendor_name')}
@@ -575,13 +601,10 @@
         ${buildModalSelectHtml('payment_type', metaData.payment_methods, 'id', 'payment_method_name')}
       </td>
       <td>
-        ${buildModalSelectHtml('account_id', metaData.accounts, 'id', 'account_name')}
+        ${buildModalSelectHtml('account_id', metaData.accounts, 'account_id', 'Name')}
       </td>
       <td>
         <input type="number" class="exp-input exp-input--amount" data-field="Amount" step="0.01" min="0" placeholder="0.00">
-      </td>
-      <td>
-        <input type="text" class="exp-input exp-input--desc" data-field="LineDescription" placeholder="Description">
       </td>
       <td>
         <button type="button" class="exp-row-remove" data-row-index="${rowIndex}">×</button>
@@ -596,9 +619,9 @@
 
     const optionsHtml = options.map(opt => {
       const val = opt[valueKey];
-      // Try multiple possible name fields
-      const text = opt[textKey] || opt.name || opt.vendor_name || opt.account_name ||
-                   opt.payment_method_name || opt.txn_type_name ||
+      // Try multiple possible name fields - prioritize textKey, then common alternatives
+      const text = opt[textKey] || opt.Name || opt.name || opt.vendor_name || opt.account_name ||
+                   opt.payment_method_name || opt.txn_type_name || opt.TnxType_name ||
                    `Unnamed (${val})`;
       return `<option value="${text}" data-value-id="${val}">${text}</option>`;
     }).join('');
@@ -606,8 +629,8 @@
     // Store mapping in data attribute for later retrieval
     const mappingJson = JSON.stringify(
       options.map(opt => ({
-        text: opt[textKey] || opt.name || opt.vendor_name || opt.account_name ||
-              opt.payment_method_name || opt.txn_type_name || `Unnamed (${opt[valueKey]})`,
+        text: opt[textKey] || opt.Name || opt.name || opt.vendor_name || opt.account_name ||
+              opt.payment_method_name || opt.txn_type_name || opt.TnxType_name || `Unnamed (${opt[valueKey]})`,
         id: opt[valueKey]
       }))
     );
@@ -784,55 +807,190 @@
       }
     });
 
-    // Handle edit inputs
-    els.expensesTableBody?.addEventListener('input', (e) => {
-      if (!isEditMode) return;
-      if (!e.target.classList.contains('edit-input')) return;
+    // Note: Removed the input event listener that was updating expenses array directly
+    // This was causing the "No changes to save" issue because the comparison with
+    // originalExpenses would find no differences. Now we collect changes from DOM
+    // inputs directly in saveEditChanges() function.
 
-      const row = e.target.closest('tr');
-      const index = parseInt(row.dataset.index, 10);
-      const field = e.target.dataset.field;
-      let value = e.target.value;
+    // Filter toggle buttons
+    document.querySelectorAll('.filter-toggle').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const column = btn.dataset.column;
+        toggleFilterDropdown(column, btn);
+      });
+    });
 
-      if (field === 'Amount') {
-        value = value ? parseFloat(value) : null;
+    // Filter dropdown search
+    const filterSearch = els.filterDropdown?.querySelector('.filter-search');
+    filterSearch?.addEventListener('input', (e) => {
+      filterDropdownOptions(e.target.value);
+    });
+
+    // Filter dropdown Clear button
+    els.filterDropdown?.querySelector('.filter-clear-btn')?.addEventListener('click', () => {
+      clearFilterSelection();
+    });
+
+    // Filter dropdown Apply button
+    els.filterDropdown?.querySelector('.filter-apply-btn')?.addEventListener('click', () => {
+      applyFilterSelection();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!els.filterDropdown?.contains(e.target) && !e.target.classList.contains('filter-toggle')) {
+        closeFilterDropdown();
       }
+    });
+  }
 
-      if (expenses[index]) {
-        expenses[index][field] = value || null;
+  // ================================
+  // FILTER DROPDOWN FUNCTIONS
+  // ================================
+  function toggleFilterDropdown(column, toggleBtn) {
+    if (currentFilterColumn === column && !els.filterDropdown.classList.contains('hidden')) {
+      closeFilterDropdown();
+      return;
+    }
+
+    currentFilterColumn = column;
+    tempFilterSelections = {};
+
+    // Get unique values for this column
+    const uniqueValues = getUniqueColumnValues(column);
+
+    // Position dropdown below the button
+    const rect = toggleBtn.getBoundingClientRect();
+    const tableContainer = document.querySelector('.expenses-table-container');
+    const containerRect = tableContainer.getBoundingClientRect();
+
+    els.filterDropdown.style.left = `${rect.left - containerRect.left}px`;
+    els.filterDropdown.style.top = `${rect.bottom - containerRect.top + 4}px`;
+
+    // Populate options
+    populateFilterOptions(uniqueValues, column);
+
+    // Show dropdown
+    els.filterDropdown.classList.remove('hidden');
+
+    // Update toggle button state
+    document.querySelectorAll('.filter-toggle').forEach(btn => btn.classList.remove('active'));
+    toggleBtn.classList.add('active');
+  }
+
+  function closeFilterDropdown() {
+    els.filterDropdown?.classList.add('hidden');
+    currentFilterColumn = null;
+    tempFilterSelections = {};
+
+    // Update active states
+    document.querySelectorAll('.filter-toggle').forEach(btn => {
+      const col = btn.dataset.column;
+      if (columnFilters[col] && columnFilters[col].length > 0) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
       }
     });
+  }
 
-    // Column filters
-    document.getElementById('filterDate')?.addEventListener('input', (e) => {
-      columnFilters.date = e.target.value;
-      renderExpensesTable();
+  function getUniqueColumnValues(column) {
+    const values = new Set();
+
+    expenses.forEach(exp => {
+      let value;
+      switch (column) {
+        case 'date':
+          value = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
+          break;
+        case 'description':
+          value = exp.LineDescription || '—';
+          break;
+        case 'type':
+          value = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'id', 'TnxType_name') || '—';
+          break;
+        case 'vendor':
+          value = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
+          break;
+        case 'payment':
+          value = exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '—';
+          break;
+        case 'account':
+          value = exp.account_name || findMetaName('accounts', exp.account_id, 'account_id', 'Name') || '—';
+          break;
+      }
+      values.add(value);
     });
 
-    document.getElementById('filterType')?.addEventListener('input', (e) => {
-      columnFilters.type = e.target.value;
-      renderExpensesTable();
+    return Array.from(values).sort();
+  }
+
+  function populateFilterOptions(values, column) {
+    const currentFilters = columnFilters[column] || [];
+
+    const optionsHtml = values.map(value => {
+      const isChecked = currentFilters.includes(value);
+      const checkboxId = `filter-${column}-${value.replace(/[^a-zA-Z0-9]/g, '-')}`;
+
+      return `
+        <div class="filter-option">
+          <input
+            type="checkbox"
+            id="${checkboxId}"
+            data-value="${value}"
+            ${isChecked ? 'checked' : ''}
+          />
+          <label for="${checkboxId}">${value}</label>
+        </div>
+      `;
+    }).join('');
+
+    els.filterDropdownOptions.innerHTML = optionsHtml;
+
+    // Add change event listeners
+    els.filterDropdownOptions.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const value = e.target.dataset.value;
+        tempFilterSelections[value] = e.target.checked;
+      });
+    });
+  }
+
+  function filterDropdownOptions(searchText) {
+    const options = els.filterDropdownOptions.querySelectorAll('.filter-option');
+    const search = searchText.toLowerCase();
+
+    options.forEach(option => {
+      const label = option.querySelector('label').textContent.toLowerCase();
+      option.style.display = label.includes(search) ? 'flex' : 'none';
+    });
+  }
+
+  function clearFilterSelection() {
+    els.filterDropdownOptions.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.checked = false;
+    });
+    tempFilterSelections = {};
+  }
+
+  function applyFilterSelection() {
+    if (!currentFilterColumn) return;
+
+    // Get all checked values
+    const checkedValues = [];
+    els.filterDropdownOptions.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+      checkedValues.push(cb.dataset.value);
     });
 
-    document.getElementById('filterVendor')?.addEventListener('input', (e) => {
-      columnFilters.vendor = e.target.value;
-      renderExpensesTable();
-    });
+    // Update column filters
+    columnFilters[currentFilterColumn] = checkedValues;
 
-    document.getElementById('filterPayment')?.addEventListener('input', (e) => {
-      columnFilters.payment = e.target.value;
-      renderExpensesTable();
-    });
+    // Re-render table with new filters
+    renderExpensesTable();
 
-    document.getElementById('filterAccount')?.addEventListener('input', (e) => {
-      columnFilters.account = e.target.value;
-      renderExpensesTable();
-    });
-
-    document.getElementById('filterDescription')?.addEventListener('input', (e) => {
-      columnFilters.description = e.target.value;
-      renderExpensesTable();
-    });
+    // Close dropdown
+    closeFilterDropdown();
   }
 
   // ================================

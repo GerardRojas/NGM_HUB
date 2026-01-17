@@ -57,9 +57,21 @@
       if (storedUser) {
         try {
           const user = JSON.parse(storedUser);
-          console.log('[PILLS] User from localStorage:', user);
-          const name = user.user_name || user.name || user.email || "User";
-          const role = user.user_role || user.role || user.user_type || "Member";
+          console.log('[PILLS] User object from localStorage:', user);
+          console.log('[PILLS] Available user fields:', Object.keys(user));
+
+          // Try multiple field names for user name (filter out empty strings)
+          const name = user.user_name?.trim() || user.name?.trim() || user.username?.trim() ||
+                       user.userName?.trim() || user.display_name?.trim() || user.displayName?.trim() ||
+                       user.email?.trim() || user.full_name?.trim() || user.fullName?.trim() ||
+                       user.first_name?.trim() || user.firstName?.trim() || "User";
+
+          // Try multiple field names for role (filter out empty strings)
+          const role = user.user_role?.trim() || user.role?.trim() || user.user_type?.trim() ||
+                       user.userType?.trim() || user.role_name?.trim() || user.roleName?.trim() ||
+                       user.type?.trim() || "Member";
+
+          console.log('[PILLS] Extracted - Name:', name, 'Role:', role);
           set(userPill, `${name} · ${role}`);
           return;
         } catch (e) {
@@ -76,8 +88,8 @@
         return;
       }
 
-      const name = data.user_name || data.name || data.email || "User";
-      const role = data.user_role || data.role || data.user_type || "Member";
+      const name = data.user_name?.trim() || data.name?.trim() || data.username?.trim() || data.email?.trim() || "User";
+      const role = data.user_role?.trim() || data.role?.trim() || data.user_type?.trim() || "Member";
       set(userPill, `${name} · ${role}`);
     } catch (err) {
       console.error('[PILLS] Error loading user:', err);

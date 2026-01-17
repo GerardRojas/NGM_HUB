@@ -16,10 +16,17 @@
     <link rel="stylesheet" href="assets/css/styles.css" />
     <link rel="stylesheet" href="assets/css/expenses_styles.css" />
     <link rel="stylesheet" href="assets/css/expenses_modal.css" />
+    <link rel="stylesheet" href="assets/css/receipt_upload.css" />
+
+    <!-- Supabase JS Library for Storage -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Global env/server/user pills -->
     <script src="assets/js/config.js" defer></script>
     <script src="assets/js/pills.js" defer></script>
+
+    <!-- Receipt upload functionality -->
+    <script src="assets/js/receipt-upload.js" defer></script>
 
 </head>
 <body class="page-expenses">
@@ -35,13 +42,12 @@
             </div>
             <div class="sidebar-title-block">
                 <p class="sidebar-title">NGM HUB</p>
-                <p class="sidebar-subtitle">Expenses Engine</p>
             </div>
 
             <div class="sidebar-nav-card">
                 <nav class="sidebar-nav" id="sidebar-nav">
                     <a href="dashboard.html" class="nav-item">Dashboard</a>
-                    <a href="expenses.html" class="nav-item nav-item-active">Expenses Engine</a>
+                    <a href="expenses.html" class="nav-item nav-item-active">Expenses</a>
                     <a href="pipeline.html" class="nav-item">Pipeline Manager</a>
                     <a href="projects.html" class="nav-item">Projects</a>
                     <a href="estimator.html" class="nav-item">Estimator Suite</a>
@@ -91,7 +97,6 @@
 
                     <!-- Expenses Section -->
                     <section class="data-section">
-                        <h2 class="section-title">Expenses</h2>
 
                         <!-- Toolbar -->
                         <div class="expenses-toolbar">
@@ -149,6 +154,7 @@
                                             <button type="button" class="filter-toggle" data-column="account" title="Filter">▼</button>
                                         </th>
                                         <th>Amount</th>
+                                        <th class="col-actions" title="Receipt">📎</th>
                                         <th class="col-actions"></th>
                                     </tr>
                                 </thead>
@@ -181,6 +187,77 @@
 
                 </div>
             </main>
+        </div>
+    </div>
+
+    <!-- Edit Single Expense Modal -->
+    <div id="editSingleExpenseModal" class="modal-backdrop hidden">
+        <div class="modal modal-single-expense">
+            <div class="modal-header">
+                <div class="modal-title">Edit Expense</div>
+                <button type="button" class="modal-close-btn" id="btnCloseSingleExpenseModal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Expense form fields -->
+                <div class="modal-form-grid">
+                    <div class="form-field">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-input" id="singleExpenseDate">
+                    </div>
+
+                    <div class="form-field form-field-full">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-input" id="singleExpenseDescription" placeholder="Enter description...">
+                    </div>
+
+                    <div class="form-field">
+                        <label class="form-label">Type</label>
+                        <select class="form-input" id="singleExpenseType">
+                            <option value="">Select type...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label class="form-label">Vendor</label>
+                        <select class="form-input" id="singleExpenseVendor">
+                            <option value="">Select vendor...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label class="form-label">Payment Method</label>
+                        <select class="form-input" id="singleExpensePayment">
+                            <option value="">Select payment...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label class="form-label">Account</label>
+                        <select class="form-input" id="singleExpenseAccount">
+                            <option value="">Select account...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label class="form-label">Amount</label>
+                        <input type="number" class="form-input" id="singleExpenseAmount" step="0.01" min="0" placeholder="0.00">
+                    </div>
+
+                    <!-- Receipt section -->
+                    <div class="form-field form-field-full">
+                        <label class="form-label">Receipt / Proof of Payment</label>
+                        <div id="singleExpenseReceiptContainer">
+                            <!-- Receipt uploader or preview will be rendered here by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCancelSingleExpense">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="btnSaveSingleExpense">Save Changes</button>
+            </div>
         </div>
     </div>
 
@@ -223,6 +300,14 @@
                         <button type="button" class="btn-add-row" id="btnAddExpenseRow">
                             <span>+</span> Add Row
                         </button>
+                    </div>
+                </div>
+
+                <!-- Receipt Upload Section -->
+                <div class="modal-receipt-section">
+                    <label class="modal-receipt-label">Receipt / Proof of Payment</label>
+                    <div id="receiptUploadContainer">
+                        <!-- Receipt uploader or preview will be rendered here by JS -->
                     </div>
                 </div>
             </div>

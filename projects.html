@@ -343,11 +343,92 @@
     }
 
     // =============================
+    // Save changes to backend
+    // =============================
+    let originalProjects = []; // Store original data
+
+    async function saveAllChanges() {
+        const updates = [];
+
+        // Compare current projects with original to find changes
+        for (let i = 0; i < projects.length; i++) {
+            const current = projects[i];
+            const original = originalProjects[i];
+
+            if (!original) continue; // Skip new projects
+
+            // Check if any field changed
+            const hasChanges =
+                current.project_name !== original.project_name ||
+                current.city !== original.city ||
+                current.source_company !== original.source_company ||
+                current.status !== original.status;
+
+            if (hasChanges) {
+                updates.push({
+                    id: current.project_id,
+                    data: {
+                        project_name: current.project_name,
+                        city: current.city || null,
+                        source_company: current.source_company,
+                        status: current.status
+                    }
+                });
+            }
+        }
+
+        if (updates.length === 0) {
+            return; // No changes to save
+        }
+
+        // Disable button while saving
+        manageBtn.disabled = true;
+        manageBtn.textContent = "Saving...";
+
+        try {
+            // Send PATCH request for each changed project
+            for (const update of updates) {
+                const res = await fetch(`${API_BASE}/projects/${update.id}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(update.data)
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(`Error updating project: ${errText}`);
+                }
+            }
+
+            alert(`${updates.length} project(s) updated successfully!`);
+
+            // Reload projects from backend to ensure sync
+            await loadProjects();
+
+        } catch (err) {
+            console.error("Error saving changes:", err);
+            alert("Error saving changes: " + err.message);
+        } finally {
+            manageBtn.disabled = false;
+        }
+    }
+
+    // =============================
     // Toggle Manage Mode
     // =============================
-    manageBtn.addEventListener("click", () => {
-        isManaging = !isManaging;
-        manageBtn.textContent = isManaging ? "Done" : "Manage Projects";
+    manageBtn.addEventListener("click", async () => {
+        if (isManaging) {
+            // Switching from Manage to Read - save changes
+            await saveAllChanges();
+            isManaging = false;
+            manageBtn.textContent = "Manage Projects";
+        } else {
+            // Switching from Read to Manage - store original data
+            originalProjects = JSON.parse(JSON.stringify(projects));
+            isManaging = true;
+            manageBtn.textContent = "Done";
+        }
+
         renderProjects();
     });
 

@@ -205,6 +205,7 @@
     const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'txn_type_name') || '—';
     const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
     const payment = exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '—';
+    const account = exp.account_name || findMetaName('accounts', exp.account_id, 'id', 'account_name') || '—';
     const amount = exp.Amount ? `$${Number(exp.Amount).toFixed(2)}` : '$0.00';
     const description = exp.LineDescription || '—';
 
@@ -214,6 +215,7 @@
         <td>${type}</td>
         <td>${vendor}</td>
         <td>${payment}</td>
+        <td>${account}</td>
         <td class="col-amount">${amount}</td>
         <td>${description}</td>
         <td class="col-actions"></td>
@@ -237,6 +239,9 @@
         </td>
         <td>
           ${buildSelectHtml('payment_type', exp.payment_type, metaData.payment_methods, 'id', 'payment_method_name')}
+        </td>
+        <td>
+          ${buildSelectHtml('account_id', exp.account_id, metaData.accounts, 'id', 'account_name')}
         </td>
         <td>
           <input type="number" class="edit-input edit-input--amount" data-field="Amount" step="0.01" min="0" value="${exp.Amount || ''}">
@@ -367,7 +372,7 @@
   }
 
   function hasChanges(original, updated) {
-    const fields = ['TxnDate', 'txn_type', 'vendor_id', 'payment_type', 'Amount', 'LineDescription'];
+    const fields = ['TxnDate', 'txn_type', 'vendor_id', 'payment_type', 'account_id', 'Amount', 'LineDescription'];
     return fields.some(f => {
       const origVal = original[f];
       const updVal = updated[f];
@@ -453,6 +458,9 @@
       </td>
       <td>
         ${buildModalSelectHtml('payment_type', metaData.payment_methods, 'id', 'payment_method_name')}
+      </td>
+      <td>
+        ${buildModalSelectHtml('account_id', metaData.accounts, 'id', 'account_name')}
       </td>
       <td>
         <input type="number" class="exp-input exp-input--amount" data-field="Amount" step="0.01" min="0" placeholder="0.00">

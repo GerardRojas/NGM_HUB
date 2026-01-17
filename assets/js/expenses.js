@@ -14,10 +14,19 @@
     accounts: []
   };
   let expenses = [];
+  let filteredExpenses = []; // For filtered view
   let originalExpenses = []; // For edit mode rollback
   let isEditMode = false;
   let selectedProjectId = null;
   let modalRowCounter = 0;
+  let columnFilters = {
+    date: '',
+    type: '',
+    vendor: '',
+    payment: '',
+    account: '',
+    description: ''
+  };
 
   // ================================
   // DOM ELEMENTS
@@ -197,6 +206,48 @@
     }
   }
 
+  function applyFilters() {
+    filteredExpenses = expenses.filter(exp => {
+      // Date filter
+      if (columnFilters.date) {
+        const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString().toLowerCase() : '';
+        if (!date.includes(columnFilters.date.toLowerCase())) return false;
+      }
+
+      // Type filter
+      if (columnFilters.type) {
+        const type = (exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'txn_type_name') || '').toLowerCase();
+        if (!type.includes(columnFilters.type.toLowerCase())) return false;
+      }
+
+      // Vendor filter
+      if (columnFilters.vendor) {
+        const vendor = (exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '').toLowerCase();
+        if (!vendor.includes(columnFilters.vendor.toLowerCase())) return false;
+      }
+
+      // Payment filter
+      if (columnFilters.payment) {
+        const payment = (exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '').toLowerCase();
+        if (!payment.includes(columnFilters.payment.toLowerCase())) return false;
+      }
+
+      // Account filter
+      if (columnFilters.account) {
+        const account = (exp.account_name || findMetaName('accounts', exp.account_id, 'id', 'account_name') || '').toLowerCase();
+        if (!account.includes(columnFilters.account.toLowerCase())) return false;
+      }
+
+      // Description filter
+      if (columnFilters.description) {
+        const desc = (exp.LineDescription || '').toLowerCase();
+        if (!desc.includes(columnFilters.description.toLowerCase())) return false;
+      }
+
+      return true;
+    });
+  }
+
   function renderExpensesTable() {
     if (!els.expensesTableBody) return;
 
@@ -205,17 +256,39 @@
       return;
     }
 
+    // Apply filters
+    applyFilters();
+
     // Hide empty state, show table
     if (els.expensesEmptyState) els.expensesEmptyState.style.display = 'none';
     if (els.expensesTable) els.expensesTable.style.display = 'table';
 
-    els.expensesTableBody.innerHTML = expenses.map((exp, index) => {
+    const displayExpenses = filteredExpenses.length > 0 || Object.values(columnFilters).some(f => f) ? filteredExpenses : expenses;
+
+    const rows = displayExpenses.map((exp, index) => {
       if (isEditMode) {
         return renderEditableRow(exp, index);
       } else {
         return renderReadOnlyRow(exp, index);
       }
     }).join('');
+
+    // Calculate total
+    const total = displayExpenses.reduce((sum, exp) => {
+      const amount = parseFloat(exp.Amount) || 0;
+      return sum + amount;
+    }, 0);
+
+    // Add total row
+    const totalRow = `
+      <tr class="total-row">
+        <td colspan="5" class="total-label">Total</td>
+        <td class="col-amount total-amount">$${total.toFixed(2)}</td>
+        <td colspan="2"></td>
+      </tr>
+    `;
+
+    els.expensesTableBody.innerHTML = rows + totalRow;
   }
 
   function renderReadOnlyRow(exp, index) {
@@ -707,6 +780,37 @@
       if (expenses[index]) {
         expenses[index][field] = value || null;
       }
+    });
+
+    // Column filters
+    document.getElementById('filterDate')?.addEventListener('input', (e) => {
+      columnFilters.date = e.target.value;
+      renderExpensesTable();
+    });
+
+    document.getElementById('filterType')?.addEventListener('input', (e) => {
+      columnFilters.type = e.target.value;
+      renderExpensesTable();
+    });
+
+    document.getElementById('filterVendor')?.addEventListener('input', (e) => {
+      columnFilters.vendor = e.target.value;
+      renderExpensesTable();
+    });
+
+    document.getElementById('filterPayment')?.addEventListener('input', (e) => {
+      columnFilters.payment = e.target.value;
+      renderExpensesTable();
+    });
+
+    document.getElementById('filterAccount')?.addEventListener('input', (e) => {
+      columnFilters.account = e.target.value;
+      renderExpensesTable();
+    });
+
+    document.getElementById('filterDescription')?.addEventListener('input', (e) => {
+      columnFilters.description = e.target.value;
+      renderExpensesTable();
     });
   }
 

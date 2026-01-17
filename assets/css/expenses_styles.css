@@ -395,3 +395,68 @@ select.edit-input option {
     width: 100%;
   }
 }
+
+/* ==========================================
+   FILTER ROW
+   ========================================== */
+
+.expenses-table .filter-row {
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.expenses-table .filter-row th {
+  padding: 8px 10px;
+  vertical-align: middle;
+}
+
+.expenses-table .filter-input {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.expenses-table .filter-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 11px;
+}
+
+.expenses-table .filter-input:focus {
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ==========================================
+   TOTAL ROW
+   ========================================== */
+
+.expenses-table .total-row {
+  background: rgba(34, 197, 94, 0.08);
+  border-top: 2px solid rgba(34, 197, 94, 0.3);
+  font-weight: 600;
+}
+
+.expenses-table .total-row td {
+  padding: 14px 12px;
+}
+
+.expenses-table .total-label {
+  text-align: right;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.expenses-table .total-amount {
+  color: #4ade80;
+  font-size: 15px;
+  font-weight: 700;
+}

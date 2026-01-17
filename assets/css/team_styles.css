@@ -115,9 +115,9 @@
 }
 
 .team-card:hover {
-  transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: var(--ngm-shadow-soft);
+  transform: translateY(-2px);
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 /* Avatar más grande arriba */
@@ -497,20 +497,22 @@
 
 /* Status pill (arriba) */
 .team-status-pill{
-  padding: 6px 10px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: 12px;
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(255,255,255,0.06);
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid rgba(107, 114, 128, 0.3);
+  background: rgba(107, 114, 128, 0.15);
+  color: #9ca3af;
   white-space: nowrap;
 }
 
 /* Glow solo si Active */
 .team-status-pill.is-active{
-  border-color: rgba(120,180,255,0.25);
-  box-shadow:
-    0 0 0 1px rgba(120,180,255,0.15),
-    0 0 14px rgba(120,180,255,0.18);
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: none;
 }
 
 /* Lista de campos */

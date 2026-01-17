@@ -345,17 +345,7 @@
     font-style: italic;
 }
 
-/* Hacer que la primera columna (Task) sea más ancha */
-.pm-group .table th:first-child,
-.pm-group .table td:first-child {
-    width: 30%;
-}
-
-/* Columns compactas: Due y Finished */
-.pm-group .table th:nth-last-child(-n+2),
-.pm-group .table td:nth-last-child(-n+2) {
-    white-space: nowrap;
-}
+/* Anchos de columnas se controlan desde JS (pipeline_layout.js) */
 
 .pm-group--working-on-it {
     --pm-group-accent: #3b82f6;
@@ -848,22 +838,12 @@
   background: rgba(255,255,255,0.28);
 }
 
+/* Base para todas las celdas - anchos controlados por JS */
 .pm-group .table th,
 .pm-group .table td {
-  min-width: var(--pm-cell-min, 110px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* Task: sí puede partirse (clamp 2 líneas lo controla) */
-.pm-group .table th[data-col="task"],
-.pm-group .table td[data-col="task"] {
-  min-width: 300px;
-  white-space: normal;
-  overflow: visible;
-  text-overflow: unset;
-  word-break: break-word;
 }
 
 /* Avatar inicial + nombre (Owner/Collaborator) */
@@ -910,24 +890,26 @@
 
 /* ===============================
    Pipeline – Column width tuning
+   Anchos se controlan desde JS (pipeline_layout.js)
    =============================== */
 
-/* Columna Collaborator: más ancho + no wrap */
+/* Columnas de personas: overflow hidden para evitar desborde */
 .pm-group .table th[data-col="collaborator"],
-.pm-group .table td[data-col="collaborator"] {
-    min-width: 220px;
-    max-width: 280px;
+.pm-group .table td[data-col="collaborator"],
+.pm-group .table th[data-col="owner"],
+.pm-group .table td[data-col="owner"],
+.pm-group .table th[data-col="manager"],
+.pm-group .table td[data-col="manager"] {
     white-space: nowrap;
-    overflow: visible;
+    overflow: hidden;
 }
 
-/* Columna Owner: ancho mínimo para avatar + nombre */
-.pm-group .table th[data-col="owner"],
-.pm-group .table td[data-col="owner"] {
-    min-width: 220px;
-    max-width: 280px;
-    white-space: nowrap;
-    overflow: visible;
+/* Columna Task: puede hacer wrap */
+.pm-group .table th[data-col="task"],
+.pm-group .table td[data-col="task"] {
+    white-space: normal;
+    overflow: hidden;
+    word-break: break-word;
 }
 
 /* Ellipsis limpio para columnas no-task */
@@ -1190,7 +1172,12 @@
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 16px;
-  padding: 14px 14px;
+  padding: 18px 18px;
+}
+
+/* Spacing between section cards */
+:is(#layoutModal, #newTaskModal) .pm-modal-section + .pm-modal-section {
+  margin-top: 16px;
 }
 
 /* Título de card */
@@ -1240,4 +1227,154 @@
   width: 100%;
   max-width: var(--pm-layout-max, 100%);
   margin: 0 auto;
+}
+
+/* =========================================================
+   PIPELINE — Inline Cell Editing
+   ========================================================= */
+
+/* Base inline editor styles */
+.pm-inline-editor {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 8px;
+
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  color: rgba(255, 255, 255, 0.95);
+
+  font-size: 12px;
+  font-family: inherit;
+  line-height: 1.4;
+
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pm-inline-editor:focus {
+  border-color: rgba(34, 197, 94, 0.7);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pm-inline-editor::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Textarea editor */
+textarea.pm-inline-editor {
+  resize: vertical;
+  min-height: 50px;
+  max-height: 120px;
+}
+
+/* Date input editor */
+.pm-inline-editor--date {
+  padding: 5px 8px;
+  min-width: 130px;
+  color-scheme: dark;
+}
+
+/* Select/Dropdown editor */
+.pm-inline-editor--select {
+  padding: 5px 28px 5px 10px;
+  appearance: none;
+  cursor: pointer;
+
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255,255,255,0.65) 50%),
+    linear-gradient(135deg, rgba(255,255,255,0.65) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 8px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.pm-inline-editor--select option {
+  background: #1e1e1e;
+  color: #fff;
+  padding: 8px;
+}
+
+/* Cell editing state */
+.pm-cell-editing {
+  background: rgba(34, 197, 94, 0.08) !important;
+  padding: 4px !important;
+}
+
+/* Cell saving state */
+.pm-cell-saving {
+  position: relative;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.pm-cell-saving::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+
+  border: 2px solid rgba(34, 197, 94, 0.3);
+  border-top-color: #4ade80;
+  border-radius: 50%;
+
+  animation: pm-spin 0.6s linear infinite;
+}
+
+@keyframes pm-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Cell saved success state */
+.pm-cell-saved {
+  animation: pm-saved-flash 1.5s ease-out;
+}
+
+@keyframes pm-saved-flash {
+  0% {
+    background: rgba(34, 197, 94, 0.25);
+    box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.5);
+  }
+  100% {
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+/* Cell error state */
+.pm-cell-error {
+  animation: pm-error-flash 2s ease-out;
+}
+
+@keyframes pm-error-flash {
+  0%, 20% {
+    background: rgba(239, 68, 68, 0.25);
+    box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.5);
+  }
+  100% {
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+/* Remove default hover when editing */
+.pm-cell-editing:hover {
+  background: rgba(34, 197, 94, 0.08) !important;
+  cursor: default;
+}
+
+/* Read-only columns cursor */
+.pm-group .table td[data-col="links"]:hover,
+.pm-group .table td[data-col="finished"]:hover,
+.pm-group .table td[data-col="est"]:hover,
+.pm-group .table td[data-col="priority"]:hover {
+  cursor: default;
+  background: transparent;
 }

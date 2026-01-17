@@ -1,0 +1,47 @@
+<div id="addExpenseModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add Expenses</div>
+      <button type="button" class="modal-close-btn" id="btnCloseExpenseModal">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Project indicator -->
+      <div class="modal-project-info">
+        <span class="modal-project-label">Project:</span>
+        <span class="modal-project-name" id="modalProjectName">—</span>
+      </div>
+
+      <!-- Expense rows table -->
+      <div class="modal-table-container">
+        <table class="expense-rows-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Vendor</th>
+              <th>Payment</th>
+              <th>Amount</th>
+              <th>Description</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="expenseRowsBody">
+            <!-- Rows rendered by JS -->
+          </tbody>
+        </table>
+
+        <div class="add-row-container">
+          <button type="button" class="btn-add-row" id="btnAddExpenseRow">
+            <span>+</span> Add Row
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-modal-secondary" id="btnCancelExpenses">Cancel</button>
+      <button type="button" class="btn-modal-primary" id="btnSaveAllExpenses">Save All</button>
+    </div>
+  </div>
+</div>

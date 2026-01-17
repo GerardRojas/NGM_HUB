@@ -163,13 +163,49 @@
       open();
     });
 
-    // Create (for now just validate + log payload)
-    qs("btnCreateNewTask")?.addEventListener("click", (e) => {
+    // Create task and POST to backend
+    qs("btnCreateNewTask")?.addEventListener("click", async (e) => {
       e.preventDefault();
       const payload = buildPayloadFromForm();
       if (!payload) return;
-      console.log("[NEW TASK PAYLOAD]", payload);
-      // Next step: POST to backend + refresh pipeline
+
+      const btn = qs("btnCreateNewTask");
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Creating...";
+
+      try {
+        const apiBase = window.API_BASE || "";
+        const res = await fetch(`${apiBase}/pipeline/tasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Server error (${res.status}): ${errText}`);
+        }
+
+        const created = await res.json();
+        console.log("[NEW TASK] Created:", created);
+
+        alert("Task created successfully!");
+        close();
+
+        // Refresh pipeline data if fetchPipeline exists
+        if (typeof window.fetchPipeline === "function") {
+          window.fetchPipeline();
+        }
+
+      } catch (err) {
+        console.error("[NEW TASK] Error:", err);
+        alert("Error creating task: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
     });
 
     // Botones modal

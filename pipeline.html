@@ -36,7 +36,14 @@
             </div>
 
             <nav class="sidebar-nav" id="sidebar-nav">
-                <!-- Módulos se inyectan desde JS -->
+                <a href="dashboard.html" class="nav-item">Overview</a>
+                <a href="expenses.html" class="nav-item">Expenses</a>
+                <a href="projects.html" class="nav-item">Projects</a>
+                <a href="pipeline.html" class="nav-item nav-item-active">Pipeline</a>
+                <a href="team.html" class="nav-item">Team</a>
+                <a href="users.html" class="nav-item">Users</a>
+                <a href="#" class="nav-item">Finance</a>
+                <a href="#" class="nav-item">Estimator</a>
             </nav>
         </aside>
 
@@ -574,6 +581,9 @@
 
         let rawGroups = [];
         let searchQuery = "";
+
+        // Expose fetchPipeline to window for modal refresh
+        window.fetchPipeline = fetchPipeline;
 
         async function fetchPipeline() {
             try {

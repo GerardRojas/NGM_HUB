@@ -1,107 +1,397 @@
 /* ==========================================
-   Expenses Engine (scoped)
+   Expenses Engine — Dark Theme
    ========================================== */
 
-.page-expenses .main-content{
-  max-width: none;     /* workspace flexible */
+.page-expenses .main-content {
+  max-width: none;
   width: 100%;
 }
 
-.page-expenses .workspace{
+.page-expenses .workspace {
   display: flex;
   flex-direction: column;
   gap: 18px;
+  padding-top: 24px;
+}
+
+/* Section */
+.page-expenses .data-section {
+  max-width: 1200px;
+  margin-inline: auto;
+  width: 100%;
 }
 
 /* Titles */
-.page-expenses .section-title{
-  margin: 0 0 10px;
+.page-expenses .section-title {
+  margin: 0 0 20px;
+  padding-bottom: 12px;
   font-size: 18px;
-  font-weight: 700;
-  color: var(--ngm-text-main);
-}
-
-/* Form */
-.page-expenses .form-grid{
-  display: grid;
-  grid-template-columns: repeat(2, minmax(240px, 1fr));
-  gap: 14px;
-  align-items: end;
-}
-
-.page-expenses .field-full{
-  grid-column: 1 / -1;
-}
-
-.page-expenses .field-label{
-  display: block;
-  margin-bottom: 6px;
-  font-size: 12px;
   font-weight: 600;
-  color: var(--ngm-text-soft);
+  color: var(--text-primary, #e5e7eb);
+  border-bottom: 1px solid var(--border-soft, #27272f);
 }
 
-.page-expenses .input{
-  width: 100%;
-  height: 40px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid var(--border-soft);
-  background: var(--bg-input);
-  color: var(--ngm-text-main);
+/* ==========================================
+   TOOLBAR
+   ========================================== */
+
+.expenses-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toolbar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.toolbar-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ngm-text-muted, #6b7280);
+}
+
+.toolbar-select {
+  min-width: 280px;
+  padding: 10px 36px 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft, #27272f);
+  background: var(--ngm-bg-card, #18181b);
+  color: var(--text-primary, #e5e7eb);
+  font-size: 13px;
   outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.5) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 12px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
 }
 
-.page-expenses select.input{
+.toolbar-select:focus {
+  border-color: rgba(34, 197, 94, 0.55);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+.toolbar-select option {
+  background: #18181b;
+  color: #e5e7eb;
+}
+
+/* Toolbar buttons */
+.btn-toolbar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.12s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.btn-toolbar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-toolbar-secondary {
+  border: 1px solid var(--border-soft, #27272f);
+  background: var(--ngm-bg-card, #18181b);
+  color: var(--text-primary, #e5e7eb);
+}
+
+.btn-toolbar-secondary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(148, 163, 184, 0.5);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-toolbar-primary {
+  border: none;
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  color: #0f2a1e;
+  font-weight: 600;
+}
+
+.btn-toolbar-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+}
+
+/* ==========================================
+   EXPENSES TABLE CONTAINER
+   ========================================== */
+
+.expenses-table-container {
+  background: var(--ngm-bg-card, #18181b);
+  border: 1px solid var(--border-soft, #27272f);
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 200px;
+}
+
+/* Empty state */
+.expenses-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 12px;
+}
+
+.expenses-empty-icon {
+  font-size: 36px;
+  opacity: 0.5;
+}
+
+.expenses-empty-text {
+  font-size: 14px;
+  color: var(--text-secondary, #9ca3af);
+}
+
+/* ==========================================
+   EXPENSES TABLE — DARK THEME
+   ========================================== */
+
+.expenses-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.expenses-table thead {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.expenses-table th {
+  padding: 12px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ngm-text-muted, #6b7280);
+  text-align: left;
+  border-bottom: 1px solid var(--border-soft, #27272f);
+}
+
+.expenses-table td {
+  padding: 14px 14px;
+  font-size: 13px;
+  color: var(--text-primary, #e5e7eb);
+  border-bottom: 1px solid rgba(39, 39, 47, 0.5);
+  vertical-align: middle;
+}
+
+.expenses-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.expenses-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Amount column */
+.expenses-table .col-amount {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Actions column */
+.expenses-table .col-actions {
+  width: 50px;
+  text-align: center;
+}
+
+/* ==========================================
+   EDIT MODE — INLINE INPUTS
+   ========================================== */
+
+.edit-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-primary, #e5e7eb);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.edit-input:focus {
+  border-color: rgba(34, 197, 94, 0.65);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.edit-input--amount {
+  text-align: right;
+  min-width: 100px;
+}
+
+select.edit-input {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.5) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 8px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 28px;
   cursor: pointer;
 }
 
-.page-expenses .input::placeholder{
-  color: var(--ngm-text-muted);
+select.edit-input option {
+  background: #1f1f1f;
+  color: #ffffff;
 }
 
-.page-expenses .input:focus{
-  border-color: rgba(34, 197, 94, .55);
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, .14);
+/* Delete row button */
+.btn-row-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: rgba(248, 113, 113, 0.7);
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.page-expenses .form-footer{
-  grid-column: 1 / -1;
-  margin-top: 6px;
+.btn-row-delete:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+}
+
+/* ==========================================
+   EDIT MODE FOOTER
+   ========================================== */
+
+.edit-mode-footer {
   display: flex;
-}
-
-.page-expenses .form-footer-right{
   justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--ngm-bg-card, #18181b);
+  border: 1px solid var(--border-soft, #27272f);
+  border-radius: 12px;
 }
 
-/* White “doc” surface for tables */
-.page-expenses .ngm-sheet{
-  background: #ffffff;
-  color: #0f172a;
-  border-radius: 16px;
-  border: 1px solid rgba(15, 23, 42, .08);
-  box-shadow: 0 18px 40px rgba(0,0,0,.35);
-  overflow: hidden;
+.edit-mode-footer.hidden {
+  display: none;
 }
 
-/* Table overrides only inside white sheet */
-.page-expenses .ngm-sheet .table{
+.btn-edit-cancel,
+.btn-edit-save {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 10px;
   font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.page-expenses .ngm-sheet .table thead{
-  background: #f8fafc;
+.btn-edit-cancel {
+  border: 1px solid var(--border-soft, #27272f);
+  background: transparent;
+  color: var(--text-secondary, #9ca3af);
 }
 
-.page-expenses .ngm-sheet .table th{
-  color: #334155;
-  padding: 12px;
-  border-bottom: 1px solid rgba(15, 23, 42, .10);
+.btn-edit-cancel:hover {
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: var(--text-primary, #e5e7eb);
 }
 
-.page-expenses .ngm-sheet .table td{
-  color: #0f172a;
-  padding: 12px;
-  border-bottom: 1px solid rgba(15, 23, 42, .08);
+.btn-edit-save {
+  border: none;
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  color: #0f2a1e;
+}
+
+.btn-edit-save:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+}
+
+.btn-edit-save:disabled,
+.btn-edit-cancel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+
+@media (max-width: 900px) {
+  .expenses-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-left,
+  .toolbar-right {
+    width: 100%;
+  }
+
+  .toolbar-right {
+    justify-content: flex-end;
+  }
+
+  .toolbar-select {
+    min-width: 100%;
+  }
+
+  .expenses-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .toolbar-right {
+    flex-direction: column;
+  }
+
+  .btn-toolbar {
+    width: 100%;
+  }
 }

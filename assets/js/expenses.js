@@ -3,10 +3,51 @@
   'use strict';
 
   // ================================
-  // AUTH & USER
+  // STATE
   // ================================
   let currentUser = null;
+  let metaData = {
+    txn_types: [],
+    projects: [],
+    vendors: [],
+    payment_methods: [],
+    accounts: []
+  };
+  let expenses = [];
+  let originalExpenses = []; // For edit mode rollback
+  let isEditMode = false;
+  let selectedProjectId = null;
+  let modalRowCounter = 0;
 
+  // ================================
+  // DOM ELEMENTS
+  // ================================
+  const els = {};
+
+  function cacheElements() {
+    els.projectFilter = document.getElementById('projectFilter');
+    els.btnAddExpense = document.getElementById('btnAddExpense');
+    els.btnEditExpenses = document.getElementById('btnEditExpenses');
+    els.expensesTable = document.getElementById('expensesTable');
+    els.expensesTableBody = document.getElementById('expensesTableBody');
+    els.expensesEmptyState = document.getElementById('expensesEmptyState');
+    els.editModeFooter = document.getElementById('editModeFooter');
+    els.btnCancelEdit = document.getElementById('btnCancelEdit');
+    els.btnSaveChanges = document.getElementById('btnSaveChanges');
+
+    // Modal elements
+    els.modal = document.getElementById('addExpenseModal');
+    els.modalProjectName = document.getElementById('modalProjectName');
+    els.expenseRowsBody = document.getElementById('expenseRowsBody');
+    els.btnAddExpenseRow = document.getElementById('btnAddExpenseRow');
+    els.btnCloseExpenseModal = document.getElementById('btnCloseExpenseModal');
+    els.btnCancelExpenses = document.getElementById('btnCancelExpenses');
+    els.btnSaveAllExpenses = document.getElementById('btnSaveAllExpenses');
+  }
+
+  // ================================
+  // AUTH & USER
+  // ================================
   function initAuth() {
     const userRaw = localStorage.getItem('ngmUser');
     if (!userRaw) {
@@ -52,227 +93,552 @@
   }
 
   // ================================
-  // LOAD DROPDOWN DATA
+  // LOAD META DATA
   // ================================
-  async function loadDropdownData() {
+  async function loadMetaData() {
     const apiBase = getApiBase();
 
     try {
-      // Use the /expenses/meta endpoint to get all catalogs at once
       const meta = await apiJson(`${apiBase}/expenses/meta`);
 
       if (!meta) {
         throw new Error('No metadata received from server');
       }
 
-      // Extract catalogs from meta response
-      const { txn_types = [], projects = [], vendors = [], payment_methods = [], accounts = [] } = meta;
+      metaData.txn_types = meta.txn_types || [];
+      metaData.projects = meta.projects || [];
+      metaData.vendors = meta.vendors || [];
+      metaData.payment_methods = meta.payment_methods || [];
+      metaData.accounts = meta.accounts || [];
 
-      // Populate Transaction Type dropdown
-      const txnTypeSelect = document.getElementById('exp-txn-type');
-      if (txnTypeSelect && Array.isArray(txn_types)) {
-        txn_types.forEach(txn => {
-          const opt = document.createElement('option');
-          opt.value = txn.TnxType_id || txn.id;
-          opt.textContent = txn.txn_type_name || txn.name || 'Unnamed Type';
-          txnTypeSelect.appendChild(opt);
-        });
-      }
-
-      // Populate Project dropdown
-      const projectSelect = document.getElementById('exp-project');
-      if (projectSelect && Array.isArray(projects)) {
-        projects.forEach(p => {
-          const opt = document.createElement('option');
-          opt.value = p.project_id || p.id;
-          opt.textContent = p.project_name || p.name || 'Unnamed Project';
-          projectSelect.appendChild(opt);
-        });
-      }
-
-      // Populate Vendor dropdown
-      const vendorSelect = document.getElementById('exp-vendor');
-      if (vendorSelect && Array.isArray(vendors)) {
-        vendors.forEach(v => {
-          const opt = document.createElement('option');
-          opt.value = v.id;
-          opt.textContent = v.vendor_name || v.name || 'Unnamed Vendor';
-          vendorSelect.appendChild(opt);
-        });
-      }
-
-      // Populate Payment Method dropdown
-      const paymentSelect = document.getElementById('exp-payment');
-      if (paymentSelect && Array.isArray(payment_methods)) {
-        payment_methods.forEach(pm => {
-          const opt = document.createElement('option');
-          opt.value = pm.id;
-          opt.textContent = pm.payment_method_name || pm.name || 'Unnamed Method';
-          paymentSelect.appendChild(opt);
-        });
-      }
-
-      // Populate Account dropdown
-      const accountSelect = document.getElementById('exp-account');
-      if (accountSelect && Array.isArray(accounts)) {
-        accounts.forEach(acc => {
-          const opt = document.createElement('option');
-          opt.value = acc.account_id || acc.id;
-          opt.textContent = acc.account_name || acc.name || 'Unnamed Account';
-          accountSelect.appendChild(opt);
-        });
-      }
+      // Populate project filter dropdown
+      populateProjectFilter();
 
     } catch (err) {
-      console.error('[EXPENSES] Error loading dropdown data:', err);
-      alert('Error loading form data. Please refresh the page.');
+      console.error('[EXPENSES] Error loading meta data:', err);
+      alert('Error loading data. Please refresh the page.');
     }
   }
 
-  // ================================
-  // SAVE EXPENSE
-  // ================================
-  async function saveExpense(expenseData) {
-    const apiBase = getApiBase();
+  function populateProjectFilter() {
+    if (!els.projectFilter) return;
 
-    try {
-      const response = await apiJson(`${apiBase}/expenses`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(expenseData),
-      });
+    // Clear existing options except first
+    els.projectFilter.innerHTML = '<option value="">Select project...</option>';
 
-      return response;
-    } catch (err) {
-      console.error('[EXPENSES] Error saving expense:', err);
-      throw err;
-    }
+    metaData.projects.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.project_id || p.id;
+      opt.textContent = p.project_name || p.name || 'Unnamed Project';
+      els.projectFilter.appendChild(opt);
+    });
   }
 
   // ================================
-  // LOAD RECENT EXPENSES
+  // LOAD EXPENSES BY PROJECT
   // ================================
-  async function loadRecentExpenses(projectFilter = null) {
+  async function loadExpensesByProject(projectId) {
+    if (!projectId) {
+      expenses = [];
+      showEmptyState('Select a project to view expenses');
+      return;
+    }
+
     const apiBase = getApiBase();
 
     try {
-      // Build URL with optional project filter
-      let url = `${apiBase}/expenses`;
-      if (projectFilter) {
-        url += `?project=${projectFilter}`;
+      showEmptyState('Loading expenses...');
+
+      const url = `${apiBase}/expenses?project=${projectId}`;
+      const result = await apiJson(url);
+
+      expenses = Array.isArray(result) ? result : [];
+
+      if (expenses.length === 0) {
+        showEmptyState('No expenses found for this project');
+      } else {
+        renderExpensesTable();
       }
 
-      const expenses = await apiJson(url);
-      return Array.isArray(expenses) ? expenses : [];
     } catch (err) {
       console.error('[EXPENSES] Error loading expenses:', err);
-      return [];
+      showEmptyState('Error loading expenses');
     }
   }
 
   // ================================
   // RENDER EXPENSES TABLE
   // ================================
-  function renderExpensesTable(expenses) {
-    const tbody = document.getElementById('expensesTableBody');
-    if (!tbody) return;
+  function showEmptyState(message) {
+    if (els.expensesEmptyState) {
+      els.expensesEmptyState.querySelector('.expenses-empty-text').textContent = message;
+      els.expensesEmptyState.style.display = 'flex';
+    }
+    if (els.expensesTable) {
+      els.expensesTable.style.display = 'none';
+    }
+  }
 
-    if (!expenses || expenses.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">No expenses found</td></tr>';
+  function renderExpensesTable() {
+    if (!els.expensesTableBody) return;
+
+    if (expenses.length === 0) {
+      showEmptyState('No expenses found');
       return;
     }
 
-    tbody.innerHTML = expenses.map(exp => {
-      const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
-      const vendor = exp.vendor_name || '—';
-      const project = exp.project_name || '—';
-      const amount = exp.Amount ? `$${Number(exp.Amount).toFixed(2)}` : '$0.00';
-      const payment = exp.payment_method_name || '—';
-      const description = exp.LineDescription || '—';
-      const type = exp.txn_type_name || '—';
+    // Hide empty state, show table
+    if (els.expensesEmptyState) els.expensesEmptyState.style.display = 'none';
+    if (els.expensesTable) els.expensesTable.style.display = 'table';
 
-      return `
-        <tr>
-          <td>${date}</td>
-          <td>${vendor}</td>
-          <td>${project}</td>
-          <td>${amount}</td>
-          <td>${payment}</td>
-          <td>${description}</td>
-          <td>${type}</td>
-        </tr>
-      `;
+    els.expensesTableBody.innerHTML = expenses.map((exp, index) => {
+      if (isEditMode) {
+        return renderEditableRow(exp, index);
+      } else {
+        return renderReadOnlyRow(exp, index);
+      }
     }).join('');
   }
 
+  function renderReadOnlyRow(exp, index) {
+    const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
+    const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'txn_type_name') || '—';
+    const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
+    const payment = exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '—';
+    const amount = exp.Amount ? `$${Number(exp.Amount).toFixed(2)}` : '$0.00';
+    const description = exp.LineDescription || '—';
+
+    return `
+      <tr data-index="${index}" data-id="${exp.id || ''}">
+        <td>${date}</td>
+        <td>${type}</td>
+        <td>${vendor}</td>
+        <td>${payment}</td>
+        <td class="col-amount">${amount}</td>
+        <td>${description}</td>
+        <td class="col-actions"></td>
+      </tr>
+    `;
+  }
+
+  function renderEditableRow(exp, index) {
+    const dateVal = exp.TxnDate ? exp.TxnDate.split('T')[0] : '';
+
+    return `
+      <tr data-index="${index}" data-id="${exp.id || ''}">
+        <td>
+          <input type="date" class="edit-input" data-field="TxnDate" value="${dateVal}">
+        </td>
+        <td>
+          ${buildSelectHtml('txn_type', exp.txn_type, metaData.txn_types, 'TnxType_id', 'txn_type_name')}
+        </td>
+        <td>
+          ${buildSelectHtml('vendor_id', exp.vendor_id, metaData.vendors, 'id', 'vendor_name')}
+        </td>
+        <td>
+          ${buildSelectHtml('payment_type', exp.payment_type, metaData.payment_methods, 'id', 'payment_method_name')}
+        </td>
+        <td>
+          <input type="number" class="edit-input edit-input--amount" data-field="Amount" step="0.01" min="0" value="${exp.Amount || ''}">
+        </td>
+        <td>
+          <input type="text" class="edit-input" data-field="LineDescription" value="${exp.LineDescription || ''}">
+        </td>
+        <td class="col-actions">
+          <button type="button" class="btn-row-delete" data-index="${index}" title="Delete">×</button>
+        </td>
+      </tr>
+    `;
+  }
+
+  function buildSelectHtml(field, selectedValue, options, valueKey, textKey) {
+    const optionsHtml = options.map(opt => {
+      const val = opt[valueKey];
+      const text = opt[textKey] || opt.name || 'Unnamed';
+      const selected = val == selectedValue ? 'selected' : '';
+      return `<option value="${val}" ${selected}>${text}</option>`;
+    }).join('');
+
+    return `<select class="edit-input" data-field="${field}"><option value="">—</option>${optionsHtml}</select>`;
+  }
+
+  function findMetaName(category, value, valueKey, textKey) {
+    if (!value) return null;
+    const item = metaData[category]?.find(i => i[valueKey] == value);
+    return item ? item[textKey] : null;
+  }
+
   // ================================
-  // FORM HANDLER
+  // EDIT MODE
   // ================================
-  function setupFormHandler() {
-    const form = document.getElementById('expenseForm');
-    if (!form) return;
+  function toggleEditMode(enable) {
+    isEditMode = enable;
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    if (enable) {
+      // Store original data for rollback
+      originalExpenses = JSON.parse(JSON.stringify(expenses));
+      els.btnEditExpenses.textContent = 'Editing...';
+      els.btnEditExpenses.disabled = true;
+      els.btnAddExpense.disabled = true;
+      els.projectFilter.disabled = true;
+      if (els.editModeFooter) els.editModeFooter.classList.remove('hidden');
+    } else {
+      els.btnEditExpenses.textContent = 'Edit Expenses';
+      els.btnEditExpenses.disabled = expenses.length === 0;
+      els.btnAddExpense.disabled = !selectedProjectId;
+      els.projectFilter.disabled = false;
+      if (els.editModeFooter) els.editModeFooter.classList.add('hidden');
+    }
 
-      // Get form values
-      const date = document.getElementById('exp-date').value;
-      const txnType = document.getElementById('exp-txn-type').value;
-      const vendor = document.getElementById('exp-vendor').value;
-      const payment = document.getElementById('exp-payment').value;
-      const amount = document.getElementById('exp-amount').value;
-      const account = document.getElementById('exp-account').value;
-      const project = document.getElementById('exp-project').value;
-      const qboId = document.getElementById('exp-qbo-id').value;
-      const description = document.getElementById('exp-desc').value.trim();
-      const showOnReports = document.getElementById('exp-show-reports').checked;
+    renderExpensesTable();
+  }
 
-      // Validate required fields
-      if (!date || !txnType || !vendor || !payment || !amount || !description) {
-        alert('Please fill in all required fields');
-        return;
+  function cancelEditMode() {
+    // Restore original data
+    expenses = JSON.parse(JSON.stringify(originalExpenses));
+    toggleEditMode(false);
+  }
+
+  async function saveEditChanges() {
+    const apiBase = getApiBase();
+    const rows = els.expensesTableBody.querySelectorAll('tr[data-index]');
+    const updates = [];
+    const deletes = [];
+
+    // Collect changes from DOM
+    rows.forEach(row => {
+      const index = parseInt(row.dataset.index, 10);
+      const expenseId = row.dataset.id;
+
+      if (!expenseId) return; // Skip rows without ID
+
+      const updatedData = {};
+      row.querySelectorAll('.edit-input').forEach(input => {
+        const field = input.dataset.field;
+        let value = input.value;
+
+        if (field === 'Amount') {
+          value = value ? parseFloat(value) : null;
+        }
+
+        updatedData[field] = value || null;
+      });
+
+      // Check if data changed
+      const original = originalExpenses[index];
+      if (original && hasChanges(original, updatedData)) {
+        updates.push({ id: expenseId, data: updatedData });
+      }
+    });
+
+    if (updates.length === 0) {
+      alert('No changes to save.');
+      toggleEditMode(false);
+      return;
+    }
+
+    // Disable save button
+    els.btnSaveChanges.disabled = true;
+    els.btnSaveChanges.textContent = 'Saving...';
+
+    try {
+      // Send PATCH requests for each update
+      for (const update of updates) {
+        await apiJson(`${apiBase}/expenses/${update.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(update.data)
+        });
       }
 
-      // Build expense object
-      const expenseData = {
-        TxnDate: date,
-        txn_type: txnType,
-        vendor_id: vendor,
-        payment_type: payment,
-        Amount: parseFloat(amount),
-        LineDescription: description,
-        show_on_reports: showOnReports,
-        created_by: currentUser.user_id || currentUser.id,
+      alert(`${updates.length} expense(s) updated successfully!`);
+
+      // Reload expenses
+      await loadExpensesByProject(selectedProjectId);
+      toggleEditMode(false);
+
+    } catch (err) {
+      console.error('[EXPENSES] Error saving changes:', err);
+      alert('Error saving changes: ' + err.message);
+    } finally {
+      els.btnSaveChanges.disabled = false;
+      els.btnSaveChanges.textContent = 'Save Changes';
+    }
+  }
+
+  function hasChanges(original, updated) {
+    const fields = ['TxnDate', 'txn_type', 'vendor_id', 'payment_type', 'Amount', 'LineDescription'];
+    return fields.some(f => {
+      const origVal = original[f];
+      const updVal = updated[f];
+
+      // Handle date comparison
+      if (f === 'TxnDate') {
+        const origDate = origVal ? origVal.split('T')[0] : '';
+        return origDate !== (updVal || '');
+      }
+
+      return String(origVal || '') !== String(updVal || '');
+    });
+  }
+
+  async function deleteExpense(index) {
+    const expense = expenses[index];
+    if (!expense || !expense.id) return;
+
+    const confirmed = confirm('Delete this expense? This cannot be undone.');
+    if (!confirmed) return;
+
+    const apiBase = getApiBase();
+
+    try {
+      await apiJson(`${apiBase}/expenses/${expense.id}`, {
+        method: 'DELETE'
+      });
+
+      // Remove from local array and re-render
+      expenses.splice(index, 1);
+      originalExpenses.splice(index, 1);
+      renderExpensesTable();
+
+    } catch (err) {
+      console.error('[EXPENSES] Error deleting expense:', err);
+      alert('Error deleting expense: ' + err.message);
+    }
+  }
+
+  // ================================
+  // ADD EXPENSE MODAL
+  // ================================
+  function openAddExpenseModal() {
+    if (!selectedProjectId) return;
+
+    // Find project name
+    const project = metaData.projects.find(p => (p.project_id || p.id) == selectedProjectId);
+    const projectName = project ? (project.project_name || project.name) : '—';
+
+    els.modalProjectName.textContent = projectName;
+
+    // Clear existing rows and add one empty row
+    els.expenseRowsBody.innerHTML = '';
+    modalRowCounter = 0;
+    addModalRow();
+
+    // Show modal
+    els.modal.classList.remove('hidden');
+  }
+
+  function closeAddExpenseModal() {
+    els.modal.classList.add('hidden');
+    els.expenseRowsBody.innerHTML = '';
+    modalRowCounter = 0;
+  }
+
+  function addModalRow() {
+    const rowIndex = modalRowCounter++;
+    const today = new Date().toISOString().split('T')[0];
+
+    const row = document.createElement('tr');
+    row.dataset.rowIndex = rowIndex;
+
+    row.innerHTML = `
+      <td>
+        <input type="date" class="exp-input exp-input--date" data-field="TxnDate" value="${today}">
+      </td>
+      <td>
+        ${buildModalSelectHtml('txn_type', metaData.txn_types, 'TnxType_id', 'txn_type_name')}
+      </td>
+      <td>
+        ${buildModalSelectHtml('vendor_id', metaData.vendors, 'id', 'vendor_name')}
+      </td>
+      <td>
+        ${buildModalSelectHtml('payment_type', metaData.payment_methods, 'id', 'payment_method_name')}
+      </td>
+      <td>
+        <input type="number" class="exp-input exp-input--amount" data-field="Amount" step="0.01" min="0" placeholder="0.00">
+      </td>
+      <td>
+        <input type="text" class="exp-input exp-input--desc" data-field="LineDescription" placeholder="Description">
+      </td>
+      <td>
+        <button type="button" class="exp-row-remove" data-row-index="${rowIndex}">×</button>
+      </td>
+    `;
+
+    els.expenseRowsBody.appendChild(row);
+  }
+
+  function buildModalSelectHtml(field, options, valueKey, textKey) {
+    const optionsHtml = options.map(opt => {
+      const val = opt[valueKey];
+      const text = opt[textKey] || opt.name || 'Unnamed';
+      return `<option value="${val}">${text}</option>`;
+    }).join('');
+
+    return `<select class="exp-input" data-field="${field}"><option value="">Select...</option>${optionsHtml}</select>`;
+  }
+
+  function removeModalRow(rowIndex) {
+    const row = els.expenseRowsBody.querySelector(`tr[data-row-index="${rowIndex}"]`);
+    if (row) {
+      row.remove();
+    }
+  }
+
+  async function saveAllExpenses() {
+    const apiBase = getApiBase();
+    const rows = els.expenseRowsBody.querySelectorAll('tr');
+    const expensesToSave = [];
+
+    // Collect data from each row
+    rows.forEach(row => {
+      const rowData = {
+        project: selectedProjectId,
+        created_by: currentUser.user_id || currentUser.id
       };
 
-      // Add optional fields if present
-      if (account) expenseData.account_id = account;
-      if (project) expenseData.project = project;
-      if (qboId) expenseData.TxnId_QBO = qboId;
+      row.querySelectorAll('.exp-input').forEach(input => {
+        const field = input.dataset.field;
+        let value = input.value;
 
-      // Disable submit button
-      const submitBtn = form.querySelector('button[type="submit"]');
-      const originalText = submitBtn.textContent;
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Saving...';
+        if (field === 'Amount') {
+          value = value ? parseFloat(value) : null;
+        }
 
-      try {
-        await saveExpense(expenseData);
+        rowData[field] = value || null;
+      });
 
-        // Success - reset form and reload expenses
-        form.reset();
-        alert('Expense saved successfully!');
+      // Validate required fields
+      if (rowData.TxnDate && rowData.Amount) {
+        expensesToSave.push(rowData);
+      }
+    });
 
-        // Reload recent expenses
-        const expenses = await loadRecentExpenses();
-        renderExpensesTable(expenses);
+    if (expensesToSave.length === 0) {
+      alert('Please fill in at least one complete expense row (Date and Amount are required).');
+      return;
+    }
 
-      } catch (err) {
-        alert('Error saving expense: ' + err.message);
-      } finally {
-        // Re-enable submit button
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
+    // Disable save button
+    els.btnSaveAllExpenses.disabled = true;
+    els.btnSaveAllExpenses.textContent = 'Saving...';
+
+    try {
+      // Send POST requests for each expense
+      for (const expenseData of expensesToSave) {
+        await apiJson(`${apiBase}/expenses`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(expenseData)
+        });
+      }
+
+      alert(`${expensesToSave.length} expense(s) saved successfully!`);
+
+      // Close modal and reload expenses
+      closeAddExpenseModal();
+      await loadExpensesByProject(selectedProjectId);
+
+    } catch (err) {
+      console.error('[EXPENSES] Error saving expenses:', err);
+      alert('Error saving expenses: ' + err.message);
+    } finally {
+      els.btnSaveAllExpenses.disabled = false;
+      els.btnSaveAllExpenses.textContent = 'Save All';
+    }
+  }
+
+  // ================================
+  // EVENT HANDLERS
+  // ================================
+  function setupEventListeners() {
+    // Project filter change
+    els.projectFilter?.addEventListener('change', async (e) => {
+      selectedProjectId = e.target.value || null;
+
+      // Enable/disable toolbar buttons
+      els.btnAddExpense.disabled = !selectedProjectId;
+
+      // Load expenses for selected project
+      await loadExpensesByProject(selectedProjectId);
+
+      // Enable edit button if we have expenses
+      els.btnEditExpenses.disabled = !selectedProjectId || expenses.length === 0;
+    });
+
+    // Add Expense button
+    els.btnAddExpense?.addEventListener('click', () => {
+      openAddExpenseModal();
+    });
+
+    // Edit Expenses button
+    els.btnEditExpenses?.addEventListener('click', () => {
+      if (!isEditMode && expenses.length > 0) {
+        toggleEditMode(true);
+      }
+    });
+
+    // Cancel edit button
+    els.btnCancelEdit?.addEventListener('click', () => {
+      cancelEditMode();
+    });
+
+    // Save changes button
+    els.btnSaveChanges?.addEventListener('click', () => {
+      saveEditChanges();
+    });
+
+    // Delete row in edit mode
+    els.expensesTableBody?.addEventListener('click', (e) => {
+      if (e.target.classList.contains('btn-row-delete')) {
+        const index = parseInt(e.target.dataset.index, 10);
+        deleteExpense(index);
+      }
+    });
+
+    // Modal: Close button
+    els.btnCloseExpenseModal?.addEventListener('click', closeAddExpenseModal);
+
+    // Modal: Cancel button
+    els.btnCancelExpenses?.addEventListener('click', closeAddExpenseModal);
+
+    // Modal: Add row button
+    els.btnAddExpenseRow?.addEventListener('click', addModalRow);
+
+    // Modal: Remove row button
+    els.expenseRowsBody?.addEventListener('click', (e) => {
+      if (e.target.classList.contains('exp-row-remove')) {
+        const rowIndex = parseInt(e.target.dataset.rowIndex, 10);
+        removeModalRow(rowIndex);
+      }
+    });
+
+    // Modal: Save all button
+    els.btnSaveAllExpenses?.addEventListener('click', saveAllExpenses);
+
+    // Modal: Close on backdrop click
+    els.modal?.addEventListener('click', (e) => {
+      if (e.target === els.modal) {
+        closeAddExpenseModal();
+      }
+    });
+
+    // Handle edit inputs
+    els.expensesTableBody?.addEventListener('input', (e) => {
+      if (!isEditMode) return;
+      if (!e.target.classList.contains('edit-input')) return;
+
+      const row = e.target.closest('tr');
+      const index = parseInt(row.dataset.index, 10);
+      const field = e.target.dataset.field;
+      let value = e.target.value;
+
+      if (field === 'Amount') {
+        value = value ? parseFloat(value) : null;
+      }
+
+      if (expenses[index]) {
+        expenses[index][field] = value || null;
       }
     });
   }
@@ -284,15 +650,17 @@
     // Check auth first
     if (!initAuth()) return;
 
-    // Load dropdown data
-    await loadDropdownData();
+    // Cache DOM elements
+    cacheElements();
 
-    // Setup form handler
-    setupFormHandler();
+    // Setup event listeners
+    setupEventListeners();
 
-    // Load recent expenses
-    const expenses = await loadRecentExpenses();
-    renderExpensesTable(expenses);
+    // Load metadata (dropdowns)
+    await loadMetaData();
+
+    // Show initial empty state
+    showEmptyState('Select a project to view expenses');
   }
 
   // Run on DOM load

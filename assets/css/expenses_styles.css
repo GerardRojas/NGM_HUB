@@ -182,9 +182,35 @@
    EXPENSES TABLE — DARK THEME
    ========================================== */
 
+.expenses-table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Better scrollbar for table container */
+.expenses-table-container::-webkit-scrollbar {
+  height: 10px;
+}
+
+.expenses-table-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+}
+
+.expenses-table-container::-webkit-scrollbar-thumb {
+  background-color: rgba(180, 180, 180, 0.35);
+  border-radius: 8px;
+  border: 2px solid rgba(0, 0, 0, 0.4);
+}
+
+.expenses-table-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(200, 200, 200, 0.5);
+}
+
 .expenses-table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 900px; /* Ensure table doesn't compress too much */
 }
 
 .expenses-table thead {
@@ -234,6 +260,29 @@
 .expenses-table .col-actions {
   width: 50px;
   text-align: center;
+}
+
+/* Edit mode: wider columns for better input visibility */
+.expenses-table.edit-mode-table {
+  min-width: 1400px; /* Much wider in edit mode */
+}
+
+.expenses-table.edit-mode-table th,
+.expenses-table.edit-mode-table td {
+  padding: 10px 12px;
+  min-width: 150px; /* Wider columns in edit mode */
+}
+
+.expenses-table.edit-mode-table .col-description {
+  min-width: 250px;
+}
+
+.expenses-table.edit-mode-table .col-amount {
+  min-width: 120px;
+}
+
+.expenses-table.edit-mode-table .col-actions {
+  min-width: 60px;
 }
 
 /* ==========================================

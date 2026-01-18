@@ -242,6 +242,37 @@
   color: #f87171;
 }
 
+/* Row receipt button */
+#addExpenseModal .btn-row-receipt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: rgba(148, 163, 184, 0.6);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+#addExpenseModal .btn-row-receipt:hover {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+#addExpenseModal .btn-row-receipt.receipt-icon-btn--has-receipt {
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+#addExpenseModal .btn-row-receipt.receipt-icon-btn--has-receipt:hover {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
 /* Add row button */
 #addExpenseModal .add-row-container {
   display: flex;

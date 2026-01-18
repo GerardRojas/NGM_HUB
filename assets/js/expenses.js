@@ -426,17 +426,45 @@
   }
 
   function buildSelectHtml(field, selectedValue, options, valueKey, textKey) {
+    // Create a unique ID for this datalist
+    const listId = `datalist-${field}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Find the selected option text
+    let selectedText = '';
+    if (selectedValue) {
+      const selectedOption = options.find(opt => opt[valueKey] == selectedValue);
+      if (selectedOption) {
+        selectedText = selectedOption[textKey] || selectedOption.Name || selectedOption.name ||
+                       selectedOption.vendor_name || selectedOption.account_name ||
+                       selectedOption.payment_method_name || selectedOption.txn_type_name ||
+                       selectedOption.TnxType_name || '';
+      }
+    }
+
+    // Build datalist options
     const optionsHtml = options.map(opt => {
       const val = opt[valueKey];
-      // Try multiple possible name fields - prioritize textKey, then common alternatives
       const text = opt[textKey] || opt.Name || opt.name || opt.vendor_name || opt.account_name ||
                    opt.payment_method_name || opt.txn_type_name || opt.TnxType_name ||
                    `Unnamed (${val})`;
-      const selected = val == selectedValue ? 'selected' : '';
-      return `<option value="${val}" ${selected}>${text}</option>`;
+      return `<option value="${text}" data-value="${val}"></option>`;
     }).join('');
 
-    return `<select class="edit-input" data-field="${field}"><option value="">—</option>${optionsHtml}</select>`;
+    return `
+      <input
+        type="text"
+        class="edit-input edit-input-datalist"
+        data-field="${field}"
+        data-field-value="${selectedValue || ''}"
+        value="${selectedText}"
+        list="${listId}"
+        placeholder="Type to search..."
+        autocomplete="off"
+      >
+      <datalist id="${listId}">
+        ${optionsHtml}
+      </datalist>
+    `;
   }
 
   function findMetaName(category, value, valueKey, textKey) {
@@ -468,12 +496,16 @@
       els.btnAddExpense.disabled = true;
       els.projectFilter.disabled = true;
       if (els.editModeFooter) els.editModeFooter.classList.remove('hidden');
+      // Add edit mode class to table for wider columns
+      if (els.expensesTable) els.expensesTable.classList.add('edit-mode-table');
     } else {
       els.btnEditExpenses.textContent = 'Edit Expenses';
       els.btnEditExpenses.disabled = expenses.length === 0;
       els.btnAddExpense.disabled = !selectedProjectId;
       els.projectFilter.disabled = false;
       if (els.editModeFooter) els.editModeFooter.classList.add('hidden');
+      // Remove edit mode class from table
+      if (els.expensesTable) els.expensesTable.classList.remove('edit-mode-table');
     }
 
     renderExpensesTable();
@@ -509,7 +541,14 @@
       const updatedData = {};
       row.querySelectorAll('.edit-input').forEach(input => {
         const field = input.dataset.field;
-        let value = input.value;
+        let value;
+
+        // For datalist inputs, use the hidden data-field-value instead of display text
+        if (input.classList.contains('edit-input-datalist')) {
+          value = input.dataset.fieldValue || null;
+        } else {
+          value = input.value;
+        }
 
         if (field === 'Amount') {
           value = value ? parseFloat(value) : null;
@@ -733,11 +772,36 @@
         <input type="number" class="exp-input exp-input--amount" data-field="Amount" step="0.01" min="0" placeholder="0.00">
       </td>
       <td>
+        <button type="button" class="btn-row-receipt" data-row-index="${rowIndex}" title="Attach receipt">
+          📎
+        </button>
+        <input type="file" class="row-receipt-input" data-row-index="${rowIndex}" accept="image/*,application/pdf" style="display: none;">
+      </td>
+      <td>
         <button type="button" class="exp-row-remove" data-row-index="${rowIndex}">×</button>
       </td>
     `;
 
     els.expenseRowsBody.appendChild(row);
+
+    // Add event listener for receipt button
+    const receiptBtn = row.querySelector('.btn-row-receipt');
+    const receiptInput = row.querySelector('.row-receipt-input');
+
+    receiptBtn.addEventListener('click', () => {
+      receiptInput.click();
+    });
+
+    receiptInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        // Store file reference in row data
+        row.dataset.receiptFile = 'pending'; // Mark that this row has a file
+        receiptBtn.classList.add('receipt-icon-btn--has-receipt');
+        receiptBtn.title = `Receipt: ${file.name}`;
+        console.log(`[MODAL] Receipt attached to row ${rowIndex}:`, file.name);
+      }
+    });
   }
 
   function buildModalSelectHtml(field, options, valueKey, textKey) {
@@ -789,7 +853,7 @@
     const rows = els.expenseRowsBody.querySelectorAll('tr');
     const expensesToSave = [];
 
-    // Collect data from each row
+    // Collect data from each row including receipt files
     rows.forEach(row => {
       const rowData = {
         project: selectedProjectId,
@@ -818,6 +882,12 @@
         rowData[field] = value || null;
       });
 
+      // Check if row has a receipt file
+      const receiptInput = row.querySelector('.row-receipt-input');
+      if (receiptInput && receiptInput.files.length > 0) {
+        rowData._receiptFile = receiptInput.files[0]; // Store file temporarily
+      }
+
       // Validate required fields
       if (rowData.TxnDate && rowData.Amount) {
         expensesToSave.push(rowData);
@@ -834,44 +904,49 @@
     els.btnSaveAllExpenses.textContent = 'Saving...';
 
     try {
-      // Send POST requests for each expense
+      // Send POST requests for each expense and upload receipts
       const createdExpenses = [];
-      for (const expenseData of expensesToSave) {
+      for (let i = 0; i < expensesToSave.length; i++) {
+        const expenseData = { ...expensesToSave[i] };
+        const receiptFile = expenseData._receiptFile;
+        delete expenseData._receiptFile; // Remove file from data before sending
+
+        // Create expense
         const created = await apiJson(`${apiBase}/expenses`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(expenseData)
         });
         createdExpenses.push(created);
-      }
 
-      // If there's a receipt file and we created exactly one expense, upload it
-      if (currentReceiptFile && createdExpenses.length === 1 && window.ReceiptUpload) {
-        try {
-          const expenseId = createdExpenses[0].id || createdExpenses[0].expense_id;
-          console.log('[EXPENSES] Uploading receipt for expense:', expenseId);
+        // Upload receipt if this row had one
+        if (receiptFile && window.ReceiptUpload) {
+          try {
+            const expenseId = created.id || created.expense_id;
+            console.log(`[EXPENSES] Uploading receipt for expense ${expenseId}:`, receiptFile.name);
 
-          // Upload receipt to Supabase Storage
-          const receiptUrl = await window.ReceiptUpload.upload(
-            currentReceiptFile,
-            expenseId,
-            selectedProjectId
-          );
+            // Upload receipt to Supabase Storage
+            const receiptUrl = await window.ReceiptUpload.upload(
+              receiptFile,
+              expenseId,
+              selectedProjectId
+            );
 
-          console.log('[EXPENSES] Receipt uploaded:', receiptUrl);
+            console.log('[EXPENSES] Receipt uploaded:', receiptUrl);
 
-          // Update expense with receipt URL
-          await apiJson(`${apiBase}/expenses/${expenseId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ receipt_url: receiptUrl })
-          });
+            // Update expense with receipt URL
+            await apiJson(`${apiBase}/expenses/${expenseId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ receipt_url: receiptUrl })
+            });
 
-          console.log('[EXPENSES] Expense updated with receipt URL');
-        } catch (uploadErr) {
-          console.error('[EXPENSES] Error uploading receipt:', uploadErr);
-          // Don't fail the whole save if receipt upload fails
-          alert('Expense saved, but receipt upload failed: ' + uploadErr.message);
+            console.log('[EXPENSES] Expense updated with receipt URL');
+          } catch (uploadErr) {
+            console.error('[EXPENSES] Error uploading receipt:', uploadErr);
+            // Don't fail the whole save if receipt upload fails
+            console.warn('Receipt upload failed for one expense, continuing...');
+          }
         }
       }
 
@@ -1181,11 +1256,15 @@
 
     // Table row click to open single expense modal (only in read-only mode)
     els.expensesTableBody?.addEventListener('click', (e) => {
+      console.log('[EXPENSES] Table click:', { isEditMode, target: e.target, closest: e.target.closest('.expense-row-clickable') });
       if (!isEditMode && e.target.closest('.expense-row-clickable')) {
         const row = e.target.closest('tr');
         const expenseId = row.dataset.id;
+        console.log('[EXPENSES] Row clicked, expenseId:', expenseId);
         if (expenseId) {
           openSingleExpenseModal(expenseId);
+        } else {
+          console.warn('[EXPENSES] No expenseId found in row dataset');
         }
       }
     });
@@ -1194,6 +1273,28 @@
     // This was causing the "No changes to save" issue because the comparison with
     // originalExpenses would find no differences. Now we collect changes from DOM
     // inputs directly in saveEditChanges() function.
+
+    // Datalist inputs: Update data-field-value when user selects from list
+    els.expensesTableBody?.addEventListener('input', (e) => {
+      if (e.target.classList.contains('edit-input-datalist')) {
+        const input = e.target;
+        const datalist = document.getElementById(input.getAttribute('list'));
+        if (!datalist) return;
+
+        // Find matching option
+        const options = Array.from(datalist.options);
+        const matchingOption = options.find(opt => opt.value === input.value);
+
+        if (matchingOption) {
+          // Update the hidden value with the actual ID
+          input.dataset.fieldValue = matchingOption.dataset.value;
+          console.log(`[DATALIST] Updated ${input.dataset.field} to:`, matchingOption.dataset.value);
+        } else {
+          // Clear if no match (user typed something not in list)
+          input.dataset.fieldValue = '';
+        }
+      }
+    });
 
     // Filter toggle buttons
     document.querySelectorAll('.filter-toggle').forEach(btn => {

@@ -157,6 +157,12 @@
   padding: 6px 8px;
   vertical-align: middle;
   border-bottom: 1px solid rgba(148, 163, 184, 0.10);
+  overflow: hidden;
+}
+
+/* Description column - allow text wrapping */
+#addExpenseModal .expense-rows-table td:nth-child(2) {
+  overflow: visible;
 }
 
 #addExpenseModal .expense-rows-table tr:last-child td {
@@ -258,6 +264,10 @@
 
 #addExpenseModal .exp-input--desc {
   min-width: 280px;
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 /* Remove row button */

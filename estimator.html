@@ -374,8 +374,8 @@
         // ======================================================
         // BLOQUE 6.1: CONFIG + STATE
         // ======================================================
-        const API_BASE = window.API_BASE || "https://ngm-fastapi.onrender.com";
-        const API_BASE_URL = API_BASE; // fix para las llamadas que usan API_BASE_URL
+        // Use window.API_BASE directly (set by config.js)
+        const API_BASE_URL = window.API_BASE || "https://ngm-fastapi.onrender.com"; // fix para las llamadas que usan API_BASE_URL
 
         let currentEstimateData = null;
         const groupState = {};

@@ -14,6 +14,12 @@
     "accounts": { label: "Accounts", href: "accounts.html", order: 6 },
     "estimator": { label: "Estimator Suite", href: "estimator.html", order: 7 },
     "team": { label: "Team Management", href: "team.html", order: 8 },
+    "god_view": { label: "God View", href: "god-view.html", order: 9 },
+    "reporting": { label: "Reporting", href: "reporting.html", order: 10 },
+    "budgets": { label: "Budgets", href: "budgets.html", order: 11 },
+    "roles": { label: "Roles Management", href: "roles.html", order: 12 },
+    "settings": { label: "Settings", href: "settings.html", order: 13 },
+    "audit": { label: "Audit Logs", href: "audit.html", order: 14 },
   };
 
   // Cache para evitar llamadas repetidas

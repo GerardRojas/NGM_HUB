@@ -37,6 +37,8 @@
   async function init() {
     await loadData();
     setupEventListeners();
+    // Iniciar en modo de edición por defecto
+    toggleEditMode(true);
   }
 
   // ================================

@@ -47,6 +47,17 @@
   // Scanned receipt file storage
   let scannedReceiptFile = null;
 
+  // QBO Integration State
+  let currentDataSource = 'manual';  // 'manual' or 'qbo'
+  let qboExpenses = [];              // QBO expenses for current project
+  let reconciliationData = {         // Reconciliation modal state
+    manualExpenses: [],
+    qboExpenses: [],
+    selectedManual: null,            // Selected row ID in manual table
+    selectedQBO: null,               // Selected row ID in QBO table
+    linkedPairs: []                  // Array of { manual_id, qbo_id } objects
+  };
+
   // Column visibility configuration
   const COLUMN_CONFIG = [
     { key: 'date', label: 'Date', defaultVisible: true },
@@ -264,6 +275,12 @@
     if (!projectId) {
       expenses = [];
       showEmptyState('Select a project to view expenses');
+      return;
+    }
+
+    // Check if we're in QBO mode, redirect to QBO loading
+    if (currentDataSource === 'qbo') {
+      await loadQBOExpenses(projectId);
       return;
     }
 
@@ -1869,6 +1886,557 @@
   }
 
   // ================================
+  // QBO INTEGRATION EVENT LISTENERS
+  // ================================
+  function setupQBOEventListeners() {
+    // Source Toggle Buttons
+    document.getElementById('btnSourceManual')?.addEventListener('click', async () => {
+      await switchDataSource('manual');
+    });
+
+    document.getElementById('btnSourceQBO')?.addEventListener('click', async () => {
+      await switchDataSource('qbo');
+    });
+
+    // Sync QBO Button
+    document.getElementById('btnSyncQBO')?.addEventListener('click', async () => {
+      await syncQBOExpenses();
+    });
+
+    // Reconcile Button
+    document.getElementById('btnReconcile')?.addEventListener('click', () => {
+      openReconciliationModal();
+    });
+
+    // Reconciliation Modal - Close buttons
+    document.getElementById('btnCloseReconcileModal')?.addEventListener('click', () => {
+      closeReconciliationModal();
+    });
+
+    document.getElementById('btnCancelReconcile')?.addEventListener('click', () => {
+      closeReconciliationModal();
+    });
+
+    // Reconciliation Modal - Save links button
+    document.getElementById('btnSaveReconciliations')?.addEventListener('click', async () => {
+      await saveReconciliations();
+    });
+
+    // Reconciliation Modal - Table row clicks (event delegation)
+    document.getElementById('reconcileManualTableBody')?.addEventListener('click', (e) => {
+      const row = e.target.closest('tr');
+      if (row && row.hasAttribute('data-expense-id')) {
+        handleReconcileRowClick('manual', row);
+      }
+    });
+
+    document.getElementById('reconcileQBOTableBody')?.addEventListener('click', (e) => {
+      const row = e.target.closest('tr');
+      if (row && row.hasAttribute('data-expense-id')) {
+        handleReconcileRowClick('qbo', row);
+      }
+    });
+
+    // Reconciliation Modal - Backdrop close
+    document.getElementById('reconcileModal')?.addEventListener('click', (e) => {
+      if (e.target === document.getElementById('reconcileModal')) {
+        closeReconciliationModal();
+      }
+    });
+  }
+
+  // ================================
+  // QBO DATA SOURCE SWITCHING
+  // ================================
+  async function switchDataSource(source) {
+    if (source === currentDataSource) return; // Already on this source
+
+    currentDataSource = source;
+
+    // Update button states
+    const btnManual = document.getElementById('btnSourceManual');
+    const btnQBO = document.getElementById('btnSourceQBO');
+    const btnSyncQBO = document.getElementById('btnSyncQBO');
+    const btnAdd = document.getElementById('btnAddExpense');
+    const btnEdit = document.getElementById('btnEditExpenses');
+    const btnReconcile = document.getElementById('btnReconcile');
+
+    if (source === 'manual') {
+      btnManual?.classList.add('active');
+      btnQBO?.classList.remove('active');
+      btnSyncQBO?.classList.add('hidden');
+      btnAdd?.removeAttribute('disabled');
+      btnEdit?.removeAttribute('disabled');
+      btnReconcile?.removeAttribute('disabled');
+    } else {
+      btnManual?.classList.remove('active');
+      btnQBO?.classList.add('active');
+      btnSyncQBO?.classList.remove('hidden');
+      btnAdd?.setAttribute('disabled', 'true');
+      btnEdit?.setAttribute('disabled', 'true');
+      btnReconcile?.removeAttribute('disabled'); // Can still reconcile from QBO view
+    }
+
+    // Reload data for selected project
+    if (selectedProjectId) {
+      if (source === 'manual') {
+        await loadExpensesByProject(selectedProjectId);
+      } else {
+        await loadQBOExpenses(selectedProjectId);
+      }
+    }
+  }
+
+  // ================================
+  // QBO DATA LOADING & RENDERING
+  // ================================
+  async function loadQBOExpenses(projectId) {
+    if (!projectId) {
+      qboExpenses = [];
+      showEmptyState('Select a project to view QBO expenses...');
+      return;
+    }
+
+    try {
+      showEmptyState('Loading QBO expenses...');
+      const url = `${apiBase}/expenses/qbo?project=${projectId}`;
+      const result = await apiJson(url);
+
+      // Handle response format (similar to manual expenses)
+      if (Array.isArray(result)) qboExpenses = result;
+      else if (result?.data) qboExpenses = result.data;
+      else if (result?.expenses) qboExpenses = result.expenses;
+      else qboExpenses = [];
+
+      console.log('[QBO] Loaded expenses:', qboExpenses.length);
+      renderQBOExpensesTable();
+    } catch (err) {
+      console.error('[QBO] Error loading expenses:', err);
+      showEmptyState('Error loading QBO expenses: ' + err.message);
+    }
+  }
+
+  function renderQBOExpensesTable() {
+    if (!qboExpenses || qboExpenses.length === 0) {
+      showEmptyState('No QBO expenses found for this project.');
+      return;
+    }
+
+    hideEmptyState();
+
+    // Apply filters (reuse existing filter logic)
+    const displayExpenses = applyFiltersToQBO(qboExpenses);
+
+    // Render rows
+    const rows = displayExpenses.map(exp => renderQBORow(exp)).join('');
+
+    // Calculate total
+    const total = displayExpenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
+    const totalRow = `
+      <tr class="table-total-row">
+        <td colspan="${getVisibleColumnCount() - 1}" style="text-align: right; font-weight: 600;">Total:</td>
+        <td style="font-weight: 700; color: #22c55e;">$${formatCurrency(total)}</td>
+        <td></td>
+      </tr>
+    `;
+
+    els.expensesTableBody.innerHTML = rows + totalRow;
+    applyColumnVisibility(); // Apply column hiding
+  }
+
+  function renderQBORow(exp) {
+    const expenseId = exp.id;
+    const txnDate = exp.txn_date ? new Date(exp.txn_date).toLocaleDateString() : '';
+    const amount = exp.amount ? formatCurrency(exp.amount) : '0.00';
+
+    // QBO data is read-only, show reconciliation status badge
+    const isReconciled = exp.reconciliation_status === 'matched' || exp.reconciliation_status === 'reviewed';
+    const statusClass = isReconciled ? 'reconcile-status-badge--linked' : 'reconcile-status-badge--pending';
+    const statusText = isReconciled ? 'Linked' : 'Pending';
+
+    return `
+      <tr data-expense-id="${expenseId}" data-source="qbo">
+        <td>${txnDate}</td>
+        <td>${exp.description || exp.memo || ''}</td>
+        <td>${exp.account_name || ''}</td>
+        <td>${exp.vendor_name || ''}</td>
+        <td>${exp.payment_type || ''}</td>
+        <td style="text-align: right;">$${amount}</td>
+        <td>
+          <span class="reconcile-status-badge ${statusClass}">${statusText}</span>
+        </td>
+      </tr>
+    `;
+  }
+
+  function applyFiltersToQBO(qboExpensesList) {
+    // Reuse filter logic from applyFilters() but adapt for QBO field names
+    let filtered = [...qboExpensesList];
+
+    // Global search filter
+    if (globalSearchTerm) {
+      const term = globalSearchTerm.toLowerCase();
+      filtered = filtered.filter(exp => {
+        const searchFields = [
+          exp.txn_date,
+          exp.description,
+          exp.memo,
+          exp.vendor_name,
+          exp.account_name,
+          exp.payment_type,
+          String(exp.amount)
+        ];
+        return searchFields.some(field =>
+          field && String(field).toLowerCase().includes(term)
+        );
+      });
+    }
+
+    // Column filters (adapt field names)
+    // Date filter
+    if (columnFilters.date?.length > 0) {
+      filtered = filtered.filter(exp => {
+        const dateStr = exp.txn_date ? new Date(exp.txn_date).toLocaleDateString() : '';
+        return columnFilters.date.includes(dateStr);
+      });
+    }
+
+    // Vendor filter
+    if (columnFilters.vendor?.length > 0) {
+      filtered = filtered.filter(exp =>
+        columnFilters.vendor.includes(exp.vendor_name)
+      );
+    }
+
+    // Account filter
+    if (columnFilters.account?.length > 0) {
+      filtered = filtered.filter(exp =>
+        columnFilters.account.includes(exp.account_name)
+      );
+    }
+
+    // Payment filter
+    if (columnFilters.payment?.length > 0) {
+      filtered = filtered.filter(exp =>
+        columnFilters.payment.includes(exp.payment_type)
+      );
+    }
+
+    return filtered;
+  }
+
+  // ================================
+  // QBO SYNC
+  // ================================
+  async function syncQBOExpenses() {
+    if (!selectedProjectId) {
+      alert('Please select a project first.');
+      return;
+    }
+
+    const btnSyncQBO = document.getElementById('btnSyncQBO');
+    const originalText = btnSyncQBO?.innerHTML;
+
+    try {
+      // Show loading state
+      if (btnSyncQBO) {
+        btnSyncQBO.disabled = true;
+        btnSyncQBO.innerHTML = '<span style="font-size: 14px;">⏳</span> Syncing...';
+      }
+
+      console.log('[QBO] Syncing expenses for project:', selectedProjectId);
+
+      const url = `${apiBase}/expenses/qbo/sync`;
+      const result = await apiJson(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_id: selectedProjectId })
+      });
+
+      console.log('[QBO] Sync result:', result);
+
+      // Show success message
+      const message = result?.message || `Successfully synced ${result?.count || 0} expenses from QuickBooks.`;
+      alert(message);
+
+      // Reload QBO expenses
+      await loadQBOExpenses(selectedProjectId);
+
+    } catch (err) {
+      console.error('[QBO] Sync error:', err);
+      alert('Error syncing QuickBooks data: ' + err.message);
+    } finally {
+      // Restore button state
+      if (btnSyncQBO) {
+        btnSyncQBO.disabled = false;
+        btnSyncQBO.innerHTML = originalText;
+      }
+    }
+  }
+
+  // ================================
+  // RECONCILIATION MODAL
+  // ================================
+  async function openReconciliationModal() {
+    if (!selectedProjectId) {
+      alert('Please select a project first.');
+      return;
+    }
+
+    try {
+      // Load both manual and QBO expenses for reconciliation
+      showEmptyState('Loading reconciliation data...');
+
+      const [manualRes, qboRes] = await Promise.all([
+        apiJson(`${apiBase}/expenses?project=${selectedProjectId}`),
+        apiJson(`${apiBase}/expenses/qbo?project=${selectedProjectId}`)
+      ]);
+
+      // Parse responses
+      reconciliationData.manualExpenses = Array.isArray(manualRes) ? manualRes : (manualRes?.data || manualRes?.expenses || []);
+      reconciliationData.qboExpenses = Array.isArray(qboRes) ? qboRes : (qboRes?.data || qboRes?.expenses || []);
+
+      // Load existing reconciliations (if any)
+      await loadExistingReconciliations();
+
+      // Reset selection state
+      reconciliationData.selectedManual = null;
+      reconciliationData.selectedQBO = null;
+
+      // Render tables
+      renderReconciliationTables();
+
+      // Show modal
+      document.getElementById('reconcileModal')?.classList.remove('hidden');
+
+      hideEmptyState();
+
+    } catch (err) {
+      console.error('[RECONCILE] Error opening modal:', err);
+      alert('Error loading reconciliation data: ' + err.message);
+      hideEmptyState();
+    }
+  }
+
+  async function loadExistingReconciliations() {
+    try {
+      const url = `${apiBase}/expenses/reconciliations?project=${selectedProjectId}`;
+      const result = await apiJson(url);
+
+      // Parse linked pairs
+      reconciliationData.linkedPairs = Array.isArray(result) ? result : (result?.data || []);
+
+      console.log('[RECONCILE] Loaded existing links:', reconciliationData.linkedPairs.length);
+    } catch (err) {
+      console.warn('[RECONCILE] Could not load existing reconciliations:', err);
+      reconciliationData.linkedPairs = [];
+    }
+  }
+
+  function renderReconciliationTables() {
+    // Render manual expenses table
+    const manualTableBody = document.getElementById('reconcileManualTableBody');
+    const qboTableBody = document.getElementById('reconcileQBOTableBody');
+
+    if (!manualTableBody || !qboTableBody) return;
+
+    // Manual expenses (filter out already linked)
+    const unlinkedManual = reconciliationData.manualExpenses.filter(exp => {
+      const expId = exp.expense_id || exp.id;
+      return !reconciliationData.linkedPairs.some(pair => pair.manual_expense_id === expId);
+    });
+
+    const manualRows = unlinkedManual.map(exp => {
+      const expId = exp.expense_id || exp.id;
+      const isSelected = reconciliationData.selectedManual === expId;
+      const rowClass = isSelected ? 'reconcile-row-selected' : '';
+
+      return `
+        <tr class="${rowClass}" data-expense-id="${expId}" data-source="manual">
+          <td>${exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : ''}</td>
+          <td>${exp.description || ''}</td>
+          <td>${findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || ''}</td>
+          <td style="text-align: right;">$${formatCurrency(exp.amount)}</td>
+          <td><span class="reconcile-status-badge reconcile-status-badge--pending">Pending</span></td>
+        </tr>
+      `;
+    }).join('');
+
+    manualTableBody.innerHTML = manualRows || '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #6b7280;">No unlinked manual expenses</td></tr>';
+
+    // QBO expenses (filter out already linked)
+    const unlinkedQBO = reconciliationData.qboExpenses.filter(exp => {
+      return !reconciliationData.linkedPairs.some(pair => pair.qbo_expense_id === exp.id);
+    });
+
+    const qboRows = unlinkedQBO.map(exp => {
+      const isSelected = reconciliationData.selectedQBO === exp.id;
+      const rowClass = isSelected ? 'reconcile-row-selected' : '';
+
+      return `
+        <tr class="${rowClass}" data-expense-id="${exp.id}" data-source="qbo">
+          <td>${exp.txn_date ? new Date(exp.txn_date).toLocaleDateString() : ''}</td>
+          <td>${exp.description || exp.memo || ''}</td>
+          <td>${exp.vendor_name || ''}</td>
+          <td style="text-align: right;">$${formatCurrency(exp.amount)}</td>
+          <td><span class="reconcile-status-badge reconcile-status-badge--pending">Pending</span></td>
+        </tr>
+      `;
+    }).join('');
+
+    qboTableBody.innerHTML = qboRows || '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #6b7280;">No unlinked QBO expenses</td></tr>';
+
+    // Update counts
+    document.getElementById('reconcileManualCount')?.textContent = `${unlinkedManual.length} pending`;
+    document.getElementById('reconcileQBOCount')?.textContent = `${unlinkedQBO.length} pending`;
+
+    // Update summary stats
+    updateReconciliationSummary();
+  }
+
+  function handleReconcileRowClick(source, row) {
+    const expenseId = row.getAttribute('data-expense-id');
+
+    if (source === 'manual') {
+      // Toggle selection
+      if (reconciliationData.selectedManual === expenseId) {
+        reconciliationData.selectedManual = null;
+      } else {
+        reconciliationData.selectedManual = expenseId;
+
+        // If both sides selected, create link
+        if (reconciliationData.selectedQBO) {
+          createReconciliationLink();
+        }
+      }
+    } else if (source === 'qbo') {
+      // Toggle selection
+      if (reconciliationData.selectedQBO === expenseId) {
+        reconciliationData.selectedQBO = null;
+      } else {
+        reconciliationData.selectedQBO = expenseId;
+
+        // If both sides selected, create link
+        if (reconciliationData.selectedManual) {
+          createReconciliationLink();
+        }
+      }
+    }
+
+    // Re-render to show selection
+    renderReconciliationTables();
+  }
+
+  function createReconciliationLink() {
+    const manualId = reconciliationData.selectedManual;
+    const qboId = reconciliationData.selectedQBO;
+
+    if (!manualId || !qboId) return;
+
+    // Add to linked pairs
+    reconciliationData.linkedPairs.push({
+      manual_expense_id: manualId,
+      qbo_expense_id: qboId
+    });
+
+    console.log('[RECONCILE] Created link:', { manualId, qboId });
+
+    // Reset selections
+    reconciliationData.selectedManual = null;
+    reconciliationData.selectedQBO = null;
+
+    // Re-render
+    renderReconciliationTables();
+  }
+
+  function updateReconciliationSummary() {
+    const totalManual = reconciliationData.manualExpenses.length;
+    const totalQBO = reconciliationData.qboExpenses.length;
+    const linkedCount = reconciliationData.linkedPairs.length;
+    const pendingManual = totalManual - linkedCount;
+    const pendingQBO = totalQBO - linkedCount;
+
+    document.getElementById('reconcileSummaryLinked')?.textContent = linkedCount;
+    document.getElementById('reconcileSummaryPendingManual')?.textContent = pendingManual;
+    document.getElementById('reconcileSummaryPendingQBO')?.textContent = pendingQBO;
+    document.getElementById('reconcileSummaryTotal')?.textContent = totalManual;
+  }
+
+  async function saveReconciliations() {
+    if (reconciliationData.linkedPairs.length === 0) {
+      alert('No reconciliations to save. Select matching expenses from both tables.');
+      return;
+    }
+
+    const btnSave = document.getElementById('btnSaveReconciliations');
+    const originalText = btnSave?.textContent;
+
+    try {
+      if (btnSave) {
+        btnSave.disabled = true;
+        btnSave.textContent = 'Saving...';
+      }
+
+      console.log('[RECONCILE] Saving reconciliations:', reconciliationData.linkedPairs);
+
+      const url = `${apiBase}/expenses/reconciliations`;
+      const result = await apiJson(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: selectedProjectId,
+          reconciliations: reconciliationData.linkedPairs
+        })
+      });
+
+      console.log('[RECONCILE] Save result:', result);
+
+      alert(`Successfully saved ${reconciliationData.linkedPairs.length} reconciliation(s)!`);
+
+      // Close modal and reload data
+      closeReconciliationModal();
+      if (currentDataSource === 'qbo') {
+        await loadQBOExpenses(selectedProjectId);
+      } else {
+        await loadExpensesByProject(selectedProjectId);
+      }
+
+    } catch (err) {
+      console.error('[RECONCILE] Save error:', err);
+      alert('Error saving reconciliations: ' + err.message);
+    } finally {
+      if (btnSave) {
+        btnSave.disabled = false;
+        btnSave.textContent = originalText;
+      }
+    }
+  }
+
+  function closeReconciliationModal() {
+    document.getElementById('reconcileModal')?.classList.add('hidden');
+
+    // Reset state
+    reconciliationData.manualExpenses = [];
+    reconciliationData.qboExpenses = [];
+    reconciliationData.selectedManual = null;
+    reconciliationData.selectedQBO = null;
+    reconciliationData.linkedPairs = [];
+  }
+
+  // ================================
+  // HELPER FUNCTIONS
+  // ================================
+  function getVisibleColumnCount() {
+    // Count visible columns based on columnVisibility state
+    const baseColumns = ['date', 'description', 'type', 'vendor', 'payment', 'account', 'amount'];
+    const visibleCount = baseColumns.filter(col => {
+      return columnVisibility[col] !== false; // Default to visible
+    }).length;
+
+    return visibleCount + 1; // +1 for actions/status column
+  }
+
+  // ================================
   // FILTER DROPDOWN FUNCTIONS
   // ================================
   function toggleFilterDropdown(column, toggleBtn) {
@@ -2398,6 +2966,7 @@
 
     // Setup event listeners
     setupEventListeners();
+    setupQBOEventListeners();
 
     // Load metadata (dropdowns)
     await loadMetaData();

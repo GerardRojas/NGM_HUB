@@ -2,6 +2,10 @@
 (function () {
   'use strict';
 
+  console.log('[EXPENSES] ========================================');
+  console.log('[EXPENSES] expenses.js loaded and executing');
+  console.log('[EXPENSES] ========================================');
+
   // ================================
   // STATE
   // ================================
@@ -80,7 +84,11 @@
   const els = {};
 
   function cacheElements() {
+    console.log('[EXPENSES] cacheElements called');
+    console.log('[EXPENSES] document.readyState:', document.readyState);
+
     els.projectFilter = document.getElementById('projectFilter');
+    console.log('[EXPENSES] projectFilter element found:', els.projectFilter);
     els.btnAddExpense = document.getElementById('btnAddExpense');
     els.btnEditExpenses = document.getElementById('btnEditExpenses');
     els.expensesTable = document.getElementById('expensesTable');
@@ -225,9 +233,14 @@
   // ================================
   async function loadMetaData() {
     const apiBase = getApiBase();
+    console.log('[EXPENSES] loadMetaData called, apiBase:', apiBase);
 
     try {
-      const meta = await apiJson(`${apiBase}/expenses/meta`);
+      const url = `${apiBase}/expenses/meta`;
+      console.log('[EXPENSES] Fetching metadata from:', url);
+
+      const meta = await apiJson(url);
+      console.log('[EXPENSES] Raw metadata response:', meta);
 
       if (!meta) {
         throw new Error('No metadata received from server');
@@ -240,7 +253,13 @@
       metaData.accounts = meta.accounts || [];
 
       // Debug: Log metadata structure to help identify correct column names
+      console.log('[METADATA] txn_types count:', metaData.txn_types.length);
+      console.log('[METADATA] projects count:', metaData.projects.length);
+      console.log('[METADATA] vendors count:', metaData.vendors.length);
+      console.log('[METADATA] payment_methods count:', metaData.payment_methods.length);
+      console.log('[METADATA] accounts count:', metaData.accounts.length);
       console.log('[METADATA] txn_types sample:', metaData.txn_types[0]);
+      console.log('[METADATA] projects sample:', metaData.projects[0]);
       console.log('[METADATA] accounts sample:', metaData.accounts[0]);
       console.log('[METADATA] vendors sample:', metaData.vendors[0]);
       console.log('[METADATA] payment_methods sample:', metaData.payment_methods[0]);
@@ -255,7 +274,14 @@
   }
 
   function populateProjectFilter() {
-    if (!els.projectFilter) return;
+    console.log('[EXPENSES] populateProjectFilter called');
+    console.log('[EXPENSES] els.projectFilter:', els.projectFilter);
+    console.log('[EXPENSES] metaData.projects:', metaData.projects);
+
+    if (!els.projectFilter) {
+      console.error('[EXPENSES] projectFilter element not found!');
+      return;
+    }
 
     // Clear existing options except first
     els.projectFilter.innerHTML = '<option value="">Select project...</option>';
@@ -265,7 +291,10 @@
       opt.value = p.project_id || p.id;
       opt.textContent = p.project_name || p.name || 'Unnamed Project';
       els.projectFilter.appendChild(opt);
+      console.log('[EXPENSES] Added project option:', opt.value, opt.textContent);
     });
+
+    console.log('[EXPENSES] Total project options added:', metaData.projects.length);
   }
 
   // ================================

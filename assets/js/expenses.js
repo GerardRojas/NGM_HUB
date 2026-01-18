@@ -44,6 +44,9 @@
   // Global search state
   let globalSearchTerm = '';
 
+  // Scanned receipt file storage
+  let scannedReceiptFile = null;
+
   // Column visibility configuration
   const COLUMN_CONFIG = [
     { key: 'date', label: 'Date', defaultVisible: true },
@@ -798,6 +801,7 @@
     modalRowCounter = 0;
     currentReceiptFile = null;
     currentReceiptUrl = null;
+    scannedReceiptFile = null; // Clear scanned receipt reference
   }
 
   // ================================
@@ -982,10 +986,20 @@
   }
 
   function updateAutoCategorizeButton() {
-    const rowCount = els.expenseRowsBody?.querySelectorAll('tr').length || 0;
-    if (els.btnAutoCategorize) {
-      els.btnAutoCategorize.disabled = rowCount === 0;
-    }
+    if (!els.btnAutoCategorize) return;
+
+    // Check if at least one row has a description
+    const rows = els.expenseRowsBody?.querySelectorAll('tr') || [];
+    let hasDescription = false;
+
+    rows.forEach(row => {
+      const descInput = row.querySelector('.exp-input--desc');
+      if (descInput && descInput.value.trim()) {
+        hasDescription = true;
+      }
+    });
+
+    els.btnAutoCategorize.disabled = !hasDescription;
   }
 
   async function saveAllExpenses() {
@@ -1026,6 +1040,10 @@
       const receiptInput = row.querySelector('.row-receipt-input');
       if (receiptInput && receiptInput.files.length > 0) {
         rowData._receiptFile = receiptInput.files[0]; // Store file temporarily
+      } else if (scannedReceiptFile) {
+        // If no individual receipt but we have a scanned receipt, use it
+        rowData._receiptFile = scannedReceiptFile;
+        rowData._fromScannedReceipt = true; // Mark as coming from scanned receipt
       }
 
       // Validate required fields
@@ -1049,7 +1067,9 @@
       for (let i = 0; i < expensesToSave.length; i++) {
         const expenseData = { ...expensesToSave[i] };
         const receiptFile = expenseData._receiptFile;
+        const isFromScan = expenseData._fromScannedReceipt;
         delete expenseData._receiptFile; // Remove file from data before sending
+        delete expenseData._fromScannedReceipt; // Remove marker from data
 
         // Create expense
         const created = await apiJson(`${apiBase}/expenses`, {
@@ -1097,6 +1117,9 @@
       }
 
       alert(`${expensesToSave.length} expense(s) saved successfully!`);
+
+      // Clear scanned receipt file reference
+      scannedReceiptFile = null;
 
       // Close modal and reload expenses
       closeAddExpenseModal();
@@ -1446,6 +1469,10 @@
 
       els.scanReceiptProgressText.textContent = 'Populating expense rows...';
       els.scanReceiptProgressFill.style.width = '90%';
+
+      // Store the scanned receipt file to attach to all generated expenses
+      scannedReceiptFile = file;
+      console.log('[SCAN RECEIPT] Stored receipt file for later upload:', file.name);
 
       // Close scan modal
       closeScanReceiptModal();
@@ -1802,6 +1829,34 @@
     els.btnResetColumns?.addEventListener('click', () => {
       resetColumnVisibility();
     });
+
+    // Auto Categorize button - open stage selection modal
+    els.btnAutoCategorize?.addEventListener('click', () => {
+      openConstructionStageModal();
+    });
+
+    // Construction Stage Modal handlers
+    const stageModal = document.getElementById('constructionStageModal');
+    const btnCloseStageModal = document.getElementById('btnCloseStageModal');
+    const btnCancelStageModal = document.getElementById('btnCancelStageModal');
+    const stageOptions = document.querySelectorAll('.stage-option');
+
+    btnCloseStageModal?.addEventListener('click', closeConstructionStageModal);
+    btnCancelStageModal?.addEventListener('click', closeConstructionStageModal);
+
+    stageOptions.forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const stage = e.currentTarget.getAttribute('data-stage');
+        await handleStageSelection(stage);
+      });
+    });
+
+    // Monitor description changes in modal rows to update Auto Categorize button
+    els.expenseRowsBody?.addEventListener('input', (e) => {
+      if (e.target.classList.contains('exp-input--desc')) {
+        updateAutoCategorizeButton();
+      }
+    });
   }
 
   // ================================
@@ -2005,6 +2060,184 @@
 
   // Expose toggleAuth to window for onclick handler
   window.toggleAuth = toggleAuth;
+
+  // ================================
+  // AUTO CATEGORIZE & CONSTRUCTION STAGE
+  // ================================
+
+  function openConstructionStageModal() {
+    const modal = document.getElementById('constructionStageModal');
+    const progressDiv = document.getElementById('autoCategorizeProgress');
+
+    if (modal) {
+      modal.classList.remove('hidden');
+      if (progressDiv) progressDiv.classList.add('hidden');
+    }
+  }
+
+  function closeConstructionStageModal() {
+    const modal = document.getElementById('constructionStageModal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  }
+
+  async function handleStageSelection(stage) {
+    console.log('[AUTO-CATEGORIZE] Stage selected:', stage);
+
+    const progressDiv = document.getElementById('autoCategorizeProgress');
+    const progressFill = document.getElementById('autoCategorizeProgressFill');
+    const progressText = document.getElementById('autoCategorizeProgressText');
+
+    // Show progress
+    if (progressDiv) progressDiv.classList.remove('hidden');
+    if (progressFill) progressFill.style.width = '20%';
+    if (progressText) progressText.textContent = 'Collecting expense data...';
+
+    try {
+      // Collect expenses with descriptions
+      const rows = els.expenseRowsBody.querySelectorAll('tr');
+      const expenses = [];
+
+      rows.forEach((row, index) => {
+        const descInput = row.querySelector('.exp-input--desc');
+        const description = descInput?.value.trim();
+
+        if (description) {
+          expenses.push({
+            rowIndex: parseInt(row.dataset.rowIndex),
+            description: description
+          });
+        }
+      });
+
+      if (expenses.length === 0) {
+        alert('No expenses with descriptions found');
+        closeConstructionStageModal();
+        return;
+      }
+
+      console.log('[AUTO-CATEGORIZE] Sending to backend:', { stage, expenses });
+
+      // Update progress
+      if (progressFill) progressFill.style.width = '40%';
+      if (progressText) progressText.textContent = `Analyzing ${expenses.length} expense(s) with AI...`;
+
+      const apiBase = getApiBase();
+
+      // Call backend endpoint for categorization
+      const response = await apiJson(`${apiBase}/expenses/auto-categorize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stage: stage,
+          expenses: expenses
+        })
+      });
+
+      console.log('[AUTO-CATEGORIZE] Response:', response);
+
+      // Update progress
+      if (progressFill) progressFill.style.width = '80%';
+      if (progressText) progressText.textContent = 'Applying categorizations...';
+
+      // Apply categorizations to rows
+      if (response.success && response.categorizations) {
+        applyCategorizations(response.categorizations);
+      }
+
+      // Complete
+      if (progressFill) progressFill.style.width = '100%';
+      if (progressText) progressText.textContent = 'Done!';
+
+      // Close modal after a short delay
+      setTimeout(() => {
+        closeConstructionStageModal();
+
+        // Show summary
+        const summary = getSummary(response.categorizations);
+        alert(`Auto-categorization complete!\n\n${summary}`);
+      }, 800);
+
+    } catch (error) {
+      console.error('[AUTO-CATEGORIZE] Error:', error);
+      alert('Error during auto-categorization: ' + error.message);
+      closeConstructionStageModal();
+    }
+  }
+
+  function applyCategorizations(categorizations) {
+    categorizations.forEach(cat => {
+      const row = els.expenseRowsBody.querySelector(`tr[data-row-index="${cat.rowIndex}"]`);
+      if (!row) return;
+
+      console.log('[AUTO-CATEGORIZE] Applying to row', cat.rowIndex, ':', cat);
+
+      // Find account input
+      const accountInput = row.querySelector('[data-field="account_id"]');
+      if (accountInput && cat.account_id && cat.account_name) {
+        // Set the display text and the hidden value
+        accountInput.value = cat.account_name;
+        accountInput.setAttribute('data-value', cat.account_id);
+
+        // Add visual feedback with confidence badge
+        addConfidenceBadge(accountInput, cat.confidence, cat.account_name);
+      }
+    });
+  }
+
+  function addConfidenceBadge(inputElement, confidence, accountName) {
+    // Remove any existing badge
+    const existingBadge = inputElement.parentElement.querySelector('.account-suggestion');
+    if (existingBadge) {
+      existingBadge.remove();
+    }
+
+    // Determine confidence level and icon
+    let confidenceLevel, confidenceIcon;
+    if (confidence >= 80) {
+      confidenceLevel = 'high';
+      confidenceIcon = '✓';
+    } else if (confidence >= 60) {
+      confidenceLevel = 'medium';
+      confidenceIcon = '⚠';
+    } else {
+      confidenceLevel = 'low';
+      confidenceIcon = '?';
+    }
+
+    // Create confidence badge
+    const badge = document.createElement('div');
+    badge.className = 'account-suggestion';
+    badge.innerHTML = `
+      <span class="account-suggestion-label">AI Suggestion:</span>
+      <span class="account-suggestion-value">${accountName}</span>
+      <span class="confidence-badge confidence-badge-${confidenceLevel}">
+        <span class="confidence-badge-icon">${confidenceIcon}</span>
+        ${confidence}%
+      </span>
+    `;
+
+    // Insert after input
+    inputElement.parentElement.appendChild(badge);
+  }
+
+  function getSummary(categorizations) {
+    if (!categorizations || categorizations.length === 0) {
+      return 'No categorizations applied.';
+    }
+
+    const high = categorizations.filter(c => c.confidence >= 80).length;
+    const medium = categorizations.filter(c => c.confidence >= 60 && c.confidence < 80).length;
+    const low = categorizations.filter(c => c.confidence < 60).length;
+
+    let summary = `Categorized ${categorizations.length} expense(s):\n`;
+    if (high > 0) summary += `✓ ${high} high confidence (≥80%)\n`;
+    if (medium > 0) summary += `⚠ ${medium} medium confidence (60-79%)\n`;
+    if (low > 0) summary += `? ${low} low confidence (<60%) - review needed`;
+
+    return summary;
+  }
 
   // ================================
   // COLUMN VISIBILITY MANAGER

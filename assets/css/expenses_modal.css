@@ -317,31 +317,40 @@
   background: rgba(34, 197, 94, 0.08);
 }
 
-/* Auto Categorize button */
+/* Auto Categorize button - matches Scan Receipt style */
 #addExpenseModal .btn-auto-categorize {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 8px;
+  padding: 10px 16px;
   border-radius: 8px;
-  border: 1px solid rgba(139, 92, 246, 0.4);
+  border: 1px solid rgba(139, 92, 246, 0.3);
   background: rgba(139, 92, 246, 0.08);
   color: #a78bfa;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 #addExpenseModal .btn-auto-categorize:hover:not(:disabled) {
-  border-color: rgba(139, 92, 246, 0.6);
+  border-color: rgba(139, 92, 246, 0.5);
   background: rgba(139, 92, 246, 0.15);
   color: #c4b5fd;
+  transform: translateY(-1px);
+}
+
+#addExpenseModal .btn-auto-categorize:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 #addExpenseModal .btn-auto-categorize:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+#addExpenseModal .btn-auto-categorize svg {
+  flex-shrink: 0;
 }
 
 /* Footer */
@@ -1187,5 +1196,244 @@ input[type="number"].form-input {
 
 .scan-receipt-progress-fill {
   animation: progressPulse 1.5s ease-in-out infinite;
+}
+
+/* ==========================================
+   Construction Stage Selection Modal
+   ========================================== */
+
+#constructionStageModal.modal-backdrop.hidden {
+  display: none !important;
+}
+
+#constructionStageModal.modal-backdrop {
+  background: rgba(0, 0, 0, 0.80);
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-construction-stage {
+  width: min(650px, 95%);
+  max-width: 650px;
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  background: #212121 !important;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+#constructionStageModal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #242424 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+#constructionStageModal .modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+#constructionStageModal .modal-close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+#constructionStageModal .modal-close-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+#constructionStageModal .modal-body {
+  flex: 1;
+  padding: 20px 18px;
+  overflow-y: auto;
+  background: #1a1a1a;
+}
+
+#constructionStageModal .modal-hint {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+.stage-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stage-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid rgba(148, 163, 184, 0.25);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.stage-option:hover {
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+}
+
+.stage-option:active {
+  transform: translateY(0);
+}
+
+.stage-icon {
+  font-size: 32px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.stage-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stage-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.stage-desc {
+  font-size: 12px;
+  color: #9ca3af;
+  line-height: 1.3;
+}
+
+#constructionStageModal .modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px;
+  background: #1f1f1f;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Auto Categorize Progress */
+.auto-categorize-progress {
+  margin: 20px 0;
+}
+
+.auto-categorize-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.auto-categorize-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  width: 0%;
+  animation: progressPulse 1.5s ease-in-out infinite;
+}
+
+.auto-categorize-progress-text {
+  text-align: center;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* Confidence Badge */
+.confidence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.confidence-badge-high {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: #4ade80;
+}
+
+.confidence-badge-medium {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+.confidence-badge-low {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+}
+
+.confidence-badge-icon {
+  font-size: 9px;
+}
+
+/* Account suggestion with confidence */
+.account-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 8px;
+  margin-top: 4px;
+}
+
+.account-suggestion-label {
+  font-size: 12px;
+  color: #a78bfa;
+  font-weight: 500;
+}
+
+.account-suggestion-value {
+  flex: 1;
+  font-size: 13px;
+  color: #e5e7eb;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .stage-options {
+    grid-template-columns: 1fr;
+  }
 }
 

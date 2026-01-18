@@ -151,26 +151,33 @@
     gap: 6px;
 }
 
-/* Spinner: OCULTO por defecto */
+/* Logo loading indicator: OCULTO por defecto */
 .btn-primary__spinner {
     display: none;
-    width: 14px;
-    height: 14px;
-    border-radius: 999px;
-    border: 2px solid rgba(15, 23, 42, 0.6);
-    border-top-color: #ffffff;
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    animation: logoShimmer 2s ease-in-out infinite;
 }
 
-/* Solo se muestra y gira cuando el botón está en modo loading */
+/* Solo se muestra cuando el botón está en modo loading */
 .btn-primary--loading .btn-primary__spinner {
     display: inline-block;
-    animation: spin-login 0.7s linear infinite;
 }
 
-
-@keyframes spin-login {
-    to {
-        transform: rotate(360deg);
+/* Shimmer animation for login button logo */
+@keyframes logoShimmer {
+    0% {
+        opacity: 0.4;
+        filter: brightness(0.6) drop-shadow(0 0 6px rgba(255, 255, 255, 0.2));
+    }
+    50% {
+        opacity: 1;
+        filter: brightness(1.3) drop-shadow(0 0 12px rgba(255, 255, 255, 0.5));
+    }
+    100% {
+        opacity: 0.4;
+        filter: brightness(0.6) drop-shadow(0 0 6px rgba(255, 255, 255, 0.2));
     }
 }
 

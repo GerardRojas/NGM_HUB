@@ -296,19 +296,29 @@
             </div>
 
             <div class="modal-body">
-                <!-- Project indicator and scan receipt button -->
+                <!-- Project indicator and action buttons -->
                 <div class="modal-project-header">
                     <div class="modal-project-info">
                         <span class="modal-project-label">Project:</span>
                         <span class="modal-project-name" id="modalProjectName">—</span>
                     </div>
-                    <button type="button" class="btn-scan-receipt" id="btnScanReceipt">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                            <circle cx="12" cy="13" r="4"></circle>
-                        </svg>
-                        Scan Receipt
-                    </button>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn-scan-receipt" id="btnScanReceipt">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                <circle cx="12" cy="13" r="4"></circle>
+                            </svg>
+                            Scan Receipt
+                        </button>
+                        <button type="button" class="btn-auto-categorize" id="btnAutoCategorize" disabled>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                            </svg>
+                            Auto Categorize
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Expense rows table -->
@@ -333,14 +343,6 @@
                     </table>
 
                     <div class="add-row-container">
-                        <button type="button" class="btn-auto-categorize" id="btnAutoCategorize" disabled>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                                <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                            </svg>
-                            Auto Categorize
-                        </button>
                         <button type="button" class="btn-add-row" id="btnAddExpenseRow">
                             <span>+</span> Add Row
                         </button>
@@ -414,6 +416,76 @@
             <div class="modal-footer">
                 <button type="button" class="btn-modal-secondary" id="btnResetColumns">Reset to Default</button>
                 <button type="button" class="btn-modal-primary" id="btnCloseColumnManagerFooter">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Construction Stage Selection Modal -->
+    <div id="constructionStageModal" class="modal-backdrop hidden">
+        <div class="modal modal-construction-stage">
+            <div class="modal-header">
+                <div class="modal-title">Select Construction Stage</div>
+                <button type="button" class="modal-close-btn" id="btnCloseStageModal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <p class="modal-hint">Select the construction stage where these expenses will be used. This helps AI better categorize the expenses.</p>
+
+                <div class="stage-options" id="stageOptions">
+                    <button type="button" class="stage-option" data-stage="Preparation">
+                        <div class="stage-icon">🏗️</div>
+                        <div class="stage-info">
+                            <div class="stage-name">Preparation</div>
+                            <div class="stage-desc">Site prep, permits, planning</div>
+                        </div>
+                    </button>
+                    <button type="button" class="stage-option" data-stage="Footings">
+                        <div class="stage-icon">⚒️</div>
+                        <div class="stage-info">
+                            <div class="stage-name">Footings</div>
+                            <div class="stage-desc">Foundation, concrete work</div>
+                        </div>
+                    </button>
+                    <button type="button" class="stage-option" data-stage="Framing">
+                        <div class="stage-icon">🪚</div>
+                        <div class="stage-info">
+                            <div class="stage-name">Framing</div>
+                            <div class="stage-desc">Structural framing, walls</div>
+                        </div>
+                    </button>
+                    <button type="button" class="stage-option" data-stage="Roof">
+                        <div class="stage-icon">🏠</div>
+                        <div class="stage-info">
+                            <div class="stage-name">Roof</div>
+                            <div class="stage-desc">Roofing, shingles, gutters</div>
+                        </div>
+                    </button>
+                    <button type="button" class="stage-option" data-stage="Interior Finishes">
+                        <div class="stage-icon">🎨</div>
+                        <div class="stage-info">
+                            <div class="stage-name">Interior Finishes</div>
+                            <div class="stage-desc">Drywall, paint, flooring</div>
+                        </div>
+                    </button>
+                    <button type="button" class="stage-option" data-stage="Exterior Finishes">
+                        <div class="stage-icon">🚪</div>
+                        <div class="stage-info">
+                            <div class="stage-name">Exterior Finishes</div>
+                            <div class="stage-desc">Siding, doors, windows</div>
+                        </div>
+                    </button>
+                </div>
+
+                <div id="autoCategorizeProgress" class="auto-categorize-progress hidden">
+                    <div class="auto-categorize-progress-bar">
+                        <div class="auto-categorize-progress-fill" id="autoCategorizeProgressFill"></div>
+                    </div>
+                    <div class="auto-categorize-progress-text" id="autoCategorizeProgressText">Analyzing expenses...</div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCancelStageModal">Cancel</button>
             </div>
         </div>
     </div>

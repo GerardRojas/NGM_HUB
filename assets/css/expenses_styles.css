@@ -216,6 +216,97 @@
   gap: 16px;
 }
 
+/* ==========================================
+   NGM Logo Loading Animation System
+   ========================================== */
+
+/* Base loading logo class - shimmer effect */
+.loading-logo {
+  display: inline-block;
+  position: relative;
+  animation: logoShimmer 2s ease-in-out infinite;
+}
+
+/* Size variants */
+.loading-logo-xs {
+  width: 16px;
+  height: 16px;
+}
+
+.loading-logo-sm {
+  width: 24px;
+  height: 24px;
+}
+
+.loading-logo-md {
+  width: 48px;
+  height: 48px;
+}
+
+.loading-logo-lg {
+  width: 64px;
+  height: 64px;
+}
+
+.loading-logo-xl {
+  width: 80px;
+  height: 80px;
+}
+
+/* Default size if no size class specified */
+.loading-logo:not([class*="loading-logo-"]) {
+  width: 64px;
+  height: 64px;
+}
+
+/* Shimmer animation - progressive fade (arrow progress effect) */
+@keyframes logoShimmer {
+  0% {
+    opacity: 0.4;
+    filter: brightness(0.6) drop-shadow(0 0 8px rgba(34, 197, 94, 0.2));
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.2) drop-shadow(0 0 16px rgba(34, 197, 94, 0.6));
+  }
+  100% {
+    opacity: 0.4;
+    filter: brightness(0.6) drop-shadow(0 0 8px rgba(34, 197, 94, 0.2));
+  }
+}
+
+/* Alternative: Sweep variant (left to right overlay) */
+.loading-logo-sweep {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-logo-sweep::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(34, 197, 94, 0.5) 50%,
+    transparent 100%
+  );
+  animation: sweepShine 2s ease-in-out infinite;
+}
+
+@keyframes sweepShine {
+  0% {
+    left: -100%;
+  }
+  50%, 100% {
+    left: 100%;
+  }
+}
+
+/* Fallback: Original Spinner */
 .loading-spinner {
   width: 32px;
   height: 32px;

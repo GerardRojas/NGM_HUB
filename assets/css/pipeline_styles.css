@@ -1342,21 +1342,18 @@ textarea.pm-inline-editor {
   height: 14px;
   margin-top: -7px;
 
-  animation: fadeLeftRight 1.5s ease-in-out infinite;
+  animation: fadeOnly 1.5s ease-in-out infinite;
 }
 
-@keyframes fadeLeftRight {
+@keyframes fadeOnly {
   0% {
     opacity: 0.3;
-    transform: translateX(-10px);
   }
   50% {
     opacity: 1;
-    transform: translateX(0);
   }
   100% {
     opacity: 0.3;
-    transform: translateX(10px);
   }
 }
 

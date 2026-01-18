@@ -1,29 +1,24 @@
 // assets/js/sidebar.js
+// Sistema unificado de sidebar basado en permisos de la base de datos
 (function () {
   const navEl = document.getElementById("sidebar-nav");
   if (!navEl) return;
 
-  // Define aquí el "catálogo" total de módulos (id -> label/href)
-  const MODULE_CATALOG = [
-    { id: "dashboard", label: "Overview", href: "dashboard.html" },
-    { id: "expenses", label: "Expenses", href: "expenses.html" },
-    { id: "projects", label: "Projects", href: "projects.html" },
-    { id: "pipeline", label: "Pipeline", href: "pipeline.html" },
-    { id: "team", label: "Team", href: "team.html" },
-    { id: "users", label: "Users", href: "users.html" },
-    { id: "finance", label: "Finance", href: "finance.html" },
-    { id: "estimator", label: "Estimator", href: "estimator.html" },
-  ];
-
-  // Fallback si /auth/me NO trae modules[]
-  // Ajusta esto a tus roles reales
-  const ROLE_MODULES = {
-    Admin: ["dashboard", "projects", "pipeline", "team", "users", "expenses", "finance", "estimator"],
-    Chief: ["dashboard", "projects", "pipeline", "team", "users", "expenses", "finance", "estimator"],
-    Manager: ["dashboard", "projects", "pipeline", "team", "expenses"],
-    Member: ["dashboard", "projects", "pipeline", "team"],
-    Guest: ["dashboard"],
+  // Mapeo de module_key (de role_permissions) a configuración de UI
+  const MODULE_CONFIG = {
+    "dashboard": { label: "Dashboard", href: "dashboard.html", order: 1 },
+    "expenses": { label: "Expenses Engine", href: "expenses.html", order: 2 },
+    "pipeline": { label: "Pipeline Manager", href: "pipeline.html", order: 3 },
+    "projects": { label: "Projects", href: "projects.html", order: 4 },
+    "vendors": { label: "Vendors", href: "vendors.html", order: 5 },
+    "accounts": { label: "Accounts", href: "accounts.html", order: 6 },
+    "estimator": { label: "Estimator Suite", href: "estimator.html", order: 7 },
+    "team": { label: "Team Management", href: "team.html", order: 8 },
   };
+
+  // Cache para evitar llamadas repetidas
+  const CACHE_KEY = "sidebar_permissions";
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
   function getAuthHeaders() {
     const token = localStorage.getItem("access_token");
@@ -46,46 +41,113 @@
     return last || "dashboard.html";
   }
 
-  function render(modIds) {
+  function getCachedPermissions() {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (!cached) return null;
+
+      const { timestamp, permissions } = JSON.parse(cached);
+      const now = Date.now();
+
+      // Verificar si el cache expiró
+      if (now - timestamp > CACHE_DURATION) {
+        localStorage.removeItem(CACHE_KEY);
+        return null;
+      }
+
+      return permissions;
+    } catch (e) {
+      console.warn("[SIDEBAR] Error reading cache:", e);
+      return null;
+    }
+  }
+
+  function setCachedPermissions(permissions) {
+    try {
+      const cacheData = {
+        timestamp: Date.now(),
+        permissions: permissions
+      };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+    } catch (e) {
+      console.warn("[SIDEBAR] Error saving cache:", e);
+    }
+  }
+
+  function render(permissions) {
     const current = getCurrentFile();
 
-    const allowed = new Set(modIds || []);
-    const links = MODULE_CATALOG.filter(m => allowed.has(m.id));
+    // Filtrar solo módulos con permiso can_view = true
+    const allowedModules = permissions
+      .filter(p => p.can_view === true && MODULE_CONFIG[p.module_key])
+      .map(p => ({
+        ...MODULE_CONFIG[p.module_key],
+        module_key: p.module_key
+      }))
+      .sort((a, b) => a.order - b.order);
 
-    navEl.innerHTML = links
+    // Generar HTML
+    navEl.innerHTML = allowedModules
       .map(m => {
         const active = m.href === current ? " nav-item-active" : "";
-        return `<a href="${m.href}" class="nav-item${active}">${m.label}</a>`;
+        return `<a href="${m.href}" class="nav-item${active}" data-module="${m.module_key}">${m.label}</a>`;
       })
       .join("");
   }
 
   async function initSidebar() {
-    // 1) Si ya guardaste módulos en localStorage (opcional), úsalo:
-    // const cached = localStorage.getItem("allowed_modules");
-    // if (cached) { render(JSON.parse(cached)); return; }
+    try {
+      // 1) Intentar usar cache primero
+      const cached = getCachedPermissions();
+      if (cached) {
+        console.log("[SIDEBAR] Using cached permissions");
+        render(cached);
+        return;
+      }
 
-    // 2) Si no, consulta /auth/me
-    const { ok, data } = await fetchJSON("/auth/me");
+      // 2) Obtener user_id desde /auth/me
+      const { ok: authOk, data: authData } = await fetchJSON("/auth/me");
 
-    if (!ok || !data) {
-      render(ROLE_MODULES.Guest);
-      return;
+      if (!authOk || !authData || !authData.user_id) {
+        console.warn("[SIDEBAR] No user data, showing minimal menu");
+        // Mostrar solo dashboard como fallback
+        render([{ module_key: "dashboard", can_view: true }]);
+        return;
+      }
+
+      const userId = authData.user_id;
+      console.log("[SIDEBAR] Fetching permissions for user:", userId);
+
+      // 3) Consultar permisos del usuario desde el endpoint
+      const { ok: permOk, data: permData } = await fetchJSON(`/permissions/user/${userId}`);
+
+      if (!permOk || !permData || !permData.permissions) {
+        console.warn("[SIDEBAR] No permissions data, showing minimal menu");
+        render([{ module_key: "dashboard", can_view: true }]);
+        return;
+      }
+
+      const permissions = permData.permissions;
+      console.log("[SIDEBAR] User permissions loaded:", permissions.length, "modules");
+
+      // 4) Guardar en cache
+      setCachedPermissions(permissions);
+
+      // 5) Renderizar sidebar
+      render(permissions);
+
+    } catch (error) {
+      console.error("[SIDEBAR] Error loading permissions:", error);
+      // Fallback: mostrar solo dashboard
+      render([{ module_key: "dashboard", can_view: true }]);
     }
-
-    const role =
-      data.role || data.user_role || data.user_type || "Member";
-
-    // Si backend ya manda modules[] úsalo; si no, usa el mapa por role
-    const modules = Array.isArray(data.modules)
-      ? data.modules
-      : (ROLE_MODULES[role] || ROLE_MODULES.Member);
-
-    // Opcional: cache
-    // localStorage.setItem("allowed_modules", JSON.stringify(modules));
-
-    render(modules);
   }
+
+  // Función para forzar recarga de permisos (útil después de cambios de rol)
+  window.reloadSidebarPermissions = function() {
+    localStorage.removeItem(CACHE_KEY);
+    return initSidebar();
+  };
 
   window.initSidebar = initSidebar;
 

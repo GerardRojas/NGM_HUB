@@ -19,6 +19,7 @@
   <script src="assets/js/config.js" defer></script>
   <script src="assets/js/permissions.js" defer></script>
   <script src="assets/js/pills.js" defer></script>
+  <script src="assets/js/sidebar.js" defer></script>
 </head>
 <body>
     <div class="app-layout">
@@ -590,7 +591,9 @@
 
         async function fetchPipeline() {
             try {
-                const res = await fetch(`${API_BASE}/pipeline/grouped`);
+                const res = await fetch(`${API_BASE}/pipeline/grouped`, {
+                    credentials: "include"
+                });
                 if (!res.ok) throw new Error("Error loading pipeline");
                 const data = await res.json();
 

@@ -157,7 +157,7 @@
     width: 20px;
     height: 20px;
     object-fit: contain;
-    animation: fadeLeftRight 1.5s ease-in-out infinite;
+    animation: fadeOnly 1.5s ease-in-out infinite;
 }
 
 /* Solo se muestra cuando el botón está en modo loading */
@@ -166,18 +166,15 @@
 }
 
 /* Fade animation for login button logo */
-@keyframes fadeLeftRight {
+@keyframes fadeOnly {
     0% {
         opacity: 0.3;
-        transform: translateX(-10px);
     }
     50% {
         opacity: 1;
-        transform: translateX(0);
     }
     100% {
         opacity: 0.3;
-        transform: translateX(10px);
     }
 }
 

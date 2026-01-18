@@ -257,7 +257,7 @@
 }
 
 #addExpenseModal .exp-input--desc {
-  min-width: 200px;
+  min-width: 280px;
 }
 
 /* Remove row button */
@@ -1376,21 +1376,18 @@ input[type="number"].form-input {
 .auto-categorize-progress-logo {
   width: 60px;
   height: 60px;
-  animation: fadeLeftRight 1.5s ease-in-out infinite;
+  animation: fadeOnly 1.5s ease-in-out infinite;
 }
 
-@keyframes fadeLeftRight {
+@keyframes fadeOnly {
   0% {
     opacity: 0.3;
-    transform: translateX(-10px);
   }
   50% {
     opacity: 1;
-    transform: translateX(0);
   }
   100% {
     opacity: 0.3;
-    transform: translateX(10px);
   }
 }
 
@@ -1404,13 +1401,14 @@ input[type="number"].form-input {
 .confidence-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .confidence-badge-high {
@@ -1431,33 +1429,41 @@ input[type="number"].form-input {
   color: #f87171;
 }
 
+.confidence-badge-warning {
+  background: rgba(251, 146, 60, 0.15);
+  border: 1px solid rgba(251, 146, 60, 0.4);
+  color: #fb923c;
+}
+
 .confidence-badge-icon {
-  font-size: 9px;
+  font-size: 8px;
+  line-height: 1;
 }
 
 /* Account suggestion with confidence */
 .account-suggestion {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 4px 8px;
   background: rgba(139, 92, 246, 0.08);
   border: 1px solid rgba(139, 92, 246, 0.3);
-  border-radius: 8px;
-  margin-top: 4px;
+  border-radius: 5px;
+  margin-top: 5px;
+  font-size: 11px;
 }
 
 .account-suggestion-label {
-  font-size: 12px;
+  font-size: 10px;
   color: #a78bfa;
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
-.account-suggestion-value {
-  flex: 1;
-  font-size: 13px;
-  color: #e5e7eb;
-  font-weight: 500;
+.account-suggestion-warning {
+  color: #fb923c;
 }
 
 /* Responsive */

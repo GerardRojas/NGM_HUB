@@ -2184,13 +2184,13 @@
         accountInput.value = cat.account_name;
         accountInput.setAttribute('data-value', cat.account_id);
 
-        // Add visual feedback with confidence badge
-        addConfidenceBadge(accountInput, cat.confidence, cat.account_name);
+        // Add visual feedback with confidence badge and warning if present
+        addConfidenceBadge(accountInput, cat.confidence, cat.account_name, cat.warning);
       }
     });
   }
 
-  function addConfidenceBadge(inputElement, confidence, accountName) {
+  function addConfidenceBadge(inputElement, confidence, accountName, warning) {
     // Remove any existing badge
     const existingBadge = inputElement.parentElement.querySelector('.account-suggestion');
     if (existingBadge) {
@@ -2210,17 +2210,35 @@
       confidenceIcon = '?';
     }
 
+    // If there's a warning (power tool detection), override to warning style
+    if (warning) {
+      confidenceLevel = 'warning';
+      confidenceIcon = '⚠';
+    }
+
     // Create confidence badge
     const badge = document.createElement('div');
     badge.className = 'account-suggestion';
-    badge.innerHTML = `
-      <span class="account-suggestion-label">AI Suggestion:</span>
-      <span class="account-suggestion-value">${accountName}</span>
-      <span class="confidence-badge confidence-badge-${confidenceLevel}">
-        <span class="confidence-badge-icon">${confidenceIcon}</span>
-        ${confidence}%
-      </span>
-    `;
+
+    if (warning) {
+      // Show warning instead of suggested
+      badge.innerHTML = `
+        <span class="account-suggestion-label account-suggestion-warning">Warning</span>
+        <span class="confidence-badge confidence-badge-warning">
+          <span class="confidence-badge-icon">${confidenceIcon}</span>
+          Power Tool
+        </span>
+      `;
+    } else {
+      // Normal suggestion
+      badge.innerHTML = `
+        <span class="account-suggestion-label">Suggested</span>
+        <span class="confidence-badge confidence-badge-${confidenceLevel}">
+          <span class="confidence-badge-icon">${confidenceIcon}</span>
+          ${confidence}%
+        </span>
+      `;
+    }
 
     // Insert after input
     inputElement.parentElement.appendChild(badge);

@@ -209,21 +209,18 @@
   width: 60px;
   height: 60px;
   opacity: 0.4;
-  animation: fadeLeftRight 2s ease-in-out infinite;
+  animation: fadeOnly 2s ease-in-out infinite;
 }
 
-@keyframes fadeLeftRight {
+@keyframes fadeOnly {
   0% {
     opacity: 0.2;
-    transform: translateX(-10px);
   }
   50% {
     opacity: 0.6;
-    transform: translateX(0);
   }
   100% {
     opacity: 0.2;
-    transform: translateX(10px);
   }
 }
 
@@ -334,23 +331,20 @@
 
 /* Fallback: Original Spinner */
 .loading-spinner {
-  width: 32px;
-  height: 32px;
-  animation: fadeLeftRight 1.5s ease-in-out infinite;
+  width: 64px;
+  height: 64px;
+  animation: fadeOnly 1.5s ease-in-out infinite;
 }
 
-@keyframes fadeLeftRight {
+@keyframes fadeOnly {
   0% {
     opacity: 0.3;
-    transform: translateX(-10px);
   }
   50% {
     opacity: 1;
-    transform: translateX(0);
   }
   100% {
     opacity: 0.3;
-    transform: translateX(10px);
   }
 }
 

@@ -4,7 +4,7 @@
 const API_BASE =
   window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
     ? "http://127.0.0.1:8000"
-    : "https://ngm-backend.onrender.com";
+    : "https://ngm-fastapi.onrender.com";
 
 // También lo colgamos explícitamente en window por si acaso
 window.API_BASE = API_BASE;

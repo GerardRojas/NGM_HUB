@@ -30,7 +30,7 @@
     const config = {
       url: window.SUPABASE_URL,
       anonKey: window.SUPABASE_ANON_KEY,
-      bucketName: 'expenses-receipts'
+      bucketName: 'expenses-receipts' // lowercase - matches actual bucket name
     };
 
     console.log('   URL:', config.url ? '✅ Set' : '❌ Missing');

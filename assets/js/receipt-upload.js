@@ -27,7 +27,7 @@
   const SUPABASE_CONFIG = {
     url: window.SUPABASE_URL || 'https://your-project.supabase.co',
     anonKey: window.SUPABASE_ANON_KEY || 'your-anon-key-here',
-    bucketName: 'expenses-receipts' // Changed to match your bucket name
+    bucketName: 'expenses-receipts' // lowercase - matches actual bucket name
   };
 
   // Allowed file types

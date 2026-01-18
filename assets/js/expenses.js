@@ -481,33 +481,40 @@
       ? `<a href="${exp.receipt_url}" target="_blank" class="receipt-icon-btn receipt-icon-btn--has-receipt" title="View receipt">📎</a>`
       : `<span class="receipt-icon-btn" title="No receipt">📎</span>`;
 
+    // Authorization badge (not editable in bulk edit mode)
+    const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
+    const authBadgeClass = isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending';
+    const authBadgeText = isAuthorized ? '✓ Auth' : '⏳ Pending';
+    const authBadge = `<span class="auth-badge ${authBadgeClass}">${authBadgeText}</span>`;
+
     // Get the ID - backend uses 'expense_id' as primary key
     const expenseId = exp.expense_id || exp.id || '';
 
     return `
-      <tr data-index="${index}" data-id="${expenseId}">
-        <td>
+      <tr data-index="${index}" data-id="${expenseId}" class="edit-mode-row">
+        <td class="editable-cell">
           <input type="date" class="edit-input" data-field="TxnDate" value="${dateVal}">
         </td>
-        <td>
-          <input type="text" class="edit-input edit-input--description" data-field="LineDescription" value="${exp.LineDescription || ''}">
+        <td class="col-description editable-cell">
+          <input type="text" class="edit-input" data-field="LineDescription" value="${exp.LineDescription || ''}" placeholder="Description...">
         </td>
-        <td>
-          ${buildSelectHtml('txn_type', exp.txn_type, metaData.txn_types, 'id', 'TnxType_name')}
+        <td class="editable-cell">
+          ${buildSelectHtml('txn_type', exp.txn_type, metaData.txn_types, 'TnxType_id', 'TnxType_name')}
         </td>
-        <td>
+        <td class="editable-cell">
           ${buildSelectHtml('vendor_id', exp.vendor_id, metaData.vendors, 'id', 'vendor_name')}
         </td>
-        <td>
+        <td class="editable-cell">
           ${buildSelectHtml('payment_type', exp.payment_type, metaData.payment_methods, 'id', 'payment_method_name')}
         </td>
-        <td>
+        <td class="editable-cell">
           ${buildSelectHtml('account_id', exp.account_id, metaData.accounts, 'account_id', 'Name')}
         </td>
-        <td>
-          <input type="number" class="edit-input edit-input--amount" data-field="Amount" step="0.01" min="0" value="${exp.Amount || ''}">
+        <td class="col-amount editable-cell">
+          <input type="number" class="edit-input edit-input--amount" data-field="Amount" step="0.01" min="0" value="${exp.Amount || ''}" placeholder="0.00">
         </td>
-        <td class="col-actions">${receiptIcon}</td>
+        <td class="col-receipt">${receiptIcon}</td>
+        <td class="col-auth">${authBadge}</td>
         <td class="col-actions">
           <button type="button" class="btn-row-delete" data-index="${index}" title="Delete">×</button>
         </td>

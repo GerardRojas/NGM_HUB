@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32">
+  <!-- Fondo negro -->
+  <rect width="32" height="32" fill="#000000"/>
+
+  <!-- Filtro verde para el ícono -->
+  <defs>
+    <filter id="greenGlow">
+      <!-- Color base verde -->
+      <feColorMatrix type="matrix" values="
+        0 0 0 0 0.13
+        0 0 0 0 0.77
+        0 0 0 0 0.37
+        0 0 0 1 0"/>
+      <!-- Brillo adicional -->
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.95"/>
+      </feComponentTransfer>
+    </filter>
+  </defs>
+
+  <!-- Ícono de NGM con filtro verde -->
+  <image
+    href="white_icon.png"
+    x="4"
+    y="4"
+    width="24"
+    height="24"
+    filter="url(#greenGlow)"
+  />
+</svg>

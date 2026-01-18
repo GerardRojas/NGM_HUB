@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NGM HUB — Pipeline Manager</title>
+    <link rel="icon" type="image/svg+xml" href="assets/img/favicon.svg" />
 
   <!-- Fonts: Inter + Roboto (NGM standard) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -287,21 +288,34 @@
 
     <script>
             // ================================
-            // Sidebar: módulos según accesos
+            // AUTH
             // ================================
-            const sidebarNav = document.getElementById("sidebar-nav");
+            let currentUser = null;
 
-            const AVAILABLE_MODULES = {
-            dashboard: { key: "dashboard", label: "Dashboard", href: "dashboard.html" },
-            projects:  { key: "projects",  label: "Projects",  href: "projects.html" },
-            pipeline:  { key: "pipeline",  label: "Pipeline",  href: "pipeline.html" },
-            estimator: { key: "estimator", label: "Estimator", href: "#" },
-            expenses:  { key: "expenses",  label: "Expenses",  href: "#" },
-            settings:  { key: "settings",  label: "Settings",  href: "#" },
-            };
+            function initAuth() {
+                const userStr = localStorage.getItem('ngmUser');
+                if (!userStr) {
+                    console.warn('[PIPELINE] No user found, redirecting to login');
+                    window.location.href = 'login.html';
+                    return false;
+                }
+                try {
+                    currentUser = JSON.parse(userStr);
+                    console.log('[PIPELINE] User authenticated:', currentUser);
+                    return true;
+                } catch (e) {
+                    console.error('[PIPELINE] Error parsing user:', e);
+                    localStorage.removeItem('ngmUser');
+                    window.location.href = 'login.html';
+                    return false;
+                }
+            }
 
-            // TODO: en producción esto vendrá del backend según el rol del usuario
-            const USER_MODULES = ["dashboard", "projects", "pipeline", "estimator", "expenses"];
+            // ================================
+            // Sidebar: handled by sidebar.js
+            // ================================
+            // NOTE: Sidebar rendering is now handled by assets/js/sidebar.js
+            // which loads permissions from the backend and renders dynamically
 
             function initLayoutControls() {
             const overlay = document.getElementById("layoutModal");           // overlay/backdrop
@@ -354,35 +368,12 @@
 
                 // ✅ re-render para aplicar el filtro de grupos
                 renderGroups();
-                
+
                 window.initTableWidthSlider?.();
 
                 closeModal();
             });
             }
-
-
-
-        function renderSidebarModules(modulesKeys) {
-        if (!sidebarNav) return;
-        sidebarNav.innerHTML = "";
-
-        modulesKeys.forEach((key) => {
-            const mod = AVAILABLE_MODULES[key];
-            if (!mod) return;
-
-            const a = document.createElement("a");
-            a.href = mod.href;
-            a.className = "nav-item" + (key === "pipeline" ? " nav-item-active" : "");
-
-            const labelSpan = document.createElement("span");
-            labelSpan.className = "nav-item-label";
-            labelSpan.textContent = mod.label;
-
-            a.appendChild(labelSpan);
-            sidebarNav.appendChild(a);
-        });
-        }
 
         // ================================
         // Pipeline: datos y lógica de UI
@@ -591,10 +582,17 @@
 
         async function fetchPipeline() {
             try {
+                console.log("[PIPELINE] fetchPipeline called");
+                console.log("[PIPELINE] API_BASE:", window.API_BASE);
+                console.log("[PIPELINE] Fetching from:", `${window.API_BASE}/pipeline/grouped`);
+
                 const res = await fetch(`${window.API_BASE}/pipeline/grouped`, {
                     credentials: "include"
                 });
-                if (!res.ok) throw new Error("Error loading pipeline");
+
+                console.log("[PIPELINE] Response status:", res.status, res.statusText);
+
+                if (!res.ok) throw new Error(`Error loading pipeline: ${res.status} ${res.statusText}`);
                 const data = await res.json();
 
                 console.log("[PIPELINE] raw response:", data);
@@ -1159,17 +1157,24 @@
         // Init global
         // ================================
         window.addEventListener("DOMContentLoaded", () => {
-            initTopbarPills?.();
-            // Sidebar + topbar
-            renderSidebarModules(USER_MODULES);
+            // Check authentication first
+            if (!initAuth()) return;
 
+            console.log("[PIPELINE] DOMContentLoaded - initializing...");
+
+            // Initialize topbar pills (environment, server status)
+            initTopbarPills?.();
+
+            // Initialize topbar user pill
             try {
-            if (typeof initTopbarUserPill === "function") {
-                initTopbarUserPill();
-            }
+                if (typeof initTopbarUserPill === "function") {
+                    initTopbarUserPill();
+                }
             } catch (err) {
-            console.warn("[TOPBAR] initTopbarUserPill failed:", err);
+                console.warn("[TOPBAR] initTopbarUserPill failed:", err);
             }
+
+            // NOTE: Sidebar is automatically initialized by sidebar.js
 
             // Pipeline (datos + render)
             // si tu lógica usa fetchPipeline directamente, déjalo así:

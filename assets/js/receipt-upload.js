@@ -200,17 +200,39 @@
     const container = document.createElement('div');
     container.className = 'receipt-preview';
 
-    const isPdf = receiptUrl.toLowerCase().endsWith('.pdf');
+    // Detect file type from URL or blob URL
+    const urlLower = receiptUrl.toLowerCase();
+    const isPdf = urlLower.includes('.pdf');
+    const isImage = urlLower.includes('.jpg') || urlLower.includes('.jpeg') ||
+                    urlLower.includes('.png') || urlLower.includes('.gif') ||
+                    urlLower.includes('.webp') || urlLower.startsWith('blob:');
+
+    // Determine icon and label based on file type
+    let previewContent;
+    if (isPdf) {
+      previewContent = `
+        <div class="receipt-preview-file">
+          <span class="receipt-preview-file-icon">📄</span>
+          <span class="receipt-preview-file-text">PDF Receipt</span>
+        </div>`;
+    } else if (isImage) {
+      previewContent = `
+        <div class="receipt-preview-file">
+          <span class="receipt-preview-file-icon">🖼️</span>
+          <span class="receipt-preview-file-text">Image Receipt</span>
+        </div>`;
+    } else {
+      // Generic file icon for unknown types
+      previewContent = `
+        <div class="receipt-preview-file">
+          <span class="receipt-preview-file-icon">📎</span>
+          <span class="receipt-preview-file-text">Receipt File</span>
+        </div>`;
+    }
 
     container.innerHTML = `
       <div class="receipt-preview-content">
-        ${isPdf
-          ? `<div class="receipt-preview-pdf">
-               <span class="receipt-preview-pdf-icon">📄</span>
-               <span class="receipt-preview-pdf-text">PDF Receipt</span>
-             </div>`
-          : `<img src="${receiptUrl}" alt="Receipt" class="receipt-preview-img">`
-        }
+        ${previewContent}
       </div>
       <div class="receipt-preview-actions">
         <a href="${receiptUrl}" target="_blank" class="receipt-btn receipt-btn--view" title="View receipt">

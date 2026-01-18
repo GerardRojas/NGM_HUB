@@ -25,6 +25,7 @@
   let modalRowCounter = 0;
   let currentReceiptFile = null; // File selected for upload
   let currentReceiptUrl = null;  // URL of existing receipt
+  let currentReceiptDeleted = false; // Flag to track if user deleted receipt
   let currentEditingExpense = null; // Expense being edited in single modal
   let columnFilters = {
     date: [],
@@ -83,6 +84,17 @@
     els.btnCloseExpenseModal = document.getElementById('btnCloseExpenseModal');
     els.btnCancelExpenses = document.getElementById('btnCancelExpenses');
     els.btnSaveAllExpenses = document.getElementById('btnSaveAllExpenses');
+
+    // Scan Receipt Modal elements
+    els.btnScanReceipt = document.getElementById('btnScanReceipt');
+    els.scanReceiptModal = document.getElementById('scanReceiptModal');
+    els.btnCloseScanReceipt = document.getElementById('btnCloseScanReceipt');
+    els.btnCancelScanReceipt = document.getElementById('btnCancelScanReceipt');
+    els.scanReceiptFileInput = document.getElementById('scanReceiptFileInput');
+    els.scanReceiptDropArea = document.getElementById('scanReceiptDropArea');
+    els.scanReceiptProgress = document.getElementById('scanReceiptProgress');
+    els.scanReceiptProgressFill = document.getElementById('scanReceiptProgressFill');
+    els.scanReceiptProgressText = document.getElementById('scanReceiptProgressText');
 
     // Filter dropdown elements
     els.filterDropdown = document.getElementById('filterDropdown');
@@ -1052,11 +1064,17 @@
 
             console.log('[EXPENSES] Receipt uploaded:', receiptUrl);
 
-            // Update expense with receipt URL
+            // Update the created expense object to include receipt_url
+            created.receipt_url = receiptUrl;
+
+            // Update expense with receipt URL AND at least one other field to avoid "No fields to update" error
             await apiJson(`${apiBase}/expenses/${expenseId}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ receipt_url: receiptUrl })
+              body: JSON.stringify({
+                receipt_url: receiptUrl,
+                LineDescription: created.LineDescription || null // Include existing field to ensure at least one field is sent
+              })
             });
 
             console.log('[EXPENSES] Expense updated with receipt URL');
@@ -1135,6 +1153,7 @@
     // Handle receipt
     currentReceiptFile = null;
     currentReceiptUrl = expense.receipt_url || null;
+    currentReceiptDeleted = false; // Reset deletion flag
     renderSingleExpenseReceipt();
 
     // Handle authorization checkbox (only show for authorized roles)
@@ -1161,6 +1180,7 @@
     currentEditingExpense = null;
     currentReceiptFile = null;
     currentReceiptUrl = null;
+    currentReceiptDeleted = false;
   }
 
   function populateSingleExpenseDropdowns() {
@@ -1258,6 +1278,7 @@
   function handleSingleExpenseReceiptDelete() {
     currentReceiptFile = null;
     currentReceiptUrl = null;
+    currentReceiptDeleted = true; // Mark that user explicitly deleted the receipt
     renderSingleExpenseReceipt();
   }
 
@@ -1306,14 +1327,7 @@
     els.btnSaveSingleExpense.textContent = 'Saving...';
 
     try {
-      // Update expense
-      await apiJson(`${apiBase}/expenses/${expenseId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData)
-      });
-
-      // Handle receipt upload if new file selected
+      // Handle receipt upload first if new file selected
       if (currentReceiptFile && window.ReceiptUpload) {
         try {
           console.log('[EXPENSES] Uploading new receipt');
@@ -1323,19 +1337,26 @@
             selectedProjectId
           );
 
-          // Update expense with receipt URL
-          await apiJson(`${apiBase}/expenses/${expenseId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ receipt_url: receiptUrl })
-          });
-
-          console.log('[EXPENSES] Receipt uploaded and linked');
+          // Add receipt_url to updatedData so it's included in the main PATCH
+          updatedData.receipt_url = receiptUrl;
+          console.log('[EXPENSES] Receipt uploaded, will be saved with expense update');
         } catch (uploadErr) {
           console.error('[EXPENSES] Error uploading receipt:', uploadErr);
-          alert('Expense saved, but receipt upload failed: ' + uploadErr.message);
+          alert('Receipt upload failed: ' + uploadErr.message);
+          throw uploadErr; // Stop the save if receipt upload fails
         }
+      } else if (currentReceiptDeleted) {
+        // User explicitly deleted the receipt, set it to null
+        updatedData.receipt_url = null;
+        console.log('[EXPENSES] Receipt deleted, will be removed from expense');
       }
+
+      // Update expense with all fields including receipt_url if uploaded/deleted
+      await apiJson(`${apiBase}/expenses/${expenseId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
 
       alert('Expense updated successfully!');
       closeSingleExpenseModal();
@@ -1347,6 +1368,163 @@
     } finally {
       els.btnSaveSingleExpense.disabled = false;
       els.btnSaveSingleExpense.textContent = 'Save Changes';
+    }
+  }
+
+  // ================================
+  // SCAN RECEIPT FUNCTIONALITY
+  // ================================
+
+  function openScanReceiptModal() {
+    els.scanReceiptModal.classList.remove('hidden');
+    els.scanReceiptProgress.classList.add('hidden');
+    els.scanReceiptProgressFill.style.width = '0%';
+  }
+
+  function closeScanReceiptModal() {
+    els.scanReceiptModal.classList.add('hidden');
+    els.scanReceiptFileInput.value = '';
+  }
+
+  async function handleScanReceiptFile(file) {
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Invalid file type. Please upload JPG, PNG, WebP, GIF images or PDF files.');
+      return;
+    }
+
+    // Validate file size (20MB max)
+    if (file.size > 20 * 1024 * 1024) {
+      alert('File too large. Maximum size is 20MB.');
+      return;
+    }
+
+    const apiBase = getApiBase();
+
+    try {
+      // Show progress
+      els.scanReceiptProgress.classList.remove('hidden');
+      els.scanReceiptProgressText.textContent = 'Uploading receipt...';
+      els.scanReceiptProgressFill.style.width = '30%';
+
+      // Create FormData
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Call backend to parse receipt
+      els.scanReceiptProgressText.textContent = 'AI is analyzing receipt...';
+      els.scanReceiptProgressFill.style.width = '60%';
+
+      const response = await fetch(`${apiBase}/expenses/parse-receipt`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to parse receipt');
+      }
+
+      const result = await response.json();
+      console.log('[SCAN RECEIPT] Parse result:', result);
+
+      els.scanReceiptProgressText.textContent = 'Populating expense rows...';
+      els.scanReceiptProgressFill.style.width = '90%';
+
+      // Close scan modal
+      closeScanReceiptModal();
+
+      // Populate expense rows with parsed data
+      if (result.success && result.data && result.data.expenses) {
+        await populateExpensesFromScan(result.data.expenses);
+      }
+
+      els.scanReceiptProgressFill.style.width = '100%';
+
+      alert(`Successfully scanned ${result.count} expense(s) from receipt!`);
+
+    } catch (error) {
+      console.error('[SCAN RECEIPT] Error:', error);
+      alert('Error scanning receipt: ' + error.message);
+      els.scanReceiptProgress.classList.add('hidden');
+    }
+  }
+
+  async function populateExpensesFromScan(scannedExpenses) {
+    // Clear existing rows
+    els.expenseRowsBody.innerHTML = '';
+    modalRowCounter = 0;
+
+    // Add a row for each scanned expense
+    for (const expense of scannedExpenses) {
+      addModalRow();
+
+      const index = modalRowCounter - 1;
+      const row = els.expenseRowsBody.querySelector(`tr[data-index="${index}"]`);
+
+      if (!row) continue;
+
+      // Populate date
+      if (expense.date) {
+        const dateInput = row.querySelector('[data-field="TxnDate"]');
+        if (dateInput) dateInput.value = expense.date;
+      }
+
+      // Populate description
+      if (expense.description) {
+        const descInput = row.querySelector('[data-field="LineDescription"]');
+        if (descInput) descInput.value = expense.description;
+      }
+
+      // Populate amount
+      if (expense.amount) {
+        const amountInput = row.querySelector('[data-field="Amount"]');
+        if (amountInput) amountInput.value = expense.amount;
+      }
+
+      // Try to match vendor
+      if (expense.vendor && metaData.vendors) {
+        const vendorInput = row.querySelector('[data-field="vendor_id"]');
+        if (vendorInput) {
+          // Try to find matching vendor (case-insensitive)
+          const matchedVendor = metaData.vendors.find(v =>
+            v.vendor_name && v.vendor_name.toLowerCase().includes(expense.vendor.toLowerCase())
+          );
+
+          if (matchedVendor) {
+            vendorInput.value = matchedVendor.vendor_name;
+            vendorInput.setAttribute('data-value', matchedVendor.id);
+          } else {
+            // Just set the text, user can select from dropdown
+            vendorInput.value = expense.vendor;
+          }
+        }
+      }
+
+      // Try to match category to transaction type
+      if (expense.category && metaData.txn_types) {
+        const typeInput = row.querySelector('[data-field="txn_type"]');
+        if (typeInput) {
+          // Try to find matching type (case-insensitive)
+          const matchedType = metaData.txn_types.find(t =>
+            t.TnxType_name && (
+              t.TnxType_name.toLowerCase().includes(expense.category.toLowerCase()) ||
+              expense.category.toLowerCase().includes(t.TnxType_name.toLowerCase())
+            )
+          );
+
+          if (matchedType) {
+            typeInput.value = matchedType.TnxType_name;
+            typeInput.setAttribute('data-value', matchedType.TnxType_id);
+          }
+        }
+      }
     }
   }
 
@@ -1413,6 +1591,41 @@
 
     // Modal: Add row button
     els.btnAddExpenseRow?.addEventListener('click', addModalRow);
+
+    // Modal: Scan Receipt button
+    els.btnScanReceipt?.addEventListener('click', openScanReceiptModal);
+
+    // Scan Receipt Modal: Close buttons
+    els.btnCloseScanReceipt?.addEventListener('click', closeScanReceiptModal);
+    els.btnCancelScanReceipt?.addEventListener('click', closeScanReceiptModal);
+
+    // Scan Receipt Modal: File input
+    els.scanReceiptFileInput?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) handleScanReceiptFile(file);
+    });
+
+    // Scan Receipt Modal: Drop area click
+    els.scanReceiptDropArea?.addEventListener('click', () => {
+      els.scanReceiptFileInput.click();
+    });
+
+    // Scan Receipt Modal: Drag and drop
+    els.scanReceiptDropArea?.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      els.scanReceiptDropArea.classList.add('drag-over');
+    });
+
+    els.scanReceiptDropArea?.addEventListener('dragleave', () => {
+      els.scanReceiptDropArea.classList.remove('drag-over');
+    });
+
+    els.scanReceiptDropArea?.addEventListener('drop', (e) => {
+      e.preventDefault();
+      els.scanReceiptDropArea.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) handleScanReceiptFile(file);
+    });
 
     // Modal: Remove row button
     els.expenseRowsBody?.addEventListener('click', (e) => {

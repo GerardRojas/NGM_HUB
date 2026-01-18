@@ -324,6 +324,13 @@
                         <button type="button" class="btn-add-row" id="btnAddExpenseRow">
                             <span>+</span> Add Row
                         </button>
+                        <button type="button" class="btn-scan-receipt" id="btnScanReceipt">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                <circle cx="12" cy="13" r="4"></circle>
+                            </svg>
+                            Scan Receipt
+                        </button>
                     </div>
                 </div>
             </div>
@@ -331,6 +338,46 @@
             <div class="modal-footer">
                 <button type="button" class="btn-modal-secondary" id="btnCancelExpenses">Cancel</button>
                 <button type="button" class="btn-modal-primary" id="btnSaveAllExpenses">Save All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scan Receipt Modal -->
+    <div id="scanReceiptModal" class="modal-backdrop hidden">
+        <div class="modal modal-scan-receipt">
+            <div class="modal-header">
+                <div class="modal-title">Scan Receipt</div>
+                <button type="button" class="modal-close-btn" id="btnCloseScanReceipt">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <p class="modal-hint">Upload a receipt image or PDF and AI will automatically extract the expense details.</p>
+
+                <div id="scanReceiptUploadZone" class="scan-receipt-upload-zone">
+                    <input type="file" id="scanReceiptFileInput" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,application/pdf" style="display: none;">
+                    <div class="scan-receipt-drop-area" id="scanReceiptDropArea">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <div class="scan-receipt-drop-text">
+                            <span class="scan-receipt-drop-primary">Click to upload or drag and drop</span>
+                            <span class="scan-receipt-drop-secondary">JPG, PNG, WebP, GIF or PDF (max 20MB)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="scanReceiptProgress" class="scan-receipt-progress hidden">
+                    <div class="scan-receipt-progress-bar">
+                        <div class="scan-receipt-progress-fill" id="scanReceiptProgressFill"></div>
+                    </div>
+                    <div class="scan-receipt-progress-text" id="scanReceiptProgressText">Processing receipt...</div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCancelScanReceipt">Cancel</button>
             </div>
         </div>
     </div>

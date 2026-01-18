@@ -902,3 +902,138 @@ input[type="number"].form-input {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ==========================================
+   Scan Receipt Modal & Button
+   ========================================== */
+
+/* Scan Receipt Button */
+.btn-scan-receipt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: rgba(139, 92, 246, 0.08);
+  color: #a78bfa;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+
+.btn-scan-receipt svg {
+  flex-shrink: 0;
+}
+
+.btn-scan-receipt:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-scan-receipt:active {
+  transform: translateY(0);
+}
+
+/* Scan Receipt Modal */
+.modal-scan-receipt {
+  width: 90%;
+  max-width: 500px;
+}
+
+.scan-receipt-upload-zone {
+  margin: 20px 0;
+}
+
+.scan-receipt-drop-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px 24px;
+  border: 2px dashed rgba(148, 163, 184, 0.3);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.scan-receipt-drop-area:hover {
+  border-color: rgba(139, 92, 246, 0.5);
+  background: rgba(139, 92, 246, 0.05);
+}
+
+.scan-receipt-drop-area.drag-over {
+  border-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.scan-receipt-drop-area svg {
+  color: rgba(148, 163, 184, 0.6);
+  transition: color 0.2s ease;
+}
+
+.scan-receipt-drop-area:hover svg {
+  color: #a78bfa;
+}
+
+.scan-receipt-drop-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.scan-receipt-drop-primary {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary, #e5e7eb);
+}
+
+.scan-receipt-drop-secondary {
+  font-size: 12px;
+  color: var(--text-secondary, #9ca3af);
+}
+
+/* Progress */
+.scan-receipt-progress {
+  margin: 20px 0;
+}
+
+.scan-receipt-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.scan-receipt-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  width: 0%;
+}
+
+.scan-receipt-progress-text {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-secondary, #9ca3af);
+}
+
+/* Progress animation */
+@keyframes progressPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.scan-receipt-progress-fill {
+  animation: progressPulse 1.5s ease-in-out infinite;
+}
+

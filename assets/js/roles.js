@@ -141,7 +141,6 @@
         <tr data-role-id="${role.rol_id}" data-role-name="${role.rol_name}">
           <td style="position: sticky; left: 0; background: #18181b; z-index: 1;">
             <strong style="color: #e5e7eb;">${role.rol_name}</strong>
-            ${isProtected ? '<span style="margin-left: 8px; padding: 2px 6px; background: rgba(239, 68, 68, 0.12); color: #ef4444; border-radius: 4px; font-size: 11px; font-weight: 600;">PROTECTED</span>' : ''}
           </td>
           ${modules.map(mod => {
             const perm = rolePerms[mod.module_key] || { can_view: false, can_edit: false, can_delete: false };

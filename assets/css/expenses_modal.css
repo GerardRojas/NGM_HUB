@@ -235,6 +235,27 @@
   text-align: right;
 }
 
+/* Remove spinner arrows from number/amount inputs */
+#addExpenseModal .exp-input--amount::-webkit-outer-spin-button,
+#addExpenseModal .exp-input--amount::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#addExpenseModal .exp-input--amount[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Remove dropdown arrow from datalist inputs */
+#addExpenseModal .exp-input[list]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+}
+
+#addExpenseModal .exp-input[list]::-webkit-list-button {
+  display: none;
+}
+
 #addExpenseModal .exp-input--desc {
   min-width: 200px;
 }
@@ -1343,25 +1364,19 @@ input[type="number"].form-input {
 
 /* Auto Categorize Progress */
 .auto-categorize-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
   margin: 20px 0;
+  padding: 40px 20px;
 }
 
-.auto-categorize-progress-bar {
-  width: 100%;
-  height: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-
-.auto-categorize-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
-  border-radius: 4px;
-  transition: width 0.3s ease;
-  width: 0%;
-  animation: progressPulse 1.5s ease-in-out infinite;
+.auto-categorize-progress-logo {
+  width: 60px;
+  height: 60px;
+  animation: spin 2s linear infinite;
 }
 
 .auto-categorize-progress-text {

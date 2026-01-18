@@ -886,7 +886,7 @@
         ${buildModalSelectHtml('account_id', metaData.accounts, 'account_id', 'Name')}
       </td>
       <td>
-        <input type="number" class="exp-input exp-input--amount" data-field="Amount" step="0.01" min="0" placeholder="0.00">
+        <input type="text" class="exp-input exp-input--amount" data-field="Amount" placeholder="0.00" inputmode="decimal">
       </td>
       <td>
         <button type="button" class="btn-row-receipt" data-row-index="${rowIndex}" title="Attach receipt">
@@ -921,20 +921,15 @@
       }
     });
 
-    // Add currency formatting for amount input
+    // Add simple decimal formatting for amount input
     const amountInput = row.querySelector('.exp-input--amount');
     if (amountInput) {
       amountInput.addEventListener('blur', (e) => {
-        const value = parseCurrency(e.target.value);
-        if (value !== null) {
-          e.target.value = formatCurrency(value);
-        }
-      });
-
-      amountInput.addEventListener('focus', (e) => {
-        const value = parseCurrency(e.target.value);
-        if (value !== null) {
-          e.target.value = value.toString();
+        const value = e.target.value.trim();
+        if (value && !isNaN(value)) {
+          // Format to 2 decimal places
+          const numValue = parseFloat(value);
+          e.target.value = numValue.toFixed(2);
         }
       });
     }
@@ -1448,7 +1443,7 @@
       formData.append('file', file);
 
       // Call backend to parse receipt
-      els.scanReceiptProgressText.textContent = 'AI is analyzing receipt...';
+      els.scanReceiptProgressText.textContent = 'Analyzing...';
       els.scanReceiptProgressFill.style.width = '60%';
 
       const response = await fetch(`${apiBase}/expenses/parse-receipt`, {
@@ -1503,26 +1498,40 @@
       addModalRow();
 
       const index = modalRowCounter - 1;
-      const row = els.expenseRowsBody.querySelector(`tr[data-index="${index}"]`);
+      const row = els.expenseRowsBody.querySelector(`tr[data-row-index="${index}"]`);
 
-      if (!row) continue;
+      if (!row) {
+        console.warn('[POPULATE] Row not found for index:', index);
+        continue;
+      }
+
+      console.log('[POPULATE] Filling row', index, 'with:', expense);
 
       // Populate date
       if (expense.date) {
         const dateInput = row.querySelector('[data-field="TxnDate"]');
-        if (dateInput) dateInput.value = expense.date;
+        if (dateInput) {
+          dateInput.value = expense.date;
+          console.log('[POPULATE] Set date:', expense.date);
+        }
       }
 
       // Populate description
       if (expense.description) {
         const descInput = row.querySelector('[data-field="LineDescription"]');
-        if (descInput) descInput.value = expense.description;
+        if (descInput) {
+          descInput.value = expense.description;
+          console.log('[POPULATE] Set description:', expense.description);
+        }
       }
 
       // Populate amount
       if (expense.amount) {
         const amountInput = row.querySelector('[data-field="Amount"]');
-        if (amountInput) amountInput.value = expense.amount;
+        if (amountInput) {
+          amountInput.value = expense.amount;
+          console.log('[POPULATE] Set amount:', expense.amount);
+        }
       }
 
       // Try to match vendor
@@ -2086,12 +2095,10 @@
     console.log('[AUTO-CATEGORIZE] Stage selected:', stage);
 
     const progressDiv = document.getElementById('autoCategorizeProgress');
-    const progressFill = document.getElementById('autoCategorizeProgressFill');
     const progressText = document.getElementById('autoCategorizeProgressText');
 
     // Show progress
     if (progressDiv) progressDiv.classList.remove('hidden');
-    if (progressFill) progressFill.style.width = '20%';
     if (progressText) progressText.textContent = 'Collecting expense data...';
 
     try {
@@ -2120,8 +2127,7 @@
       console.log('[AUTO-CATEGORIZE] Sending to backend:', { stage, expenses });
 
       // Update progress
-      if (progressFill) progressFill.style.width = '40%';
-      if (progressText) progressText.textContent = `Analyzing ${expenses.length} expense(s) with AI...`;
+      if (progressText) progressText.textContent = `Analyzing ${expenses.length} expense(s)...`;
 
       const apiBase = getApiBase();
 
@@ -2138,7 +2144,6 @@
       console.log('[AUTO-CATEGORIZE] Response:', response);
 
       // Update progress
-      if (progressFill) progressFill.style.width = '80%';
       if (progressText) progressText.textContent = 'Applying categorizations...';
 
       // Apply categorizations to rows
@@ -2147,7 +2152,6 @@
       }
 
       // Complete
-      if (progressFill) progressFill.style.width = '100%';
       if (progressText) progressText.textContent = 'Done!';
 
       // Close modal after a short delay

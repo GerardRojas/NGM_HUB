@@ -168,16 +168,16 @@
 /* Shimmer animation for login button logo */
 @keyframes logoShimmer {
     0% {
-        opacity: 0.4;
-        filter: brightness(0.6) drop-shadow(0 0 6px rgba(255, 255, 255, 0.2));
+        opacity: 0.2;
+        filter: brightness(0.4);
     }
     50% {
         opacity: 1;
-        filter: brightness(1.3) drop-shadow(0 0 12px rgba(255, 255, 255, 0.5));
+        filter: brightness(1.3);
     }
     100% {
-        opacity: 0.4;
-        filter: brightness(0.6) drop-shadow(0 0 6px rgba(255, 255, 255, 0.2));
+        opacity: 0.2;
+        filter: brightness(0.4);
     }
 }
 

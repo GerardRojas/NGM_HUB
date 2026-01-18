@@ -218,7 +218,7 @@
 }
 
 .expenses-table th {
-  padding: 12px 14px;
+  padding: 10px 14px; /* Reduced from 12px to 10px */
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -236,17 +236,23 @@
 
 .expenses-table th:nth-child(3),
 .expenses-table th:nth-child(4),
-.expenses-table th:nth-child(5),
+.expenses-table th:nth-child(5) {
+  min-width: 130px; /* Type, Vendor, Payment */
+}
+
 .expenses-table th:nth-child(6) {
-  min-width: 130px; /* Type, Vendor, Payment, Account */
+  min-width: 180px; /* Account - wider to prevent wrapping */
 }
 
 .expenses-table td {
-  padding: 14px 14px;
+  padding: 10px 14px; /* Reduced vertical padding from 14px to 10px */
   font-size: 13px;
   color: var(--text-primary, #e5e7eb);
   border-bottom: 1px solid rgba(39, 39, 47, 0.5);
   vertical-align: middle;
+  white-space: nowrap; /* Prevent text wrapping */
+  overflow: hidden; /* Hide overflow */
+  text-overflow: ellipsis; /* Show ... for long text */
 }
 
 .expenses-table tbody tr:last-child td {
@@ -261,6 +267,18 @@
 .expenses-table .col-description {
   min-width: 250px;
   max-width: 400px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Account column - prevent expansion */
+.expenses-table .col-account {
+  min-width: 180px;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Amount column */
@@ -269,6 +287,7 @@
   font-variant-numeric: tabular-nums;
   min-width: 110px;
   text-align: right;
+  white-space: nowrap;
 }
 
 /* Receipt column */

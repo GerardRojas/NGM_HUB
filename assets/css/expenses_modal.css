@@ -955,10 +955,102 @@ input[type="number"].form-input {
   transform: translateY(0);
 }
 
-/* Scan Receipt Modal */
+/* Scan Receipt Modal Card */
 .modal-scan-receipt {
-  width: 90%;
+  width: min(500px, 95%);
   max-width: 500px;
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+
+  background: #212121 !important;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* Modal Header - inherit from other modals */
+#scanReceiptModal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #242424 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+#scanReceiptModal .modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e5e7eb;
+  letter-spacing: -0.01em;
+}
+
+#scanReceiptModal .modal-close-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  color: #9ca3af;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+#scanReceiptModal .modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e5e7eb;
+}
+
+/* Modal Body */
+#scanReceiptModal .modal-body {
+  flex: 1;
+  padding: 20px 18px;
+  overflow-y: auto;
+  background: #1a1a1a;
+}
+
+#scanReceiptModal .modal-hint {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+/* Modal Footer */
+#scanReceiptModal .modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px;
+  background: #1f1f1f;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#scanReceiptModal .btn-modal-secondary {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.03);
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+#scanReceiptModal .btn-modal-secondary:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #e5e7eb;
 }
 
 .scan-receipt-upload-zone {

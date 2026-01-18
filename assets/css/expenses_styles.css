@@ -209,7 +209,22 @@
   width: 60px;
   height: 60px;
   opacity: 0.4;
-  animation: spin 3s linear infinite;
+  animation: fadeLeftRight 2s ease-in-out infinite;
+}
+
+@keyframes fadeLeftRight {
+  0% {
+    opacity: 0.2;
+    transform: translateX(-10px);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0.2;
+    transform: translateX(10px);
+  }
 }
 
 .expenses-empty-text {
@@ -321,14 +336,22 @@
 .loading-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid rgba(148, 163, 184, 0.2);
-  border-top-color: rgba(148, 163, 184, 0.6);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: fadeLeftRight 1.5s ease-in-out infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@keyframes fadeLeftRight {
+  0% {
+    opacity: 0.3;
+    transform: translateX(-10px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0.3;
+    transform: translateX(10px);
+  }
 }
 
 .loading-text {

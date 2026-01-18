@@ -1376,7 +1376,22 @@ input[type="number"].form-input {
 .auto-categorize-progress-logo {
   width: 60px;
   height: 60px;
-  animation: spin 2s linear infinite;
+  animation: fadeLeftRight 1.5s ease-in-out infinite;
+}
+
+@keyframes fadeLeftRight {
+  0% {
+    opacity: 0.3;
+    transform: translateX(-10px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0.3;
+    transform: translateX(10px);
+  }
 }
 
 .auto-categorize-progress-text {

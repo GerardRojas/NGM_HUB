@@ -80,15 +80,23 @@
   gap: 16px;
 }
 
+/* Project info and scan receipt button container */
+#addExpenseModal .modal-project-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 /* Project info */
 #addExpenseModal .modal-project-info {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
   background: rgba(34, 197, 94, 0.08);
   border: 1px solid rgba(34, 197, 94, 0.25);
   border-radius: 10px;
+  width: fit-content;
 }
 
 #addExpenseModal .modal-project-label {

@@ -59,6 +59,8 @@
                     <a href="expenses.html" class="nav-item nav-item-active">Expenses</a>
                     <a href="pipeline.html" class="nav-item">Pipeline Manager</a>
                     <a href="projects.html" class="nav-item">Projects</a>
+                    <a href="vendors.html" class="nav-item">Vendors</a>
+                    <a href="accounts.html" class="nav-item">Accounts</a>
                     <a href="estimator.html" class="nav-item">Estimator Suite</a>
                     <a href="team.html" class="nav-item">Team Management</a>
                 </nav>
@@ -293,10 +295,19 @@
             </div>
 
             <div class="modal-body">
-                <!-- Project indicator -->
-                <div class="modal-project-info">
-                    <span class="modal-project-label">Project:</span>
-                    <span class="modal-project-name" id="modalProjectName">—</span>
+                <!-- Project indicator and scan receipt button -->
+                <div class="modal-project-header">
+                    <div class="modal-project-info">
+                        <span class="modal-project-label">Project:</span>
+                        <span class="modal-project-name" id="modalProjectName">—</span>
+                    </div>
+                    <button type="button" class="btn-scan-receipt" id="btnScanReceipt">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                        Scan Receipt
+                    </button>
                 </div>
 
                 <!-- Expense rows table -->
@@ -323,13 +334,6 @@
                     <div class="add-row-container">
                         <button type="button" class="btn-add-row" id="btnAddExpenseRow">
                             <span>+</span> Add Row
-                        </button>
-                        <button type="button" class="btn-scan-receipt" id="btnScanReceipt">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-                                <circle cx="12" cy="13" r="4"></circle>
-                            </svg>
-                            Scan Receipt
                         </button>
                     </div>
                 </div>

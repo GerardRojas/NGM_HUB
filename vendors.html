@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NGM HUB — Projects</title>
+    <title>NGM HUB — Vendors</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,9 +19,9 @@
     <!-- Global env/server/user pills -->
     <script src="assets/js/config.js" defer></script>
     <script src="assets/js/pills.js" defer></script>
-    <script src="assets/js/projects.js" defer></script>
+    <script src="assets/js/vendors.js" defer></script>
 </head>
-<body class="page-projects">
+<body class="page-vendors">
     <div class="app-layout">
 
         <!-- Sidebar -->
@@ -37,9 +37,11 @@
             <div class="sidebar-nav-card">
                 <nav class="sidebar-nav" id="sidebar-nav">
                     <a href="dashboard.html" class="nav-item">Dashboard</a>
-                    <a href="expenses.html" class="nav-item">Expenses Engine</a>
+                    <a href="expenses.html" class="nav-item">Expenses</a>
                     <a href="pipeline.html" class="nav-item">Pipeline Manager</a>
-                    <a href="projects.html" class="nav-item nav-item-active">Projects</a>
+                    <a href="projects.html" class="nav-item">Projects</a>
+                    <a href="vendors.html" class="nav-item nav-item-active">Vendors</a>
+                    <a href="accounts.html" class="nav-item">Accounts</a>
                     <a href="estimator.html" class="nav-item">Estimator Suite</a>
                     <a href="team.html" class="nav-item">Team Management</a>
                 </nav>
@@ -56,7 +58,7 @@
                         <div class="ngm-brand-icon-small"><span>⚡</span></div>
                         <div class="ngm-brand-text">
                             <span class="ngm-brand-org">Next Generation Management</span>
-                            <span class="ngm-brand-context">NGM Hub · Projects Manager</span>
+                            <span class="ngm-brand-context">NGM Hub · Vendors Manager</span>
                         </div>
                     </div>
                 </div>
@@ -70,11 +72,11 @@
                     <form class="ngm-search" role="search" onsubmit="return false;">
                         <span class="ngm-global-search-icon">⌕</span>
                         <input
-                            id="projects-search-input"
+                            id="vendors-search-input"
                             type="search"
                             class="ngm-search-input"
-                            placeholder="Search projects..."
-                            aria-label="Search projects"
+                            placeholder="Search vendors..."
+                            aria-label="Search vendors"
                         />
                     </form>
 
@@ -85,44 +87,40 @@
             <main class="main-content">
                 <div class="workspace">
 
-                    <!-- Projects Section -->
+                    <!-- Vendors Section -->
                     <section class="data-section">
 
                         <!-- Toolbar -->
                         <div class="expenses-toolbar">
                             <div class="toolbar-left">
-                                <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Projects</h2>
+                                <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Vendors</h2>
                             </div>
 
                             <div class="toolbar-right">
-                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnEditProjects" disabled>
-                                    Edit Projects
+                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnEditVendors" disabled>
+                                    Edit Vendors
                                 </button>
-                                <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnAddProject">
-                                    Add Project
+                                <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnAddVendor">
+                                    Add Vendor
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Projects Table -->
+                        <!-- Vendors Table -->
                         <div class="expenses-table-container">
-                            <div id="projectsEmptyState" class="expenses-empty-state">
-                                <span class="expenses-empty-icon">📁</span>
-                                <span class="expenses-empty-text">No projects found</span>
+                            <div id="vendorsEmptyState" class="expenses-empty-state">
+                                <span class="expenses-empty-icon">🏢</span>
+                                <span class="expenses-empty-text">No vendors found</span>
                             </div>
 
-                            <table class="expenses-table" id="projectsTable" style="display: none;">
+                            <table class="expenses-table" id="vendorsTable" style="display: none;">
                                 <thead>
                                     <tr>
-                                        <th>Project Name</th>
-                                        <th>Company</th>
-                                        <th>City</th>
-                                        <th>Client</th>
-                                        <th>Status</th>
+                                        <th>Vendor Name</th>
                                         <th class="col-actions"></th>
                                     </tr>
                                 </thead>
-                                <tbody id="projectsTableBody">
+                                <tbody id="vendorsTableBody">
                                     <!-- Rendered by JS -->
                                 </tbody>
                             </table>

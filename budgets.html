@@ -65,7 +65,7 @@
                             <div class="toolbar-left">
                                 <div class="project-filter-container">
                                     <label for="projectFilter" class="project-filter-label">Project:</label>
-                                    <select id="projectFilter" class="project-filter-select">
+                                    <select id="projectFilter" class="toolbar-select">
                                         <option value="">Select a project...</option>
                                     </select>
                                 </div>
@@ -88,7 +88,10 @@
                             <!-- Empty State -->
                             <div id="budgetsEmptyState" class="expenses-loading-state">
                                 <img src="assets/img/white_icon.png" class="loading-logo loading-logo-lg" style="opacity: 0.3;" alt="Empty">
-                                <span class="loading-text">Select a project to view budgets</span>
+                                <span class="loading-text" id="emptyStateMessage">Select a project to view budgets</span>
+                                <button type="button" id="btnImportFromEmpty" class="btn-toolbar btn-toolbar-secondary" style="display: none; margin-top: 16px;">
+                                    📂 Import from CSV
+                                </button>
                             </div>
 
                             <!-- Content -->
@@ -119,11 +122,11 @@
     </div>
 
     <!-- Import CSV Modal -->
-    <div id="importCSVModal" class="modal hidden">
-        <div class="modal-content" style="max-width: 600px;">
+    <div id="importCSVModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width: 600px;">
             <div class="modal-header">
-                <h2 class="modal-title">Import Budget from CSV</h2>
-                <button type="button" class="modal-close-x" id="btnCloseImportModal">×</button>
+                <div class="modal-title">Import Budget from CSV</div>
+                <button type="button" class="modal-close-btn" id="btnCloseImportModal">×</button>
             </div>
 
             <div class="modal-body" style="padding: 24px;">

@@ -120,10 +120,18 @@
     els.content.style.display = 'none';
   }
 
-  function showEmptyState(message = 'Select a project to view budgets') {
+  function showEmptyState(message = 'Select a project to view budgets', showImportButton = false) {
     els.loadingState.style.display = 'none';
     els.emptyState.style.display = 'flex';
-    els.emptyState.querySelector('.loading-text').textContent = message;
+
+    const messageEl = document.getElementById('emptyStateMessage');
+    if (messageEl) messageEl.textContent = message;
+
+    const importBtn = document.getElementById('btnImportFromEmpty');
+    if (importBtn) {
+      importBtn.style.display = showImportButton ? 'inline-block' : 'none';
+    }
+
     els.content.style.display = 'none';
   }
 
@@ -212,7 +220,7 @@
       console.log('[BUDGETS] Processed budgets count:', budgets.length);
 
       if (budgets.length === 0) {
-        showEmptyState('No budgets loaded for this project yet. Click "Import from CSV" to add budgets.');
+        showEmptyState('No budgets have been loaded for this project yet.', true);
       } else {
         renderBudgetsTable();
       }
@@ -412,6 +420,15 @@
 
       console.log('[BUDGETS] Project selected:', selectedProjectId, selectedProjectName);
 
+      // Enable/disable import button based on project selection
+      if (els.btnImportCSV) {
+        if (selectedProjectId) {
+          els.btnImportCSV.disabled = false;
+        } else {
+          els.btnImportCSV.disabled = true;
+        }
+      }
+
       if (selectedProjectId) {
         await loadBudgetsByProject(selectedProjectId);
       } else {
@@ -422,6 +439,11 @@
 
     // Import CSV button
     els.btnImportCSV?.addEventListener('click', () => {
+      openImportModal();
+    });
+
+    // Import CSV button from empty state
+    document.getElementById('btnImportFromEmpty')?.addEventListener('click', () => {
       openImportModal();
     });
 
@@ -462,6 +484,16 @@
 
     // Setup event listeners
     setupEventListeners();
+
+    // Initialize topbar pills (environment, server status, user)
+    if (typeof window.initTopbarPills === 'function') {
+      await window.initTopbarPills();
+    }
+
+    // Disable import button initially (no project selected)
+    if (els.btnImportCSV) {
+      els.btnImportCSV.disabled = true;
+    }
 
     // Load projects
     await loadProjects();

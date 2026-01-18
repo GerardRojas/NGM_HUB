@@ -20,6 +20,7 @@
   const els = {
     table: document.getElementById('projectsTable'),
     tbody: document.getElementById('projectsTableBody'),
+    loadingState: document.getElementById('projectsLoadingState'),
     emptyState: document.getElementById('projectsEmptyState'),
     btnEditProjects: document.getElementById('btnEditProjects'),
     btnAddProject: document.getElementById('btnAddProject'),
@@ -60,6 +61,8 @@
 
   async function loadProjects() {
     try {
+      showLoadingState();
+
       const res = await fetch(`${API_BASE}/projects/`);
       if (!res.ok) {
         const text = await res.text();
@@ -90,6 +93,7 @@
       return;
     }
 
+    els.loadingState.style.display = 'none';
     els.emptyState.style.display = 'none';
     els.table.style.display = 'table';
     els.tbody.innerHTML = '';
@@ -165,9 +169,16 @@
     return item ? item[nameKey] : null;
   }
 
-  function showEmptyState() {
+  function showLoadingState() {
+    els.loadingState.style.display = 'flex';
+    els.emptyState.style.display = 'none';
     els.table.style.display = 'none';
+  }
+
+  function showEmptyState() {
+    els.loadingState.style.display = 'none';
     els.emptyState.style.display = 'flex';
+    els.table.style.display = 'none';
   }
 
   // ================================

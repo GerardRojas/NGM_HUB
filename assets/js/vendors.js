@@ -16,6 +16,7 @@
   const els = {
     table: document.getElementById('vendorsTable'),
     tbody: document.getElementById('vendorsTableBody'),
+    loadingState: document.getElementById('vendorsLoadingState'),
     emptyState: document.getElementById('vendorsEmptyState'),
     btnEditVendors: document.getElementById('btnEditVendors'),
     btnAddVendor: document.getElementById('btnAddVendor'),
@@ -40,6 +41,8 @@
 
   async function loadVendors() {
     try {
+      showLoadingState();
+
       const res = await fetch(`${API_BASE}/vendors/`);
       if (!res.ok) {
         const text = await res.text();
@@ -70,6 +73,7 @@
       return;
     }
 
+    els.loadingState.style.display = 'none';
     els.emptyState.style.display = 'none';
     els.table.style.display = 'table';
     els.tbody.innerHTML = '';
@@ -108,9 +112,16 @@
     `;
   }
 
-  function showEmptyState() {
+  function showLoadingState() {
+    els.loadingState.style.display = 'flex';
+    els.emptyState.style.display = 'none';
     els.table.style.display = 'none';
+  }
+
+  function showEmptyState() {
+    els.loadingState.style.display = 'none';
     els.emptyState.style.display = 'flex';
+    els.table.style.display = 'none';
   }
 
   // ================================

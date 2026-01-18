@@ -17,6 +17,12 @@
     <link rel="stylesheet" href="assets/css/styles.css" />
     <!-- 2) Estilos específicos del dashboard (cards, pipeline, separadores, etc.) -->
     <link rel="stylesheet" href="assets/css/dashboard.css" />
+
+    <!-- Scripts globales -->
+    <script src="assets/js/config.js" defer></script>
+    <script src="assets/js/permissions.js" defer></script>
+    <script src="assets/js/pills.js" defer></script>
+    <script src="assets/js/dashboard.js" defer></script>
 </head>
 <body>
     <div class="app-layout">
@@ -35,14 +41,14 @@
 
             <div class="sidebar-nav-card">
                 <nav class="sidebar-nav" id="sidebar-nav">
-                    <a href="dashboard.html" class="nav-item nav-item-active">Dashboard</a>
-                    <a href="expenses.html" class="nav-item">Expenses Engine</a>
-                    <a href="pipeline.html" class="nav-item">Pipeline Manager</a>
-                    <a href="projects.html" class="nav-item">Projects</a>
-                    <a href="vendors.html" class="nav-item">Vendors</a>
-                    <a href="accounts.html" class="nav-item">Accounts</a>
-                    <a href="estimator.html" class="nav-item">Estimator Suite</a>
-                    <a href="team.html" class="nav-item">Team Management</a>
+                    <a href="dashboard.html" class="nav-item nav-item-active" data-module="dashboard">Dashboard</a>
+                    <a href="expenses.html" class="nav-item" data-module="expenses">Expenses Engine</a>
+                    <a href="pipeline.html" class="nav-item" data-module="pipeline">Pipeline Manager</a>
+                    <a href="projects.html" class="nav-item" data-module="projects">Projects</a>
+                    <a href="vendors.html" class="nav-item" data-module="vendors">Vendors</a>
+                    <a href="accounts.html" class="nav-item" data-module="accounts">Accounts</a>
+                    <a href="estimator.html" class="nav-item" data-module="estimator">Estimator Suite</a>
+                    <a href="team.html" class="nav-item" data-module="team">Team Management</a>
                 </nav>
             </div>
         </aside>
@@ -135,10 +141,10 @@
                         </button>
 
                         <!-- Expenses Engine (activo) -->
-                        <a 
-                            class="module-card" 
+                        <a
+                            class="module-card"
                             href="expenses.html"
-                            data-roles="COO,CEO,Accounting Manager,Bookkeeper"
+                            data-module="expenses"
                             data-status="active"
                         >
                             <div class="module-icon">
@@ -151,10 +157,10 @@
                         </a>
 
                         <!-- Pipeline Manager (activo) -->
-                        <a 
-                            class="module-card" 
+                        <a
+                            class="module-card"
                             href="pipeline.html"
-                            data-roles="COO,CEO,General Coordinator,Project Coordinator"
+                            data-module="pipeline"
                             data-status="active"
                         >
                             <div class="module-icon">
@@ -167,10 +173,10 @@
                         </a>
 
                         <!-- Projects (activo) -->
-                        <a 
-                            class="module-card" 
+                        <a
+                            class="module-card"
                             href="projects.html"
-                            data-roles="COO,CEO,General Coordinator,Project Coordinator,Accounting Manager,Bookkeeper"
+                            data-module="projects"
                             data-status="active"
                         >
                             <div class="module-icon">
@@ -182,11 +188,43 @@
                             </p>
                         </a>
 
+                        <!-- Vendors (activo) -->
+                        <a
+                            class="module-card"
+                            href="vendors.html"
+                            data-module="vendors"
+                            data-status="active"
+                        >
+                            <div class="module-icon">
+                                <span class="module-icon-badge">VN</span>
+                            </div>
+                            <h3 class="module-title">Vendors</h3>
+                            <p class="module-desc">
+                                Manage vendor catalog for expenses and accounting integration.
+                            </p>
+                        </a>
+
+                        <!-- Accounts (activo) -->
+                        <a
+                            class="module-card"
+                            href="accounts.html"
+                            data-module="accounts"
+                            data-status="active"
+                        >
+                            <div class="module-icon">
+                                <span class="module-icon-badge">AC</span>
+                            </div>
+                            <h3 class="module-title">Accounts</h3>
+                            <p class="module-desc">
+                                Manage chart of accounts for expense categorization and reporting.
+                            </p>
+                        </a>
+
                         <!-- Estimator Suite (activo) -->
-                        <a 
-                            class="module-card" 
+                        <a
+                            class="module-card"
                             href="estimator.html"
-                            data-roles="COO,CEO,Estimator,Architect,Intern"
+                            data-module="estimator"
                             data-status="active"
                         >
                             <div class="module-icon">
@@ -201,7 +239,7 @@
                         <a
                         class="module-card"
                         href="team.html"
-                        data-roles="COO,CEO,General Coordinator,Project Coordinator"
+                        data-module="team"
                         data-status="active"
                         >
                         <div class="module-icon">
@@ -213,6 +251,101 @@
                         </p>
                         </a>
 
+                        <!-- God View -->
+                        <a
+                        class="module-card"
+                        href="god-view.html"
+                        data-module="god_view"
+                        data-status="active"
+                        >
+                        <div class="module-icon">
+                            <span class="module-icon-badge">GV</span>
+                        </div>
+                        <h3 class="module-title">God View</h3>
+                        <p class="module-desc">
+                            Executive overview dashboard with system-wide insights and metrics.
+                        </p>
+                        </a>
+
+                        <!-- Reporting -->
+                        <a
+                        class="module-card"
+                        href="reporting.html"
+                        data-module="reporting"
+                        data-status="active"
+                        >
+                        <div class="module-icon">
+                            <span class="module-icon-badge">RP</span>
+                        </div>
+                        <h3 class="module-title">Reporting</h3>
+                        <p class="module-desc">
+                            Generate custom reports and analytics from all system data.
+                        </p>
+                        </a>
+
+                        <!-- Budgets -->
+                        <a
+                        class="module-card"
+                        href="budgets.html"
+                        data-module="budgets"
+                        data-status="active"
+                        >
+                        <div class="module-icon">
+                            <span class="module-icon-badge">BG</span>
+                        </div>
+                        <h3 class="module-title">Budgets</h3>
+                        <p class="module-desc">
+                            Manage budgets, track spending, and forecast financial performance.
+                        </p>
+                        </a>
+
+                        <!-- Roles Management -->
+                        <a
+                        class="module-card"
+                        href="roles.html"
+                        data-module="roles"
+                        data-status="active"
+                        >
+                        <div class="module-icon">
+                            <span class="module-icon-badge">RL</span>
+                        </div>
+                        <h3 class="module-title">Roles Management</h3>
+                        <p class="module-desc">
+                            Configure user roles and module permissions across the system.
+                        </p>
+                        </a>
+
+                        <!-- Settings -->
+                        <a
+                        class="module-card"
+                        href="settings.html"
+                        data-module="settings"
+                        data-status="active"
+                        >
+                        <div class="module-icon">
+                            <span class="module-icon-badge">ST</span>
+                        </div>
+                        <h3 class="module-title">Settings</h3>
+                        <p class="module-desc">
+                            System configuration, integrations, and general preferences.
+                        </p>
+                        </a>
+
+                        <!-- Audit Logs -->
+                        <a
+                        class="module-card"
+                        href="audit.html"
+                        data-module="audit"
+                        data-status="active"
+                        >
+                        <div class="module-icon">
+                            <span class="module-icon-badge">AU</span>
+                        </div>
+                        <h3 class="module-title">Audit Logs</h3>
+                        <p class="module-desc">
+                            Track system activity, user actions, and security events.
+                        </p>
+                        </a>
 
                         <!-- Finance / Books Reporting (coming soon) -->
                         <button 

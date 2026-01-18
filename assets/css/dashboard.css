@@ -19,6 +19,8 @@
 
 .pipeline-section {
     margin-bottom: 8px;
+    max-width: var(--dashboard-modules-max-width);
+    width: 100%;
 }
 
 .pipeline-header-row {
@@ -72,6 +74,7 @@
     flex-direction: column;
     gap: 10px;
     width: 100%;
+    max-width: var(--dashboard-modules-max-width);
 }
 
 .section-title {

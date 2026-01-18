@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NGM HUB — Reporting</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/expenses_styles.css" />
+
+    <!-- Global env/server/user pills -->
+    <script src="assets/js/config.js" defer></script>
+    <script src="assets/js/permissions.js" defer></script>
+    <script src="assets/js/pills.js" defer></script>
+</head>
+<body class="page-reporting">
+    <div class="app-layout">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="assets/img/logo.png" alt="NGM HUB Logo" class="sidebar-logo-img" />
+            </div>
+
+            <div class="sidebar-title-block">
+                <p class="sidebar-title">NGM HUB</p>
+            </div>
+
+            <div class="sidebar-nav-card">
+                <nav class="sidebar-nav" id="sidebar-nav">
+                    <a href="dashboard.html" class="nav-item" data-module="dashboard">Dashboard</a>
+                    <a href="expenses.html" class="nav-item" data-module="expenses">Expenses Engine</a>
+                    <a href="pipeline.html" class="nav-item" data-module="pipeline">Pipeline Manager</a>
+                    <a href="projects.html" class="nav-item" data-module="projects">Projects</a>
+                    <a href="vendors.html" class="nav-item" data-module="vendors">Vendors</a>
+                    <a href="accounts.html" class="nav-item" data-module="accounts">Accounts</a>
+                    <a href="estimator.html" class="nav-item" data-module="estimator">Estimator Suite</a>
+                    <a href="team.html" class="nav-item" data-module="team">Team Management</a>
+                    <a href="god-view.html" class="nav-item" data-module="god_view">God View</a>
+                    <a href="reporting.html" class="nav-item nav-item-active" data-module="reporting">Reporting</a>
+                    <a href="budgets.html" class="nav-item" data-module="budgets">Budgets</a>
+                    <a href="roles.html" class="nav-item" data-module="roles">Roles Management</a>
+                    <a href="settings.html" class="nav-item" data-module="settings">Settings</a>
+                    <a href="audit.html" class="nav-item" data-module="audit">Audit Logs</a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <div class="main-area">
+
+            <!-- Topbar (system standard) -->
+            <header class="ngm-topbar">
+                <div class="ngm-bar-left">
+                    <div class="ngm-brand">
+                        <div class="ngm-brand-icon-small"><span>⚡</span></div>
+                        <div class="ngm-brand-text">
+                            <span class="ngm-brand-org">Next Generation Management</span>
+                            <span class="ngm-brand-context">NGM Hub · Reporting</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ngm-topbar-right">
+                    <div class="ngm-meta">
+                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
+                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · —</span>
+                    </div>
+
+                    <form class="ngm-search" role="search" onsubmit="return false;">
+                        <span class="ngm-global-search-icon">⌕</span>
+                        <input
+                            id="reporting-search-input"
+                            type="search"
+                            class="ngm-search-input"
+                            placeholder="Search reports..."
+                            aria-label="Search reports"
+                        />
+                    </form>
+
+                    <span id="user-pill" class="user-pill">User · —</span>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="workspace">
+
+                    <!-- Reporting Section -->
+                    <section class="data-section">
+
+                        <!-- Toolbar -->
+                        <div class="expenses-toolbar">
+                            <div class="toolbar-left">
+                                <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Reports</h2>
+                                <p style="font-size: 13px; color: #6b7280; margin: 4px 0 0 0;">Generate and analyze business reports</p>
+                            </div>
+
+                            <div class="toolbar-right">
+                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnScheduleReport">
+                                    Schedule Report
+                                </button>
+                                <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnGenerateReport">
+                                    Generate New Report
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Content Container -->
+                        <div class="expenses-table-container">
+                            <div id="reportingLoadingState" class="expenses-loading-state">
+                                <div class="loading-spinner"></div>
+                                <span class="loading-text">Loading reports...</span>
+                            </div>
+
+                            <div id="reportingContent" style="display: none; padding: 24px;">
+
+                                <!-- Report Templates Grid -->
+                                <h3 style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">Report Templates</h3>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px;">
+
+                                    <!-- Expense Report Template -->
+                                    <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.15s ease;">
+                                        <div style="font-size: 24px; margin-bottom: 12px;">💰</div>
+                                        <h4 style="font-size: 15px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">Expense Report</h4>
+                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">Detailed breakdown of expenses by category, project, and vendor</p>
+                                    </div>
+
+                                    <!-- Project Performance -->
+                                    <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.15s ease;">
+                                        <div style="font-size: 24px; margin-bottom: 12px;">📊</div>
+                                        <h4 style="font-size: 15px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">Project Performance</h4>
+                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">Track project progress, milestones, and budget vs actuals</p>
+                                    </div>
+
+                                    <!-- Financial Summary -->
+                                    <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.15s ease;">
+                                        <div style="font-size: 24px; margin-bottom: 12px;">📈</div>
+                                        <h4 style="font-size: 15px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">Financial Summary</h4>
+                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">Revenue, expenses, and profit margins across all operations</p>
+                                    </div>
+
+                                    <!-- Team Productivity -->
+                                    <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.15s ease;">
+                                        <div style="font-size: 24px; margin-bottom: 12px;">👥</div>
+                                        <h4 style="font-size: 15px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">Team Productivity</h4>
+                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">Task completion rates and team performance metrics</p>
+                                    </div>
+
+                                    <!-- Vendor Analysis -->
+                                    <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.15s ease;">
+                                        <div style="font-size: 24px; margin-bottom: 12px;">🏪</div>
+                                        <h4 style="font-size: 15px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">Vendor Analysis</h4>
+                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">Spending patterns and vendor performance comparison</p>
+                                    </div>
+
+                                    <!-- Custom Report -->
+                                    <div style="background: #18181b; border: 1px dashed #27272f; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.15s ease;">
+                                        <div style="font-size: 24px; margin-bottom: 12px;">⚙️</div>
+                                        <h4 style="font-size: 15px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">Custom Report</h4>
+                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">Build your own report with custom fields and filters</p>
+                                    </div>
+
+                                </div>
+
+                                <!-- Recent Reports -->
+                                <h3 style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin: 32px 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">Recent Reports</h3>
+                                <table class="expenses-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Report Name</th>
+                                            <th>Type</th>
+                                            <th>Generated</th>
+                                            <th>Period</th>
+                                            <th class="col-actions">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>Q4 2025 Expense Summary</td>
+                                            <td><span style="padding: 4px 8px; background: rgba(34, 197, 94, 0.12); color: #22c55e; border-radius: 4px; font-size: 12px;">Expense</span></td>
+                                            <td>2026-01-15</td>
+                                            <td>Q4 2025</td>
+                                            <td class="col-actions">
+                                                <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">View</button>
+                                                <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">Download</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>December Project Performance</td>
+                                            <td><span style="padding: 4px 8px; background: rgba(59, 130, 246, 0.12); color: #3b82f6; border-radius: 4px; font-size: 12px;">Project</span></td>
+                                            <td>2026-01-10</td>
+                                            <td>Dec 2025</td>
+                                            <td class="col-actions">
+                                                <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">View</button>
+                                                <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">Download</button>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Annual Financial Summary 2025</td>
+                                            <td><span style="padding: 4px 8px; background: rgba(245, 158, 11, 0.12); color: #f59e0b; border-radius: 4px; font-size: 12px;">Financial</span></td>
+                                            <td>2026-01-05</td>
+                                            <td>FY 2025</td>
+                                            <td class="col-actions">
+                                                <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">View</button>
+                                                <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">Download</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </section>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            if (window.initTopbarPills) window.initTopbarPills();
+
+            // Simulate loading
+            setTimeout(() => {
+                document.getElementById('reportingLoadingState').style.display = 'none';
+                document.getElementById('reportingContent').style.display = 'block';
+            }, 600);
+        });
+    </script>
+
+</body>
+</html>

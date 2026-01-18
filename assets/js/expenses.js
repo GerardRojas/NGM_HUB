@@ -81,6 +81,7 @@
     els.modalProjectName = document.getElementById('modalProjectName');
     els.expenseRowsBody = document.getElementById('expenseRowsBody');
     els.btnAddExpenseRow = document.getElementById('btnAddExpenseRow');
+    els.btnAutoCategorize = document.getElementById('btnAutoCategorize');
     els.btnCloseExpenseModal = document.getElementById('btnCloseExpenseModal');
     els.btnCancelExpenses = document.getElementById('btnCancelExpenses');
     els.btnSaveAllExpenses = document.getElementById('btnSaveAllExpenses');
@@ -895,6 +896,7 @@
     `;
 
     els.expenseRowsBody.appendChild(row);
+    updateAutoCategorizeButton();
 
     // Add event listener for receipt button
     const receiptBtn = row.querySelector('.btn-row-receipt');
@@ -975,6 +977,14 @@
     const row = els.expenseRowsBody.querySelector(`tr[data-row-index="${rowIndex}"]`);
     if (row) {
       row.remove();
+    }
+    updateAutoCategorizeButton();
+  }
+
+  function updateAutoCategorizeButton() {
+    const rowCount = els.expenseRowsBody?.querySelectorAll('tr').length || 0;
+    if (els.btnAutoCategorize) {
+      els.btnAutoCategorize.disabled = rowCount === 0;
     }
   }
 

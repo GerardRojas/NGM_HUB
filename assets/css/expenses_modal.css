@@ -154,7 +154,7 @@
 #addExpenseModal .expense-rows-table th:nth-child(8) { width: 50px; }   /* Remove button */
 
 #addExpenseModal .expense-rows-table td {
-  padding: 10px 8px;
+  padding: 6px 8px;
   vertical-align: middle;
   border-bottom: 1px solid rgba(148, 163, 184, 0.10);
 }
@@ -200,6 +200,8 @@
 }
 
 #addExpenseModal select.exp-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
   background-image:
     linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.65) 50%),
@@ -211,6 +213,11 @@
   background-repeat: no-repeat;
   padding-right: 28px;
   cursor: pointer;
+}
+
+/* Remove IE dropdown arrow */
+#addExpenseModal select.exp-input::-ms-expand {
+  display: none;
 }
 
 #addExpenseModal select.exp-input option {
@@ -283,7 +290,8 @@
 /* Add row button */
 #addExpenseModal .add-row-container {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   padding: 10px 12px;
   border-top: 1px solid rgba(148, 163, 184, 0.12);
 }
@@ -307,6 +315,33 @@
   border-color: rgba(34, 197, 94, 0.5);
   color: #4ade80;
   background: rgba(34, 197, 94, 0.08);
+}
+
+/* Auto Categorize button */
+#addExpenseModal .btn-auto-categorize {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.08);
+  color: #a78bfa;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+
+#addExpenseModal .btn-auto-categorize:hover:not(:disabled) {
+  border-color: rgba(139, 92, 246, 0.6);
+  background: rgba(139, 92, 246, 0.15);
+  color: #c4b5fd;
+}
+
+#addExpenseModal .btn-auto-categorize:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* Footer */

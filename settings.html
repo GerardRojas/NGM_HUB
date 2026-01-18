@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NGM HUB — Settings</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/expenses_styles.css" />
+
+    <script src="assets/js/config.js" defer></script>
+    <script src="assets/js/permissions.js" defer></script>
+    <script src="assets/js/pills.js" defer></script>
+</head>
+<body class="page-settings">
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="assets/img/logo.png" alt="NGM HUB Logo" class="sidebar-logo-img" />
+            </div>
+            <div class="sidebar-title-block">
+                <p class="sidebar-title">NGM HUB</p>
+            </div>
+            <div class="sidebar-nav-card">
+                <nav class="sidebar-nav" id="sidebar-nav">
+                    <a href="dashboard.html" class="nav-item" data-module="dashboard">Dashboard</a>
+                    <a href="expenses.html" class="nav-item" data-module="expenses">Expenses Engine</a>
+                    <a href="pipeline.html" class="nav-item" data-module="pipeline">Pipeline Manager</a>
+                    <a href="projects.html" class="nav-item" data-module="projects">Projects</a>
+                    <a href="vendors.html" class="nav-item" data-module="vendors">Vendors</a>
+                    <a href="accounts.html" class="nav-item" data-module="accounts">Accounts</a>
+                    <a href="estimator.html" class="nav-item" data-module="estimator">Estimator Suite</a>
+                    <a href="team.html" class="nav-item" data-module="team">Team Management</a>
+                    <a href="god-view.html" class="nav-item" data-module="god_view">God View</a>
+                    <a href="reporting.html" class="nav-item" data-module="reporting">Reporting</a>
+                    <a href="budgets.html" class="nav-item" data-module="budgets">Budgets</a>
+                    <a href="roles.html" class="nav-item" data-module="roles">Roles Management</a>
+                    <a href="settings.html" class="nav-item nav-item-active" data-module="settings">Settings</a>
+                    <a href="audit.html" class="nav-item" data-module="audit">Audit Logs</a>
+                </nav>
+            </div>
+        </aside>
+
+        <div class="main-area">
+            <header class="ngm-topbar">
+                <div class="ngm-bar-left">
+                    <div class="ngm-brand">
+                        <div class="ngm-brand-icon-small"><span>⚡</span></div>
+                        <div class="ngm-brand-text">
+                            <span class="ngm-brand-org">Next Generation Management</span>
+                            <span class="ngm-brand-context">NGM Hub · System Settings</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ngm-topbar-right">
+                    <div class="ngm-meta">
+                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
+                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · —</span>
+                    </div>
+                    <form class="ngm-search" role="search" onsubmit="return false;">
+                        <span class="ngm-global-search-icon">⌕</span>
+                        <input type="search" class="ngm-search-input" placeholder="Search settings..." />
+                    </form>
+                    <span id="user-pill" class="user-pill">User · —</span>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="workspace">
+                    <section class="data-section">
+                        <div class="expenses-toolbar">
+                            <div class="toolbar-left">
+                                <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">System Settings</h2>
+                                <p style="font-size: 13px; color: #6b7280; margin: 4px 0 0 0;">Configure system preferences and integrations</p>
+                            </div>
+                            <div class="toolbar-right">
+                                <button type="button" class="btn-toolbar btn-toolbar-secondary">Reset to Default</button>
+                                <button type="button" class="btn-toolbar btn-toolbar-primary">Save Changes</button>
+                            </div>
+                        </div>
+
+                        <div class="expenses-table-container">
+                            <div id="settingsLoadingState" class="expenses-loading-state">
+                                <div class="loading-spinner"></div>
+                                <span class="loading-text">Loading settings...</span>
+                            </div>
+
+                            <div id="settingsContent" style="display: none; padding: 24px;">
+
+                                <!-- General Settings -->
+                                <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
+                                    <h3 style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">General Settings</h3>
+                                    <div style="display: grid; gap: 16px;">
+                                        <div>
+                                            <label style="display: block; font-size: 13px; color: #e5e7eb; margin-bottom: 6px;">Company Name</label>
+                                            <input type="text" value="Next Generation Management" style="width: 100%; padding: 8px 12px; background: #0a0a0b; border: 1px solid #27272f; border-radius: 6px; color: #e5e7eb; font-size: 13px;" />
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 13px; color: #e5e7eb; margin-bottom: 6px;">Default Currency</label>
+                                            <select style="width: 100%; padding: 8px 12px; background: #0a0a0b; border: 1px solid #27272f; border-radius: 6px; color: #e5e7eb; font-size: 13px;">
+                                                <option>USD ($)</option>
+                                                <option>EUR (€)</option>
+                                                <option>GBP (£)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 13px; color: #e5e7eb; margin-bottom: 6px;">Time Zone</label>
+                                            <select style="width: 100%; padding: 8px 12px; background: #0a0a0b; border: 1px solid #27272f; border-radius: 6px; color: #e5e7eb; font-size: 13px;">
+                                                <option>America/New_York (EST)</option>
+                                                <option>America/Los_Angeles (PST)</option>
+                                                <option>Europe/London (GMT)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Email & Notifications -->
+                                <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
+                                    <h3 style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">Email & Notifications</h3>
+                                    <div style="display: grid; gap: 12px;">
+                                        <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                                            <input type="checkbox" checked style="width: 16px; height: 16px; cursor: pointer;" />
+                                            <span style="font-size: 13px; color: #e5e7eb;">Send daily summary emails</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                                            <input type="checkbox" checked style="width: 16px; height: 16px; cursor: pointer;" />
+                                            <span style="font-size: 13px; color: #e5e7eb;">Notify on new expenses</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                                            <input type="checkbox" style="width: 16px; height: 16px; cursor: pointer;" />
+                                            <span style="font-size: 13px; color: #e5e7eb;">Notify on budget overruns</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                                            <input type="checkbox" checked style="width: 16px; height: 16px; cursor: pointer;" />
+                                            <span style="font-size: 13px; color: #e5e7eb;">Send weekly project updates</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Integrations -->
+                                <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
+                                    <h3 style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">Integrations</h3>
+                                    <div style="display: grid; gap: 12px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #0a0a0b; border-radius: 6px;">
+                                            <div>
+                                                <div style="font-size: 14px; color: #e5e7eb; font-weight: 600;">QuickBooks Online</div>
+                                                <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">Sync expenses and accounts</div>
+                                            </div>
+                                            <span style="padding: 4px 12px; background: rgba(34, 197, 94, 0.12); color: #22c55e; border-radius: 4px; font-size: 12px; font-weight: 600;">Connected</span>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #0a0a0b; border-radius: 6px;">
+                                            <div>
+                                                <div style="font-size: 14px; color: #e5e7eb; font-weight: 600;">Slack</div>
+                                                <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">Team notifications and updates</div>
+                                            </div>
+                                            <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">Connect</button>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #0a0a0b; border-radius: 6px;">
+                                            <div>
+                                                <div style="font-size: 14px; color: #e5e7eb; font-weight: 600;">Google Drive</div>
+                                                <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">Document storage and sharing</div>
+                                            </div>
+                                            <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">Connect</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Security -->
+                                <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 24px;">
+                                    <h3 style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">Security</h3>
+                                    <div style="display: grid; gap: 12px;">
+                                        <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                                            <input type="checkbox" checked style="width: 16px; height: 16px; cursor: pointer;" />
+                                            <span style="font-size: 13px; color: #e5e7eb;">Require two-factor authentication</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                                            <input type="checkbox" checked style="width: 16px; height: 16px; cursor: pointer;" />
+                                            <span style="font-size: 13px; color: #e5e7eb;">Auto-logout after 30 minutes of inactivity</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                                            <input type="checkbox" style="width: 16px; height: 16px; cursor: pointer;" />
+                                            <span style="font-size: 13px; color: #e5e7eb;">Require password change every 90 days</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            if (window.initTopbarPills) window.initTopbarPills();
+            setTimeout(() => {
+                document.getElementById('settingsLoadingState').style.display = 'none';
+                document.getElementById('settingsContent').style.display = 'block';
+            }, 600);
+        });
+    </script>
+</body>
+</html>

@@ -11,18 +11,23 @@
   let accounts = [];
   let originalAccounts = [];
   let isEditMode = false;
+  let currentSort = 'name'; // 'name', 'number', 'category'
 
   // DOM Elements
   const els = {
     table: document.getElementById('accountsTable'),
     tbody: document.getElementById('accountsTableBody'),
+    loadingState: document.getElementById('accountsLoadingState'),
     emptyState: document.getElementById('accountsEmptyState'),
     btnEditAccounts: document.getElementById('btnEditAccounts'),
     btnAddAccount: document.getElementById('btnAddAccount'),
     btnCancelEdit: document.getElementById('btnCancelEdit'),
     btnSaveChanges: document.getElementById('btnSaveChanges'),
     editModeFooter: document.getElementById('editModeFooter'),
-    searchInput: document.getElementById('accounts-search-input')
+    searchInput: document.getElementById('accounts-search-input'),
+    btnSortByNumber: document.getElementById('btnSortByNumber'),
+    btnSortByCategory: document.getElementById('btnSortByCategory'),
+    btnSortByName: document.getElementById('btnSortByName')
   };
 
   // ================================
@@ -40,6 +45,8 @@
 
   async function loadAccounts() {
     try {
+      showLoadingState();
+
       const res = await fetch(`${API_BASE}/accounts/`);
       if (!res.ok) {
         const text = await res.text();
@@ -70,6 +77,7 @@
       return;
     }
 
+    els.loadingState.style.display = 'none';
     els.emptyState.style.display = 'none';
     els.table.style.display = 'table';
     els.tbody.innerHTML = '';
@@ -82,11 +90,15 @@
 
   function renderReadRow(account, index) {
     const id = account.account_id || '';
+    const acctNum = account.AcctNum != null ? account.AcctNum : '—';
     const name = account.Name || '—';
+    const category = account.AccountCategory || '—';
 
     return `
       <tr data-index="${index}" data-id="${id}">
+        <td>${acctNum}</td>
         <td>${name}</td>
+        <td>${category}</td>
         <td class="col-actions"></td>
       </tr>
     `;
@@ -94,12 +106,20 @@
 
   function renderEditRow(account, index) {
     const id = account.account_id || '';
+    const acctNum = account.AcctNum != null ? account.AcctNum : '';
     const name = account.Name || '';
+    const category = account.AccountCategory || '';
 
     return `
       <tr data-index="${index}" data-id="${id}" class="edit-mode-row">
         <td class="editable-cell">
+          <input type="number" class="edit-input" data-field="AcctNum" value="${acctNum}" placeholder="Account #">
+        </td>
+        <td class="editable-cell">
           <input type="text" class="edit-input" data-field="Name" value="${name}" placeholder="Account name">
+        </td>
+        <td class="editable-cell">
+          <input type="text" class="edit-input" data-field="AccountCategory" value="${category}" placeholder="Category">
         </td>
         <td class="col-actions">
           <button type="button" class="btn-row-delete" data-index="${index}" title="Delete">×</button>
@@ -108,9 +128,16 @@
     `;
   }
 
-  function showEmptyState() {
+  function showLoadingState() {
+    els.loadingState.style.display = 'flex';
+    els.emptyState.style.display = 'none';
     els.table.style.display = 'none';
+  }
+
+  function showEmptyState() {
+    els.loadingState.style.display = 'none';
     els.emptyState.style.display = 'flex';
+    els.table.style.display = 'none';
   }
 
   // ================================
@@ -157,7 +184,13 @@
       const inputs = row.querySelectorAll('.edit-input');
       inputs.forEach(input => {
         const field = input.getAttribute('data-field');
-        current[field] = input.value.trim() || null;
+        const value = input.value.trim();
+
+        if (field === 'AcctNum') {
+          current[field] = value ? parseInt(value, 10) : null;
+        } else {
+          current[field] = value || null;
+        }
       });
 
       // Check if changed
@@ -167,7 +200,9 @@
         updates.push({
           id: current.account_id,
           data: {
-            Name: current.Name
+            Name: current.Name,
+            AcctNum: current.AcctNum,
+            AccountCategory: current.AccountCategory
           }
         });
       }
@@ -257,6 +292,43 @@
   }
 
   // ================================
+  // SORTING
+  // ================================
+
+  function sortAccounts(sortBy) {
+    currentSort = sortBy;
+
+    // Update active button
+    document.querySelectorAll('.btn-sort').forEach(btn => btn.classList.remove('active'));
+    if (sortBy === 'number') {
+      els.btnSortByNumber?.classList.add('active');
+    } else if (sortBy === 'category') {
+      els.btnSortByCategory?.classList.add('active');
+    } else {
+      els.btnSortByName?.classList.add('active');
+    }
+
+    // Sort accounts array
+    accounts.sort((a, b) => {
+      if (sortBy === 'number') {
+        const numA = a.AcctNum != null ? a.AcctNum : Infinity;
+        const numB = b.AcctNum != null ? b.AcctNum : Infinity;
+        return numA - numB;
+      } else if (sortBy === 'category') {
+        const catA = (a.AccountCategory || '').toLowerCase();
+        const catB = (b.AccountCategory || '').toLowerCase();
+        return catA.localeCompare(catB);
+      } else {
+        const nameA = (a.Name || '').toLowerCase();
+        const nameB = (b.Name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      }
+    });
+
+    renderAccountsTable();
+  }
+
+  // ================================
   // SEARCH
   // ================================
 
@@ -265,8 +337,12 @@
     const rows = els.tbody.querySelectorAll('tr');
 
     rows.forEach(row => {
-      const accountName = row.querySelector('td')?.textContent.toLowerCase() || '';
-      if (accountName.includes(searchTerm)) {
+      const cells = row.querySelectorAll('td');
+      const acctNum = cells[0]?.textContent.toLowerCase() || '';
+      const accountName = cells[1]?.textContent.toLowerCase() || '';
+      const category = cells[2]?.textContent.toLowerCase() || '';
+
+      if (acctNum.includes(searchTerm) || accountName.includes(searchTerm) || category.includes(searchTerm)) {
         row.style.display = '';
       } else {
         row.style.display = 'none';
@@ -309,6 +385,19 @@
 
     // Search
     els.searchInput?.addEventListener('input', filterTable);
+
+    // Sort buttons
+    els.btnSortByNumber?.addEventListener('click', () => {
+      sortAccounts('number');
+    });
+
+    els.btnSortByCategory?.addEventListener('click', () => {
+      sortAccounts('category');
+    });
+
+    els.btnSortByName?.addEventListener('click', () => {
+      sortAccounts('name');
+    });
   }
 
   // ================================

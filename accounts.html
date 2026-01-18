@@ -18,6 +18,7 @@
 
     <!-- Global env/server/user pills -->
     <script src="assets/js/config.js" defer></script>
+    <script src="assets/js/permissions.js" defer></script>
     <script src="assets/js/pills.js" defer></script>
     <script src="assets/js/accounts.js" defer></script>
 </head>
@@ -36,14 +37,14 @@
 
             <div class="sidebar-nav-card">
                 <nav class="sidebar-nav" id="sidebar-nav">
-                    <a href="dashboard.html" class="nav-item">Dashboard</a>
-                    <a href="expenses.html" class="nav-item">Expenses</a>
-                    <a href="pipeline.html" class="nav-item">Pipeline Manager</a>
-                    <a href="projects.html" class="nav-item">Projects</a>
-                    <a href="accounts.html" class="nav-item nav-item-active">Accounts</a>
-                    <a href="accounts.html" class="nav-item">Accounts</a>
-                    <a href="estimator.html" class="nav-item">Estimator Suite</a>
-                    <a href="team.html" class="nav-item">Team Management</a>
+                    <a href="dashboard.html" class="nav-item" data-module="dashboard">Dashboard</a>
+                    <a href="expenses.html" class="nav-item" data-module="expenses">Expenses</a>
+                    <a href="pipeline.html" class="nav-item" data-module="pipeline">Pipeline Manager</a>
+                    <a href="projects.html" class="nav-item" data-module="projects">Projects</a>
+                    <a href="vendors.html" class="nav-item" data-module="vendors">Vendors</a>
+                    <a href="accounts.html" class="nav-item nav-item-active" data-module="accounts">Accounts</a>
+                    <a href="estimator.html" class="nav-item" data-module="estimator">Estimator Suite</a>
+                    <a href="team.html" class="nav-item" data-module="team">Team Management</a>
                 </nav>
             </div>
         </aside>
@@ -94,6 +95,18 @@
                         <div class="expenses-toolbar">
                             <div class="toolbar-left">
                                 <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Accounts</h2>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <span style="font-size: 11px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Sort by:</span>
+                                    <button type="button" class="btn-sort" id="btnSortByNumber" data-sort="number">
+                                        Account #
+                                    </button>
+                                    <button type="button" class="btn-sort" id="btnSortByCategory" data-sort="category">
+                                        Category
+                                    </button>
+                                    <button type="button" class="btn-sort active" id="btnSortByName" data-sort="name">
+                                        A-Z
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="toolbar-right">
@@ -108,7 +121,12 @@
 
                         <!-- Accounts Table -->
                         <div class="expenses-table-container">
-                            <div id="accountsEmptyState" class="expenses-empty-state">
+                            <div id="accountsLoadingState" class="expenses-loading-state">
+                                <div class="loading-spinner"></div>
+                                <span class="loading-text">Loading data...</span>
+                            </div>
+
+                            <div id="accountsEmptyState" class="expenses-empty-state" style="display: none;">
                                 <span class="expenses-empty-icon">🏢</span>
                                 <span class="expenses-empty-text">No accounts found</span>
                             </div>
@@ -116,7 +134,9 @@
                             <table class="expenses-table" id="accountsTable" style="display: none;">
                                 <thead>
                                     <tr>
+                                        <th>Account #</th>
                                         <th>Account Name</th>
+                                        <th>Category</th>
                                         <th class="col-actions"></th>
                                     </tr>
                                 </thead>

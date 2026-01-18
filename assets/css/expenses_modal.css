@@ -8,10 +8,9 @@
   display: none !important;
 }
 
-/* Backdrop negro + blur */
+/* Backdrop negro (sin blur para mejor performance) */
 #addExpenseModal.modal-backdrop {
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.80);
 
   position: fixed;
   inset: 0;
@@ -402,8 +401,7 @@
 }
 
 #editSingleExpenseModal.modal-backdrop {
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.80);
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -508,6 +506,21 @@
   border-color: rgba(34, 197, 94, 0.65);
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
   background: rgba(255, 255, 255, 0.06);
+}
+
+/* Inputs with datalist */
+input.form-input[list] {
+  cursor: text;
+}
+
+/* Hide native datalist dropdown arrow in WebKit browsers */
+input.form-input[list]::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+/* Datalist options styling */
+datalist {
+  display: none;
 }
 
 select.form-input {

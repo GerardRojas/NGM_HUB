@@ -154,6 +154,7 @@
                                             <button type="button" class="filter-toggle" data-column="account" title="Filter">▼</button>
                                         </th>
                                         <th>Amount</th>
+                                        <th class="col-status" title="Authorization Status">Auth</th>
                                         <th class="col-actions" title="Receipt">📎</th>
                                         <th class="col-actions"></th>
                                     </tr>
@@ -213,30 +214,26 @@
 
                     <div class="form-field">
                         <label class="form-label">Type</label>
-                        <select class="form-input" id="singleExpenseType">
-                            <option value="">Select type...</option>
-                        </select>
+                        <input type="text" class="form-input" id="singleExpenseType" list="singleExpenseTypeList" placeholder="Type to search..." autocomplete="off">
+                        <datalist id="singleExpenseTypeList"></datalist>
                     </div>
 
                     <div class="form-field">
                         <label class="form-label">Vendor</label>
-                        <select class="form-input" id="singleExpenseVendor">
-                            <option value="">Select vendor...</option>
-                        </select>
+                        <input type="text" class="form-input" id="singleExpenseVendor" list="singleExpenseVendorList" placeholder="Type to search..." autocomplete="off">
+                        <datalist id="singleExpenseVendorList"></datalist>
                     </div>
 
                     <div class="form-field">
                         <label class="form-label">Payment Method</label>
-                        <select class="form-input" id="singleExpensePayment">
-                            <option value="">Select payment...</option>
-                        </select>
+                        <input type="text" class="form-input" id="singleExpensePayment" list="singleExpensePaymentList" placeholder="Type to search..." autocomplete="off">
+                        <datalist id="singleExpensePaymentList"></datalist>
                     </div>
 
                     <div class="form-field">
                         <label class="form-label">Account</label>
-                        <select class="form-input" id="singleExpenseAccount">
-                            <option value="">Select account...</option>
-                        </select>
+                        <input type="text" class="form-input" id="singleExpenseAccount" list="singleExpenseAccountList" placeholder="Type to search..." autocomplete="off">
+                        <datalist id="singleExpenseAccountList"></datalist>
                     </div>
 
                     <div class="form-field">

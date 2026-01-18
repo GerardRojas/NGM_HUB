@@ -6,6 +6,10 @@
   // STATE
   // ================================
   let currentUser = null;
+  let canAuthorize = false; // Can user authorize expenses?
+
+  // Roles allowed to authorize expenses
+  const AUTHORIZED_ROLES = ['CEO', 'COO', 'Accounting Manager', 'Admin Guest'];
   let metaData = {
     txn_types: [],
     projects: [],
@@ -100,6 +104,11 @@
 
     try {
       currentUser = JSON.parse(userRaw);
+
+      // Check if user can authorize expenses
+      const userRole = currentUser.user_role || currentUser.role || '';
+      canAuthorize = AUTHORIZED_ROLES.includes(userRole);
+      console.log('[EXPENSES] User role:', userRole, '| Can authorize:', canAuthorize);
     } catch (err) {
       console.error('[EXPENSES] Invalid ngmUser in localStorage', err);
       localStorage.removeItem('ngmUser');
@@ -253,7 +262,7 @@
         const searchLower = globalSearchTerm.toLowerCase();
         const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '';
         const description = exp.LineDescription || '';
-        const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'id', 'TnxType_name') || '';
+        const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || '';
         const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '';
         const payment = exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '';
         const account = exp.account_name || findMetaName('accounts', exp.account_id, 'account_id', 'Name') || '';
@@ -279,7 +288,7 @@
 
       // Type filter
       if (columnFilters.type.length > 0) {
-        const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'id', 'TnxType_name') || '—';
+        const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || '—';
         if (!columnFilters.type.includes(type)) return false;
       }
 
@@ -358,7 +367,7 @@
   function renderReadOnlyRow(exp, index) {
     const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
     const description = exp.LineDescription || '—';
-    const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'id', 'TnxType_name') || '—';
+    const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || '—';
     const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
     const payment = exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '—';
     const account = exp.account_name || findMetaName('accounts', exp.account_id, 'account_id', 'Name') || '—';
@@ -376,6 +385,17 @@
       ? `<a href="${exp.receipt_url}" target="_blank" class="receipt-icon-btn receipt-icon-btn--has-receipt" title="View receipt" onclick="event.stopPropagation()">📎</a>`
       : `<span class="receipt-icon-btn" title="No receipt">📎</span>`;
 
+    // Authorization badge
+    const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
+    const authBadgeClass = isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending';
+    const authBadgeText = isAuthorized ? '✓ Auth' : '⏳ Pending';
+    const authBadgeDisabled = canAuthorize ? '' : ' auth-badge-disabled';
+    const authBadge = `<span class="auth-badge ${authBadgeClass}${authBadgeDisabled}"
+      data-expense-id="${expenseId}"
+      data-auth-status="${isAuthorized}"
+      onclick="event.stopPropagation(); ${canAuthorize ? 'window.toggleAuth(this)' : ''}"
+      title="${canAuthorize ? 'Click to toggle authorization' : 'You do not have permission to authorize'}">${authBadgeText}</span>`;
+
     return `
       <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable" style="cursor: pointer;">
         <td>${date}</td>
@@ -385,6 +405,7 @@
         <td>${payment}</td>
         <td>${account}</td>
         <td class="col-amount">${amount}</td>
+        <td class="col-status">${authBadge}</td>
         <td class="col-actions">${receiptIcon}</td>
         <td class="col-actions"></td>
       </tr>
@@ -1005,11 +1026,26 @@
     // Populate dropdowns
     populateSingleExpenseDropdowns();
 
-    // Set selected values
-    els.singleExpenseType.value = expense.txn_type || '';
-    els.singleExpenseVendor.value = expense.vendor_id || '';
-    els.singleExpensePayment.value = expense.payment_type || '';
-    els.singleExpenseAccount.value = expense.account_id || '';
+    // Set selected values - display text, store ID in data-value
+    // Type
+    const selectedType = metaData.txn_types.find(t => (t.TnxType_id || t.id) == expense.txn_type);
+    els.singleExpenseType.value = selectedType ? (selectedType.TnxType_name || selectedType.name || '') : '';
+    els.singleExpenseType.setAttribute('data-value', expense.txn_type || '');
+
+    // Vendor
+    const selectedVendor = metaData.vendors.find(v => v.id == expense.vendor_id);
+    els.singleExpenseVendor.value = selectedVendor ? (selectedVendor.vendor_name || selectedVendor.name || '') : '';
+    els.singleExpenseVendor.setAttribute('data-value', expense.vendor_id || '');
+
+    // Payment
+    const selectedPayment = metaData.payment_methods.find(p => p.id == expense.payment_type);
+    els.singleExpensePayment.value = selectedPayment ? (selectedPayment.payment_method_name || selectedPayment.name || '') : '';
+    els.singleExpensePayment.setAttribute('data-value', expense.payment_type || '');
+
+    // Account
+    const selectedAccount = metaData.accounts.find(a => a.account_id == expense.account_id);
+    els.singleExpenseAccount.value = selectedAccount ? (selectedAccount.Name || selectedAccount.name || '') : '';
+    els.singleExpenseAccount.setAttribute('data-value', expense.account_id || '');
 
     // Handle receipt
     currentReceiptFile = null;
@@ -1028,41 +1064,58 @@
   }
 
   function populateSingleExpenseDropdowns() {
-    // Populate type dropdown - uses TnxType_id
-    els.singleExpenseType.innerHTML = '<option value="">Select type...</option>';
-    metaData.txn_types.forEach(type => {
-      const opt = document.createElement('option');
-      opt.value = type.TnxType_id || type.id;
-      opt.textContent = type.TnxType_name || type.name || `Type ${type.TnxType_id || type.id}`;
-      els.singleExpenseType.appendChild(opt);
-    });
+    // Populate type datalist - uses TnxType_id
+    const typeList = document.getElementById('singleExpenseTypeList');
+    if (typeList) {
+      typeList.innerHTML = '';
+      metaData.txn_types.forEach(type => {
+        const opt = document.createElement('option');
+        const typeId = type.TnxType_id || type.id;
+        const typeName = type.TnxType_name || type.name || `Type ${typeId}`;
+        opt.value = typeName;
+        opt.setAttribute('data-id', typeId);
+        typeList.appendChild(opt);
+      });
+    }
 
-    // Populate vendor dropdown - uses id
-    els.singleExpenseVendor.innerHTML = '<option value="">Select vendor...</option>';
-    metaData.vendors.forEach(vendor => {
-      const opt = document.createElement('option');
-      opt.value = vendor.id;
-      opt.textContent = vendor.vendor_name || vendor.name || `Vendor ${vendor.id}`;
-      els.singleExpenseVendor.appendChild(opt);
-    });
+    // Populate vendor datalist - uses id
+    const vendorList = document.getElementById('singleExpenseVendorList');
+    if (vendorList) {
+      vendorList.innerHTML = '';
+      metaData.vendors.forEach(vendor => {
+        const opt = document.createElement('option');
+        const vendorName = vendor.vendor_name || vendor.name || `Vendor ${vendor.id}`;
+        opt.value = vendorName;
+        opt.setAttribute('data-id', vendor.id);
+        vendorList.appendChild(opt);
+      });
+    }
 
-    // Populate payment dropdown - uses id
-    els.singleExpensePayment.innerHTML = '<option value="">Select payment...</option>';
-    metaData.payment_methods.forEach(payment => {
-      const opt = document.createElement('option');
-      opt.value = payment.id;
-      opt.textContent = payment.payment_method_name || payment.name || `Payment ${payment.id}`;
-      els.singleExpensePayment.appendChild(opt);
-    });
+    // Populate payment datalist - uses id
+    const paymentList = document.getElementById('singleExpensePaymentList');
+    if (paymentList) {
+      paymentList.innerHTML = '';
+      metaData.payment_methods.forEach(payment => {
+        const opt = document.createElement('option');
+        const paymentName = payment.payment_method_name || payment.name || `Payment ${payment.id}`;
+        opt.value = paymentName;
+        opt.setAttribute('data-id', payment.id);
+        paymentList.appendChild(opt);
+      });
+    }
 
-    // Populate account dropdown - uses account_id
-    els.singleExpenseAccount.innerHTML = '<option value="">Select account...</option>';
-    metaData.accounts.forEach(account => {
-      const opt = document.createElement('option');
-      opt.value = account.account_id;
-      opt.textContent = account.Name || account.name || `Account ${account.account_id}`;
-      els.singleExpenseAccount.appendChild(opt);
-    });
+    // Populate account datalist - uses account_id
+    const accountList = document.getElementById('singleExpenseAccountList');
+    if (accountList) {
+      accountList.innerHTML = '';
+      metaData.accounts.forEach(account => {
+        const opt = document.createElement('option');
+        const accountName = account.Name || account.name || `Account ${account.account_id}`;
+        opt.value = accountName;
+        opt.setAttribute('data-id', account.account_id);
+        accountList.appendChild(opt);
+      });
+    }
   }
 
   function renderSingleExpenseReceipt() {
@@ -1114,14 +1167,29 @@
     const apiBase = getApiBase();
     const expenseId = currentEditingExpense.expense_id || currentEditingExpense.id;
 
-    // Collect updated data
+    // Helper function to get ID from datalist input
+    function getDatalistValue(input, datalistId) {
+      // First check if data-value was set by our input handler
+      const storedValue = input.getAttribute('data-value');
+      if (storedValue) return storedValue;
+
+      // Fallback: try to find matching option by text value
+      const datalist = document.getElementById(datalistId);
+      if (datalist) {
+        const matchingOption = Array.from(datalist.options).find(opt => opt.value === input.value);
+        if (matchingOption) return matchingOption.getAttribute('data-id');
+      }
+      return null;
+    }
+
+    // Collect updated data - read from data-value attributes
     const updatedData = {
       TxnDate: els.singleExpenseDate.value || null,
       LineDescription: els.singleExpenseDescription.value || null,
-      txn_type: els.singleExpenseType.value || null,
-      vendor_id: els.singleExpenseVendor.value || null,
-      payment_type: els.singleExpensePayment.value || null,
-      account_id: els.singleExpenseAccount.value || null,
+      txn_type: getDatalistValue(els.singleExpenseType, 'singleExpenseTypeList'),
+      vendor_id: getDatalistValue(els.singleExpenseVendor, 'singleExpenseVendorList'),
+      payment_type: getDatalistValue(els.singleExpensePayment, 'singleExpensePaymentList'),
+      account_id: getDatalistValue(els.singleExpenseAccount, 'singleExpenseAccountList'),
       Amount: els.singleExpenseAmount.value ? parseFloat(els.singleExpenseAmount.value) : null,
       created_by: currentUser.user_id || currentUser.id // Update created_by to current user
     };
@@ -1288,6 +1356,29 @@
       }
     });
 
+    // Single expense modal: Update data-value when datalist input changes
+    const singleExpenseInputs = [
+      { input: els.singleExpenseType, listId: 'singleExpenseTypeList' },
+      { input: els.singleExpenseVendor, listId: 'singleExpenseVendorList' },
+      { input: els.singleExpensePayment, listId: 'singleExpensePaymentList' },
+      { input: els.singleExpenseAccount, listId: 'singleExpenseAccountList' }
+    ];
+
+    singleExpenseInputs.forEach(({ input, listId }) => {
+      input?.addEventListener('input', (e) => {
+        const datalist = document.getElementById(listId);
+        if (!datalist) return;
+
+        const matchingOption = Array.from(datalist.options).find(opt => opt.value === e.target.value);
+        if (matchingOption) {
+          e.target.setAttribute('data-value', matchingOption.getAttribute('data-id'));
+          console.log(`[SINGLE MODAL] Updated to:`, matchingOption.getAttribute('data-id'));
+        } else {
+          e.target.setAttribute('data-value', '');
+        }
+      });
+    });
+
     // Note: Removed the input event listener that was updating expenses array directly
     // This was causing the "No changes to save" issue because the comparison with
     // originalExpenses would find no differences. Now we collect changes from DOM
@@ -1411,7 +1502,7 @@
           value = exp.LineDescription || '—';
           break;
         case 'type':
-          value = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'id', 'TnxType_name') || '—';
+          value = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || '—';
           break;
         case 'vendor':
           value = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
@@ -1495,6 +1586,56 @@
     // Close dropdown
     closeFilterDropdown();
   }
+
+  // ================================
+  // AUTHORIZATION TOGGLE
+  // ================================
+  async function toggleAuth(badgeElement) {
+    if (!canAuthorize) {
+      console.warn('[AUTH] User does not have permission to authorize');
+      return;
+    }
+
+    const expenseId = badgeElement.getAttribute('data-expense-id');
+    const currentStatus = badgeElement.getAttribute('data-auth-status') === 'true';
+    const newStatus = !currentStatus;
+
+    console.log('[AUTH] Toggling authorization for expense:', expenseId, 'from', currentStatus, 'to', newStatus);
+
+    const apiBase = getApiBase();
+
+    try {
+      // Update authorization status
+      const userId = currentUser.user_id || currentUser.id;
+      const response = await apiJson(`${apiBase}/expenses/${expenseId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auth_status: newStatus,
+          auth_by: newStatus ? userId : null // Record who authorized, clear if un-authorizing
+        })
+      });
+
+      console.log('[AUTH] Authorization updated:', response);
+
+      // Update local expense data
+      const expense = expenses.find(e => (e.expense_id || e.id) == expenseId);
+      if (expense) {
+        expense.auth_status = newStatus;
+        expense.auth_by = newStatus ? userId : null;
+      }
+
+      // Re-render table to update badge
+      renderExpensesTable();
+
+    } catch (error) {
+      console.error('[AUTH] Error updating authorization:', error);
+      alert('Failed to update authorization status: ' + error.message);
+    }
+  }
+
+  // Expose toggleAuth to window for onclick handler
+  window.toggleAuth = toggleAuth;
 
   // ================================
   // INIT

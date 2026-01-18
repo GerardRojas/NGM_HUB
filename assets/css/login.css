@@ -158,6 +158,7 @@
     height: 30px;
     object-fit: contain;
     animation: fadeOnly 1.5s ease-in-out infinite;
+    flex-shrink: 0;  /* No permitir que se comprima */
 }
 
 /* Cuando está en loading: ocultar texto y mostrar solo logo */
@@ -194,6 +195,7 @@
     justify-content: center;
 
     width: auto;
+    height: 44px;  /* Altura fija para que no crezca con el spinner */
     margin: 16px auto 0 auto;   /* ← AQUÍ SE CONTROLA TODO EL ESPACIADO */
     border: none;
     cursor: pointer;
@@ -213,7 +215,8 @@
 
 .login-screen .btn-primary__inner {
     width: 100%;
-    padding: 10px 16px; /* más corto */
+    height: 100%;  /* Usa toda la altura del botón padre */
+    padding: 0 16px;  /* Solo padding horizontal */
     display: inline-flex;
     align-items: center;
     justify-content: center;

@@ -2316,8 +2316,11 @@
     qboTableBody.innerHTML = qboRows || '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #6b7280;">No unlinked QBO expenses</td></tr>';
 
     // Update counts
-    document.getElementById('reconcileManualCount')?.textContent = `${unlinkedManual.length} pending`;
-    document.getElementById('reconcileQBOCount')?.textContent = `${unlinkedQBO.length} pending`;
+    const manualCountEl = document.getElementById('reconcileManualCount');
+    if (manualCountEl) manualCountEl.textContent = `${unlinkedManual.length} pending`;
+
+    const qboCountEl = document.getElementById('reconcileQBOCount');
+    if (qboCountEl) qboCountEl.textContent = `${unlinkedQBO.length} pending`;
 
     // Update summary stats
     updateReconciliationSummary();
@@ -2385,10 +2388,17 @@
     const pendingManual = totalManual - linkedCount;
     const pendingQBO = totalQBO - linkedCount;
 
-    document.getElementById('reconcileSummaryLinked')?.textContent = linkedCount;
-    document.getElementById('reconcileSummaryPendingManual')?.textContent = pendingManual;
-    document.getElementById('reconcileSummaryPendingQBO')?.textContent = pendingQBO;
-    document.getElementById('reconcileSummaryTotal')?.textContent = totalManual;
+    const linkedEl = document.getElementById('reconcileSummaryLinked');
+    if (linkedEl) linkedEl.textContent = linkedCount;
+
+    const pendingManualEl = document.getElementById('reconcileSummaryPendingManual');
+    if (pendingManualEl) pendingManualEl.textContent = pendingManual;
+
+    const pendingQBOEl = document.getElementById('reconcileSummaryPendingQBO');
+    if (pendingQBOEl) pendingQBOEl.textContent = pendingQBO;
+
+    const totalEl = document.getElementById('reconcileSummaryTotal');
+    if (totalEl) totalEl.textContent = totalManual;
   }
 
   async function saveReconciliations() {

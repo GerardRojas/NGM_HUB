@@ -457,7 +457,7 @@
 }
 
 #editSingleExpenseModal .modal-body {
-  padding: 20px;
+  padding: 16px 18px;
   overflow: auto;
 }
 
@@ -465,13 +465,13 @@
 .modal-form-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 .form-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .form-field-full {
@@ -488,7 +488,7 @@
 
 .form-input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 9px 11px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(148, 163, 184, 0.28);
@@ -540,6 +540,18 @@ select.form-input {
 select.form-input option {
   background: #1f1f1f;
   color: #ffffff;
+}
+
+/* Remove number input spinners (up/down arrows) */
+input[type="number"].form-input::-webkit-inner-spin-button,
+input[type="number"].form-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"].form-input {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 #editSingleExpenseModal .modal-footer {
@@ -623,4 +635,84 @@ select.form-input option {
   .modal-form-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* =========================================
+   CHECKBOX STYLES FOR AUTHORIZATION
+   ========================================= */
+
+.form-checkbox-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.form-checkbox-wrapper:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.form-checkbox {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(148, 163, 184, 0.4);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  margin-top: 2px;
+}
+
+.form-checkbox:hover {
+  border-color: rgba(34, 197, 94, 0.6);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.form-checkbox:checked {
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  border-color: #22c55e;
+}
+
+.form-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #0f2a1e;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.form-checkbox:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-checkbox-label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.form-checkbox-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.form-checkbox-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
 }

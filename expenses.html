@@ -31,6 +31,9 @@
     <!-- JWT Debugger (development only) -->
     <script src="assets/js/jwt-debugger.js" defer></script>
 
+    <!-- Auth Diagnostic (development only) -->
+    <script src="assets/js/auth-diagnostic.js" defer></script>
+
 </head>
 <body class="page-expenses">
     <div class="app-layout">
@@ -242,6 +245,17 @@
                     <div class="form-field">
                         <label class="form-label">Amount</label>
                         <input type="number" class="form-input" id="singleExpenseAmount" step="0.01" min="0" placeholder="0.00">
+                    </div>
+
+                    <!-- Authorization checkbox (only visible to authorized roles) -->
+                    <div class="form-field form-field-full" id="singleExpenseAuthContainer" style="display: none;">
+                        <label class="form-checkbox-wrapper">
+                            <input type="checkbox" class="form-checkbox" id="singleExpenseAuthStatus">
+                            <span class="form-checkbox-label">
+                                <span class="form-checkbox-text">Authorized</span>
+                                <span class="form-checkbox-hint">Mark this expense as authorized</span>
+                            </span>
+                        </label>
                     </div>
 
                     <!-- Receipt section -->

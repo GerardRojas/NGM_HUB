@@ -90,6 +90,8 @@
     els.singleExpenseAccount = document.getElementById('singleExpenseAccount');
     els.singleExpenseAmount = document.getElementById('singleExpenseAmount');
     els.singleExpenseReceiptContainer = document.getElementById('singleExpenseReceiptContainer');
+    els.singleExpenseAuthContainer = document.getElementById('singleExpenseAuthContainer');
+    els.singleExpenseAuthStatus = document.getElementById('singleExpenseAuthStatus');
   }
 
   // ================================
@@ -109,6 +111,8 @@
       const userRole = currentUser.user_role || currentUser.role || '';
       canAuthorize = AUTHORIZED_ROLES.includes(userRole);
       console.log('[EXPENSES] User role:', userRole, '| Can authorize:', canAuthorize);
+      console.log('[EXPENSES] Authorized roles:', AUTHORIZED_ROLES);
+      console.log('[EXPENSES] User object:', currentUser);
     } catch (err) {
       console.error('[EXPENSES] Invalid ngmUser in localStorage', err);
       localStorage.removeItem('ngmUser');
@@ -142,6 +146,26 @@
       throw new Error(`${options.method || 'GET'} ${url} failed (${res.status}): ${text}`);
     }
     return text ? JSON.parse(text) : null;
+  }
+
+  // ================================
+  // CURRENCY FORMATTING HELPERS
+  // ================================
+  function formatCurrency(value) {
+    if (value === null || value === undefined || value === '') return '';
+    const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value;
+    if (isNaN(num)) return '';
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function parseCurrency(formattedValue) {
+    if (!formattedValue) return null;
+    const cleaned = String(formattedValue).replace(/[^0-9.-]/g, '');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? null : num;
   }
 
   // ================================
@@ -835,6 +859,24 @@
         console.log(`[MODAL] Receipt attached to row ${rowIndex}:`, file.name);
       }
     });
+
+    // Add currency formatting for amount input
+    const amountInput = row.querySelector('.exp-input--amount');
+    if (amountInput) {
+      amountInput.addEventListener('blur', (e) => {
+        const value = parseCurrency(e.target.value);
+        if (value !== null) {
+          e.target.value = formatCurrency(value);
+        }
+      });
+
+      amountInput.addEventListener('focus', (e) => {
+        const value = parseCurrency(e.target.value);
+        if (value !== null) {
+          e.target.value = value.toString();
+        }
+      });
+    }
   }
 
   function buildModalSelectHtml(field, options, valueKey, textKey) {
@@ -909,7 +951,7 @@
             console.warn('Failed to parse mapping for field:', field, e);
           }
         } else if (field === 'Amount') {
-          value = value ? parseFloat(value) : null;
+          value = parseCurrency(value);
         }
 
         rowData[field] = value || null;
@@ -1021,7 +1063,7 @@
     // Populate form fields
     els.singleExpenseDate.value = expense.TxnDate ? expense.TxnDate.split('T')[0] : '';
     els.singleExpenseDescription.value = expense.LineDescription || '';
-    els.singleExpenseAmount.value = expense.Amount || '';
+    els.singleExpenseAmount.value = formatCurrency(expense.Amount);
 
     // Populate dropdowns
     populateSingleExpenseDropdowns();
@@ -1051,6 +1093,21 @@
     currentReceiptFile = null;
     currentReceiptUrl = expense.receipt_url || null;
     renderSingleExpenseReceipt();
+
+    // Handle authorization checkbox (only show for authorized roles)
+    console.log('[EXPENSES] Opening modal - canAuthorize:', canAuthorize);
+    console.log('[EXPENSES] Auth container element exists:', !!els.singleExpenseAuthContainer);
+    console.log('[EXPENSES] Current expense auth_status:', expense.auth_status);
+
+    if (canAuthorize && els.singleExpenseAuthContainer) {
+      console.log('[EXPENSES] Showing authorization checkbox');
+      els.singleExpenseAuthContainer.style.display = 'block';
+      els.singleExpenseAuthStatus.checked = expense.auth_status === true || expense.auth_status === 1;
+      els.singleExpenseAuthStatus.disabled = false;
+    } else {
+      console.log('[EXPENSES] Hiding authorization checkbox - canAuthorize:', canAuthorize);
+      els.singleExpenseAuthContainer.style.display = 'none';
+    }
 
     // Show modal
     els.singleExpenseModal.classList.remove('hidden');
@@ -1190,9 +1247,15 @@
       vendor_id: getDatalistValue(els.singleExpenseVendor, 'singleExpenseVendorList'),
       payment_type: getDatalistValue(els.singleExpensePayment, 'singleExpensePaymentList'),
       account_id: getDatalistValue(els.singleExpenseAccount, 'singleExpenseAccountList'),
-      Amount: els.singleExpenseAmount.value ? parseFloat(els.singleExpenseAmount.value) : null,
+      Amount: parseCurrency(els.singleExpenseAmount.value),
       created_by: currentUser.user_id || currentUser.id // Update created_by to current user
     };
+
+    // Include authorization fields if user has permission
+    if (canAuthorize && els.singleExpenseAuthStatus) {
+      updatedData.auth_status = els.singleExpenseAuthStatus.checked;
+      updatedData.auth_by = els.singleExpenseAuthStatus.checked ? (currentUser.user_id || currentUser.id) : null;
+    }
 
     console.log('[EXPENSES] Saving single expense:', expenseId, updatedData);
 
@@ -1377,6 +1440,22 @@
           e.target.setAttribute('data-value', '');
         }
       });
+    });
+
+    // Format currency on blur for single expense modal
+    els.singleExpenseAmount?.addEventListener('blur', (e) => {
+      const value = parseCurrency(e.target.value);
+      if (value !== null) {
+        e.target.value = formatCurrency(value);
+      }
+    });
+
+    // Allow typing in currency field - remove formatting on focus
+    els.singleExpenseAmount?.addEventListener('focus', (e) => {
+      const value = parseCurrency(e.target.value);
+      if (value !== null) {
+        e.target.value = value.toString();
+      }
     });
 
     // Note: Removed the input event listener that was updating expenses array directly

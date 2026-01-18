@@ -34,6 +34,9 @@
     <!-- Auth Diagnostic (development only) -->
     <script src="assets/js/auth-diagnostic.js" defer></script>
 
+    <!-- Supabase Bucket Diagnostic (development only) -->
+    <script src="assets/js/supabase-bucket-diagnostic.js" defer></script>
+
 </head>
 <body class="page-expenses">
     <div class="app-layout">
@@ -116,6 +119,9 @@
                             </div>
 
                             <div class="toolbar-right">
+                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnColumnManager">
+                                    <span style="font-size: 14px;">⚙</span> Columns
+                                </button>
                                 <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnEditExpenses" disabled>
                                     Edit Expenses
                                 </button>
@@ -159,9 +165,12 @@
                                             Account
                                             <button type="button" class="filter-toggle" data-column="account" title="Filter">▼</button>
                                         </th>
-                                        <th>Amount</th>
-                                        <th class="col-status" title="Authorization Status">Auth</th>
-                                        <th class="col-actions" title="Receipt">📎</th>
+                                        <th class="col-amount">Amount</th>
+                                        <th class="col-receipt" title="Receipt">📎</th>
+                                        <th class="col-auth" title="Authorization Status">
+                                            Auth
+                                            <button type="button" class="filter-toggle" data-column="auth" title="Filter">▼</button>
+                                        </th>
                                         <th class="col-actions"></th>
                                     </tr>
                                 </thead>
@@ -322,6 +331,29 @@
             <div class="modal-footer">
                 <button type="button" class="btn-modal-secondary" id="btnCancelExpenses">Cancel</button>
                 <button type="button" class="btn-modal-primary" id="btnSaveAllExpenses">Save All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Column Manager Modal -->
+    <div id="columnManagerModal" class="modal-backdrop hidden">
+        <div class="modal modal-column-manager">
+            <div class="modal-header">
+                <div class="modal-title">Manage Columns</div>
+                <button type="button" class="modal-close-btn" id="btnCloseColumnManager">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <p class="modal-hint">Toggle column visibility. Your preferences are saved automatically.</p>
+
+                <div class="column-checkboxes" id="columnCheckboxes">
+                    <!-- Checkboxes populated by JS -->
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnResetColumns">Reset to Default</button>
+                <button type="button" class="btn-modal-primary" id="btnCloseColumnManagerFooter">Done</button>
             </div>
         </div>
     </div>

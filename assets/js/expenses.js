@@ -32,7 +32,8 @@
     vendor: [],
     payment: [],
     account: [],
-    description: []
+    description: [],
+    auth: []
   };
 
   // Filter dropdown state
@@ -41,6 +42,22 @@
 
   // Global search state
   let globalSearchTerm = '';
+
+  // Column visibility configuration
+  const COLUMN_CONFIG = [
+    { key: 'date', label: 'Date', defaultVisible: true },
+    { key: 'description', label: 'Description', defaultVisible: true },
+    { key: 'type', label: 'Type', defaultVisible: true },
+    { key: 'vendor', label: 'Vendor', defaultVisible: true },
+    { key: 'payment', label: 'Payment', defaultVisible: true },
+    { key: 'account', label: 'Account', defaultVisible: true },
+    { key: 'amount', label: 'Amount', defaultVisible: true },
+    { key: 'receipt', label: 'Receipt', defaultVisible: true },
+    { key: 'auth', label: 'Authorization', defaultVisible: true }
+  ];
+
+  const COLUMN_VISIBILITY_KEY = 'expensesColumnVisibility';
+  let columnVisibility = {};
 
   // ================================
   // DOM ELEMENTS
@@ -92,6 +109,14 @@
     els.singleExpenseReceiptContainer = document.getElementById('singleExpenseReceiptContainer');
     els.singleExpenseAuthContainer = document.getElementById('singleExpenseAuthContainer');
     els.singleExpenseAuthStatus = document.getElementById('singleExpenseAuthStatus');
+
+    // Column manager modal
+    els.btnColumnManager = document.getElementById('btnColumnManager');
+    els.columnManagerModal = document.getElementById('columnManagerModal');
+    els.btnCloseColumnManager = document.getElementById('btnCloseColumnManager');
+    els.btnCloseColumnManagerFooter = document.getElementById('btnCloseColumnManagerFooter');
+    els.btnResetColumns = document.getElementById('btnResetColumns');
+    els.columnCheckboxes = document.getElementById('columnCheckboxes');
   }
 
   // ================================
@@ -340,6 +365,13 @@
         if (!columnFilters.description.includes(desc)) return false;
       }
 
+      // Authorization filter
+      if (columnFilters.auth.length > 0) {
+        const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
+        const authValue = isAuthorized ? 'Authorized' : 'Pending';
+        if (!columnFilters.auth.includes(authValue)) return false;
+      }
+
       return true;
     });
   }
@@ -375,17 +407,21 @@
       return sum + amount;
     }, 0);
 
-    // Add total row with currency formatting (includes receipt column)
+    // Add total row with currency formatting (order: Date, Desc, Type, Vendor, Payment, Account, Amount, Receipt, Auth, Actions)
     const totalRow = `
       <tr class="total-row">
         <td colspan="6" class="total-label">Total</td>
         <td class="col-amount total-amount">${formatCurrency(total)}</td>
-        <td class="col-actions"></td>
+        <td class="col-receipt"></td>
+        <td class="col-auth"></td>
         <td class="col-actions"></td>
       </tr>
     `;
 
     els.expensesTableBody.innerHTML = rows + totalRow;
+
+    // Apply column visibility after rendering
+    applyColumnVisibility();
   }
 
   function renderReadOnlyRow(exp, index) {
@@ -429,8 +465,8 @@
         <td>${payment}</td>
         <td>${account}</td>
         <td class="col-amount">${amount}</td>
-        <td class="col-status">${authBadge}</td>
-        <td class="col-actions">${receiptIcon}</td>
+        <td class="col-receipt">${receiptIcon}</td>
+        <td class="col-auth">${authBadge}</td>
         <td class="col-actions"></td>
       </tr>
     `;
@@ -1328,6 +1364,7 @@
     // Global search input
     els.searchInput?.addEventListener('input', (e) => {
       globalSearchTerm = e.target.value.trim();
+      console.log('[EXPENSES] Global search:', globalSearchTerm);
       renderExpensesTable();
     });
 
@@ -1516,6 +1553,25 @@
         closeFilterDropdown();
       }
     });
+
+    // Column Manager button
+    els.btnColumnManager?.addEventListener('click', () => {
+      openColumnManager();
+    });
+
+    // Column Manager modal close buttons
+    els.btnCloseColumnManager?.addEventListener('click', () => {
+      closeColumnManager();
+    });
+
+    els.btnCloseColumnManagerFooter?.addEventListener('click', () => {
+      closeColumnManager();
+    });
+
+    // Reset columns button
+    els.btnResetColumns?.addEventListener('click', () => {
+      resetColumnVisibility();
+    });
   }
 
   // ================================
@@ -1591,6 +1647,10 @@
           break;
         case 'account':
           value = exp.account_name || findMetaName('accounts', exp.account_id, 'account_id', 'Name') || '—';
+          break;
+        case 'auth':
+          const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
+          value = isAuthorized ? 'Authorized' : 'Pending';
           break;
       }
       values.add(value);
@@ -1717,6 +1777,128 @@
   window.toggleAuth = toggleAuth;
 
   // ================================
+  // COLUMN VISIBILITY MANAGER
+  // ================================
+  function initColumnVisibility() {
+    // Load saved visibility from localStorage
+    const saved = localStorage.getItem(COLUMN_VISIBILITY_KEY);
+    if (saved) {
+      try {
+        columnVisibility = JSON.parse(saved);
+      } catch (e) {
+        console.error('[COLUMN MANAGER] Error parsing saved visibility:', e);
+        columnVisibility = {};
+      }
+    }
+
+    // Set default visibility for columns not in saved state
+    COLUMN_CONFIG.forEach(col => {
+      if (columnVisibility[col.key] === undefined) {
+        columnVisibility[col.key] = col.defaultVisible;
+      }
+    });
+
+    // Apply initial column visibility
+    applyColumnVisibility();
+
+    // Populate column manager modal checkboxes
+    populateColumnCheckboxes();
+  }
+
+  function populateColumnCheckboxes() {
+    if (!els.columnCheckboxes) return;
+
+    const checkboxesHtml = COLUMN_CONFIG.map(col => {
+      const isVisible = columnVisibility[col.key];
+      return `
+        <label class="column-checkbox-item">
+          <input type="checkbox" data-column-key="${col.key}" ${isVisible ? 'checked' : ''} />
+          <span class="column-checkbox-label">${col.label}</span>
+        </label>
+      `;
+    }).join('');
+
+    els.columnCheckboxes.innerHTML = checkboxesHtml;
+
+    // Add change event listeners
+    els.columnCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const columnKey = e.target.dataset.columnKey;
+        columnVisibility[columnKey] = e.target.checked;
+        saveColumnVisibility();
+        applyColumnVisibility();
+      });
+    });
+  }
+
+  function applyColumnVisibility() {
+    const table = els.expensesTable;
+    if (!table) return;
+
+    // Map column keys to their index in the table
+    const columnIndexMap = {
+      date: 0,
+      description: 1,
+      type: 2,
+      vendor: 3,
+      payment: 4,
+      account: 5,
+      amount: 6,
+      receipt: 7,
+      auth: 8
+      // actions column (index 9) is always visible
+    };
+
+    // Apply visibility to header cells
+    Object.entries(columnIndexMap).forEach(([key, index]) => {
+      const isVisible = columnVisibility[key];
+      const th = table.querySelector(`thead th:nth-child(${index + 1})`);
+      if (th) {
+        th.style.display = isVisible ? '' : 'none';
+      }
+    });
+
+    // Apply visibility to body cells
+    Object.entries(columnIndexMap).forEach(([key, index]) => {
+      const isVisible = columnVisibility[key];
+      const tds = table.querySelectorAll(`tbody td:nth-child(${index + 1})`);
+      tds.forEach(td => {
+        td.style.display = isVisible ? '' : 'none';
+      });
+    });
+  }
+
+  function saveColumnVisibility() {
+    try {
+      localStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(columnVisibility));
+      console.log('[COLUMN MANAGER] Visibility saved:', columnVisibility);
+    } catch (e) {
+      console.error('[COLUMN MANAGER] Error saving visibility:', e);
+    }
+  }
+
+  function resetColumnVisibility() {
+    // Reset to defaults
+    COLUMN_CONFIG.forEach(col => {
+      columnVisibility[col.key] = col.defaultVisible;
+    });
+
+    saveColumnVisibility();
+    applyColumnVisibility();
+    populateColumnCheckboxes();
+
+    console.log('[COLUMN MANAGER] Reset to defaults');
+  }
+
+  function openColumnManager() {
+    els.columnManagerModal?.classList.remove('hidden');
+  }
+
+  function closeColumnManager() {
+    els.columnManagerModal?.classList.add('hidden');
+  }
+
+  // ================================
   // INIT
   // ================================
   async function init() {
@@ -1725,6 +1907,9 @@
 
     // Cache DOM elements
     cacheElements();
+
+    // Initialize column visibility
+    initColumnVisibility();
 
     // Setup event listeners
     setupEventListeners();

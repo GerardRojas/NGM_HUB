@@ -716,3 +716,189 @@ input[type="number"].form-input {
   color: rgba(255, 255, 255, 0.5);
   line-height: 1.4;
 }
+
+/* =========================================
+   COLUMN MANAGER MODAL
+   ========================================= */
+
+#columnManagerModal.modal-backdrop.hidden {
+  display: none !important;
+}
+
+#columnManagerModal.modal-backdrop {
+  background: rgba(0, 0, 0, 0.80);
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vh, 28px);
+}
+
+#columnManagerModal .modal-column-manager {
+  width: min(500px, 95%);
+  max-width: 500px;
+  background: #212121;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+#columnManagerModal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #242424;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+#columnManagerModal .modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+#columnManagerModal .modal-close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+#columnManagerModal .modal-close-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+#columnManagerModal .modal-body {
+  padding: 18px;
+}
+
+.modal-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+.column-checkboxes {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.column-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.column-checkbox-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.column-checkbox-item input[type="checkbox"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(148, 163, 184, 0.4);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  margin: 0;
+}
+
+.column-checkbox-item input[type="checkbox"]:hover {
+  border-color: rgba(34, 197, 94, 0.6);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.column-checkbox-item input[type="checkbox"]:checked {
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  border-color: #22c55e;
+}
+
+.column-checkbox-item input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #0f2a1e;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.column-checkbox-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+  user-select: none;
+}
+
+#columnManagerModal .modal-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #242424;
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+#columnManagerModal .btn-modal-secondary,
+#columnManagerModal .btn-modal-primary {
+  appearance: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+
+#columnManagerModal .btn-modal-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+#columnManagerModal .btn-modal-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+#columnManagerModal .btn-modal-primary {
+  background: linear-gradient(135deg, #22c55e, #15803d);
+  color: #0f2a1e;
+  border-color: transparent;
+}
+
+#columnManagerModal .btn-modal-primary:hover {
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .column-checkboxes {
+    grid-template-columns: 1fr;
+  }
+}

@@ -226,6 +226,19 @@
   color: var(--ngm-text-muted, #6b7280);
   text-align: left;
   border-bottom: 1px solid var(--border-soft, #27272f);
+  min-width: 110px; /* Minimum width to fit text + filter icon */
+  white-space: nowrap;
+}
+
+.expenses-table th:first-child {
+  min-width: 100px; /* Date column */
+}
+
+.expenses-table th:nth-child(3),
+.expenses-table th:nth-child(4),
+.expenses-table th:nth-child(5),
+.expenses-table th:nth-child(6) {
+  min-width: 130px; /* Type, Vendor, Payment, Account */
 }
 
 .expenses-table td {
@@ -254,16 +267,28 @@
 .expenses-table .col-amount {
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+  min-width: 110px;
+  text-align: right;
 }
 
-/* Actions column */
-.expenses-table .col-status {
-  width: 80px;
+/* Receipt column */
+.expenses-table .col-receipt {
+  width: 50px;
+  min-width: 50px;
   text-align: center;
 }
 
+/* Authorization column */
+.expenses-table .col-auth {
+  width: 90px;
+  min-width: 90px;
+  text-align: center;
+}
+
+/* Actions column */
 .expenses-table .col-actions {
   width: 50px;
+  min-width: 50px;
   text-align: center;
 }
 

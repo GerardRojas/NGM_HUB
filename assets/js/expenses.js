@@ -364,6 +364,12 @@
     const account = exp.account_name || findMetaName('accounts', exp.account_id, 'account_id', 'Name') || '—';
     const amount = exp.Amount ? formatCurrency(Number(exp.Amount)) : '$0.00';
 
+    // Get the ID - backend uses 'expense_id' as primary key
+    const expenseId = exp.expense_id || exp.id || '';
+    if (index === 0) {
+      console.log('[EXPENSES] First expense - using expense_id:', expenseId);
+    }
+
     // Receipt icon - show as active if receipt exists
     const hasReceipt = exp.receipt_url;
     const receiptIcon = hasReceipt
@@ -371,7 +377,7 @@
       : `<span class="receipt-icon-btn" title="No receipt">📎</span>`;
 
     return `
-      <tr data-index="${index}" data-id="${exp.id || ''}" class="expense-row-clickable" style="cursor: pointer;">
+      <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable" style="cursor: pointer;">
         <td>${date}</td>
         <td class="col-description">${description}</td>
         <td>${type}</td>
@@ -394,8 +400,11 @@
       ? `<a href="${exp.receipt_url}" target="_blank" class="receipt-icon-btn receipt-icon-btn--has-receipt" title="View receipt">📎</a>`
       : `<span class="receipt-icon-btn" title="No receipt">📎</span>`;
 
+    // Get the ID - backend uses 'expense_id' as primary key
+    const expenseId = exp.expense_id || exp.id || '';
+
     return `
-      <tr data-index="${index}" data-id="${exp.id || ''}">
+      <tr data-index="${index}" data-id="${expenseId}">
         <td>
           <input type="date" class="edit-input" data-field="TxnDate" value="${dateVal}">
         </td>
@@ -559,9 +568,12 @@
 
       console.log(`[EDIT] Row ${index} updated data:`, updatedData);
 
-      // Check if data changed - Find original by ID, not by index
-      const original = originalExpenses.find(exp => exp.id == expenseId);
-      console.log(`[EDIT] Row ${index} original data (found by ID ${expenseId}):`, original);
+      // Check if data changed - Find original by expense_id (backend primary key)
+      const original = originalExpenses.find(exp => {
+        const origId = exp.expense_id || exp.id;
+        return origId == expenseId;
+      });
+      console.log(`[EDIT] Row ${index} original data (found by expense_id ${expenseId}):`, original);
 
       if (original && hasChanges(original, updatedData)) {
         console.log(`[EDIT] Row ${index} has changes, adding to update list`);
@@ -969,9 +981,16 @@
   // SINGLE EXPENSE EDIT MODAL
   // ================================
   function openSingleExpenseModal(expenseId) {
-    const expense = expenses.find(exp => exp.id == expenseId);
+    // Backend uses 'expense_id' as primary key
+    const expense = expenses.find(exp => {
+      const id = exp.expense_id || exp.id;
+      return id == expenseId;
+    });
+
     if (!expense) {
       console.error('[EXPENSES] Expense not found:', expenseId);
+      console.error('[EXPENSES] Looking for expense_id:', expenseId);
+      console.error('[EXPENSES] First expense expense_id:', expenses[0]?.expense_id);
       return;
     }
 
@@ -1093,7 +1112,7 @@
     if (!currentEditingExpense) return;
 
     const apiBase = getApiBase();
-    const expenseId = currentEditingExpense.id;
+    const expenseId = currentEditingExpense.expense_id || currentEditingExpense.id;
 
     // Collect updated data
     const updatedData = {

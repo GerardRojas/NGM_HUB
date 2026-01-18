@@ -1028,16 +1028,16 @@
   }
 
   function populateSingleExpenseDropdowns() {
-    // Populate type dropdown
+    // Populate type dropdown - uses TnxType_id
     els.singleExpenseType.innerHTML = '<option value="">Select type...</option>';
     metaData.txn_types.forEach(type => {
       const opt = document.createElement('option');
-      opt.value = type.id;
-      opt.textContent = type.TnxType_name || type.name || `Type ${type.id}`;
+      opt.value = type.TnxType_id || type.id;
+      opt.textContent = type.TnxType_name || type.name || `Type ${type.TnxType_id || type.id}`;
       els.singleExpenseType.appendChild(opt);
     });
 
-    // Populate vendor dropdown
+    // Populate vendor dropdown - uses id
     els.singleExpenseVendor.innerHTML = '<option value="">Select vendor...</option>';
     metaData.vendors.forEach(vendor => {
       const opt = document.createElement('option');
@@ -1046,7 +1046,7 @@
       els.singleExpenseVendor.appendChild(opt);
     });
 
-    // Populate payment dropdown
+    // Populate payment dropdown - uses id
     els.singleExpensePayment.innerHTML = '<option value="">Select payment...</option>';
     metaData.payment_methods.forEach(payment => {
       const opt = document.createElement('option');
@@ -1055,7 +1055,7 @@
       els.singleExpensePayment.appendChild(opt);
     });
 
-    // Populate account dropdown
+    // Populate account dropdown - uses account_id
     els.singleExpenseAccount.innerHTML = '<option value="">Select account...</option>';
     metaData.accounts.forEach(account => {
       const opt = document.createElement('option');
@@ -1118,10 +1118,10 @@
     const updatedData = {
       TxnDate: els.singleExpenseDate.value || null,
       LineDescription: els.singleExpenseDescription.value || null,
-      txn_type: els.singleExpenseType.value ? parseInt(els.singleExpenseType.value) : null,
-      vendor_id: els.singleExpenseVendor.value ? parseInt(els.singleExpenseVendor.value) : null,
-      payment_type: els.singleExpensePayment.value ? parseInt(els.singleExpensePayment.value) : null,
-      account_id: els.singleExpenseAccount.value ? parseInt(els.singleExpenseAccount.value) : null,
+      txn_type: els.singleExpenseType.value || null,
+      vendor_id: els.singleExpenseVendor.value || null,
+      payment_type: els.singleExpensePayment.value || null,
+      account_id: els.singleExpenseAccount.value || null,
       Amount: els.singleExpenseAmount.value ? parseFloat(els.singleExpenseAmount.value) : null,
       created_by: currentUser.user_id || currentUser.id // Update created_by to current user
     };

@@ -160,7 +160,11 @@
     animation: fadeOnly 1.5s ease-in-out infinite;
 }
 
-/* Solo se muestra cuando el botón está en modo loading */
+/* Cuando está en loading: ocultar texto y mostrar solo logo */
+.btn-primary--loading .btn-primary__label {
+    display: none;
+}
+
 .btn-primary--loading .btn-primary__spinner {
     display: inline-block;
 }

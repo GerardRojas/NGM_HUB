@@ -145,7 +145,7 @@
 
 /* Column widths */
 #addExpenseModal .expense-rows-table th:nth-child(1) { width: 140px; } /* Date */
-#addExpenseModal .expense-rows-table th:nth-child(2) { width: auto; }   /* Description - takes remaining space */
+#addExpenseModal .expense-rows-table th:nth-child(2) { width: 300px; min-width: 300px; } /* Description - fixed width to contain input */
 #addExpenseModal .expense-rows-table th:nth-child(3) { width: 140px; } /* Type */
 #addExpenseModal .expense-rows-table th:nth-child(4) { width: 160px; } /* Vendor */
 #addExpenseModal .expense-rows-table th:nth-child(5) { width: 140px; } /* Payment */
@@ -160,8 +160,11 @@
   overflow: hidden;
 }
 
-/* Description column - allow text wrapping */
+/* Description column - fixed width to match header */
 #addExpenseModal .expense-rows-table td:nth-child(2) {
+  width: 300px;
+  min-width: 300px;
+  max-width: 300px;
   overflow: visible;
 }
 
@@ -221,9 +224,28 @@
   cursor: pointer;
 }
 
-/* Remove IE dropdown arrow */
+/* Remove all native dropdown arrows */
 #addExpenseModal select.exp-input::-ms-expand {
   display: none;
+}
+
+#addExpenseModal select.exp-input::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#addExpenseModal select.exp-input::-webkit-inner-spin-button,
+#addExpenseModal select.exp-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox specific */
+#addExpenseModal select.exp-input:-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 rgba(255, 255, 255, 0.92);
 }
 
 #addExpenseModal select.exp-input option {
@@ -607,6 +629,8 @@ datalist {
 }
 
 select.form-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
   appearance: none;
   background-image:
     linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.65) 50%),
@@ -618,6 +642,30 @@ select.form-input {
   background-repeat: no-repeat;
   padding-right: 32px;
   cursor: pointer;
+}
+
+/* Remove all native dropdown arrows */
+select.form-input::-ms-expand {
+  display: none;
+}
+
+select.form-input::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+select.form-input::-webkit-inner-spin-button,
+select.form-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox specific */
+select.form-input:-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 rgba(255, 255, 255, 0.92);
 }
 
 select.form-input option {

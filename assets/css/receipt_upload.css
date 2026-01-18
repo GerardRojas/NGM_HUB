@@ -217,8 +217,8 @@
 }
 
 .receipt-loading-spinner {
-  width: 16px;
-  height: 16px;
+  width: 24px;   /* 16px * 1.5 */
+  height: 24px;
   animation: fadeOnly 1.5s ease-in-out infinite;
 }
 

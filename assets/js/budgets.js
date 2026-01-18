@@ -69,7 +69,7 @@
   // AUTH
   // ================================
   function initAuth() {
-    const userStr = localStorage.getItem('current_user');
+    const userStr = localStorage.getItem('ngmUser');
     if (!userStr) {
       console.warn('[BUDGETS] No user found, redirecting to login');
       window.location.href = 'login.html';
@@ -81,6 +81,7 @@
       return true;
     } catch (e) {
       console.error('[BUDGETS] Error parsing user:', e);
+      localStorage.removeItem('ngmUser');
       window.location.href = 'login.html';
       return false;
     }

@@ -167,6 +167,9 @@
                             <table class="expenses-table" id="expensesTable" style="display: none;">
                                 <thead>
                                     <tr>
+                                        <th class="col-checkbox" style="width: 40px; display: none;">
+                                            <input type="checkbox" id="selectAllCheckbox" title="Select All">
+                                        </th>
                                         <th>
                                             Date
                                             <button type="button" class="filter-toggle" data-column="date" title="Filter">▼</button>
@@ -226,8 +229,15 @@
 
                         <!-- Edit mode footer (hidden by default) -->
                         <div class="edit-mode-footer hidden" id="editModeFooter">
-                            <button type="button" class="btn-edit-cancel" id="btnCancelEdit">Cancel</button>
-                            <button type="button" class="btn-edit-save" id="btnSaveChanges">Save Changes</button>
+                            <div class="edit-footer-left">
+                                <button type="button" class="btn-edit-delete" id="btnBulkDelete" disabled>
+                                    <span style="font-size: 14px;">🗑</span> Delete Selected (<span id="selectedCount">0</span>)
+                                </button>
+                            </div>
+                            <div class="edit-footer-right">
+                                <button type="button" class="btn-edit-cancel" id="btnCancelEdit">Cancel</button>
+                                <button type="button" class="btn-edit-save" id="btnSaveChanges">Save Changes</button>
+                            </div>
                         </div>
                     </section>
 
@@ -333,6 +343,9 @@
                         <button type="button" class="btn-scan-receipt" id="btnScanReceipt">
                             Scan Receipt
                         </button>
+                        <button type="button" class="btn-import-csv" id="btnImportCSVExpenses">
+                            📂 Import CSV
+                        </button>
                         <button type="button" class="btn-auto-categorize" id="btnAutoCategorize" disabled>
                             Auto Categorize
                         </button>
@@ -374,6 +387,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Hidden file input for CSV import -->
+    <input type="file" id="csvExpenseFileInput" accept=".csv" style="display: none;">
 
     <!-- Scan Receipt Modal -->
     <div id="scanReceiptModal" class="modal-backdrop hidden">
@@ -502,6 +518,29 @@
 
             <div class="modal-footer">
                 <button type="button" class="btn-modal-secondary" id="btnCancelStageModal">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSV Column Mapping Modal -->
+    <div id="csvMappingModal" class="modal-backdrop hidden">
+        <div class="modal modal-csv-mapping">
+            <div class="modal-header">
+                <div class="modal-title">Map CSV Columns</div>
+                <button type="button" class="modal-close-btn" id="btnCloseCsvMapping">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <p class="modal-hint">Match the columns from your CSV file with the expense fields. Unmapped columns will be discarded.</p>
+
+                <div class="csv-mapping-container" id="csvMappingContainer">
+                    <!-- Mapping rows populated by JS -->
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCancelCsvMapping">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="btnConfirmCsvMapping">Import Expenses</button>
             </div>
         </div>
     </div>

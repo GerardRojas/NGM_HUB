@@ -51,6 +51,13 @@
   // Scanned receipt file storage
   let scannedReceiptFile = null;
 
+  // CSV Import State
+  let csvParsedData = {
+    headers: [],    // Original CSV column names
+    rows: []        // Parsed data rows
+  };
+  let csvColumnMapping = {}; // Maps CSV column index to expense field name
+
   // QBO Integration State
   let currentDataSource = 'manual';  // 'manual' or 'qbo'
   let qboExpenses = [];              // QBO expenses for current project
@@ -78,6 +85,9 @@
   const COLUMN_VISIBILITY_KEY = 'expensesColumnVisibility';
   let columnVisibility = {};
 
+  // Bulk delete state
+  let selectedExpenseIds = new Set(); // Set of expense IDs to delete
+
   // ================================
   // DOM ELEMENTS
   // ================================
@@ -97,6 +107,9 @@
     els.editModeFooter = document.getElementById('editModeFooter');
     els.btnCancelEdit = document.getElementById('btnCancelEdit');
     els.btnSaveChanges = document.getElementById('btnSaveChanges');
+    els.btnBulkDelete = document.getElementById('btnBulkDelete');
+    els.selectedCount = document.getElementById('selectedCount');
+    els.selectAllCheckbox = document.getElementById('selectAllCheckbox');
 
     // Modal elements
     els.modal = document.getElementById('addExpenseModal');
@@ -104,6 +117,16 @@
     els.expenseRowsBody = document.getElementById('expenseRowsBody');
     els.btnAddExpenseRow = document.getElementById('btnAddExpenseRow');
     els.btnAutoCategorize = document.getElementById('btnAutoCategorize');
+    els.btnImportCSVExpenses = document.getElementById('btnImportCSVExpenses');
+    els.csvExpenseFileInput = document.getElementById('csvExpenseFileInput');
+
+    // CSV Mapping Modal elements
+    els.csvMappingModal = document.getElementById('csvMappingModal');
+    els.csvMappingContainer = document.getElementById('csvMappingContainer');
+    els.btnCloseCsvMapping = document.getElementById('btnCloseCsvMapping');
+    els.btnCancelCsvMapping = document.getElementById('btnCancelCsvMapping');
+    els.btnConfirmCsvMapping = document.getElementById('btnConfirmCsvMapping');
+
     els.btnCloseExpenseModal = document.getElementById('btnCloseExpenseModal');
     els.btnCancelExpenses = document.getElementById('btnCancelExpenses');
     els.btnSaveAllExpenses = document.getElementById('btnSaveAllExpenses');
@@ -552,8 +575,14 @@
     // Get the ID - backend uses 'expense_id' as primary key
     const expenseId = exp.expense_id || exp.id || '';
 
+    // Checkbox checked state
+    const isChecked = selectedExpenseIds.has(expenseId) ? 'checked' : '';
+
     return `
       <tr data-index="${index}" data-id="${expenseId}" class="edit-mode-row">
+        <td class="col-checkbox" style="display: ${isEditMode ? '' : 'none'};">
+          <input type="checkbox" class="row-checkbox" data-id="${expenseId}" ${isChecked}>
+        </td>
         <td class="editable-cell">
           <input type="date" class="edit-input" data-field="TxnDate" value="${dateVal}">
         </td>
@@ -578,7 +607,7 @@
         <td class="col-receipt">${receiptIcon}</td>
         <td class="col-auth">${authBadge}</td>
         <td class="col-actions">
-          <button type="button" class="btn-row-delete" data-index="${index}" title="Delete">×</button>
+          <button type="button" class="btn-row-delete" data-id="${expenseId}" title="Delete">×</button>
         </td>
       </tr>
     `;
@@ -657,6 +686,14 @@
       if (els.editModeFooter) els.editModeFooter.classList.remove('hidden');
       // Add edit mode class to table for wider columns
       if (els.expensesTable) els.expensesTable.classList.add('edit-mode-table');
+
+      // Show checkbox column
+      const checkboxHeader = document.querySelector('.col-checkbox');
+      if (checkboxHeader) checkboxHeader.style.display = '';
+
+      // Reset selection
+      selectedExpenseIds.clear();
+      updateBulkDeleteButton();
     } else {
       els.btnEditExpenses.textContent = 'Edit Expenses';
       els.btnEditExpenses.disabled = expenses.length === 0;
@@ -665,6 +702,13 @@
       if (els.editModeFooter) els.editModeFooter.classList.add('hidden');
       // Remove edit mode class from table
       if (els.expensesTable) els.expensesTable.classList.remove('edit-mode-table');
+
+      // Hide checkbox column
+      const checkboxHeader = document.querySelector('.col-checkbox');
+      if (checkboxHeader) checkboxHeader.style.display = 'none';
+
+      // Reset selection
+      selectedExpenseIds.clear();
     }
 
     renderExpensesTable();
@@ -790,9 +834,8 @@
     });
   }
 
-  async function deleteExpense(index) {
-    const expense = expenses[index];
-    if (!expense || !expense.id) return;
+  async function deleteExpense(expenseId) {
+    if (!expenseId) return;
 
     const confirmed = confirm('Delete this expense? This cannot be undone.');
     if (!confirmed) return;
@@ -800,19 +843,113 @@
     const apiBase = getApiBase();
 
     try {
-      await apiJson(`${apiBase}/expenses/${expense.id}`, {
+      await apiJson(`${apiBase}/expenses/${expenseId}`, {
         method: 'DELETE'
       });
 
-      // Remove from local array and re-render
-      expenses.splice(index, 1);
-      originalExpenses.splice(index, 1);
+      // Remove from local array
+      const index = expenses.findIndex(e => (e.expense_id || e.id) === expenseId);
+      if (index >= 0) {
+        expenses.splice(index, 1);
+      }
+
+      // Remove from original array
+      const origIndex = originalExpenses.findIndex(e => (e.expense_id || e.id) === expenseId);
+      if (origIndex >= 0) {
+        originalExpenses.splice(origIndex, 1);
+      }
+
+      // Remove from selection if selected
+      selectedExpenseIds.delete(expenseId);
+
       renderExpensesTable();
+      updateBulkDeleteButton();
 
     } catch (err) {
       console.error('[EXPENSES] Error deleting expense:', err);
       alert('Error deleting expense: ' + err.message);
     }
+  }
+
+  async function bulkDeleteExpenses() {
+    if (selectedExpenseIds.size === 0) {
+      alert('No expenses selected.');
+      return;
+    }
+
+    const confirmed = confirm(`Delete ${selectedExpenseIds.size} expense(s)? This cannot be undone.`);
+    if (!confirmed) return;
+
+    const apiBase = getApiBase();
+
+    // Disable button
+    els.btnBulkDelete.disabled = true;
+    const originalText = els.btnBulkDelete.innerHTML;
+    els.btnBulkDelete.innerHTML = '<span style="font-size: 14px;">⏳</span> Deleting...';
+
+    try {
+      const deletePromises = Array.from(selectedExpenseIds).map(expenseId =>
+        apiJson(`${apiBase}/expenses/${expenseId}`, {
+          method: 'DELETE'
+        })
+      );
+
+      await Promise.all(deletePromises);
+
+      console.log(`[BULK_DELETE] Deleted ${selectedExpenseIds.size} expenses`);
+
+      // Remove from local arrays
+      selectedExpenseIds.forEach(expenseId => {
+        const index = expenses.findIndex(e => (e.expense_id || e.id) === expenseId);
+        if (index >= 0) {
+          expenses.splice(index, 1);
+        }
+
+        const origIndex = originalExpenses.findIndex(e => (e.expense_id || e.id) === expenseId);
+        if (origIndex >= 0) {
+          originalExpenses.splice(origIndex, 1);
+        }
+      });
+
+      selectedExpenseIds.clear();
+      renderExpensesTable();
+      updateBulkDeleteButton();
+
+      alert('Expenses deleted successfully!');
+
+    } catch (err) {
+      console.error('[BULK_DELETE] Error:', err);
+      alert('Error deleting expenses: ' + err.message);
+    } finally {
+      els.btnBulkDelete.disabled = false;
+      els.btnBulkDelete.innerHTML = originalText;
+    }
+  }
+
+  function updateBulkDeleteButton() {
+    if (!els.btnBulkDelete || !els.selectedCount) return;
+
+    const count = selectedExpenseIds.size;
+    els.selectedCount.textContent = count;
+    els.btnBulkDelete.disabled = count === 0;
+  }
+
+  function toggleSelectAll() {
+    const displayExpenses = filteredExpenses.length > 0 || Object.values(columnFilters).some(f => f.length > 0) ? filteredExpenses : expenses;
+
+    if (els.selectAllCheckbox.checked) {
+      // Select all
+      displayExpenses.forEach(exp => {
+        const expenseId = exp.expense_id || exp.id;
+        if (expenseId) selectedExpenseIds.add(expenseId);
+      });
+    } else {
+      // Deselect all
+      selectedExpenseIds.clear();
+    }
+
+    renderExpensesTable();
+    updateBulkDeleteButton();
   }
 
   // ================================
@@ -1621,6 +1758,230 @@
   }
 
   // ================================
+  // CSV IMPORT
+  // ================================
+  async function handleCSVImport(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    console.log('[CSV_IMPORT] Selected file:', file.name);
+
+    try {
+      const text = await file.text();
+
+      // Parse CSV into headers and rows
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) {
+        alert('CSV file must contain at least a header row and one data row.');
+        return;
+      }
+
+      // Parse headers
+      csvParsedData.headers = lines[0].split(',').map(h => h.trim());
+
+      // Parse data rows
+      csvParsedData.rows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const cells = line.split(',').map(c => c.trim());
+        csvParsedData.rows.push(cells);
+      }
+
+      if (csvParsedData.rows.length === 0) {
+        alert('No data rows found in CSV file.');
+        return;
+      }
+
+      console.log('[CSV_IMPORT] Parsed:', csvParsedData.headers.length, 'columns,', csvParsedData.rows.length, 'rows');
+
+      // Open mapping modal
+      openCsvMappingModal();
+
+    } catch (err) {
+      console.error('[CSV_IMPORT] Error:', err);
+      alert('Error reading CSV file: ' + err.message);
+    } finally {
+      // Reset file input
+      event.target.value = '';
+    }
+  }
+
+  function openCsvMappingModal() {
+    // Auto-detect column mappings using flexible matching
+    csvColumnMapping = {};
+    const expenseFields = ['date', 'description', 'type', 'vendor', 'payment', 'account', 'amount'];
+
+    csvParsedData.headers.forEach((header, index) => {
+      const headerLower = header.toLowerCase();
+
+      // Try to auto-match
+      if (headerLower.includes('date')) {
+        csvColumnMapping[index] = 'date';
+      } else if (headerLower.includes('description') || headerLower.includes('desc')) {
+        csvColumnMapping[index] = 'description';
+      } else if (headerLower.includes('type')) {
+        csvColumnMapping[index] = 'type';
+      } else if (headerLower.includes('vendor')) {
+        csvColumnMapping[index] = 'vendor';
+      } else if (headerLower.includes('payment')) {
+        csvColumnMapping[index] = 'payment';
+      } else if (headerLower.includes('account')) {
+        csvColumnMapping[index] = 'account';
+      } else if (headerLower.includes('amount')) {
+        csvColumnMapping[index] = 'amount';
+      } else {
+        csvColumnMapping[index] = ''; // Unmapped by default
+      }
+    });
+
+    console.log('[CSV_MAPPING] Auto-detected mappings:', csvColumnMapping);
+
+    // Render mapping UI
+    renderCsvMappingRows();
+
+    // Show modal
+    els.csvMappingModal?.classList.remove('hidden');
+  }
+
+  function renderCsvMappingRows() {
+    if (!els.csvMappingContainer) return;
+
+    const expenseFields = [
+      { value: '', label: '(Skip this column)' },
+      { value: 'date', label: 'Date' },
+      { value: 'description', label: 'Description' },
+      { value: 'type', label: 'Type' },
+      { value: 'vendor', label: 'Vendor' },
+      { value: 'payment', label: 'Payment Method' },
+      { value: 'account', label: 'Account' },
+      { value: 'amount', label: 'Amount' }
+    ];
+
+    const rows = csvParsedData.headers.map((header, index) => {
+      const currentMapping = csvColumnMapping[index] || '';
+
+      const optionsHTML = expenseFields.map(field => {
+        const selected = field.value === currentMapping ? 'selected' : '';
+        return `<option value="${field.value}" ${selected}>${field.label}</option>`;
+      }).join('');
+
+      return `
+        <div class="csv-mapping-row">
+          <div class="csv-column-name" title="${header}">${header}</div>
+          <div class="csv-mapping-arrow">→</div>
+          <select class="ngm-select csv-field-select" data-csv-index="${index}">
+            ${optionsHTML}
+          </select>
+        </div>
+      `;
+    }).join('');
+
+    els.csvMappingContainer.innerHTML = rows;
+
+    // Add change listeners to update mapping
+    document.querySelectorAll('.csv-field-select').forEach(select => {
+      select.addEventListener('change', (e) => {
+        const index = parseInt(e.target.dataset.csvIndex);
+        csvColumnMapping[index] = e.target.value;
+        console.log('[CSV_MAPPING] Updated mapping:', csvColumnMapping);
+      });
+    });
+  }
+
+  function closeCsvMappingModal() {
+    els.csvMappingModal?.classList.add('hidden');
+
+    // Reset state
+    csvParsedData = {
+      headers: [],
+      rows: []
+    };
+    csvColumnMapping = {};
+  }
+
+  async function confirmCSVMapping() {
+    try {
+      // Clear existing rows
+      els.expenseRowsBody.innerHTML = '';
+      modalRowCounter = 0;
+
+      console.log('[CSV_MAPPING] Importing', csvParsedData.rows.length, 'rows');
+
+      // Add a row for each CSV data row
+      for (const dataRow of csvParsedData.rows) {
+        addModalRow();
+
+        const index = modalRowCounter - 1;
+        const row = els.expenseRowsBody.querySelector(`tr[data-row-index="${index}"]`);
+
+        if (!row) {
+          console.warn('[CSV_MAPPING] Row not found for index:', index);
+          continue;
+        }
+
+        // Map each column based on user selection
+        csvParsedData.headers.forEach((header, colIndex) => {
+          const field = csvColumnMapping[colIndex];
+          const value = dataRow[colIndex] || '';
+
+          if (!field) return; // Skip unmapped columns
+
+          if (field === 'date') {
+            const dateInput = row.querySelector('[data-field="TxnDate"]');
+            if (dateInput && value) {
+              dateInput.value = value;
+            }
+          } else if (field === 'description') {
+            const descInput = row.querySelector('[data-field="LineDescription"]');
+            if (descInput) {
+              descInput.value = value;
+            }
+          } else if (field === 'type') {
+            const typeSelect = row.querySelector('[data-field="txn_type"]');
+            if (typeSelect) {
+              typeSelect.value = value;
+            }
+          } else if (field === 'vendor') {
+            const vendorSelect = row.querySelector('[data-field="vendor_id"]');
+            if (vendorSelect) {
+              vendorSelect.value = value;
+            }
+          } else if (field === 'payment') {
+            const paymentSelect = row.querySelector('[data-field="payment_method"]');
+            if (paymentSelect) {
+              paymentSelect.value = value;
+            }
+          } else if (field === 'account') {
+            const accountSelect = row.querySelector('[data-field="account_id"]');
+            if (accountSelect) {
+              accountSelect.value = value;
+            }
+          } else if (field === 'amount') {
+            const amountInput = row.querySelector('[data-field="Amount"]');
+            if (amountInput) {
+              amountInput.value = value;
+            }
+          }
+        });
+      }
+
+      console.log('[CSV_MAPPING] Successfully populated', modalRowCounter, 'rows');
+
+      // Close mapping modal
+      closeCsvMappingModal();
+
+      alert(`Successfully imported ${csvParsedData.rows.length} expense(s) from CSV.`);
+
+    } catch (err) {
+      console.error('[CSV_MAPPING] Error importing:', err);
+      alert('Error importing CSV data: ' + err.message);
+    }
+  }
+
+
+  // ================================
   // EVENT HANDLERS
   // ================================
   function setupEventListeners() {
@@ -1670,8 +2031,28 @@
     // Delete row in edit mode
     els.expensesTableBody?.addEventListener('click', (e) => {
       if (e.target.classList.contains('btn-row-delete')) {
-        const index = parseInt(e.target.dataset.index, 10);
-        deleteExpense(index);
+        const expenseId = e.target.dataset.id;
+        deleteExpense(expenseId);
+      }
+    });
+
+    // Bulk delete button
+    els.btnBulkDelete?.addEventListener('click', bulkDeleteExpenses);
+
+    // Select all checkbox
+    els.selectAllCheckbox?.addEventListener('change', toggleSelectAll);
+
+    // Individual row checkboxes (event delegation)
+    els.expensesTableBody?.addEventListener('change', (e) => {
+      if (e.target.classList.contains('row-checkbox')) {
+        const expenseId = e.target.dataset.id;
+        if (e.target.checked) {
+          selectedExpenseIds.add(expenseId);
+        } else {
+          selectedExpenseIds.delete(expenseId);
+          els.selectAllCheckbox.checked = false;
+        }
+        updateBulkDeleteButton();
       }
     });
 
@@ -1888,6 +2269,26 @@
     // Auto Categorize button - open stage selection modal
     els.btnAutoCategorize?.addEventListener('click', () => {
       openConstructionStageModal();
+    });
+
+    // Import CSV button
+    els.btnImportCSVExpenses?.addEventListener('click', () => {
+      els.csvExpenseFileInput?.click();
+    });
+
+    // CSV file input change
+    els.csvExpenseFileInput?.addEventListener('change', handleCSVImport);
+
+    // CSV Mapping Modal handlers
+    els.btnCloseCsvMapping?.addEventListener('click', closeCsvMappingModal);
+    els.btnCancelCsvMapping?.addEventListener('click', closeCsvMappingModal);
+    els.btnConfirmCsvMapping?.addEventListener('click', confirmCSVMapping);
+
+    // Close mapping modal on backdrop click
+    els.csvMappingModal?.addEventListener('click', (e) => {
+      if (e.target === els.csvMappingModal) {
+        closeCsvMappingModal();
+      }
     });
 
     // Construction Stage Modal handlers

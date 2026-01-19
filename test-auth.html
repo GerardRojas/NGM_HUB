@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Test</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #e5e7eb;
+        }
+        .section {
+            background: #2a2a2a;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border: 1px solid #3a3a3a;
+        }
+        .success { color: #22c55e; }
+        .error { color: #ef4444; }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        pre {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>NGM Hub - Authentication Diagnostics</h1>
+
+    <div class="section">
+        <h2>1. LocalStorage Check</h2>
+        <button onclick="checkLocalStorage()">Check Token & User</button>
+        <pre id="localStorageResult">Click button to check...</pre>
+    </div>
+
+    <div class="section">
+        <h2>2. API Base URL</h2>
+        <pre id="apiBaseResult">Loading...</pre>
+    </div>
+
+    <div class="section">
+        <h2>3. Test /projects Endpoint</h2>
+        <button onclick="testProjects()">Test GET /projects</button>
+        <pre id="projectsResult">Click button to test...</pre>
+    </div>
+
+    <div class="section">
+        <h2>4. Test /budgets Endpoint</h2>
+        <button onclick="testBudgets()">Test GET /budgets</button>
+        <pre id="budgetsResult">Click button to test...</pre>
+    </div>
+
+    <div class="section">
+        <h2>5. Test /auth/me Endpoint</h2>
+        <button onclick="testAuthMe()">Test GET /auth/me</button>
+        <pre id="authMeResult">Click button to test...</pre>
+    </div>
+
+    <script src="assets/js/config.js"></script>
+    <script>
+        const apiBase = window.API_BASE || 'https://ngm-fastapi.onrender.com';
+        document.getElementById('apiBaseResult').textContent = `API_BASE: ${apiBase}`;
+
+        function checkLocalStorage() {
+            const token = localStorage.getItem('ngmToken');
+            const userStr = localStorage.getItem('ngmUser');
+
+            let result = '';
+
+            if (token) {
+                result += `✓ Token exists\n`;
+                result += `Token length: ${token.length} chars\n`;
+                result += `Token preview: ${token.substring(0, 50)}...\n\n`;
+            } else {
+                result += `✗ No token found in localStorage\n\n`;
+            }
+
+            if (userStr) {
+                result += `✓ User data exists\n`;
+                try {
+                    const user = JSON.parse(userStr);
+                    result += `User: ${JSON.stringify(user, null, 2)}\n`;
+                } catch (e) {
+                    result += `✗ Error parsing user data: ${e.message}\n`;
+                }
+            } else {
+                result += `✗ No user data found in localStorage\n`;
+            }
+
+            const resultEl = document.getElementById('localStorageResult');
+            resultEl.textContent = result;
+            resultEl.className = (token && userStr) ? 'success' : 'error';
+        }
+
+        async function apiJson(url, options = {}) {
+            const token = localStorage.getItem('ngmToken');
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(options.headers || {})
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const res = await fetch(url, {
+                credentials: 'include',
+                ...options,
+                headers
+            });
+
+            const text = await res.text();
+
+            return {
+                ok: res.ok,
+                status: res.status,
+                statusText: res.statusText,
+                body: text ? JSON.parse(text) : null
+            };
+        }
+
+        async function testProjects() {
+            const resultEl = document.getElementById('projectsResult');
+            resultEl.textContent = 'Testing...';
+
+            try {
+                const url = `${apiBase}/projects`;
+                resultEl.textContent = `Fetching: ${url}\n\n`;
+
+                const result = await apiJson(url);
+
+                let output = `Status: ${result.status} ${result.statusText}\n\n`;
+
+                if (result.ok) {
+                    output += `✓ Success!\n\n`;
+                    output += `Response:\n${JSON.stringify(result.body, null, 2)}`;
+                    resultEl.className = 'success';
+                } else {
+                    output += `✗ Failed!\n\n`;
+                    output += `Error:\n${JSON.stringify(result.body, null, 2)}`;
+                    resultEl.className = 'error';
+                }
+
+                resultEl.textContent = output;
+            } catch (err) {
+                resultEl.textContent = `✗ Error: ${err.message}\n\nStack:\n${err.stack}`;
+                resultEl.className = 'error';
+            }
+        }
+
+        async function testBudgets() {
+            const resultEl = document.getElementById('budgetsResult');
+            resultEl.textContent = 'Testing...';
+
+            try {
+                const url = `${apiBase}/budgets`;
+                resultEl.textContent = `Fetching: ${url}\n\n`;
+
+                const result = await apiJson(url);
+
+                let output = `Status: ${result.status} ${result.statusText}\n\n`;
+
+                if (result.ok) {
+                    output += `✓ Success!\n\n`;
+                    output += `Response:\n${JSON.stringify(result.body, null, 2)}`;
+                    resultEl.className = 'success';
+                } else {
+                    output += `✗ Failed!\n\n`;
+                    output += `Error:\n${JSON.stringify(result.body, null, 2)}`;
+                    resultEl.className = 'error';
+                }
+
+                resultEl.textContent = output;
+            } catch (err) {
+                resultEl.textContent = `✗ Error: ${err.message}\n\nStack:\n${err.stack}`;
+                resultEl.className = 'error';
+            }
+        }
+
+        async function testAuthMe() {
+            const resultEl = document.getElementById('authMeResult');
+            resultEl.textContent = 'Testing...';
+
+            try {
+                const url = `${apiBase}/auth/me`;
+                resultEl.textContent = `Fetching: ${url}\n\n`;
+
+                const result = await apiJson(url);
+
+                let output = `Status: ${result.status} ${result.statusText}\n\n`;
+
+                if (result.ok) {
+                    output += `✓ Success!\n\n`;
+                    output += `Response:\n${JSON.stringify(result.body, null, 2)}`;
+                    resultEl.className = 'success';
+                } else {
+                    output += `✗ Failed!\n\n`;
+                    output += `Error:\n${JSON.stringify(result.body, null, 2)}`;
+                    resultEl.className = 'error';
+                }
+
+                resultEl.textContent = output;
+            } catch (err) {
+                resultEl.textContent = `✗ Error: ${err.message}\n\nStack:\n${err.stack}`;
+                resultEl.className = 'error';
+            }
+        }
+    </script>
+</body>
+</html>

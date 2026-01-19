@@ -70,6 +70,13 @@
   color: var(--ngm-text-muted, #6b7280);
 }
 
+/* ==========================================
+   NGM SELECT — UNIFIED DROPDOWN COMPONENT
+   Use .ngm-select for all dropdowns across the system
+   .toolbar-select is kept for backwards compatibility
+   ========================================== */
+
+.ngm-select,
 .toolbar-select {
   min-width: 280px;
   padding: 11px 36px 11px 14px;
@@ -81,7 +88,7 @@
   font-weight: 500;
   outline: none;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 
   /* Remove default appearance */
   -webkit-appearance: none;
@@ -97,14 +104,16 @@
     calc(100% - 8px) calc(50% - 2px);
   background-size: 6px 6px, 6px 6px;
   background-repeat: no-repeat;
-  padding-right: 28px;
+  padding-right: 32px;
 }
 
 /* Remove IE dropdown arrow */
+.ngm-select::-ms-expand,
 .toolbar-select::-ms-expand {
   display: none;
 }
 
+.ngm-select:hover,
 .toolbar-select:hover {
   border-color: rgba(148, 163, 184, 0.45);
   background: rgba(255, 255, 255, 0.06);
@@ -144,6 +153,7 @@
   font-weight: 600;
 }
 
+.ngm-select:focus,
 .toolbar-select:focus {
   border-color: rgba(34, 197, 94, 0.65);
   background: rgba(255, 255, 255, 0.06);
@@ -151,6 +161,7 @@
 }
 
 /* Dropdown options styling */
+.ngm-select option,
 .toolbar-select option {
   background: #18181b;
   color: rgba(255, 255, 255, 0.92);
@@ -158,10 +169,12 @@
   font-weight: 400;
 }
 
+.ngm-select option:hover,
 .toolbar-select option:hover {
   background: rgba(255, 255, 255, 0.08);
 }
 
+.ngm-select option:checked,
 .toolbar-select option:checked {
   background: rgba(34, 197, 94, 0.15);
   color: #4ade80;

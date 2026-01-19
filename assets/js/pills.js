@@ -9,7 +9,7 @@
   }
 
   function getAuthHeaders() {
-    const token = localStorage.getItem("access_token");
+    const token = localStorage.getItem("ngmToken");
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 

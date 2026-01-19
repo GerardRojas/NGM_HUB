@@ -304,11 +304,151 @@
     els.importModal.classList.add('hidden');
   }
 
+  // ================================
+  // CSV SANITIZATION & PARSING
+  // ================================
+
+  /**
+   * Sanitize and parse CSV text
+   * Handles:
+   * - Different line endings (CRLF, LF, CR)
+   * - Quoted fields with commas inside
+   * - Empty lines
+   * - BOM (Byte Order Mark)
+   * - Escaped quotes
+   */
+  function sanitizeAndParseCSV(csvText) {
+    // Remove BOM if present (common in Excel exports)
+    if (csvText.charCodeAt(0) === 0xFEFF) {
+      csvText = csvText.slice(1);
+    }
+
+    // Normalize line endings to \n
+    csvText = csvText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    // Split into lines and remove empty lines
+    const lines = csvText.split('\n').filter(line => line.trim());
+
+    if (lines.length === 0) {
+      throw new Error('CSV file is empty');
+    }
+
+    // Parse each line respecting quoted fields
+    const rows = lines.map(line => parseCSVLine(line));
+
+    // Filter out completely empty rows
+    const validRows = rows.filter(row => row.some(cell => cell.trim() !== ''));
+
+    return validRows;
+  }
+
+  /**
+   * Parse a single CSV line
+   * Properly handles:
+   * - Quoted fields: "value, with comma"
+   * - Escaped quotes: "value with ""quotes"""
+   * - Mixed quoted and unquoted fields
+   */
+  function parseCSVLine(line) {
+    const result = [];
+    let currentField = '';
+    let insideQuotes = false;
+    let i = 0;
+
+    while (i < line.length) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+
+      if (char === '"') {
+        if (insideQuotes && nextChar === '"') {
+          // Escaped quote: "" becomes "
+          currentField += '"';
+          i += 2;
+          continue;
+        } else {
+          // Toggle quote mode
+          insideQuotes = !insideQuotes;
+          i++;
+          continue;
+        }
+      }
+
+      if (char === ',' && !insideQuotes) {
+        // End of field
+        result.push(currentField.trim());
+        currentField = '';
+        i++;
+        continue;
+      }
+
+      // Regular character
+      currentField += char;
+      i++;
+    }
+
+    // Push the last field
+    result.push(currentField.trim());
+
+    return result;
+  }
+
+  /**
+   * Validate CSV structure
+   * Checks:
+   * - Minimum number of rows
+   * - Consistent column count
+   * - Required headers present
+   */
+  function validateCSVStructure(rows, requiredHeaders = []) {
+    if (rows.length < 2) {
+      throw new Error('CSV file must have at least a header row and one data row.');
+    }
+
+    const headers = rows[0];
+    const dataRows = rows.slice(1);
+
+    // Check for consistent column count
+    const headerCount = headers.length;
+    const inconsistentRows = dataRows.filter(row => row.length !== headerCount);
+
+    if (inconsistentRows.length > 0) {
+      console.warn(`[BUDGETS] Found ${inconsistentRows.length} rows with inconsistent column count`);
+      // We'll allow this but warn the user
+    }
+
+    // Check for required headers (case-insensitive)
+    if (requiredHeaders.length > 0) {
+      const headerLower = headers.map(h => h.toLowerCase().trim());
+      const missingHeaders = requiredHeaders.filter(required =>
+        !headerLower.some(h => h === required.toLowerCase())
+      );
+
+      if (missingHeaders.length > 0) {
+        throw new Error(`Missing required columns: ${missingHeaders.join(', ')}`);
+      }
+    }
+
+    return {
+      isValid: true,
+      headers: headers,
+      dataRows: dataRows,
+      rowCount: dataRows.length,
+      columnCount: headerCount
+    };
+  }
+
   async function handleCSVFileSelect(e) {
     const file = e.target.files[0];
     if (!file) {
       els.csvPreview.style.display = 'none';
       els.btnConfirmImport.disabled = true;
+      return;
+    }
+
+    // Check file type
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+      alert('Please select a CSV file.');
+      els.csvFileInput.value = '';
       return;
     }
 
@@ -322,42 +462,45 @@
     currentCSVFile = file;
 
     try {
+      // Read file content
       const text = await file.text();
-      const lines = text.split('\n').filter(line => line.trim());
 
-      // Parse CSV
-      const rows = lines.map(line => {
-        // Simple CSV parser (handles quoted fields)
-        const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-        return matches ? matches.map(field => field.replace(/^"|"$/g, '').trim()) : [];
-      });
+      // Sanitize and parse CSV
+      const rows = sanitizeAndParseCSV(text);
 
-      if (rows.length < 2) {
-        alert('CSV file must have at least a header row and one data row.');
-        els.csvFileInput.value = '';
-        return;
-      }
+      // Validate structure
+      const requiredHeaders = ['BudgetName', 'BudgetId', 'Amount_SUM'];
+      const validation = validateCSVStructure(rows, requiredHeaders);
 
+      console.log('[BUDGETS] CSV validation:', validation);
+
+      // Store parsed data
       parsedCSVData = {
-        headers: rows[0],
-        data: rows.slice(1)
+        headers: validation.headers,
+        data: validation.dataRows
       };
 
-      // Show preview
-      const previewLines = rows.slice(0, 5); // First 5 rows
-      const previewText = previewLines.map(row => row.join(', ')).join('\n');
+      // Show preview (first 5 rows)
+      const previewRows = rows.slice(0, Math.min(6, rows.length)); // Headers + 5 data rows
+      const previewText = previewRows.map(row => row.join(', ')).join('\n');
 
       els.csvPreviewContent.textContent = previewText;
-      els.csvPreviewStats.textContent = `📊 ${parsedCSVData.headers.length} columns × ${parsedCSVData.data.length} rows`;
+      els.csvPreviewStats.textContent = `📊 ${validation.columnCount} columns × ${validation.rowCount} data rows`;
       els.csvPreview.style.display = 'block';
       els.btnConfirmImport.disabled = false;
 
-      console.log('[BUDGETS] Parsed CSV:', parsedCSVData);
+      console.log('[BUDGETS] Successfully parsed CSV:', {
+        headers: parsedCSVData.headers,
+        rowCount: parsedCSVData.data.length,
+        preview: parsedCSVData.data.slice(0, 3)
+      });
 
     } catch (err) {
       console.error('[BUDGETS] Error parsing CSV:', err);
       alert('Error reading CSV file: ' + err.message);
       els.csvFileInput.value = '';
+      els.csvPreview.style.display = 'none';
+      els.btnConfirmImport.disabled = true;
     }
   }
 

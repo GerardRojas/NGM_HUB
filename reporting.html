@@ -122,97 +122,22 @@
                                 <span class="loading-text">Loading reports...</span>
                             </div>
 
-                            <div id="reportingContent" style="display: none; padding: 24px;">
-
-                                <!-- Report Templates Grid -->
-                                <h3 style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">Report Templates</h3>
-                                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px;">
-
-                                    <!-- Expense Report Template -->
-                                    <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.15s ease;">
-                                        <div style="font-size: 24px; margin-bottom: 12px;">💰</div>
-                                        <h4 style="font-size: 15px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">Expense Report</h4>
-                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">Detailed breakdown of expenses by category, project, and vendor</p>
-                                    </div>
-
-                                    <!-- Project Performance -->
-                                    <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.15s ease;">
-                                        <div style="font-size: 24px; margin-bottom: 12px;">📊</div>
-                                        <h4 style="font-size: 15px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">Project Performance</h4>
-                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">Track project progress, milestones, and budget vs actuals</p>
-                                    </div>
-
-                                    <!-- Financial Summary -->
-                                    <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.15s ease;">
-                                        <div style="font-size: 24px; margin-bottom: 12px;">📈</div>
-                                        <h4 style="font-size: 15px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">Financial Summary</h4>
-                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">Revenue, expenses, and profit margins across all operations</p>
-                                    </div>
-
-                                    <!-- Team Productivity -->
-                                    <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.15s ease;">
-                                        <div style="font-size: 24px; margin-bottom: 12px;">👥</div>
-                                        <h4 style="font-size: 15px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">Team Productivity</h4>
-                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">Task completion rates and team performance metrics</p>
-                                    </div>
-
-                                    <!-- Vendor Analysis -->
-                                    <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.15s ease;">
-                                        <div style="font-size: 24px; margin-bottom: 12px;">🏪</div>
-                                        <h4 style="font-size: 15px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">Vendor Analysis</h4>
-                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">Spending patterns and vendor performance comparison</p>
-                                    </div>
-
-                                    <!-- Custom Report -->
-                                    <div style="background: #18181b; border: 1px dashed #27272f; border-radius: 8px; padding: 20px; cursor: pointer; transition: all 0.15s ease;">
-                                        <div style="font-size: 24px; margin-bottom: 12px;">⚙️</div>
-                                        <h4 style="font-size: 15px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">Custom Report</h4>
-                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">Build your own report with custom fields and filters</p>
-                                    </div>
-
-                                </div>
-
-                                <!-- Recent Reports -->
-                                <h3 style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin: 32px 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">Recent Reports</h3>
+                            <div id="reportingContent" style="display: none;">
+                                <!-- Available Reports -->
                                 <table class="expenses-table">
                                     <thead>
                                         <tr>
                                             <th>Report Name</th>
-                                            <th>Type</th>
-                                            <th>Generated</th>
-                                            <th>Period</th>
+                                            <th>Description</th>
                                             <th class="col-actions">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td>Q4 2025 Expense Summary</td>
-                                            <td><span style="padding: 4px 8px; background: rgba(34, 197, 94, 0.12); color: #22c55e; border-radius: 4px; font-size: 12px;">Expense</span></td>
-                                            <td>2026-01-15</td>
-                                            <td>Q4 2025</td>
+                                            <td style="font-weight: 600;">Budget Vs Actuals</td>
+                                            <td style="color: #9ca3af;">Compare budgeted amounts against actual expenses by project</td>
                                             <td class="col-actions">
-                                                <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">View</button>
-                                                <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">Download</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>December Project Performance</td>
-                                            <td><span style="padding: 4px 8px; background: rgba(59, 130, 246, 0.12); color: #3b82f6; border-radius: 4px; font-size: 12px;">Project</span></td>
-                                            <td>2026-01-10</td>
-                                            <td>Dec 2025</td>
-                                            <td class="col-actions">
-                                                <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">View</button>
-                                                <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">Download</button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Annual Financial Summary 2025</td>
-                                            <td><span style="padding: 4px 8px; background: rgba(245, 158, 11, 0.12); color: #f59e0b; border-radius: 4px; font-size: 12px;">Financial</span></td>
-                                            <td>2026-01-05</td>
-                                            <td>FY 2025</td>
-                                            <td class="col-actions">
-                                                <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">View</button>
-                                                <button style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">Download</button>
+                                                <button onclick="window.location.href='budget-vs-actuals.html'" style="padding: 6px 16px; background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.3); color: #22c55e; border-radius: 4px; font-size: 13px; cursor: pointer; font-weight: 500;">Generate</button>
                                             </td>
                                         </tr>
                                     </tbody>

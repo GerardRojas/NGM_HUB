@@ -227,11 +227,8 @@
         const field = input.getAttribute('data-field');
         const value = input.value.trim();
 
-        if (input.tagName === 'SELECT') {
-          current[field] = value ? parseInt(value, 10) : null;
-        } else {
-          current[field] = value || null;
-        }
+        // Keep all values as strings - backend expects strings
+        current[field] = value || null;
       });
 
       // Check if changed

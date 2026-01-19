@@ -492,10 +492,15 @@
       return sum + amount;
     }, 0);
 
-    // Add total row with currency formatting (order: Date, Desc, Type, Vendor, Payment, Account, Amount, Receipt, Auth, Actions)
+    // Calculate colspan: 6 base columns (Date, Desc, Type, Vendor, Payment, Account) + 1 if edit mode (checkbox)
+    const totalColspan = isEditMode ? 7 : 6;
+
+    // Add total row with currency formatting
+    // Columns: [Checkbox (edit only)], Date, Desc, Type, Vendor, Payment, Account, Amount, Receipt, Auth, Actions
     const totalRow = `
       <tr class="total-row">
-        <td colspan="6" class="total-label">Total</td>
+        ${isEditMode ? '<td class="col-checkbox"></td>' : ''}
+        <td colspan="${totalColspan - 1}" class="total-label">Total</td>
         <td class="col-amount total-amount">${formatCurrency(total)}</td>
         <td class="col-receipt"></td>
         <td class="col-auth"></td>
@@ -1903,11 +1908,73 @@
 
   async function confirmCSVMapping() {
     try {
-      // Clear existing rows
+      console.log('[CSV_MAPPING] Importing', csvParsedData.rows.length, 'rows');
+
+      // Step 1: Extract unique vendors from CSV
+      const vendorColumnIndex = Object.keys(csvColumnMapping).find(
+        idx => csvColumnMapping[idx] === 'vendor'
+      );
+
+      let newVendorsCreated = 0;
+
+      if (vendorColumnIndex !== undefined) {
+        // Collect unique vendor names from CSV
+        const csvVendorNames = new Set();
+        csvParsedData.rows.forEach(row => {
+          const vendorName = row[vendorColumnIndex]?.trim();
+          if (vendorName) {
+            csvVendorNames.add(vendorName);
+          }
+        });
+
+        console.log('[CSV_MAPPING] Found', csvVendorNames.size, 'unique vendors in CSV');
+
+        // Check which vendors don't exist in metaData.vendors
+        const existingVendorNames = new Set(
+          metaData.vendors.map(v => v.vendor_name.toLowerCase())
+        );
+
+        const newVendors = Array.from(csvVendorNames).filter(
+          name => !existingVendorNames.has(name.toLowerCase())
+        );
+
+        // Create new vendors via API
+        if (newVendors.length > 0) {
+          console.log('[CSV_MAPPING] Creating', newVendors.length, 'new vendors:', newVendors);
+
+          const apiBase = getApiBase();
+
+          for (const vendorName of newVendors) {
+            try {
+              const response = await apiJson(`${apiBase}/vendors`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ vendor_name: vendorName })
+              });
+
+              console.log('[CSV_MAPPING] Created vendor:', vendorName, response);
+
+              // Add to local metaData
+              const newVendor = {
+                id: response.id || response.vendor_id,
+                vendor_name: vendorName
+              };
+              metaData.vendors.push(newVendor);
+              newVendorsCreated++;
+
+            } catch (err) {
+              console.warn('[CSV_MAPPING] Failed to create vendor:', vendorName, err);
+              // Continue with other vendors even if one fails
+            }
+          }
+
+          console.log('[CSV_MAPPING] Successfully created', newVendorsCreated, 'new vendors');
+        }
+      }
+
+      // Step 2: Clear existing rows and populate from CSV
       els.expenseRowsBody.innerHTML = '';
       modalRowCounter = 0;
-
-      console.log('[CSV_MAPPING] Importing', csvParsedData.rows.length, 'rows');
 
       // Add a row for each CSV data row
       for (const dataRow of csvParsedData.rows) {
@@ -1944,9 +2011,20 @@
               typeSelect.value = value;
             }
           } else if (field === 'vendor') {
-            const vendorSelect = row.querySelector('[data-field="vendor_id"]');
-            if (vendorSelect) {
-              vendorSelect.value = value;
+            const vendorInput = row.querySelector('[data-field="vendor_id"]');
+            if (vendorInput && value) {
+              // Find vendor ID by name
+              const vendor = metaData.vendors.find(
+                v => v.vendor_name.toLowerCase() === value.toLowerCase()
+              );
+
+              if (vendor) {
+                vendorInput.value = vendor.vendor_name;
+                vendorInput.setAttribute('data-field-value', vendor.id);
+              } else {
+                // Fallback: set the name
+                vendorInput.value = value;
+              }
             }
           } else if (field === 'payment') {
             const paymentSelect = row.querySelector('[data-field="payment_method"]');
@@ -1972,7 +2050,12 @@
       // Close mapping modal
       closeCsvMappingModal();
 
-      alert(`Successfully imported ${csvParsedData.rows.length} expense(s) from CSV.`);
+      // Show success message
+      let message = `Successfully imported ${csvParsedData.rows.length} expense(s) from CSV.`;
+      if (newVendorsCreated > 0) {
+        message += `\n${newVendorsCreated} new vendor(s) were automatically created.`;
+      }
+      alert(message);
 
     } catch (err) {
       console.error('[CSV_MAPPING] Error importing:', err);

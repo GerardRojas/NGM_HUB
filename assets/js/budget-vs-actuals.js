@@ -26,7 +26,7 @@
   // ================================
   // CONFIG
   // ================================
-  const apiBase = window.API_BASE || 'http://localhost:8000';
+  const apiBase = window.API_BASE || 'https://ngm-fastapi.onrender.com';
 
   // ================================
   // DOM ELEMENTS

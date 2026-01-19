@@ -1922,12 +1922,16 @@
       let newPaymentMethodsCreated = 0;
 
       if (vendorColumnIndex !== undefined) {
-        // Collect unique vendor names from CSV (normalized)
+        // Collect unique vendor names from CSV (normalized and cleaned)
         const csvVendorNames = new Set();
         csvParsedData.rows.forEach(row => {
-          const vendorName = row[vendorColumnIndex]?.trim();
+          let vendorName = row[vendorColumnIndex]?.trim();
           if (vendorName) {
-            csvVendorNames.add(vendorName);
+            // Remove surrounding quotes
+            vendorName = vendorName.replace(/^["']+|["']+$/g, '');
+            if (vendorName) { // Check again after removing quotes
+              csvVendorNames.add(vendorName);
+            }
           }
         });
 
@@ -2004,12 +2008,16 @@
 
       // Step 1b: Extract and create payment methods
       if (paymentColumnIndex !== undefined) {
-        // Collect unique payment method names from CSV (normalized)
+        // Collect unique payment method names from CSV (normalized and cleaned)
         const csvPaymentNames = new Set();
         csvParsedData.rows.forEach(row => {
-          const paymentName = row[paymentColumnIndex]?.trim();
+          let paymentName = row[paymentColumnIndex]?.trim();
           if (paymentName) {
-            csvPaymentNames.add(paymentName);
+            // Remove surrounding quotes
+            paymentName = paymentName.replace(/^["']+|["']+$/g, '');
+            if (paymentName) { // Check again after removing quotes
+              csvPaymentNames.add(paymentName);
+            }
           }
         });
 
@@ -2110,48 +2118,134 @@
           if (field === 'date') {
             const dateInput = row.querySelector('[data-field="TxnDate"]');
             if (dateInput && value) {
-              dateInput.value = value;
+              // Try to parse and format the date to YYYY-MM-DD
+              let formattedDate = value.trim();
+
+              try {
+                const parsedDate = new Date(value);
+                if (!isNaN(parsedDate.getTime())) {
+                  // Valid date - format as YYYY-MM-DD
+                  const year = parsedDate.getFullYear();
+                  const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                  const day = String(parsedDate.getDate()).padStart(2, '0');
+                  formattedDate = `${year}-${month}-${day}`;
+                }
+              } catch (err) {
+                console.warn('[CSV_MAPPING] Could not parse date:', value);
+              }
+
+              dateInput.value = formattedDate;
             }
           } else if (field === 'description') {
             const descInput = row.querySelector('[data-field="LineDescription"]');
             if (descInput) {
-              descInput.value = value;
+              // Trim and remove surrounding quotes
+              let cleanedValue = value.toString().trim();
+              cleanedValue = cleanedValue.replace(/^["']+|["']+$/g, ''); // Remove quotes from start/end
+              descInput.value = cleanedValue;
             }
           } else if (field === 'type') {
             const typeSelect = row.querySelector('[data-field="txn_type"]');
-            if (typeSelect) {
-              typeSelect.value = value;
+            if (typeSelect && value) {
+              // Clean transaction type name - remove quotes
+              let cleanedTypeName = value.toString().trim();
+              cleanedTypeName = cleanedTypeName.replace(/^["']+|["']+$/g, ''); // Remove quotes from start/end
+
+              // Find transaction type ID by name (case-insensitive)
+              const txnType = metaData.txn_types.find(
+                t => t.TnxType_name.toLowerCase() === cleanedTypeName.toLowerCase()
+              );
+
+              if (txnType) {
+                typeSelect.value = txnType.id;
+              } else {
+                console.warn('[CSV_MAPPING] Transaction type not found:', cleanedTypeName);
+                // Set to empty/first option if not found
+                typeSelect.value = '';
+              }
             }
           } else if (field === 'vendor') {
             const vendorInput = row.querySelector('[data-field="vendor_id"]');
             if (vendorInput && value) {
+              // Clean vendor name - remove quotes
+              let cleanedVendorName = value.toString().trim();
+              cleanedVendorName = cleanedVendorName.replace(/^["']+|["']+$/g, ''); // Remove quotes from start/end
+
               // Find vendor ID by name
               const vendor = metaData.vendors.find(
-                v => v.vendor_name.toLowerCase() === value.toLowerCase()
+                v => v.vendor_name.toLowerCase() === cleanedVendorName.toLowerCase()
               );
 
               if (vendor) {
                 vendorInput.value = vendor.vendor_name;
                 vendorInput.setAttribute('data-field-value', vendor.id);
               } else {
-                // Fallback: set the name
-                vendorInput.value = value;
+                // Fallback: set the cleaned name
+                vendorInput.value = cleanedVendorName;
               }
             }
           } else if (field === 'payment') {
-            const paymentSelect = row.querySelector('[data-field="payment_method"]');
-            if (paymentSelect) {
-              paymentSelect.value = value;
+            const paymentSelect = row.querySelector('[data-field="payment_type"]');
+            if (paymentSelect && value) {
+              // Clean payment method name - remove quotes
+              let cleanedPaymentName = value.toString().trim();
+              cleanedPaymentName = cleanedPaymentName.replace(/^["']+|["']+$/g, ''); // Remove quotes from start/end
+
+              // Find payment method ID by name (case-insensitive)
+              const paymentMethod = metaData.payment_methods.find(
+                p => p.payment_method_name.toLowerCase() === cleanedPaymentName.toLowerCase()
+              );
+
+              if (paymentMethod) {
+                paymentSelect.value = paymentMethod.id;
+              } else {
+                console.warn('[CSV_MAPPING] Payment method not found:', cleanedPaymentName);
+                // Set to empty/first option if not found
+                paymentSelect.value = '';
+              }
             }
           } else if (field === 'account') {
             const accountSelect = row.querySelector('[data-field="account_id"]');
-            if (accountSelect) {
-              accountSelect.value = value;
+            if (accountSelect && value) {
+              // Clean account name - remove quotes
+              let cleanedAccountName = value.toString().trim();
+              cleanedAccountName = cleanedAccountName.replace(/^["']+|["']+$/g, ''); // Remove quotes from start/end
+
+              // Find account ID by name (case-insensitive)
+              const account = metaData.accounts.find(
+                a => a.Name.toLowerCase() === cleanedAccountName.toLowerCase()
+              );
+
+              if (account) {
+                accountSelect.value = account.account_id;
+              } else {
+                console.warn('[CSV_MAPPING] Account not found:', cleanedAccountName);
+                // Set to empty/first option if not found
+                accountSelect.value = '';
+              }
             }
           } else if (field === 'amount') {
             const amountInput = row.querySelector('[data-field="Amount"]');
-            if (amountInput) {
-              amountInput.value = value;
+            if (amountInput && value) {
+              // Clean amount: remove $, commas, spaces, and keep only numbers and decimal point
+              const originalValue = value.toString().trim();
+              let cleanedAmount = originalValue;
+              cleanedAmount = cleanedAmount.replace(/[$,\s]/g, ''); // Remove $, commas, spaces
+              cleanedAmount = cleanedAmount.replace(/[^\d.-]/g, ''); // Keep only digits, dot, and minus
+
+              // Validate it's a valid number
+              const numValue = parseFloat(cleanedAmount);
+              if (!isNaN(numValue)) {
+                amountInput.value = numValue.toFixed(2);
+
+                // Log if the value was modified
+                if (originalValue !== numValue.toFixed(2)) {
+                  console.log('[CSV_MAPPING] Cleaned amount:', originalValue, '->', numValue.toFixed(2));
+                }
+              } else {
+                console.warn('[CSV_MAPPING] Invalid amount value:', originalValue, '-> setting to 0.00');
+                amountInput.value = '0.00';
+              }
             }
           }
         });

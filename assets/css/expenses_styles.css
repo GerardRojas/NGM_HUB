@@ -41,19 +41,22 @@
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 20px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-height: 48px;
 }
 
 .toolbar-left {
   display: flex;
   align-items: flex-end;
   gap: 16px;
+  flex-shrink: 0;
 }
 
 .toolbar-right {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .toolbar-field {

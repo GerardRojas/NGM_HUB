@@ -1910,15 +1910,19 @@
     try {
       console.log('[CSV_MAPPING] Importing', csvParsedData.rows.length, 'rows');
 
-      // Step 1: Extract unique vendors from CSV
+      // Step 1: Extract unique vendors and payment types from CSV
       const vendorColumnIndex = Object.keys(csvColumnMapping).find(
         idx => csvColumnMapping[idx] === 'vendor'
       );
+      const paymentColumnIndex = Object.keys(csvColumnMapping).find(
+        idx => csvColumnMapping[idx] === 'payment'
+      );
 
       let newVendorsCreated = 0;
+      let newPaymentMethodsCreated = 0;
 
       if (vendorColumnIndex !== undefined) {
-        // Collect unique vendor names from CSV
+        // Collect unique vendor names from CSV (normalized)
         const csvVendorNames = new Set();
         csvParsedData.rows.forEach(row => {
           const vendorName = row[vendorColumnIndex]?.trim();
@@ -1929,18 +1933,18 @@
 
         console.log('[CSV_MAPPING] Found', csvVendorNames.size, 'unique vendors in CSV');
 
-        // Check which vendors don't exist in metaData.vendors
+        // Check which vendors don't exist in metaData.vendors (case-insensitive + normalized)
         const existingVendorNames = new Set(
-          metaData.vendors.map(v => v.vendor_name.toLowerCase())
+          metaData.vendors.map(v => v.vendor_name.toLowerCase().trim())
         );
 
         const newVendors = Array.from(csvVendorNames).filter(
-          name => !existingVendorNames.has(name.toLowerCase())
+          name => !existingVendorNames.has(name.toLowerCase().trim())
         );
 
         // Create new vendors via API
         if (newVendors.length > 0) {
-          console.log('[CSV_MAPPING] Creating', newVendors.length, 'new vendors:', newVendors);
+          console.log('[CSV_MAPPING] Attempting to create', newVendors.length, 'new vendors:', newVendors);
 
           const apiBase = getApiBase();
 
@@ -1952,23 +1956,131 @@
                 body: JSON.stringify({ vendor_name: vendorName })
               });
 
-              console.log('[CSV_MAPPING] Created vendor:', vendorName, response);
+              console.log('[CSV_MAPPING] ✓ Created vendor:', vendorName);
 
               // Add to local metaData
               const newVendor = {
-                id: response.id || response.vendor_id,
+                id: response.id || response.vendor_id || response.data?.id,
                 vendor_name: vendorName
               };
               metaData.vendors.push(newVendor);
               newVendorsCreated++;
 
             } catch (err) {
-              console.warn('[CSV_MAPPING] Failed to create vendor:', vendorName, err);
-              // Continue with other vendors even if one fails
+              // If vendor already exists (race condition or sync issue), try to fetch it
+              if (err.message && err.message.includes('already exists')) {
+                console.log('[CSV_MAPPING] ⚠ Vendor already exists (skipping):', vendorName);
+
+                // Try to find it in backend and add to local metaData if not present
+                try {
+                  const allVendorsResponse = await apiJson(`${apiBase}/vendors`);
+                  const allVendors = Array.isArray(allVendorsResponse) ? allVendorsResponse : (allVendorsResponse?.data || []);
+
+                  const existingVendor = allVendors.find(v =>
+                    v.vendor_name.toLowerCase().trim() === vendorName.toLowerCase().trim()
+                  );
+
+                  if (existingVendor && !metaData.vendors.find(v => v.id === existingVendor.id)) {
+                    metaData.vendors.push({
+                      id: existingVendor.id,
+                      vendor_name: existingVendor.vendor_name
+                    });
+                    console.log('[CSV_MAPPING] ✓ Added existing vendor to local cache:', vendorName);
+                  }
+                } catch (fetchErr) {
+                  console.warn('[CSV_MAPPING] Could not fetch existing vendor:', vendorName);
+                }
+              } else {
+                console.error('[CSV_MAPPING] ✗ Failed to create vendor:', vendorName, err.message);
+              }
             }
           }
 
-          console.log('[CSV_MAPPING] Successfully created', newVendorsCreated, 'new vendors');
+          if (newVendorsCreated > 0) {
+            console.log('[CSV_MAPPING] Successfully created', newVendorsCreated, 'new vendors');
+          }
+        }
+      }
+
+      // Step 1b: Extract and create payment methods
+      if (paymentColumnIndex !== undefined) {
+        // Collect unique payment method names from CSV (normalized)
+        const csvPaymentNames = new Set();
+        csvParsedData.rows.forEach(row => {
+          const paymentName = row[paymentColumnIndex]?.trim();
+          if (paymentName) {
+            csvPaymentNames.add(paymentName);
+          }
+        });
+
+        console.log('[CSV_MAPPING] Found', csvPaymentNames.size, 'unique payment methods in CSV');
+
+        // Check which payment methods don't exist in metaData.payment_methods (case-insensitive + normalized)
+        const existingPaymentNames = new Set(
+          metaData.payment_methods.map(p => p.payment_method_name.toLowerCase().trim())
+        );
+
+        const newPayments = Array.from(csvPaymentNames).filter(
+          name => !existingPaymentNames.has(name.toLowerCase().trim())
+        );
+
+        // Create new payment methods via API (note: table is 'paymet_methods' with typo)
+        if (newPayments.length > 0) {
+          console.log('[CSV_MAPPING] Attempting to create', newPayments.length, 'new payment methods:', newPayments);
+
+          const apiBase = getApiBase();
+
+          for (const paymentName of newPayments) {
+            try {
+              const response = await apiJson(`${apiBase}/payment-methods`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ payment_method_name: paymentName })
+              });
+
+              console.log('[CSV_MAPPING] ✓ Created payment method:', paymentName);
+
+              // Add to local metaData
+              const newPayment = {
+                id: response.id || response.payment_method_id || response.data?.id,
+                payment_method_name: paymentName
+              };
+              metaData.payment_methods.push(newPayment);
+              newPaymentMethodsCreated++;
+
+            } catch (err) {
+              // If payment method already exists (race condition or sync issue), try to fetch it
+              if (err.message && err.message.includes('already exists')) {
+                console.log('[CSV_MAPPING] ⚠ Payment method already exists (skipping):', paymentName);
+
+                // Try to find it in backend and add to local metaData if not present
+                try {
+                  const allPaymentsResponse = await apiJson(`${apiBase}/payment-methods`);
+                  const allPayments = Array.isArray(allPaymentsResponse) ? allPaymentsResponse : (allPaymentsResponse?.data || []);
+
+                  const existingPayment = allPayments.find(p =>
+                    p.payment_method_name.toLowerCase().trim() === paymentName.toLowerCase().trim()
+                  );
+
+                  if (existingPayment && !metaData.payment_methods.find(p => p.id === existingPayment.id)) {
+                    metaData.payment_methods.push({
+                      id: existingPayment.id,
+                      payment_method_name: existingPayment.payment_method_name
+                    });
+                    console.log('[CSV_MAPPING] ✓ Added existing payment method to local cache:', paymentName);
+                  }
+                } catch (fetchErr) {
+                  console.warn('[CSV_MAPPING] Could not fetch existing payment method:', paymentName);
+                }
+              } else {
+                console.error('[CSV_MAPPING] ✗ Failed to create payment method:', paymentName, err.message);
+              }
+            }
+          }
+
+          if (newPaymentMethodsCreated > 0) {
+            console.log('[CSV_MAPPING] Successfully created', newPaymentMethodsCreated, 'new payment methods');
+          }
         }
       }
 
@@ -2054,6 +2166,9 @@
       let message = `Successfully imported ${csvParsedData.rows.length} expense(s) from CSV.`;
       if (newVendorsCreated > 0) {
         message += `\n${newVendorsCreated} new vendor(s) were automatically created.`;
+      }
+      if (newPaymentMethodsCreated > 0) {
+        message += `\n${newPaymentMethodsCreated} new payment method(s) were automatically created.`;
       }
       alert(message);
 

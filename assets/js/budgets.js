@@ -42,7 +42,20 @@
   }
 
   async function apiJson(url, options = {}) {
-    const res = await fetch(url, { credentials: 'include', ...options });
+    const token = localStorage.getItem('ngmToken');
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(url, {
+      credentials: 'include',
+      ...options,
+      headers
+    });
     const text = await res.text().catch(() => '');
     if (!res.ok) {
       throw new Error(`${options.method || 'GET'} ${url} failed (${res.status}): ${text}`);

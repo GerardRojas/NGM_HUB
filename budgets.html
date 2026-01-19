@@ -123,28 +123,36 @@
 
     <!-- Import CSV Modal -->
     <div id="importCSVModal" class="modal-backdrop hidden">
-        <div class="modal" style="max-width: 600px;">
+        <div class="modal">
             <div class="modal-header">
                 <div class="modal-title">Import Budget from CSV</div>
                 <button type="button" class="modal-close-btn" id="btnCloseImportModal">&times;</button>
             </div>
 
             <div class="modal-body">
-                <div class="modal-form-grid">
-                    <div class="form-field form-field-full">
-                        <p style="font-size: 13px; color: #9ca3af; margin-bottom: 16px;">
-                            Upload a CSV file exported from QuickBooks Online with the following columns:
-                        </p>
-                        <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; padding: 12px; margin-bottom: 12px;">
-                            <code style="font-size: 11px; color: #93c5fd; font-family: monospace; word-break: break-all;">
-                                BudgetName, BudgetId, Year, StartDate, EndDate, Active, AccountId, AccountName, Amount_SUM
-                            </code>
-                        </div>
-                        <p style="font-size: 12px; color: #6b7280;">
-                            The CSV must include headers. Each row represents one budget account line.
-                        </p>
+                <!-- Project info header -->
+                <div class="modal-project-header">
+                    <div class="modal-project-info">
+                        <span class="modal-project-label">Project:</span>
+                        <span class="modal-project-name" id="selectedProjectName">—</span>
                     </div>
+                </div>
 
+                <!-- Instructions -->
+                <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                    <p style="font-size: 13px; color: #93c5fd; margin: 0 0 8px 0; font-weight: 500;">
+                        CSV Requirements
+                    </p>
+                    <code style="font-size: 11px; color: #93c5fd; font-family: monospace; word-break: break-all; display: block; margin-bottom: 8px;">
+                        BudgetName, BudgetId, Year, StartDate, EndDate, Active, AccountId, AccountName, Amount_SUM
+                    </code>
+                    <p style="font-size: 12px; color: #93c5fd; margin: 0;">
+                        Each row represents one budget account line. Max file size: 5MB
+                    </p>
+                </div>
+
+                <!-- Form fields -->
+                <div class="modal-form-grid">
                     <div class="form-field form-field-full">
                         <label class="form-label">Select CSV File</label>
                         <input
@@ -154,9 +162,6 @@
                             class="form-input"
                             style="cursor: pointer;"
                         />
-                        <p style="font-size: 12px; color: #6b7280; margin-top: 6px;">
-                            Max file size: 5MB
-                        </p>
                     </div>
 
                     <div id="csvPreview" class="form-field form-field-full" style="display: none;">
@@ -165,15 +170,6 @@
                             <pre id="csvPreviewContent" style="font-size: 11px; color: #9ca3af; margin: 0; font-family: monospace; white-space: pre-wrap;"></pre>
                         </div>
                         <p id="csvPreviewStats" style="font-size: 12px; color: #6b7280; margin-top: 8px;"></p>
-                    </div>
-
-                    <div class="form-field form-field-full">
-                        <label class="form-label">This budget will be linked to:</label>
-                        <div style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 6px; padding: 12px;">
-                            <p id="selectedProjectName" style="font-size: 14px; font-weight: 600; color: #22c55e; margin: 0;">
-                                <!-- Project name will be inserted here -->
-                            </p>
-                        </div>
                     </div>
                 </div>
             </div>

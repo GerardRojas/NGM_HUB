@@ -175,7 +175,7 @@
 /* Inputs inside table */
 #addExpenseModal .exp-input {
   width: 100%;
-  padding: 8px 10px;
+  padding: 9px 11px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(148, 163, 184, 0.28);
@@ -195,7 +195,23 @@
     calc(100% - 8px) calc(50% - 2px);
   background-size: 6px 6px, 6px 6px;
   background-repeat: no-repeat;
-  padding-right: 28px;
+  padding-right: 32px;
+  cursor: text;
+}
+
+/* Hide native datalist dropdown arrow */
+#addExpenseModal .exp-input-searchable::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#addExpenseModal input.exp-input[list]::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+  opacity: 0;
+  pointer-events: none;
 }
 
 #addExpenseModal .exp-input::placeholder {
@@ -220,7 +236,7 @@
     calc(100% - 8px) calc(50% - 2px);
   background-size: 6px 6px, 6px 6px;
   background-repeat: no-repeat;
-  padding-right: 28px;
+  padding-right: 32px;
   cursor: pointer;
 }
 

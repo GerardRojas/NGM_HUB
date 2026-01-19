@@ -25,6 +25,8 @@
     btnImportCSV: null,
     importModal: null,
     csvFileInput: null,
+    btnSelectFile: null,
+    fileNameDisplay: null,
     csvPreview: null,
     csvPreviewContent: null,
     csvPreviewStats: null,
@@ -114,6 +116,8 @@
     els.btnImportCSV = document.getElementById('btnImportCSV');
     els.importModal = document.getElementById('importCSVModal');
     els.csvFileInput = document.getElementById('csvFileInput');
+    els.btnSelectFile = document.getElementById('btnSelectFile');
+    els.fileNameDisplay = document.getElementById('fileNameDisplay');
     els.csvPreview = document.getElementById('csvPreview');
     els.csvPreviewContent = document.getElementById('csvPreviewContent');
     els.csvPreviewStats = document.getElementById('csvPreviewStats');
@@ -455,13 +459,27 @@
     if (!file) {
       els.csvPreview.style.display = 'none';
       els.btnConfirmImport.disabled = true;
+      if (els.fileNameDisplay) {
+        els.fileNameDisplay.textContent = 'No file selected';
+        els.fileNameDisplay.classList.remove('has-file');
+      }
       return;
+    }
+
+    // Update file name display
+    if (els.fileNameDisplay) {
+      els.fileNameDisplay.textContent = file.name;
+      els.fileNameDisplay.classList.add('has-file');
     }
 
     // Check file type
     if (!file.name.toLowerCase().endsWith('.csv')) {
       alert('Please select a CSV file.');
       els.csvFileInput.value = '';
+      if (els.fileNameDisplay) {
+        els.fileNameDisplay.textContent = 'No file selected';
+        els.fileNameDisplay.classList.remove('has-file');
+      }
       return;
     }
 
@@ -469,6 +487,10 @@
     if (file.size > 5 * 1024 * 1024) {
       alert('File is too large. Maximum size is 5MB.');
       els.csvFileInput.value = '';
+      if (els.fileNameDisplay) {
+        els.fileNameDisplay.textContent = 'No file selected';
+        els.fileNameDisplay.classList.remove('has-file');
+      }
       return;
     }
 
@@ -612,6 +634,11 @@
       if (e.target === els.importModal) {
         closeImportModal();
       }
+    });
+
+    // File select button (triggers hidden file input)
+    els.btnSelectFile?.addEventListener('click', () => {
+      els.csvFileInput?.click();
     });
 
     // CSV file input

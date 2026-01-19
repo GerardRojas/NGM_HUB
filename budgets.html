@@ -156,13 +156,19 @@
                 <div class="modal-form-grid">
                     <div class="form-field form-field-full">
                         <label class="form-label">Select CSV File</label>
-                        <input
-                            type="file"
-                            id="csvFileInput"
-                            accept=".csv"
-                            class="form-input"
-                            style="cursor: pointer;"
-                        />
+                        <div class="file-input-wrapper">
+                            <input
+                                type="file"
+                                id="csvFileInput"
+                                accept=".csv"
+                                style="display: none;"
+                            />
+                            <button type="button" class="btn-file-select" id="btnSelectFile">
+                                <span style="font-size: 16px; margin-right: 8px;">📁</span>
+                                Choose File
+                            </button>
+                            <span class="file-name-display" id="fileNameDisplay">No file selected</span>
+                        </div>
                     </div>
 
                     <div id="csvPreview" class="form-field form-field-full" style="display: none;">

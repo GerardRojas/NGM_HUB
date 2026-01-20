@@ -496,13 +496,13 @@
     const totalColspan = 7;
 
     // Add total row with currency formatting
-    // Columns: Checkbox (always present, may be hidden), Date, Desc, Type, Vendor, Payment, Account, Amount, Source, Receipt, Auth, Actions
+    // Columns: Checkbox (always present, may be hidden), Date, Desc, Type, Vendor, Payment, Account, Amount, Source (hidden), Receipt, Auth, Actions
     const totalRow = `
       <tr class="total-row">
         <td class="col-checkbox" style="display: none;"></td>
         <td colspan="${totalColspan - 1}" class="total-label">Total</td>
         <td class="col-amount total-amount">${formatCurrency(total)}</td>
-        <td class="col-source"></td>
+        <td class="col-source" style="display: none;"></td>
         <td class="col-receipt"></td>
         <td class="col-auth"></td>
         <td class="col-actions"></td>
@@ -557,7 +557,7 @@
         <td>${payment}</td>
         <td>${account}</td>
         <td class="col-amount">${amount}</td>
-        <td class="col-source"><span class="status-badge">Manual</span></td>
+        <td class="col-source" style="display: none;"></td>
         <td class="col-receipt">${receiptIcon}</td>
         <td class="col-auth">${authBadge}</td>
         <td class="col-actions"></td>
@@ -612,6 +612,7 @@
         <td class="col-amount editable-cell">
           <input type="number" class="edit-input edit-input--amount" data-field="Amount" step="0.01" min="0" value="${exp.Amount || ''}" placeholder="0.00">
         </td>
+        <td class="col-source" style="display: none;"></td>
         <td class="col-receipt">${receiptIcon}</td>
         <td class="col-auth">${authBadge}</td>
         <td class="col-actions">

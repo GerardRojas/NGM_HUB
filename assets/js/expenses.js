@@ -110,6 +110,8 @@
     els.btnBulkDelete = document.getElementById('btnBulkDelete');
     els.selectedCount = document.getElementById('selectedCount');
     els.selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    els.btnBulkAuthorize = document.getElementById('btnBulkAuthorize');
+    els.authorizeCount = document.getElementById('authorizeCount');
 
     // Modal elements
     els.modal = document.getElementById('addExpenseModal');
@@ -540,10 +542,12 @@
     const authBadgeClass = isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending';
     const authBadgeText = isAuthorized ? '✓ Auth' : '⏳ Pending';
     const authBadgeDisabled = canAuthorize ? '' : ' auth-badge-disabled';
+    const cursorStyle = canAuthorize ? 'cursor: pointer;' : 'cursor: not-allowed;';
     const authBadge = `<span class="auth-badge ${authBadgeClass}${authBadgeDisabled}"
       data-expense-id="${expenseId}"
       data-auth-status="${isAuthorized}"
-      onclick="event.stopPropagation(); ${canAuthorize ? 'window.toggleAuth(this)' : ''}"
+      data-can-authorize="${canAuthorize}"
+      style="${cursorStyle}"
       title="${canAuthorize ? 'Click to toggle authorization' : 'You do not have permission to authorize'}">${authBadgeText}</span>`;
 
     return `
@@ -693,13 +697,19 @@
       // Add edit mode class to table for wider columns
       if (els.expensesTable) els.expensesTable.classList.add('edit-mode-table');
 
-      // Show checkbox column
+      // Show checkbox column (header and cells)
       const checkboxHeader = document.querySelector('.col-checkbox');
       if (checkboxHeader) checkboxHeader.style.display = '';
+
+      // Show bulk authorize button if user has permission
+      if (canAuthorize && els.btnBulkAuthorize) {
+        els.btnBulkAuthorize.style.display = 'inline-flex';
+      }
 
       // Reset selection
       selectedExpenseIds.clear();
       updateBulkDeleteButton();
+      updateBulkAuthorizeButton();
     } else {
       els.btnEditExpenses.textContent = 'Edit Expenses';
       els.btnEditExpenses.disabled = expenses.length === 0;
@@ -709,9 +719,14 @@
       // Remove edit mode class from table
       if (els.expensesTable) els.expensesTable.classList.remove('edit-mode-table');
 
-      // Hide checkbox column
+      // Hide checkbox column (header and cells)
       const checkboxHeader = document.querySelector('.col-checkbox');
       if (checkboxHeader) checkboxHeader.style.display = 'none';
+
+      // Hide bulk authorize button
+      if (els.btnBulkAuthorize) {
+        els.btnBulkAuthorize.style.display = 'none';
+      }
 
       // Reset selection
       selectedExpenseIds.clear();
@@ -940,6 +955,75 @@
     els.btnBulkDelete.disabled = count === 0;
   }
 
+  function updateBulkAuthorizeButton() {
+    if (!els.btnBulkAuthorize || !els.authorizeCount) return;
+
+    const count = selectedExpenseIds.size;
+    els.authorizeCount.textContent = count;
+    els.btnBulkAuthorize.disabled = count === 0;
+  }
+
+  async function bulkAuthorizeExpenses() {
+    if (selectedExpenseIds.size === 0) {
+      alert('No expenses selected.');
+      return;
+    }
+
+    if (!canAuthorize) {
+      alert('You do not have permission to authorize expenses.');
+      return;
+    }
+
+    const confirmed = confirm(`Authorize ${selectedExpenseIds.size} expense(s)? This will mark them as approved.`);
+    if (!confirmed) return;
+
+    const apiBase = getApiBase();
+    const userId = currentUser.user_id || currentUser.id;
+
+    els.btnBulkAuthorize.disabled = true;
+    const originalText = els.btnBulkAuthorize.innerHTML;
+    els.btnBulkAuthorize.innerHTML = '<span style="font-size: 14px;">⏳</span> Authorizing...';
+
+    try {
+      const authorizePromises = Array.from(selectedExpenseIds).map(expenseId =>
+        apiJson(`${apiBase}/expenses/${expenseId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            auth_status: true,
+            auth_by: userId
+          })
+        })
+      );
+
+      await Promise.all(authorizePromises);
+
+      console.log('[BULK_AUTH] Successfully authorized', selectedExpenseIds.size, 'expenses');
+
+      // Update local data
+      selectedExpenseIds.forEach(expenseId => {
+        const expense = expenses.find(e => (e.expense_id || e.id) == expenseId);
+        if (expense) {
+          expense.auth_status = true;
+          expense.auth_by = userId;
+        }
+      });
+
+      alert(`${selectedExpenseIds.size} expense(s) authorized successfully!`);
+      selectedExpenseIds.clear();
+      renderExpensesTable();
+      updateBulkDeleteButton();
+      updateBulkAuthorizeButton();
+
+    } catch (err) {
+      console.error('[BULK_AUTH] Error:', err);
+      alert('Error authorizing expenses: ' + err.message);
+    } finally {
+      els.btnBulkAuthorize.disabled = false;
+      els.btnBulkAuthorize.innerHTML = originalText;
+    }
+  }
+
   function toggleSelectAll() {
     const displayExpenses = filteredExpenses.length > 0 || Object.values(columnFilters).some(f => f.length > 0) ? filteredExpenses : expenses;
 
@@ -956,6 +1040,7 @@
 
     renderExpensesTable();
     updateBulkDeleteButton();
+    updateBulkAuthorizeButton();
   }
 
   // ================================
@@ -2664,6 +2749,9 @@
     // Bulk delete button
     els.btnBulkDelete?.addEventListener('click', bulkDeleteExpenses);
 
+    // Bulk authorize button
+    els.btnBulkAuthorize?.addEventListener('click', bulkAuthorizeExpenses);
+
     // Select all checkbox
     els.selectAllCheckbox?.addEventListener('change', toggleSelectAll);
 
@@ -2678,6 +2766,18 @@
           els.selectAllCheckbox.checked = false;
         }
         updateBulkDeleteButton();
+        updateBulkAuthorizeButton();
+      }
+    });
+
+    // Authorization badge clicks (event delegation)
+    els.expensesTableBody?.addEventListener('click', (e) => {
+      if (e.target.classList.contains('auth-badge')) {
+        e.stopPropagation(); // Don't trigger row click
+        const canAuth = e.target.getAttribute('data-can-authorize') === 'true';
+        if (canAuth) {
+          toggleAuth(e.target);
+        }
       }
     });
 

@@ -312,10 +312,28 @@
   // PROCESS REPORT DATA
   // ================================
   function processReportData(budgets, expenses) {
+    // Helper function to resolve account name from account_id
+    const getAccountName = (accountId, accountName) => {
+      // If account_name is already provided, use it
+      if (accountName) return accountName;
+
+      // Otherwise, look up by account_id in accounts array
+      if (accountId) {
+        const accountInfo = accounts.find(acc =>
+          (acc.account_id || acc.id) === accountId
+        );
+        if (accountInfo) {
+          return accountInfo.Name || accountInfo.account_name || 'Unknown Account';
+        }
+      }
+
+      return 'Unknown Account';
+    };
+
     // Group budgets by account_name
     const budgetsByAccount = {};
     budgets.forEach(budget => {
-      const accountName = budget.account_name || 'Unknown Account';
+      const accountName = getAccountName(budget.account_id, budget.account_name);
       if (!budgetsByAccount[accountName]) {
         budgetsByAccount[accountName] = 0;
       }
@@ -325,12 +343,25 @@
     // Group expenses by account_name and sum amounts
     const expensesByAccount = {};
     expenses.forEach(expense => {
-      const accountName = expense.account_name || 'Unknown Account';
+      // Resolve account name from account_id or use existing account_name
+      const accountName = getAccountName(expense.account_id, expense.account_name);
+
+      console.log('[BUDGET_VS_ACTUALS] Processing expense:', {
+        account_id: expense.account_id,
+        account_name: expense.account_name,
+        resolved_name: accountName,
+        amount: expense.Amount || expense.amount
+      });
+
       if (!expensesByAccount[accountName]) {
         expensesByAccount[accountName] = 0;
       }
-      expensesByAccount[accountName] += parseFloat(expense.amount || 0);
+      // Try both Amount and amount fields (case-sensitive)
+      const expenseAmount = parseFloat(expense.Amount || expense.amount || 0);
+      expensesByAccount[accountName] += expenseAmount;
     });
+
+    console.log('[BUDGET_VS_ACTUALS] Expenses by account:', expensesByAccount);
 
     // Get all unique account names
     const allAccounts = new Set([

@@ -194,11 +194,27 @@
    * Create receipt preview element
    * @param {string} receiptUrl - The URL of the receipt
    * @param {Function} onDelete - Callback when delete is clicked
+   * @param {Function} onReplace - Optional callback when replace is clicked
    * @returns {HTMLElement}
    */
-  function createReceiptPreview(receiptUrl, onDelete) {
+  function createReceiptPreview(receiptUrl, onDelete, onReplace) {
     const container = document.createElement('div');
     container.className = 'receipt-preview';
+
+    // Extract filename from URL
+    let filename = 'Receipt File';
+    try {
+      // Try to extract filename from URL (last segment after /)
+      const urlParts = receiptUrl.split('/');
+      const lastPart = urlParts[urlParts.length - 1];
+      // Remove query params if present
+      const filenameWithoutQuery = lastPart.split('?')[0];
+      if (filenameWithoutQuery && filenameWithoutQuery.length > 0) {
+        filename = decodeURIComponent(filenameWithoutQuery);
+      }
+    } catch (err) {
+      console.warn('[RECEIPT] Could not extract filename from URL:', err);
+    }
 
     // Detect file type from URL or blob URL
     const urlLower = receiptUrl.toLowerCase();
@@ -207,27 +223,49 @@
                     urlLower.includes('.png') || urlLower.includes('.gif') ||
                     urlLower.includes('.webp') || urlLower.startsWith('blob:');
 
-    // Determine icon and label based on file type
-    let previewContent;
+    // Determine icon based on file type
+    let fileIcon;
     if (isPdf) {
-      previewContent = `
-        <div class="receipt-preview-file">
-          <span class="receipt-preview-file-icon">📄</span>
-          <span class="receipt-preview-file-text">PDF Receipt</span>
-        </div>`;
+      fileIcon = '📄';
     } else if (isImage) {
-      previewContent = `
-        <div class="receipt-preview-file">
-          <span class="receipt-preview-file-icon">🖼️</span>
-          <span class="receipt-preview-file-text">Image Receipt</span>
-        </div>`;
+      fileIcon = '🖼️';
     } else {
-      // Generic file icon for unknown types
-      previewContent = `
-        <div class="receipt-preview-file">
-          <span class="receipt-preview-file-icon">📎</span>
-          <span class="receipt-preview-file-text">Receipt File</span>
-        </div>`;
+      fileIcon = '📎';
+    }
+
+    // Build preview content with filename and link
+    const previewContent = `
+      <div class="receipt-preview-file">
+        <span class="receipt-preview-file-icon">${fileIcon}</span>
+        <div class="receipt-preview-file-info">
+          <a href="${receiptUrl}" target="_blank" class="receipt-preview-file-link" title="Click to open receipt">
+            ${filename}
+          </a>
+          <span class="receipt-preview-file-label">Attached Receipt</span>
+        </div>
+      </div>`;
+
+    // Build action buttons - show both Replace and Delete if onReplace is provided
+    let actionButtons;
+    if (onReplace) {
+      actionButtons = `
+        <button type="button" class="receipt-btn receipt-btn--replace" title="Replace receipt">
+          🔄 Replace
+        </button>
+        <button type="button" class="receipt-btn receipt-btn--delete" title="Delete receipt">
+          🗑️ Delete
+        </button>
+      `;
+    } else {
+      // Fallback to just View and Delete for backwards compatibility
+      actionButtons = `
+        <a href="${receiptUrl}" target="_blank" class="receipt-btn receipt-btn--view" title="View receipt">
+          👁️ View
+        </a>
+        <button type="button" class="receipt-btn receipt-btn--delete" title="Delete receipt">
+          🗑️ Delete
+        </button>
+      `;
     }
 
     container.innerHTML = `
@@ -235,15 +273,11 @@
         ${previewContent}
       </div>
       <div class="receipt-preview-actions">
-        <a href="${receiptUrl}" target="_blank" class="receipt-btn receipt-btn--view" title="View receipt">
-          👁️ View
-        </a>
-        <button type="button" class="receipt-btn receipt-btn--delete" title="Delete receipt">
-          🗑️ Delete
-        </button>
+        ${actionButtons}
       </div>
     `;
 
+    // Attach event listeners
     const deleteBtn = container.querySelector('.receipt-btn--delete');
     deleteBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -251,6 +285,15 @@
         onDelete();
       }
     });
+
+    // Attach replace listener if provided
+    if (onReplace) {
+      const replaceBtn = container.querySelector('.receipt-btn--replace');
+      replaceBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        onReplace();
+      });
+    }
 
     return container;
   }

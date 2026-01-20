@@ -1621,7 +1621,11 @@
     // Populate form fields
     els.singleExpenseDate.value = expense.TxnDate ? expense.TxnDate.split('T')[0] : '';
     els.singleExpenseDescription.value = expense.LineDescription || '';
-    els.singleExpenseAmount.value = formatCurrency(expense.Amount);
+
+    // Set amount value - use plain number, not formatted (formatting will happen on blur)
+    const amountValue = expense.Amount || expense.amount || 0;
+    console.log('[EXPENSES] Setting amount field value:', amountValue, 'from expense.Amount:', expense.Amount);
+    els.singleExpenseAmount.value = amountValue;
 
     // Populate dropdowns
     populateSingleExpenseDropdowns();
@@ -1745,12 +1749,43 @@
     els.singleExpenseReceiptContainer.innerHTML = '';
 
     if (currentReceiptUrl) {
-      const preview = window.ReceiptUpload.createPreview(currentReceiptUrl, handleSingleExpenseReceiptDelete);
+      const preview = window.ReceiptUpload.createPreview(
+        currentReceiptUrl,
+        handleSingleExpenseReceiptDelete,
+        handleSingleExpenseReceiptReplace
+      );
       els.singleExpenseReceiptContainer.appendChild(preview);
     } else {
       const uploader = window.ReceiptUpload.createUploader(handleSingleExpenseFileSelected);
       els.singleExpenseReceiptContainer.appendChild(uploader);
     }
+  }
+
+  function handleSingleExpenseReceiptReplace() {
+    console.log('[EXPENSES] Replace receipt clicked');
+
+    // Create a temporary file input to trigger file selection
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = window.ReceiptUpload.ALLOWED_TYPES.join(',');
+    fileInput.style.display = 'none';
+
+    // Handle file selection
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        handleSingleExpenseFileSelected(file);
+      }
+    });
+
+    // Trigger file picker
+    document.body.appendChild(fileInput);
+    fileInput.click();
+
+    // Clean up
+    setTimeout(() => {
+      document.body.removeChild(fileInput);
+    }, 1000);
   }
 
   function handleSingleExpenseFileSelected(file) {

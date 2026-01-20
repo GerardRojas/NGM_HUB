@@ -2151,15 +2151,22 @@
               let cleanedTypeName = value.toString().trim();
               cleanedTypeName = cleanedTypeName.replace(/^["']+|["']+$/g, ''); // Remove quotes from start/end
 
+              console.log('[CSV_MAPPING] Looking for transaction type:', cleanedTypeName);
+              console.log('[CSV_MAPPING] Available txn_types:', metaData.txn_types);
+
               // Find transaction type ID by name (case-insensitive)
               const txnType = metaData.txn_types.find(
-                t => t.TnxType_name.toLowerCase() === cleanedTypeName.toLowerCase()
+                t => t.TnxType_name && t.TnxType_name.toLowerCase() === cleanedTypeName.toLowerCase()
               );
 
               if (txnType) {
-                typeSelect.value = txnType.id;
+                // Use 'id' field (not 'TnxType_id') as that's what the select expects
+                const typeId = txnType.id || txnType.TnxType_id;
+                console.log('[CSV_MAPPING] Found transaction type:', txnType, '-> using ID:', typeId);
+                typeSelect.value = typeId;
               } else {
                 console.warn('[CSV_MAPPING] Transaction type not found:', cleanedTypeName);
+                console.warn('[CSV_MAPPING] Available types:', metaData.txn_types.map(t => t.TnxType_name));
                 // Set to empty/first option if not found
                 typeSelect.value = '';
               }

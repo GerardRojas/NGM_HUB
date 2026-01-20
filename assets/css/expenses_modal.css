@@ -187,31 +187,39 @@
 
 /* Searchable input specific styles */
 #addExpenseModal .exp-input-searchable {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
   background-image:
     linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.5) 50%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.5) 50%, transparent 50%);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5) 50%, transparent 50%) !important;
   background-position:
     calc(100% - 14px) calc(50% - 2px),
-    calc(100% - 8px) calc(50% - 2px);
-  background-size: 6px 6px, 6px 6px;
-  background-repeat: no-repeat;
-  padding-right: 32px;
-  cursor: text;
+    calc(100% - 8px) calc(50% - 2px) !important;
+  background-size: 6px 6px, 6px 6px !important;
+  background-repeat: no-repeat !important;
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  padding-right: 32px !important;
+  cursor: text !important;
 }
 
 /* Hide native datalist dropdown arrow */
 #addExpenseModal .exp-input-searchable::-webkit-calendar-picker-indicator {
-  display: none;
-  -webkit-appearance: none;
-  opacity: 0;
-  pointer-events: none;
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 #addExpenseModal input.exp-input[list]::-webkit-calendar-picker-indicator {
-  display: none;
-  -webkit-appearance: none;
-  opacity: 0;
-  pointer-events: none;
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 #addExpenseModal .exp-input::placeholder {
@@ -302,14 +310,27 @@
   -moz-appearance: textfield;
 }
 
-/* Remove dropdown arrow from datalist inputs */
+/* Force hide all dropdown arrows and native appearance for inputs with datalist */
+#addExpenseModal .exp-input[list] {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
 #addExpenseModal .exp-input[list]::-webkit-calendar-picker-indicator {
-  display: none;
-  -webkit-appearance: none;
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 #addExpenseModal .exp-input[list]::-webkit-list-button {
-  display: none;
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 #addExpenseModal .exp-input--desc {

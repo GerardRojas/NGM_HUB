@@ -30,6 +30,246 @@
   }
 
   // ================================
+  // UTILITIES (Pure Helper Functions)
+  // ================================
+
+  const Utils = {
+    /**
+     * Escapes HTML special characters to prevent XSS
+     */
+    escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    },
+
+    /**
+     * Gets the first letter of a name (for avatar initials)
+     */
+    getInitial(name) {
+      const s = String(name || "").trim();
+      if (!s) return "?";
+      return s[0].toUpperCase();
+    },
+
+    /**
+     * Generates a consistent color hue from a string (for avatars)
+     */
+    hashStringToHue(str) {
+      let h = 0;
+      for (let i = 0; i < str.length; i++) {
+        h = (h * 31 + str.charCodeAt(i)) >>> 0;
+      }
+      return h % 360;
+    },
+
+    /**
+     * Formats a date value for display in tables
+     */
+    formatMaybeDate(v) {
+      if (!v) return "-";
+      const s = String(v);
+      // Convert ISO date (2025-12-07T06:21:42.156005Z) to short format (2025-12-07)
+      if (s.includes("T")) return s.split("T")[0];
+      return s;
+    }
+  };
+
+  // ================================
+  // RENDERERS (UI Components)
+  // ================================
+
+  const Renderers = {
+    /**
+     * Renders a person badge with avatar and name
+     */
+    renderPerson(name) {
+      const raw = String(name || "").trim();
+      const safeName = Utils.escapeHtml(raw || "-");
+      const initial = Utils.escapeHtml(Utils.getInitial(raw || "-"));
+
+      const key = raw ? raw.toLowerCase() : "__unknown__";
+      const hue = Utils.hashStringToHue(key);
+
+      const bg = raw ? `hsl(${hue} 55% 35%)` : "#334155";
+      const ring = raw ? `hsl(${hue} 65% 55%)` : "rgba(148, 163, 184, 0.6)";
+
+      return `
+        <span class="pm-person" title="${safeName}">
+          <span class="pm-avatar" style="--av-bg:${bg}; --av-ring:${ring};">${initial}</span>
+          <span class="pm-person-name">${safeName}</span>
+        </span>
+      `;
+    },
+
+    /**
+     * Gets the cell value for a specific column key
+     */
+    getCellValue(task, key) {
+      const t = task;
+
+      switch (key) {
+        case "task":
+          return Utils.escapeHtml(t.task_description || t.title || "(No description)");
+
+        case "project":
+          return Utils.escapeHtml(
+            t.project_name ||
+            t.project ||
+            t.project_title ||
+            t.project_id ||
+            "-"
+          );
+
+        case "owner": {
+          const name =
+            (t.owner && (t.owner.name || t.owner.username || t.owner.email)) ||
+            t.owner_name ||
+            t.assigned_to ||
+            "";
+          return this.renderPerson(name || "-");
+        }
+
+        case "collaborator": {
+          const name =
+            (Array.isArray(t.collaborators) &&
+              t.collaborators.length > 0 &&
+              (t.collaborators[0].name || t.collaborators[0].id)) ||
+            "";
+          return this.renderPerson(name || "-");
+        }
+
+        case "manager": {
+          const name =
+            (t.manager && (t.manager.name || t.manager.username || t.manager.email)) ||
+            t.manager_name ||
+            "";
+          return this.renderPerson(name || "-");
+        }
+
+        case "company":
+          return Utils.escapeHtml(t.company_name || "-");
+
+        case "department":
+          return Utils.escapeHtml(t.department || "-");
+
+        case "type":
+          return Utils.escapeHtml(t.type || "-");
+
+        case "time_start":
+          return Utils.escapeHtml(t.time_start || "-");
+
+        case "time_finish":
+          return Utils.escapeHtml(t.time_finish || "-");
+
+        case "start":
+          return Utils.escapeHtml(Utils.formatMaybeDate(t.start_date));
+
+        case "est": {
+          const v = (typeof t.estimated_hours === "number")
+            ? t.estimated_hours
+            : (t.estimated_hours ?? null);
+          return Utils.escapeHtml(v != null ? v : "-");
+        }
+
+        case "priority":
+          return Utils.escapeHtml(
+            (t.priority && (t.priority.priority_name || t.priority.priority_id)) ||
+            t.priority_name ||
+            t.priority ||
+            "-"
+          );
+
+        case "finished":
+          return Utils.escapeHtml(
+            (t.finished_status &&
+              (t.finished_status.completed_status_name ||
+              t.finished_status.completed_status_id)) ||
+            t.finished_status_name ||
+            "-"
+          );
+
+        case "due":
+          return Utils.escapeHtml(Utils.formatMaybeDate(t.due_date || t.deadline || t.due));
+
+        case "links": {
+          const docsLink = t.docs_link || null;
+          const resultLink = t.result_link || null;
+
+          if (!docsLink && !resultLink) return "-";
+
+          const parts = [];
+          if (docsLink) {
+            parts.push(`<a href="${Utils.escapeHtml(docsLink)}" target="_blank" rel="noopener noreferrer">Docs</a>`);
+          }
+          if (resultLink) {
+            parts.push(`<a href="${Utils.escapeHtml(resultLink)}" target="_blank" rel="noopener noreferrer">Result</a>`);
+          }
+          return parts.join(" · ");
+        }
+
+        default:
+          return "-";
+      }
+    }
+  };
+
+  // ================================
+  // STATUS CONFIGURATION
+  // ================================
+
+  const STATUS_CONFIG = {
+    accents: {
+      "working on it": "#3b82f6",
+      "done": "#22c55e",
+      "correction": "#f87171",
+      "awaiting approval": "#fb923c",
+      "resubmittal needed": "#eab308",
+      "good to go": "#10b981",
+      "not started": "#facc15",
+      "delayed": "#a855f7",
+    },
+
+    classes: {
+      "working on it": "pm-group--working-on-it",
+      "done": "pm-group--done",
+      "correction": "pm-group--correction",
+      "awaiting approval": "pm-group--awaiting-approval",
+      "resubmittal needed": "pm-group--resubmittal-needed",
+      "good to go": "pm-group--good-to-go",
+      "not started": "pm-group--not-started",
+      "delayed": "pm-group--delayed",
+    },
+
+    order: [
+      "not started",
+      "working on it",
+      "awaiting approval",
+      "good to go",
+      "correction",
+      "resubmittal needed",
+      "done",
+      "delayed",
+    ],
+
+    getRank(statusName) {
+      const index = this.order.indexOf(statusName);
+      return index !== -1 ? index : 999;
+    },
+
+    getAccentColor(statusName) {
+      return this.accents[statusName] || "#3e4042";
+    },
+
+    getCssClass(statusName) {
+      return this.classes[statusName] || "";
+    }
+  };
+
+  // ================================
   // Layout Controls (Manage Layout Modal)
   // ================================
   function initLayoutControls() {
@@ -289,6 +529,9 @@
   let rawGroups = [];
   let searchQuery = "";
 
+  // Smart Re-rendering: Track existing DOM elements
+  const groupElementsMap = new Map(); // Maps groupKey -> DOM element
+
   // Expose fetchPipeline to window for modal refresh
   window.fetchPipeline = fetchPipeline;
 
@@ -499,368 +742,503 @@
   }
 
   // ================================
-  // Render Groups
+  // Render Groups (Smart Re-rendering)
   // ================================
 
+  /**
+   * Main render function - Smart Re-rendering version
+   * Updates existing elements instead of destroying/recreating all DOM
+   */
   function renderGroups() {
     if (!groupsWrapper) return;
 
     const groups = applyFilters(rawGroups);
     console.log("[PIPELINE] rendering groups:", groups);
 
-    groupsWrapper.innerHTML = "";
-
+    // Empty state
     if (!groups.length) {
       groupsWrapper.innerHTML = "<p class='panel-text'>No pipeline groups to display.</p>";
+      groupElementsMap.clear();
       return;
     }
 
-    function escapeHtml(s) {
-      return String(s)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
+    // Filter and sort groups
+    const visibleGroupsMap = loadVisibleGroups();
+    const filteredGroups = filterVisibleGroups(groups, visibleGroupsMap);
+    const sortedGroups = sortGroupsByStatus(filteredGroups);
 
-    function getInitial(name) {
-      const s = String(name || "").trim();
-      if (!s) return "?";
-      return s[0].toUpperCase();
-    }
+    // Smart Re-rendering: reconcile groups
+    reconcileGroups(sortedGroups);
 
-    function hashStringToHue(str) {
-      let h = 0;
-      for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
-      return h % 360;
-    }
+    // Apply column visibility
+    applyVisibleColsToTables(loadVisibleCols(COLUMNS));
+  }
 
-    function renderPerson(name) {
-      const raw = String(name || "").trim();
-      const safeName = escapeHtml(raw || "-");
-      const initial = escapeHtml(getInitial(raw || "-"));
+  /**
+   * Reconciles groups: updates existing, creates new, removes old
+   */
+  function reconcileGroups(groups) {
+    const newGroupKeys = new Set();
 
-      const key = raw ? raw.toLowerCase() : "__unknown__";
-      const hue = hashStringToHue(key);
+    // Track existing elements to detect removals
+    const existingKeys = new Set(groupElementsMap.keys());
 
-      const bg = raw ? `hsl(${hue} 55% 35%)` : "#334155";
-      const ring = raw ? `hsl(${hue} 65% 55%)` : "rgba(148, 163, 184, 0.6)";
+    console.log("[SMART-RENDER] Reconciling groups:", {
+      existing: existingKeys.size,
+      new: groups.length
+    });
 
-      return `
-        <span class="pm-person" title="${safeName}">
-          <span class="pm-avatar" style="--av-bg:${bg}; --av-ring:${ring};">${initial}</span>
-          <span class="pm-person-name">${safeName}</span>
-        </span>
-      `;
-    }
+    // Process each group
+    groups.forEach((group, index) => {
+      const groupKey = getGroupKey(group);
+      newGroupKeys.add(groupKey);
 
-    function formatMaybeDate(v) {
-      if (!v) return "-";
-      const s = String(v);
-      // 2025-12-07T06:21:42.156005Z -> 2025-12-07
-      if (s.includes("T")) return s.split("T")[0];
-      return s;
-    }
+      if (groupElementsMap.has(groupKey)) {
+        // Update existing group
+        console.log(`[SMART-RENDER] Updating group: ${groupKey}`);
+        const existingElem = groupElementsMap.get(groupKey);
+        updateGroupElement(existingElem, group);
 
-    function getCellValue(t, key) {
-      switch (key) {
-        case "task":
-          return escapeHtml(t.task_description || t.title || "(No description)");
-
-        case "project":
-          return escapeHtml(
-            t.project_name ||
-            t.project ||
-            t.project_title ||
-            t.project_id ||
-            "-"
-          );
-
-        case "owner": {
-          const name =
-            (t.owner && (t.owner.name || t.owner.username || t.owner.email)) ||
-            t.owner_name ||
-            t.assigned_to ||
-            "";
-          return renderPerson(name || "-");
-        }
-
-        case "collaborator": {
-          const name =
-            (Array.isArray(t.collaborators) &&
-              t.collaborators.length > 0 &&
-              (t.collaborators[0].name || t.collaborators[0].id)) ||
-            "";
-          return renderPerson(name || "-");
-        }
-
-        case "manager": {
-          const name =
-            (t.manager && (t.manager.name || t.manager.username || t.manager.email)) ||
-            t.manager_name ||
-            "";
-          return renderPerson(name || "-");
-        }
-
-        case "company":
-          return escapeHtml(t.company_name || "-");
-
-        case "department":
-          return escapeHtml(t.department || "-");
-
-        case "type":
-          return escapeHtml(t.type || "-");
-
-        case "time_start":
-          return escapeHtml(t.time_start || "-");
-
-        case "time_finish":
-          return escapeHtml(t.time_finish || "-");
-
-        case "start":
-          return escapeHtml(formatMaybeDate(t.start_date));
-
-        case "est": {
-          const v = (typeof t.estimated_hours === "number")
-            ? t.estimated_hours
-            : (t.estimated_hours ?? null);
-          return escapeHtml(v != null ? v : "-");
-        }
-
-        case "priority":
-          return escapeHtml(
-            (t.priority && (t.priority.priority_name || t.priority.priority_id)) ||
-            t.priority_name ||
-            t.priority ||
-            "-"
-          );
-
-        case "finished":
-          return escapeHtml(
-            (t.finished_status &&
-              (t.finished_status.completed_status_name ||
-              t.finished_status.completed_status_id)) ||
-            t.finished_status_name ||
-            "-"
-          );
-
-        case "due":
-          return escapeHtml(formatMaybeDate(t.due_date || t.deadline || t.due));
-
-        case "links": {
-          const docsLink = t.docs_link || null;
-          const resultLink = t.result_link || null;
-
-          if (!docsLink && !resultLink) return "-";
-
-          const parts = [];
-          if (docsLink) {
-            parts.push(`<a href="${escapeHtml(docsLink)}" target="_blank" rel="noopener noreferrer">Docs</a>`);
+        // Ensure correct position
+        const currentIndex = Array.from(groupsWrapper.children).indexOf(existingElem);
+        if (currentIndex !== index) {
+          // Move element to correct position
+          if (index >= groupsWrapper.children.length) {
+            groupsWrapper.appendChild(existingElem);
+          } else {
+            groupsWrapper.insertBefore(existingElem, groupsWrapper.children[index]);
           }
-          if (resultLink) {
-            parts.push(`<a href="${escapeHtml(resultLink)}" target="_blank" rel="noopener noreferrer">Result</a>`);
-          }
-          return parts.join(" · ");
         }
+      } else {
+        // Create new group
+        console.log(`[SMART-RENDER] Creating new group: ${groupKey}`);
+        const newElem = createGroupElement(group);
+        groupElementsMap.set(groupKey, newElem);
 
-        default:
-          return "-";
+        // Insert at correct position
+        if (index >= groupsWrapper.children.length) {
+          groupsWrapper.appendChild(newElem);
+        } else {
+          groupsWrapper.insertBefore(newElem, groupsWrapper.children[index]);
+        }
+      }
+    });
+
+    // Remove groups that no longer exist
+    existingKeys.forEach(key => {
+      if (!newGroupKeys.has(key)) {
+        console.log(`[SMART-RENDER] Removing group: ${key}`);
+        const elem = groupElementsMap.get(key);
+        if (elem && elem.parentNode === groupsWrapper) {
+          groupsWrapper.removeChild(elem);
+        }
+        groupElementsMap.delete(key);
+      }
+    });
+  }
+
+  /**
+   * Generates a unique key for a group
+   */
+  function getGroupKey(group) {
+    const name = getGroupName(group);
+    return name.trim().toLowerCase();
+  }
+
+  /**
+   * Updates an existing group element with new data
+   */
+  function updateGroupElement(groupElem, group) {
+    const tasks = getGroupTasks(group);
+    const groupName = getGroupName(group);
+    const statusKey = groupName.trim().toLowerCase();
+
+    // Update styling
+    const accentColor = STATUS_CONFIG.getAccentColor(statusKey);
+    groupElem.style.setProperty("--pm-group-accent", accentColor);
+
+    // Update header (task count)
+    const header = groupElem.querySelector(".pm-group-header");
+    if (header) {
+      const pill = header.querySelector(".ngm-pill-value");
+      if (pill) {
+        pill.textContent = `${tasks.length} tasks`;
       }
     }
 
-    // Status color mapping
-    const STATUS_ACCENTS = {
-      "working on it": "#3b82f6",
-      "done": "#22c55e",
-      "correction": "#f87171",
-      "awaiting approval": "#fb923c",
-      "resubmittal needed": "#eab308",
-      "good to go": "#10b981",
-      "not started": "#facc15",
-      "delayed": "#a855f7",
-    };
+    // Update body (reconcile tasks)
+    const body = groupElem.querySelector(".pm-group-body");
+    if (body) {
+      const tbody = body.querySelector("tbody");
+      if (tbody) {
+        reconcileTasks(tbody, tasks);
+      }
+    }
+  }
 
-    // Status CSS class mapping
-    const STATUS_CLASS_MAP = {
-      "working on it": "pm-group--working-on-it",
-      "done": "pm-group--done",
-      "correction": "pm-group--correction",
-      "awaiting approval": "pm-group--awaiting-approval",
-      "resubmittal needed": "pm-group--resubmittal-needed",
-      "good to go": "pm-group--good-to-go",
-      "not started": "pm-group--not-started",
-      "delayed": "pm-group--delayed",
-    };
+  /**
+   * Reconciles tasks in a tbody: updates existing, creates new, removes old
+   */
+  function reconcileTasks(tbody, tasks) {
+    // Handle empty state
+    if (!tasks.length) {
+      // Check if empty row already exists
+      const existingEmpty = tbody.querySelector(".pm-empty-row");
+      if (!existingEmpty) {
+        tbody.innerHTML = "";
+        tbody.appendChild(createEmptyRow());
+      }
+      return;
+    }
 
-    // Status order
-    const STATUS_ORDER = [
-      "not started",
-      "working on it",
-      "awaiting approval",
-      "good to go",
-      "correction",
-      "resubmittal needed",
-      "done",
-      "delayed",
-    ];
-    const STATUS_RANK = {};
-    STATUS_ORDER.forEach((name, idx) => { STATUS_RANK[name] = idx; });
+    // Remove empty row if it exists
+    const emptyRow = tbody.querySelector(".pm-empty-row");
+    if (emptyRow) {
+      tbody.removeChild(emptyRow);
+    }
 
-    const visibleGroupsMap = loadVisibleGroups();
+    // Build map of existing rows by taskId
+    const existingRowsMap = new Map();
+    Array.from(tbody.children).forEach(row => {
+      const taskId = row.dataset.taskId;
+      if (taskId) {
+        existingRowsMap.set(taskId, row);
+      }
+    });
 
-    const filteredGroups = groups.filter(g => {
+    // Track which task IDs we're keeping
+    const newTaskIds = new Set();
+
+    let updatedCount = 0;
+    let createdCount = 0;
+    let removedCount = 0;
+
+    // Process each task
+    tasks.forEach((task, index) => {
+      const taskId = String(task.id || task.task_id || "");
+      if (!taskId) return; // Skip tasks without IDs
+
+      newTaskIds.add(taskId);
+
+      if (existingRowsMap.has(taskId)) {
+        // Update existing row
+        const existingRow = existingRowsMap.get(taskId);
+        updateTaskRow(existingRow, task);
+        updatedCount++;
+
+        // Ensure correct position
+        const currentIndex = Array.from(tbody.children).indexOf(existingRow);
+        if (currentIndex !== index) {
+          // Move row to correct position
+          if (index >= tbody.children.length) {
+            tbody.appendChild(existingRow);
+          } else {
+            tbody.insertBefore(existingRow, tbody.children[index]);
+          }
+        }
+      } else {
+        // Create new row
+        const newRow = createTaskRow(task);
+        createdCount++;
+
+        // Insert at correct position
+        if (index >= tbody.children.length) {
+          tbody.appendChild(newRow);
+        } else {
+          tbody.insertBefore(newRow, tbody.children[index]);
+        }
+      }
+    });
+
+    // Remove rows for tasks that no longer exist
+    existingRowsMap.forEach((row, taskId) => {
+      if (!newTaskIds.has(taskId)) {
+        if (row.parentNode === tbody) {
+          tbody.removeChild(row);
+          removedCount++;
+        }
+      }
+    });
+
+    if (createdCount > 0 || removedCount > 0) {
+      console.log(`[SMART-RENDER] Tasks: updated=${updatedCount}, created=${createdCount}, removed=${removedCount}`);
+    }
+  }
+
+  /**
+   * Updates an existing task row with new data
+   */
+  function updateTaskRow(tr, task) {
+    // Update each cell
+    COLUMNS.forEach((col, colIndex) => {
+      const td = tr.children[colIndex];
+      if (!td) return;
+
+      const html = Renderers.getCellValue(task, col.key);
+      const div = td.querySelector("div");
+      if (div) {
+        div.innerHTML = html;
+      }
+    });
+
+    // Update dataset
+    storeTaskDataInRow(tr, task);
+  }
+
+  /**
+   * Filters groups by visibility settings
+   */
+  function filterVisibleGroups(groups, visibleGroupsMap) {
+    return groups.filter(g => {
       const name = (g.status_name || g.group_name || g.name || "").trim().toLowerCase();
+      // If status is in visibility map, respect setting; otherwise show by default
       if (name in visibleGroupsMap) return !!visibleGroupsMap[name];
       return true;
     });
+  }
 
-    const sortedGroups = [...filteredGroups].sort((a, b) => {
+  /**
+   * Sorts groups by status order
+   */
+  function sortGroupsByStatus(groups) {
+    return [...groups].sort((a, b) => {
       const nameA = (a.status_name || a.group_name || a.name || "").trim().toLowerCase();
       const nameB = (b.status_name || b.group_name || b.name || "").trim().toLowerCase();
 
-      const rankA = STATUS_RANK[nameA] ?? 999;
-      const rankB = STATUS_RANK[nameB] ?? 999;
+      const rankA = STATUS_CONFIG.getRank(nameA);
+      const rankB = STATUS_CONFIG.getRank(nameB);
 
       if (rankA !== rankB) return rankA - rankB;
       return nameA.localeCompare(nameB);
     });
+  }
 
-    // Render each group
-    sortedGroups.forEach(group => {
-      const tasks =
-        Array.isArray(group.tasks) ? group.tasks :
-        Array.isArray(group.items) ? group.items :
-        Array.isArray(group.tasks_list) ? group.tasks_list :
-        [];
+  /**
+   * Creates a complete group DOM element
+   */
+  function createGroupElement(group) {
+    const tasks = getGroupTasks(group);
+    const groupName = getGroupName(group);
+    const statusKey = groupName.trim().toLowerCase();
 
-      const groupName =
-        group.status_name ||
-        group.group_name ||
-        group.name ||
-        "Group";
+    // Create main container
+    const groupElem = document.createElement("div");
+    groupElem.className = "pm-group";
 
-      const groupElem = document.createElement("div");
-      groupElem.className = "pm-group";
+    // Add data-group-key for Smart Re-rendering tracking
+    groupElem.dataset.groupKey = statusKey;
 
-      const statusKey = groupName.trim().toLowerCase();
+    // Apply status-specific styling
+    const cssClass = STATUS_CONFIG.getCssClass(statusKey);
+    if (cssClass) groupElem.classList.add(cssClass);
 
-      const cssClass = STATUS_CLASS_MAP[statusKey];
-      if (cssClass) groupElem.classList.add(cssClass);
+    const accentColor = STATUS_CONFIG.getAccentColor(statusKey);
+    groupElem.style.setProperty("--pm-group-accent", accentColor);
 
-      const accentColor = STATUS_ACCENTS[statusKey] || "#3e4042";
-      groupElem.style.setProperty("--pm-group-accent", accentColor);
+    // Create and attach header
+    const header = createGroupHeader(groupName, tasks.length, accentColor);
 
-      const header = document.createElement("div");
-      header.className = "pm-group-header";
-      header.innerHTML = `
-        <h3 class="section-title" style="color:${accentColor};">
-          ${groupName}
-        </h3>
-        <span class="ngm-pill"><span class="ngm-pill-value">${tasks.length} tasks</span></span>
-      `;
+    // Create and attach body
+    const body = createGroupBody(tasks);
 
-      const body = document.createElement("div");
-      body.className = "pm-group-body";
+    // Setup collapse functionality
+    setupGroupCollapse(header, body);
 
-      let isCollapsed = false;
-      header.addEventListener("click", () => {
-        isCollapsed = !isCollapsed;
-        body.style.display = isCollapsed ? "none" : "";
-        header.classList.toggle("pm-group-header--collapsed", isCollapsed);
+    groupElem.appendChild(header);
+    groupElem.appendChild(body);
+
+    return groupElem;
+  }
+
+  /**
+   * Extracts tasks array from group object
+   */
+  function getGroupTasks(group) {
+    return Array.isArray(group.tasks) ? group.tasks :
+           Array.isArray(group.items) ? group.items :
+           Array.isArray(group.tasks_list) ? group.tasks_list :
+           [];
+  }
+
+  /**
+   * Extracts group name from group object
+   */
+  function getGroupName(group) {
+    return group.status_name || group.group_name || group.name || "Group";
+  }
+
+  /**
+   * Creates group header element
+   */
+  function createGroupHeader(groupName, taskCount, accentColor) {
+    const header = document.createElement("div");
+    header.className = "pm-group-header";
+    header.innerHTML = `
+      <h3 class="section-title" style="color:${accentColor};">
+        ${groupName}
+      </h3>
+      <span class="ngm-pill"><span class="ngm-pill-value">${taskCount} tasks</span></span>
+    `;
+    return header;
+  }
+
+  /**
+   * Creates group body (table with tasks)
+   */
+  function createGroupBody(tasks) {
+    const body = document.createElement("div");
+    body.className = "pm-group-body";
+
+    const table = createTasksTable(tasks);
+    body.appendChild(table);
+
+    return body;
+  }
+
+  /**
+   * Creates the table element with tasks
+   */
+  function createTasksTable(tasks) {
+    const table = document.createElement("table");
+    table.className = "table";
+
+    // Add column groups for proper sizing
+    table.insertAdjacentHTML("afterbegin", buildColGroup());
+
+    // Add header
+    const thead = createTableHeader();
+    table.appendChild(thead);
+
+    // Add body with task rows
+    const tbody = createTableBody(tasks);
+    table.appendChild(tbody);
+
+    return table;
+  }
+
+  /**
+   * Creates table header
+   */
+  function createTableHeader() {
+    const thead = document.createElement("thead");
+    thead.innerHTML = `
+      <tr>
+        ${COLUMNS.map(c => `<th data-col="${Utils.escapeHtml(c.key)}">${Utils.escapeHtml(c.label)}</th>`).join("")}
+      </tr>
+    `;
+    return thead;
+  }
+
+  /**
+   * Creates table body with task rows
+   */
+  function createTableBody(tasks) {
+    const tbody = document.createElement("tbody");
+
+    if (!tasks.length) {
+      tbody.appendChild(createEmptyRow());
+    } else {
+      tasks.forEach(task => {
+        tbody.appendChild(createTaskRow(task));
       });
+    }
 
-      const table = document.createElement("table");
-      table.className = "table";
+    return tbody;
+  }
 
-      table.insertAdjacentHTML("afterbegin", buildColGroup());
+  /**
+   * Creates empty row when no tasks
+   */
+  function createEmptyRow() {
+    const emptyRow = document.createElement("tr");
+    emptyRow.className = "pm-empty-row";
+    emptyRow.innerHTML = `
+      <td colspan="${COLUMNS.length}" class="pm-empty-cell">
+        <div>No tasks in this group for the current filters.</div>
+      </td>
+    `;
+    return emptyRow;
+  }
 
-      const thead = document.createElement("thead");
-      thead.innerHTML = `
-        <tr>
-          ${COLUMNS.map(c => `<th data-col="${escapeHtml(c.key)}">${escapeHtml(c.label)}</th>`).join("")}
-        </tr>
+  /**
+   * Creates a single task row
+   */
+  function createTaskRow(task) {
+    const tr = document.createElement("tr");
+    tr.className = "pm-row";
+    tr.dataset.taskId = task.id || task.task_id || "";
+
+    // Render cells
+    tr.innerHTML = COLUMNS.map(col => {
+      const html = Renderers.getCellValue(task, col.key);
+      return `
+        <td data-col="${Utils.escapeHtml(col.key)}">
+          <div>${html}</div>
+        </td>
       `;
-      table.appendChild(thead);
+    }).join("");
 
-      const tbody = document.createElement("tbody");
+    // Store task data in dataset for future use (modal editing, etc.)
+    storeTaskDataInRow(tr, task);
 
-      if (!tasks.length) {
-        const emptyRow = document.createElement("tr");
-        emptyRow.className = "pm-empty-row";
-        emptyRow.innerHTML = `
-          <td colspan="${COLUMNS.length}" class="pm-empty-cell">
-            <div>No tasks in this group for the current filters.</div>
-          </td>
-        `;
-        tbody.appendChild(emptyRow);
-      } else {
-        tasks.forEach(t => {
-          const tr = document.createElement("tr");
-          tr.className = "pm-row";
-          tr.dataset.taskId = t.id || t.task_id || "";
+    return tr;
+  }
 
-          tr.innerHTML = COLUMNS.map(col => {
-            const html = getCellValue(t, col.key);
-            return `
-              <td data-col="${escapeHtml(col.key)}">
-                <div>${html}</div>
-              </td>
-            `;
-          }).join("");
+  /**
+   * Stores task metadata in row dataset
+   */
+  function storeTaskDataInRow(tr, task) {
+    const t = task;
 
-          // Store task data in dataset for future use
-          const taskId = t.task_id || null;
-          const taskNotes = t.task_notes || null;
-          const companyManagement = t.company_management || null;
-          const startDate = t.start_date || null;
+    const taskId = t.task_id || null;
+    const taskNotes = t.task_notes || null;
+    const companyManagement = t.company_management || null;
+    const startDate = t.start_date || null;
 
-          const estimatedHours = (typeof t.estimated_hours === "number")
-            ? t.estimated_hours
-            : (t.estimated_hours ?? null);
+    const estimatedHours = (typeof t.estimated_hours === "number")
+      ? t.estimated_hours
+      : (t.estimated_hours ?? null);
 
-          const docsLink = t.docs_link || null;
-          const resultLink = t.result_link || null;
+    const docsLink = t.docs_link || null;
+    const resultLink = t.result_link || null;
 
-          const priorityId =
-            (t.priority && t.priority.priority_id) ||
-            t.task_priority ||
-            null;
+    const priorityId =
+      (t.priority && t.priority.priority_id) ||
+      t.task_priority ||
+      null;
 
-          const finishedStatusId =
-            (t.finished_status && t.finished_status.completed_status_id) ||
-            t.task_finished_status ||
-            null;
+    const finishedStatusId =
+      (t.finished_status && t.finished_status.completed_status_id) ||
+      t.task_finished_status ||
+      null;
 
-          if (taskId) tr.dataset.taskId = String(taskId);
-          if (startDate) tr.dataset.startDate = String(startDate);
-          if (estimatedHours != null) tr.dataset.estimatedHours = String(estimatedHours);
-          if (taskNotes) tr.dataset.taskNotes = String(taskNotes);
-          if (docsLink) tr.dataset.docsLink = String(docsLink);
-          if (resultLink) tr.dataset.resultLink = String(resultLink);
-          if (companyManagement) tr.dataset.companyManagement = String(companyManagement);
-          if (priorityId) tr.dataset.priorityId = String(priorityId);
-          if (finishedStatusId) tr.dataset.finishedStatusId = String(finishedStatusId);
+    if (taskId) tr.dataset.taskId = String(taskId);
+    if (startDate) tr.dataset.startDate = String(startDate);
+    if (estimatedHours != null) tr.dataset.estimatedHours = String(estimatedHours);
+    if (taskNotes) tr.dataset.taskNotes = String(taskNotes);
+    if (docsLink) tr.dataset.docsLink = String(docsLink);
+    if (resultLink) tr.dataset.resultLink = String(resultLink);
+    if (companyManagement) tr.dataset.companyManagement = String(companyManagement);
+    if (priorityId) tr.dataset.priorityId = String(priorityId);
+    if (finishedStatusId) tr.dataset.finishedStatusId = String(finishedStatusId);
 
-          // Store additional fields
-          if (t.department) tr.dataset.department = String(t.department);
-          if (t.type) tr.dataset.type = String(t.type);
-          if (t.time_start) tr.dataset.timeStart = String(t.time_start);
-          if (t.time_finish) tr.dataset.timeFinish = String(t.time_finish);
+    // Store additional fields
+    if (t.department) tr.dataset.department = String(t.department);
+    if (t.type) tr.dataset.type = String(t.type);
+    if (t.time_start) tr.dataset.timeStart = String(t.time_start);
+    if (t.time_finish) tr.dataset.timeFinish = String(t.time_finish);
+  }
 
-          tbody.appendChild(tr);
-        });
-      }
-
-      table.appendChild(tbody);
-      body.appendChild(table);
-
-      groupElem.appendChild(header);
-      groupElem.appendChild(body);
-      groupsWrapper.appendChild(groupElem);
+  /**
+   * Sets up group collapse/expand functionality
+   */
+  function setupGroupCollapse(header, body) {
+    let isCollapsed = false;
+    header.addEventListener("click", () => {
+      isCollapsed = !isCollapsed;
+      body.style.display = isCollapsed ? "none" : "";
+      header.classList.toggle("pm-group-header--collapsed", isCollapsed);
     });
-
-    applyVisibleColsToTables(loadVisibleCols(COLUMNS));
   }
 
   // ================================

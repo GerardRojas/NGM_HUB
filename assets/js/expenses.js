@@ -1832,7 +1832,14 @@
       }
 
       const result = await response.json();
-      console.log('[SCAN RECEIPT] Parse result:', result);
+      console.log('[SCAN RECEIPT] ========================================');
+      console.log('[SCAN RECEIPT] FULL RESPONSE:');
+      console.log('[SCAN RECEIPT] ========================================');
+      console.log(JSON.stringify(result, null, 2));
+      console.log('[SCAN RECEIPT] ========================================');
+      console.log('[SCAN RECEIPT] result.data:', result.data);
+      console.log('[SCAN RECEIPT] result.data.expenses:', result.data?.expenses);
+      console.log('[SCAN RECEIPT] ========================================');
 
       els.scanReceiptProgressText.textContent = 'Populating expense rows...';
       els.scanReceiptProgressFill.style.width = '90%';
@@ -1861,54 +1868,88 @@
   }
 
   async function populateExpensesFromScan(scannedExpenses) {
+    console.log('[POPULATE] ========================================');
+    console.log('[POPULATE] START populateExpensesFromScan');
+    console.log('[POPULATE] Number of expenses:', scannedExpenses?.length);
+    console.log('[POPULATE] Full scannedExpenses array:');
+    console.log(JSON.stringify(scannedExpenses, null, 2));
+    console.log('[POPULATE] ========================================');
+
     // Clear existing rows
     els.expenseRowsBody.innerHTML = '';
     modalRowCounter = 0;
 
     // Add a row for each scanned expense
     for (const expense of scannedExpenses) {
+      console.log('[POPULATE] ----------------------------------------');
+      console.log('[POPULATE] Processing expense:', JSON.stringify(expense, null, 2));
+      console.log('[POPULATE] expense.date:', expense.date);
+      console.log('[POPULATE] expense.description:', expense.description);
+      console.log('[POPULATE] expense.amount:', expense.amount);
+      console.log('[POPULATE] expense.vendor:', expense.vendor);
+      console.log('[POPULATE] expense.category:', expense.category);
+      console.log('[POPULATE] ----------------------------------------');
+
       addModalRow();
 
       const index = modalRowCounter - 1;
       const row = els.expenseRowsBody.querySelector(`tr[data-row-index="${index}"]`);
 
       if (!row) {
-        console.warn('[POPULATE] Row not found for index:', index);
+        console.warn('[POPULATE] ❌ Row not found for index:', index);
         continue;
       }
 
-      console.log('[POPULATE] Filling row', index, 'with:', expense);
+      console.log('[POPULATE] ✓ Row found for index:', index);
 
       // Populate date
       if (expense.date) {
         const dateInput = row.querySelector('[data-field="TxnDate"]');
+        console.log('[POPULATE] Looking for date input, found:', !!dateInput);
         if (dateInput) {
           dateInput.value = expense.date;
-          console.log('[POPULATE] Set date:', expense.date);
+          console.log('[POPULATE] ✓ Set date:', expense.date);
+        } else {
+          console.warn('[POPULATE] ❌ Date input not found!');
         }
+      } else {
+        console.log('[POPULATE] ⚠ No date in expense data');
       }
 
       // Populate description
       if (expense.description) {
         const descInput = row.querySelector('[data-field="LineDescription"]');
+        console.log('[POPULATE] Looking for description input, found:', !!descInput);
         if (descInput) {
           descInput.value = expense.description;
-          console.log('[POPULATE] Set description:', expense.description);
+          console.log('[POPULATE] ✓ Set description:', expense.description);
+        } else {
+          console.warn('[POPULATE] ❌ Description input not found!');
         }
+      } else {
+        console.log('[POPULATE] ⚠ No description in expense data');
       }
 
       // Populate amount
       if (expense.amount) {
         const amountInput = row.querySelector('[data-field="Amount"]');
+        console.log('[POPULATE] Looking for amount input, found:', !!amountInput);
         if (amountInput) {
           amountInput.value = expense.amount;
-          console.log('[POPULATE] Set amount:', expense.amount);
+          console.log('[POPULATE] ✓ Set amount:', expense.amount);
+        } else {
+          console.warn('[POPULATE] ❌ Amount input not found!');
         }
+      } else {
+        console.log('[POPULATE] ⚠ No amount in expense data');
       }
 
       // Try to match vendor
       if (expense.vendor && metaData.vendors) {
+        console.log('[POPULATE] Trying to match vendor:', expense.vendor);
+        console.log('[POPULATE] Available vendors:', metaData.vendors.length);
         const vendorInput = row.querySelector('[data-field="vendor_id"]');
+        console.log('[POPULATE] Looking for vendor input, found:', !!vendorInput);
         if (vendorInput) {
           // Try to find matching vendor (case-insensitive)
           const matchedVendor = metaData.vendors.find(v =>
@@ -1916,22 +1957,31 @@
           );
 
           if (matchedVendor) {
+            console.log('[POPULATE] ✓ Matched vendor:', matchedVendor.vendor_name);
             vendorInput.value = matchedVendor.vendor_name;
             vendorInput.setAttribute('data-value', matchedVendor.id);
             // Remove warning class if previously applied
             vendorInput.classList.remove('exp-input--no-match');
           } else {
+            console.log('[POPULATE] ⚠ No vendor match, setting text only:', expense.vendor);
             // Just set the text, user can select from dropdown
             vendorInput.value = expense.vendor;
             // Add warning class to highlight this input
             vendorInput.classList.add('exp-input--no-match');
           }
+        } else {
+          console.warn('[POPULATE] ❌ Vendor input not found!');
         }
+      } else {
+        console.log('[POPULATE] ⚠ No vendor in expense data or no vendors in metadata');
       }
 
       // Try to match category to transaction type
       if (expense.category && metaData.txn_types) {
+        console.log('[POPULATE] Trying to match category:', expense.category);
+        console.log('[POPULATE] Available txn_types:', metaData.txn_types.length);
         const typeInput = row.querySelector('[data-field="txn_type"]');
+        console.log('[POPULATE] Looking for type input, found:', !!typeInput);
         if (typeInput) {
           // Try to find matching type (case-insensitive)
           const matchedType = metaData.txn_types.find(t =>
@@ -1942,15 +1992,21 @@
           );
 
           if (matchedType) {
+            console.log('[POPULATE] ✓ Matched type:', matchedType.TnxType_name);
             typeInput.value = matchedType.TnxType_name;
             typeInput.setAttribute('data-value', matchedType.TnxType_id);
             // Remove warning class if previously applied
             typeInput.classList.remove('exp-input--no-match');
           } else {
+            console.log('[POPULATE] ⚠ No type match for category:', expense.category);
             // No match found, add warning class
             typeInput.classList.add('exp-input--no-match');
           }
+        } else {
+          console.warn('[POPULATE] ❌ Type input not found!');
         }
+      } else {
+        console.log('[POPULATE] ⚠ No category in expense data or no txn_types in metadata');
       }
     }
   }

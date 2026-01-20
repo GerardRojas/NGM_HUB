@@ -297,8 +297,12 @@
   background: var(--ngm-bg-card, #18181b);
   border: 1px solid var(--border-soft, #27272f);
   border-radius: 12px;
-  overflow: visible;
+  overflow-x: auto; /* Enable horizontal scroll */
+  overflow-y: visible; /* Allow dropdowns to overflow vertically */
   min-height: 200px;
+  width: 100%;
+  /* Add padding at bottom for scrollbar */
+  padding-bottom: 4px;
 }
 
 /* Empty state */
@@ -464,11 +468,6 @@
    EXPENSES TABLE — DARK THEME
    ========================================== */
 
-.expenses-table-container {
-  width: 100%;
-  overflow-x: auto;
-}
-
 /* Better scrollbar for table container */
 .expenses-table-container::-webkit-scrollbar {
   height: 10px;
@@ -492,7 +491,7 @@
 .expenses-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px; /* Ensure table doesn't compress too much */
+  min-width: 1200px; /* Ensure table doesn't compress too much - increased for all columns */
 }
 
 .expenses-table thead {

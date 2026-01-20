@@ -982,42 +982,95 @@
 
     els.btnBulkAuthorize.disabled = true;
     const originalText = els.btnBulkAuthorize.innerHTML;
-    els.btnBulkAuthorize.innerHTML = '<span style="font-size: 14px;">⏳</span> Authorizing...';
+
+    const totalExpenses = selectedExpenseIds.size;
+    let processedCount = 0;
+    let successCount = 0;
+    let failedCount = 0;
+    const failedIds = [];
 
     try {
-      const authorizePromises = Array.from(selectedExpenseIds).map(expenseId =>
-        apiJson(`${apiBase}/expenses/${expenseId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            auth_status: true,
-            auth_by: userId
-          })
-        })
-      );
+      // Convert Set to Array for processing
+      const expenseIdsArray = Array.from(selectedExpenseIds);
 
-      await Promise.all(authorizePromises);
+      // Process in batches to avoid overwhelming the server
+      const BATCH_SIZE = 5; // Process 5 expenses at a time
+      const DELAY_MS = 300; // 300ms delay between batches
 
-      console.log('[BULK_AUTH] Successfully authorized', selectedExpenseIds.size, 'expenses');
+      console.log(`[BULK_AUTH] Starting authorization of ${totalExpenses} expenses in batches of ${BATCH_SIZE}`);
 
-      // Update local data
-      selectedExpenseIds.forEach(expenseId => {
-        const expense = expenses.find(e => (e.expense_id || e.id) == expenseId);
-        if (expense) {
-          expense.auth_status = true;
-          expense.auth_by = userId;
+      // Helper function to delay execution
+      const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+      // Process expenses in batches
+      for (let i = 0; i < expenseIdsArray.length; i += BATCH_SIZE) {
+        const batch = expenseIdsArray.slice(i, i + BATCH_SIZE);
+        const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
+        const totalBatches = Math.ceil(expenseIdsArray.length / BATCH_SIZE);
+
+        // Update progress in button
+        els.btnBulkAuthorize.innerHTML = `<span style="font-size: 14px;">⏳</span> Authorizing... (${processedCount}/${totalExpenses})`;
+
+        console.log(`[BULK_AUTH] Processing batch ${batchNumber}/${totalBatches} (${batch.length} expenses)`);
+
+        // Process current batch in parallel
+        const batchPromises = batch.map(async (expenseId) => {
+          try {
+            await apiJson(`${apiBase}/expenses/${expenseId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                auth_status: true,
+                auth_by: userId
+              })
+            });
+            successCount++;
+            processedCount++;
+
+            // Update local data immediately
+            const expense = expenses.find(e => (e.expense_id || e.id) == expenseId);
+            if (expense) {
+              expense.auth_status = true;
+              expense.auth_by = userId;
+            }
+
+            console.log(`[BULK_AUTH] ✓ Authorized expense ${expenseId}`);
+          } catch (err) {
+            failedCount++;
+            processedCount++;
+            failedIds.push(expenseId);
+            console.error(`[BULK_AUTH] ✗ Failed to authorize expense ${expenseId}:`, err.message);
+          }
+        });
+
+        // Wait for current batch to complete
+        await Promise.all(batchPromises);
+
+        // Delay before next batch (except for the last batch)
+        if (i + BATCH_SIZE < expenseIdsArray.length) {
+          await delay(DELAY_MS);
         }
-      });
+      }
 
-      alert(`${selectedExpenseIds.size} expense(s) authorized successfully!`);
+      console.log(`[BULK_AUTH] Completed: ${successCount} succeeded, ${failedCount} failed`);
+
+      // Show results
+      if (failedCount === 0) {
+        alert(`Successfully authorized ${successCount} expense(s)!`);
+      } else {
+        alert(`Authorization completed:\n✓ ${successCount} succeeded\n✗ ${failedCount} failed\n\nFailed expense IDs logged to console.`);
+        console.error('[BULK_AUTH] Failed expense IDs:', failedIds);
+      }
+
+      // Clear selection and refresh
       selectedExpenseIds.clear();
       renderExpensesTable();
       updateBulkDeleteButton();
       updateBulkAuthorizeButton();
 
     } catch (err) {
-      console.error('[BULK_AUTH] Error:', err);
-      alert('Error authorizing expenses: ' + err.message);
+      console.error('[BULK_AUTH] Unexpected error:', err);
+      alert(`Error during bulk authorization: ${err.message}\n\nProcessed: ${processedCount}/${totalExpenses}\nSucceeded: ${successCount}`);
     } finally {
       els.btnBulkAuthorize.disabled = false;
       els.btnBulkAuthorize.innerHTML = originalText;

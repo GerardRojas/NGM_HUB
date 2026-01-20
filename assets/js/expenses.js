@@ -492,17 +492,16 @@
       return sum + amount;
     }, 0);
 
-    // Calculate colspan: always include checkbox column (hidden) + 6 base columns (Date, Desc, Type, Vendor, Payment, Account)
+    // Calculate colspan: checkbox (hidden) + 6 base columns (Date, Desc, Account, Type, Vendor, Payment)
     const totalColspan = 7;
 
     // Add total row with currency formatting
-    // Columns: Checkbox (always present, may be hidden), Date, Desc, Type, Vendor, Payment, Account, Amount, Source (hidden), Receipt, Auth, Actions
+    // Columns: Checkbox (hidden), Date, Desc, Account, Type, Vendor, Payment, Amount, Receipt, Auth, Actions
     const totalRow = `
       <tr class="total-row">
         <td class="col-checkbox" style="display: none;"></td>
         <td colspan="${totalColspan - 1}" class="total-label">Total</td>
         <td class="col-amount total-amount">${formatCurrency(total)}</td>
-        <td class="col-source" style="display: none;"></td>
         <td class="col-receipt"></td>
         <td class="col-auth"></td>
         <td class="col-actions"></td>
@@ -552,12 +551,11 @@
         <td class="col-checkbox" style="display: none;"></td>
         <td>${date}</td>
         <td class="col-description">${description}</td>
+        <td>${account}</td>
         <td>${type}</td>
         <td>${vendor}</td>
         <td>${payment}</td>
-        <td>${account}</td>
         <td class="col-amount">${amount}</td>
-        <td class="col-source" style="display: none;"></td>
         <td class="col-receipt">${receiptIcon}</td>
         <td class="col-auth">${authBadge}</td>
         <td class="col-actions"></td>
@@ -598,6 +596,9 @@
           <input type="text" class="edit-input" data-field="LineDescription" value="${exp.LineDescription || ''}" placeholder="Description...">
         </td>
         <td class="editable-cell">
+          ${buildSelectHtml('account_id', exp.account_id, metaData.accounts, 'account_id', 'Name')}
+        </td>
+        <td class="editable-cell">
           ${buildSelectHtml('txn_type', exp.txn_type, metaData.txn_types, 'TnxType_id', 'TnxType_name')}
         </td>
         <td class="editable-cell">
@@ -606,13 +607,9 @@
         <td class="editable-cell">
           ${buildSelectHtml('payment_type', exp.payment_type, metaData.payment_methods, 'id', 'payment_method_name')}
         </td>
-        <td class="editable-cell">
-          ${buildSelectHtml('account_id', exp.account_id, metaData.accounts, 'account_id', 'Name')}
-        </td>
         <td class="col-amount editable-cell">
           <input type="number" class="edit-input edit-input--amount" data-field="Amount" step="0.01" min="0" value="${exp.Amount || ''}" placeholder="0.00">
         </td>
-        <td class="col-source" style="display: none;"></td>
         <td class="col-receipt">${receiptIcon}</td>
         <td class="col-auth">${authBadge}</td>
         <td class="col-actions">

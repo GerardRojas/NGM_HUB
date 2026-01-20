@@ -1976,20 +1976,30 @@
         console.log('[POPULATE] ⚠ No vendor in expense data or no vendors in metadata');
       }
 
-      // Try to match category to transaction type
-      if (expense.category && metaData.txn_types) {
-        console.log('[POPULATE] Trying to match category:', expense.category);
+      // Try to match category or transaction_type to transaction type
+      const searchValue = expense.transaction_type || expense.category;
+      if (searchValue && metaData.txn_types) {
+        console.log('[POPULATE] Trying to match transaction type/category:', searchValue);
+        console.log('[POPULATE] Using field:', expense.transaction_type ? 'transaction_type' : 'category');
         console.log('[POPULATE] Available txn_types:', metaData.txn_types.length);
         const typeInput = row.querySelector('[data-field="txn_type"]');
         console.log('[POPULATE] Looking for type input, found:', !!typeInput);
         if (typeInput) {
-          // Try to find matching type (case-insensitive)
-          const matchedType = metaData.txn_types.find(t =>
-            t.TnxType_name && (
-              t.TnxType_name.toLowerCase().includes(expense.category.toLowerCase()) ||
-              expense.category.toLowerCase().includes(t.TnxType_name.toLowerCase())
-            )
+          // Try exact match first (case-insensitive)
+          let matchedType = metaData.txn_types.find(t =>
+            t.TnxType_name && t.TnxType_name.toLowerCase() === searchValue.toLowerCase()
           );
+
+          // If no exact match, try fuzzy match
+          if (!matchedType) {
+            console.log('[POPULATE] No exact match, trying fuzzy match...');
+            matchedType = metaData.txn_types.find(t =>
+              t.TnxType_name && (
+                t.TnxType_name.toLowerCase().includes(searchValue.toLowerCase()) ||
+                searchValue.toLowerCase().includes(t.TnxType_name.toLowerCase())
+              )
+            );
+          }
 
           if (matchedType) {
             console.log('[POPULATE] ✓ Matched type:', matchedType.TnxType_name);
@@ -1998,7 +2008,7 @@
             // Remove warning class if previously applied
             typeInput.classList.remove('exp-input--no-match');
           } else {
-            console.log('[POPULATE] ⚠ No type match for category:', expense.category);
+            console.log('[POPULATE] ⚠ No type match for:', searchValue);
             // No match found, add warning class
             typeInput.classList.add('exp-input--no-match');
           }
@@ -2006,7 +2016,7 @@
           console.warn('[POPULATE] ❌ Type input not found!');
         }
       } else {
-        console.log('[POPULATE] ⚠ No category in expense data or no txn_types in metadata');
+        console.log('[POPULATE] ⚠ No transaction_type/category in expense data or no txn_types in metadata');
       }
     }
   }

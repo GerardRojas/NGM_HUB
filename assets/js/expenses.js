@@ -1287,14 +1287,23 @@
         if (input.classList.contains('exp-input-searchable') && input.dataset.mapping) {
           try {
             const mapping = JSON.parse(input.dataset.mapping);
-            const match = mapping.find(m => m.text === value);
+            // Use case-insensitive and trimmed comparison
+            const trimmedValue = value ? value.trim() : '';
+            const match = mapping.find(m => {
+              const mappingText = m.text ? m.text.trim() : '';
+              return mappingText.toLowerCase() === trimmedValue.toLowerCase();
+            });
+
             if (match) {
               value = match.id;
-            } else if (value && value.trim() !== '') {
-              // Account name doesn't match any existing account
+              console.log(`[SAVE] Matched ${field}: "${trimmedValue}" -> ID: ${match.id}`);
+            } else if (trimmedValue !== '') {
+              // Value doesn't match any existing option
+              console.warn(`[SAVE] No match found for ${field}: "${trimmedValue}"`);
               if (field === 'account_id') {
-                invalidAccounts.add(value);
-                rowsWithInvalidAccounts.push({ row: rowIdx + 1, accountName: value });
+                invalidAccounts.add(trimmedValue);
+                rowsWithInvalidAccounts.push({ row: rowIdx + 1, accountName: trimmedValue });
+                console.log(`[SAVE] Added to invalid accounts: "${trimmedValue}" (Row ${rowIdx + 1})`);
               }
               // Leave value as text for now - we'll handle it below
             }

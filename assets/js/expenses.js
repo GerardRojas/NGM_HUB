@@ -1063,7 +1063,7 @@
         <input type="text" class="exp-input exp-input--desc" data-field="LineDescription" placeholder="Description">
       </td>
       <td>
-        ${buildModalSelectHtml('txn_type', metaData.txn_types, 'id', 'TnxType_name')}
+        ${buildModalSelectHtml('txn_type', metaData.txn_types, 'TnxType_id', 'TnxType_name')}
       </td>
       <td>
         ${buildModalSelectHtml('vendor_id', metaData.vendors, 'id', 'vendor_name')}

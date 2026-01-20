@@ -492,16 +492,17 @@
       return sum + amount;
     }, 0);
 
-    // Calculate colspan: 6 base columns (Date, Desc, Type, Vendor, Payment, Account) + 1 if edit mode (checkbox)
-    const totalColspan = isEditMode ? 7 : 6;
+    // Calculate colspan: always include checkbox column (hidden) + 6 base columns (Date, Desc, Type, Vendor, Payment, Account)
+    const totalColspan = 7;
 
     // Add total row with currency formatting
-    // Columns: [Checkbox (edit only)], Date, Desc, Type, Vendor, Payment, Account, Amount, Receipt, Auth, Actions
+    // Columns: Checkbox (always present, may be hidden), Date, Desc, Type, Vendor, Payment, Account, Amount, Source, Receipt, Auth, Actions
     const totalRow = `
       <tr class="total-row">
-        ${isEditMode ? '<td class="col-checkbox"></td>' : ''}
+        <td class="col-checkbox" style="display: none;"></td>
         <td colspan="${totalColspan - 1}" class="total-label">Total</td>
         <td class="col-amount total-amount">${formatCurrency(total)}</td>
+        <td class="col-source"></td>
         <td class="col-receipt"></td>
         <td class="col-auth"></td>
         <td class="col-actions"></td>
@@ -548,6 +549,7 @@
 
     return `
       <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable" style="cursor: pointer;">
+        <td class="col-checkbox" style="display: none;"></td>
         <td>${date}</td>
         <td class="col-description">${description}</td>
         <td>${type}</td>
@@ -555,6 +557,7 @@
         <td>${payment}</td>
         <td>${account}</td>
         <td class="col-amount">${amount}</td>
+        <td class="col-source"><span class="status-badge">Manual</span></td>
         <td class="col-receipt">${receiptIcon}</td>
         <td class="col-auth">${authBadge}</td>
         <td class="col-actions"></td>

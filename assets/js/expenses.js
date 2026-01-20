@@ -1189,9 +1189,11 @@
     const apiBase = getApiBase();
     const rows = els.expenseRowsBody.querySelectorAll('tr');
     const expensesToSave = [];
+    const invalidAccounts = new Set();
+    const rowsWithInvalidAccounts = [];
 
     // Collect data from each row including receipt files
-    rows.forEach(row => {
+    rows.forEach((row, rowIdx) => {
       const rowData = {
         project: selectedProjectId,
         created_by: currentUser.user_id || currentUser.id
@@ -1208,6 +1210,13 @@
             const match = mapping.find(m => m.text === value);
             if (match) {
               value = match.id;
+            } else if (value && value.trim() !== '') {
+              // Account name doesn't match any existing account
+              if (field === 'account_id') {
+                invalidAccounts.add(value);
+                rowsWithInvalidAccounts.push({ row: rowIdx + 1, accountName: value });
+              }
+              // Leave value as text for now - we'll handle it below
             }
           } catch (e) {
             console.warn('Failed to parse mapping for field:', field, e);
@@ -1240,9 +1249,66 @@
       return;
     }
 
-    // Disable save button
+    // Check for invalid accounts
+    if (invalidAccounts.size > 0) {
+      const accountsList = Array.from(invalidAccounts).join('\n- ');
+      const rowsList = rowsWithInvalidAccounts.map(r => `Row ${r.row}: "${r.accountName}"`).join('\n');
+
+      const message = `The following accounts don't exist in your system:\n\n${rowsList}\n\nWould you like to:\n\n1. Create these accounts automatically\n2. Cancel and select existing accounts`;
+
+      const createAccounts = confirm(message + '\n\n(OK = Create accounts, Cancel = Go back)');
+
+      if (!createAccounts) {
+        return; // User wants to go back and fix manually
+      }
+
+      // Create accounts automatically
+      try {
+        for (const accountName of invalidAccounts) {
+          console.log('[EXPENSES] Creating account:', accountName);
+
+          const response = await apiJson(`${apiBase}/accounts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              Name: accountName,
+              Type: 'Expense', // Default type
+              Active: true
+            })
+          });
+
+          const newAccount = response.data || response;
+          const accountId = newAccount.account_id || newAccount.id;
+
+          console.log('[EXPENSES] Created account with ID:', accountId);
+
+          // Add to metaData for future use
+          metaData.accounts.push({
+            account_id: accountId,
+            Name: accountName,
+            Type: 'Expense',
+            Active: true
+          });
+
+          // Update all rows that had this account name
+          expensesToSave.forEach(expense => {
+            if (expense.account_id === accountName) {
+              expense.account_id = accountId;
+            }
+          });
+        }
+
+        console.log('[EXPENSES] Successfully created', invalidAccounts.size, 'accounts');
+      } catch (err) {
+        console.error('[EXPENSES] Error creating accounts:', err);
+        alert('Error creating accounts: ' + err.message + '\n\nPlease create accounts manually or select from existing ones.');
+        return;
+      }
+    }
+
+    // Show loading state with animated icon
     els.btnSaveAllExpenses.disabled = true;
-    els.btnSaveAllExpenses.textContent = 'Saving...';
+    els.btnSaveAllExpenses.innerHTML = '<img src="assets/img/greenblack_icon.png" class="loading-logo loading-logo-sm" alt="Loading..." style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;"> Saving expenses...';
 
     try {
       // Send POST requests for each expense and upload receipts

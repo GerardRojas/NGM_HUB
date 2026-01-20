@@ -1895,9 +1895,13 @@
           if (matchedVendor) {
             vendorInput.value = matchedVendor.vendor_name;
             vendorInput.setAttribute('data-value', matchedVendor.id);
+            // Remove warning class if previously applied
+            vendorInput.classList.remove('exp-input--no-match');
           } else {
             // Just set the text, user can select from dropdown
             vendorInput.value = expense.vendor;
+            // Add warning class to highlight this input
+            vendorInput.classList.add('exp-input--no-match');
           }
         }
       }
@@ -1917,6 +1921,11 @@
           if (matchedType) {
             typeInput.value = matchedType.TnxType_name;
             typeInput.setAttribute('data-value', matchedType.TnxType_id);
+            // Remove warning class if previously applied
+            typeInput.classList.remove('exp-input--no-match');
+          } else {
+            // No match found, add warning class
+            typeInput.classList.add('exp-input--no-match');
           }
         }
       }
@@ -2362,11 +2371,15 @@
                 // Set the display name (not ID) for visual display
                 // The datalist input uses the text value, and the ID is stored in data-value-id
                 typeSelect.value = txnType.TnxType_name;
+                // Remove warning class if it was previously applied
+                typeSelect.classList.remove('exp-input--no-match');
               } else {
                 console.warn('[CSV_MAPPING] Transaction type not found:', cleanedTypeName);
                 console.warn('[CSV_MAPPING] Available types:', metaData.txn_types.map(t => t.TnxType_name));
                 // Set the cleaned name even if not found
                 typeSelect.value = cleanedTypeName;
+                // Add warning class to highlight this input
+                typeSelect.classList.add('exp-input--no-match');
               }
             }
           } else if (field === 'vendor') {
@@ -2384,9 +2397,13 @@
               if (vendor) {
                 vendorInput.value = vendor.vendor_name;
                 vendorInput.setAttribute('data-field-value', vendor.id);
+                // Remove warning class if it was previously applied
+                vendorInput.classList.remove('exp-input--no-match');
               } else {
                 // Fallback: set the cleaned name
                 vendorInput.value = cleanedVendorName;
+                // Add warning class to highlight this input
+                vendorInput.classList.add('exp-input--no-match');
               }
             }
           } else if (field === 'payment') {
@@ -2404,10 +2421,14 @@
               if (paymentMethod) {
                 // Set the display name (not ID) for visual display
                 paymentSelect.value = paymentMethod.payment_method_name;
+                // Remove warning class if it was previously applied
+                paymentSelect.classList.remove('exp-input--no-match');
               } else {
                 console.warn('[CSV_MAPPING] Payment method not found:', cleanedPaymentName);
                 // Set the cleaned name even if not found
                 paymentSelect.value = cleanedPaymentName;
+                // Add warning class to highlight this input
+                paymentSelect.classList.add('exp-input--no-match');
               }
             }
           } else if (field === 'account') {
@@ -2425,10 +2446,14 @@
               if (account) {
                 // Set the display name (not ID) for visual display
                 accountSelect.value = account.Name;
+                // Remove warning class if it was previously applied
+                accountSelect.classList.remove('exp-input--no-match');
               } else {
                 console.warn('[CSV_MAPPING] Account not found:', cleanedAccountName);
                 // Set the cleaned name even if not found
                 accountSelect.value = cleanedAccountName;
+                // Add warning class to highlight this input
+                accountSelect.classList.add('exp-input--no-match');
               }
             }
           } else if (field === 'amount') {

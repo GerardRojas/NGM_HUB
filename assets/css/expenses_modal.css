@@ -224,6 +224,18 @@
   background: rgba(255, 255, 255, 0.06);
 }
 
+/* Input warning state - no exact match found */
+#addExpenseModal .exp-input--no-match {
+  border-color: rgba(251, 191, 36, 0.5);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+#addExpenseModal .exp-input--no-match:focus {
+  border-color: rgba(251, 191, 36, 0.7);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+  background: rgba(251, 191, 36, 0.1);
+}
+
 #addExpenseModal select.exp-input {
   -webkit-appearance: none;
   -moz-appearance: none;

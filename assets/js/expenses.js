@@ -1403,9 +1403,12 @@
 
     // Show loading state with animated icon
     els.btnSaveAllExpenses.disabled = true;
+    const originalButtonText = els.btnSaveAllExpenses.textContent;
     els.btnSaveAllExpenses.innerHTML = '<img src="assets/img/greenblack_icon.png" class="loading-logo loading-logo-sm" alt="Loading..." style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;"> Saving expenses...';
 
     try {
+      console.log('[EXPENSES] Starting save process for', expensesToSave.length, 'expenses');
+
       // Send POST requests for each expense and upload receipts
       const createdExpenses = [];
       for (let i = 0; i < expensesToSave.length; i++) {
@@ -1415,6 +1418,8 @@
         delete expenseData._receiptFile; // Remove file from data before sending
         delete expenseData._fromScannedReceipt; // Remove marker from data
 
+        console.log(`[EXPENSES] Creating expense ${i + 1}/${expensesToSave.length}:`, expenseData);
+
         // Create expense
         const created = await apiJson(`${apiBase}/expenses`, {
           method: 'POST',
@@ -1422,6 +1427,8 @@
           body: JSON.stringify(expenseData)
         });
         createdExpenses.push(created);
+
+        console.log(`[EXPENSES] Created expense ${i + 1}/${expensesToSave.length}:`, created);
 
         // Upload receipt if this row had one
         if (receiptFile && window.ReceiptUpload) {
@@ -1460,21 +1467,27 @@
         }
       }
 
-      alert(`${expensesToSave.length} expense(s) saved successfully!`);
+      console.log('[EXPENSES] All expenses saved successfully');
 
       // Clear scanned receipt file reference
       scannedReceiptFile = null;
 
       // Close modal and reload expenses
       closeAddExpenseModal();
+      console.log('[EXPENSES] Modal closed, reloading expenses...');
+
       await loadExpensesByProject(selectedProjectId);
+      console.log('[EXPENSES] Expenses reloaded');
+
+      alert(`${expensesToSave.length} expense(s) saved successfully!`);
 
     } catch (err) {
       console.error('[EXPENSES] Error saving expenses:', err);
       alert('Error saving expenses: ' + err.message);
-    } finally {
+
+      // Reset button state on error
       els.btnSaveAllExpenses.disabled = false;
-      els.btnSaveAllExpenses.textContent = 'Save All';
+      els.btnSaveAllExpenses.textContent = originalButtonText;
     }
   }
 

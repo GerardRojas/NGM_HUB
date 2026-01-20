@@ -160,16 +160,16 @@
   // ================================
 
   async function initPermissions() {
-    // Obtener userId del localStorage (asumiendo que se guarda en login)
-    const userData = localStorage.getItem('user_data');
+    // Obtener userId del localStorage (ngmUser se guarda en login)
+    const userData = localStorage.getItem('ngmUser');
     if (!userData) {
-      console.warn('[PERMISSIONS] No user data found in localStorage');
+      console.warn('[PERMISSIONS] No user data found in localStorage (ngmUser)');
       return;
     }
 
     try {
       const user = JSON.parse(userData);
-      const userId = user.user_id;
+      const userId = user.user_id || user.id;
 
       if (!userId) {
         console.warn('[PERMISSIONS] No user_id found in user data');

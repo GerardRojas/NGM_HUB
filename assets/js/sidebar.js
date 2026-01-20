@@ -4,6 +4,9 @@
   const navEl = document.getElementById("sidebar-nav");
   if (!navEl) return;
 
+  // Limpiar contenido HTML estático inmediatamente para evitar flash de links no autorizados
+  navEl.innerHTML = '<span class="nav-loading" style="color:rgba(255,255,255,0.4);font-size:12px;padding:8px 12px;">Loading...</span>';
+
   // Mapeo de module_key (de role_permissions) a configuración de UI
   const MODULE_CONFIG = {
     "dashboard": { label: "Dashboard", href: "dashboard.html", order: 1 },
@@ -52,13 +55,29 @@
       const cached = localStorage.getItem(CACHE_KEY);
       if (!cached) return null;
 
-      const { timestamp, permissions } = JSON.parse(cached);
+      const { timestamp, permissions, userId } = JSON.parse(cached);
       const now = Date.now();
 
       // Verificar si el cache expiró
       if (now - timestamp > CACHE_DURATION) {
         localStorage.removeItem(CACHE_KEY);
         return null;
+      }
+
+      // Verificar si el usuario cambió (logout/login con diferente usuario)
+      const currentUser = localStorage.getItem("ngmUser");
+      if (currentUser) {
+        try {
+          const user = JSON.parse(currentUser);
+          const currentUserId = user.user_id || user.id;
+          if (userId && currentUserId && userId !== currentUserId) {
+            console.log("[SIDEBAR] User changed, invalidating cache");
+            localStorage.removeItem(CACHE_KEY);
+            return null;
+          }
+        } catch (e) {
+          // Ignorar error de parsing
+        }
       }
 
       return permissions;
@@ -68,11 +87,12 @@
     }
   }
 
-  function setCachedPermissions(permissions) {
+  function setCachedPermissions(permissions, userId) {
     try {
       const cacheData = {
         timestamp: Date.now(),
-        permissions: permissions
+        permissions: permissions,
+        userId: userId
       };
       localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
     } catch (e) {
@@ -136,8 +156,8 @@
       const permissions = permData.permissions;
       console.log("[SIDEBAR] User permissions loaded:", permissions.length, "modules");
 
-      // 4) Guardar en cache
-      setCachedPermissions(permissions);
+      // 4) Guardar en cache (incluir userId para invalidar si cambia el usuario)
+      setCachedPermissions(permissions, userId);
 
       // 5) Renderizar sidebar
       render(permissions);

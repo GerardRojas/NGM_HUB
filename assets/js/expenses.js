@@ -221,7 +221,12 @@
   // ================================
   function getApiBase() {
     const base = window.API_BASE || window.apiBase || 'https://ngm-fastapi.onrender.com';
-    return String(base || '').replace(/\/+$/, '');
+    const result = String(base || '').replace(/\/+$/, '');
+    console.log('[EXPENSES] getApiBase debug:', {
+      'window.API_BASE': window.API_BASE,
+      'result': result
+    });
+    return result;
   }
 
   async function apiJson(url, options = {}) {

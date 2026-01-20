@@ -11,6 +11,7 @@
   let vendors = [];
   let originalVendors = [];
   let isEditMode = false;
+  let selectedVendorIds = new Set();
 
   // DOM Elements
   const els = {
@@ -23,7 +24,10 @@
     btnCancelEdit: document.getElementById('btnCancelEdit'),
     btnSaveChanges: document.getElementById('btnSaveChanges'),
     editModeFooter: document.getElementById('editModeFooter'),
-    searchInput: document.getElementById('vendors-search-input')
+    searchInput: document.getElementById('vendors-search-input'),
+    selectAllCheckbox: document.getElementById('selectAllCheckbox'),
+    btnBulkDelete: document.getElementById('btnBulkDelete'),
+    selectedCount: document.getElementById('selectedCount')
   };
 
   // ================================
@@ -99,14 +103,18 @@
   function renderEditRow(vendor, index) {
     const id = vendor.id || '';
     const name = vendor.vendor_name || '';
+    const isChecked = selectedVendorIds.has(id);
 
     return `
       <tr data-index="${index}" data-id="${id}" class="edit-mode-row">
+        <td class="col-checkbox">
+          <input type="checkbox" class="row-checkbox" data-id="${id}" ${isChecked ? 'checked' : ''}>
+        </td>
         <td class="editable-cell">
           <input type="text" class="edit-input" data-field="vendor_name" value="${name}" placeholder="Vendor name">
         </td>
         <td class="col-actions">
-          <button type="button" class="btn-row-delete" data-index="${index}" title="Delete">×</button>
+          <button type="button" class="btn-row-delete" data-id="${id}" title="Delete">×</button>
         </td>
       </tr>
     `;
@@ -131,6 +139,12 @@
   function toggleEditMode(enable) {
     isEditMode = enable;
 
+    // Show/hide checkbox column
+    const checkboxTh = document.querySelector('.col-checkbox');
+    if (checkboxTh) {
+      checkboxTh.style.display = isEditMode ? 'table-cell' : 'none';
+    }
+
     if (isEditMode) {
       els.btnEditVendors.textContent = 'Cancel Edit';
       els.btnEditVendors.classList.remove('btn-toolbar-secondary');
@@ -146,6 +160,10 @@
 
       // Restore original data
       vendors = JSON.parse(JSON.stringify(originalVendors));
+
+      // Clear selections
+      selectedVendorIds.clear();
+      updateBulkDeleteButton();
     }
 
     renderVendorsTable();
@@ -245,12 +263,16 @@
   // DELETE ROW
   // ================================
 
-  async function deleteRow(index) {
-    const vendor = vendors[index];
+  async function deleteRow(vendorId) {
+    if (!vendorId) return;
+
+    const vendor = vendors.find(v => v.id === vendorId);
+    if (!vendor) return;
+
     if (!confirm(`Delete vendor "${vendor.vendor_name}"?`)) return;
 
     try {
-      const res = await fetch(`${API_BASE}/vendors/${vendor.id}`, {
+      const res = await fetch(`${API_BASE}/vendors/${vendorId}`, {
         method: 'DELETE'
       });
 
@@ -260,10 +282,105 @@
       }
 
       alert('Vendor deleted successfully!');
+      selectedVendorIds.delete(vendorId);
       await loadVendors();
+      updateBulkDeleteButton();
     } catch (err) {
       console.error('[VENDORS] Error deleting vendor:', err);
       alert(`Error deleting vendor: ${err.message}`);
+    }
+  }
+
+  // ================================
+  // BULK DELETE
+  // ================================
+
+  async function bulkDeleteVendors() {
+    if (selectedVendorIds.size === 0) {
+      alert('No vendors selected.');
+      return;
+    }
+
+    const confirmed = confirm(`Delete ${selectedVendorIds.size} vendor(s)? This cannot be undone.`);
+    if (!confirmed) return;
+
+    els.btnBulkDelete.disabled = true;
+    const originalText = els.btnBulkDelete.innerHTML;
+    els.btnBulkDelete.innerHTML = '<span style="font-size: 14px;">⏳</span> Deleting...';
+
+    try {
+      const deletePromises = Array.from(selectedVendorIds).map(vendorId =>
+        fetch(`${API_BASE}/vendors/${vendorId}`, {
+          method: 'DELETE'
+        }).then(res => {
+          if (!res.ok) {
+            return res.text().then(text => {
+              throw new Error(`Failed to delete vendor ${vendorId}: ${text}`);
+            });
+          }
+          return res;
+        })
+      );
+
+      await Promise.all(deletePromises);
+
+      alert(`${selectedVendorIds.size} vendor(s) deleted successfully!`);
+      selectedVendorIds.clear();
+      await loadVendors();
+      updateBulkDeleteButton();
+    } catch (err) {
+      console.error('[BULK_DELETE] Error:', err);
+      alert('Error deleting vendors: ' + err.message);
+    } finally {
+      els.btnBulkDelete.disabled = false;
+      els.btnBulkDelete.innerHTML = originalText;
+    }
+  }
+
+  function updateBulkDeleteButton() {
+    if (!els.btnBulkDelete || !els.selectedCount) return;
+
+    const count = selectedVendorIds.size;
+    els.selectedCount.textContent = count;
+    els.btnBulkDelete.disabled = count === 0;
+
+    // Update select all checkbox state
+    if (els.selectAllCheckbox && vendors.length > 0) {
+      const allSelected = vendors.every(v => selectedVendorIds.has(v.id));
+      els.selectAllCheckbox.checked = allSelected;
+    }
+  }
+
+  function toggleSelectAll() {
+    if (!vendors || vendors.length === 0) return;
+
+    const allSelected = vendors.every(v => selectedVendorIds.has(v.id));
+
+    if (allSelected) {
+      // Unselect all
+      vendors.forEach(v => selectedVendorIds.delete(v.id));
+    } else {
+      // Select all
+      vendors.forEach(v => selectedVendorIds.add(v.id));
+    }
+
+    renderVendorsTable();
+    updateBulkDeleteButton();
+  }
+
+  function toggleRowSelection(vendorId) {
+    if (selectedVendorIds.has(vendorId)) {
+      selectedVendorIds.delete(vendorId);
+    } else {
+      selectedVendorIds.add(vendorId);
+    }
+
+    updateBulkDeleteButton();
+
+    // Update checkbox visual state
+    const checkbox = document.querySelector(`.row-checkbox[data-id="${vendorId}"]`);
+    if (checkbox) {
+      checkbox.checked = selectedVendorIds.has(vendorId);
     }
   }
 
@@ -310,11 +427,28 @@
       addVendor();
     });
 
-    // Delete row (delegated)
+    // Bulk delete
+    els.btnBulkDelete?.addEventListener('click', () => {
+      bulkDeleteVendors();
+    });
+
+    // Select all checkbox
+    els.selectAllCheckbox?.addEventListener('change', () => {
+      toggleSelectAll();
+    });
+
+    // Delete row and checkbox (delegated)
     els.tbody?.addEventListener('click', (e) => {
+      // Delete button
       if (e.target.classList.contains('btn-row-delete')) {
-        const index = parseInt(e.target.getAttribute('data-index'), 10);
-        deleteRow(index);
+        const vendorId = e.target.getAttribute('data-id');
+        deleteRow(vendorId);
+      }
+
+      // Checkbox
+      if (e.target.classList.contains('row-checkbox')) {
+        const vendorId = e.target.getAttribute('data-id');
+        toggleRowSelection(vendorId);
       }
     });
 

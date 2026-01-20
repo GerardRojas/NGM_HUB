@@ -124,6 +124,9 @@
                             <table class="expenses-table" id="vendorsTable" style="display: none;">
                                 <thead>
                                     <tr>
+                                        <th class="col-checkbox" style="width: 40px; display: none;">
+                                            <input type="checkbox" id="selectAllCheckbox" title="Select All">
+                                        </th>
                                         <th>Vendor Name</th>
                                         <th class="col-actions"></th>
                                     </tr>
@@ -136,8 +139,15 @@
 
                         <!-- Edit mode footer (hidden by default) -->
                         <div class="edit-mode-footer hidden" id="editModeFooter">
-                            <button type="button" class="btn-edit-cancel" id="btnCancelEdit">Cancel</button>
-                            <button type="button" class="btn-edit-save" id="btnSaveChanges">Save Changes</button>
+                            <div class="edit-footer-left">
+                                <button type="button" class="btn-edit-delete" id="btnBulkDelete" disabled>
+                                    <span style="font-size: 14px;">🗑</span> Delete Selected (<span id="selectedCount">0</span>)
+                                </button>
+                            </div>
+                            <div class="edit-footer-right">
+                                <button type="button" class="btn-edit-cancel" id="btnCancelEdit">Cancel</button>
+                                <button type="button" class="btn-edit-save" id="btnSaveChanges">Save Changes</button>
+                            </div>
                         </div>
                     </section>
 

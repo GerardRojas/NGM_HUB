@@ -1765,6 +1765,46 @@
   // ================================
   // CSV IMPORT
   // ================================
+
+  /**
+   * Parses a CSV line respecting quoted fields that may contain commas
+   * @param {string} line - CSV line to parse
+   * @returns {string[]} - Array of cell values
+   */
+  function parseCSVLine(line) {
+    const cells = [];
+    let currentCell = '';
+    let insideQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+
+      if (char === '"') {
+        // Handle escaped quotes ("")
+        if (insideQuotes && nextChar === '"') {
+          currentCell += '"';
+          i++; // Skip next quote
+        } else {
+          // Toggle quote state
+          insideQuotes = !insideQuotes;
+        }
+      } else if (char === ',' && !insideQuotes) {
+        // End of cell
+        cells.push(currentCell.trim());
+        currentCell = '';
+      } else {
+        // Regular character
+        currentCell += char;
+      }
+    }
+
+    // Add last cell
+    cells.push(currentCell.trim());
+
+    return cells;
+  }
+
   async function handleCSVImport(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1781,16 +1821,16 @@
         return;
       }
 
-      // Parse headers
-      csvParsedData.headers = lines[0].split(',').map(h => h.trim());
+      // Parse headers using proper CSV parsing
+      csvParsedData.headers = parseCSVLine(lines[0]);
 
-      // Parse data rows
+      // Parse data rows using proper CSV parsing
       csvParsedData.rows = [];
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
 
-        const cells = line.split(',').map(c => c.trim());
+        const cells = parseCSVLine(line);
         csvParsedData.rows.push(cells);
       }
 
@@ -1800,6 +1840,7 @@
       }
 
       console.log('[CSV_IMPORT] Parsed:', csvParsedData.headers.length, 'columns,', csvParsedData.rows.length, 'rows');
+      console.log('[CSV_IMPORT] Sample row:', csvParsedData.rows[0]);
 
       // Open mapping modal
       openCsvMappingModal();

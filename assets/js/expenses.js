@@ -558,12 +558,12 @@
     return `
       <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable" style="cursor: pointer;">
         <td class="col-checkbox" style="display: none;"></td>
-        <td>${date}</td>
+        <td class="col-date">${date}</td>
         <td class="col-description">${description}</td>
-        <td>${account}</td>
-        <td>${type}</td>
-        <td>${vendor}</td>
-        <td>${payment}</td>
+        <td class="col-account">${account}</td>
+        <td class="col-type">${type}</td>
+        <td class="col-vendor">${vendor}</td>
+        <td class="col-payment">${payment}</td>
         <td class="col-amount">${amount}</td>
         <td class="col-receipt">${receiptIcon}</td>
         <td class="col-auth">${authBadge}</td>
@@ -598,22 +598,22 @@
         <td class="col-checkbox" style="display: ${isEditMode ? '' : 'none'};">
           <input type="checkbox" class="row-checkbox" data-id="${expenseId}" ${isChecked}>
         </td>
-        <td class="editable-cell">
+        <td class="col-date editable-cell">
           <input type="date" class="edit-input" data-field="TxnDate" value="${dateVal}">
         </td>
         <td class="col-description editable-cell">
           <input type="text" class="edit-input" data-field="LineDescription" value="${exp.LineDescription || ''}" placeholder="Description...">
         </td>
-        <td class="editable-cell">
+        <td class="col-account editable-cell">
           ${buildSelectHtml('account_id', exp.account_id, metaData.accounts, 'account_id', 'Name')}
         </td>
-        <td class="editable-cell">
+        <td class="col-type editable-cell">
           ${buildSelectHtml('txn_type', exp.txn_type, metaData.txn_types, 'TnxType_id', 'TnxType_name')}
         </td>
-        <td class="editable-cell">
+        <td class="col-vendor editable-cell">
           ${buildSelectHtml('vendor_id', exp.vendor_id, metaData.vendors, 'id', 'vendor_name')}
         </td>
-        <td class="editable-cell">
+        <td class="col-payment editable-cell">
           ${buildSelectHtml('payment_type', exp.payment_type, metaData.payment_methods, 'id', 'payment_method_name')}
         </td>
         <td class="col-amount editable-cell">
@@ -4146,37 +4146,28 @@
     const table = els.expensesTable;
     if (!table) return;
 
-    // Map column keys to their index in the table
-    const columnIndexMap = {
-      date: 0,
-      description: 1,
-      type: 2,
-      vendor: 3,
-      payment: 4,
-      account: 5,
-      amount: 6,
-      receipt: 7,
-      auth: 8
-      // actions column (index 9) is always visible
-    };
+    // Column keys that can be toggled (match CSS classes: col-date, col-description, etc.)
+    const toggleableColumns = ['date', 'description', 'type', 'vendor', 'payment', 'account', 'amount', 'receipt', 'auth'];
 
-    // Apply visibility to header cells
-    Object.entries(columnIndexMap).forEach(([key, index]) => {
-      const isVisible = columnVisibility[key];
-      const th = table.querySelector(`thead th:nth-child(${index + 1})`);
+    // Apply visibility using class selectors
+    toggleableColumns.forEach(key => {
+      const isVisible = columnVisibility[key] !== false; // Default to visible
+      const className = `col-${key}`;
+
+      // Apply to header
+      const th = table.querySelector(`thead .${className}`);
       if (th) {
         th.style.display = isVisible ? '' : 'none';
       }
-    });
 
-    // Apply visibility to body cells
-    Object.entries(columnIndexMap).forEach(([key, index]) => {
-      const isVisible = columnVisibility[key];
-      const tds = table.querySelectorAll(`tbody td:nth-child(${index + 1})`);
+      // Apply to body cells
+      const tds = table.querySelectorAll(`tbody .${className}`);
       tds.forEach(td => {
         td.style.display = isVisible ? '' : 'none';
       });
     });
+
+    console.log('[COLUMN MANAGER] Visibility applied:', columnVisibility);
   }
 
   function saveColumnVisibility() {

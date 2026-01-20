@@ -496,7 +496,7 @@
 .expenses-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed; /* Fixed layout for consistent column widths */
+  table-layout: auto; /* Auto layout adapts to visible columns */
 }
 
 .expenses-table thead {
@@ -519,17 +519,28 @@
   background: #1a1a1d; /* Solid background for sticky header */
 }
 
-/* Column widths are now controlled by table-layout: fixed */
+/* Column widths - proportional based on content type */
+.expenses-table .col-date { width: 95px; }
+.expenses-table .col-description { width: auto; min-width: 200px; } /* Flexible, takes remaining space */
+.expenses-table .col-type { width: 120px; }
+.expenses-table .col-vendor { width: 140px; }
+.expenses-table .col-payment { width: 100px; }
+.expenses-table .col-account { width: 160px; }
+.expenses-table .col-amount { width: 100px; }
+.expenses-table .col-receipt { width: 60px; }
+.expenses-table .col-auth { width: 100px; }
+.expenses-table .col-checkbox { width: 40px; }
+.expenses-table .col-actions { width: 50px; }
 
 .expenses-table td {
-  padding: 10px 14px; /* Reduced vertical padding from 14px to 10px */
+  padding: 10px 14px;
   font-size: 13px;
   color: var(--text-primary, #e5e7eb);
   border-bottom: 1px solid rgba(39, 39, 47, 0.5);
   vertical-align: middle;
-  white-space: nowrap; /* Prevent text wrapping */
-  overflow: hidden; /* Hide overflow */
-  text-overflow: ellipsis; /* Show ... for long text */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .expenses-table tbody tr:last-child td {
@@ -540,37 +551,15 @@
   background: rgba(255, 255, 255, 0.02);
 }
 
-/* Description column */
-.expenses-table .col-description {
-  min-width: 250px;
-  max-width: 400px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Account column - prevent expansion */
-.expenses-table .col-account {
-  min-width: 180px;
-  max-width: 220px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Amount column */
+/* Amount column - right aligned with tabular numbers */
 .expenses-table .col-amount {
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  min-width: 110px;
   text-align: right;
-  white-space: nowrap;
 }
 
-/* Receipt column */
+/* Receipt column - centered */
 .expenses-table .col-receipt {
-  width: 50px;
-  min-width: 50px;
   text-align: center;
 }
 

@@ -2197,11 +2197,12 @@
               );
 
               if (paymentMethod) {
-                paymentSelect.value = paymentMethod.id;
+                // Set the display name (not ID) for visual display
+                paymentSelect.value = paymentMethod.payment_method_name;
               } else {
                 console.warn('[CSV_MAPPING] Payment method not found:', cleanedPaymentName);
-                // Set to empty/first option if not found
-                paymentSelect.value = '';
+                // Set the cleaned name even if not found
+                paymentSelect.value = cleanedPaymentName;
               }
             }
           } else if (field === 'account') {
@@ -2217,11 +2218,12 @@
               );
 
               if (account) {
-                accountSelect.value = account.account_id;
+                // Set the display name (not ID) for visual display
+                accountSelect.value = account.Name;
               } else {
                 console.warn('[CSV_MAPPING] Account not found:', cleanedAccountName);
-                // Set to empty/first option if not found
-                accountSelect.value = '';
+                // Set the cleaned name even if not found
+                accountSelect.value = cleanedAccountName;
               }
             }
           } else if (field === 'amount') {

@@ -707,6 +707,46 @@
   border-radius: 6px;
 }
 
+/* Select dropdowns - custom styling to remove native appearance */
+select.edit-input {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  cursor: pointer !important;
+  padding-right: 28px !important;
+
+  /* Custom dropdown arrow */
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.65) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.65) 50%, transparent 50%) !important;
+  background-position:
+    calc(100% - 12px) calc(50% - 2px),
+    calc(100% - 6px) calc(50% - 2px) !important;
+  background-size: 6px 6px, 6px 6px !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Remove all native select arrows */
+select.edit-input::-ms-expand {
+  display: none !important;
+}
+
+select.edit-input::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Option styling */
+select.edit-input option {
+  background: #1f1f1f;
+  color: #ffffff;
+  padding: 8px 12px;
+}
+
 /* Amount input - right aligned */
 .edit-input--amount {
   text-align: right;

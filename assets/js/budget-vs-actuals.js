@@ -479,13 +479,11 @@
       `;
     });
 
-    // Total row
+    // Total row (moved to tbody so it only appears on last page)
     const isTotalOverBudget = totals.balance < 0;
     const totalBalanceColor = isTotalOverBudget ? 'color: #dc2626;' : '';
 
     html += `
-          </tbody>
-          <tfoot>
             <tr style="background: #f5f5f5; border-top: 2px solid #333; font-weight: bold;">
               <td style="padding: 12px 8px; font-size: 13px;">TOTAL</td>
               <td style="padding: 12px 8px; text-align: right; font-size: 13px;">$${formatCurrency(totals.actual)}</td>
@@ -493,7 +491,7 @@
               ${reportOptions.showPercentage ? `<td style="padding: 12px 8px; text-align: right; font-size: 13px;">${totals.percentOfBudget.toFixed(2)}%</td>` : ''}
               ${reportOptions.showVariance ? `<td style="padding: 12px 8px; text-align: right; font-size: 13px; ${totalBalanceColor}">$${formatCurrency(totals.balance)}</td>` : ''}
             </tr>
-          </tfoot>
+          </tbody>
         </table>
 
         <!-- Footer note -->

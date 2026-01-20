@@ -1185,6 +1185,82 @@
     els.btnAutoCategorize.disabled = !hasDescription;
   }
 
+  // ================================
+  // FUZZY MATCHING HELPER
+  // ================================
+
+  /**
+   * Calculate Levenshtein distance between two strings (edit distance)
+   * @param {string} str1 - First string
+   * @param {string} str2 - Second string
+   * @returns {number} - Edit distance
+   */
+  function levenshteinDistance(str1, str2) {
+    const s1 = str1.toLowerCase();
+    const s2 = str2.toLowerCase();
+
+    const costs = [];
+    for (let i = 0; i <= s1.length; i++) {
+      let lastValue = i;
+      for (let j = 0; j <= s2.length; j++) {
+        if (i === 0) {
+          costs[j] = j;
+        } else if (j > 0) {
+          let newValue = costs[j - 1];
+          if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
+            newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+          }
+          costs[j - 1] = lastValue;
+          lastValue = newValue;
+        }
+      }
+      if (i > 0) costs[s2.length] = lastValue;
+    }
+    return costs[s2.length];
+  }
+
+  /**
+   * Calculate similarity percentage between two strings
+   * @param {string} str1 - First string
+   * @param {string} str2 - Second string
+   * @returns {number} - Similarity percentage (0-100)
+   */
+  function calculateSimilarity(str1, str2) {
+    const maxLength = Math.max(str1.length, str2.length);
+    if (maxLength === 0) return 100;
+
+    const distance = levenshteinDistance(str1, str2);
+    return Math.round(((maxLength - distance) / maxLength) * 100);
+  }
+
+  /**
+   * Find similar accounts using fuzzy matching
+   * @param {string} searchName - Account name to search for
+   * @param {Array} accounts - List of available accounts
+   * @param {number} maxResults - Maximum number of results to return
+   * @returns {Array} - Array of similar accounts with similarity scores
+   */
+  function findSimilarAccounts(searchName, accounts, maxResults = 3) {
+    const similarities = accounts.map(account => {
+      const accountName = account.Name || account.name || '';
+      return {
+        name: accountName,
+        id: account.account_id || account.id,
+        similarity: calculateSimilarity(searchName, accountName)
+      };
+    });
+
+    // Filter accounts with at least 50% similarity and sort by similarity
+    return similarities
+      .filter(item => item.similarity >= 50)
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, maxResults);
+  }
+
+  // ================================
+  // SAVE ALL EXPENSES
+  // ================================
+
   async function saveAllExpenses() {
     const apiBase = getApiBase();
     const rows = els.expenseRowsBody.querySelectorAll('tr');
@@ -1251,10 +1327,29 @@
 
     // Check for invalid accounts
     if (invalidAccounts.size > 0) {
-      const accountsList = Array.from(invalidAccounts).join('\n- ');
-      const rowsList = rowsWithInvalidAccounts.map(r => `Row ${r.row}: "${r.accountName}"`).join('\n');
+      // Build message with fuzzy matching suggestions
+      const invalidAccountsList = Array.from(invalidAccounts);
+      let message = 'The following accounts don\'t exist in your system:\n\n';
 
-      const message = `The following accounts don't exist in your system:\n\n${rowsList}\n\nWould you like to:\n\n1. Create these accounts automatically\n2. Cancel and select existing accounts`;
+      // Calculate fuzzy matches for each invalid account
+      invalidAccountsList.forEach(invalidName => {
+        const suggestions = findSimilarAccounts(invalidName, metaData.accounts, 3);
+        const rowsWithThis = rowsWithInvalidAccounts.filter(r => r.accountName === invalidName);
+        const rowNumbers = rowsWithThis.map(r => r.row).join(', ');
+
+        message += `\n❌ "${invalidName}" (Row ${rowNumbers})\n`;
+
+        if (suggestions.length > 0) {
+          message += `   💡 Similar accounts found:\n`;
+          suggestions.forEach((sugg, idx) => {
+            message += `      ${idx + 1}. "${sugg.name}" (${sugg.similarity}% match)\n`;
+          });
+        } else {
+          message += `   (No similar accounts found)\n`;
+        }
+      });
+
+      message += '\n\nWould you like to:\n\n1. Create these accounts automatically\n2. Cancel and select existing accounts manually';
 
       const createAccounts = confirm(message + '\n\n(OK = Create accounts, Cancel = Go back)');
 

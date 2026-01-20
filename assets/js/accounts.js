@@ -47,7 +47,7 @@
     try {
       showLoadingState();
 
-      const res = await fetch(`${API_BASE}/accounts/`);
+      const res = await fetch(`${API_BASE}/accounts`);
       if (!res.ok) {
         const text = await res.text();
         console.error('[ACCOUNTS] Error loading accounts:', text);
@@ -246,7 +246,7 @@
     if (!accountName || !accountName.trim()) return;
 
     try {
-      const res = await fetch(`${API_BASE}/accounts/`, {
+      const res = await fetch(`${API_BASE}/accounts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ Name: accountName.trim() })

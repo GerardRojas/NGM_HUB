@@ -47,7 +47,7 @@
     try {
       showLoadingState();
 
-      const res = await fetch(`${API_BASE}/vendors/`);
+      const res = await fetch(`${API_BASE}/vendors`);
       if (!res.ok) {
         const text = await res.text();
         console.error('[VENDORS] Error loading vendors:', text);
@@ -240,7 +240,7 @@
     if (!vendorName || !vendorName.trim()) return;
 
     try {
-      const res = await fetch(`${API_BASE}/vendors/`, {
+      const res = await fetch(`${API_BASE}/vendors`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vendor_name: vendorName.trim() })

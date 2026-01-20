@@ -297,12 +297,11 @@
   background: var(--ngm-bg-card, #18181b);
   border: 1px solid var(--border-soft, #27272f);
   border-radius: 12px;
-  overflow-x: auto; /* Enable horizontal scroll */
-  overflow-y: visible; /* Allow dropdowns to overflow vertically */
+  overflow-x: hidden; /* No horizontal scroll - table adapts to width */
+  overflow-y: auto; /* Enable vertical scroll for long tables */
+  max-height: calc(100vh - 280px); /* Limit height, leave room for toolbar/footer */
   min-height: 200px;
   width: 100%;
-  /* Add padding at bottom for scrollbar */
-  padding-bottom: 4px;
 }
 
 /* Empty state */
@@ -468,9 +467,9 @@
    EXPENSES TABLE — DARK THEME
    ========================================== */
 
-/* Better scrollbar for table container */
+/* Better scrollbar for table container (vertical) */
 .expenses-table-container::-webkit-scrollbar {
-  height: 10px;
+  width: 10px;
 }
 
 .expenses-table-container::-webkit-scrollbar-track {
@@ -488,18 +487,27 @@
   background-color: rgba(200, 200, 200, 0.5);
 }
 
+/* Firefox scrollbar */
+.expenses-table-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 180, 180, 0.35) rgba(255, 255, 255, 0.04);
+}
+
 .expenses-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1200px; /* Ensure table doesn't compress too much - increased for all columns */
+  table-layout: fixed; /* Fixed layout for consistent column widths */
 }
 
 .expenses-table thead {
   background: rgba(255, 255, 255, 0.03);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .expenses-table th {
-  padding: 10px 14px; /* Reduced from 12px to 10px */
+  padding: 10px 14px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -507,23 +515,11 @@
   color: var(--ngm-text-muted, #6b7280);
   text-align: left;
   border-bottom: 1px solid var(--border-soft, #27272f);
-  min-width: 110px; /* Minimum width to fit text + filter icon */
   white-space: nowrap;
+  background: #1a1a1d; /* Solid background for sticky header */
 }
 
-.expenses-table th:first-child {
-  min-width: 100px; /* Date column */
-}
-
-.expenses-table th:nth-child(3),
-.expenses-table th:nth-child(4),
-.expenses-table th:nth-child(5) {
-  min-width: 130px; /* Type, Vendor, Payment */
-}
-
-.expenses-table th:nth-child(6) {
-  min-width: 180px; /* Account - wider to prevent wrapping */
-}
+/* Column widths are now controlled by table-layout: fixed */
 
 .expenses-table td {
   padding: 10px 14px; /* Reduced vertical padding from 14px to 10px */

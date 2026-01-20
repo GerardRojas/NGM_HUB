@@ -63,7 +63,7 @@
     try {
       showLoadingState();
 
-      const res = await fetch(`${API_BASE}/projects/`);
+      const res = await fetch(`${API_BASE}/projects`);
       if (!res.ok) {
         const text = await res.text();
         console.error('[PROJECTS] Error loading projects:', text);

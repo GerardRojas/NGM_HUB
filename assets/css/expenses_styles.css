@@ -85,35 +85,45 @@
   padding: 11px 36px 11px 14px;
   border-radius: 8px;
   border: 1px solid rgba(148, 163, 184, 0.28);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.04) !important;
   color: rgba(255, 255, 255, 0.92);
   font-size: 13px;
   font-weight: 500;
   outline: none;
-  cursor: pointer;
+  cursor: pointer !important;
   transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 
   /* Remove default appearance */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
 
   /* Custom dropdown arrow */
   background-image:
     linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.65) 50%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.65) 50%, transparent 50%);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.65) 50%, transparent 50%) !important;
   background-position:
     calc(100% - 14px) calc(50% - 2px),
-    calc(100% - 8px) calc(50% - 2px);
-  background-size: 6px 6px, 6px 6px;
-  background-repeat: no-repeat;
+    calc(100% - 8px) calc(50% - 2px) !important;
+  background-size: 6px 6px, 6px 6px !important;
+  background-repeat: no-repeat !important;
   padding-right: 32px;
 }
 
-/* Remove IE dropdown arrow */
+/* Remove all native select arrows */
 .ngm-select::-ms-expand,
 .toolbar-select::-ms-expand {
-  display: none;
+  display: none !important;
+}
+
+.ngm-select::-webkit-calendar-picker-indicator,
+.toolbar-select::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 .ngm-select:hover,

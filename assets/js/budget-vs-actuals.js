@@ -341,16 +341,40 @@
     });
 
     // Group expenses by account_name and sum amounts
+    // IMPORTANT: Only include authorized expenses (auth_status = true)
     const expensesByAccount = {};
+    let totalExpensesCount = 0;
+    let authorizedExpensesCount = 0;
+    let skippedExpensesCount = 0;
+
     expenses.forEach(expense => {
+      totalExpensesCount++;
+
+      // Filter: Only include expenses that are authorized
+      const isAuthorized = expense.auth_status === true;
+
+      if (!isAuthorized) {
+        skippedExpensesCount++;
+        console.log('[BUDGET_VS_ACTUALS] ⚠ Skipping unauthorized expense:', {
+          expense_id: expense.expense_id,
+          description: expense.LineDescription,
+          amount: expense.Amount || expense.amount,
+          auth_status: expense.auth_status
+        });
+        return; // Skip this expense
+      }
+
+      authorizedExpensesCount++;
+
       // Resolve account name from account_id or use existing account_name
       const accountName = getAccountName(expense.account_id, expense.account_name);
 
-      console.log('[BUDGET_VS_ACTUALS] Processing expense:', {
+      console.log('[BUDGET_VS_ACTUALS] ✓ Processing authorized expense:', {
         account_id: expense.account_id,
         account_name: expense.account_name,
         resolved_name: accountName,
-        amount: expense.Amount || expense.amount
+        amount: expense.Amount || expense.amount,
+        auth_status: expense.auth_status
       });
 
       if (!expensesByAccount[accountName]) {
@@ -360,6 +384,13 @@
       const expenseAmount = parseFloat(expense.Amount || expense.amount || 0);
       expensesByAccount[accountName] += expenseAmount;
     });
+
+    console.log('[BUDGET_VS_ACTUALS] ========================================');
+    console.log('[BUDGET_VS_ACTUALS] EXPENSE AUTHORIZATION SUMMARY:');
+    console.log('[BUDGET_VS_ACTUALS] Total expenses:', totalExpensesCount);
+    console.log('[BUDGET_VS_ACTUALS] Authorized expenses (included):', authorizedExpensesCount);
+    console.log('[BUDGET_VS_ACTUALS] Unauthorized expenses (skipped):', skippedExpensesCount);
+    console.log('[BUDGET_VS_ACTUALS] ========================================');
 
     console.log('[BUDGET_VS_ACTUALS] Expenses by account:', expensesByAccount);
 

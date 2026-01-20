@@ -1439,12 +1439,24 @@
         createdExpenses.push(created);
 
         console.log(`[EXPENSES] Created expense ${i + 1}/${expensesToSave.length}:`, created);
+        console.log('[EXPENSES] ========================================');
+        console.log('[EXPENSES] CHECKING EXPENSE ID:');
+        console.log('[EXPENSES] created.id:', created.id);
+        console.log('[EXPENSES] created.expense_id:', created.expense_id);
+        console.log('[EXPENSES] Full created object keys:', Object.keys(created));
+        console.log('[EXPENSES] ========================================');
 
         // Upload receipt if this row had one
         if (receiptFile && window.ReceiptUpload) {
           try {
             const expenseId = created.id || created.expense_id;
             console.log(`[EXPENSES] Uploading receipt for expense ${expenseId}:`, receiptFile.name);
+
+            if (!expenseId) {
+              console.error('[EXPENSES] ❌ CRITICAL: expenseId is undefined!');
+              console.error('[EXPENSES] Created object:', JSON.stringify(created, null, 2));
+              throw new Error('Expense ID is undefined - cannot upload receipt');
+            }
 
             // Upload receipt to Supabase Storage
             const receiptUrl = await window.ReceiptUpload.upload(

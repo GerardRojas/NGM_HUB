@@ -220,7 +220,7 @@
   // API HELPERS
   // ================================
   function getApiBase() {
-    const base = window.API_BASE || window.apiBase || '';
+    const base = window.API_BASE || window.apiBase || 'https://ngm-fastapi.onrender.com';
     return String(base || '').replace(/\/+$/, '');
   }
 

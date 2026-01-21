@@ -157,6 +157,14 @@
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: #888888;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+/* Hover effect on icon badge when card is hovered */
+.module-card:hover .module-icon-badge {
+    border-color: rgba(62, 207, 142, 0.4);
+    background: rgba(62, 207, 142, 0.08);
+    color: #3ecf8e;
 }
 
 /* Títulos y textos del módulo */

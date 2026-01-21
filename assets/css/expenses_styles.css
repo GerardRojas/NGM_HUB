@@ -1173,3 +1173,113 @@ select.edit-input option {
   color: #ef4444;
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
+
+/* ==========================================
+   ROLES & PERMISSIONS TABLE
+   ========================================== */
+
+/* Roles page specific layout */
+.page-roles .main-content {
+  max-width: none;
+  width: 100%;
+}
+
+.page-roles .workspace {
+  padding: 24px;
+}
+
+.page-roles .data-section {
+  max-width: none;
+  width: 100%;
+}
+
+/* Permissions table wrapper - proper scroll containment */
+.permissions-table-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  margin: 0;
+  padding: 0 0 24px 0;
+}
+
+/* Permissions table */
+.permissions-table {
+  min-width: 1200px;
+  width: 100%;
+  margin: 0;
+}
+
+/* Green checkboxes for permissions */
+.permissions-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #3ecf8e;
+  cursor: pointer;
+}
+
+.permissions-table input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Permission cell styling */
+.permissions-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.permissions-table td:first-child {
+  text-align: left;
+  font-weight: 500;
+}
+
+/* Module name column */
+.permissions-table .module-name {
+  text-align: left;
+  font-weight: 500;
+  color: #ededed;
+  min-width: 160px;
+}
+
+/* Role header columns */
+.permissions-table th {
+  text-align: center;
+  min-width: 100px;
+}
+
+.permissions-table th:first-child {
+  text-align: left;
+  min-width: 160px;
+}
+
+/* Protected role indicator */
+.permissions-table .role-protected {
+  color: #fbbf24;
+  font-size: 10px;
+  display: block;
+  margin-top: 2px;
+}
+
+/* Scrollbar styling for permissions wrapper */
+.permissions-table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.permissions-table-wrapper::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+}
+
+.permissions-table-wrapper::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.permissions-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Firefox scrollbar */
+.permissions-table-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) rgba(255, 255, 255, 0.02);
+}

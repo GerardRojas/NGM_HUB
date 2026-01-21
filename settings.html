@@ -320,6 +320,9 @@
         // ====== QBO Functions ======
 
         async function checkQBOStatus() {
+            console.log('[QBO] checkQBOStatus called');
+            console.log('[QBO] API_BASE:', window.API_BASE);
+
             const loadingState = document.getElementById('qboLoadingState');
             const notConnected = document.getElementById('qboNotConnected');
             const connected = document.getElementById('qboConnected');
@@ -337,7 +340,9 @@
             statusBadge.style.color = '#9ca3af';
 
             try {
-                const response = await fetch(`${window.API_URL}/qbo/status`);
+                const url = `${window.API_BASE}/qbo/status`;
+                console.log('[QBO] Fetching:', url);
+                const response = await fetch(url);
                 if (!response.ok) throw new Error('Failed to fetch status');
 
                 const data = await response.json();
@@ -385,13 +390,25 @@
                     currentQBOConnection = null;
                 }
             } catch (error) {
-                console.error('Error checking QBO status:', error);
+                console.error('[QBO] Error checking QBO status:', error);
                 loadingState.style.display = 'none';
-                errorState.style.display = 'block';
-                document.getElementById('qboErrorMessage').textContent = error.message || 'Unable to check connection status';
-                statusBadge.textContent = 'Error';
-                statusBadge.style.background = 'rgba(239, 68, 68, 0.12)';
-                statusBadge.style.color = '#ef4444';
+
+                // If it's a 404, the endpoint might not be deployed yet
+                // Show "Not Connected" instead of error
+                if (error.message.includes('404') || error.message.includes('Failed to fetch')) {
+                    console.log('[QBO] Endpoint not available, showing Not Connected state');
+                    statusBadge.textContent = 'Not Connected';
+                    statusBadge.style.background = 'rgba(239, 68, 68, 0.12)';
+                    statusBadge.style.color = '#ef4444';
+                    notConnected.style.display = 'block';
+                    currentQBOConnection = null;
+                } else {
+                    errorState.style.display = 'block';
+                    document.getElementById('qboErrorMessage').textContent = error.message || 'Unable to check connection status';
+                    statusBadge.textContent = 'Error';
+                    statusBadge.style.background = 'rgba(239, 68, 68, 0.12)';
+                    statusBadge.style.color = '#ef4444';
+                }
             }
         }
 
@@ -401,7 +418,7 @@
             btn.innerHTML = '<span style="font-size: 14px;">⏳</span> Redirecting...';
 
             try {
-                const response = await fetch(`${window.API_URL}/qbo/auth`);
+                const response = await fetch(`${window.API_BASE}/qbo/auth`);
                 if (!response.ok) throw new Error('Failed to get auth URL');
 
                 const data = await response.json();
@@ -458,7 +475,7 @@
             btn.innerHTML = '<span style="font-size: 14px;">⏳</span> Syncing...';
 
             try {
-                const response = await fetch(`${window.API_URL}/qbo/sync/${currentQBOConnection.realm_id}`, {
+                const response = await fetch(`${window.API_BASE}/qbo/sync/${currentQBOConnection.realm_id}`, {
                     method: 'POST'
                 });
 
@@ -496,7 +513,7 @@
             btn.textContent = 'Disconnecting...';
 
             try {
-                const response = await fetch(`${window.API_URL}/qbo/disconnect/${currentQBOConnection.realm_id}`, {
+                const response = await fetch(`${window.API_BASE}/qbo/disconnect/${currentQBOConnection.realm_id}`, {
                     method: 'POST'
                 });
 
@@ -530,6 +547,9 @@
 
         // ====== Initialize ======
         window.addEventListener("DOMContentLoaded", () => {
+            console.log('[Settings] DOMContentLoaded fired');
+            console.log('[Settings] API_BASE at init:', window.API_BASE);
+
             if (window.initTopbarPills) window.initTopbarPills();
             if (window.initSidebar) window.initSidebar();
 
@@ -538,7 +558,17 @@
                 document.getElementById('settingsContent').style.display = 'block';
 
                 // Check QBO status after content loads
-                checkQBOStatus();
+                // Wait a bit more to ensure config.js has loaded
+                console.log('[Settings] About to check QBO status, API_BASE:', window.API_BASE);
+                if (window.API_BASE) {
+                    checkQBOStatus();
+                } else {
+                    console.error('[Settings] API_BASE not defined! Check config.js loading.');
+                    // Show error state
+                    document.getElementById('qboLoadingState').style.display = 'none';
+                    document.getElementById('qboErrorState').style.display = 'block';
+                    document.getElementById('qboErrorMessage').textContent = 'Configuration not loaded. Please refresh the page.';
+                }
             }, 600);
         });
     </script>

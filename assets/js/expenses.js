@@ -2048,7 +2048,25 @@
 
       els.scanReceiptProgressFill.style.width = '100%';
 
-      alert(`Successfully scanned ${result.count} expense(s) from receipt!`);
+      // Build success message with tax info if available
+      let successMessage = `Successfully scanned ${result.count} expense(s) from receipt!`;
+
+      if (result.data?.tax_summary) {
+        const tax = result.data.tax_summary;
+        successMessage += `\n\n📊 Tax Distribution Applied:`;
+        successMessage += `\n• ${tax.tax_label || 'Tax'} detected: $${tax.total_tax_detected?.toFixed(2) || '0.00'}`;
+        successMessage += `\n• Subtotal: $${tax.subtotal?.toFixed(2) || '0.00'}`;
+        successMessage += `\n• Grand Total: $${tax.grand_total?.toFixed(2) || '0.00'}`;
+
+        if (tax.distribution && tax.distribution.length > 0) {
+          successMessage += `\n\nTax was distributed as follows:`;
+          for (const item of tax.distribution) {
+            successMessage += `\n  → ${item.description}: $${item.original_amount?.toFixed(2)} + $${item.tax_added?.toFixed(2)} tax = $${item.final_amount?.toFixed(2)}`;
+          }
+        }
+      }
+
+      alert(successMessage);
 
     } catch (error) {
       console.error('[SCAN RECEIPT] Error:', error);

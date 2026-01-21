@@ -64,12 +64,13 @@
 
     try {
       // Load all catalogs in parallel
+      // Note: projects uses /projects endpoint, but others use /pipeline/* prefix
       const [projectsRes, companiesRes, departmentsRes, typesRes, prioritiesRes] = await Promise.all([
         fetch(`${apiBase}/projects`, { credentials: "include" }).catch(() => null),
-        fetch(`${apiBase}/companies`, { credentials: "include" }).catch(() => null),
-        fetch(`${apiBase}/task-departments`, { credentials: "include" }).catch(() => null),
-        fetch(`${apiBase}/task-types`, { credentials: "include" }).catch(() => null),
-        fetch(`${apiBase}/task-priorities`, { credentials: "include" }).catch(() => null)
+        fetch(`${apiBase}/pipeline/companies`, { credentials: "include" }).catch(() => null),
+        fetch(`${apiBase}/pipeline/task-departments`, { credentials: "include" }).catch(() => null),
+        fetch(`${apiBase}/pipeline/task-types`, { credentials: "include" }).catch(() => null),
+        fetch(`${apiBase}/pipeline/task-priorities`, { credentials: "include" }).catch(() => null)
       ]);
 
       // Parse responses

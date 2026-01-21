@@ -143,17 +143,109 @@
                                     </div>
                                 </div>
 
-                                <!-- Integrations -->
-                                <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
-                                    <h3 style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">Integrations</h3>
-                                    <div style="display: grid; gap: 12px;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #0a0a0b; border-radius: 6px;">
-                                            <div>
-                                                <div style="font-size: 14px; color: #e5e7eb; font-weight: 600;">QuickBooks Online</div>
-                                                <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">Sync expenses and accounts</div>
-                                            </div>
-                                            <span style="padding: 4px 12px; background: rgba(34, 197, 94, 0.12); color: #22c55e; border-radius: 4px; font-size: 12px; font-weight: 600;">Connected</span>
+                                <!-- QuickBooks Online Integration -->
+                                <div id="qboIntegrationCard" style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                        <h3 style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">QuickBooks Online Integration</h3>
+                                        <span id="qboStatusBadge" style="padding: 4px 12px; background: rgba(107, 114, 128, 0.2); color: #9ca3af; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                                            Checking...
+                                        </span>
+                                    </div>
+
+                                    <!-- Connection Status Panel -->
+                                    <div id="qboConnectionPanel" style="background: #0a0a0b; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                                        <!-- Loading State -->
+                                        <div id="qboLoadingState" style="display: flex; align-items: center; gap: 12px;">
+                                            <div style="width: 20px; height: 20px; border: 2px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                                            <span style="color: #9ca3af; font-size: 13px;">Checking QuickBooks connection...</span>
                                         </div>
+
+                                        <!-- Not Connected State -->
+                                        <div id="qboNotConnected" style="display: none;">
+                                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                                <div style="width: 40px; height: 40px; background: rgba(239, 68, 68, 0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                                    <span style="font-size: 20px;">⚠️</span>
+                                                </div>
+                                                <div>
+                                                    <div style="font-size: 14px; color: #e5e7eb; font-weight: 600;">Not Connected</div>
+                                                    <div style="font-size: 12px; color: #6b7280;">Connect your QuickBooks account to sync expenses</div>
+                                                </div>
+                                            </div>
+                                            <button id="btnConnectQBO" onclick="connectQuickBooks()" style="width: 100%; padding: 10px 16px; background: linear-gradient(135deg, #2ca01c 0%, #1a7a10 100%); border: none; border-radius: 6px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s ease;">
+                                                <span style="font-size: 16px;">🔗</span>
+                                                Connect to QuickBooks
+                                            </button>
+                                        </div>
+
+                                        <!-- Connected State -->
+                                        <div id="qboConnected" style="display: none;">
+                                            <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px;">
+                                                <div style="width: 40px; height: 40px; background: rgba(34, 197, 94, 0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                                    <span style="font-size: 20px;">✓</span>
+                                                </div>
+                                                <div style="flex: 1;">
+                                                    <div style="font-size: 14px; color: #e5e7eb; font-weight: 600;" id="qboCompanyName">Company Name</div>
+                                                    <div style="font-size: 12px; color: #6b7280; margin-top: 2px;">Realm ID: <span id="qboRealmId">—</span></div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Token Status -->
+                                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;">
+                                                <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 6px; border: 1px solid #27272f;">
+                                                    <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Access Token</div>
+                                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                                        <span id="qboAccessTokenStatus" style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span>
+                                                        <span id="qboAccessTokenText" style="font-size: 13px; color: #e5e7eb;">Valid</span>
+                                                    </div>
+                                                    <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">Expires: <span id="qboAccessExpires">—</span></div>
+                                                </div>
+                                                <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 6px; border: 1px solid #27272f;">
+                                                    <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">Refresh Token</div>
+                                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                                        <span id="qboRefreshTokenStatus" style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span>
+                                                        <span id="qboRefreshTokenText" style="font-size: 13px; color: #e5e7eb;">Valid</span>
+                                                    </div>
+                                                    <div style="font-size: 11px; color: #6b7280; margin-top: 4px;">Expires: <span id="qboRefreshExpires">—</span></div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Actions -->
+                                            <div style="display: flex; gap: 12px;">
+                                                <button id="btnSyncQBO" onclick="syncQuickBooks()" style="flex: 1; padding: 10px 16px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border: none; border-radius: 6px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s ease;">
+                                                    <span style="font-size: 14px;">🔄</span>
+                                                    Sync Expenses
+                                                </button>
+                                                <button id="btnDisconnectQBO" onclick="disconnectQuickBooks()" style="padding: 10px 16px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; color: #f87171; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">
+                                                    Disconnect
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Error State -->
+                                        <div id="qboErrorState" style="display: none;">
+                                            <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px;">
+                                                <span style="font-size: 20px;">❌</span>
+                                                <div>
+                                                    <div style="font-size: 13px; color: #f87171; font-weight: 600;">Connection Error</div>
+                                                    <div style="font-size: 12px; color: #9ca3af;" id="qboErrorMessage">Unable to check connection status</div>
+                                                </div>
+                                            </div>
+                                            <button onclick="checkQBOStatus()" style="margin-top: 12px; padding: 8px 16px; background: transparent; border: 1px solid #27272f; border-radius: 6px; color: #9ca3af; font-size: 12px; cursor: pointer;">
+                                                Retry
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Sync Info -->
+                                    <div id="qboSyncInfo" style="display: none; font-size: 12px; color: #6b7280;">
+                                        Last sync: <span id="qboLastSync">Never</span>
+                                    </div>
+                                </div>
+
+                                <!-- Other Integrations -->
+                                <div style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
+                                    <h3 style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin: 0 0 16px 0; text-transform: uppercase; letter-spacing: 0.05em;">Other Integrations</h3>
+                                    <div style="display: grid; gap: 12px;">
                                         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #0a0a0b; border-radius: 6px;">
                                             <div>
                                                 <div style="font-size: 14px; color: #e5e7eb; font-weight: 600;">Slack</div>
@@ -198,12 +290,255 @@
         </div>
     </div>
 
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        #btnConnectQBO:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+        #btnSyncQBO:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+        #btnDisconnectQBO:hover {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+        #btnSyncQBO:disabled, #btnConnectQBO:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+
     <script>
+        // ====== QBO Integration Variables ======
+        let currentQBOConnection = null;
+
+        // ====== QBO Functions ======
+
+        async function checkQBOStatus() {
+            const loadingState = document.getElementById('qboLoadingState');
+            const notConnected = document.getElementById('qboNotConnected');
+            const connected = document.getElementById('qboConnected');
+            const errorState = document.getElementById('qboErrorState');
+            const statusBadge = document.getElementById('qboStatusBadge');
+            const syncInfo = document.getElementById('qboSyncInfo');
+
+            // Show loading
+            loadingState.style.display = 'flex';
+            notConnected.style.display = 'none';
+            connected.style.display = 'none';
+            errorState.style.display = 'none';
+            statusBadge.textContent = 'Checking...';
+            statusBadge.style.background = 'rgba(107, 114, 128, 0.2)';
+            statusBadge.style.color = '#9ca3af';
+
+            try {
+                const response = await fetch(`${window.API_URL}/qbo/status`);
+                if (!response.ok) throw new Error('Failed to fetch status');
+
+                const data = await response.json();
+
+                loadingState.style.display = 'none';
+
+                if (data.connected && data.connections && data.connections.length > 0) {
+                    // Show connected state
+                    const conn = data.connections[0]; // Use first connection
+                    currentQBOConnection = conn;
+
+                    document.getElementById('qboCompanyName').textContent = conn.company_name || 'Unknown Company';
+                    document.getElementById('qboRealmId').textContent = conn.realm_id;
+
+                    // Access token status
+                    const accessValid = conn.access_token_valid;
+                    document.getElementById('qboAccessTokenStatus').style.background = accessValid ? '#22c55e' : '#ef4444';
+                    document.getElementById('qboAccessTokenText').textContent = accessValid ? 'Valid' : 'Expired';
+                    document.getElementById('qboAccessExpires').textContent = formatDate(conn.access_token_expires_at);
+
+                    // Refresh token status
+                    const refreshValid = conn.refresh_token_valid;
+                    document.getElementById('qboRefreshTokenStatus').style.background = refreshValid ? '#22c55e' : '#ef4444';
+                    document.getElementById('qboRefreshTokenText').textContent = refreshValid ? 'Valid' : 'Expired';
+                    document.getElementById('qboRefreshExpires').textContent = formatDate(conn.refresh_token_expires_at);
+
+                    // Last updated
+                    if (conn.last_updated) {
+                        syncInfo.style.display = 'block';
+                        document.getElementById('qboLastSync').textContent = formatDate(conn.last_updated);
+                    }
+
+                    // Update badge
+                    statusBadge.textContent = 'Connected';
+                    statusBadge.style.background = 'rgba(34, 197, 94, 0.12)';
+                    statusBadge.style.color = '#22c55e';
+
+                    connected.style.display = 'block';
+                } else {
+                    // Not connected
+                    statusBadge.textContent = 'Not Connected';
+                    statusBadge.style.background = 'rgba(239, 68, 68, 0.12)';
+                    statusBadge.style.color = '#ef4444';
+                    notConnected.style.display = 'block';
+                    currentQBOConnection = null;
+                }
+            } catch (error) {
+                console.error('Error checking QBO status:', error);
+                loadingState.style.display = 'none';
+                errorState.style.display = 'block';
+                document.getElementById('qboErrorMessage').textContent = error.message || 'Unable to check connection status';
+                statusBadge.textContent = 'Error';
+                statusBadge.style.background = 'rgba(239, 68, 68, 0.12)';
+                statusBadge.style.color = '#ef4444';
+            }
+        }
+
+        async function connectQuickBooks() {
+            const btn = document.getElementById('btnConnectQBO');
+            btn.disabled = true;
+            btn.innerHTML = '<span style="font-size: 14px;">⏳</span> Redirecting...';
+
+            try {
+                const response = await fetch(`${window.API_URL}/qbo/auth`);
+                if (!response.ok) throw new Error('Failed to get auth URL');
+
+                const data = await response.json();
+
+                if (data.authorization_url) {
+                    // Open in popup window
+                    const width = 600;
+                    const height = 700;
+                    const left = (window.screen.width - width) / 2;
+                    const top = (window.screen.height - height) / 2;
+
+                    const popup = window.open(
+                        data.authorization_url,
+                        'QuickBooks Authorization',
+                        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+                    );
+
+                    // Listen for message from popup
+                    window.addEventListener('message', function handleQBOCallback(event) {
+                        if (event.data && event.data.type === 'QBO_CONNECTED') {
+                            window.removeEventListener('message', handleQBOCallback);
+                            checkQBOStatus();
+                        }
+                    });
+
+                    // Poll for popup close
+                    const pollTimer = setInterval(() => {
+                        if (popup.closed) {
+                            clearInterval(pollTimer);
+                            btn.disabled = false;
+                            btn.innerHTML = '<span style="font-size: 16px;">🔗</span> Connect to QuickBooks';
+                            // Check status after popup closes
+                            setTimeout(() => checkQBOStatus(), 1000);
+                        }
+                    }, 500);
+                }
+            } catch (error) {
+                console.error('Error connecting to QBO:', error);
+                alert('Failed to initiate QuickBooks connection: ' + error.message);
+                btn.disabled = false;
+                btn.innerHTML = '<span style="font-size: 16px;">🔗</span> Connect to QuickBooks';
+            }
+        }
+
+        async function syncQuickBooks() {
+            if (!currentQBOConnection) {
+                alert('No QuickBooks connection found');
+                return;
+            }
+
+            const btn = document.getElementById('btnSyncQBO');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span style="font-size: 14px;">⏳</span> Syncing...';
+
+            try {
+                const response = await fetch(`${window.API_URL}/qbo/sync/${currentQBOConnection.realm_id}`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Sync failed');
+                }
+
+                const data = await response.json();
+
+                alert(`Sync completed!\n\nImported: ${data.total_imported} expense lines\nTransactions:\n- Bills: ${data.transactions.bills}\n- Purchases: ${data.transactions.purchases}\n- Vendor Credits: ${data.transactions.vendor_credits}\n- Journal Entries: ${data.transactions.journal_entries}\n\nNew project mappings: ${data.new_project_mappings}`);
+
+                // Update last sync time
+                document.getElementById('qboSyncInfo').style.display = 'block';
+                document.getElementById('qboLastSync').textContent = formatDate(new Date().toISOString());
+
+            } catch (error) {
+                console.error('Error syncing QBO:', error);
+                alert('Sync failed: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        }
+
+        async function disconnectQuickBooks() {
+            if (!currentQBOConnection) return;
+
+            if (!confirm(`Are you sure you want to disconnect "${currentQBOConnection.company_name}" from QuickBooks?\n\nThis will remove the stored tokens. You'll need to re-authorize to sync expenses again.`)) {
+                return;
+            }
+
+            const btn = document.getElementById('btnDisconnectQBO');
+            btn.disabled = true;
+            btn.textContent = 'Disconnecting...';
+
+            try {
+                const response = await fetch(`${window.API_URL}/qbo/disconnect/${currentQBOConnection.realm_id}`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) throw new Error('Disconnect failed');
+
+                // Refresh status
+                checkQBOStatus();
+            } catch (error) {
+                console.error('Error disconnecting QBO:', error);
+                alert('Failed to disconnect: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = 'Disconnect';
+            }
+        }
+
+        function formatDate(isoString) {
+            if (!isoString) return '—';
+            try {
+                const date = new Date(isoString);
+                return date.toLocaleString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch {
+                return isoString;
+            }
+        }
+
+        // ====== Initialize ======
         window.addEventListener("DOMContentLoaded", () => {
             if (window.initTopbarPills) window.initTopbarPills();
+            if (window.initSidebar) window.initSidebar();
+
             setTimeout(() => {
                 document.getElementById('settingsLoadingState').style.display = 'none';
                 document.getElementById('settingsContent').style.display = 'block';
+
+                // Check QBO status after content loads
+                checkQBOStatus();
             }, 600);
         });
     </script>

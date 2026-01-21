@@ -247,3 +247,347 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================
+   ACTIVE RECONCILIATION PANEL
+   Shows when user is matching a QBO invoice
+   ========================================== */
+
+.active-reconcile-panel {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%);
+  border: 2px solid rgba(59, 130, 246, 0.4);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  animation: panelSlideIn 0.3s ease-out;
+}
+
+@keyframes panelSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.active-reconcile-panel.hidden {
+  display: none;
+}
+
+.active-reconcile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.active-reconcile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.active-reconcile-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #60a5fa;
+}
+
+.active-reconcile-description {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e5e7eb;
+  max-width: 500px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-cancel-reconcile-mode {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #f87171;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-cancel-reconcile-mode:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* Amount boxes */
+.active-reconcile-amounts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.reconcile-amount-box {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reconcile-amount-box .amount-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #9ca3af;
+}
+
+.reconcile-amount-box .amount-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e5e7eb;
+  font-variant-numeric: tabular-nums;
+}
+
+.reconcile-amount-matched {
+  background: rgba(62, 207, 142, 0.1);
+  border-color: rgba(62, 207, 142, 0.3);
+}
+
+.reconcile-amount-matched .amount-value {
+  color: #4ade80;
+}
+
+.reconcile-amount-remaining {
+  background: rgba(251, 146, 60, 0.1);
+  border-color: rgba(251, 146, 60, 0.3);
+}
+
+.reconcile-amount-remaining .amount-value {
+  color: #fb923c;
+}
+
+.reconcile-amount-remaining.fully-matched {
+  background: rgba(62, 207, 142, 0.15);
+  border-color: rgba(62, 207, 142, 0.4);
+}
+
+.reconcile-amount-remaining.fully-matched .amount-value {
+  color: #4ade80;
+}
+
+.reconcile-amount-remaining.over-matched {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.reconcile-amount-remaining.over-matched .amount-value {
+  color: #f87171;
+}
+
+/* Selected expenses list */
+.active-reconcile-selected {
+  margin-bottom: 16px;
+}
+
+.selected-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.selected-expenses-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 36px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px dashed rgba(148, 163, 184, 0.25);
+}
+
+.selected-expenses-list .no-selection {
+  color: #6b7280;
+  font-size: 13px;
+  font-style: italic;
+}
+
+.selected-expense-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(62, 207, 142, 0.15);
+  border: 1px solid rgba(62, 207, 142, 0.35);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: #e5e7eb;
+}
+
+.selected-expense-chip .chip-amount {
+  font-weight: 700;
+  color: #4ade80;
+}
+
+.selected-expense-chip .chip-remove {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.selected-expense-chip .chip-remove:hover {
+  color: #f87171;
+}
+
+/* Actions */
+.active-reconcile-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-confirm-match {
+  background: linear-gradient(135deg, #3ecf8e 0%, #22c55e 100%);
+  border: none;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 8px rgba(62, 207, 142, 0.25);
+}
+
+.btn-confirm-match:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(62, 207, 142, 0.35);
+}
+
+.btn-confirm-match:disabled {
+  background: #4b5563;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* QBO Row in reconcile mode */
+.reconcile-table tbody tr.qbo-reconciling {
+  background: rgba(59, 130, 246, 0.15);
+  border-left: 3px solid #3b82f6;
+}
+
+/* Reconcile button in QBO table */
+.btn-start-reconcile {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-start-reconcile:hover {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+.btn-start-reconcile:disabled {
+  background: rgba(75, 85, 99, 0.3);
+  border-color: rgba(75, 85, 99, 0.4);
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+/* View matched link */
+.btn-view-match {
+  background: rgba(62, 207, 142, 0.15);
+  border: 1px solid rgba(62, 207, 142, 0.4);
+  color: #4ade80;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-view-match:hover {
+  background: rgba(62, 207, 142, 0.25);
+}
+
+/* Manual expense row selectable state */
+.reconcile-table tbody tr.manual-selectable {
+  cursor: pointer;
+}
+
+.reconcile-table tbody tr.manual-selectable:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.reconcile-table tbody tr.manual-selected {
+  background: rgba(62, 207, 142, 0.15);
+  border-left: 3px solid #3ecf8e;
+}
+
+.reconcile-table tbody tr.manual-selected:hover {
+  background: rgba(62, 207, 142, 0.2);
+}
+
+/* Checkbox styling in manual table */
+.reconcile-table input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #3ecf8e;
+}
+
+.reconcile-table input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Already matched manual expense */
+.reconcile-table tbody tr.manual-already-matched {
+  opacity: 0.5;
+  background: rgba(62, 207, 142, 0.05);
+}
+
+.reconcile-table tbody tr.manual-already-matched td {
+  color: #6b7280;
+}
+
+/* Responsive for active panel */
+@media (max-width: 768px) {
+  .active-reconcile-amounts {
+    grid-template-columns: 1fr;
+  }
+
+  .active-reconcile-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .btn-cancel-reconcile-mode {
+    align-self: flex-start;
+  }
+}

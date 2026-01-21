@@ -542,7 +542,7 @@
     <div id="reconcileModal" class="modal-backdrop hidden">
         <div class="modal modal-reconcile">
             <div class="modal-header">
-                <div class="modal-title">Reconcile Expenses - Compare Manual Books vs QuickBooks</div>
+                <div class="modal-title">Reconcile Expenses - Match QuickBooks Invoices to Manual Expenses</div>
                 <button type="button" class="modal-close-btn" id="btnCloseReconcileModal">&times;</button>
             </div>
 
@@ -553,30 +553,72 @@
                     <div>
                         <strong style="color: #4ade80; font-size: 13px;">How to Reconcile:</strong>
                         <p style="margin: 4px 0 0 0; font-size: 12px; color: #9ca3af;">
-                            Select an expense from Manual Books on the left, then click a matching expense from QuickBooks on the right to link them.
-                            Linked expenses will be highlighted in green.
+                            1. Click <strong>"Reconcile"</strong> on a QuickBooks invoice to start matching.<br>
+                            2. Select one or more manual expenses that correspond to that invoice.<br>
+                            3. Watch the <strong>Remaining Amount</strong> update as you add expenses.<br>
+                            4. Click <strong>"Confirm Match"</strong> when the invoice is fully matched (or partially if needed).
                         </p>
+                    </div>
+                </div>
+
+                <!-- Active Reconciliation Panel (hidden by default) -->
+                <div id="activeReconcilePanel" class="active-reconcile-panel hidden">
+                    <div class="active-reconcile-header">
+                        <div class="active-reconcile-info">
+                            <span class="active-reconcile-label">Currently Reconciling QBO Invoice:</span>
+                            <span class="active-reconcile-description" id="activeQBODescription">—</span>
+                        </div>
+                        <button type="button" class="btn-cancel-reconcile-mode" id="btnCancelReconcileMode">
+                            ✕ Cancel
+                        </button>
+                    </div>
+                    <div class="active-reconcile-amounts">
+                        <div class="reconcile-amount-box">
+                            <span class="amount-label">Invoice Total</span>
+                            <span class="amount-value" id="activeQBOTotal">$0.00</span>
+                        </div>
+                        <div class="reconcile-amount-box reconcile-amount-matched">
+                            <span class="amount-label">Matched Amount</span>
+                            <span class="amount-value" id="activeMatchedAmount">$0.00</span>
+                        </div>
+                        <div class="reconcile-amount-box reconcile-amount-remaining">
+                            <span class="amount-label">Remaining</span>
+                            <span class="amount-value" id="activeRemainingAmount">$0.00</span>
+                        </div>
+                    </div>
+                    <div class="active-reconcile-selected">
+                        <span class="selected-label">Selected Manual Expenses:</span>
+                        <div class="selected-expenses-list" id="selectedExpensesList">
+                            <span class="no-selection">No expenses selected yet</span>
+                        </div>
+                    </div>
+                    <div class="active-reconcile-actions">
+                        <button type="button" class="btn-confirm-match" id="btnConfirmMatch" disabled>
+                            ✓ Confirm Match
+                        </button>
                     </div>
                 </div>
 
                 <!-- Two-column layout for tables -->
                 <div class="reconcile-tables-container">
-                    <!-- Manual Books Table -->
+                    <!-- Manual Books Table (Left - Your expenses) -->
                     <div class="reconcile-table-section">
                         <div class="reconcile-table-header">
-                            <h3>Manual Books</h3>
+                            <h3>Manual Expenses</h3>
                             <span class="reconcile-count" id="manualCount">0 expenses</span>
                         </div>
                         <div class="reconcile-table-wrapper">
                             <table class="reconcile-table" id="reconcileManualTable">
                                 <thead>
                                     <tr>
-                                        <th style="width: 40px;"></th>
+                                        <th style="width: 40px;">
+                                            <input type="checkbox" id="selectAllManualExpenses" title="Select All" disabled>
+                                        </th>
                                         <th>Date</th>
                                         <th>Description</th>
                                         <th>Vendor</th>
                                         <th>Amount</th>
-                                        <th style="width: 60px;">Status</th>
+                                        <th style="width: 80px;">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody id="reconcileManualBody">
@@ -590,28 +632,28 @@
                         </div>
                     </div>
 
-                    <!-- QuickBooks Table -->
+                    <!-- QuickBooks Table (Right - Invoices to match against) -->
                     <div class="reconcile-table-section">
                         <div class="reconcile-table-header">
-                            <h3>QuickBooks (QBO)</h3>
-                            <span class="reconcile-count" id="qboCount">0 expenses</span>
+                            <h3>QuickBooks Invoices (QBO)</h3>
+                            <span class="reconcile-count" id="qboCount">0 invoices</span>
                         </div>
                         <div class="reconcile-table-wrapper">
                             <table class="reconcile-table" id="reconcileQBOTable">
                                 <thead>
                                     <tr>
-                                        <th style="width: 40px;"></th>
                                         <th>Date</th>
                                         <th>Description</th>
                                         <th>Vendor</th>
                                         <th>Amount</th>
-                                        <th style="width: 60px;">Status</th>
+                                        <th style="width: 100px;">Status</th>
+                                        <th style="width: 100px;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="reconcileQBOBody">
                                     <tr>
                                         <td colspan="6" style="text-align: center; padding: 40px; color: #6b7280;">
-                                            Loading QuickBooks expenses...
+                                            Loading QuickBooks invoices...
                                         </td>
                                     </tr>
                                 </tbody>
@@ -623,19 +665,19 @@
                 <!-- Progress summary -->
                 <div class="reconcile-summary">
                     <div class="reconcile-summary-stat">
-                        <span class="reconcile-summary-label">Total Manual:</span>
-                        <span class="reconcile-summary-value" id="summaryManualTotal">0</span>
-                    </div>
-                    <div class="reconcile-summary-stat">
-                        <span class="reconcile-summary-label">Total QBO:</span>
+                        <span class="reconcile-summary-label">QBO Invoices:</span>
                         <span class="reconcile-summary-value" id="summaryQBOTotal">0</span>
                     </div>
+                    <div class="reconcile-summary-stat">
+                        <span class="reconcile-summary-label">Manual Expenses:</span>
+                        <span class="reconcile-summary-value" id="summaryManualTotal">0</span>
+                    </div>
                     <div class="reconcile-summary-stat reconcile-summary-stat--success">
-                        <span class="reconcile-summary-label">Reconciled:</span>
+                        <span class="reconcile-summary-label">Matched Invoices:</span>
                         <span class="reconcile-summary-value" id="summaryReconciled">0</span>
                     </div>
                     <div class="reconcile-summary-stat reconcile-summary-stat--pending">
-                        <span class="reconcile-summary-label">Pending:</span>
+                        <span class="reconcile-summary-label">Pending Invoices:</span>
                         <span class="reconcile-summary-value" id="summaryPending">0</span>
                     </div>
                 </div>
@@ -644,7 +686,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn-modal-secondary" id="btnCancelReconcile">Close</button>
                 <button type="button" class="btn-modal-primary" id="btnSaveReconciliation">
-                    Save Reconciliation
+                    Save All Reconciliations
                 </button>
             </div>
         </div>

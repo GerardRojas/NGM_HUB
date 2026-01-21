@@ -3165,26 +3165,6 @@
       closeReconciliationModal();
     });
 
-    // Reconciliation Modal - Save links button
-    document.getElementById('btnSaveReconciliations')?.addEventListener('click', async () => {
-      await saveReconciliations();
-    });
-
-    // Reconciliation Modal - Table row clicks (event delegation)
-    document.getElementById('reconcileManualTableBody')?.addEventListener('click', (e) => {
-      const row = e.target.closest('tr');
-      if (row && row.hasAttribute('data-expense-id')) {
-        handleReconcileRowClick('manual', row);
-      }
-    });
-
-    document.getElementById('reconcileQBOTableBody')?.addEventListener('click', (e) => {
-      const row = e.target.closest('tr');
-      if (row && row.hasAttribute('data-expense-id')) {
-        handleReconcileRowClick('qbo', row);
-      }
-    });
-
     // Reconciliation Modal - Backdrop close
     document.getElementById('reconcileModal')?.addEventListener('click', (e) => {
       if (e.target === document.getElementById('reconcileModal')) {
@@ -3423,8 +3403,18 @@
   }
 
   // ================================
-  // RECONCILIATION MODAL
+  // RECONCILIATION MODAL - NEW LOGIC
+  // Supports 1 QBO invoice -> multiple manual expenses
   // ================================
+
+  // Extended reconciliation state
+  let activeReconciliation = {
+    isActive: false,
+    qboExpense: null,           // The QBO invoice being reconciled
+    selectedManualIds: new Set(), // Set of manual expense IDs selected for this QBO
+    confirmedMatches: []        // Array of { qbo_expense_id, manual_expense_ids: [], matched_amount }
+  };
+
   async function openReconciliationModal() {
     if (!selectedProjectId) {
       alert('Please select a project first.');
@@ -3432,7 +3422,6 @@
     }
 
     try {
-      // Load both manual and QBO expenses for reconciliation
       showEmptyState('Loading reconciliation data...');
 
       const [manualRes, qboRes] = await Promise.all([
@@ -3444,15 +3433,17 @@
       reconciliationData.manualExpenses = Array.isArray(manualRes) ? manualRes : (manualRes?.data || manualRes?.expenses || []);
       reconciliationData.qboExpenses = Array.isArray(qboRes) ? qboRes : (qboRes?.data || qboRes?.expenses || []);
 
-      // Load existing reconciliations (if any)
+      // Load existing reconciliations
       await loadExistingReconciliations();
 
-      // Reset selection state
-      reconciliationData.selectedManual = null;
-      reconciliationData.selectedQBO = null;
+      // Reset active reconciliation state
+      resetActiveReconciliation();
 
       // Render tables
       renderReconciliationTables();
+
+      // Setup event listeners for new UI
+      setupReconciliationEventListeners();
 
       // Show modal
       document.getElementById('reconcileModal')?.classList.remove('hidden');
@@ -3471,162 +3462,501 @@
       const url = `${apiBase}/expenses/reconciliations?project=${selectedProjectId}`;
       const result = await apiJson(url);
 
-      // Parse linked pairs
-      reconciliationData.linkedPairs = Array.isArray(result) ? result : (result?.data || []);
+      // Parse existing reconciliations - now supports 1:many format
+      const rawData = Array.isArray(result) ? result : (result?.data || []);
 
-      console.log('[RECONCILE] Loaded existing links:', reconciliationData.linkedPairs.length);
+      // Convert to our confirmed matches format
+      // Expected format from API: { qbo_expense_id, manual_expense_ids: [...] } or legacy { manual_expense_id, qbo_expense_id }
+      activeReconciliation.confirmedMatches = [];
+
+      rawData.forEach(item => {
+        if (item.manual_expense_ids && Array.isArray(item.manual_expense_ids)) {
+          // New format: 1 QBO -> many manual
+          activeReconciliation.confirmedMatches.push({
+            qbo_expense_id: item.qbo_expense_id,
+            manual_expense_ids: item.manual_expense_ids,
+            matched_amount: item.matched_amount || 0
+          });
+        } else if (item.manual_expense_id && item.qbo_expense_id) {
+          // Legacy format: 1:1 - convert to new format
+          const existingMatch = activeReconciliation.confirmedMatches.find(m => m.qbo_expense_id === item.qbo_expense_id);
+          if (existingMatch) {
+            existingMatch.manual_expense_ids.push(item.manual_expense_id);
+          } else {
+            activeReconciliation.confirmedMatches.push({
+              qbo_expense_id: item.qbo_expense_id,
+              manual_expense_ids: [item.manual_expense_id],
+              matched_amount: 0
+            });
+          }
+        }
+      });
+
+      console.log('[RECONCILE] Loaded existing matches:', activeReconciliation.confirmedMatches.length);
     } catch (err) {
       console.warn('[RECONCILE] Could not load existing reconciliations:', err);
-      reconciliationData.linkedPairs = [];
+      activeReconciliation.confirmedMatches = [];
     }
+  }
+
+  function resetActiveReconciliation() {
+    activeReconciliation.isActive = false;
+    activeReconciliation.qboExpense = null;
+    activeReconciliation.selectedManualIds = new Set();
+
+    // Hide active panel
+    const panel = document.getElementById('activeReconcilePanel');
+    if (panel) panel.classList.add('hidden');
+
+    // Enable all checkboxes in manual table
+    const selectAllCheckbox = document.getElementById('selectAllManualExpenses');
+    if (selectAllCheckbox) selectAllCheckbox.disabled = true;
+  }
+
+  function setupReconciliationEventListeners() {
+    // Cancel reconcile mode button
+    document.getElementById('btnCancelReconcileMode')?.addEventListener('click', () => {
+      resetActiveReconciliation();
+      renderReconciliationTables();
+    });
+
+    // Confirm match button
+    document.getElementById('btnConfirmMatch')?.addEventListener('click', () => {
+      confirmCurrentMatch();
+    });
+
+    // Select all checkbox
+    document.getElementById('selectAllManualExpenses')?.addEventListener('change', (e) => {
+      handleSelectAllManual(e.target.checked);
+    });
+
+    // Save all reconciliations
+    document.getElementById('btnSaveReconciliation')?.addEventListener('click', async () => {
+      await saveReconciliations();
+    });
   }
 
   function renderReconciliationTables() {
-    // Render manual expenses table
-    const manualTableBody = document.getElementById('reconcileManualTableBody');
-    const qboTableBody = document.getElementById('reconcileQBOTableBody');
-
-    if (!manualTableBody || !qboTableBody) return;
-
-    // Manual expenses (filter out already linked)
-    const unlinkedManual = reconciliationData.manualExpenses.filter(exp => {
-      const expId = exp.expense_id || exp.id;
-      return !reconciliationData.linkedPairs.some(pair => pair.manual_expense_id === expId);
-    });
-
-    const manualRows = unlinkedManual.map(exp => {
-      const expId = exp.expense_id || exp.id;
-      const isSelected = reconciliationData.selectedManual === expId;
-      const rowClass = isSelected ? 'reconcile-row-selected' : '';
-
-      return `
-        <tr class="${rowClass}" data-expense-id="${expId}" data-source="manual">
-          <td>${exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : ''}</td>
-          <td>${exp.description || ''}</td>
-          <td>${findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || ''}</td>
-          <td style="text-align: right;">$${formatCurrency(exp.amount)}</td>
-          <td><span class="reconcile-status-badge reconcile-status-badge--pending">Pending</span></td>
-        </tr>
-      `;
-    }).join('');
-
-    manualTableBody.innerHTML = manualRows || '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #6b7280;">No unlinked manual expenses</td></tr>';
-
-    // QBO expenses (filter out already linked)
-    const unlinkedQBO = reconciliationData.qboExpenses.filter(exp => {
-      return !reconciliationData.linkedPairs.some(pair => pair.qbo_expense_id === exp.id);
-    });
-
-    const qboRows = unlinkedQBO.map(exp => {
-      const isSelected = reconciliationData.selectedQBO === exp.id;
-      const rowClass = isSelected ? 'reconcile-row-selected' : '';
-
-      return `
-        <tr class="${rowClass}" data-expense-id="${exp.id}" data-source="qbo">
-          <td>${exp.txn_date ? new Date(exp.txn_date).toLocaleDateString() : ''}</td>
-          <td>${exp.description || exp.memo || ''}</td>
-          <td>${exp.vendor_name || ''}</td>
-          <td style="text-align: right;">$${formatCurrency(exp.amount)}</td>
-          <td><span class="reconcile-status-badge reconcile-status-badge--pending">Pending</span></td>
-        </tr>
-      `;
-    }).join('');
-
-    qboTableBody.innerHTML = qboRows || '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #6b7280;">No unlinked QBO expenses</td></tr>';
-
-    // Update counts
-    const manualCountEl = document.getElementById('reconcileManualCount');
-    if (manualCountEl) manualCountEl.textContent = `${unlinkedManual.length} pending`;
-
-    const qboCountEl = document.getElementById('reconcileQBOCount');
-    if (qboCountEl) qboCountEl.textContent = `${unlinkedQBO.length} pending`;
-
-    // Update summary stats
+    renderQBOReconciliationTable();
+    renderManualReconciliationTable();
     updateReconciliationSummary();
   }
 
-  function handleReconcileRowClick(source, row) {
-    const expenseId = row.getAttribute('data-expense-id');
+  function renderQBOReconciliationTable() {
+    const tbody = document.getElementById('reconcileQBOBody');
+    if (!tbody) return;
 
-    if (source === 'manual') {
-      // Toggle selection
-      if (reconciliationData.selectedManual === expenseId) {
-        reconciliationData.selectedManual = null;
+    // Get IDs of QBO expenses that are already fully matched
+    const matchedQBOIds = new Set(activeReconciliation.confirmedMatches.map(m => m.qbo_expense_id));
+
+    const rows = reconciliationData.qboExpenses.map(exp => {
+      const isMatched = matchedQBOIds.has(exp.id);
+      const isCurrentlyReconciling = activeReconciliation.isActive && activeReconciliation.qboExpense?.id === exp.id;
+
+      let statusBadge, actionButton;
+
+      if (isMatched) {
+        const match = activeReconciliation.confirmedMatches.find(m => m.qbo_expense_id === exp.id);
+        const matchCount = match?.manual_expense_ids?.length || 0;
+        statusBadge = `<span class="reconcile-status-badge reconcile-status-badge--linked">Matched (${matchCount})</span>`;
+        actionButton = `<button class="btn-view-match" data-qbo-id="${exp.id}">View</button>`;
+      } else if (isCurrentlyReconciling) {
+        statusBadge = `<span class="reconcile-status-badge reconcile-status-badge--linked">Matching...</span>`;
+        actionButton = `<button class="btn-start-reconcile" disabled>Active</button>`;
       } else {
-        reconciliationData.selectedManual = expenseId;
-
-        // If both sides selected, create link
-        if (reconciliationData.selectedQBO) {
-          createReconciliationLink();
-        }
+        statusBadge = `<span class="reconcile-status-badge reconcile-status-badge--pending">Pending</span>`;
+        const disabledAttr = activeReconciliation.isActive ? 'disabled' : '';
+        actionButton = `<button class="btn-start-reconcile" data-qbo-id="${exp.id}" ${disabledAttr}>Reconcile</button>`;
       }
-    } else if (source === 'qbo') {
-      // Toggle selection
-      if (reconciliationData.selectedQBO === expenseId) {
-        reconciliationData.selectedQBO = null;
-      } else {
-        reconciliationData.selectedQBO = expenseId;
 
-        // If both sides selected, create link
-        if (reconciliationData.selectedManual) {
-          createReconciliationLink();
+      const rowClass = isCurrentlyReconciling ? 'qbo-reconciling' : (isMatched ? 'reconcile-row-linked' : '');
+
+      return `
+        <tr class="${rowClass}" data-qbo-id="${exp.id}">
+          <td>${exp.txn_date ? new Date(exp.txn_date).toLocaleDateString() : ''}</td>
+          <td>${exp.description || exp.memo || ''}</td>
+          <td>${exp.vendor_name || ''}</td>
+          <td style="text-align: right; font-weight: 600;">$${formatCurrency(exp.amount)}</td>
+          <td>${statusBadge}</td>
+          <td>${actionButton}</td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.innerHTML = rows || '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #6b7280;">No QBO invoices found</td></tr>';
+
+    // Update count
+    const countEl = document.getElementById('qboCount');
+    if (countEl) countEl.textContent = `${reconciliationData.qboExpenses.length} invoices`;
+
+    // Add click handlers for reconcile buttons
+    tbody.querySelectorAll('.btn-start-reconcile:not([disabled])').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const qboId = btn.getAttribute('data-qbo-id');
+        startReconciliationMode(qboId);
+      });
+    });
+
+    // Add click handlers for view buttons
+    tbody.querySelectorAll('.btn-view-match').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const qboId = btn.getAttribute('data-qbo-id');
+        viewMatchDetails(qboId);
+      });
+    });
+  }
+
+  function renderManualReconciliationTable() {
+    const tbody = document.getElementById('reconcileManualBody');
+    if (!tbody) return;
+
+    // Get all manual expense IDs that are already matched
+    const matchedManualIds = new Set();
+    activeReconciliation.confirmedMatches.forEach(match => {
+      match.manual_expense_ids.forEach(id => matchedManualIds.add(id));
+    });
+
+    const rows = reconciliationData.manualExpenses.map(exp => {
+      const expId = exp.expense_id || exp.id;
+      const isAlreadyMatched = matchedManualIds.has(expId);
+      const isSelected = activeReconciliation.selectedManualIds.has(expId);
+
+      let rowClass = '';
+      let checkboxDisabled = true;
+      let checkboxChecked = false;
+
+      if (isAlreadyMatched) {
+        rowClass = 'manual-already-matched';
+      } else if (activeReconciliation.isActive) {
+        rowClass = isSelected ? 'manual-selected manual-selectable' : 'manual-selectable';
+        checkboxDisabled = false;
+        checkboxChecked = isSelected;
+      }
+
+      const statusBadge = isAlreadyMatched
+        ? `<span class="reconcile-status-badge reconcile-status-badge--linked">Matched</span>`
+        : `<span class="reconcile-status-badge reconcile-status-badge--pending">Pending</span>`;
+
+      return `
+        <tr class="${rowClass}" data-expense-id="${expId}" data-amount="${exp.Amount || exp.amount || 0}">
+          <td>
+            <input type="checkbox" class="manual-expense-checkbox"
+              data-expense-id="${expId}"
+              ${checkboxDisabled ? 'disabled' : ''}
+              ${checkboxChecked ? 'checked' : ''}>
+          </td>
+          <td>${exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : ''}</td>
+          <td>${exp.LineDescription || exp.description || ''}</td>
+          <td>${exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || ''}</td>
+          <td style="text-align: right;">$${formatCurrency(exp.Amount || exp.amount)}</td>
+          <td>${statusBadge}</td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.innerHTML = rows || '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #6b7280;">No manual expenses found</td></tr>';
+
+    // Update count
+    const pendingCount = reconciliationData.manualExpenses.length - matchedManualIds.size;
+    const countEl = document.getElementById('manualCount');
+    if (countEl) countEl.textContent = `${pendingCount} pending`;
+
+    // Add click handlers for checkboxes
+    tbody.querySelectorAll('.manual-expense-checkbox:not([disabled])').forEach(checkbox => {
+      checkbox.addEventListener('change', (e) => {
+        const expId = e.target.getAttribute('data-expense-id');
+        toggleManualExpenseSelection(expId, e.target.checked);
+      });
+    });
+
+    // Add click handlers for rows (only when in reconciliation mode)
+    tbody.querySelectorAll('tr.manual-selectable').forEach(row => {
+      row.addEventListener('click', (e) => {
+        // Don't trigger if clicking directly on checkbox
+        if (e.target.type === 'checkbox') return;
+
+        const checkbox = row.querySelector('.manual-expense-checkbox');
+        if (checkbox && !checkbox.disabled) {
+          checkbox.checked = !checkbox.checked;
+          const expId = checkbox.getAttribute('data-expense-id');
+          toggleManualExpenseSelection(expId, checkbox.checked);
         }
+      });
+    });
+
+    // Update select all checkbox state
+    updateSelectAllCheckboxState();
+  }
+
+  function startReconciliationMode(qboId) {
+    const qboExpense = reconciliationData.qboExpenses.find(e => e.id === qboId);
+    if (!qboExpense) return;
+
+    console.log('[RECONCILE] Starting reconciliation mode for QBO:', qboExpense);
+
+    activeReconciliation.isActive = true;
+    activeReconciliation.qboExpense = qboExpense;
+    activeReconciliation.selectedManualIds = new Set();
+
+    // Show active panel
+    const panel = document.getElementById('activeReconcilePanel');
+    if (panel) panel.classList.remove('hidden');
+
+    // Update panel info
+    updateActiveReconciliationPanel();
+
+    // Re-render tables to enable manual selection
+    renderReconciliationTables();
+
+    // Enable select all checkbox
+    const selectAllCheckbox = document.getElementById('selectAllManualExpenses');
+    if (selectAllCheckbox) selectAllCheckbox.disabled = false;
+  }
+
+  function toggleManualExpenseSelection(expId, isSelected) {
+    if (isSelected) {
+      activeReconciliation.selectedManualIds.add(expId);
+    } else {
+      activeReconciliation.selectedManualIds.delete(expId);
+    }
+
+    // Update the panel
+    updateActiveReconciliationPanel();
+
+    // Update row visual state
+    const row = document.querySelector(`tr[data-expense-id="${expId}"]`);
+    if (row) {
+      if (isSelected) {
+        row.classList.add('manual-selected');
+      } else {
+        row.classList.remove('manual-selected');
       }
     }
 
-    // Re-render to show selection
-    renderReconciliationTables();
+    // Update select all checkbox
+    updateSelectAllCheckboxState();
   }
 
-  function createReconciliationLink() {
-    const manualId = reconciliationData.selectedManual;
-    const qboId = reconciliationData.selectedQBO;
+  function handleSelectAllManual(selectAll) {
+    if (!activeReconciliation.isActive) return;
 
-    if (!manualId || !qboId) return;
-
-    // Add to linked pairs
-    reconciliationData.linkedPairs.push({
-      manual_expense_id: manualId,
-      qbo_expense_id: qboId
+    // Get all matched manual IDs to exclude
+    const matchedManualIds = new Set();
+    activeReconciliation.confirmedMatches.forEach(match => {
+      match.manual_expense_ids.forEach(id => matchedManualIds.add(id));
     });
 
-    console.log('[RECONCILE] Created link:', { manualId, qboId });
+    reconciliationData.manualExpenses.forEach(exp => {
+      const expId = exp.expense_id || exp.id;
+      if (!matchedManualIds.has(expId)) {
+        if (selectAll) {
+          activeReconciliation.selectedManualIds.add(expId);
+        } else {
+          activeReconciliation.selectedManualIds.delete(expId);
+        }
+      }
+    });
 
-    // Reset selections
-    reconciliationData.selectedManual = null;
-    reconciliationData.selectedQBO = null;
-
-    // Re-render
-    renderReconciliationTables();
+    // Update panel and re-render
+    updateActiveReconciliationPanel();
+    renderManualReconciliationTable();
   }
 
-  function updateReconciliationSummary() {
-    const totalManual = reconciliationData.manualExpenses.length;
-    const totalQBO = reconciliationData.qboExpenses.length;
-    const linkedCount = reconciliationData.linkedPairs.length;
-    const pendingManual = totalManual - linkedCount;
-    const pendingQBO = totalQBO - linkedCount;
+  function updateSelectAllCheckboxState() {
+    const selectAllCheckbox = document.getElementById('selectAllManualExpenses');
+    if (!selectAllCheckbox || !activeReconciliation.isActive) return;
 
-    const linkedEl = document.getElementById('reconcileSummaryLinked');
-    if (linkedEl) linkedEl.textContent = linkedCount;
+    // Get all matched manual IDs
+    const matchedManualIds = new Set();
+    activeReconciliation.confirmedMatches.forEach(match => {
+      match.manual_expense_ids.forEach(id => matchedManualIds.add(id));
+    });
 
-    const pendingManualEl = document.getElementById('reconcileSummaryPendingManual');
-    if (pendingManualEl) pendingManualEl.textContent = pendingManual;
+    // Count available (unmatched) manual expenses
+    const availableExpenses = reconciliationData.manualExpenses.filter(exp => {
+      const expId = exp.expense_id || exp.id;
+      return !matchedManualIds.has(expId);
+    });
 
-    const pendingQBOEl = document.getElementById('reconcileSummaryPendingQBO');
-    if (pendingQBOEl) pendingQBOEl.textContent = pendingQBO;
+    const selectedCount = activeReconciliation.selectedManualIds.size;
+    const availableCount = availableExpenses.length;
 
-    const totalEl = document.getElementById('reconcileSummaryTotal');
-    if (totalEl) totalEl.textContent = totalManual;
+    selectAllCheckbox.checked = selectedCount === availableCount && availableCount > 0;
+    selectAllCheckbox.indeterminate = selectedCount > 0 && selectedCount < availableCount;
   }
 
-  async function saveReconciliations() {
-    if (reconciliationData.linkedPairs.length === 0) {
-      alert('No reconciliations to save. Select matching expenses from both tables.');
+  function updateActiveReconciliationPanel() {
+    if (!activeReconciliation.isActive || !activeReconciliation.qboExpense) return;
+
+    const qbo = activeReconciliation.qboExpense;
+    const qboTotal = parseFloat(qbo.amount) || 0;
+
+    // Calculate matched amount
+    let matchedAmount = 0;
+    const selectedExpenses = [];
+
+    activeReconciliation.selectedManualIds.forEach(id => {
+      const exp = reconciliationData.manualExpenses.find(e => (e.expense_id || e.id) === id);
+      if (exp) {
+        const amount = parseFloat(exp.Amount || exp.amount) || 0;
+        matchedAmount += amount;
+        selectedExpenses.push({
+          id: id,
+          description: exp.LineDescription || exp.description || 'No description',
+          amount: amount
+        });
+      }
+    });
+
+    const remainingAmount = qboTotal - matchedAmount;
+
+    // Update panel elements
+    document.getElementById('activeQBODescription').textContent = qbo.description || qbo.memo || 'QBO Invoice';
+    document.getElementById('activeQBOTotal').textContent = `$${formatCurrency(qboTotal)}`;
+    document.getElementById('activeMatchedAmount').textContent = `$${formatCurrency(matchedAmount)}`;
+    document.getElementById('activeRemainingAmount').textContent = `$${formatCurrency(Math.abs(remainingAmount))}`;
+
+    // Update remaining amount box styling
+    const remainingBox = document.querySelector('.reconcile-amount-remaining');
+    if (remainingBox) {
+      remainingBox.classList.remove('fully-matched', 'over-matched');
+      if (Math.abs(remainingAmount) < 0.01) {
+        remainingBox.classList.add('fully-matched');
+      } else if (remainingAmount < 0) {
+        remainingBox.classList.add('over-matched');
+      }
+    }
+
+    // Update selected expenses list
+    const listEl = document.getElementById('selectedExpensesList');
+    if (listEl) {
+      if (selectedExpenses.length === 0) {
+        listEl.innerHTML = '<span class="no-selection">No expenses selected yet</span>';
+      } else {
+        listEl.innerHTML = selectedExpenses.map(exp => `
+          <div class="selected-expense-chip" data-expense-id="${exp.id}">
+            <span class="chip-description">${exp.description.substring(0, 30)}${exp.description.length > 30 ? '...' : ''}</span>
+            <span class="chip-amount">$${formatCurrency(exp.amount)}</span>
+            <button class="chip-remove" data-expense-id="${exp.id}" title="Remove">&times;</button>
+          </div>
+        `).join('');
+
+        // Add remove handlers
+        listEl.querySelectorAll('.chip-remove').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const expId = btn.getAttribute('data-expense-id');
+            toggleManualExpenseSelection(expId, false);
+            // Update checkbox
+            const checkbox = document.querySelector(`.manual-expense-checkbox[data-expense-id="${expId}"]`);
+            if (checkbox) checkbox.checked = false;
+            renderManualReconciliationTable();
+          });
+        });
+      }
+    }
+
+    // Enable/disable confirm button
+    const btnConfirm = document.getElementById('btnConfirmMatch');
+    if (btnConfirm) {
+      btnConfirm.disabled = selectedExpenses.length === 0;
+    }
+  }
+
+  function confirmCurrentMatch() {
+    if (!activeReconciliation.isActive || !activeReconciliation.qboExpense) return;
+    if (activeReconciliation.selectedManualIds.size === 0) {
+      alert('Please select at least one manual expense to match.');
       return;
     }
 
-    const btnSave = document.getElementById('btnSaveReconciliations');
+    const qbo = activeReconciliation.qboExpense;
+
+    // Calculate matched amount
+    let matchedAmount = 0;
+    activeReconciliation.selectedManualIds.forEach(id => {
+      const exp = reconciliationData.manualExpenses.find(e => (e.expense_id || e.id) === id);
+      if (exp) {
+        matchedAmount += parseFloat(exp.Amount || exp.amount) || 0;
+      }
+    });
+
+    // Add to confirmed matches
+    activeReconciliation.confirmedMatches.push({
+      qbo_expense_id: qbo.id,
+      manual_expense_ids: Array.from(activeReconciliation.selectedManualIds),
+      matched_amount: matchedAmount
+    });
+
+    console.log('[RECONCILE] Confirmed match:', {
+      qbo_id: qbo.id,
+      manual_ids: Array.from(activeReconciliation.selectedManualIds),
+      amount: matchedAmount
+    });
+
+    // Reset active reconciliation
+    resetActiveReconciliation();
+
+    // Re-render tables
+    renderReconciliationTables();
+  }
+
+  function viewMatchDetails(qboId) {
+    const match = activeReconciliation.confirmedMatches.find(m => m.qbo_expense_id === qboId);
+    if (!match) return;
+
+    const qbo = reconciliationData.qboExpenses.find(e => e.id === qboId);
+
+    let details = `QBO Invoice: ${qbo?.description || qbo?.memo || 'Invoice'}\n`;
+    details += `Total: $${formatCurrency(qbo?.amount || 0)}\n\n`;
+    details += `Matched Manual Expenses (${match.manual_expense_ids.length}):\n`;
+
+    match.manual_expense_ids.forEach(id => {
+      const exp = reconciliationData.manualExpenses.find(e => (e.expense_id || e.id) === id);
+      if (exp) {
+        details += `  - ${exp.LineDescription || exp.description || 'No description'}: $${formatCurrency(exp.Amount || exp.amount)}\n`;
+      }
+    });
+
+    details += `\nMatched Amount: $${formatCurrency(match.matched_amount)}`;
+
+    alert(details);
+  }
+
+  function updateReconciliationSummary() {
+    const totalQBO = reconciliationData.qboExpenses.length;
+    const totalManual = reconciliationData.manualExpenses.length;
+    const matchedQBO = activeReconciliation.confirmedMatches.length;
+
+    // Count matched manual expenses
+    const matchedManualIds = new Set();
+    activeReconciliation.confirmedMatches.forEach(match => {
+      match.manual_expense_ids.forEach(id => matchedManualIds.add(id));
+    });
+
+    const pendingQBO = totalQBO - matchedQBO;
+
+    // Update summary elements
+    const summaryQBO = document.getElementById('summaryQBOTotal');
+    const summaryManual = document.getElementById('summaryManualTotal');
+    const summaryReconciled = document.getElementById('summaryReconciled');
+    const summaryPending = document.getElementById('summaryPending');
+
+    if (summaryQBO) summaryQBO.textContent = totalQBO;
+    if (summaryManual) summaryManual.textContent = totalManual;
+    if (summaryReconciled) summaryReconciled.textContent = matchedQBO;
+    if (summaryPending) summaryPending.textContent = pendingQBO;
+  }
+
+  async function saveReconciliations() {
+    if (activeReconciliation.confirmedMatches.length === 0) {
+      alert('No reconciliations to save. Match QBO invoices with manual expenses first.');
+      return;
+    }
+
+    const btnSave = document.getElementById('btnSaveReconciliation');
     const originalText = btnSave?.textContent;
 
     try {
@@ -3635,7 +3965,7 @@
         btnSave.textContent = 'Saving...';
       }
 
-      console.log('[RECONCILE] Saving reconciliations:', reconciliationData.linkedPairs);
+      console.log('[RECONCILE] Saving reconciliations:', activeReconciliation.confirmedMatches);
 
       const url = `${apiBase}/expenses/reconciliations`;
       const result = await apiJson(url, {
@@ -3643,13 +3973,16 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           project_id: selectedProjectId,
-          reconciliations: reconciliationData.linkedPairs
+          reconciliations: activeReconciliation.confirmedMatches
         })
       });
 
       console.log('[RECONCILE] Save result:', result);
 
-      alert(`Successfully saved ${reconciliationData.linkedPairs.length} reconciliation(s)!`);
+      const totalMatches = activeReconciliation.confirmedMatches.length;
+      const totalExpenses = activeReconciliation.confirmedMatches.reduce((sum, m) => sum + m.manual_expense_ids.length, 0);
+
+      alert(`Successfully saved ${totalMatches} reconciliation(s) covering ${totalExpenses} manual expense(s)!`);
 
       // Close modal and reload data
       closeReconciliationModal();
@@ -3673,12 +4006,11 @@
   function closeReconciliationModal() {
     document.getElementById('reconcileModal')?.classList.add('hidden');
 
-    // Reset state
+    // Reset all state
     reconciliationData.manualExpenses = [];
     reconciliationData.qboExpenses = [];
-    reconciliationData.selectedManual = null;
-    reconciliationData.selectedQBO = null;
-    reconciliationData.linkedPairs = [];
+    resetActiveReconciliation();
+    activeReconciliation.confirmedMatches = [];
   }
 
   // ================================

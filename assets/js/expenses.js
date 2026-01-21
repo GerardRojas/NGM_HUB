@@ -2048,9 +2048,27 @@
 
       els.scanReceiptProgressFill.style.width = '100%';
 
-      // Build success message with tax info if available
+      // Build success message with validation and tax info
       let successMessage = `Successfully scanned ${result.count} expense(s) from receipt!`;
 
+      // Show validation info
+      if (result.data?.validation) {
+        const v = result.data.validation;
+        successMessage += `\n\n📋 Validation:`;
+        successMessage += `\n• Invoice Total: $${v.invoice_total?.toFixed(2) || '0.00'}`;
+        successMessage += `\n• Calculated Sum: $${v.calculated_sum?.toFixed(2) || '0.00'}`;
+
+        if (v.validation_passed) {
+          successMessage += `\n✅ Totals match!`;
+        } else {
+          successMessage += `\n⚠️ WARNING: Totals do not match!`;
+          if (v.validation_warning) {
+            successMessage += `\n   ${v.validation_warning}`;
+          }
+        }
+      }
+
+      // Show tax distribution info if available
       if (result.data?.tax_summary) {
         const tax = result.data.tax_summary;
         successMessage += `\n\n📊 Tax Distribution Applied:`;

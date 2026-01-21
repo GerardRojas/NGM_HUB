@@ -1,9 +1,11 @@
 /* ===========================
-   TEAM MANAGEMENT (scoped)
+   TEAM MANAGEMENT — Supabase Style
+   Clean, minimal, professional
    =========================== */
 
+/* Section container */
 .team-section {
-  padding: 16px 18px 26px;
+  padding: 24px 28px 32px;
 }
 
 /* Header row */
@@ -11,618 +13,380 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 14px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .team-section .section-title {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 600;
   margin: 0;
+  color: var(--text-primary);
 }
 
 .team-section .section-subtitle {
-  margin: 6px 0 0 0;
+  margin: 4px 0 0 0;
   color: var(--text-secondary);
   font-size: 13px;
 }
 
+/* Action buttons container */
 .team-section .team-actions {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
 }
 
-/* === Board ahora es vertical (secciones por rol) === */
+.team-actions button {
+  border: 1px solid #2a2a2a;
+  background: transparent;
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.team-actions button:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
+}
+
+/* Primary button: Add User */
+.team-actions #btn-add-user {
+  background: #3ecf8e;
+  border-color: #3ecf8e;
+  color: #000;
+  font-weight: 600;
+}
+
+.team-actions #btn-add-user:hover {
+  background: #34b87d;
+  border-color: #34b87d;
+}
+
+/* Board container */
 .team-board {
   display: flex;
-  flex-direction: column; /* antes: row */
+  flex-direction: column;
   gap: 16px;
-
-  overflow: visible; /* ya no kanban horizontal */
-  padding: 10px 6px 18px;
+  padding: 0;
 }
 
 /* Placeholder */
 .team-placeholder {
   width: 100%;
-  min-height: 260px;
+  min-height: 200px;
   display: grid;
   place-items: center;
   color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed var(--border-soft);
-  border-radius: var(--radius-md);
-}
-
-/* === Cada "columna" ahora es sección full-width === */
-.team-column {
-  flex: 0 0 auto;
-  max-width: none;
-  width: 100%;
-
-  background: var(--ngm-bg-card, #18181b);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  box-shadow: var(--ngm-shadow-soft);
-  padding: 12px;
-}
-
-.team-column-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.team-column-title {
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 0.2px;
-  margin: 0;
-}
-
-.team-column-count {
-  font-size: 12px;
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 4px 8px;
-  border-radius: 999px;
-}
-
-/* === Retícula de cards === */
-.team-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 12px;
-}
-
-/* === Card retrato (vertical) === */
-.team-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  background: var(--ngm-bg-surface, #0d0f12);
-  border: 1px solid var(--border-soft);
-  border-radius: 14px;
-  padding: 12px;
-
-  min-height: 220px; /* “alargada” */
-}
-
-.team-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(34, 197, 94, 0.4);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-/* Avatar más grande arriba */
-.team-avatar {
-  width: 56px;
-  height: 56px;
-
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-
-  font-weight: 800;
-  font-size: 18px;
-  color: #0b0b0c;
-
-  background: #a3a3a3;
-  outline: 2px solid rgba(255, 255, 255, 0.10);
-  outline-offset: 1px;
-}
-
-.team-card-main {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.team-name-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-/* Nombre un poco más protagonista */
-.team-name {
-  font-weight: 800;
+  background: #111111;
+  border: 1px solid #1f1f1f;
+  border-radius: 8px;
   font-size: 14px;
 }
 
-.team-meta {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.team-badges {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
-  flex-wrap: wrap;
-}
-
-.team-badge {
-  font-size: 11px;
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 4px 8px;
-  border-radius: 999px;
-}
-
-/* Si hay foto */
-.team-avatar img {
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
-  object-fit: cover;
-  display: block;
-}
-
-/* Empuja acciones al fondo */
-.team-card-actions {
-  margin-top: auto;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.team-action-btn {
-  flex: 1 1 auto;
-  text-align: center;
-}
-
-.team-action-btn:hover {
-  background: rgba(255, 255, 255, 0.07);
+/* Cards grid */
+.team-cards {
+  display: grid;
+  gap: 16px;
+  justify-content: start;
+  align-items: start;
 }
 
 /* ===========================
-   TEAM OVERRIDES (portrait grid)
-   Pegar al FINAL del archivo
+   CARD — Simple flat design
    =========================== */
 
-/* Cada sección por rol (lane) sigue full width */
-.team-column {
-  width: 100%;
+.team-card-stack {
+  position: relative;
 }
 
-/* Grid real con cards de ancho fijo (evita que se estiren) */
-.team-cards {
-  --team-cols: 2;            /* default: 2 por fila */
-  --team-card-w: 240px;      /* ancho fijo card */
-  --team-gap: 12px;
-
-  display: grid;
-  grid-template-columns: repeat(var(--team-cols), var(--team-card-w));
-  gap: var(--team-gap);
-
-  justify-content: start;    /* NO estirar */
-  align-content: start;
+/* Remove backplate completely - no visual effect */
+.team-card-back {
+  display: none;
 }
 
-/* Card retrato / vertical */
 .team-card {
-  width: var(--team-card-w);
-  min-height: 280px;         /* alargada vertical */
+  width: 280px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 16px;
+  padding: 20px;
 
-  padding: 12px;
-  border-radius: 14px;
+  background: #111111;
+  border: 1px solid #1f1f1f;
+  border-radius: 8px;
+
+  transition: border-color 0.15s ease;
 }
 
-/* Avatar grande arriba */
+.team-card:hover {
+  border-color: #2a2a2a;
+}
+
+/* ===========================
+   AVATAR — Ring style (not filled)
+   =========================== */
+
 .team-avatar {
-  width: 56px;
-  height: 56px;
-  font-size: 18px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Ring style: transparent center, colored border */
+  background: transparent;
+  border: 2px solid currentColor;
+
+  font-weight: 600;
+  font-size: 20px;
+  color: #888;
+
+  align-self: center;
+  margin-bottom: 4px;
 }
 
+/* When avatar has image */
 .team-avatar img {
   width: 100%;
   height: 100%;
-  border-radius: 999px;
+  border-radius: 50%;
   object-fit: cover;
   display: block;
 }
 
-/* Empuja acciones hacia abajo para que no brinquen */
-.team-card-actions {
-  margin-top: auto;
+/* ===========================
+   CARD CONTENT
+   =========================== */
+
+.team-card-main {
   display: flex;
-  gap: 8px;
-}
-
-/* Botones estilo NGM (no default) */
-.team-card .team-action-btn {
-  flex: 1 1 auto;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-primary);
-  border-radius: 10px;
-  padding: 8px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
-}
-
-.team-card .team-action-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.16);
-  transform: translateY(-1px);
-}
-
-/* Delete con look "danger" suave */
-.team-card .team-action-btn[data-action="delete"] {
-  background: rgba(239, 68, 68, 0.10);
-  border-color: rgba(239, 68, 68, 0.22);
-}
-
-.team-card .team-action-btn[data-action="delete"]:hover {
-  background: rgba(239, 68, 68, 0.16);
-  border-color: rgba(239, 68, 68, 0.30);
-}
-
-/* Responsive: en pantallas chicas baja columnas */
-@media (max-width: 900px) {
-  .team-cards { --team-cols: 2; }
-}
-@media (max-width: 620px) {
-  .team-cards { --team-cols: 1; }
-}
-
-/* ===== FIX GRID + PORTRAIT (paste at END) ===== */
-
-/* Grid real: los items NO se estiran */
-.team-column .team-cards {
-  display: grid !important;
+  flex-direction: column;
   gap: 12px;
-  justify-items: start;              /* <- clave: evita stretch */
-  align-items: start;
+  min-width: 0;
+  flex: 1;
 }
 
-/* Card fija (retrato) */
-.team-column .team-card {
-  width: 260px;                      /* <- card no se vuelve “full width” */
-  min-height: 320px;                 /* <- más vertical */
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-/* Empuja acciones al fondo */
-.team-column .team-card-actions {
-  margin-top: auto;
-}
-
-.team-actions button {
-  border: 1px solid rgba(255,255,255,0.10);
-  background: rgba(255,255,255,0.05);
-  color: var(--text-primary);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
-}
-
-.team-actions button:hover {
-  background: rgba(255,255,255,0.08);
-  border-color: rgba(255,255,255,0.16);
-  transform: translateY(-1px);
-}
-
-/* “primary” look para Add User */
-.team-actions #btn-add-user {
-  background: rgba(34, 197, 94, 0.14);
-  border-color: rgba(34, 197, 94, 0.28);
-}
-.team-actions #btn-add-user:hover {
-  background: rgba(34, 197, 94, 0.20);
-  border-color: rgba(34, 197, 94, 0.36);
-}
-
-/* Depth plate detrás de cada user card (gris, alineado) */
-.team-card-stack{
-  position: relative;
-  overflow: visible;
-
-  /* tweaks */
-  --team-card-radius: 18px;
-  --team-back-inset: 10px;   /* cuánto “crece” la placa alrededor */
-  --team-back-offset: 6px;   /* micro-offset para profundidad (opcional) */
-}
-
-.team-card-back{
-  position: absolute;
-  inset: calc(var(--team-back-inset) * -1);
-  border-radius: calc(var(--team-card-radius) + var(--team-back-inset));
-  pointer-events: none;
-  z-index: 0;
-
-  /* gris neutro (sin colores por user) */
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
-
-  transform: translate(var(--team-back-offset), var(--team-back-offset));
-}
-
-.team-card-stack .team-card{
-  position: relative;
-  z-index: 1;
-  border-radius: var(--team-card-radius);
-}
-
-/* Hover suave */
-.team-card-stack:hover .team-card-back{
-  transform: translate(calc(var(--team-back-offset) + 2px), calc(var(--team-back-offset) + 2px));
-}
-
-/* ===== TEAM MANAGER — FINAL OVERRIDES (NO LANES) ===== */
-
-/* Grid real (sin .team-column) */
-#team-board .team-cards{
-  display: grid;
-  gap: 12px;
-  justify-content: start;
-  justify-items: start;  /* clave: evita stretch raro */
-  align-items: start;
-}
-
-/* Stack base */
-#team-board .team-card-stack{
-  position: relative;
-  overflow: visible;
-
-  --team-card-radius: 14px;  /* igual que la card */
-  --team-back-offset: 8px;   /* “desfase” */
-}
-
-/* Backplate: MISMO tamaño, solo desfasado, y OPACO */
-#team-board .team-card-back{
-  position: absolute;
-  inset: 0; /* mismo size que la card */
-  border-radius: var(--team-card-radius);
-  pointer-events: none;
-  z-index: 0;
-
-  background: #1b2028; /* <- opaco gris */
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
-
-  transform: translate(var(--team-back-offset), var(--team-back-offset));
-}
-
-#team-board .team-card-stack:hover .team-card-back{
-  transform: translate(
-    calc(var(--team-back-offset) + 2px),
-    calc(var(--team-back-offset) + 2px)
-  );
-}
-
-/* Card: fija y alineada con el backplate */
-#team-board .team-card{
-  width: 260px;
-  min-height: 320px;
-  border-radius: var(--team-card-radius);
-  position: relative;
-  z-index: 1;
-}
-
-/* Empuja acciones al fondo */
-#team-board .team-card-actions{
-  margin-top: auto;
-}
-
-/* opcional: si quieres usar TODO el ancho disponible */
-.page-team .main-area,
-.page-team .main-content{
-  width: 100%;
-}
-
-/* ===== TEAM card: list layout ===== */
-
-/* Card interno: avatar + contenido */
-.team-card{
-  display: grid;
-  grid-template-columns: 96px 1fr;
-  align-items: center;
-  gap: 14px;
-  text-align: left;
-}
-
-/* Avatar centrado y más grande */
-.team-avatar{
-  width: 76px;
-  height: 76px;
-  border-radius: 999px;
-  margin: 0 auto;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  font-weight: 700;
-  font-size: 22px;
-}
-
-.team-avatar img{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* Header: nombre + status arriba */
-.team-head{
+/* Header: name + status */
+.team-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
-.team-name{
+.team-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
   margin: 0;
-}
 
-/* Status pill (arriba) */
-.team-status-pill{
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 500;
-  border: 1px solid rgba(107, 114, 128, 0.3);
-  background: rgba(107, 114, 128, 0.15);
-  color: #9ca3af;
-  white-space: nowrap;
-}
-
-/* Glow solo si Active */
-.team-status-pill.is-active{
-  background: rgba(34, 197, 94, 0.12);
-  color: #4ade80;
-  border-color: rgba(34, 197, 94, 0.4);
-  box-shadow: none;
-}
-
-/* Lista de campos */
-.team-fields{
-  margin-top: 10px;
-  display: grid;
-  gap: 8px;
-}
-
-.team-field{
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.08);
-}
-
-.team-field-label{
-  opacity: 0.75;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.team-field-value{
-  text-align: right;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 65%;
+  flex: 1;
+  min-width: 0;
 }
 
-/* TEAM: quitar centrado global y pegar al sidebar */
-.page-team .main-content{
+/* Status indicator - simple text, no pill */
+.team-status-pill {
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+
+  /* No background, no border - just text */
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.team-status-pill.is-active {
+  color: #3ecf8e;
+}
+
+/* ===========================
+   FIELDS — Clean key-value rows
+   =========================== */
+
+.team-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+
+  /* Clean style: no background, just subtle separator */
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+
+  font-size: 13px;
+}
+
+.team-field:last-child {
+  border-bottom: none;
+}
+
+.team-field-label {
+  color: #666;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.team-field-value {
+  color: var(--text-primary);
+  text-align: right;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ===========================
+   ACTION BUTTONS
+   =========================== */
+
+.team-card-actions {
+  margin-top: auto;
+  padding-top: 12px;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.team-action-btn {
+  flex: 1;
+  text-align: center;
+
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #2a2a2a;
+  background: transparent;
+
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.team-action-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
+}
+
+/* Delete button - subtle danger style */
+.team-action-btn[data-action="delete"] {
+  border-color: rgba(239, 68, 68, 0.25);
+  color: rgba(239, 68, 68, 0.8);
+}
+
+.team-action-btn[data-action="delete"]:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+}
+
+/* ===========================
+   RESPONSIVE
+   =========================== */
+
+@media (max-width: 900px) {
+  .team-card {
+    width: 260px;
+  }
+}
+
+@media (max-width: 620px) {
+  .team-section {
+    padding: 16px;
+  }
+
+  .team-section .section-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .team-card {
+    width: 100%;
+    max-width: 320px;
+  }
+}
+
+/* ===========================
+   PAGE OVERRIDES
+   =========================== */
+
+.page-team .main-content {
   max-width: none !important;
   margin-inline: 0 !important;
 }
 
-/* TEAM: card tipo kanban (avatar arriba) */
-.page-team .team-card{
+.page-team .main-area,
+.page-team .main-content {
+  width: 100%;
+}
+
+/* Ensure vertical card layout */
+.page-team .team-card {
   display: flex !important;
   flex-direction: column !important;
   align-items: stretch;
 }
 
-.page-team .team-avatar{
+.page-team .team-avatar {
   align-self: center;
-  margin: 12px auto 10px;
-  width: 86px;
-  height: 86px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  font-weight: 700;
-  font-size: 24px;
 }
 
-.page-team .team-avatar img{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* TEAM: nada se sale del card */
 .page-team .team-card,
-.page-team .team-card-main{
-  overflow: hidden;   /* recorta dentro del card */
-  min-width: 0;       /* CLAVE: permite que encogan en flex/grid */
-}
-
-/* Header: nombre + status */
-.page-team .team-head{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+.page-team .team-card-main {
+  overflow: hidden;
   min-width: 0;
 }
 
-.page-team .team-name{
+.page-team .team-head {
+  min-width: 0;
+}
+
+.page-team .team-name {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-/* Lista de campos */
 .page-team .team-fields,
-.page-team .team-field{
+.page-team .team-field {
   min-width: 0;
 }
 
-.page-team .team-field{
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  min-width: 0;
+/* Grid overrides */
+#team-board .team-cards {
+  display: grid;
+  gap: 16px;
+  justify-content: start;
+  justify-items: start;
+  align-items: start;
 }
 
-/* Valor: que corte con ellipsis y no empuje el card */
-.page-team .team-field-value{
-  flex: 1;
-  min-width: 0;
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+#team-board .team-card {
+  width: 280px;
+  border-radius: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+#team-board .team-card-actions {
+  margin-top: auto;
 }

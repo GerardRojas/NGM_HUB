@@ -1,4 +1,5 @@
 /* ---------- CONTENIDO PRINCIPAL DEL DASHBOARD ---------- */
+/* Supabase-inspired dark theme */
 
 .main-content.dashboard-main {
     /* Variables SOLO para el dashboard */
@@ -6,13 +7,13 @@
     --dashboard-modules-columns: 6;
 
     /* Override al centrado global */
-    margin-inline: 0;     /* quita el centrado de main-content */
-    max-width: none;      /* permite usar todo el ancho junto a la sidebar */
+    margin-inline: 0;
+    max-width: none;
 
-    padding: 18px 16px 28px;
+    padding: 24px 24px 32px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 24px;
 }
 
 /* Pipeline arriba, módulos abajo */
@@ -32,29 +33,29 @@
 
 .pipeline-title {
     font-size: 13px;
-    font-weight: 600;
-    color: #e5e7eb;
+    font-weight: 500;
+    color: #ededed;
 }
 
 .pipeline-subtitle {
     margin-top: 2px;
     font-size: 11px;
-    color: #9ca3af;
+    color: #666666;
 }
 
-/* Panel de pipeline más compacto, estilo card Supabase */
+/* Panel de pipeline - Supabase style */
 
 .pipeline-panel {
-    margin-top: 10px;
-    padding: 14px 14px 12px;
-    border-radius: 10px;
-    background: #111318;
-    border: 1px solid #20252c;
+    margin-top: 12px;
+    padding: 16px;
+    border-radius: 8px;
+    background: #111111;
+    border: 1px solid #1f1f1f;
 }
 
 .pipeline-empty-text {
     font-size: 12px;
-    color: #9ca3af;
+    color: #666666;
 }
 
 /* Separador visual entre pipeline y módulos */
@@ -62,8 +63,8 @@
 .dashboard-separator {
     height: 1px;
     width: 100%;
-    background: #20252c;
-    margin: 6px 0 14px;
+    background: #1f1f1f;
+    margin: 8px 0 16px;
     border-radius: 999px;
 }
 
@@ -72,137 +73,128 @@
 .modules-section {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 16px;
     width: 100%;
     max-width: var(--dashboard-modules-max-width);
 }
 
 .section-title {
     font-size: 13px;
-    font-weight: 600;
-    color: #e5e7eb;
+    font-weight: 500;
+    color: #ededed;
 }
 
 .section-subtitle {
     margin: 0;
     font-size: 11px;
-    color: #9ca3af;
+    color: #666666;
 }
+
+/* Cards de módulo - Supabase style */
 
 .modules-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 16px;
     margin: 0;
     width: 100%;
-    align-items: stretch;       /* hace que los cards tengan misma altura en la fila */
-    justify-content: flex-start;/* asegura alineado a la izquierda */
+    align-items: stretch;
+    justify-content: flex-start;
 }
-
-/* Cards de módulo */
 
 .module-card {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
 
-    /* padding un poco más compacto */
-    padding: 14px 14px 12px;
-    border-radius: 10px; /* menos redondeado */
-    min-height: 150px;
+    padding: 20px;
+    border-radius: 8px;
+    min-height: 140px;
 
-    /* gris r=59 g=59 b=59 */
-    background: #3b3b3b;
-    border: 1px solid #2b2b2b;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+    /* Fondo oscuro sutil */
+    background: #111111;
+    border: 1px solid #1f1f1f;
+    box-shadow: none;
 
-    flex: 0 0 260px;   /* ancho base aprox 260px */
+    flex: 0 0 260px;
 
     text-align: left;
     cursor: pointer;
     text-decoration: none;
     transition:
-        transform 0.12s ease-out,
-        box-shadow 0.12s ease-out,
-        border-color 0.12s ease-out,
-        background-color 0.12s ease-out;
+        border-color 0.15s ease,
+        background-color 0.15s ease;
 }
 
 .module-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 22px 50px rgba(0, 0, 0, 0.9);
-    border-color: rgba(34, 197, 94, 0.85);  /* verde NGM */
-    background-color: #444444;
+    background: #161616;
+    border-color: #2a2a2a;
 }
 
 .module-card:focus-visible {
-    outline: 2px solid #22c55e;
+    outline: 2px solid #3ecf8e;
     outline-offset: 2px;
 }
 
 /* Icono/Badge cuadrado */
 
 .module-icon {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 }
 
 .module-icon-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 40px;
-    height: 40px;
+    min-width: 36px;
+    height: 36px;
     padding: 0 8px;
-    border-radius: 10px;
-    border: 1px solid rgba(148, 163, 184, 0.7);
-    background: #090b10;
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
+    border-radius: 6px;
+    border: 1px solid #2a2a2a;
+    background: #1a1a1a;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: #e5e7eb;
+    color: #888888;
 }
 
 /* Títulos y textos del módulo */
 
 .module-title {
-    margin: 0 0 4px;
-    font-size: 0.94rem;
-    font-weight: 600;
-    color: #f9fafb;
+    margin: 0 0 6px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #ededed;
 }
 
 .module-desc {
     margin: 0;
     font-size: 0.8rem;
-    line-height: 1.45;
-    color: #9ca3af;
+    line-height: 1.5;
+    color: #666666;
 }
 
 /* Estados especiales */
 
 .module-coming-soon {
-    opacity: 0.45;
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
 .module-coming-soon:hover {
-    transform: none;
-    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.3);
-    border-color: rgba(148, 163, 184, 0.5);
+    background: #111111;
+    border-color: #1f1f1f;
 }
 
-/* Pipeline “card” en dashboard */
+/* Pipeline "card" en dashboard */
 .pipeline-card {
-    margin-top: 18px;
+    margin-top: 16px;
 }
 
-/* Por si en algún momento .panel pisa estilos,
-   reforzamos que el fondo sea el mismo que las module-card */
 #pipeline-tasks.pipeline-card {
-    background: #3b3b3b;
-    border-radius: 10px;
-    border-color: #2b2b2b;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+    background: #111111;
+    border-radius: 8px;
+    border-color: #1f1f1f;
+    box-shadow: none;
 }

@@ -1,47 +1,49 @@
 /* ==========================================
-   01 — THEME & TOKENS GLOBALES
+   01 — THEME & TOKENS GLOBALES (Supabase-inspired)
    ========================================== */
 
 :root {
-    /* Fondo global */
-    --bg-main: #171717;             /* Supabase-style background */
-    --bg-body: #020617;
+    /* Fondo global - muy oscuro, casi negro */
+    --bg-main: #090909;
+    --bg-body: #090909;
 
-    /* Paneles / superficies */
-    --ngm-bg-topbar: #050509;
-    --ngm-bg-surface: #0d0f12;
-    --ngm-bg-surface-soft: #111318;
-    --ngm-bg-card: #18181b;
+    /* Paneles / superficies - sutilmente más claros */
+    --ngm-bg-topbar: #090909;       /* mismo que fondo, topbar discreta */
+    --ngm-bg-surface: #111111;
+    --ngm-bg-surface-soft: #161616;
+    --ngm-bg-card: #1a1a1a;
 
     /* Inputs */
-    --bg-input: #050509;
-    --bg-input-hover: #111111;
+    --bg-input: #111111;
+    --bg-input-hover: #1a1a1a;
 
-    /* Texto */
-    --text-primary: #e5e7eb;
-    --text-secondary: #9ca3af;
-    --ngm-text-main: #e5e7eb;
-    --ngm-text-soft: #9ca3af;
-    --ngm-text-muted: #6b7280;
-    --ngm-text-subtle: #4b5563;
+    /* Texto - grises claros, no blanco puro */
+    --text-primary: #ededed;
+    --text-secondary: #888888;
+    --ngm-text-main: #ededed;
+    --ngm-text-soft: #888888;
+    --ngm-text-muted: #666666;
+    --ngm-text-subtle: #444444;
 
-    /* Acentos */
-    --accent: #22c55e;
-    --accent-soft: rgba(34, 197, 94, 0.18);
-    --accent-strong: #4ade80;
+    /* Acentos - verde esmeralda Supabase */
+    --accent: #3ecf8e;
+    --accent-soft: rgba(62, 207, 142, 0.15);
+    --accent-strong: #3ecf8e;
+    --accent-hover: #2db77a;
 
-    /* Bordes / separadores */
-    --border-soft: #27272f;
-    --border-strong: #202329;
+    /* Bordes / separadores - muy sutiles */
+    --border-soft: #1f1f1f;
+    --border-strong: #2a2a2a;
 
-    /* Radios */
-    --radius-lg: 22px;
-    --radius-md: 10px;
+    /* Radios - más suaves */
+    --radius-lg: 12px;
+    --radius-md: 8px;
+    --radius-sm: 6px;
     --radius-pill: 9999px;
 
-    /* Sombras */
-    --ngm-shadow-soft: 0 16px 40px rgba(0, 0, 0, 0.7);
-    --ngm-shadow-strong: 0 22px 50px rgba(0, 0, 0, 0.9);
+    /* Sombras - más sutiles */
+    --ngm-shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.3);
+    --ngm-shadow-strong: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 /* Reset básico */
@@ -82,12 +84,12 @@ button {
 /* ---------- SIDEBAR GLOBAL ---------- */
 
 .sidebar {
-    width: 250px;
-    background: #171717;
-    border-right: 1px solid #27292e;
+    width: 240px;
+    background: #090909;            /* mismo que fondo principal */
+    border-right: 1px solid #1f1f1f;
     display: flex;
     flex-direction: column;
-    padding: 25px 10px 10px;
+    padding: 20px 12px 12px;
 }
 
 /* Bloque logo + title */
@@ -95,29 +97,39 @@ button {
 .sidebar-logo {
     display: flex;
     justify-content: center;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .sidebar-logo img {
-    max-width: 180px;
+    max-width: 160px;
     height: auto;
+    opacity: 0.9;
 }
 
 .sidebar-title-block {
     text-align: center;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .sidebar-title {
-    font-size: 14px;
-    color: #e5e7eb;
-    letter-spacing: 0.16em;
+    font-size: 13px;
+    color: #888888;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
+    font-weight: 500;
 }
 
 .sidebar-subtitle {
     font-size: 11px;
-    color: #9ca3af;
+    color: #666666;
+}
+
+/* Card contenedor de navegación */
+.sidebar-nav-card {
+    background: #111111;
+    border: 1px solid #1f1f1f;
+    border-radius: 8px;
+    padding: 8px;
 }
 
 /* Navegación */
@@ -125,28 +137,29 @@ button {
 .sidebar-nav {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-top: 10px;
-    padding-inline: 4px;
+    gap: 2px;
+    margin-top: 0;
+    padding-inline: 0;
 }
 
 .nav-item {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 10px;
-    border-radius: 10px;
-    color: #e5e7eb;
+    padding: 10px 12px;
+    border-radius: 6px;
+    color: #888888;
     font-size: 13px;
+    font-weight: 400;
     cursor: pointer;
-    border: 1px solid transparent;
+    border: none;
     background: transparent;
-    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    transition: background 0.15s ease, color 0.15s ease;
 }
 
 .nav-item-icon {
     font-size: 16px;
-    opacity: 0.9;
+    opacity: 0.7;
 }
 
 .nav-item-label {
@@ -154,24 +167,23 @@ button {
 }
 
 .nav-item:hover {
-    background: rgba(148, 163, 184, 0.08);
-    border-color: #27272f;
-    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.04);
+    color: #ededed;
 }
 
 .nav-item-active {
-    background: rgba(34, 197, 94, 0.12);
-    border-color: rgba(34, 197, 94, 0.7);
+    background: rgba(62, 207, 142, 0.1);
+    color: #3ecf8e;
 }
 
 /* Footer de la sidebar (versión, entorno, etc.) */
 
 .sidebar-footer {
     margin-top: auto;
-    padding: 10px 6px 4px;
-    border-top: 1px solid #27272f;
+    padding: 12px 8px 4px;
+    border-top: 1px solid #1f1f1f;
     font-size: 11px;
-    color: #6b7280;
+    color: #444444;
 }
 
 /* ---------- MAIN AREA (derecha) ---------- */
@@ -307,11 +319,11 @@ button {
 
 .ngm-pill {
     font-size: 11px;
-    border-radius: var(--radius-pill);
+    border-radius: 6px;
     padding: 4px 10px;
-    border: 1px solid #27272f;
-    background: #020617;
-    color: var(--ngm-text-main);
+    border: 1px solid #1f1f1f;
+    background: #111111;
+    color: #888888;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -319,24 +331,25 @@ button {
 
 .ngm-pill-label {
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     font-size: 10px;
-    color: var(--ngm-text-muted);
+    color: #666666;
 }
 
 .ngm-pill-value {
     font-weight: 500;
+    color: #ededed;
 }
 
 /* Estados especiales de pill */
 
 .ngm-pill--env {
-    border-color: rgba(59, 130, 246, 0.5);
+    border-color: #1f1f1f;
 }
 
 .ngm-pill--status-live {
-    border-color: rgba(34, 197, 94, 0.6);
-    color: #bbf7d0;
+    border-color: rgba(62, 207, 142, 0.3);
+    color: #3ecf8e;
 }
 
 /* Pill de usuario (avatar + nombre + rol) */
@@ -345,23 +358,23 @@ button {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 4px 10px;
-    border-radius: 9999px;
-    background: #020617;
-    border: 1px solid #27272f;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: #111111;
+    border: 1px solid #1f1f1f;
+    box-shadow: none;
 }
 
 .user-pill-avatar {
-    width: 22px;
-    height: 22px;
-    border-radius: 9999px;
-    background: #111827;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: #1a1a1a;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 11px;
-    color: #e5e7eb;
+    color: #ededed;
 }
 
 .user-pill-text {
@@ -372,23 +385,23 @@ button {
 
 .user-pill-name {
     font-size: 12px;
-    color: var(--ngm-text-main);
+    color: #ededed;
 }
 
 .user-pill-role {
     font-size: 10px;
-    color: var(--ngm-text-muted);
+    color: #666666;
 }
 
 .user-pill-text .user-name {
     font-size: 12px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.1;
 }
 
 .user-pill-text .user-role {
     font-size: 11px;
-    opacity: 0.7;
+    color: #666666;
     line-height: 1.1;
 }
 
@@ -424,44 +437,45 @@ button {
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 6px 12px;
-    border-radius: 9999px;
+    padding: 8px 14px;
+    border-radius: 6px;
     border: 1px solid transparent;
     font-size: 13px;
+    font-weight: 500;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .btn-primary {
-    background: var(--accent);
-    border-color: #16a34a;
-    color: #022c22;
-    font-weight: 500;
+    background: #3ecf8e;
+    border-color: #3ecf8e;
+    color: #000000;
 }
 
 .btn-primary:hover {
-    background: #16a34a;
-    transform: translateY(-1px);
+    background: #2db77a;
+    border-color: #2db77a;
 }
 
 .btn-secondary {
-    background: #020617;
-    border-color: #27272f;
-    color: var(--ngm-text-main);
+    background: #1a1a1a;
+    border-color: #2a2a2a;
+    color: #ededed;
 }
 
 .btn-secondary:hover {
-    background: #0b1120;
+    background: #222222;
+    border-color: #333333;
 }
 
 
 /* Cards / surfaces */
 
 .ngm-card {
-    background: var(--ngm-bg-card);
-    border-radius: 16px;
-    border: 1px solid #27272f;
-    box-shadow: var(--ngm-shadow-soft);
+    background: #1a1a1a;
+    border-radius: 8px;
+    border: 1px solid #1f1f1f;
+    box-shadow: none;
     padding: 16px;
 }
 
@@ -474,20 +488,28 @@ button {
 }
 
 .table thead {
-    background: #020617;
+    background: #111111;
 }
 
 .table th {
     text-align: left;
-    padding: 8px 10px;
+    padding: 10px 12px;
     font-weight: 500;
-    color: #9ca3af;
-    border-bottom: 1px solid #27272f;
+    color: #666666;
+    border-bottom: 1px solid #1f1f1f;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .table td {
-    padding: 7px 10px;
-    border-bottom: 1px solid #1f2933;
+    padding: 10px 12px;
+    border-bottom: 1px solid #1a1a1a;
+    color: #ededed;
+}
+
+.table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
 }
 
 /* Inputs dentro de tabla */
@@ -495,11 +517,16 @@ button {
 .table .cell-input {
     width: 100%;
     border-radius: 6px;
-    border: 1px solid #27272f;
-    background: #020617;
-    color: #e5e7eb;
-    padding: 4px 6px;
+    border: 1px solid #1f1f1f;
+    background: #111111;
+    color: #ededed;
+    padding: 6px 8px;
     font-size: 12px;
+}
+
+.table .cell-input:focus {
+    outline: none;
+    border-color: #3ecf8e;
 }
 
 /* Modal genérico */
@@ -511,7 +538,7 @@ button {
 .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.8);
+    background: rgba(0, 0, 0, 0.7);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -519,11 +546,11 @@ button {
 }
 
 .modal {
-    background: #020617;
-    border-radius: 18px;
-    border: 1px solid #27272f;
-    box-shadow: var(--ngm-shadow-strong);
-    padding: 16px 18px 18px;
+    background: #1a1a1a;
+    border-radius: 12px;
+    border: 1px solid #2a2a2a;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    padding: 20px;
     max-width: 520px;
     width: 100%;
 }
@@ -533,21 +560,21 @@ button {
 .ngm-section-title {
     font-size: 14px;
     font-weight: 500;
-    color: var(--ngm-text-main);
+    color: #ededed;
 }
 
 .ngm-section-subtitle {
     font-size: 12px;
-    color: var(--ngm-text-muted);
+    color: #666666;
     margin-top: 2px;
 }
 
 
-/* NGM Topbar */
+/* NGM Topbar - Supabase style: discreta, mismo fondo */
 .ngm-topbar {
-    background: #050509;              /* más oscuro que el fondo general */
-    border-bottom: 1px solid #202329;
-    padding: 10px 24px;
+    background: #090909;              /* mismo que fondo principal */
+    border-bottom: 1px solid #1f1f1f;
+    padding: 12px 24px;
 }
 
 /* Alineación global */
@@ -566,23 +593,23 @@ button {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 10px;
-    border-radius: 9999px;
-    border: 1px solid #2b2b2b;
-    background: #3b3b3b; /* mismo que fondo de cards */
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #1f1f1f;
+    background: #111111;
 }
 
 .ngm-search-input {
     border: none;
     outline: none;
     background: transparent;
-    color: #e5e7eb;
+    color: #ededed;
     font-size: 0.85rem;
     min-width: 180px;
 }
 
 .ngm-search-input::placeholder {
-    color: #9ca3af;
+    color: #666666;
 }
 
 .ngm-brand {
@@ -593,48 +620,49 @@ button {
 
 .ngm-global-search-icon {
     font-size: 0.8rem;
-    color: #b3b3b3;
+    color: #666666;
 }
 
 .ngm-brand-icon-small {
-    width: 24px;
-    height: 24px;
-    border-radius: 9999px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
     background: #111111;
-    border: 1px solid #27272a;
+    border: 1px solid #1f1f1f;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 12px;
-    color: #22c55e; /* verde NGM */
+    color: #3ecf8e;
     overflow: hidden;
-    padding: 3px;
+    padding: 4px;
 }
 
 .ngm-brand-icon-small img {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    /* Filtro verde NGM usando hue-rotate y saturate */
-    filter: brightness(0) saturate(100%) invert(64%) sepia(73%) saturate(435%) hue-rotate(85deg) brightness(94%) contrast(89%);
+    /* Filtro verde Supabase */
+    filter: brightness(0) saturate(100%) invert(75%) sepia(41%) saturate(506%) hue-rotate(101deg) brightness(92%) contrast(89%);
 }
 
 .ngm-brand-text {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
 }
 
 .ngm-brand-org {
-    font-size: 0.75rem;
-    color: #9ca3af;
+    font-size: 0.7rem;
+    color: #666666;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.1em;
 }
 
 .ngm-brand-context {
-    font-size: 0.8rem;
-    color: #e5e7eb;
+    font-size: 0.85rem;
+    color: #ededed;
+    font-weight: 500;
 }
 
 .ngm-meta {
@@ -644,26 +672,20 @@ button {
     margin-right: 8px;
 }
 
-.ngm-meta-env {
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #cbd5f5;
-}
-
 .ngm-meta-pill {
-    padding: 2px 10px;
-    border-radius: 999px;
+    padding: 4px 10px;
+    border-radius: 6px;
     font-size: 0.7rem;
-    border: 1px solid #27272a;
-    background: #111827;
-    color: #e5e7eb;
+    border: 1px solid #1f1f1f;
+    background: #111111;
+    color: #888888;
     white-space: nowrap;
 }
 
 .ngm-meta-env {
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #cbd5f5;
+    letter-spacing: 0.06em;
+    color: #888888;
 }
 
 /* Pill "Server · Live" */
@@ -674,11 +696,11 @@ button {
 }
 
 .ngm-meta-status-live {
-    border-color: #22c55e;
-    color: #bbf7d0;
+    border-color: rgba(62, 207, 142, 0.3);
+    color: #3ecf8e;
 }
 
 .ngm-meta-status-offline {
-    border-color: #ef4444;
-    color: #fca5a5;
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
 }

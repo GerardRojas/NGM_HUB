@@ -161,36 +161,36 @@
 }
 
 .source-toggle-btn.active {
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
+  background: rgba(62, 207, 142, 0.15);
+  color: #3ecf8e;
   font-weight: 600;
 }
 
 .ngm-select:focus,
 .toolbar-select:focus {
-  border-color: rgba(34, 197, 94, 0.65);
+  border-color: rgba(62, 207, 142, 0.6);
   background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+  box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.15);
 }
 
 /* Dropdown options styling */
 .ngm-select option,
 .toolbar-select option {
-  background: #18181b;
-  color: rgba(255, 255, 255, 0.92);
+  background: #111111;
+  color: #ededed;
   padding: 10px 14px;
   font-weight: 400;
 }
 
 .ngm-select option:hover,
 .toolbar-select option:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .ngm-select option:checked,
 .toolbar-select option:checked {
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
+  background: rgba(62, 207, 142, 0.15);
+  color: #3ecf8e;
   font-weight: 500;
 }
 
@@ -518,11 +518,11 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--ngm-text-muted, #6b7280);
+  color: #666666;
   text-align: left;
-  border-bottom: 1px solid var(--border-soft, #27272f);
+  border-bottom: 1px solid #1f1f1f;
   white-space: nowrap;
-  background: #1a1a1d; /* Solid background for sticky header */
+  background: #111111;
 }
 
 /* Column widths - fixed sizes for consistent layout */
@@ -541,8 +541,8 @@
 .expenses-table td {
   padding: 10px 14px;
   font-size: 13px;
-  color: var(--text-primary, #e5e7eb);
-  border-bottom: 1px solid rgba(39, 39, 47, 0.5);
+  color: #ededed;
+  border-bottom: 1px solid #1f1f1f;
   vertical-align: middle;
   white-space: nowrap;
   overflow: hidden;
@@ -594,7 +594,7 @@
   cursor: pointer;
   width: 16px;
   height: 16px;
-  accent-color: #22c55e;
+  accent-color: #3ecf8e;
 }
 
 /* Authorization badge */
@@ -625,14 +625,14 @@
 }
 
 .auth-badge-authorized {
-  background: rgba(34, 197, 94, 0.12);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(62, 207, 142, 0.12);
+  color: #3ecf8e;
+  border: 1px solid rgba(62, 207, 142, 0.3);
 }
 
 .auth-badge-authorized:hover {
-  background: rgba(34, 197, 94, 0.18);
-  border-color: rgba(34, 197, 94, 0.5);
+  background: rgba(62, 207, 142, 0.18);
+  border-color: rgba(62, 207, 142, 0.5);
 }
 
 .auth-badge-disabled {

@@ -138,7 +138,7 @@
 
 .estimator-file--active {
     border-color: var(--accent);
-    background: rgba(34, 197, 94, 0.12); /* verde muy suave */
+    background: rgba(62, 207, 142, 0.12); /* verde muy suave */
     color: #e5e7eb;
 }
 
@@ -382,13 +382,13 @@
 
 .modal-content {
     max-height: 90vh;
-    background: #222222;
-    border-radius: 16px;
+    background: #111111;
+    border-radius: 8px;
     padding: 24px 24px 16px;
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
     display: flex;
     flex-direction: column;
-    border: 1px solid rgba(75, 75, 75, 0.25);
+    border: 1px solid #1f1f1f;
 }
 
 /* Header del modal de info: título + botón "Manage info" */
@@ -445,22 +445,21 @@
 
 /* Inputs dentro del modal, estilo compacto y oscuro */
 .modal .input {
-    background: #555555;
-    border-radius: 12px;
-    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 4px;
+    border: 1px solid #2a2a2a;
     padding: 8px 10px;
     color: #e5e7eb;
     font-size: 0.85rem;
 }
 
 .modal .input::placeholder {
-    color: #878787;
+    color: #555;
 }
 
 .modal .input:focus {
     outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.65);
+    border-color: #3ecf8e;
 }
 
 /* Inputs en modo read-only (cuando no estás en "Manage info") */
@@ -488,44 +487,45 @@
     margin-top: 12px;
 }
 
-/* Botones del footer del modal: mismo look que el toolbar */
+/* Botones del footer del modal */
 .modal-footer .btn-primary,
 .modal-footer .btn-secondary {
-    padding: 6px 14px;
-    border-radius: 9999px;
-    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
 
     display: inline-flex;
     align-items: center;
     gap: 6px;
 
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
     border-width: 1px;
     cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 /* Primario: CTA verde */
 .modal-footer .btn-primary {
-    background: var(--accent);
-    border-color: #16a34a;
-    color: #022c22;
-    font-weight: 500;
+    background: #3ecf8e;
+    border-color: #3ecf8e;
+    color: #000;
+    font-weight: 600;
 }
 
 .modal-footer .btn-primary:hover {
-    background: #16a34a;
-    transform: translateY(-1px);
+    background: #34b87d;
+    border-color: #34b87d;
 }
 
 /* Secundario: oscuro coherente con el hub */
 .modal-footer .btn-secondary {
-    background: #020617;
-    border-color: #27272f;
+    background: transparent;
+    border-color: #2a2a2a;
     color: #e5e7eb;
 }
 
 .modal-footer .btn-secondary:hover {
-    background: #0b1120;
+    background: rgba(255, 255, 255, 0.04);
+    border-color: #3a3a3a;
 }
 
 /* Checkboxes del modal con acento NGM en lugar de azul del navegador */
@@ -555,8 +555,8 @@
 
     padding: 8px 12px;
     border-radius: 14px;
-    background: #232323;                 /* fondo oscuro tipo NGM */
-    border: 1px solid var(--border-soft);
+    background: #111111;                 /* fondo oscuro Supabase style */
+    border: 1px solid #1f1f1f;
     box-shadow: 0 14px 30px rgba(0, 0, 0, 0.65);
     margin-bottom: 12px;
 }
@@ -579,8 +579,8 @@
     font-size: 12px;
 
     /* Fondo un poco más claro para que se diferencie de la toolbar */
-    background: #2d2d2d;
-    border: 1px solid #3a3a3a;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
 
     color: #e5e7eb;
 
@@ -593,7 +593,7 @@
 }
 
 .estimator-page .estimator-toolbar .btn-secondary:hover {
-    background: #3b3b3b;
+    background: #2a2a2a;
     border-color: var(--accent); /* borde verde */
     transform: translateY(-1px);
 }
@@ -681,43 +681,41 @@
    ================================ */
 
 .modal-footer .modal-btn {
-    width: 170px; /* cambia aquí */
+    width: 170px;
     padding: 10px 18px;
-    border-radius: 12px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 13px;
     font-weight: 500;
 
-    background: #3a3a3a;              /* gris moderno */
-    border: 1px solid #4b4b4b;
-    color: #e5e5e5;
+    background: #3ecf8e;
+    border: 1px solid #3ecf8e;
+    color: #000;
 
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
 
-    transition: all 0.18s ease;
+    transition: background 0.15s ease, border-color 0.15s ease;
     cursor: pointer;
 }
 
-/* Hover verde elegante */
+/* Hover */
 .modal-footer .modal-btn:hover {
-    background: #16a34a;             /* verde NGM */
-    border-color: #16a34a;
-    color: #383a39;                  /* texto verde oscuro */
-    transform: translateY(-1px);
+    background: #34b87d;
+    border-color: #34b87d;
 }
 
 /* Botón secundario (cancelar) */
 .modal-footer .modal-btn.cancel {
-    background: #2a2a2a;
-    border-color: #444;
+    background: transparent;
+    border-color: #2a2a2a;
+    color: #e5e5e5;
 }
 
 .modal-footer .modal-btn.cancel:hover {
-    background: #636363;
-    border-color: #16a34a;
-    color: #e5e5e5;
+    background: rgba(255, 255, 255, 0.04);
+    border-color: #3a3a3a;
 }
 
 .modal-footer {
@@ -733,10 +731,10 @@
 
 .modal-header .modal-btn.header-action {
     padding: 8px 16px;
-    background: #3a3a3a;
+    background: transparent;
     color: #e5e5e5;
-    border: 1px solid #4b4b4b;
-    border-radius: 10px;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
     font-size: 13px;
     font-weight: 500;
 
@@ -745,13 +743,11 @@
     justify-content: center;
     gap: 6px;
 
-    transition: all .18s ease;
+    transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-/* Hover verde elegante */
+/* Hover */
 .modal-header .modal-btn.header-action:hover {
-    background: #16a34a;
-    border-color: #16a34a;
-    color: #022c22;
-    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.04);
+    border-color: #3a3a3a;
 }

@@ -268,7 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
         : `${initials}`;
 
       card.innerHTML = `
-        <div class="team-avatar" style="background:${bg};" title="${safeName}">
+        <div class="team-avatar" style="color:${bg}; border-color:${bg};" title="${safeName}">
           ${avatarHtml}
         </div>
 

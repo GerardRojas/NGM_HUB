@@ -203,8 +203,8 @@
     border-radius: 14px; /* más premium */
     padding: 0;
 
-    background: linear-gradient(135deg, #22c55e, #15803d);
-    color: #0f2a1e;
+    background: #3ecf8e;
+    color: #000000;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35);
 
     transition:
@@ -243,7 +243,7 @@
     width: 100%;
     padding: 10px 10px;
     border-radius: 8px;
-    border: 1px solid #27272f;
+    border: 1px solid #1f1f1f;
     background: var(--bg-input);
     color: var(--text-primary);
     font-size: 13px;

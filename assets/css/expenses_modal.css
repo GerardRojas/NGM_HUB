@@ -32,10 +32,10 @@
   display: flex;
   flex-direction: column;
 
-  background: #212121 !important;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #111111 !important;
+  border: 1px solid #1f1f1f;
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -46,8 +46,8 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #242424 !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  background: #111111 !important;
+  border-bottom: 1px solid #1f1f1f;
 }
 
 #addExpenseModal .modal-title {
@@ -93,8 +93,8 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: rgba(34, 197, 94, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  background: rgba(62, 207, 142, 0.08);
+  border: 1px solid rgba(62, 207, 142, 0.25);
   border-radius: 10px;
   width: fit-content;
 }
@@ -108,7 +108,7 @@
 #addExpenseModal .modal-project-name {
   font-size: 14px;
   font-weight: 600;
-  color: #4ade80;
+  color: #3ecf8e;
 }
 
 /* Table container */
@@ -176,13 +176,13 @@
 #addExpenseModal .exp-input {
   width: 100%;
   padding: 9px 11px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid #2a2a2a;
   color: rgba(255, 255, 255, 0.92);
   font-size: 13px;
   outline: none;
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 /* Searchable input specific styles */
@@ -227,9 +227,8 @@
 }
 
 #addExpenseModal .exp-input:focus {
-  border-color: rgba(34, 197, 94, 0.65);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: #3ecf8e;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 /* Input warning state - no exact match found */
@@ -375,18 +374,18 @@
 }
 
 #addExpenseModal .btn-row-receipt:hover {
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
+  background: rgba(62, 207, 142, 0.15);
+  color: #3ecf8e;
 }
 
 #addExpenseModal .btn-row-receipt.receipt-icon-btn--has-receipt {
-  color: #4ade80;
-  background: rgba(34, 197, 94, 0.1);
+  color: #3ecf8e;
+  background: rgba(62, 207, 142, 0.1);
 }
 
 #addExpenseModal .btn-row-receipt.receipt-icon-btn--has-receipt:hover {
-  background: rgba(34, 197, 94, 0.2);
-  color: #22c55e;
+  background: rgba(62, 207, 142, 0.2);
+  color: #3ecf8e;
 }
 
 /* Add row button */
@@ -414,9 +413,9 @@
 }
 
 #addExpenseModal .btn-add-row:hover {
-  border-color: rgba(34, 197, 94, 0.5);
-  color: #4ade80;
-  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(62, 207, 142, 0.5);
+  color: #3ecf8e;
+  background: rgba(62, 207, 142, 0.08);
 }
 
 /* Auto Categorize button - matches Scan Receipt style */
@@ -505,9 +504,9 @@
 }
 
 .modal-csv-mapping {
-  background: var(--ngm-bg-card, #18181b);
-  border: 1px solid var(--border-soft, #27272f);
-  border-radius: 16px;
+  background: #111111;
+  border: 1px solid #1f1f1f;
+  border-radius: 8px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   max-width: 700px;
   width: 90%;
@@ -649,37 +648,35 @@
 .modal-csv-mapping .btn-modal-secondary,
 .modal-csv-mapping .btn-modal-primary {
   appearance: none;
-  border-radius: 10px;
-  padding: 10px 20px;
+  border-radius: 6px;
+  padding: 10px 18px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    transform 0.05s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .modal-csv-mapping .btn-modal-secondary {
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.8);
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: var(--text-primary, #ededed);
 }
 
 .modal-csv-mapping .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
 }
 
 .modal-csv-mapping .btn-modal-primary {
-  background: linear-gradient(135deg, #22c55e, #15803d);
-  color: #0f2a1e;
-  border-color: transparent;
+  background: #3ecf8e;
+  border: 1px solid #3ecf8e;
+  color: #000;
+  font-weight: 600;
 }
 
 .modal-csv-mapping .btn-modal-primary:hover {
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
-  transform: translateY(-1px);
+  background: #34b87d;
+  border-color: #34b87d;
 }
 
 .modal-csv-mapping .btn-modal-primary:disabled,
@@ -694,44 +691,42 @@
   justify-content: flex-end;
   gap: 12px;
   padding: 14px 18px;
-  background: #242424 !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  background: #111111 !important;
+  border-top: 1px solid #1f1f1f;
 }
 
 #addExpenseModal .btn-modal-secondary,
 #addExpenseModal .btn-modal-primary {
   appearance: none;
-  border-radius: 10px;
-  padding: 10px 20px;
+  border-radius: 6px;
+  padding: 10px 18px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    transform 0.05s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 #addExpenseModal .btn-modal-secondary {
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.8);
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: var(--text-primary, #ededed);
 }
 
 #addExpenseModal .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
 }
 
 #addExpenseModal .btn-modal-primary {
-  background: linear-gradient(135deg, #22c55e, #15803d);
-  color: #0f2a1e;
-  border-color: transparent;
+  background: #3ecf8e;
+  border: 1px solid #3ecf8e;
+  color: #000;
+  font-weight: 600;
 }
 
 #addExpenseModal .btn-modal-primary:hover {
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
-  transform: translateY(-1px);
+  background: #34b87d;
+  border-color: #34b87d;
 }
 
 #addExpenseModal .btn-modal-primary:disabled,
@@ -805,10 +800,10 @@
   max-height: calc(100vh - 2 * clamp(12px, 3vh, 28px));
   display: flex;
   flex-direction: column;
-  background: #212121 !important;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #111111 !important;
+  border: 1px solid #1f1f1f;
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -818,8 +813,8 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #242424 !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  background: #111111 !important;
+  border-bottom: 1px solid #1f1f1f;
 }
 
 #editSingleExpenseModal .modal-title {
@@ -876,23 +871,22 @@
 .form-input {
   width: 100%;
   padding: 9px 11px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid #2a2a2a;
   color: rgba(255, 255, 255, 0.92);
   font-size: 13px;
   outline: none;
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .form-input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: #555;
 }
 
 .form-input:focus {
-  border-color: rgba(34, 197, 94, 0.65);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: #3ecf8e;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 /* Inputs with datalist */
@@ -972,44 +966,42 @@ input[type="number"].form-input {
   justify-content: flex-end;
   gap: 12px;
   padding: 14px 18px;
-  background: #242424 !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  background: #111111 !important;
+  border-top: 1px solid #1f1f1f;
 }
 
 #editSingleExpenseModal .btn-modal-secondary,
 #editSingleExpenseModal .btn-modal-primary {
   appearance: none;
-  border-radius: 10px;
-  padding: 10px 20px;
+  border-radius: 6px;
+  padding: 10px 18px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    transform 0.05s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 #editSingleExpenseModal .btn-modal-secondary {
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.8);
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: var(--text-primary, #ededed);
 }
 
 #editSingleExpenseModal .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
 }
 
 #editSingleExpenseModal .btn-modal-primary {
-  background: linear-gradient(135deg, #22c55e, #15803d);
-  color: #0f2a1e;
-  border-color: transparent;
+  background: #3ecf8e;
+  border: 1px solid #3ecf8e;
+  color: #000;
+  font-weight: 600;
 }
 
 #editSingleExpenseModal .btn-modal-primary:hover {
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
-  transform: translateY(-1px);
+  background: #34b87d;
+  border-color: #34b87d;
 }
 
 #editSingleExpenseModal .btn-modal-primary:disabled,
@@ -1068,7 +1060,7 @@ input[type="number"].form-input {
 
 .form-checkbox-wrapper:hover {
   background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(34, 197, 94, 0.4);
+  border-color: rgba(62, 207, 142, 0.4);
 }
 
 .form-checkbox {
@@ -1086,13 +1078,13 @@ input[type="number"].form-input {
 }
 
 .form-checkbox:hover {
-  border-color: rgba(34, 197, 94, 0.6);
-  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(62, 207, 142, 0.6);
+  background: rgba(62, 207, 142, 0.1);
 }
 
 .form-checkbox:checked {
-  background: linear-gradient(135deg, #22c55e, #15803d);
-  border-color: #22c55e;
+  background: #3ecf8e;
+  border-color: #3ecf8e;
 }
 
 .form-checkbox:checked::after {
@@ -1152,10 +1144,10 @@ input[type="number"].form-input {
 #columnManagerModal .modal-column-manager {
   width: min(500px, 95%);
   max-width: 500px;
-  background: #212121;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #111111;
+  border: 1px solid #1f1f1f;
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -1165,8 +1157,8 @@ input[type="number"].form-input {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #242424;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  background: #111111;
+  border-bottom: 1px solid #1f1f1f;
 }
 
 #columnManagerModal .modal-title {
@@ -1221,7 +1213,7 @@ input[type="number"].form-input {
 
 .column-checkbox-item:hover {
   background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(34, 197, 94, 0.4);
+  border-color: rgba(62, 207, 142, 0.4);
 }
 
 .column-checkbox-item input[type="checkbox"] {
@@ -1239,13 +1231,13 @@ input[type="number"].form-input {
 }
 
 .column-checkbox-item input[type="checkbox"]:hover {
-  border-color: rgba(34, 197, 94, 0.6);
-  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(62, 207, 142, 0.6);
+  background: rgba(62, 207, 142, 0.1);
 }
 
 .column-checkbox-item input[type="checkbox"]:checked {
-  background: linear-gradient(135deg, #22c55e, #15803d);
-  border-color: #22c55e;
+  background: #3ecf8e;
+  border-color: #3ecf8e;
 }
 
 .column-checkbox-item input[type="checkbox"]:checked::after {
@@ -1272,41 +1264,42 @@ input[type="number"].form-input {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #242424;
-  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  background: #111111;
+  border-top: 1px solid #1f1f1f;
 }
 
 #columnManagerModal .btn-modal-secondary,
 #columnManagerModal .btn-modal-primary {
   appearance: none;
-  border-radius: 10px;
-  padding: 10px 20px;
+  border-radius: 6px;
+  padding: 10px 18px;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 #columnManagerModal .btn-modal-secondary {
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.8);
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: var(--text-primary, #ededed);
 }
 
 #columnManagerModal .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
 }
 
 #columnManagerModal .btn-modal-primary {
-  background: linear-gradient(135deg, #22c55e, #15803d);
-  color: #0f2a1e;
-  border-color: transparent;
+  background: #3ecf8e;
+  border: 1px solid #3ecf8e;
+  color: #000;
+  font-weight: 600;
 }
 
 #columnManagerModal .btn-modal-primary:hover {
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
-  transform: translateY(-1px);
+  background: #34b87d;
+  border-color: #34b87d;
 }
 
 /* Responsive */
@@ -1376,10 +1369,10 @@ input[type="number"].form-input {
   display: flex;
   flex-direction: column;
 
-  background: #212121 !important;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #111111 !important;
+  border: 1px solid #1f1f1f;
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -1390,8 +1383,8 @@ input[type="number"].form-input {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #242424 !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  background: #111111 !important;
+  border-bottom: 1px solid #1f1f1f;
 }
 
 #scanReceiptModal .modal-title {
@@ -1427,7 +1420,7 @@ input[type="number"].form-input {
   flex: 1;
   padding: 20px 18px;
   overflow-y: auto;
-  background: #1a1a1a;
+  background: #111111;
 }
 
 #scanReceiptModal .modal-hint {
@@ -1444,8 +1437,8 @@ input[type="number"].form-input {
   justify-content: flex-end;
   gap: 10px;
   padding: 14px 18px;
-  background: #1f1f1f;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #111111;
+  border-top: 1px solid #1f1f1f;
 }
 
 #scanReceiptModal .btn-modal-secondary {
@@ -1584,10 +1577,10 @@ input[type="number"].form-input {
   max-height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
-  background: #212121 !important;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #111111 !important;
+  border: 1px solid #1f1f1f;
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -1597,8 +1590,8 @@ input[type="number"].form-input {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #242424 !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  background: #111111 !important;
+  border-bottom: 1px solid #1f1f1f;
 }
 
 #constructionStageModal .modal-title {
@@ -1626,7 +1619,7 @@ input[type="number"].form-input {
   flex: 1;
   padding: 20px 18px;
   overflow-y: auto;
-  background: #1a1a1a;
+  background: #111111;
 }
 
 #constructionStageModal .modal-hint {
@@ -1698,8 +1691,8 @@ input[type="number"].form-input {
   justify-content: flex-end;
   gap: 10px;
   padding: 14px 18px;
-  background: #1f1f1f;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #111111;
+  border-top: 1px solid #1f1f1f;
 }
 
 /* Auto Categorize Progress */
@@ -1752,9 +1745,9 @@ input[type="number"].form-input {
 }
 
 .confidence-badge-high {
-  background: rgba(34, 197, 94, 0.15);
-  border: 1px solid rgba(34, 197, 94, 0.4);
-  color: #4ade80;
+  background: rgba(62, 207, 142, 0.15);
+  border: 1px solid rgba(62, 207, 142, 0.4);
+  color: #3ecf8e;
 }
 
 .confidence-badge-medium {
@@ -1839,10 +1832,10 @@ input[type="number"].form-input {
   max-height: calc(100vh - 2 * clamp(12px, 3vh, 28px));
   display: flex;
   flex-direction: column;
-  background: #212121 !important;
-  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: #111111 !important;
+  border: 1px solid #1f1f1f;
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
-  border-radius: 16px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -1852,8 +1845,8 @@ input[type="number"].form-input {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #242424 !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  background: #111111 !important;
+  border-bottom: 1px solid #1f1f1f;
 }
 
 #importCSVModal .modal-title {
@@ -1896,8 +1889,8 @@ input[type="number"].form-input {
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  background: rgba(34, 197, 94, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  background: rgba(62, 207, 142, 0.08);
+  border: 1px solid rgba(62, 207, 142, 0.25);
   border-radius: 10px;
   width: fit-content;
 }
@@ -1905,14 +1898,14 @@ input[type="number"].form-input {
 #importCSVModal .modal-project-label {
   font-size: 13px;
   font-weight: 500;
-  color: rgba(34, 197, 94, 0.9);
+  color: rgba(62, 207, 142, 0.9);
   letter-spacing: 0.02em;
 }
 
 #importCSVModal .modal-project-name {
   font-size: 13px;
   font-weight: 600;
-  color: #22c55e;
+  color: #3ecf8e;
   letter-spacing: -0.01em;
 }
 
@@ -1922,43 +1915,42 @@ input[type="number"].form-input {
   justify-content: flex-end;
   gap: 10px;
   padding: 14px 18px;
-  background: #1a1a1a !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #111111 !important;
+  border-top: 1px solid #1f1f1f;
 }
 
 #importCSVModal .btn-modal-secondary {
   padding: 9px 18px;
   font-size: 13px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--text-primary, #ededed);
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 #importCSVModal .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #e5e7eb;
-  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
 }
 
 #importCSVModal .btn-modal-primary {
   padding: 9px 18px;
   font-size: 13px;
-  font-weight: 500;
-  color: #fff;
-  background: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.4);
-  border-radius: 10px;
+  font-weight: 600;
+  color: #000;
+  background: #3ecf8e;
+  border: 1px solid #3ecf8e;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 #importCSVModal .btn-modal-primary:hover:not(:disabled) {
-  background: #16a34a;
-  border-color: rgba(34, 197, 94, 0.5);
+  background: #34b87d;
+  border-color: #34b87d;
 }
 
 #importCSVModal .btn-modal-primary:disabled {
@@ -1987,17 +1979,17 @@ input[type="number"].form-input {
 
 #importCSVModal .form-input {
   padding: 10px 12px;
-  background: #18181b;
-  border: 1px solid #27272f;
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
   color: #e5e7eb;
   font-size: 13px;
-  transition: border-color 0.2s ease;
+  transition: border-color 0.15s ease;
 }
 
 #importCSVModal .form-input:focus {
   outline: none;
-  border-color: rgba(34, 197, 94, 0.4);
+  border-color: #3ecf8e;
 }
 
 #importCSVModal .file-input-wrapper {
@@ -2011,20 +2003,19 @@ input[type="number"].form-input {
   font-size: 13px;
   font-weight: 500;
   color: #e5e7eb;
-  background: #18181b;
-  border: 1px solid #27272f;
-  border-radius: 8px;
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
 }
 
 #importCSVModal .btn-file-select:hover {
-  background: #27272f;
-  border-color: rgba(34, 197, 94, 0.3);
-  color: #22c55e;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
 }
 
 #importCSVModal .file-name-display {
@@ -2048,15 +2039,15 @@ input[type="number"].form-input {
 .ngm-select {
   min-width: 280px;
   padding: 11px 36px 11px 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  border: 1px solid #2a2a2a;
+  background: rgba(255, 255, 255, 0.02);
   color: rgba(255, 255, 255, 0.92);
   font-size: 13px;
   font-weight: 500;
   outline: none;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 
   /* Remove default appearance */
   -webkit-appearance: none;
@@ -2080,18 +2071,17 @@ input[type="number"].form-input {
 }
 
 .ngm-select:hover {
-  border-color: rgba(148, 163, 184, 0.45);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: #3a3a3a;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .ngm-select:focus {
-  border-color: rgba(34, 197, 94, 0.65);
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+  border-color: #3ecf8e;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .ngm-select option {
-  background: #18181b;
+  background: #111111;
   color: rgba(255, 255, 255, 0.92);
   padding: 10px 14px;
   font-weight: 400;
@@ -2102,8 +2092,8 @@ input[type="number"].form-input {
 }
 
 .ngm-select option:checked {
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
+  background: rgba(62, 207, 142, 0.15);
+  color: #3ecf8e;
   font-weight: 500;
 }
 

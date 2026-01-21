@@ -527,11 +527,11 @@
 /* Column widths - fixed sizes for consistent layout */
 .expenses-table .col-checkbox { width: 40px; }
 .expenses-table .col-date { width: 90px; }
-.expenses-table .col-description { width: 120px; max-width: 120px; } /* Fixed width, compact */
-.expenses-table .col-account { width: 140px; }
-.expenses-table .col-type { width: 100px; }
-.expenses-table .col-vendor { width: 120px; }
-.expenses-table .col-payment { width: 90px; }
+.expenses-table .col-description { width: 160px; }
+.expenses-table .col-account { width: 180px; }
+.expenses-table .col-type { width: 90px; }
+.expenses-table .col-vendor { width: 150px; }
+.expenses-table .col-payment { width: 80px; }
 .expenses-table .col-amount { width: 90px; }
 .expenses-table .col-receipt { width: 50px; }
 .expenses-table .col-auth { width: 85px; }

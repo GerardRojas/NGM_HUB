@@ -499,8 +499,7 @@
 }
 
 .expenses-table {
-  width: max-content; /* Table takes minimum width needed */
-  min-width: 100%; /* But at least fill container */
+  width: max-content; /* Table takes exactly the width of its columns */
   border-collapse: collapse;
   table-layout: fixed; /* Fixed layout for consistent widths */
 }
@@ -528,7 +527,7 @@
 /* Column widths - fixed sizes for consistent layout */
 .expenses-table .col-checkbox { width: 40px; }
 .expenses-table .col-date { width: 90px; }
-.expenses-table .col-description { width: 120px; } /* Fixed width, compact */
+.expenses-table .col-description { width: 120px; max-width: 120px; } /* Fixed width, compact */
 .expenses-table .col-account { width: 140px; }
 .expenses-table .col-type { width: 100px; }
 .expenses-table .col-vendor { width: 120px; }

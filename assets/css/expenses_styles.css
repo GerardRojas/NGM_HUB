@@ -297,8 +297,8 @@
   background: var(--ngm-bg-card, #18181b);
   border: 1px solid var(--border-soft, #27272f);
   border-radius: 12px;
-  overflow-x: hidden; /* No horizontal scroll - table adapts to width */
-  overflow-y: auto; /* Enable vertical scroll for long tables */
+  overflow-x: auto; /* Horizontal scroll when table is wider than container */
+  overflow-y: auto; /* Vertical scroll for long tables */
   max-height: calc(100vh - 280px); /* Limit height, leave room for toolbar/footer */
   min-height: 200px;
   width: 100%;
@@ -467,9 +467,10 @@
    EXPENSES TABLE — DARK THEME
    ========================================== */
 
-/* Better scrollbar for table container (vertical) */
+/* Scrollbars for table container (both vertical and horizontal) */
 .expenses-table-container::-webkit-scrollbar {
   width: 10px;
+  height: 10px;
 }
 
 .expenses-table-container::-webkit-scrollbar-track {
@@ -487,6 +488,10 @@
   background-color: rgba(200, 200, 200, 0.5);
 }
 
+.expenses-table-container::-webkit-scrollbar-corner {
+  background: rgba(255, 255, 255, 0.02);
+}
+
 /* Firefox scrollbar */
 .expenses-table-container {
   scrollbar-width: thin;
@@ -494,9 +499,10 @@
 }
 
 .expenses-table {
-  width: 100%;
+  width: max-content; /* Table takes minimum width needed */
+  min-width: 100%; /* But at least fill container */
   border-collapse: collapse;
-  table-layout: auto; /* Auto layout adapts to visible columns */
+  table-layout: fixed; /* Fixed layout for consistent widths */
 }
 
 .expenses-table thead {
@@ -507,7 +513,7 @@
 }
 
 .expenses-table th {
-  padding: 10px 14px;
+  padding: 10px 12px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -519,18 +525,18 @@
   background: #1a1a1d; /* Solid background for sticky header */
 }
 
-/* Column widths - proportional based on content type */
-.expenses-table .col-date { width: 95px; }
-.expenses-table .col-description { width: auto; min-width: 200px; } /* Flexible, takes remaining space */
-.expenses-table .col-type { width: 120px; }
-.expenses-table .col-vendor { width: 140px; }
-.expenses-table .col-payment { width: 100px; }
-.expenses-table .col-account { width: 160px; }
-.expenses-table .col-amount { width: 100px; }
-.expenses-table .col-receipt { width: 60px; }
-.expenses-table .col-auth { width: 100px; }
+/* Column widths - fixed sizes for consistent layout */
 .expenses-table .col-checkbox { width: 40px; }
-.expenses-table .col-actions { width: 50px; }
+.expenses-table .col-date { width: 90px; }
+.expenses-table .col-description { width: 180px; } /* Fixed width, smaller */
+.expenses-table .col-account { width: 140px; }
+.expenses-table .col-type { width: 100px; }
+.expenses-table .col-vendor { width: 120px; }
+.expenses-table .col-payment { width: 90px; }
+.expenses-table .col-amount { width: 90px; }
+.expenses-table .col-receipt { width: 50px; }
+.expenses-table .col-auth { width: 85px; }
+.expenses-table .col-actions { width: 45px; }
 
 .expenses-table td {
   padding: 10px 14px;

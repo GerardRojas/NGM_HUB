@@ -543,15 +543,26 @@
       console.log("[PIPELINE] fetchPipeline called");
       console.log("[PIPELINE] API_BASE:", window.API_BASE);
       console.log("[PIPELINE] Using apiBase:", apiBase);
-      console.log("[PIPELINE] Fetching from:", `${apiBase}/pipeline/grouped`);
 
-      const res = await fetch(`${apiBase}/pipeline/grouped`, {
-        credentials: "include"
+      const url = `${apiBase}/pipeline/grouped`;
+      console.log("[PIPELINE] Fetching from:", url);
+
+      const res = await fetch(url, {
+        credentials: "include",
+        headers: {
+          "Accept": "application/json"
+        }
       });
 
       console.log("[PIPELINE] Response status:", res.status, res.statusText);
+      console.log("[PIPELINE] Response headers:", Object.fromEntries(res.headers.entries()));
 
-      if (!res.ok) throw new Error(`Error loading pipeline: ${res.status} ${res.statusText}`);
+      if (!res.ok) {
+        const errorText = await res.text().catch(() => "Could not read error body");
+        console.error("[PIPELINE] Error response body:", errorText);
+        throw new Error(`Error loading pipeline: ${res.status} ${res.statusText} - ${errorText}`);
+      }
+
       const data = await res.json();
 
       console.log("[PIPELINE] raw response:", data);
@@ -582,8 +593,17 @@
       renderGroups();
     } catch (err) {
       console.error("[PIPELINE] fetch error:", err);
+      console.error("[PIPELINE] Error name:", err.name);
+      console.error("[PIPELINE] Error message:", err.message);
+      console.error("[PIPELINE] Error stack:", err.stack);
+
+      // Check if it's a network error (CORS, connection refused, etc.)
+      if (err instanceof TypeError && err.message.includes("Failed to fetch")) {
+        console.error("[PIPELINE] Network error - possible causes: CORS, server down, or connection refused");
+      }
+
       if (groupsWrapper) {
-        groupsWrapper.innerHTML = "<p class='panel-text'>Error loading pipeline data.</p>";
+        groupsWrapper.innerHTML = `<p class='panel-text'>Error loading pipeline data: ${err.message}</p>`;
       }
     }
   }

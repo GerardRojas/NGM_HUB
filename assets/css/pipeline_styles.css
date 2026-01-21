@@ -94,22 +94,94 @@
     color: var(--ngm-text-muted);
 }
 
+/* ==========================================
+   NGM SELECT — UNIFIED DROPDOWN COMPONENT
+   (Copied from expenses_styles.css for consistency)
+   ========================================== */
+
+.pipeline-section .ngm-select {
+    min-width: 280px;
+    padding: 11px 36px 11px 14px;
+    border-radius: 4px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s ease;
+
+    /* Custom dropdown arrow */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M2.5 4.5L6 8l3.5-3.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    padding-right: 32px;
+}
+
+.pipeline-section .ngm-select::-ms-expand {
+    display: none !important;
+}
+
+.pipeline-section .ngm-select::-webkit-calendar-picker-indicator {
+    display: none !important;
+    -webkit-appearance: none !important;
+}
+
+.pipeline-section .ngm-select:hover {
+    border-color: rgba(148, 163, 184, 0.45);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.pipeline-section .ngm-select:focus {
+    border-color: rgba(62, 207, 142, 0.6);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.1);
+}
+
+/* Dropdown options styling */
+.pipeline-section .ngm-select option {
+    background: #111111;
+    color: #ededed;
+    padding: 10px 14px;
+    font-weight: 400;
+}
+
+.pipeline-section .ngm-select option:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.pipeline-section .ngm-select option:checked {
+    background: rgba(62, 207, 142, 0.15);
+    color: #3ecf8e;
+    font-weight: 500;
+}
+
+/* Compact variant for toolbar filters */
+.pipeline-section .ngm-select--compact {
+    min-width: 140px;
+    padding: 8px 32px 8px 12px;
+    font-size: 12px;
+    height: 34px;
+}
+
+/* Legacy filter-select (kept for backwards compatibility) */
 .pipeline-section .filter-select {
     min-width: 130px;
-    height: 32px; /* ⬅️ igual que pm-btn */
-
+    height: 32px;
     padding: 0 12px;
     font-size: 12px;
-
-    border-radius: var(--radius-md); /* ⬅️ NO pill */
+    border-radius: var(--radius-md);
     border: 1px solid var(--border-soft);
-
     background: var(--ngm-bg-surface-soft);
     color: var(--ngm-text-main);
-
     outline: none;
     cursor: pointer;
-
     transition:
         background 0.15s ease,
         border-color 0.15s ease,

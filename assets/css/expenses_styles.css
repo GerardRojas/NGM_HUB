@@ -528,7 +528,7 @@
 /* Column widths - fixed sizes for consistent layout */
 .expenses-table .col-checkbox { width: 40px; }
 .expenses-table .col-date { width: 90px; }
-.expenses-table .col-description { width: 180px; } /* Fixed width, smaller */
+.expenses-table .col-description { width: 11px; } /* Fixed width, compact */
 .expenses-table .col-account { width: 140px; }
 .expenses-table .col-type { width: 100px; }
 .expenses-table .col-vendor { width: 120px; }

@@ -3,12 +3,12 @@
    ========================================== */
 
 :root {
-    /* Fondo global - muy oscuro, casi negro */
-    --bg-main: #090909;
-    --bg-body: #090909;
+    /* Fondo global - gris muy oscuro (no negro puro, estilo Supabase) */
+    --bg-main: #0d0d0d;
+    --bg-body: #0d0d0d;
 
     /* Paneles / superficies - sutilmente más claros */
-    --ngm-bg-topbar: #090909;       /* mismo que fondo, topbar discreta */
+    --ngm-bg-topbar: #0d0d0d;       /* mismo que fondo, topbar discreta */
     --ngm-bg-surface: #111111;
     --ngm-bg-surface-soft: #161616;
     --ngm-bg-card: #1a1a1a;
@@ -85,7 +85,7 @@ button {
 
 .sidebar {
     width: 240px;
-    background: #090909;            /* mismo que fondo principal */
+    background: #0d0d0d;            /* mismo que fondo principal */
     border-right: 1px solid #1f1f1f;
     display: flex;
     flex-direction: column;
@@ -572,7 +572,7 @@ button {
 
 /* NGM Topbar - Supabase style: discreta, mismo fondo */
 .ngm-topbar {
-    background: #090909;              /* mismo que fondo principal */
+    background: #0d0d0d;              /* mismo que fondo principal */
     border-bottom: 1px solid #1f1f1f;
     padding: 12px 24px;
 }

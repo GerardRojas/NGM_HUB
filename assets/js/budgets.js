@@ -16,7 +16,6 @@
   // DOM Elements
   const els = {
     projectFilter: null,
-    loadingState: null,
     emptyState: null,
     content: null,
     budgetsTable: null,
@@ -33,7 +32,8 @@
     selectedProjectName: null,
     btnCloseImportModal: null,
     btnCancelImport: null,
-    btnConfirmImport: null
+    btnConfirmImport: null,
+    pageLoadingOverlay: null
   };
 
   // ================================
@@ -107,8 +107,8 @@
   // ================================
   function cacheElements() {
     els.projectFilter = document.getElementById('projectFilter');
-    els.loadingState = document.getElementById('budgetsLoadingState');
     els.emptyState = document.getElementById('budgetsEmptyState');
+    els.pageLoadingOverlay = document.getElementById('pageLoadingOverlay');
     els.content = document.getElementById('budgetsContent');
     els.budgetsTable = document.getElementById('budgetsTable');
     els.budgetsTableBody = document.getElementById('budgetsTableBody');
@@ -130,15 +130,7 @@
   // ================================
   // UI STATE
   // ================================
-  function showLoadingState(message = 'Loading budgets...') {
-    els.loadingState.style.display = 'flex';
-    els.loadingState.querySelector('.loading-text').textContent = message;
-    els.emptyState.style.display = 'none';
-    els.content.style.display = 'none';
-  }
-
   function showEmptyState(message = 'Select a project to view budgets', showImportButton = false) {
-    els.loadingState.style.display = 'none';
     els.emptyState.style.display = 'flex';
 
     const messageEl = document.getElementById('emptyStateMessage');
@@ -153,9 +145,15 @@
   }
 
   function hideEmptyState() {
-    els.loadingState.style.display = 'none';
     els.emptyState.style.display = 'none';
     els.content.style.display = 'block';
+  }
+
+  function hidePageLoading() {
+    document.body.classList.remove('page-loading');
+    if (els.pageLoadingOverlay) {
+      els.pageLoadingOverlay.classList.add('hidden');
+    }
   }
 
   // ================================
@@ -215,8 +213,6 @@
     const apiBase = getApiBase();
 
     try {
-      showLoadingState('Loading budgets...');
-
       const url = `${apiBase}/budgets?project=${projectId}`;
       console.log('[BUDGETS] Fetching from:', url);
 
@@ -681,8 +677,9 @@
     // Load projects
     await loadProjects();
 
-    // Show initial empty state
+    // Show initial empty state and hide page loading
     showEmptyState('Select a project to view budgets');
+    hidePageLoading();
   }
 
   // ================================

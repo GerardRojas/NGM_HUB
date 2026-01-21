@@ -20,13 +20,13 @@
   const els = {
     table: document.getElementById('projectsTable'),
     tbody: document.getElementById('projectsTableBody'),
-    loadingState: document.getElementById('projectsLoadingState'),
     emptyState: document.getElementById('projectsEmptyState'),
     btnEditProjects: document.getElementById('btnEditProjects'),
     btnAddProject: document.getElementById('btnAddProject'),
     btnCancelEdit: document.getElementById('btnCancelEdit'),
     btnSaveChanges: document.getElementById('btnSaveChanges'),
-    editModeFooter: document.getElementById('editModeFooter')
+    editModeFooter: document.getElementById('editModeFooter'),
+    pageLoadingOverlay: document.getElementById('pageLoadingOverlay')
   };
 
   // ================================
@@ -61,13 +61,12 @@
 
   async function loadProjects() {
     try {
-      showLoadingState();
-
       const res = await fetch(`${API_BASE}/projects`);
       if (!res.ok) {
         const text = await res.text();
         console.error('[PROJECTS] Error loading projects:', text);
         showEmptyState();
+        hidePageLoading();
         return;
       }
 
@@ -77,9 +76,11 @@
 
       renderProjectsTable();
       els.btnEditProjects.disabled = projects.length === 0;
+      hidePageLoading();
     } catch (err) {
       console.error('[PROJECTS] Network error:', err);
       showEmptyState();
+      hidePageLoading();
     }
   }
 
@@ -93,7 +94,6 @@
       return;
     }
 
-    els.loadingState.style.display = 'none';
     els.emptyState.style.display = 'none';
     els.table.style.display = 'table';
     els.tbody.innerHTML = '';
@@ -154,14 +154,35 @@
   }
 
   function buildSelectHtml(field, selectedValue, options, valueKey, labelKey) {
+    // Generate unique ID for datalist
+    const listId = `datalist-${field}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Find the selected option's label
+    const selectedOption = options.find(opt => opt[valueKey] == selectedValue);
+    const selectedLabel = selectedOption ? (selectedOption[labelKey] || '') : '';
+
+    // Build datalist options
     const opts = options.map(opt => {
       const val = opt[valueKey];
       const label = opt[labelKey] || '—';
-      const selected = val == selectedValue ? 'selected' : '';
-      return `<option value="${val}" ${selected}>${label}</option>`;
+      return `<option value="${label}" data-id="${val}"></option>`;
     }).join('');
 
-    return `<select class="edit-input" data-field="${field}"><option value="">Select...</option>${opts}</select>`;
+    return `
+      <input
+        type="text"
+        class="edit-input edit-input-datalist"
+        data-field="${field}"
+        data-value-id="${selectedValue || ''}"
+        value="${selectedLabel}"
+        list="${listId}"
+        placeholder="Select..."
+        autocomplete="off"
+      >
+      <datalist id="${listId}">
+        ${opts}
+      </datalist>
+    `;
   }
 
   function findMetaName(metaKey, id, idKey, nameKey) {
@@ -169,16 +190,16 @@
     return item ? item[nameKey] : null;
   }
 
-  function showLoadingState() {
-    els.loadingState.style.display = 'flex';
-    els.emptyState.style.display = 'none';
+  function showEmptyState() {
+    els.emptyState.style.display = 'flex';
     els.table.style.display = 'none';
   }
 
-  function showEmptyState() {
-    els.loadingState.style.display = 'none';
-    els.emptyState.style.display = 'flex';
-    els.table.style.display = 'none';
+  function hidePageLoading() {
+    document.body.classList.remove('page-loading');
+    if (els.pageLoadingOverlay) {
+      els.pageLoadingOverlay.classList.add('hidden');
+    }
   }
 
   // ================================
@@ -225,10 +246,15 @@
       const inputs = row.querySelectorAll('.edit-input');
       inputs.forEach(input => {
         const field = input.getAttribute('data-field');
-        const value = input.value.trim();
 
-        // Keep all values as strings - backend expects strings
-        current[field] = value || null;
+        // For datalist inputs, use the stored ID value
+        if (input.classList.contains('edit-input-datalist')) {
+          const valueId = input.getAttribute('data-value-id');
+          current[field] = valueId || null;
+        } else {
+          const value = input.value.trim();
+          current[field] = value || null;
+        }
       });
 
       // Check if changed
@@ -310,6 +336,28 @@
     // Add project
     els.btnAddProject?.addEventListener('click', () => {
       alert('Add project functionality - to be implemented');
+    });
+
+    // Datalist selection - update data-value-id when user selects an option
+    els.tbody?.addEventListener('input', (e) => {
+      if (e.target.classList.contains('edit-input-datalist')) {
+        const input = e.target;
+        const listId = input.getAttribute('list');
+        const datalist = document.getElementById(listId);
+
+        if (datalist) {
+          const matchingOption = Array.from(datalist.options).find(
+            opt => opt.value === input.value
+          );
+
+          if (matchingOption) {
+            input.setAttribute('data-value-id', matchingOption.getAttribute('data-id') || '');
+          } else {
+            // User typed something not in the list - clear the ID
+            input.setAttribute('data-value-id', '');
+          }
+        }
+      }
     });
 
     // Delete row (delegated)

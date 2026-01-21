@@ -22,7 +22,13 @@
   <script src="assets/js/pills.js" defer></script>
   <script src="assets/js/sidebar.js" defer></script>
 </head>
-<body>
+<body class="page-pipeline page-loading">
+    <!-- Page Loading Overlay -->
+    <div class="page-loading-overlay" id="pageLoadingOverlay">
+        <img src="assets/img/white_icon.png" class="loading-logo loading-logo-xl" alt="Loading...">
+        <span class="loading-text">Loading...</span>
+    </div>
+
     <div class="app-layout">
         <!-- Sidebar con módulos dinámicos -->
         <aside class="sidebar">

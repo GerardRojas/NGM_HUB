@@ -348,6 +348,14 @@
   const priorityFilter = document.getElementById("priority-filter");
   const manageBtn = document.getElementById("btnNewTask");
   const searchInput = document.getElementById("pipeline-search-input");
+  const pageLoadingOverlay = document.getElementById("pageLoadingOverlay");
+
+  function hidePageLoading() {
+    document.body.classList.remove("page-loading");
+    if (pageLoadingOverlay) {
+      pageLoadingOverlay.classList.add("hidden");
+    }
+  }
 
   // New Task button handler
   if (manageBtn) {
@@ -591,6 +599,7 @@
 
       populateFilters(rawGroups);
       renderGroups();
+      hidePageLoading();
     } catch (err) {
       console.error("[PIPELINE] fetch error:", err);
       console.error("[PIPELINE] Error name:", err.name);
@@ -605,6 +614,7 @@
       if (groupsWrapper) {
         groupsWrapper.innerHTML = `<p class='panel-text'>Error loading pipeline data: ${err.message}</p>`;
       }
+      hidePageLoading();
     }
   }
 

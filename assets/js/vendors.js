@@ -17,7 +17,6 @@
   const els = {
     table: document.getElementById('vendorsTable'),
     tbody: document.getElementById('vendorsTableBody'),
-    loadingState: document.getElementById('vendorsLoadingState'),
     emptyState: document.getElementById('vendorsEmptyState'),
     btnEditVendors: document.getElementById('btnEditVendors'),
     btnAddVendor: document.getElementById('btnAddVendor'),
@@ -27,7 +26,8 @@
     searchInput: document.getElementById('vendors-search-input'),
     selectAllCheckbox: document.getElementById('selectAllCheckbox'),
     btnBulkDelete: document.getElementById('btnBulkDelete'),
-    selectedCount: document.getElementById('selectedCount')
+    selectedCount: document.getElementById('selectedCount'),
+    pageLoadingOverlay: document.getElementById('pageLoadingOverlay')
   };
 
   // ================================
@@ -45,13 +45,12 @@
 
   async function loadVendors() {
     try {
-      showLoadingState();
-
       const res = await fetch(`${API_BASE}/vendors`);
       if (!res.ok) {
         const text = await res.text();
         console.error('[VENDORS] Error loading vendors:', text);
         showEmptyState();
+        hidePageLoading();
         return;
       }
 
@@ -61,9 +60,11 @@
 
       renderVendorsTable();
       els.btnEditVendors.disabled = vendors.length === 0;
+      hidePageLoading();
     } catch (err) {
       console.error('[VENDORS] Network error:', err);
       showEmptyState();
+      hidePageLoading();
     }
   }
 
@@ -77,7 +78,6 @@
       return;
     }
 
-    els.loadingState.style.display = 'none';
     els.emptyState.style.display = 'none';
     els.table.style.display = 'table';
     els.tbody.innerHTML = '';
@@ -120,16 +120,16 @@
     `;
   }
 
-  function showLoadingState() {
-    els.loadingState.style.display = 'flex';
-    els.emptyState.style.display = 'none';
+  function showEmptyState() {
+    els.emptyState.style.display = 'flex';
     els.table.style.display = 'none';
   }
 
-  function showEmptyState() {
-    els.loadingState.style.display = 'none';
-    els.emptyState.style.display = 'flex';
-    els.table.style.display = 'none';
+  function hidePageLoading() {
+    document.body.classList.remove('page-loading');
+    if (els.pageLoadingOverlay) {
+      els.pageLoadingOverlay.classList.add('hidden');
+    }
   }
 
   // ================================

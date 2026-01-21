@@ -59,11 +59,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 2) DOM refs
   const board = document.getElementById("team-board");
-  const placeholder = document.getElementById("team-placeholder");
   const searchInput = document.getElementById("team-search-input");
+  const pageLoadingOverlay = document.getElementById("pageLoadingOverlay");
 
   if (!board) return;
-  if (placeholder) placeholder.remove();
+
+  function hidePageLoading() {
+    document.body.classList.remove("page-loading");
+    if (pageLoadingOverlay) {
+      pageLoadingOverlay.classList.add("hidden");
+    }
+  }
 
   // 3) API helpers
   function getApiBase() {
@@ -326,16 +332,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 9) Load from API
-  async function loadUsersFromApi({ keepQuery = true } = {}) {
+  async function loadUsersFromApi({ keepQuery = true, isInitialLoad = false } = {}) {
     const currentQ = keepQuery ? (searchInput?.value || "") : "";
     try {
       const data = await fetchTeamUsers("");
       usersStore = Array.isArray(data) ? data.map(adaptUser) : [];
       if (keepQuery && searchInput) searchInput.value = currentQ;
       rerender();
+      if (isInitialLoad) hidePageLoading();
     } catch (err) {
       console.error("[TEAM] loadUsersFromApi failed:", err);
       alert("Failed to load team users. Check console.");
+      if (isInitialLoad) hidePageLoading();
     }
   }
 
@@ -423,5 +431,5 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Initial load
-  loadUsersFromApi({ keepQuery: false });
+  loadUsersFromApi({ keepQuery: false, isInitialLoad: true });
 });

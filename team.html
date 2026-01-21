@@ -31,7 +31,13 @@
   <script src="assets/js/team.js" defer></script>
 </head>
 
-<body class="page-team">
+<body class="page-team page-loading">
+  <!-- Page Loading Overlay -->
+  <div class="page-loading-overlay" id="pageLoadingOverlay">
+      <img src="assets/img/white_icon.png" class="loading-logo loading-logo-xl" alt="Loading...">
+      <span class="loading-text">Loading...</span>
+  </div>
+
   <div class="app-layout">
     <!-- Sidebar -->
     <aside class="sidebar">
@@ -114,7 +120,7 @@
           </div>
 
           <div id="team-board" class="team-board">
-            <div id="team-placeholder" class="team-placeholder">Loading team…</div>
+            <!-- Content rendered by JS -->
           </div>
         </section>
 

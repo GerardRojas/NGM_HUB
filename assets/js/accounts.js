@@ -17,7 +17,6 @@
   const els = {
     table: document.getElementById('accountsTable'),
     tbody: document.getElementById('accountsTableBody'),
-    loadingState: document.getElementById('accountsLoadingState'),
     emptyState: document.getElementById('accountsEmptyState'),
     btnEditAccounts: document.getElementById('btnEditAccounts'),
     btnAddAccount: document.getElementById('btnAddAccount'),
@@ -27,7 +26,8 @@
     searchInput: document.getElementById('accounts-search-input'),
     btnSortByNumber: document.getElementById('btnSortByNumber'),
     btnSortByCategory: document.getElementById('btnSortByCategory'),
-    btnSortByName: document.getElementById('btnSortByName')
+    btnSortByName: document.getElementById('btnSortByName'),
+    pageLoadingOverlay: document.getElementById('pageLoadingOverlay')
   };
 
   // ================================
@@ -45,13 +45,12 @@
 
   async function loadAccounts() {
     try {
-      showLoadingState();
-
       const res = await fetch(`${API_BASE}/accounts`);
       if (!res.ok) {
         const text = await res.text();
         console.error('[ACCOUNTS] Error loading accounts:', text);
         showEmptyState();
+        hidePageLoading();
         return;
       }
 
@@ -61,9 +60,11 @@
 
       renderAccountsTable();
       els.btnEditAccounts.disabled = accounts.length === 0;
+      hidePageLoading();
     } catch (err) {
       console.error('[ACCOUNTS] Network error:', err);
       showEmptyState();
+      hidePageLoading();
     }
   }
 
@@ -77,7 +78,6 @@
       return;
     }
 
-    els.loadingState.style.display = 'none';
     els.emptyState.style.display = 'none';
     els.table.style.display = 'table';
     els.tbody.innerHTML = '';
@@ -128,16 +128,16 @@
     `;
   }
 
-  function showLoadingState() {
-    els.loadingState.style.display = 'flex';
-    els.emptyState.style.display = 'none';
+  function showEmptyState() {
+    els.emptyState.style.display = 'flex';
     els.table.style.display = 'none';
   }
 
-  function showEmptyState() {
-    els.loadingState.style.display = 'none';
-    els.emptyState.style.display = 'flex';
-    els.table.style.display = 'none';
+  function hidePageLoading() {
+    document.body.classList.remove('page-loading');
+    if (els.pageLoadingOverlay) {
+      els.pageLoadingOverlay.classList.add('hidden');
+    }
   }
 
   // ================================

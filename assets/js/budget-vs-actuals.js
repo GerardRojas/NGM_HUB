@@ -44,6 +44,14 @@
     els.reportResults = document.getElementById('reportResults');
     els.reportLoadingState = document.getElementById('reportLoadingState');
     els.reportContent = document.getElementById('reportContent');
+    els.pageLoadingOverlay = document.getElementById('pageLoadingOverlay');
+  }
+
+  function hidePageLoading() {
+    document.body.classList.remove('page-loading');
+    if (els.pageLoadingOverlay) {
+      els.pageLoadingOverlay.classList.add('hidden');
+    }
   }
 
   // ================================
@@ -625,6 +633,9 @@
 
     // Load projects
     await loadProjects();
+
+    // Hide page loading overlay
+    hidePageLoading();
 
     console.log('[BUDGET_VS_ACTUALS] Initialized successfully');
   }

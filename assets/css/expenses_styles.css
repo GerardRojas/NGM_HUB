@@ -528,10 +528,10 @@
 .expenses-table .col-checkbox { width: 40px; min-width: 40px; }
 .expenses-table .col-date { width: 90px; min-width: 90px; }
 .expenses-table .col-bill-id { width: 85px; min-width: 85px; }
-.expenses-table .col-description { width: 100; min-width: 140px; }
+.expenses-table .col-description { width: 100px; min-width: 100px; }
 .expenses-table .col-account { width: 100px; min-width: 100px; }
 .expenses-table .col-type { width: 90px; min-width: 90px; }
-.expenses-table .col-vendor { width: 90; min-width: 100px; }
+.expenses-table .col-vendor { width: 100px; min-width: 100px; }
 .expenses-table .col-payment { width: 80px; min-width: 80px; }
 .expenses-table .col-amount { width: 90px; min-width: 90px; }
 .expenses-table .col-receipt { width: 45px; min-width: 45px; }

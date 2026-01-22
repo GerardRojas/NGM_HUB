@@ -1123,6 +1123,12 @@
     currentReceiptUrl = null;
     renderReceiptUploader();
 
+    // IMPORTANT: Reset Save button to enabled state
+    if (els.btnSaveAllExpenses) {
+      els.btnSaveAllExpenses.disabled = false;
+      els.btnSaveAllExpenses.textContent = 'Save All';
+    }
+
     // Show modal
     els.modal.classList.remove('hidden');
   }
@@ -1411,6 +1417,12 @@
     const expensesToSave = [];
     const invalidAccounts = new Set();
     const rowsWithInvalidAccounts = [];
+    const invalidVendors = new Set();
+    const rowsWithInvalidVendors = [];
+    const invalidTxnTypes = new Set();
+    const rowsWithInvalidTxnTypes = [];
+    const invalidPaymentTypes = new Set();
+    const rowsWithInvalidPaymentTypes = [];
 
     // Collect data from each row including receipt files
     rows.forEach((row, rowIdx) => {
@@ -1444,6 +1456,18 @@
                 invalidAccounts.add(trimmedValue);
                 rowsWithInvalidAccounts.push({ row: rowIdx + 1, accountName: trimmedValue });
                 console.log(`[SAVE] Added to invalid accounts: "${trimmedValue}" (Row ${rowIdx + 1})`);
+              } else if (field === 'vendor_id') {
+                invalidVendors.add(trimmedValue);
+                rowsWithInvalidVendors.push({ row: rowIdx + 1, vendorName: trimmedValue });
+                console.log(`[SAVE] Added to invalid vendors: "${trimmedValue}" (Row ${rowIdx + 1})`);
+              } else if (field === 'txn_type') {
+                invalidTxnTypes.add(trimmedValue);
+                rowsWithInvalidTxnTypes.push({ row: rowIdx + 1, typeName: trimmedValue });
+                console.log(`[SAVE] Added to invalid txn types: "${trimmedValue}" (Row ${rowIdx + 1})`);
+              } else if (field === 'payment_type') {
+                invalidPaymentTypes.add(trimmedValue);
+                rowsWithInvalidPaymentTypes.push({ row: rowIdx + 1, paymentName: trimmedValue });
+                console.log(`[SAVE] Added to invalid payment types: "${trimmedValue}" (Row ${rowIdx + 1})`);
               }
               // Leave value as text for now - we'll handle it below
             }
@@ -1472,6 +1496,64 @@
         expensesToSave.push(rowData);
       }
     });
+
+    // ============================================
+    // VALIDATION: Reject invalid vendors
+    // ============================================
+    if (invalidVendors.size > 0) {
+      const invalidVendorsList = Array.from(invalidVendors);
+      let message = '❌ INVALID VENDORS DETECTED\n\nThe following vendors are not registered in the system:\n';
+
+      invalidVendorsList.forEach(vendorName => {
+        const rowsWithThis = rowsWithInvalidVendors.filter(r => r.vendorName === vendorName);
+        const rowNumbers = rowsWithThis.map(r => r.row).join(', ');
+        message += `\n• "${vendorName}" (Row ${rowNumbers})`;
+      });
+
+      message += '\n\n📋 Please select a valid vendor from the dropdown list.';
+      message += '\n\nIf you need to add a new vendor, go to Settings > Vendors first.';
+
+      alert(message);
+      return; // Stop saving
+    }
+
+    // ============================================
+    // VALIDATION: Reject invalid transaction types
+    // ============================================
+    if (invalidTxnTypes.size > 0) {
+      const invalidTypesList = Array.from(invalidTxnTypes);
+      let message = '❌ INVALID TRANSACTION TYPES DETECTED\n\nThe following transaction types are not valid:\n';
+
+      invalidTypesList.forEach(typeName => {
+        const rowsWithThis = rowsWithInvalidTxnTypes.filter(r => r.typeName === typeName);
+        const rowNumbers = rowsWithThis.map(r => r.row).join(', ');
+        message += `\n• "${typeName}" (Row ${rowNumbers})`;
+      });
+
+      message += '\n\n📋 Please select a valid transaction type from the dropdown list.';
+
+      alert(message);
+      return; // Stop saving
+    }
+
+    // ============================================
+    // VALIDATION: Reject invalid payment types
+    // ============================================
+    if (invalidPaymentTypes.size > 0) {
+      const invalidPaymentsList = Array.from(invalidPaymentTypes);
+      let message = '❌ INVALID PAYMENT METHODS DETECTED\n\nThe following payment methods are not valid:\n';
+
+      invalidPaymentsList.forEach(paymentName => {
+        const rowsWithThis = rowsWithInvalidPaymentTypes.filter(r => r.paymentName === paymentName);
+        const rowNumbers = rowsWithThis.map(r => r.row).join(', ');
+        message += `\n• "${paymentName}" (Row ${rowNumbers})`;
+      });
+
+      message += '\n\n📋 Please select a valid payment method from the dropdown list.';
+
+      alert(message);
+      return; // Stop saving
+    }
 
     if (expensesToSave.length === 0) {
       alert('Please fill in at least one complete expense row (Date and Amount are required).');
@@ -1592,7 +1674,8 @@
         // Upload receipt if this row had one
         if (receiptFile && window.ReceiptUpload) {
           try {
-            const expenseId = created.id || created.expense_id;
+            // The API returns { message, expense: { expense_id, ... } }
+            const expenseId = created.expense?.expense_id || created.expense_id || created.id;
             console.log(`[EXPENSES] Uploading receipt for expense ${expenseId}:`, receiptFile.name);
 
             if (!expenseId) {
@@ -1611,7 +1694,9 @@
             console.log('[EXPENSES] Receipt uploaded:', receiptUrl);
 
             // Update the created expense object to include receipt_url
-            created.receipt_url = receiptUrl;
+            // Handle both { expense: {...} } and direct object response formats
+            const expenseData = created.expense || created;
+            expenseData.receipt_url = receiptUrl;
 
             // Update expense with receipt URL AND at least one other field to avoid "No fields to update" error
             await apiJson(`${apiBase}/expenses/${expenseId}`, {
@@ -1619,7 +1704,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 receipt_url: receiptUrl,
-                LineDescription: created.LineDescription || null // Include existing field to ensure at least one field is sent
+                LineDescription: expenseData.LineDescription || null // Include existing field to ensure at least one field is sent
               })
             });
 
@@ -4352,6 +4437,13 @@
       setTimeout(() => {
         closeConstructionStageModal();
 
+        // IMPORTANT: Ensure Save button is enabled and in correct state
+        if (els.btnSaveAllExpenses) {
+          els.btnSaveAllExpenses.disabled = false;
+          els.btnSaveAllExpenses.textContent = 'Save All';
+          console.log('[AUTO-CATEGORIZE] Save button reset to enabled state');
+        }
+
         // Show summary
         const summary = getSummary(response.categorizations);
         alert(`Auto-categorization complete!\n\n${summary}`);
@@ -4361,6 +4453,12 @@
       console.error('[AUTO-CATEGORIZE] Error:', error);
       alert('Error during auto-categorization: ' + error.message);
       closeConstructionStageModal();
+
+      // IMPORTANT: Ensure Save button is enabled even on error
+      if (els.btnSaveAllExpenses) {
+        els.btnSaveAllExpenses.disabled = false;
+        els.btnSaveAllExpenses.textContent = 'Save All';
+      }
     }
   }
 

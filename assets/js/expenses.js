@@ -3212,6 +3212,11 @@
       filterDropdownOptions(e.target.value);
     });
 
+    // Filter dropdown Select All button
+    els.filterDropdown?.querySelector('.filter-select-all-btn')?.addEventListener('click', () => {
+      selectAllFilterOptions();
+    });
+
     // Filter dropdown Clear button
     els.filterDropdown?.querySelector('.filter-clear-btn')?.addEventListener('click', () => {
       clearFilterSelection();
@@ -4316,6 +4321,13 @@
     options.forEach(option => {
       const label = option.querySelector('label').textContent.toLowerCase();
       option.style.display = label.includes(search) ? 'flex' : 'none';
+    });
+  }
+
+  function selectAllFilterOptions() {
+    els.filterDropdownOptions.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.checked = true;
+      tempFilterSelections[cb.dataset.value] = true;
     });
   }
 

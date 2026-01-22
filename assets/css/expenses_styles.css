@@ -525,18 +525,18 @@
 }
 
 /* Column widths - fixed sizes for consistent layout */
-.expenses-table .col-checkbox { width: 40px; min-width: 40px; }
-.expenses-table .col-date { width: 90px; min-width: 90px; }
-.expenses-table .col-bill-id { width: 85px; min-width: 85px; }
-.expenses-table .col-description { width: 100px; min-width: 100px; }
-.expenses-table .col-account { width: 100px; min-width: 100px; }
-.expenses-table .col-type { width: 90px; min-width: 90px; }
-.expenses-table .col-vendor { width: 100px; min-width: 100px; }
-.expenses-table .col-payment { width: 80px; min-width: 80px; }
-.expenses-table .col-amount { width: 90px; min-width: 90px; }
-.expenses-table .col-receipt { width: 45px; min-width: 45px; }
-.expenses-table .col-auth { width: 85px; min-width: 85px; }
-.expenses-table .col-actions { width: 45px; min-width: 45px; }
+.expenses-table .col-checkbox { width: 40px; min-width: 40px; max-width: 40px; }
+.expenses-table .col-date { width: 90px; min-width: 90px; max-width: 90px; }
+.expenses-table .col-bill-id { width: 85px; min-width: 85px; max-width: 85px; }
+.expenses-table .col-description { width: 100px; min-width: 100px; max-width: 100px; }
+.expenses-table .col-account { width: 100px; min-width: 100px; max-width: 100px; }
+.expenses-table .col-type { width: 90px; min-width: 90px; max-width: 90px; }
+.expenses-table .col-vendor { width: 100px; min-width: 100px; max-width: 100px; }
+.expenses-table .col-payment { width: 80px; min-width: 80px; max-width: 80px; }
+.expenses-table .col-amount { width: 90px; min-width: 90px; max-width: 90px; }
+.expenses-table .col-receipt { width: 45px; min-width: 45px; max-width: 45px; }
+.expenses-table .col-auth { width: 85px; min-width: 85px; max-width: 85px; }
+.expenses-table .col-actions { width: 45px; min-width: 45px; max-width: 45px; }
 
 .expenses-table td {
   padding: 10px 14px;
@@ -1072,6 +1072,7 @@ select.edit-input option {
   border-top: 1px solid rgba(148, 163, 184, 0.2);
 }
 
+.filter-select-all-btn,
 .filter-clear-btn,
 .filter-apply-btn {
   flex: 1;
@@ -1083,12 +1084,14 @@ select.edit-input option {
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
+.filter-select-all-btn,
 .filter-clear-btn {
   background: transparent;
   border: 1px solid rgba(148, 163, 184, 0.3);
   color: rgba(255, 255, 255, 0.7);
 }
 
+.filter-select-all-btn:hover,
 .filter-clear-btn:hover {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(148, 163, 184, 0.5);

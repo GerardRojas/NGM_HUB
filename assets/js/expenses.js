@@ -33,6 +33,7 @@
   let currentEditingExpense = null; // Expense being edited in single modal
   let columnFilters = {
     date: [],
+    bill_id: [],
     type: [],
     vendor: [],
     payment: [],
@@ -72,6 +73,7 @@
   // Column visibility configuration
   const COLUMN_CONFIG = [
     { key: 'date', label: 'Date', defaultVisible: true },
+    { key: 'bill_id', label: 'Bill #', defaultVisible: true },
     { key: 'description', label: 'Description', defaultVisible: true },
     { key: 'type', label: 'Type', defaultVisible: true },
     { key: 'vendor', label: 'Vendor', defaultVisible: true },
@@ -160,6 +162,7 @@
     els.btnCancelSingleExpense = document.getElementById('btnCancelSingleExpense');
     els.btnSaveSingleExpense = document.getElementById('btnSaveSingleExpense');
     els.singleExpenseDate = document.getElementById('singleExpenseDate');
+    els.singleExpenseBillId = document.getElementById('singleExpenseBillId');
     els.singleExpenseDescription = document.getElementById('singleExpenseDescription');
     els.singleExpenseType = document.getElementById('singleExpenseType');
     els.singleExpenseVendor = document.getElementById('singleExpenseVendor');
@@ -402,6 +405,7 @@
       if (globalSearchTerm) {
         const searchLower = globalSearchTerm.toLowerCase();
         const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '';
+        const billId = exp.bill_id || '';
         const description = exp.LineDescription || '';
         const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || '';
         const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '';
@@ -411,6 +415,7 @@
 
         const matchesSearch =
           date.toLowerCase().includes(searchLower) ||
+          billId.toLowerCase().includes(searchLower) ||
           description.toLowerCase().includes(searchLower) ||
           type.toLowerCase().includes(searchLower) ||
           vendor.toLowerCase().includes(searchLower) ||
@@ -425,6 +430,12 @@
       if (columnFilters.date.length > 0) {
         const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
         if (!columnFilters.date.includes(date)) return false;
+      }
+
+      // Bill ID filter
+      if (columnFilters.bill_id.length > 0) {
+        const billId = exp.bill_id || '—';
+        if (!columnFilters.bill_id.includes(billId)) return false;
       }
 
       // Type filter
@@ -499,11 +510,11 @@
       return sum + amount;
     }, 0);
 
-    // Calculate colspan: checkbox (hidden) + 6 base columns (Date, Desc, Account, Type, Vendor, Payment)
-    const totalColspan = 7;
+    // Calculate colspan: checkbox (hidden) + 7 base columns (Date, Bill#, Desc, Account, Type, Vendor, Payment)
+    const totalColspan = 8;
 
     // Add total row with currency formatting
-    // Columns: Checkbox (hidden), Date, Desc, Account, Type, Vendor, Payment, Amount, Receipt, Auth, Actions
+    // Columns: Checkbox (hidden), Date, Bill#, Desc, Account, Type, Vendor, Payment, Amount, Receipt, Auth, Actions
     const totalRow = `
       <tr class="total-row">
         <td class="col-checkbox" style="display: none;"></td>
@@ -523,6 +534,7 @@
 
   function renderReadOnlyRow(exp, index) {
     const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
+    const billId = exp.bill_id || '—';
     const description = exp.LineDescription || '—';
     const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || '—';
     const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
@@ -559,6 +571,7 @@
       <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable" style="cursor: pointer;">
         <td class="col-checkbox" style="display: none;"></td>
         <td class="col-date">${date}</td>
+        <td class="col-bill-id">${billId}</td>
         <td class="col-description">${description}</td>
         <td class="col-account">${account}</td>
         <td class="col-type">${type}</td>
@@ -600,6 +613,9 @@
         </td>
         <td class="col-date editable-cell">
           <input type="date" class="edit-input" data-field="TxnDate" value="${dateVal}">
+        </td>
+        <td class="col-bill-id editable-cell">
+          <input type="text" class="edit-input" data-field="bill_id" value="${exp.bill_id || ''}" placeholder="Bill #...">
         </td>
         <td class="col-description editable-cell">
           <input type="text" class="edit-input" data-field="LineDescription" value="${exp.LineDescription || ''}" placeholder="Description...">
@@ -1209,6 +1225,9 @@
         <input type="date" class="exp-input exp-input--date" data-field="TxnDate" value="${today}">
       </td>
       <td>
+        <input type="text" class="exp-input exp-input--bill-id" data-field="bill_id" placeholder="Bill #">
+      </td>
+      <td>
         <input type="text" class="exp-input exp-input--desc" data-field="LineDescription" placeholder="Description">
       </td>
       <td>
@@ -1763,6 +1782,7 @@
 
     // Populate form fields
     els.singleExpenseDate.value = expense.TxnDate ? expense.TxnDate.split('T')[0] : '';
+    els.singleExpenseBillId.value = expense.bill_id || '';
     els.singleExpenseDescription.value = expense.LineDescription || '';
 
     // Set amount value - use plain number, not formatted (formatting will happen on blur)
@@ -1981,6 +2001,7 @@
     // Collect updated data - read from data-value attributes
     const updatedData = {
       TxnDate: els.singleExpenseDate.value || null,
+      bill_id: els.singleExpenseBillId.value || null,
       LineDescription: els.singleExpenseDescription.value || null,
       txn_type: getDatalistValue(els.singleExpenseType, 'singleExpenseTypeList'),
       vendor_id: getDatalistValue(els.singleExpenseVendor, 'singleExpenseVendorList'),
@@ -2090,6 +2111,13 @@
       formData.append('file', file);
 
       // Call backend to parse receipt
+      // BACKEND NOTE: The OpenAI prompt should extract and return the following fields for each expense:
+      // - date: Transaction date (YYYY-MM-DD format)
+      // - bill_id (or invoice_number): The invoice/bill number from the receipt
+      // - description: Line item description
+      // - amount: Amount in decimal format
+      // - vendor: Vendor name
+      // - category/transaction_type: Expense category
       els.scanReceiptProgressText.textContent = 'Analyzing...';
       els.scanReceiptProgressFill.style.width = '60%';
 
@@ -2225,6 +2253,21 @@
         }
       } else {
         console.log('[POPULATE] ⚠ No date in expense data');
+      }
+
+      // Populate bill_id (invoice number from receipt)
+      const billIdValue = expense.bill_id || expense.invoice_number || expense.bill_number;
+      if (billIdValue) {
+        const billIdInput = row.querySelector('[data-field="bill_id"]');
+        console.log('[POPULATE] Looking for bill_id input, found:', !!billIdInput);
+        if (billIdInput) {
+          billIdInput.value = billIdValue;
+          console.log('[POPULATE] ✓ Set bill_id:', billIdValue);
+        } else {
+          console.warn('[POPULATE] ❌ bill_id input not found!');
+        }
+      } else {
+        console.log('[POPULATE] ⚠ No bill_id/invoice_number in expense data');
       }
 
       // Populate description
@@ -4139,7 +4182,7 @@
   // ================================
   function getVisibleColumnCount() {
     // Count visible columns based on columnVisibility state
-    const baseColumns = ['date', 'description', 'type', 'vendor', 'payment', 'account', 'amount'];
+    const baseColumns = ['date', 'bill_id', 'description', 'type', 'vendor', 'payment', 'account', 'amount'];
     const visibleCount = baseColumns.filter(col => {
       return columnVisibility[col] !== false; // Default to visible
     }).length;
@@ -4205,6 +4248,9 @@
       switch (column) {
         case 'date':
           value = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
+          break;
+        case 'bill_id':
+          value = exp.bill_id || '—';
           break;
         case 'description':
           value = exp.LineDescription || '—';

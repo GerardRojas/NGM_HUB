@@ -174,6 +174,10 @@
                                             Date
                                             <button type="button" class="filter-toggle" data-column="date" title="Filter">▼</button>
                                         </th>
+                                        <th class="col-bill-id">
+                                            Bill #
+                                            <button type="button" class="filter-toggle" data-column="bill_id" title="Filter">▼</button>
+                                        </th>
                                         <th class="col-description">
                                             Description
                                             <button type="button" class="filter-toggle" data-column="description" title="Filter">▼</button>
@@ -259,6 +263,11 @@
                     <div class="form-field">
                         <label class="form-label">Date</label>
                         <input type="date" class="form-input" id="singleExpenseDate">
+                    </div>
+
+                    <div class="form-field">
+                        <label class="form-label">Bill / Invoice #</label>
+                        <input type="text" class="form-input" id="singleExpenseBillId" placeholder="Invoice number...">
                     </div>
 
                     <div class="form-field form-field-full">
@@ -357,6 +366,7 @@
                         <thead>
                             <tr>
                                 <th>Date</th>
+                                <th>Bill #</th>
                                 <th>Description</th>
                                 <th>Type</th>
                                 <th>Vendor</th>

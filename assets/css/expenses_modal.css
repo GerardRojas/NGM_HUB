@@ -144,14 +144,16 @@
 }
 
 /* Column widths */
-#addExpenseModal .expense-rows-table th:nth-child(1) { width: 140px; } /* Date */
-#addExpenseModal .expense-rows-table th:nth-child(2) { width: 300px; min-width: 300px; } /* Description - fixed width to contain input */
-#addExpenseModal .expense-rows-table th:nth-child(3) { width: 140px; } /* Type */
-#addExpenseModal .expense-rows-table th:nth-child(4) { width: 160px; } /* Vendor */
-#addExpenseModal .expense-rows-table th:nth-child(5) { width: 140px; } /* Payment */
-#addExpenseModal .expense-rows-table th:nth-child(6) { width: 140px; } /* Account */
-#addExpenseModal .expense-rows-table th:nth-child(7) { width: 120px; } /* Amount */
-#addExpenseModal .expense-rows-table th:nth-child(8) { width: 50px; }   /* Remove button */
+#addExpenseModal .expense-rows-table th:nth-child(1) { width: 120px; }  /* Date */
+#addExpenseModal .expense-rows-table th:nth-child(2) { width: 90px; }   /* Bill # */
+#addExpenseModal .expense-rows-table th:nth-child(3) { width: 220px; min-width: 220px; }  /* Description */
+#addExpenseModal .expense-rows-table th:nth-child(4) { width: 130px; }  /* Type */
+#addExpenseModal .expense-rows-table th:nth-child(5) { width: 140px; }  /* Vendor */
+#addExpenseModal .expense-rows-table th:nth-child(6) { width: 120px; }  /* Payment */
+#addExpenseModal .expense-rows-table th:nth-child(7) { width: 130px; }  /* Account */
+#addExpenseModal .expense-rows-table th:nth-child(8) { width: 100px; }  /* Amount */
+#addExpenseModal .expense-rows-table th:nth-child(9) { width: 50px; }   /* Receipt */
+#addExpenseModal .expense-rows-table th:nth-child(10) { width: 40px; }  /* Remove button */
 
 #addExpenseModal .expense-rows-table td {
   padding: 6px 8px;
@@ -161,10 +163,10 @@
 }
 
 /* Description column - fixed width to match header */
-#addExpenseModal .expense-rows-table td:nth-child(2) {
-  width: 300px;
-  min-width: 300px;
-  max-width: 300px;
+#addExpenseModal .expense-rows-table td:nth-child(3) {
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
   overflow: visible;
 }
 
@@ -333,11 +335,15 @@
 }
 
 #addExpenseModal .exp-input--desc {
-  min-width: 280px;
+  min-width: 200px;
   max-width: 100%;
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: normal;
+}
+
+#addExpenseModal .exp-input--bill-id {
+  width: 100%;
 }
 
 /* Remove row button */

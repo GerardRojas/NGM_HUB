@@ -142,6 +142,29 @@
     color: #e5e7eb;
 }
 
+/* Clickable estimate/template file */
+.estimator-file[data-project-id],
+.estimator-file[data-template-id] {
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.estimator-file[data-project-id]:hover,
+.estimator-file[data-template-id]:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border-soft);
+}
+
+/* Template files - slightly different style */
+.estimator-file--template {
+    color: #a78bfa; /* Purple tint for templates */
+}
+
+.estimator-file--template::before {
+    content: '📋 ';
+    font-size: 11px;
+}
+
 /* ==========================================
    TOOLBAR ESTIMATOR + SEARCH + VIEW CONTROLS
    ========================================== */
@@ -750,4 +773,117 @@
 .modal-header .modal-btn.header-action:hover {
     background: rgba(255, 255, 255, 0.04);
     border-color: #3a3a3a;
+}
+
+/* ==========================================
+   SAVE CONTROLS (toolbar)
+   ========================================== */
+
+.estimator-save-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 16px;
+    padding-right: 16px;
+    border-right: 1px solid #2a2a2a;
+}
+
+.estimator-save-controls .btn-primary,
+.estimator-save-controls .btn-secondary {
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.18s ease;
+    cursor: pointer;
+}
+
+.estimator-save-controls .btn-primary {
+    background: #3ecf8e;
+    border: 1px solid #3ecf8e;
+    color: #000;
+    font-weight: 600;
+}
+
+.estimator-save-controls .btn-primary:hover {
+    background: #34b87d;
+    border-color: #34b87d;
+    transform: translateY(-1px);
+}
+
+.estimator-save-controls .btn-secondary {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    color: #e5e7eb;
+}
+
+.estimator-save-controls .btn-secondary:hover {
+    background: #2a2a2a;
+    border-color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.btn-icon {
+    font-size: 14px;
+}
+
+/* ==========================================
+   ITEM THUMBNAILS
+   ========================================== */
+
+.item-thumbnail {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+}
+
+/* ==========================================
+   TEMPLATES LIST IN SIDEBAR
+   ========================================== */
+
+.estimator-files-list .estimator-file {
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.estimator-files-list .estimator-file:hover:not(.estimator-file--active) {
+    background: rgba(62, 207, 142, 0.06);
+    border-color: rgba(62, 207, 142, 0.3);
+    color: #e5e7eb;
+}
+
+/* Template item with icon */
+.estimator-file--template {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.estimator-file--template::before {
+    content: '📄';
+    font-size: 12px;
+}
+
+/* ==========================================
+   TEXTAREA in modals
+   ========================================== */
+
+.modal textarea.input {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 4px;
+    border: 1px solid #2a2a2a;
+    padding: 8px 10px;
+    color: #e5e7eb;
+    font-size: 0.85rem;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
+.modal textarea.input:focus {
+    outline: none;
+    border-color: #3ecf8e;
 }

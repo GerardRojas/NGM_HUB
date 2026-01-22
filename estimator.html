@@ -1,15 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- =========================================================
-         BLOQUE 0: METADATA + FONTS + CSS
-    ========================================================== -->
     <meta charset="UTF-8" />
-    <title>NGM HUB — Estimator</title>
+    <title>NGM HUB — Estimator Suite</title>
     <link rel="icon" type="image/png" href="assets/img/greenblack_icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Fuentes -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -17,24 +14,26 @@
       rel="stylesheet"
     >
 
-    <!-- CSS global -->
+    <!-- CSS -->
     <link rel="stylesheet" href="assets/css/styles.css">
-    <!-- CSS específico del estimator -->
     <link rel="stylesheet" href="assets/css/estimator_styles.css">
+
+    <!-- Supabase JS Library for Storage -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Config (API_BASE, SUPABASE_URL, etc.) -->
+    <script src="assets/js/config.js"></script>
 </head>
 
 <body class="estimator-page">
-    <!-- =========================================================
-         BLOQUE 1: LAYOUT GENERAL (SIDEBAR + MAIN AREA)
-    ========================================================== -->
     <div class="app-layout">
-        <!-- SIDEBAR ESPECIAL PARA ESTIMATOR -->
+        <!-- SIDEBAR -->
         <aside class="sidebar estimator-sidebar">
             <div class="sidebar-logo">
                 <img src="assets/img/logo.png" alt="NGM HUB" class="sidebar-logo-img">
             </div>
 
-            <!-- Resumen del estimate -->
+            <!-- Estimate Overview -->
             <div class="estimator-summary-card">
                 <div class="summary-title">Estimate Overview</div>
 
@@ -64,7 +63,7 @@
                 </div>
             </div>
 
-            <!-- Lista de estimates -->
+            <!-- Estimates List -->
             <div class="estimator-list-card">
                 <div class="estimator-list-title">Estimates</div>
                 <div class="estimator-files-wrapper">
@@ -73,16 +72,22 @@
                     </ul>
                 </div>
             </div>
+
+            <!-- Templates List -->
+            <div class="estimator-list-card">
+                <div class="estimator-list-title">Templates</div>
+                <div class="estimator-files-wrapper">
+                    <ul id="estimator-templates-list" class="estimator-files-list">
+                        <li class="estimator-file" style="color: #6b7280; font-style: italic;">Loading...</li>
+                    </ul>
+                </div>
+            </div>
         </aside>
 
-        <!-- MAIN AREA (MISMO MARCO QUE DASHBOARD/PROJECTS) -->
+        <!-- MAIN AREA -->
         <div class="main-area">
-
-            <!-- =====================================================
-                 TOPBAR GLOBAL (ESTILO DASHBOARD)
-            ====================================================== -->
+            <!-- TOPBAR -->
             <header class="ngm-topbar">
-                <!-- LEFT: brand / contexto -->
                 <div class="ngm-bar-left">
                     <div class="ngm-brand">
                         <div class="ngm-brand-icon-small">
@@ -90,21 +95,18 @@
                         </div>
                         <div class="ngm-brand-text">
                             <span class="ngm-brand-org">Next Generation Management</span>
-                            <span class="ngm-brand-context">NGM Hub · Estimator</span>
+                            <span class="ngm-brand-context">NGM Hub · Estimator Suite</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- RIGHT: meta + search + user -->
                 <div class="ngm-topbar-right">
                     <div class="ngm-meta">
-                        <span class="ngm-meta-pill ngm-meta-env">Environment · Production</span>
-                        <span class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · Live</span>
+                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
+                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · —</span>
                     </div>
 
-                    <!-- Search visualmente igual al dashboard,
-                        pero con la lógica del estimator (id mantiene) -->
-                    <form class="ngm-search" role="search">
+                    <form class="ngm-search" role="search" onsubmit="return false;">
                         <span class="ngm-global-search-icon">⌕</span>
                         <input
                             type="search"
@@ -115,18 +117,13 @@
                         />
                     </form>
 
-                    <span id="user-pill" class="user-pill">User · Role</span>
+                    <span id="user-pill" class="user-pill">User · —</span>
                 </div>
             </header>
 
-
-
-            <!-- =====================================================
-                 CONTENIDO PRINCIPAL
-            ====================================================== -->
+            <!-- MAIN CONTENT -->
             <main class="main-content">
-
-                <!-- SUBTOPBAR LOCAL DEL ESTIMATOR (TÍTULO + MODO) -->
+                <!-- Header Bar (Project Title) -->
                 <section class="estimator-header-bar">
                     <div class="estimator-title-block">
                         <div class="topbar-title editable-title">
@@ -141,9 +138,12 @@
                     </div>
                 </section>
 
-                <!-- TOOLBAR DEL ESTIMATOR -->
+                <!-- TOOLBAR -->
                 <section class="estimator-toolbar">
                     <div class="toolbar-left">
+                        <button class="btn-primary" id="btn-new-estimate" title="Create New Estimate">
+                            <span class="btn-icon">+</span> New Estimate
+                        </button>
                         <button class="btn-secondary" id="btn-add-concept">Add Concept</button>
                         <button class="btn-secondary" id="btn-overhead">Overhead</button>
                         <button class="btn-secondary" id="btn-import-revit">Import from Revit</button>
@@ -152,8 +152,17 @@
                     </div>
 
                     <div class="toolbar-right">
+                        <!-- Save buttons -->
+                        <div class="estimator-save-controls">
+                            <button class="btn-secondary" id="btn-save-as-template" title="Save as Template">
+                                <span class="btn-icon">📄</span> Save as Template
+                            </button>
+                            <button class="btn-primary" id="btn-save" title="Save Estimate">
+                                <span class="btn-icon">💾</span> Save
+                            </button>
+                        </div>
 
-                        <!-- Controles de vista (sliders) -->
+                        <!-- View Controls -->
                         <div class="estimator-view-controls">
                             <label class="view-control">
                                 Width
@@ -177,16 +186,14 @@
                                 />
                             </label>
                         </div>
-
                     </div>
-
                 </section>
 
-                <!-- PANEL PRINCIPAL (TABLA) -->
+                <!-- MAIN TABLE PANEL -->
                 <section class="estimator-main-panel">
                     <div class="panel panel-narrow estimator-panel">
                         <div id="estimator-status" class="table-lock-label" style="margin-bottom: 8px;">
-                            Fetching /estimator/base-structure…
+                            Loading...
                         </div>
 
                         <div class="table-wrapper estimator-table-wrapper">
@@ -222,12 +229,11 @@
     </div>
 
     <!-- =========================================================
-         BLOQUE 4: MODAL PROJECT INFO
+         MODAL: PROJECT INFO
     ========================================================== -->
     <div id="project-modal" class="modal-backdrop hidden">
         <div class="modal">
             <div class="modal-content">
-
                 <div class="modal-header">
                     <div class="modal-title">Project Info</div>
                     <button type="button" class="modal-btn header-action" id="manage-info-btn">
@@ -248,7 +254,6 @@
                         <div class="field-label">Project Type</div>
                         <input type="text" id="project-type-input" class="input" />
                     </div>
-
                     <div>
                         <div class="field-label">Total Area (SqFt)</div>
                         <input type="text" id="project-total-area-input" class="input" />
@@ -265,7 +270,6 @@
                         <div class="field-label">Footings Type</div>
                         <input type="text" id="project-footings-input" class="input" />
                     </div>
-
                     <div>
                         <div class="field-label">Number of Rooms</div>
                         <input type="text" id="project-rooms-input" class="input" />
@@ -296,57 +300,47 @@
                         </button>
                     </div>
                 </form>
-
             </div>
         </div>
     </div>
 
     <!-- =========================================================
-         BLOQUE 5: MODAL COLUMNS
+         MODAL: COLUMNS
     ========================================================== -->
     <div id="columns-modal" class="modal-backdrop hidden">
         <div class="modal">
             <div class="modal-content">
-
                 <div class="modal-title">Visible Columns</div>
 
                 <form id="columns-form" class="modal-form">
-
                     <label class="field-label">
                         <input type="checkbox" data-col="code" checked />
                         Code
                     </label>
-
                     <label class="field-label">
                         <input type="checkbox" data-col="image" checked />
                         Image
                     </label>
-
                     <label class="field-label">
                         <input type="checkbox" data-col="name" checked />
                         Category / Concept
                     </label>
-
                     <label class="field-label">
                         <input type="checkbox" data-col="qty" checked />
                         QTY
                     </label>
-
                     <label class="field-label">
                         <input type="checkbox" data-col="unit" checked />
                         Unit
                     </label>
-
                     <label class="field-label">
                         <input type="checkbox" data-col="unit-cost" checked />
                         Unit Cost
                     </label>
-
                     <label class="field-label">
                         <input type="checkbox" data-col="subtotal" checked />
                         Subtotal
                     </label>
-
                     <label class="field-label">
                         <input type="checkbox" data-col="total" checked />
                         Total
@@ -360,621 +354,70 @@
                             Apply
                         </button>
                     </div>
-
                 </form>
-
             </div>
         </div>
     </div>
 
+    <!-- =========================================================
+         MODAL: SAVE AS TEMPLATE
+    ========================================================== -->
+    <div id="save-as-template-modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Save as Template</div>
+                    <button type="button" class="modal-btn header-action" onclick="document.getElementById('save-as-template-modal').classList.add('hidden')">
+                        ×
+                    </button>
+                </div>
+
+                <form id="save-as-template-form" class="modal-form" style="grid-template-columns: 1fr;">
+                    <div>
+                        <div class="field-label">Template Name *</div>
+                        <input
+                            type="text"
+                            id="template-name-input"
+                            class="input"
+                            placeholder="e.g., Residential Single Family"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <div class="field-label">Description</div>
+                        <textarea
+                            id="template-description-input"
+                            class="input"
+                            rows="3"
+                            placeholder="Brief description of this template..."
+                            style="resize: vertical; min-height: 80px;"
+                        ></textarea>
+                    </div>
+
+                    <div class="template-save-info" style="background: rgba(62, 207, 142, 0.1); border: 1px solid rgba(62, 207, 142, 0.3); border-radius: 8px; padding: 12px; margin-top: 8px;">
+                        <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+                            <strong style="color: #3ecf8e;">Note:</strong> The template will include the current category structure and all concepts, but project-specific data (address, date) will be cleared.
+                        </p>
+                    </div>
+
+                    <div class="modal-footer" style="margin-top: 16px;">
+                        <button type="button" class="modal-btn cancel" id="template-cancel-btn">
+                            Cancel
+                        </button>
+                        <button type="submit" class="modal-btn">
+                            <span style="margin-right: 6px;">📄</span> Save Template
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- =========================================================
-         BLOQUE 6: SCRIPT PRINCIPAL ESTIMATOR
+         SCRIPTS
     ========================================================== -->
-    <script>
-        // ======================================================
-        // BLOQUE 6.1: CONFIG + STATE
-        // ======================================================
-        // Use window.API_BASE directly (set by config.js)
-        const API_BASE_URL = window.API_BASE || "https://ngm-fastapi.onrender.com"; // fix para las llamadas que usan API_BASE_URL
-
-        let currentEstimateData = null;
-        const groupState = {};
-        const subState = {};
-        let currentFilter = "";
-
-        // ======================================================
-        // BLOQUE 6.2: HELPERS
-        // ======================================================
-        function formatCurrency(value) {
-            const n = typeof value === "number" ? value : 0;
-            return new Intl.NumberFormat("en-US", {
-                style: "currency",
-                currency: "USD",
-                maximumFractionDigits: 0,
-            }).format(n);
-        }
-
-        function toggleGroup(indexCat) {
-            groupState[indexCat] = !groupState[indexCat];
-            applyTableFilter(currentFilter);
-        }
-
-        function toggleSub(catIndex, subIndex) {
-            const key = catIndex + "-" + subIndex;
-            subState[key] = !subState[key];
-            applyTableFilter(currentFilter);
-        }
-
-        async function saveEstimateToServer() {
-            if (!currentEstimateData) return;
-
-            const statusEl = document.getElementById("estimator-status");
-            statusEl.textContent = "Saving…";
-
-            try {
-                const res = await fetch(API_BASE_URL + "/estimator/save", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(currentEstimateData),
-                });
-                if (!res.ok) throw new Error("HTTP " + res.status);
-                statusEl.textContent = "Saved.";
-            } catch (err) {
-                console.error("Error saving estimate:", err);
-                statusEl.textContent = "Error saving estimate.ngm";
-            }
-        }
-
-        // ======================================================
-        // BLOQUE 6.3: LOAD & RENDER ESTIMATE.NGM
-        // (resto del script igual que lo tenías)
-        // ======================================================
-
-        async function loadEstimatorFromNgm() {
-            const tbody = document.getElementById("estimator-body");
-            const statusEl = document.getElementById("estimator-status");
-            const feedbackEl = document.getElementById("estimator-feedback");
-            const projectTitleTextEl = document.getElementById("project-title-text");
-            const projectSubtitleEl = document.getElementById("project-subtitle");
-
-            const summaryProject = document.getElementById("summary-project");
-            const summarySubtotal = document.getElementById("summary-subtotal");
-            const summaryTotal = document.getElementById("summary-total");
-            const summaryOverhead = document.getElementById("summary-overhead");
-            const summaryDate = document.getElementById("summary-date");
-
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="table-cell-muted">
-                        Cargando estructura desde el servidor…
-                    </td>
-                </tr>
-            `;
-            statusEl.textContent = "Fetching /estimator/base-structure…";
-            feedbackEl.textContent = "";
-
-            try {
-                const res = await fetch(API_BASE_URL + "/estimator/base-structure");
-                if (!res.ok) throw new Error("HTTP " + res.status);
-
-                const data = await res.json();
-                console.log("NGM data:", data);
-                currentEstimateData = data;
-
-                const projectObj = data.project || {};
-                const projectName = data.project_name || projectObj["Project Name"] || "Untitled Project";
-                const projectDate = data.date || projectObj["Date"] || "";
-
-                // Topbar local
-                projectTitleTextEl.textContent = projectName || "Untitled Project";
-                projectSubtitleEl.textContent = projectDate
-                    ? "Date: " + projectDate + " · Loaded from estimate.ngm"
-                    : "Loaded from estimate.ngm";
-
-                // Sidebar summary
-                const categories = Array.isArray(data.categories) ? data.categories : [];
-                let subtotal = 0;
-
-                categories.forEach(cat => {
-                    if (typeof cat.total_cost === "number") {
-                        subtotal += cat.total_cost;
-                    }
-                });
-
-                const overheadAmount = 0;
-                const totalWithOH = subtotal + overheadAmount;
-
-                summaryProject.textContent = projectName || "(Untitled)";
-                summarySubtotal.textContent = formatCurrency(subtotal);
-                summaryTotal.textContent = formatCurrency(totalWithOH);
-                summaryOverhead.textContent = overheadAmount ? formatCurrency(overheadAmount) : "—";
-                summaryDate.textContent = projectDate || "—";
-
-                // Tabla principal
-                if (!categories.length) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="8" class="table-cell-muted">
-                                No categories found in estimate.ngm (data.categories está vacío).
-                            </td>
-                        </tr>
-                    `;
-                    statusEl.textContent = "Loaded (0 categories)";
-                    return;
-                }
-
-                tbody.innerHTML = "";
-                let totalSubs = 0;
-
-                categories.forEach((cat, indexCat) => {
-                    const catName = cat.name || "Category " + (indexCat + 1);
-                    const catCode = cat.id || "C" + (indexCat + 1);
-                    const subcats = Array.isArray(cat.subcategories) ? cat.subcategories : [];
-
-                    groupState[indexCat] = true;
-
-                    const trGroup = document.createElement("tr");
-                    trGroup.classList.add("group-row");
-                    trGroup.dataset.groupIndex = String(indexCat);
-                    trGroup.innerHTML = `
-                        <td class="category-accnum col-code">${catCode}</td>
-                        <td class="image-cell col-image"></td>
-                        <td class="group-cell col-name">
-                            <span class="group-toggle-icon">▾</span>
-                            <span class="group-name">${catName}</span>
-                        </td>
-                        <td class="group-spacer col-qty"></td>
-                        <td class="group-spacer col-unit"></td>
-                        <td class="group-spacer col-unit-cost"></td>
-                        <td class="group-spacer col-subtotal"></td>
-                        <td class="group-spacer col-total"></td>
-                    `;
-                    trGroup.addEventListener("click", () => toggleGroup(indexCat));
-                    tbody.appendChild(trGroup);
-
-                    if (!subcats.length) {
-                        const trEmpty = document.createElement("tr");
-                        trEmpty.classList.add("category-row");
-                        trEmpty.dataset.parentIndex = String(indexCat);
-                        trEmpty.innerHTML = `
-                            <td class="col-code"></td>
-                            <td class="image-cell col-image"></td>
-                            <td class="table-cell-muted col-name" colspan="6">No subcategories.</td>
-                        `;
-                        tbody.appendChild(trEmpty);
-                        return;
-                    }
-
-                    subcats.forEach((sub, indexSub) => {
-                        totalSubs++;
-                        const subName = sub.name || "Subcategory " + (indexSub + 1);
-                        const items = Array.isArray(sub.items) ? sub.items : [];
-                        const subKey = indexCat + "-" + indexSub;
-                        subState[subKey] = true;
-
-                        const trSub = document.createElement("tr");
-                        trSub.classList.add("category-row");
-                        trSub.dataset.parentIndex = String(indexCat);
-                        trSub.dataset.subRow = String(indexSub);
-                        trSub.innerHTML = `
-                            <td class="category-accnum col-code"></td>
-                            <td class="image-cell col-image"></td>
-                            <td class="category-name col-name">
-                                ${
-                                    items.length
-                                        ? '<span class="group-toggle-icon sub-toggle-icon">▾</span>'
-                                        : ""
-                                }
-                                <span>${subName}</span>
-                            </td>
-                            <td class="table-cell-muted col-qty"></td>
-                            <td class="table-cell-muted col-unit"></td>
-                            <td class="table-cell-muted col-unit-cost"></td>
-                            <td class="table-cell-muted col-subtotal"></td>
-                            <td class="table-cell-muted col-total"></td>
-                        `;
-                        if (items.length) {
-                            trSub.addEventListener("click", () => toggleSub(indexCat, indexSub));
-                        }
-                        tbody.appendChild(trSub);
-
-                        items.forEach((item, itemIdx) => {
-                            const code = item.id || item.code || "";
-                            const name = item.name || item.description || "Item " + (itemIdx + 1);
-                            const qty = item.qty ?? item.quantity ?? "";
-                            const unit = item.unit || "";
-                            const unitCost = item.unit_cost ?? item.base_cost ?? "";
-                            const subtotalItem = item.total ?? item.total_cost ?? "";
-                            const totalItem = subtotalItem;
-
-                            const trItem = document.createElement("tr");
-                            trItem.classList.add("item-row");
-                            trItem.dataset.catIndex = String(indexCat);
-                            trItem.dataset.subIndex = String(indexSub);
-                            trItem.innerHTML = `
-                                <td class="category-accnum col-code">${code}</td>
-                                <td class="image-cell col-image">—</td>
-                                <td class="item-name col-name">${name}</td>
-                                <td class="col-qty">${qty || "—"}</td>
-                                <td class="col-unit">${unit || "—"}</td>
-                                <td class="col-unit-cost">${unitCost !== "" ? unitCost : "—"}</td>
-                                <td class="col-subtotal">${subtotalItem !== "" ? subtotalItem : "—"}</td>
-                                <td class="col-total">${totalItem !== "" ? totalItem : "—"}</td>
-                            `;
-                            tbody.appendChild(trItem);
-                        });
-                    });
-                });
-
-                statusEl.textContent = "Loaded " + categories.length + " categories, " + totalSubs + " subcategories.";
-                feedbackEl.textContent = "Template loaded from estimate.ngm";
-
-                applyTableFilter(currentFilter);
-            } catch (err) {
-                console.error("NGM error:", err);
-                statusEl.textContent = "Error loading .ngm";
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" class="table-cell-muted" style="color:#fca5a5;">
-                            Error loading estimate.ngm — check backend console.
-                        </td>
-                    </tr>
-                `;
-                feedbackEl.textContent = "";
-            }
-        }
-
-        // ======================================================
-        // BLOQUE 6.4: MODAL PROJECT INFO
-        // ======================================================
-        function setupProjectInfoModal() {
-            const infoBtn = document.getElementById("project-info-btn");
-            const modal = document.getElementById("project-modal");
-            const form = document.getElementById("project-form");
-            const cancelBtn = document.getElementById("project-cancel-btn");
-            const manageBtn = document.getElementById("manage-info-btn");
-            const saveBtn = document.getElementById("project-save-btn");
-
-            const nameInput = document.getElementById("project-name-input");
-            const addressInput = document.getElementById("project-address-input");
-            const typeInput = document.getElementById("project-type-input");
-            const totalAreaInput = document.getElementById("project-total-area-input");
-            const habitableAreaInput = document.getElementById("project-habitable-area-input");
-            const nonHabitableAreaInput = document.getElementById("project-nonhabitable-area-input");
-            const footingsInput = document.getElementById("project-footings-input");
-            const roomsInput = document.getElementById("project-rooms-input");
-            const bathsInput = document.getElementById("project-baths-input");
-            const unitsInput = document.getElementById("project-units-input");
-            const foundationInput = document.getElementById("project-foundation-input");
-            const dateInput = document.getElementById("project-date-input");
-
-            const projectTitleTextEl = document.getElementById("project-title-text");
-            const summaryProject = document.getElementById("summary-project");
-            const summaryDate = document.getElementById("summary-date");
-            const projectSubtitleEl = document.getElementById("project-subtitle");
-
-            const allInputs = [
-                nameInput,
-                addressInput,
-                typeInput,
-                totalAreaInput,
-                habitableAreaInput,
-                nonHabitableAreaInput,
-                footingsInput,
-                roomsInput,
-                bathsInput,
-                unitsInput,
-                foundationInput,
-                dateInput
-            ];
-
-            let editMode = false;
-
-            function setEditMode(enabled) {
-                editMode = enabled;
-                allInputs.forEach(inp => {
-                    inp.readOnly = !enabled;
-                    inp.classList.toggle("input-readonly", !enabled);
-                });
-                saveBtn.disabled = !enabled;
-                manageBtn.textContent = enabled ? "✔ Done editing" : "✏️ Manage info";
-            }
-
-            function openModal() {
-                const proj = currentEstimateData?.project || {};
-
-                nameInput.value = proj["Project Name"] || currentEstimateData?.project_name || "";
-                addressInput.value = proj["Address"] || "";
-                typeInput.value = proj["Project Type"] || "";
-
-                totalAreaInput.value = proj["Total Area (SqFt)"] || "";
-                habitableAreaInput.value = proj["Habitable Area (SqFt)"] || "";
-                nonHabitableAreaInput.value = proj["Non Habitable Area (SqFt)"] || "";
-                footingsInput.value = proj["Footings Type"] || proj["Foundation Type"] || "";
-
-                roomsInput.value = proj["Number of Rooms"] || "";
-                bathsInput.value = proj["Number of Bathrooms"] || "";
-                unitsInput.value = proj["Number of Units"] || "";
-                foundationInput.value = proj["Foundation Type"] || "";
-                dateInput.value = proj["Date"] || currentEstimateData?.date || "";
-
-                modal.classList.remove("hidden");
-                setEditMode(false);
-            }
-
-            function closeModal() {
-                modal.classList.add("hidden");
-            }
-
-            infoBtn.addEventListener("click", openModal);
-            manageBtn.addEventListener("click", () => setEditMode(!editMode));
-            cancelBtn.addEventListener("click", (e) => {
-                e.preventDefault();
-                closeModal();
-            });
-
-            form.addEventListener("submit", async (e) => {
-                e.preventDefault();
-
-                if (!editMode) {
-                    closeModal();
-                    return;
-                }
-
-                if (!currentEstimateData) currentEstimateData = {};
-                if (!currentEstimateData.project) currentEstimateData.project = {};
-
-                const proj = currentEstimateData.project;
-
-                proj["Project Name"] = nameInput.value;
-                proj["Address"] = addressInput.value;
-                proj["Project Type"] = typeInput.value;
-                proj["Total Area (SqFt)"] = totalAreaInput.value;
-                proj["Habitable Area (SqFt)"] = habitableAreaInput.value;
-                proj["Non Habitable Area (SqFt)"] = nonHabitableAreaInput.value;
-                proj["Footings Type"] = footingsInput.value;
-                proj["Number of Rooms"] = roomsInput.value;
-                proj["Number of Bathrooms"] = bathsInput.value;
-                proj["Number of Units"] = unitsInput.value;
-                proj["Foundation Type"] = foundationInput.value;
-                proj["Date"] = dateInput.value;
-
-                currentEstimateData.project_name = nameInput.value;
-                currentEstimateData.date = dateInput.value;
-
-                projectTitleTextEl.textContent = nameInput.value || "Untitled Project";
-                summaryProject.textContent = nameInput.value || "(Untitled)";
-                summaryDate.textContent = dateInput.value || "—";
-                projectSubtitleEl.textContent = dateInput.value
-                    ? "Date: " + dateInput.value + " · Loaded from estimate.ngm"
-                    : "Loaded from estimate.ngm";
-
-                await saveEstimateToServer();
-                closeModal();
-            });
-
-            modal.addEventListener("click", (e) => {
-                if (e.target === modal) closeModal();
-            });
-        }
-
-        // ======================================================
-        // BLOQUE 6.5: TOOLBAR BÁSICA
-        // ======================================================
-        function setupToolbar() {
-            document.getElementById("btn-add-concept").addEventListener("click", () => {
-                alert("Add Concept: aquí luego abrimos el modal para insertar conceptos.");
-            });
-
-            document.getElementById("btn-overhead").addEventListener("click", () => {
-                alert("Overhead: cuando definamos sección overhead en el JSON, este botón abrirá su configurador.");
-            });
-
-            document.getElementById("btn-import-revit").addEventListener("click", () => {
-                alert("Import from Revit: aquí conectaremos la importación desde cantidades.");
-            });
-
-            document.getElementById("btn-export").addEventListener("click", () => {
-                alert("Export: aquí agregaremos la lógica para exportar a PDF / CSV / .ngm.");
-            });
-        }
-
-        // ======================================================
-        // BLOQUE 6.6: MODAL COLUMNS
-        // ======================================================
-        function setupColumnsModal() {
-            const btn = document.getElementById("btn-columns");
-            const modal = document.getElementById("columns-modal");
-            const form = document.getElementById("columns-form");
-            const cancelBtn = document.getElementById("columns-cancel-btn");
-
-            function openModal() {
-                modal.classList.remove("hidden");
-            }
-
-            function closeModal() {
-                modal.classList.add("hidden");
-            }
-
-            btn.addEventListener("click", openModal);
-            cancelBtn.addEventListener("click", (e) => {
-                e.preventDefault();
-                closeModal();
-            });
-
-            form.addEventListener("submit", (e) => {
-                e.preventDefault();
-                const checkboxes = form.querySelectorAll("input[type=checkbox][data-col]");
-
-                checkboxes.forEach(cb => {
-                    const col = cb.getAttribute("data-col");
-                    const visible = cb.checked;
-                    const selector = ".col-" + col;
-                    document.querySelectorAll(selector).forEach(el => {
-                        el.style.display = visible ? "" : "none";
-                    });
-                });
-
-                closeModal();
-            });
-
-            modal.addEventListener("click", (e) => {
-                if (e.target === modal) closeModal();
-            });
-        }
-
-        // ======================================================
-        // BLOQUE 6.7: FILTRO DINÁMICO
-        // ======================================================
-        function applyTableFilter(rawTerm) {
-            currentFilter = (rawTerm || "").trim().toLowerCase();
-            const tbody = document.getElementById("estimator-body");
-            const rows = tbody.querySelectorAll("tr");
-
-            if (!currentFilter) {
-                rows.forEach(row => {
-                    const isGroup = row.classList.contains("group-row");
-                    const isCategoryRow = row.classList.contains("category-row");
-                    const isItemRow = row.classList.contains("item-row");
-
-                    let visible = true;
-
-                    if (isCategoryRow) {
-                        const parentIndex = row.dataset.parentIndex;
-                        if (typeof parentIndex !== "undefined") {
-                            visible = !!groupState[parentIndex];
-                        }
-                    }
-
-                    if (isItemRow) {
-                        const catIndex = row.dataset.catIndex;
-                        const subIndex = row.dataset.subIndex;
-                        if (typeof catIndex !== "undefined") {
-                            visible = !!groupState[catIndex];
-                        }
-                        if (visible && typeof catIndex !== "undefined" && typeof subIndex !== "undefined") {
-                            const key = catIndex + "-" + subIndex;
-                            if (key in subState) {
-                                visible = !!subState[key];
-                            }
-                        }
-                    }
-
-                    if (isGroup) {
-                        visible = true;
-                    }
-
-                    row.style.display = visible ? "" : "none";
-                });
-                return;
-            }
-
-            rows.forEach(row => {
-                row.style.display = "none";
-            });
-
-            const shownGroups = new Set();
-            const shownSubRows = new Set();
-            const term = currentFilter;
-
-            const itemRows = tbody.querySelectorAll("tr.item-row");
-            itemRows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                if (text.includes(term)) {
-                    row.style.display = "";
-                    const catIndex = row.dataset.catIndex;
-                    const subIndex = row.dataset.subIndex;
-                    if (typeof catIndex !== "undefined") {
-                        shownGroups.add(catIndex);
-                    }
-                    if (typeof catIndex !== "undefined" && typeof subIndex !== "undefined") {
-                        shownSubRows.add(catIndex + "-" + subIndex);
-                    }
-                }
-            });
-
-            const subRows = tbody.querySelectorAll("tr.category-row[data-sub-row]");
-            subRows.forEach(row => {
-                const catIndex = row.dataset.parentIndex;
-                const subIndex = row.dataset.subRow;
-                const key = catIndex + "-" + subIndex;
-                const text = row.innerText.toLowerCase();
-
-                if (text.includes(term) || shownSubRows.has(key)) {
-                    row.style.display = "";
-                    if (typeof catIndex !== "undefined") {
-                        shownGroups.add(catIndex);
-                    }
-                }
-            });
-
-            const loneCatRows = tbody.querySelectorAll("tr.category-row:not([data-sub-row])");
-            loneCatRows.forEach(row => {
-                const catIndex = row.dataset.parentIndex;
-                const text = row.innerText.toLowerCase();
-                if (text.includes(term)) {
-                    row.style.display = "";
-                    if (typeof catIndex !== "undefined") {
-                        shownGroups.add(catIndex);
-                    }
-                }
-            });
-
-            const groupRows = tbody.querySelectorAll("tr.group-row");
-            groupRows.forEach(row => {
-                const catIndex = row.dataset.groupIndex;
-                const text = row.innerText.toLowerCase();
-
-                if (text.includes(term) || (typeof catIndex !== "undefined" && shownGroups.has(catIndex))) {
-                    row.style.display = "";
-                }
-            });
-        }
-
-        function setupSearchFilter() {
-            const input = document.getElementById("estimator-search-input");
-            if (!input) return;
-
-            input.addEventListener("input", (e) => {
-                applyTableFilter(e.target.value);
-            });
-        }
-
-        // ======================================================
-        // BLOQUE 6.8: VIEW SLIDERS (WIDTH + ZOOM)
-        // ======================================================
-        function setupViewSliders() {
-            const widthSlider = document.getElementById("table-width-slider");
-            const zoomSlider = document.getElementById("table-zoom-slider");
-
-            if (widthSlider) {
-                widthSlider.addEventListener("input", (e) => {
-                    const v = Number(e.target.value) || 100;
-                    document.documentElement.style.setProperty("--estimator-table-width", v);
-                });
-            }
-
-            if (zoomSlider) {
-                zoomSlider.addEventListener("input", (e) => {
-                    const v = Number(e.target.value) || 100;
-                    document.documentElement.style.setProperty("--estimator-table-zoom", v);
-                });
-            }
-        }
-
-        // ======================================================
-        // BLOQUE 6.9: INIT
-        // ======================================================
-        document.addEventListener("DOMContentLoaded", () => {
-            loadEstimatorFromNgm();
-            setupProjectInfoModal();
-            setupToolbar();
-            setupColumnsModal();
-            setupSearchFilter();
-            setupViewSliders();
-        });
-    </script>
-
+    <script src="assets/js/pills.js" defer></script>
+    <script src="assets/js/estimator.js" defer></script>
 </body>
 </html>

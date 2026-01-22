@@ -59,6 +59,9 @@
   };
   let csvColumnMapping = {}; // Maps CSV column index to expense field name
 
+  // Bill View State
+  let isBillViewMode = false;
+
   // QBO Integration State
   let currentDataSource = 'manual';  // 'manual' or 'qbo'
   let qboExpenses = [];              // QBO expenses for current project
@@ -103,6 +106,7 @@
     console.log('[EXPENSES] projectFilter element found:', els.projectFilter);
     els.btnAddExpense = document.getElementById('btnAddExpense');
     els.btnEditExpenses = document.getElementById('btnEditExpenses');
+    els.btnBillView = document.getElementById('btnBillView');
     els.expensesTable = document.getElementById('expensesTable');
     els.expensesTableBody = document.getElementById('expensesTableBody');
     els.expensesEmptyState = document.getElementById('expensesEmptyState');
@@ -494,6 +498,12 @@
     if (els.expensesEmptyState) els.expensesEmptyState.style.display = 'none';
     if (els.expensesTable) els.expensesTable.style.display = 'table';
 
+    // Use Bill View if active and not in edit mode
+    if (isBillViewMode && !isEditMode) {
+      renderBillViewTable();
+      return;
+    }
+
     const displayExpenses = filteredExpenses.length > 0 || Object.values(columnFilters).some(f => f) ? filteredExpenses : expenses;
 
     const rows = displayExpenses.map((exp, index) => {
@@ -530,6 +540,9 @@
 
     // Apply column visibility after rendering
     applyColumnVisibility();
+
+    // Apply saved column widths to new rows
+    loadColumnWidths();
   }
 
   function renderReadOnlyRow(exp, index) {
@@ -708,11 +721,19 @@
     isEditMode = enable;
 
     if (enable) {
+      // Exit bill view mode if active
+      if (isBillViewMode) {
+        isBillViewMode = false;
+        els.btnBillView.classList.remove('btn-toolbar-active');
+        els.btnBillView.innerHTML = '<span style="font-size: 14px;">📋</span> Bill View';
+      }
+
       // Store original data for rollback
       originalExpenses = JSON.parse(JSON.stringify(expenses));
       els.btnEditExpenses.textContent = 'Editing...';
       els.btnEditExpenses.disabled = true;
       els.btnAddExpense.disabled = true;
+      els.btnBillView.disabled = true;
       els.projectFilter.disabled = true;
       if (els.editModeFooter) els.editModeFooter.classList.remove('hidden');
       // Add edit mode class to table for wider columns
@@ -735,6 +756,7 @@
       els.btnEditExpenses.textContent = 'Edit Expenses';
       els.btnEditExpenses.disabled = expenses.length === 0;
       els.btnAddExpense.disabled = !selectedProjectId;
+      els.btnBillView.disabled = expenses.length === 0;
       els.projectFilter.disabled = false;
       if (els.editModeFooter) els.editModeFooter.classList.add('hidden');
       // Remove edit mode class from table
@@ -3234,6 +3256,11 @@
       }
     });
 
+    // Bill View toggle button
+    els.btnBillView?.addEventListener('click', () => {
+      toggleBillView();
+    });
+
     // Column Manager button
     els.btnColumnManager?.addEventListener('click', () => {
       openColumnManager();
@@ -3300,6 +3327,284 @@
         updateAutoCategorizeButton();
       }
     });
+
+    // Initialize column resize handles
+    initColumnResize();
+  }
+
+  // ================================
+  // BILL VIEW FUNCTIONALITY
+  // ================================
+
+  // Color palette for bill groups (using existing app colors)
+  const BILL_GROUP_COLORS = [
+    { border: 'rgba(34, 197, 94, 0.5)', bg: 'rgba(34, 197, 94, 0.05)' },    // Green
+    { border: 'rgba(59, 130, 246, 0.5)', bg: 'rgba(59, 130, 246, 0.05)' },  // Blue
+    { border: 'rgba(168, 85, 247, 0.5)', bg: 'rgba(168, 85, 247, 0.05)' },  // Purple
+    { border: 'rgba(249, 115, 22, 0.5)', bg: 'rgba(249, 115, 22, 0.05)' },  // Orange
+    { border: 'rgba(236, 72, 153, 0.5)', bg: 'rgba(236, 72, 153, 0.05)' },  // Pink
+    { border: 'rgba(20, 184, 166, 0.5)', bg: 'rgba(20, 184, 166, 0.05)' },  // Teal
+    { border: 'rgba(245, 158, 11, 0.5)', bg: 'rgba(245, 158, 11, 0.05)' },  // Amber
+    { border: 'rgba(99, 102, 241, 0.5)', bg: 'rgba(99, 102, 241, 0.05)' },  // Indigo
+  ];
+
+  function toggleBillView() {
+    isBillViewMode = !isBillViewMode;
+
+    // Update button appearance
+    if (isBillViewMode) {
+      els.btnBillView.classList.add('btn-toolbar-active');
+      els.btnBillView.innerHTML = '<span style="font-size: 14px;">📋</span> Normal View';
+    } else {
+      els.btnBillView.classList.remove('btn-toolbar-active');
+      els.btnBillView.innerHTML = '<span style="font-size: 14px;">📋</span> Bill View';
+    }
+
+    // Re-render table
+    renderExpensesTable();
+  }
+
+  function groupExpensesByBill(expensesList) {
+    const groups = {
+      withBill: {},    // { bill_id: [expenses] }
+      withoutBill: []  // expenses without bill_id
+    };
+
+    expensesList.forEach(exp => {
+      const billId = exp.bill_id?.trim();
+      if (billId) {
+        if (!groups.withBill[billId]) {
+          groups.withBill[billId] = [];
+        }
+        groups.withBill[billId].push(exp);
+      } else {
+        groups.withoutBill.push(exp);
+      }
+    });
+
+    return groups;
+  }
+
+  function renderBillViewTable() {
+    if (!els.expensesTableBody) return;
+
+    const displayExpenses = filteredExpenses.length > 0 || Object.values(columnFilters).some(f => f.length > 0) ? filteredExpenses : expenses;
+    const groups = groupExpensesByBill(displayExpenses);
+
+    let html = '';
+    let colorIndex = 0;
+    let grandTotal = 0;
+
+    // Render bill groups first
+    const billIds = Object.keys(groups.withBill).sort();
+
+    billIds.forEach(billId => {
+      const billExpenses = groups.withBill[billId];
+      const color = BILL_GROUP_COLORS[colorIndex % BILL_GROUP_COLORS.length];
+      const billTotal = billExpenses.reduce((sum, exp) => sum + (parseFloat(exp.Amount) || 0), 0);
+      grandTotal += billTotal;
+
+      // Only show floating total if there's more than 1 item
+      const showBillTotal = billExpenses.length > 1;
+
+      // Bill group header
+      html += `
+        <tr class="bill-group-header" style="background: ${color.bg};">
+          <td class="col-checkbox" style="display: none;"></td>
+          <td colspan="11" class="bill-group-title">
+            <span class="bill-group-indicator" style="border-color: ${color.border};"></span>
+            <span class="bill-group-label">Bill #${billId}</span>
+            <span class="bill-group-count">(${billExpenses.length} item${billExpenses.length > 1 ? 's' : ''})</span>
+            ${showBillTotal ? `<span class="bill-group-total">${formatCurrency(billTotal)}</span>` : ''}
+          </td>
+        </tr>
+      `;
+
+      // Render each expense in the group
+      billExpenses.forEach((exp, idx) => {
+        const isFirst = idx === 0;
+        const isLast = idx === billExpenses.length - 1;
+        html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), color, isFirst, isLast);
+      });
+
+      colorIndex++;
+    });
+
+    // Render expenses without bill (normal rows)
+    groups.withoutBill.forEach(exp => {
+      grandTotal += parseFloat(exp.Amount) || 0;
+      html += renderReadOnlyRow(exp, displayExpenses.indexOf(exp));
+    });
+
+    // Grand total row
+    const totalColspan = 8;
+    html += `
+      <tr class="total-row">
+        <td class="col-checkbox" style="display: none;"></td>
+        <td colspan="${totalColspan - 1}" class="total-label">Total</td>
+        <td class="col-amount total-amount">${formatCurrency(grandTotal)}</td>
+        <td class="col-receipt"></td>
+        <td class="col-auth"></td>
+        <td class="col-actions"></td>
+      </tr>
+    `;
+
+    els.expensesTableBody.innerHTML = html;
+    applyColumnVisibility();
+    loadColumnWidths();
+  }
+
+  function renderBillGroupRow(exp, index, color, isFirst, isLast) {
+    const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
+    const billId = exp.bill_id || '—';
+    const description = exp.LineDescription || '—';
+    const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || '—';
+    const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
+    const payment = exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '—';
+    const account = exp.account_name || findMetaName('accounts', exp.account_id, 'account_id', 'Name') || '—';
+    const amount = exp.Amount ? formatCurrency(Number(exp.Amount)) : '$0.00';
+    const expenseId = exp.expense_id || exp.id || '';
+
+    const hasReceipt = exp.receipt_url;
+    const receiptIcon = hasReceipt
+      ? `<a href="${exp.receipt_url}" target="_blank" class="receipt-icon-btn receipt-icon-btn--has-receipt" title="View receipt" onclick="event.stopPropagation()">📎</a>`
+      : `<span class="receipt-icon-btn" title="No receipt">📎</span>`;
+
+    const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
+    const authBadgeClass = isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending';
+    const authBadgeText = isAuthorized ? '✓ Auth' : '⏳ Pending';
+    const authBadgeDisabled = canAuthorize ? '' : ' auth-badge-disabled';
+    const cursorStyle = canAuthorize ? 'cursor: pointer;' : 'cursor: not-allowed;';
+    const authBadge = `<span class="auth-badge ${authBadgeClass}${authBadgeDisabled}"
+      data-expense-id="${expenseId}"
+      data-auth-status="${isAuthorized}"
+      data-can-authorize="${canAuthorize}"
+      style="${cursorStyle}"
+      title="${canAuthorize ? 'Click to toggle authorization' : 'You do not have permission to authorize'}">${authBadgeText}</span>`;
+
+    // Determine border classes
+    let borderClass = 'bill-group-row';
+    if (isFirst) borderClass += ' bill-group-first';
+    if (isLast) borderClass += ' bill-group-last';
+
+    return `
+      <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable ${borderClass}"
+          style="cursor: pointer; background: ${color.bg}; --bill-border-color: ${color.border};">
+        <td class="col-checkbox" style="display: none;"></td>
+        <td class="col-date">${date}</td>
+        <td class="col-bill-id">${billId}</td>
+        <td class="col-description">${description}</td>
+        <td class="col-account">${account}</td>
+        <td class="col-type">${type}</td>
+        <td class="col-vendor">${vendor}</td>
+        <td class="col-payment">${payment}</td>
+        <td class="col-amount">${amount}</td>
+        <td class="col-receipt">${receiptIcon}</td>
+        <td class="col-auth">${authBadge}</td>
+        <td class="col-actions"></td>
+      </tr>
+    `;
+  }
+
+  // ================================
+  // COLUMN RESIZE FUNCTIONALITY
+  // ================================
+  function initColumnResize() {
+    const table = document.querySelector('.expenses-table');
+    if (!table) return;
+
+    const headerCells = table.querySelectorAll('thead th');
+
+    headerCells.forEach((th, index) => {
+      // Skip checkbox and actions columns (first and last)
+      if (th.classList.contains('col-checkbox') || th.classList.contains('col-actions')) return;
+
+      // Create resize handle
+      const handle = document.createElement('div');
+      handle.className = 'col-resize-handle';
+      th.appendChild(handle);
+
+      let startX, startWidth, columnClass;
+
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        startX = e.pageX;
+        startWidth = th.offsetWidth;
+        columnClass = Array.from(th.classList).find(c => c.startsWith('col-'));
+
+        handle.classList.add('resizing');
+        table.classList.add('resizing');
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+
+      function onMouseMove(e) {
+        const diff = e.pageX - startX;
+        const newWidth = Math.max(50, startWidth + diff); // Minimum 50px
+
+        // Update all cells in this column
+        if (columnClass) {
+          table.querySelectorAll(`.${columnClass}`).forEach(cell => {
+            cell.style.width = `${newWidth}px`;
+            cell.style.minWidth = `${newWidth}px`;
+          });
+        }
+      }
+
+      function onMouseUp() {
+        handle.classList.remove('resizing');
+        table.classList.remove('resizing');
+
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+
+        // Save column widths to localStorage
+        saveColumnWidths();
+      }
+    });
+
+    // Load saved column widths
+    loadColumnWidths();
+  }
+
+  function saveColumnWidths() {
+    const table = document.querySelector('.expenses-table');
+    if (!table) return;
+
+    const widths = {};
+    const headerCells = table.querySelectorAll('thead th');
+
+    headerCells.forEach(th => {
+      const columnClass = Array.from(th.classList).find(c => c.startsWith('col-'));
+      if (columnClass && th.style.width) {
+        widths[columnClass] = th.style.width;
+      }
+    });
+
+    localStorage.setItem('expensesColumnWidths', JSON.stringify(widths));
+  }
+
+  function loadColumnWidths() {
+    const saved = localStorage.getItem('expensesColumnWidths');
+    if (!saved) return;
+
+    try {
+      const widths = JSON.parse(saved);
+      const table = document.querySelector('.expenses-table');
+      if (!table) return;
+
+      Object.entries(widths).forEach(([columnClass, width]) => {
+        table.querySelectorAll(`.${columnClass}`).forEach(cell => {
+          cell.style.width = width;
+          cell.style.minWidth = width;
+        });
+      });
+    } catch (e) {
+      console.warn('Failed to load column widths:', e);
+    }
   }
 
   // ================================

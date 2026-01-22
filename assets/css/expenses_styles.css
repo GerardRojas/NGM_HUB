@@ -525,18 +525,44 @@
 }
 
 /* Column widths - fixed sizes for consistent layout */
-.expenses-table .col-checkbox { width: 40px; min-width: 40px; max-width: 40px; }
-.expenses-table .col-date { width: 90px; min-width: 90px; max-width: 90px; }
-.expenses-table .col-bill-id { width: 85px; min-width: 85px; max-width: 85px; }
-.expenses-table .col-description { width: 100px; min-width: 100px; max-width: 100px; }
-.expenses-table .col-account { width: 100px; min-width: 100px; max-width: 100px; }
-.expenses-table .col-type { width: 90px; min-width: 90px; max-width: 90px; }
-.expenses-table .col-vendor { width: 100px; min-width: 100px; max-width: 100px; }
-.expenses-table .col-payment { width: 80px; min-width: 80px; max-width: 80px; }
-.expenses-table .col-amount { width: 90px; min-width: 90px; max-width: 90px; }
-.expenses-table .col-receipt { width: 45px; min-width: 45px; max-width: 45px; }
-.expenses-table .col-auth { width: 85px; min-width: 85px; max-width: 85px; }
-.expenses-table .col-actions { width: 45px; min-width: 45px; max-width: 45px; }
+.expenses-table .col-checkbox { width: 40px; min-width: 40px; }
+.expenses-table .col-date { width: 95px; min-width: 95px; }
+.expenses-table .col-bill-id { width: 90px; min-width: 90px; }
+.expenses-table .col-description { width: 200px; min-width: 200px; }
+.expenses-table .col-account { width: 120px; min-width: 120px; }
+.expenses-table .col-type { width: 110px; min-width: 110px; }
+.expenses-table .col-vendor { width: 130px; min-width: 130px; }
+.expenses-table .col-payment { width: 100px; min-width: 100px; }
+.expenses-table .col-amount { width: 95px; min-width: 95px; }
+.expenses-table .col-receipt { width: 50px; min-width: 50px; }
+.expenses-table .col-auth { width: 90px; min-width: 90px; }
+.expenses-table .col-actions { width: 50px; min-width: 50px; }
+
+/* Column resize handle */
+.expenses-table th {
+  position: relative;
+}
+
+.col-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 1;
+}
+
+.col-resize-handle:hover,
+.col-resize-handle.resizing {
+  background: rgba(34, 197, 94, 0.5);
+}
+
+.expenses-table.resizing {
+  cursor: col-resize;
+  user-select: none;
+}
 
 .expenses-table td {
   padding: 10px 14px;
@@ -1106,6 +1132,106 @@ select.edit-input option {
 
 .filter-apply-btn:hover {
   box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+/* ==========================================
+   BILL VIEW MODE
+   ========================================== */
+
+/* Active state for Bill View button */
+.btn-toolbar-active {
+  background: linear-gradient(135deg, #22c55e, #15803d) !important;
+  color: #0f2a1e !important;
+  border-color: #22c55e !important;
+}
+
+.btn-toolbar-active:hover {
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+/* Bill group header row */
+.bill-group-header {
+  border: none !important;
+}
+
+.bill-group-header td {
+  padding: 8px 14px !important;
+  border-bottom: none !important;
+}
+
+.bill-group-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.bill-group-indicator {
+  width: 12px;
+  height: 12px;
+  border: 3px solid;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.bill-group-label {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.bill-group-count {
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+}
+
+.bill-group-total {
+  margin-left: auto;
+  font-weight: 700;
+  color: #22c55e;
+  font-size: 13px;
+  padding: 4px 12px;
+  background: rgba(34, 197, 94, 0.15);
+  border-radius: 4px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+/* Bill group rows - dashed left border */
+.bill-group-row {
+  position: relative;
+}
+
+.bill-group-row td:first-child:not(.col-checkbox),
+.bill-group-row td:nth-child(2) {
+  position: relative;
+}
+
+.bill-group-row td:nth-child(2)::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--bill-border-color, rgba(34, 197, 94, 0.5));
+}
+
+/* Round corners for first and last items in group */
+.bill-group-first td:nth-child(2)::before {
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+}
+
+.bill-group-last td:nth-child(2)::before {
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
+}
+
+/* Bill group row hover */
+.bill-group-row:hover {
+  filter: brightness(1.1);
 }
 
 /* ==========================================

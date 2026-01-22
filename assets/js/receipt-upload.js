@@ -45,11 +45,12 @@
   /**
    * Upload file to Supabase Storage
    * @param {File} file - The file to upload
-   * @param {string} expenseId - The expense ID
+   * @param {string} expenseId - The expense ID (used if no billId provided)
    * @param {string} projectId - The project ID
+   * @param {string} billId - Optional bill ID for grouping receipts by bill
    * @returns {Promise<string>} - The public URL of the uploaded file
    */
-  async function uploadReceipt(file, expenseId, projectId) {
+  async function uploadReceipt(file, expenseId, projectId, billId = null) {
     // Validate file
     if (!ALLOWED_TYPES.includes(file.type)) {
       throw new Error('Invalid file type. Only images (JPG, PNG, GIF, WebP) and PDFs are allowed.');
@@ -60,12 +61,15 @@
     }
 
     // Generate unique filename
+    // If billId is provided, use it as the identifier (expenses with same bill share receipt)
+    // Otherwise, use expenseId for backwards compatibility
     const timestamp = Date.now();
     const extension = file.name.split('.').pop();
-    const filename = `${expenseId}_${timestamp}.${extension}`;
+    const identifier = billId ? `bill_${billId}` : expenseId;
+    const filename = `${identifier}_${timestamp}.${extension}`;
     const filepath = `${projectId}/${filename}`;
 
-    console.log('[RECEIPT] Uploading file:', { filename, filepath, size: file.size });
+    console.log('[RECEIPT] Uploading file:', { filename, filepath, size: file.size, billId });
 
     // Supabase upload logic
     try {

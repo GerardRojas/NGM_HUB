@@ -1150,72 +1150,142 @@ select.edit-input option {
   box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
 }
 
-/* Bill group container - card effect using box-shadow */
+/* ==========================================
+   BILL VIEW - CARD DESIGN
+   ========================================== */
+
+/* Bill group header - card top */
 .bill-group-header {
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
-    inset 1px 0 0 0 rgba(255, 255, 255, 0.1),
-    inset -1px 0 0 0 rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .bill-group-header td {
-  padding: 10px 14px 8px 14px !important;
+  padding: 0 !important;
   border-bottom: none !important;
 }
 
-.bill-group-title {
+/* Bill card header layout */
+.bill-card-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 11px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  margin: 0;
 }
 
-.bill-group-label {
-  font-weight: 600;
+.bill-card-header--no-bill {
+  background: linear-gradient(135deg, rgba(107, 114, 128, 0.15) 0%, rgba(107, 114, 128, 0.08) 100%);
+  border-color: rgba(107, 114, 128, 0.25);
+}
+
+.bill-card-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bill-card-number {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
   letter-spacing: 0.02em;
 }
 
-.bill-group-count {
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 10px;
+.bill-card-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
 }
 
-.bill-group-total {
-  margin-left: auto;
+/* Bill status badges */
+.bill-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
   font-weight: 600;
-  color: #4ade80;
-  font-size: 12px;
   padding: 3px 10px;
-  background: rgba(74, 222, 128, 0.1);
-  border-radius: 4px;
-  border: 1px solid rgba(74, 222, 128, 0.25);
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.bill-status--closed {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.bill-status--open {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.bill-status--split {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+/* Bill total - right side of header */
+.bill-card-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.bill-card-total-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bill-card-total-amount {
+  font-size: 18px;
+  font-weight: 700;
+  color: #4ade80;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Bill group rows - card body */
 .bill-group-row {
   position: relative;
   background: rgba(255, 255, 255, 0.02);
-  box-shadow:
-    inset 1px 0 0 0 rgba(255, 255, 255, 0.1),
-    inset -1px 0 0 0 rgba(255, 255, 255, 0.1);
 }
 
 .bill-group-row td {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
-/* Last row closes the card */
-.bill-group-last {
-  box-shadow:
-    inset 1px 0 0 0 rgba(255, 255, 255, 0.1),
-    inset -1px 0 0 0 rgba(255, 255, 255, 0.1),
-    inset 0 -1px 0 0 rgba(255, 255, 255, 0.1);
+/* First row after header */
+.bill-group-row.bill-group-first td:first-child {
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.bill-group-row.bill-group-first td:last-child {
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.bill-group-row td:first-child {
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.bill-group-row td:last-child {
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Last row before footer */
 .bill-group-last td {
   border-bottom: none !important;
 }
@@ -1225,17 +1295,65 @@ select.edit-input option {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* Add spacing between bill groups */
-.bill-group-header {
-  margin-top: 8px;
+/* Bill group footer */
+.bill-group-footer {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.bill-group-footer td {
+  padding: 0 !important;
+  border: none !important;
+}
+
+.bill-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+}
+
+.bill-footer-items {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 /* Spacer row between groups */
 .bill-group-spacer td {
-  height: 12px;
+  height: 16px;
   padding: 0 !important;
   border: none !important;
   background: transparent !important;
+}
+
+/* Grand total row in Bill View */
+.grand-total-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 24px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  margin-top: 8px;
+}
+
+.grand-total-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.grand-total-amount {
+  font-size: 22px;
+  font-weight: 700;
+  color: #4ade80;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ==========================================

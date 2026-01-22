@@ -19,7 +19,8 @@
     projects: [],
     vendors: [],
     payment_methods: [],
-    accounts: []
+    accounts: [],
+    bills: []  // Bill metadata from bills table
   };
   let expenses = [];
   let filteredExpenses = []; // For filtered view
@@ -51,6 +52,9 @@
 
   // Scanned receipt file storage
   let scannedReceiptFile = null;
+  let scannedReceiptBillId = null;  // Bill ID extracted from scanned receipt
+  let scannedReceiptVendorId = null; // Vendor ID from scanned receipt
+  let scannedReceiptTotal = null;   // Total from scanned receipt (for expected_total)
 
   // CSV Import State
   let csvParsedData = {
@@ -301,6 +305,9 @@
       console.log('[METADATA] vendors sample:', metaData.vendors[0]);
       console.log('[METADATA] payment_methods sample:', metaData.payment_methods[0]);
 
+      // Load bills metadata separately (from bills table)
+      await loadBillsMetadata();
+
       // Populate project filter dropdown
       populateProjectFilter();
 
@@ -308,6 +315,74 @@
       console.error('[EXPENSES] Error loading meta data:', err);
       alert('Error loading data. Please refresh the page.');
     }
+  }
+
+  // ================================
+  // LOAD BILLS METADATA
+  // ================================
+  async function loadBillsMetadata() {
+    const apiBase = getApiBase();
+    try {
+      const url = `${apiBase}/bills`;
+      console.log('[BILLS] Fetching bills metadata from:', url);
+
+      const result = await apiJson(url);
+
+      // Handle different response formats
+      if (Array.isArray(result)) {
+        metaData.bills = result;
+      } else if (result && Array.isArray(result.data)) {
+        metaData.bills = result.data;
+      } else if (result && Array.isArray(result.bills)) {
+        metaData.bills = result.bills;
+      } else {
+        metaData.bills = [];
+      }
+
+      console.log('[BILLS] Loaded bills count:', metaData.bills.length);
+      console.log('[BILLS] Bills sample:', metaData.bills[0]);
+    } catch (err) {
+      // Bills table might not exist yet or endpoint not available - graceful fallback
+      console.warn('[BILLS] Could not load bills metadata:', err.message);
+      metaData.bills = [];
+    }
+  }
+
+  /**
+   * Get bill metadata by bill_id
+   * @param {string} billId - The bill ID to look up
+   * @returns {Object|null} - Bill metadata or null if not found
+   */
+  function getBillMetadata(billId) {
+    if (!billId || !metaData.bills.length) return null;
+    return metaData.bills.find(b => b.bill_id === billId) || null;
+  }
+
+  /**
+   * Get receipt URL for an expense
+   * Checks bills table first (new system), then expense.receipt_url (legacy)
+   * @param {Object} expense - The expense object
+   * @returns {string|null} - Receipt URL or null if not found
+   */
+  function getExpenseReceiptUrl(expense) {
+    if (!expense) return null;
+
+    const billId = expense.bill_id?.trim();
+
+    // Priority 1: Get from bills table
+    if (billId) {
+      const billData = getBillMetadata(billId);
+      if (billData?.receipt_url) {
+        return billData.receipt_url;
+      }
+    }
+
+    // Priority 2: Get from expense (legacy support)
+    if (expense.receipt_url) {
+      return expense.receipt_url;
+    }
+
+    return null;
   }
 
   function populateProjectFilter() {
@@ -561,10 +636,11 @@
       console.log('[EXPENSES] First expense - using expense_id:', expenseId);
     }
 
-    // Receipt icon - show as active if receipt exists
-    const hasReceipt = exp.receipt_url;
+    // Receipt icon - check bills table first, then expense (legacy)
+    const receiptUrl = getExpenseReceiptUrl(exp);
+    const hasReceipt = !!receiptUrl;
     const receiptIcon = hasReceipt
-      ? `<a href="${exp.receipt_url}" target="_blank" class="receipt-icon-btn receipt-icon-btn--has-receipt" title="View receipt" onclick="event.stopPropagation()">📎</a>`
+      ? `<a href="${receiptUrl}" target="_blank" class="receipt-icon-btn receipt-icon-btn--has-receipt" title="View receipt" onclick="event.stopPropagation()">📎</a>`
       : `<span class="receipt-icon-btn" title="No receipt">📎</span>`;
 
     // Authorization badge
@@ -601,10 +677,11 @@
   function renderEditableRow(exp, index) {
     const dateVal = exp.TxnDate ? exp.TxnDate.split('T')[0] : '';
 
-    // Receipt icon - show as active if receipt exists (not editable in table)
-    const hasReceipt = exp.receipt_url;
+    // Receipt icon - check bills table first, then expense (legacy)
+    const receiptUrl = getExpenseReceiptUrl(exp);
+    const hasReceipt = !!receiptUrl;
     const receiptIcon = hasReceipt
-      ? `<a href="${exp.receipt_url}" target="_blank" class="receipt-icon-btn receipt-icon-btn--has-receipt" title="View receipt">📎</a>`
+      ? `<a href="${receiptUrl}" target="_blank" class="receipt-icon-btn receipt-icon-btn--has-receipt" title="View receipt">📎</a>`
       : `<span class="receipt-icon-btn" title="No receipt">📎</span>`;
 
     // Authorization badge (not editable in bulk edit mode)
@@ -1707,14 +1784,19 @@
     try {
       console.log('[EXPENSES] Starting save process for', expensesToSave.length, 'expenses');
 
-      // Send POST requests for each expense and upload receipts
+      // ============================================
+      // PHASE 1: Create all expenses first
+      // ============================================
       const createdExpenses = [];
+      const expensesByBillId = {}; // Map bill_id -> array of { expense, receiptFile }
+
       for (let i = 0; i < expensesToSave.length; i++) {
         const expenseData = { ...expensesToSave[i] };
         const receiptFile = expenseData._receiptFile;
         const isFromScan = expenseData._fromScannedReceipt;
-        delete expenseData._receiptFile; // Remove file from data before sending
-        delete expenseData._fromScannedReceipt; // Remove marker from data
+        const billId = expenseData.bill_id?.trim() || null;
+        delete expenseData._receiptFile;
+        delete expenseData._fromScannedReceipt;
 
         console.log(`[EXPENSES] Creating expense ${i + 1}/${expensesToSave.length}:`, expenseData);
 
@@ -1724,66 +1806,158 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(expenseData)
         });
-        createdExpenses.push(created);
 
-        console.log(`[EXPENSES] Created expense ${i + 1}/${expensesToSave.length}:`, created);
-        console.log('[EXPENSES] ========================================');
-        console.log('[EXPENSES] CHECKING EXPENSE ID:');
-        console.log('[EXPENSES] created.id:', created.id);
-        console.log('[EXPENSES] created.expense_id:', created.expense_id);
-        console.log('[EXPENSES] Full created object keys:', Object.keys(created));
-        console.log('[EXPENSES] ========================================');
+        const expenseId = created.expense?.expense_id || created.expense_id || created.id;
+        const createdData = created.expense || created;
 
-        // Upload receipt if this row had one
-        if (receiptFile && window.ReceiptUpload) {
-          try {
-            // The API returns { message, expense: { expense_id, ... } }
-            const expenseId = created.expense?.expense_id || created.expense_id || created.id;
-            console.log(`[EXPENSES] Uploading receipt for expense ${expenseId}:`, receiptFile.name);
+        createdExpenses.push({
+          created,
+          expenseId,
+          billId,
+          receiptFile,
+          isFromScan
+        });
 
-            if (!expenseId) {
-              console.error('[EXPENSES] ❌ CRITICAL: expenseId is undefined!');
-              console.error('[EXPENSES] Created object:', JSON.stringify(created, null, 2));
-              throw new Error('Expense ID is undefined - cannot upload receipt');
+        // Group by bill_id for receipt sharing
+        if (billId) {
+          if (!expensesByBillId[billId]) {
+            expensesByBillId[billId] = [];
+          }
+          expensesByBillId[billId].push({
+            expenseId,
+            receiptFile,
+            createdData
+          });
+        }
+
+        console.log(`[EXPENSES] Created expense ${i + 1}/${expensesToSave.length}:`, { expenseId, billId });
+      }
+
+      // ============================================
+      // PHASE 2: Create bills and upload receipts
+      // ============================================
+      // Receipt URL is stored in bills table, not in individual expenses
+      const uploadedReceiptsByBillId = {}; // bill_id -> receipt_url
+
+      if (window.ReceiptUpload) {
+        console.log('[EXPENSES] Processing receipts by bill_id...');
+
+        // First, handle grouped expenses (same bill_id) - create bill record and upload receipt
+        for (const [billId, expensesInBill] of Object.entries(expensesByBillId)) {
+          // Find the first expense with a receipt file
+          const expenseWithReceipt = expensesInBill.find(e => e.receiptFile);
+
+          if (expenseWithReceipt) {
+            try {
+              console.log(`[EXPENSES] Uploading receipt for bill ${billId} (${expensesInBill.length} expenses)`);
+
+              // Upload using bill_id as identifier
+              const receiptUrl = await window.ReceiptUpload.upload(
+                expenseWithReceipt.receiptFile,
+                expenseWithReceipt.expenseId, // Fallback ID
+                selectedProjectId,
+                billId // Use bill_id for the filename
+              );
+
+              uploadedReceiptsByBillId[billId] = receiptUrl;
+              console.log(`[EXPENSES] Receipt uploaded for bill ${billId}:`, receiptUrl);
+
+              // Create or update bill record in bills table
+              try {
+                // Check if bill already exists
+                const existingBill = getBillMetadata(billId);
+
+                if (existingBill) {
+                  // Update existing bill with receipt_url if not set
+                  if (!existingBill.receipt_url) {
+                    await apiJson(`${apiBase}/bills/${billId}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ receipt_url: receiptUrl })
+                    });
+                    console.log(`[EXPENSES] Updated existing bill ${billId} with receipt URL`);
+                  }
+                } else {
+                  // Create new bill record
+                  const billData = {
+                    bill_id: billId,
+                    receipt_url: receiptUrl,
+                    status: 'open'
+                  };
+
+                  // Add vendor_id if this is from scan and we have it
+                  if (scannedReceiptBillId === billId && scannedReceiptVendorId) {
+                    billData.vendor_id = scannedReceiptVendorId;
+                  }
+
+                  // Add expected_total if available
+                  if (scannedReceiptBillId === billId && scannedReceiptTotal) {
+                    billData.expected_total = scannedReceiptTotal;
+                  }
+
+                  await apiJson(`${apiBase}/bills`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(billData)
+                  });
+                  console.log(`[EXPENSES] Created bill record for ${billId} with receipt URL`);
+
+                  // Add to local metadata cache
+                  metaData.bills.push(billData);
+                }
+              } catch (billErr) {
+                // Bill creation might fail if it already exists - that's OK
+                console.warn(`[EXPENSES] Could not create/update bill ${billId}:`, billErr.message);
+              }
+
+              // NO longer update individual expenses with receipt_url
+              // The receipt is now stored in the bills table
+              console.log(`[EXPENSES] Receipt for bill ${billId} stored in bills table (not in expenses)`);
+
+            } catch (uploadErr) {
+              console.error(`[EXPENSES] Error uploading receipt for bill ${billId}:`, uploadErr);
             }
+          }
+        }
 
-            // Upload receipt to Supabase Storage
-            const receiptUrl = await window.ReceiptUpload.upload(
-              receiptFile,
-              expenseId,
-              selectedProjectId
-            );
+        // Handle expenses without bill_id (individual receipts - legacy support)
+        for (const expData of createdExpenses) {
+          if (!expData.billId && expData.receiptFile) {
+            try {
+              console.log(`[EXPENSES] Uploading individual receipt for expense ${expData.expenseId} (no bill_id)`);
 
-            console.log('[EXPENSES] Receipt uploaded:', receiptUrl);
+              const receiptUrl = await window.ReceiptUpload.upload(
+                expData.receiptFile,
+                expData.expenseId,
+                selectedProjectId,
+                null // No bill_id, use expense_id
+              );
 
-            // Update the created expense object to include receipt_url
-            // Handle both { expense: {...} } and direct object response formats
-            const expenseData = created.expense || created;
-            expenseData.receipt_url = receiptUrl;
+              // For expenses without bill_id, store receipt_url in expense (legacy behavior)
+              await apiJson(`${apiBase}/expenses/${expData.expenseId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  receipt_url: receiptUrl,
+                  LineDescription: expData.created.expense?.LineDescription || expData.created.LineDescription || null
+                })
+              });
 
-            // Update expense with receipt URL AND at least one other field to avoid "No fields to update" error
-            await apiJson(`${apiBase}/expenses/${expenseId}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                receipt_url: receiptUrl,
-                LineDescription: expenseData.LineDescription || null // Include existing field to ensure at least one field is sent
-              })
-            });
-
-            console.log('[EXPENSES] Expense updated with receipt URL');
-          } catch (uploadErr) {
-            console.error('[EXPENSES] Error uploading receipt:', uploadErr);
-            // Don't fail the whole save if receipt upload fails
-            console.warn('Receipt upload failed for one expense, continuing...');
+              console.log(`[EXPENSES] Expense ${expData.expenseId} updated with individual receipt URL`);
+            } catch (uploadErr) {
+              console.error(`[EXPENSES] Error uploading receipt for expense ${expData.expenseId}:`, uploadErr);
+            }
           }
         }
       }
 
       console.log('[EXPENSES] All expenses saved successfully');
 
-      // Clear scanned receipt file reference
+      // Clear scanned receipt state
       scannedReceiptFile = null;
+      scannedReceiptBillId = null;
+      scannedReceiptVendorId = null;
+      scannedReceiptTotal = null;
 
       // Close modal and reload expenses
       closeAddExpenseModal();
@@ -1858,10 +2032,43 @@
     els.singleExpenseAccount.value = selectedAccount ? (selectedAccount.Name || selectedAccount.name || '') : '';
     els.singleExpenseAccount.setAttribute('data-value', expense.account_id || '');
 
-    // Handle receipt
+    // Handle receipt - check bills table first, then expense, then related expenses
     currentReceiptFile = null;
-    currentReceiptUrl = expense.receipt_url || null;
-    currentReceiptDeleted = false; // Reset deletion flag
+    currentReceiptDeleted = false;
+
+    let receiptUrl = null;
+    const billId = expense.bill_id?.trim();
+
+    // Priority 1: Get receipt from bills table (new system)
+    if (billId) {
+      const billData = getBillMetadata(billId);
+      if (billData?.receipt_url) {
+        receiptUrl = billData.receipt_url;
+        console.log(`[EXPENSES] Found receipt from bills table for bill ${billId}:`, receiptUrl);
+      }
+    }
+
+    // Priority 2: Get receipt from expense itself (legacy support)
+    if (!receiptUrl && expense.receipt_url) {
+      receiptUrl = expense.receipt_url;
+      console.log(`[EXPENSES] Found receipt from expense:`, receiptUrl);
+    }
+
+    // Priority 3: Look for receipt from other expenses with same bill_id (legacy support)
+    if (!receiptUrl && billId) {
+      const relatedExpenseWithReceipt = expenses.find(exp => {
+        const expBillId = exp.bill_id?.trim();
+        const expId = exp.expense_id || exp.id;
+        return expBillId === billId && expId != (expense.expense_id || expense.id) && exp.receipt_url;
+      });
+
+      if (relatedExpenseWithReceipt) {
+        receiptUrl = relatedExpenseWithReceipt.receipt_url;
+        console.log(`[EXPENSES] Found shared receipt from related expense (bill ${billId}):`, receiptUrl);
+      }
+    }
+
+    currentReceiptUrl = receiptUrl;
     renderSingleExpenseReceipt();
 
     // Handle authorization checkbox (only show for authorized roles)
@@ -2067,45 +2274,138 @@
     els.btnSaveSingleExpense.textContent = 'Saving...';
 
     try {
-      // Handle receipt upload first if new file selected
+      const billId = updatedData.bill_id?.trim() || null;
+      let receiptUrl = null;
+
+      // Handle receipt upload - store in bills table if bill_id exists
       if (currentReceiptFile && window.ReceiptUpload) {
         try {
           console.log('[EXPENSES] Uploading new receipt');
-          const receiptUrl = await window.ReceiptUpload.upload(
+
+          // Get old receipt URL to delete after successful upload
+          const oldReceiptUrl = currentReceiptUrl;
+
+          // Upload the file
+          receiptUrl = await window.ReceiptUpload.upload(
             currentReceiptFile,
             expenseId,
-            selectedProjectId
+            selectedProjectId,
+            billId // Pass bill_id for shared receipt naming
           );
 
-          // Add receipt_url to updatedData so it's included in the main PATCH
-          updatedData.receipt_url = receiptUrl;
-          console.log('[EXPENSES] Receipt uploaded, will be saved with expense update');
+          console.log('[EXPENSES] Receipt uploaded:', receiptUrl);
+
+          // Delete old receipt file from storage if it exists (cleanup)
+          if (oldReceiptUrl && window.ReceiptUpload.delete) {
+            try {
+              await window.ReceiptUpload.delete(oldReceiptUrl);
+              console.log('[EXPENSES] Old receipt file deleted from storage');
+            } catch (deleteErr) {
+              console.warn('[EXPENSES] Could not delete old receipt file:', deleteErr.message);
+              // Non-critical error, continue
+            }
+          }
+
+          // If expense has bill_id, store receipt in bills table
+          if (billId) {
+            try {
+              const existingBill = getBillMetadata(billId);
+
+              if (existingBill) {
+                // Update existing bill with new receipt_url
+                await apiJson(`${apiBase}/bills/${billId}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ receipt_url: receiptUrl })
+                });
+                // Update local cache
+                existingBill.receipt_url = receiptUrl;
+                console.log(`[EXPENSES] Updated bill ${billId} with receipt URL`);
+              } else {
+                // Create new bill record
+                const billData = {
+                  bill_id: billId,
+                  receipt_url: receiptUrl,
+                  status: 'open'
+                };
+                await apiJson(`${apiBase}/bills`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(billData)
+                });
+                // Add to local cache
+                metaData.bills.push(billData);
+                console.log(`[EXPENSES] Created bill ${billId} with receipt URL`);
+              }
+              // Don't store receipt_url in expense when using bills table
+              console.log(`[EXPENSES] Receipt stored in bills table for bill ${billId}`);
+            } catch (billErr) {
+              console.warn(`[EXPENSES] Could not update/create bill ${billId}:`, billErr.message);
+              // Fallback: store in expense if bills table fails
+              updatedData.receipt_url = receiptUrl;
+            }
+          } else {
+            // No bill_id - store receipt_url in expense (legacy behavior)
+            updatedData.receipt_url = receiptUrl;
+            console.log('[EXPENSES] Receipt stored in expense (no bill_id)');
+          }
         } catch (uploadErr) {
           console.error('[EXPENSES] Error uploading receipt:', uploadErr);
           alert('Receipt upload failed: ' + uploadErr.message);
-          throw uploadErr; // Stop the save if receipt upload fails
+          throw uploadErr;
         }
       } else if (currentReceiptDeleted) {
-        // User explicitly deleted the receipt, set it to null
+        // User explicitly deleted the receipt - also delete from storage
+        const oldReceiptUrl = currentReceiptUrl;
+
+        // Delete file from Supabase Storage
+        if (oldReceiptUrl && window.ReceiptUpload?.delete) {
+          try {
+            await window.ReceiptUpload.delete(oldReceiptUrl);
+            console.log('[EXPENSES] Receipt file deleted from storage');
+          } catch (deleteErr) {
+            console.warn('[EXPENSES] Could not delete receipt file from storage:', deleteErr.message);
+            // Non-critical error, continue with database update
+          }
+        }
+
+        if (billId) {
+          // Remove from bills table
+          try {
+            const existingBill = getBillMetadata(billId);
+            if (existingBill) {
+              await apiJson(`${apiBase}/bills/${billId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ receipt_url: null })
+              });
+              existingBill.receipt_url = null;
+              console.log(`[EXPENSES] Removed receipt from bill ${billId}`);
+            }
+          } catch (billErr) {
+            console.warn(`[EXPENSES] Could not remove receipt from bill ${billId}:`, billErr.message);
+          }
+        }
+        // Also clear from expense (legacy cleanup)
         updatedData.receipt_url = null;
-        console.log('[EXPENSES] Receipt deleted, will be removed from expense');
+        console.log('[EXPENSES] Receipt deleted');
       }
 
-      // Update expense with all fields including receipt_url if uploaded/deleted
+      // Update the current expense (without receipt_url if stored in bills)
       await apiJson(`${apiBase}/expenses/${expenseId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData)
       });
 
-      // Reset button state before closing modal so user doesn't see stale state next time
+      // Reset button state before closing modal
       els.btnSaveSingleExpense.disabled = false;
       els.btnSaveSingleExpense.textContent = 'Save Changes';
 
       alert('Expense updated successfully!');
       closeSingleExpenseModal();
 
-      // Reload expenses (errors here shouldn't affect the UI)
+      // Reload expenses
       try {
         await loadExpensesByProject(selectedProjectId);
       } catch (reloadErr) {
@@ -2115,7 +2415,6 @@
     } catch (err) {
       console.error('[EXPENSES] Error updating expense:', err);
       alert('Error updating expense: ' + err.message);
-      // Reset button on error
       els.btnSaveSingleExpense.disabled = false;
       els.btnSaveSingleExpense.textContent = 'Save Changes';
     }
@@ -2204,6 +2503,27 @@
       // Store the scanned receipt file to attach to all generated expenses
       scannedReceiptFile = file;
       console.log('[SCAN RECEIPT] Stored receipt file for later upload:', file.name);
+
+      // Extract common bill_id from scanned expenses (all items share the same bill_id)
+      if (result.success && result.data && result.data.expenses && result.data.expenses.length > 0) {
+        const firstExpense = result.data.expenses[0];
+        scannedReceiptBillId = firstExpense.bill_id || firstExpense.invoice_number || firstExpense.bill_number || null;
+        scannedReceiptVendorId = firstExpense.vendor_id || null;
+
+        // Get invoice total for expected_total in bills table
+        if (result.data.validation?.invoice_total) {
+          scannedReceiptTotal = result.data.validation.invoice_total;
+        } else if (result.data.tax_summary?.grand_total) {
+          scannedReceiptTotal = result.data.tax_summary.grand_total;
+        } else {
+          // Calculate from expenses
+          scannedReceiptTotal = result.data.expenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
+        }
+
+        console.log('[SCAN RECEIPT] Extracted bill_id:', scannedReceiptBillId);
+        console.log('[SCAN RECEIPT] Extracted vendor_id:', scannedReceiptVendorId);
+        console.log('[SCAN RECEIPT] Extracted total:', scannedReceiptTotal);
+      }
 
       // Close scan modal
       closeScanReceiptModal();
@@ -3423,17 +3743,28 @@
       const billTotal = billExpenses.reduce((sum, exp) => sum + (parseFloat(exp.Amount) || 0), 0);
       grandTotal += billTotal;
 
-      // Only show floating total if there's more than 1 item
-      const showBillTotal = billExpenses.length > 1;
+      // Determine bill status
+      // For now: check if bill has expected_total field, otherwise show as "Open"
+      // Status can be: closed (complete), open (incomplete), split (expenses in other projects)
+      const billStatus = determineBillStatus(billId, billExpenses);
 
-      // Bill group header
+      // Bill group header - full width card header
       html += `
         <tr class="bill-group-header">
-          <td class="col-checkbox" style="display: none;"></td>
-          <td colspan="11" class="bill-group-title">
-            <span class="bill-group-label">Bill #${billId}</span>
-            <span class="bill-group-count">(${billExpenses.length} item${billExpenses.length > 1 ? 's' : ''})</span>
-            ${showBillTotal ? `<span class="bill-group-total">${formatCurrency(billTotal)}</span>` : ''}
+          <td colspan="12">
+            <div class="bill-card-header">
+              <div class="bill-card-info">
+                <span class="bill-card-number">Bill #${billId}</span>
+                <span class="bill-card-count">${billExpenses.length} item${billExpenses.length > 1 ? 's' : ''}</span>
+                <span class="bill-status bill-status--${billStatus.type}" title="${billStatus.tooltip}">
+                  ${billStatus.icon} ${billStatus.label}
+                </span>
+              </div>
+              <div class="bill-card-total">
+                <span class="bill-card-total-label">Total</span>
+                <span class="bill-card-total-amount">${formatCurrency(billTotal)}</span>
+              </div>
+            </div>
           </td>
         </tr>
       `;
@@ -3445,32 +3776,179 @@
         html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), isFirst, isLast);
       });
 
+      // Bill group footer with summary
+      html += `
+        <tr class="bill-group-footer">
+          <td colspan="12">
+            <div class="bill-card-footer">
+              <span class="bill-footer-items">${billExpenses.length} expense${billExpenses.length > 1 ? 's' : ''} in this bill</span>
+            </div>
+          </td>
+        </tr>
+      `;
+
       // Add spacer after each bill group
       html += `<tr class="bill-group-spacer"><td colspan="12"></td></tr>`;
     });
 
-    // Render expenses without bill (normal rows)
-    groups.withoutBill.forEach(exp => {
-      grandTotal += parseFloat(exp.Amount) || 0;
-      html += renderReadOnlyRow(exp, displayExpenses.indexOf(exp));
-    });
+    // Render expenses without bill (in a separate section)
+    if (groups.withoutBill.length > 0) {
+      html += `
+        <tr class="bill-group-header bill-group-header--no-bill">
+          <td colspan="12">
+            <div class="bill-card-header bill-card-header--no-bill">
+              <div class="bill-card-info">
+                <span class="bill-card-number">No Bill Assigned</span>
+                <span class="bill-card-count">${groups.withoutBill.length} item${groups.withoutBill.length > 1 ? 's' : ''}</span>
+              </div>
+            </div>
+          </td>
+        </tr>
+      `;
+
+      groups.withoutBill.forEach((exp, idx) => {
+        grandTotal += parseFloat(exp.Amount) || 0;
+        const isFirst = idx === 0;
+        const isLast = idx === groups.withoutBill.length - 1;
+        html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), isFirst, isLast);
+      });
+
+      html += `<tr class="bill-group-spacer"><td colspan="12"></td></tr>`;
+    }
 
     // Grand total row
-    const totalColspan = 8;
     html += `
       <tr class="total-row">
-        <td class="col-checkbox" style="display: none;"></td>
-        <td colspan="${totalColspan - 1}" class="total-label">Total</td>
-        <td class="col-amount total-amount">${formatCurrency(grandTotal)}</td>
-        <td class="col-receipt"></td>
-        <td class="col-auth"></td>
-        <td class="col-actions"></td>
+        <td colspan="12">
+          <div class="grand-total-row">
+            <span class="grand-total-label">Grand Total</span>
+            <span class="grand-total-amount">${formatCurrency(grandTotal)}</span>
+          </div>
+        </td>
       </tr>
     `;
 
     els.expensesTableBody.innerHTML = html;
     applyColumnVisibility();
     loadColumnWidths();
+  }
+
+  /**
+   * Determine bill status based on expenses and metadata
+   * @param {string} billId - The bill ID
+   * @param {Array} billExpenses - Expenses in this bill for current project
+   * @returns {Object} - { type: 'closed'|'open'|'split', label, icon, tooltip }
+   */
+  function determineBillStatus(billId, billExpenses) {
+    // First, try to get bill metadata from bills table
+    const billData = getBillMetadata(billId);
+
+    // If we have bill data from the bills table, use it as primary source
+    if (billData) {
+      const status = (billData.status || 'open').toLowerCase();
+
+      // Explicit status from bills table
+      if (status === 'closed') {
+        return {
+          type: 'closed',
+          label: 'Closed',
+          icon: '✓',
+          tooltip: 'All expenses for this bill are accounted for'
+        };
+      } else if (status === 'split') {
+        const splitInfo = billData.split_projects?.length
+          ? ` (across ${billData.split_projects.length + 1} projects)`
+          : '';
+        return {
+          type: 'split',
+          label: 'Split',
+          icon: '⚡',
+          tooltip: `Expenses from this bill are in multiple projects${splitInfo}`
+        };
+      }
+
+      // If we have expected total from bills table, compare with actual
+      if (billData.expected_total) {
+        const actualTotal = billExpenses.reduce((sum, exp) => sum + (parseFloat(exp.Amount) || 0), 0);
+        const expectedTotal = parseFloat(billData.expected_total);
+
+        if (Math.abs(actualTotal - expectedTotal) < 0.01) {
+          return {
+            type: 'closed',
+            label: 'Closed',
+            icon: '✓',
+            tooltip: `Bill complete: ${formatCurrency(actualTotal)} of ${formatCurrency(expectedTotal)}`
+          };
+        } else if (actualTotal < expectedTotal) {
+          return {
+            type: 'open',
+            label: 'Open',
+            icon: '⏳',
+            tooltip: `Missing: ${formatCurrency(expectedTotal - actualTotal)} (${formatCurrency(actualTotal)} of ${formatCurrency(expectedTotal)})`
+          };
+        }
+      }
+
+      // Status is 'open' from bills table
+      return {
+        type: 'open',
+        label: 'Open',
+        icon: '⏳',
+        tooltip: billData.notes || 'Bill is open - may have pending expenses'
+      };
+    }
+
+    // Fallback: Check if any expense has embedded bill metadata (legacy support)
+    const firstExpense = billExpenses[0];
+    const billMetadata = firstExpense?.bill_metadata || null;
+
+    if (billMetadata?.status) {
+      const status = billMetadata.status.toLowerCase();
+      if (status === 'closed') {
+        return {
+          type: 'closed',
+          label: 'Closed',
+          icon: '✓',
+          tooltip: 'All expenses for this bill are accounted for'
+        };
+      } else if (status === 'split') {
+        return {
+          type: 'split',
+          label: 'Split',
+          icon: '⚡',
+          tooltip: 'Some expenses from this bill are in other projects'
+        };
+      }
+    }
+
+    if (billMetadata?.expected_total) {
+      const actualTotal = billExpenses.reduce((sum, exp) => sum + (parseFloat(exp.Amount) || 0), 0);
+      const expectedTotal = parseFloat(billMetadata.expected_total);
+
+      if (Math.abs(actualTotal - expectedTotal) < 0.01) {
+        return {
+          type: 'closed',
+          label: 'Closed',
+          icon: '✓',
+          tooltip: `Bill complete: ${formatCurrency(actualTotal)} of ${formatCurrency(expectedTotal)}`
+        };
+      } else if (actualTotal < expectedTotal) {
+        return {
+          type: 'open',
+          label: 'Open',
+          icon: '⏳',
+          tooltip: `Missing: ${formatCurrency(expectedTotal - actualTotal)} (${formatCurrency(actualTotal)} of ${formatCurrency(expectedTotal)})`
+        };
+      }
+    }
+
+    // Default: Open status (no bill record found)
+    return {
+      type: 'open',
+      label: 'Open',
+      icon: '⏳',
+      tooltip: 'Bill not registered - status unknown'
+    };
   }
 
   function renderBillGroupRow(exp, index, isFirst, isLast) {
@@ -3484,9 +3962,11 @@
     const amount = exp.Amount ? formatCurrency(Number(exp.Amount)) : '$0.00';
     const expenseId = exp.expense_id || exp.id || '';
 
-    const hasReceipt = exp.receipt_url;
+    // Receipt icon - check bills table first, then expense (legacy)
+    const receiptUrl = getExpenseReceiptUrl(exp);
+    const hasReceipt = !!receiptUrl;
     const receiptIcon = hasReceipt
-      ? `<a href="${exp.receipt_url}" target="_blank" class="receipt-icon-btn receipt-icon-btn--has-receipt" title="View receipt" onclick="event.stopPropagation()">📎</a>`
+      ? `<a href="${receiptUrl}" target="_blank" class="receipt-icon-btn receipt-icon-btn--has-receipt" title="View receipt" onclick="event.stopPropagation()">📎</a>`
       : `<span class="receipt-icon-btn" title="No receipt">📎</span>`;
 
     const isAuthorized = exp.auth_status === true || exp.auth_status === 1;

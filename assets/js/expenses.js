@@ -3412,6 +3412,9 @@
         const isLast = idx === billExpenses.length - 1;
         html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), isFirst, isLast);
       });
+
+      // Add spacer after each bill group
+      html += `<tr class="bill-group-spacer"><td colspan="12"></td></tr>`;
     });
 
     // Render expenses without bill (normal rows)

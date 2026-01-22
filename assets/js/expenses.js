@@ -725,7 +725,7 @@
       if (isBillViewMode) {
         isBillViewMode = false;
         els.btnBillView.classList.remove('btn-toolbar-active');
-        els.btnBillView.textContent = 'Conciliation View';
+        els.btnBillView.textContent = 'Bill View';
       }
 
       // Store original data for rollback
@@ -3337,18 +3337,6 @@
   // BILL VIEW FUNCTIONALITY
   // ================================
 
-  // Color palette for bill groups (using existing app colors)
-  const BILL_GROUP_COLORS = [
-    { border: 'rgba(34, 197, 94, 0.5)', bg: 'rgba(34, 197, 94, 0.05)' },    // Green
-    { border: 'rgba(59, 130, 246, 0.5)', bg: 'rgba(59, 130, 246, 0.05)' },  // Blue
-    { border: 'rgba(168, 85, 247, 0.5)', bg: 'rgba(168, 85, 247, 0.05)' },  // Purple
-    { border: 'rgba(249, 115, 22, 0.5)', bg: 'rgba(249, 115, 22, 0.05)' },  // Orange
-    { border: 'rgba(236, 72, 153, 0.5)', bg: 'rgba(236, 72, 153, 0.05)' },  // Pink
-    { border: 'rgba(20, 184, 166, 0.5)', bg: 'rgba(20, 184, 166, 0.05)' },  // Teal
-    { border: 'rgba(245, 158, 11, 0.5)', bg: 'rgba(245, 158, 11, 0.05)' },  // Amber
-    { border: 'rgba(99, 102, 241, 0.5)', bg: 'rgba(99, 102, 241, 0.05)' },  // Indigo
-  ];
-
   function toggleBillView() {
     isBillViewMode = !isBillViewMode;
 
@@ -3358,7 +3346,7 @@
       els.btnBillView.textContent = 'Normal View';
     } else {
       els.btnBillView.classList.remove('btn-toolbar-active');
-      els.btnBillView.textContent = 'Conciliation View';
+      els.btnBillView.textContent = 'Bill View';
     }
 
     // Re-render table
@@ -3393,7 +3381,6 @@
     const groups = groupExpensesByBill(displayExpenses);
 
     let html = '';
-    let colorIndex = 0;
     let grandTotal = 0;
 
     // Render bill groups first
@@ -3401,7 +3388,6 @@
 
     billIds.forEach(billId => {
       const billExpenses = groups.withBill[billId];
-      const color = BILL_GROUP_COLORS[colorIndex % BILL_GROUP_COLORS.length];
       const billTotal = billExpenses.reduce((sum, exp) => sum + (parseFloat(exp.Amount) || 0), 0);
       grandTotal += billTotal;
 
@@ -3410,10 +3396,9 @@
 
       // Bill group header
       html += `
-        <tr class="bill-group-header" style="background: ${color.bg};">
+        <tr class="bill-group-header">
           <td class="col-checkbox" style="display: none;"></td>
           <td colspan="11" class="bill-group-title">
-            <span class="bill-group-indicator" style="border-color: ${color.border};"></span>
             <span class="bill-group-label">Bill #${billId}</span>
             <span class="bill-group-count">(${billExpenses.length} item${billExpenses.length > 1 ? 's' : ''})</span>
             ${showBillTotal ? `<span class="bill-group-total">${formatCurrency(billTotal)}</span>` : ''}
@@ -3425,10 +3410,8 @@
       billExpenses.forEach((exp, idx) => {
         const isFirst = idx === 0;
         const isLast = idx === billExpenses.length - 1;
-        html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), color, isFirst, isLast);
+        html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), isFirst, isLast);
       });
-
-      colorIndex++;
     });
 
     // Render expenses without bill (normal rows)
@@ -3455,7 +3438,7 @@
     loadColumnWidths();
   }
 
-  function renderBillGroupRow(exp, index, color, isFirst, isLast) {
+  function renderBillGroupRow(exp, index, isFirst, isLast) {
     const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
     const billId = exp.bill_id || '—';
     const description = exp.LineDescription || '—';
@@ -3489,8 +3472,7 @@
     if (isLast) borderClass += ' bill-group-last';
 
     return `
-      <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable ${borderClass}"
-          style="cursor: pointer; background: ${color.bg}; --bill-border-color: ${color.border};">
+      <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable ${borderClass}" style="cursor: pointer;">
         <td class="col-checkbox" style="display: none;"></td>
         <td class="col-date">${date}</td>
         <td class="col-bill-id">${billId}</td>

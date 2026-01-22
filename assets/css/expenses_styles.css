@@ -300,7 +300,7 @@
   overflow-x: auto; /* Horizontal scroll when table is wider than container */
   overflow-y: auto; /* Vertical scroll for long tables */
   max-height: calc(100vh - 280px); /* Limit height, leave room for toolbar/footer */
-  min-height: 200px;
+  min-height: 400px; /* Ensures filter dropdowns have room to display */
   width: 100%;
 }
 

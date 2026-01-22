@@ -1023,14 +1023,34 @@
     const apiBase = getApiBase();
     const userId = currentUser.user_id || currentUser.id;
 
+    // Disable button and show loading state
     els.btnBulkAuthorize.disabled = true;
-    const originalText = els.btnBulkAuthorize.innerHTML;
 
     const totalExpenses = selectedExpenseIds.size;
     let processedCount = 0;
     let successCount = 0;
     let failedCount = 0;
     const failedIds = [];
+
+    // Helper to update button text with progress
+    function updateButtonProgress() {
+      if (els.btnBulkAuthorize) {
+        els.btnBulkAuthorize.innerHTML = `<span style="font-size: 14px;">⏳</span> Authorizing... (${processedCount}/${totalExpenses})`;
+      }
+    }
+
+    // Helper to reset button to normal state
+    function resetButton() {
+      if (els.btnBulkAuthorize) {
+        els.btnBulkAuthorize.disabled = false;
+        // Restore the standard button format with current selection count
+        const count = selectedExpenseIds.size;
+        els.btnBulkAuthorize.innerHTML = `<span style="font-size: 14px;">✓</span> Authorize Selected (<span id="authorizeCount">${count}</span>)`;
+        els.btnBulkAuthorize.disabled = count === 0;
+        // Update the reference to the new authorizeCount element
+        els.authorizeCount = document.getElementById('authorizeCount');
+      }
+    }
 
     try {
       // Convert Set to Array for processing
@@ -1045,14 +1065,14 @@
       // Helper function to delay execution
       const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+      // Initial progress update
+      updateButtonProgress();
+
       // Process expenses in batches
       for (let i = 0; i < expenseIdsArray.length; i += BATCH_SIZE) {
         const batch = expenseIdsArray.slice(i, i + BATCH_SIZE);
         const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
         const totalBatches = Math.ceil(expenseIdsArray.length / BATCH_SIZE);
-
-        // Update progress in button
-        els.btnBulkAuthorize.innerHTML = `<span style="font-size: 14px;">⏳</span> Authorizing... (${processedCount}/${totalExpenses})`;
 
         console.log(`[BULK_AUTH] Processing batch ${batchNumber}/${totalBatches} (${batch.length} expenses)`);
 
@@ -1089,6 +1109,9 @@
         // Wait for current batch to complete
         await Promise.all(batchPromises);
 
+        // Update progress after each batch
+        updateButtonProgress();
+
         // Delay before next batch (except for the last batch)
         if (i + BATCH_SIZE < expenseIdsArray.length) {
           await delay(DELAY_MS);
@@ -1109,14 +1132,13 @@
       selectedExpenseIds.clear();
       renderExpensesTable();
       updateBulkDeleteButton();
-      updateBulkAuthorizeButton();
 
     } catch (err) {
       console.error('[BULK_AUTH] Unexpected error:', err);
       alert(`Error during bulk authorization: ${err.message}\n\nProcessed: ${processedCount}/${totalExpenses}\nSucceeded: ${successCount}`);
     } finally {
-      els.btnBulkAuthorize.disabled = false;
-      els.btnBulkAuthorize.innerHTML = originalText;
+      // Always reset button state regardless of success or failure
+      resetButton();
     }
   }
 
@@ -2076,14 +2098,24 @@
         body: JSON.stringify(updatedData)
       });
 
+      // Reset button state before closing modal so user doesn't see stale state next time
+      els.btnSaveSingleExpense.disabled = false;
+      els.btnSaveSingleExpense.textContent = 'Save Changes';
+
       alert('Expense updated successfully!');
       closeSingleExpenseModal();
-      await loadExpensesByProject(selectedProjectId);
+
+      // Reload expenses (errors here shouldn't affect the UI)
+      try {
+        await loadExpensesByProject(selectedProjectId);
+      } catch (reloadErr) {
+        console.error('[EXPENSES] Error reloading expenses after save:', reloadErr);
+      }
 
     } catch (err) {
       console.error('[EXPENSES] Error updating expense:', err);
       alert('Error updating expense: ' + err.message);
-    } finally {
+      // Reset button on error
       els.btnSaveSingleExpense.disabled = false;
       els.btnSaveSingleExpense.textContent = 'Save Changes';
     }
@@ -4651,9 +4683,17 @@
   // ================================
   // AUTHORIZATION TOGGLE
   // ================================
+  let isAuthToggling = false; // Prevent double-clicks
+
   async function toggleAuth(badgeElement) {
     if (!canAuthorize) {
       console.warn('[AUTH] User does not have permission to authorize');
+      return;
+    }
+
+    // Prevent double-click issues
+    if (isAuthToggling) {
+      console.log('[AUTH] Already processing, ignoring click');
       return;
     }
 
@@ -4665,7 +4705,18 @@
 
     const apiBase = getApiBase();
 
+    // Store original state for reverting on error
+    const originalText = badgeElement.textContent;
+    const originalClasses = badgeElement.className;
+
     try {
+      isAuthToggling = true;
+
+      // Show loading state on badge
+      badgeElement.textContent = '...';
+      badgeElement.style.opacity = '0.6';
+      badgeElement.style.pointerEvents = 'none';
+
       // Update authorization status
       const userId = currentUser.user_id || currentUser.id;
       const response = await apiJson(`${apiBase}/expenses/${expenseId}`, {
@@ -4691,7 +4742,16 @@
 
     } catch (error) {
       console.error('[AUTH] Error updating authorization:', error);
+
+      // Revert badge to original state
+      badgeElement.textContent = originalText;
+      badgeElement.className = originalClasses;
+      badgeElement.style.opacity = '';
+      badgeElement.style.pointerEvents = '';
+
       alert('Failed to update authorization status: ' + error.message);
+    } finally {
+      isAuthToggling = false;
     }
   }
 

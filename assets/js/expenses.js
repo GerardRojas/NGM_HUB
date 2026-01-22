@@ -725,7 +725,7 @@
       if (isBillViewMode) {
         isBillViewMode = false;
         els.btnBillView.classList.remove('btn-toolbar-active');
-        els.btnBillView.innerHTML = '<span style="font-size: 14px;">📋</span> Bill View';
+        els.btnBillView.textContent = 'Conciliation View';
       }
 
       // Store original data for rollback
@@ -2984,8 +2984,9 @@
       // Load expenses for selected project
       await loadExpensesByProject(selectedProjectId);
 
-      // Enable edit button if we have expenses
+      // Enable edit button and bill view if we have expenses
       els.btnEditExpenses.disabled = !selectedProjectId || expenses.length === 0;
+      els.btnBillView.disabled = !selectedProjectId || expenses.length === 0;
     });
 
     // Global search input
@@ -3354,10 +3355,10 @@
     // Update button appearance
     if (isBillViewMode) {
       els.btnBillView.classList.add('btn-toolbar-active');
-      els.btnBillView.innerHTML = '<span style="font-size: 14px;">📋</span> Normal View';
+      els.btnBillView.textContent = 'Normal View';
     } else {
       els.btnBillView.classList.remove('btn-toolbar-active');
-      els.btnBillView.innerHTML = '<span style="font-size: 14px;">📋</span> Bill View';
+      els.btnBillView.textContent = 'Conciliation View';
     }
 
     // Re-render table

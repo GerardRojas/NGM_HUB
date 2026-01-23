@@ -284,7 +284,7 @@
    * @returns {string|null} The JWT token or null if invalid
    */
   function getAuthToken() {
-    const token = localStorage.getItem('jwt_token');
+    const token = localStorage.getItem('ngmToken');
     if (!token) {
       console.error('[AUTH] No JWT token found in localStorage');
       alert('Your session has expired. Please log in again.');
@@ -298,7 +298,7 @@
         const payload = JSON.parse(atob(parts[1]));
         if (payload.exp && payload.exp * 1000 < Date.now()) {
           console.error('[AUTH] JWT token has expired');
-          localStorage.removeItem('jwt_token');
+          localStorage.removeItem('ngmToken');
           alert('Your session has expired. Please log in again.');
           window.location.href = 'login.html';
           return null;
@@ -4911,7 +4911,7 @@
       closeBillEditModal();
 
       // Re-render table to show updated status
-      if (isBillViewActive) {
+      if (isBillViewMode) {
         renderBillViewTable();
       } else {
         renderExpensesTable();

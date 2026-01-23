@@ -3,8 +3,9 @@
    ========================================== */
 
 .page-expenses .main-content {
-  max-width: none;
+  max-width: none; /* Override global 1400px limit */
   width: 100%;
+  padding-inline: 16px; /* Reduce side padding to maximize table space */
 }
 
 .page-expenses .workspace {
@@ -16,7 +17,7 @@
 
 /* Section */
 .page-expenses .data-section {
-  max-width: 1200px;
+  max-width: none; /* No limit - table can expand fully */
   margin-inline: auto;
   width: 100%;
 }
@@ -297,7 +298,7 @@
   background: var(--ngm-bg-card, #18181b);
   border: 1px solid var(--border-soft, #27272f);
   border-radius: 12px;
-  overflow-x: auto; /* Horizontal scroll when table is wider than container */
+  overflow-x: auto; /* Scroll only if viewport is too small */
   overflow-y: auto; /* Vertical scroll for long tables */
   max-height: calc(100vh - 280px); /* Limit height, leave room for toolbar/footer */
   min-height: 400px; /* Ensures filter dropdowns have room to display */
@@ -499,8 +500,7 @@
 }
 
 .expenses-table {
-  width: 100%;
-  min-width: 1100px; /* Minimum width to ensure all columns fit, enables horizontal scroll */
+  width: 100%; /* Fill available space */
   border-collapse: collapse;
   table-layout: fixed; /* Fixed layout for consistent widths */
 }
@@ -525,19 +525,19 @@
   background: #111111;
 }
 
-/* Column widths - minimum sizes ensure scroll when needed */
-.expenses-table .col-checkbox { width: 40px; min-width: 40px; }
-.expenses-table .col-date { width: 95px; min-width: 95px; }
-.expenses-table .col-bill-id { width: 90px; min-width: 90px; }
-.expenses-table .col-description { width: auto; min-width: 180px; } /* Flexible, grows with available space */
-.expenses-table .col-account { width: 110px; min-width: 110px; }
-.expenses-table .col-type { width: 100px; min-width: 100px; }
-.expenses-table .col-vendor { width: 120px; min-width: 120px; }
-.expenses-table .col-payment { width: 90px; min-width: 90px; }
-.expenses-table .col-amount { width: 95px; min-width: 95px; }
-.expenses-table .col-receipt { width: 50px; min-width: 50px; }
-.expenses-table .col-auth { width: 90px; min-width: 90px; }
-.expenses-table .col-actions { width: 50px; min-width: 50px; }
+/* Column widths - fixed sizes except description which grows to fill space */
+.expenses-table .col-checkbox { width: 40px; }
+.expenses-table .col-date { width: 95px; }
+.expenses-table .col-bill-id { width: 90px; }
+.expenses-table .col-description { width: auto; } /* Flexible - fills remaining space */
+.expenses-table .col-account { width: 120px; }
+.expenses-table .col-type { width: 100px; }
+.expenses-table .col-vendor { width: 130px; }
+.expenses-table .col-payment { width: 100px; }
+.expenses-table .col-amount { width: 100px; }
+.expenses-table .col-receipt { width: 50px; }
+.expenses-table .col-auth { width: 95px; }
+.expenses-table .col-actions { width: 50px; }
 
 /* Column resize handle */
 .expenses-table th {
@@ -1010,8 +1010,8 @@ select.edit-input option {
 }
 
 .filter-dropdown {
-  position: absolute;
-  z-index: 100;
+  position: fixed;
+  z-index: 1000;
   width: 260px;
   background: #1f1f1f;
   border: 1px solid rgba(148, 163, 184, 0.3);
@@ -1235,27 +1235,60 @@ select.edit-input option {
   border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
-/* Bill total - right side of header */
-.bill-card-total {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-
-.bill-card-total-label {
-  font-size: 10px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.4);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.bill-card-total-amount {
-  font-size: 18px;
-  font-weight: 700;
+/* Bill total as small pill (inline with header) */
+.bill-card-total-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
   color: #4ade80;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  padding: 3px 10px;
+  border-radius: 12px;
   font-variant-numeric: tabular-nums;
+}
+
+/* Clickable bill header */
+.bill-card-clickable {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.bill-card-clickable:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.06) 100%);
+}
+
+/* Bill card actions (right side) */
+.bill-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bill-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s ease;
+}
+
+.bill-edit-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Receipt indicator in bill header */
+.bill-receipt-indicator {
+  font-size: 14px;
+  opacity: 0.7;
 }
 
 /* Bill group rows - card body */
@@ -1354,6 +1387,389 @@ select.edit-input option {
   font-weight: 700;
   color: #4ade80;
   font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================
+   BILL EDIT MODAL
+   ========================================== */
+
+.modal-bill-edit {
+  max-width: 500px;
+}
+
+.bill-edit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.bill-edit-number {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bill-edit-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bill-edit-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.bill-edit-stats {
+  display: flex;
+  gap: 20px;
+}
+
+.bill-edit-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.bill-edit-stat-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+}
+
+.bill-edit-stat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.bill-edit-stat-amount {
+  color: #4ade80;
+}
+
+/* Bill Status Options */
+.bill-status-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bill-status-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.bill-status-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.bill-status-option.selected {
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.4);
+}
+
+.bill-status-option .status-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+.bill-status-option .status-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.bill-status-option .status-desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: auto;
+}
+
+/* Bill Receipt Section */
+.bill-receipt-section {
+  min-height: 80px;
+}
+
+.bill-receipt-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bill-receipt-upload:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.bill-receipt-upload-icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+
+.bill-receipt-upload-text {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+.bill-receipt-upload-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 4px;
+}
+
+.bill-receipt-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.bill-receipt-preview-icon {
+  font-size: 24px;
+}
+
+.bill-receipt-preview-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.bill-receipt-preview-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bill-receipt-preview-link {
+  font-size: 12px;
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+.bill-receipt-preview-link:hover {
+  text-decoration: underline;
+}
+
+.bill-receipt-preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.bill-receipt-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bill-receipt-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.bill-receipt-btn--delete {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.bill-receipt-btn--delete:hover {
+  background: rgba(248, 113, 113, 0.15);
+}
+
+/* ==========================================
+   SCANNED RECEIPT INDICATOR (Add Expense Modal)
+   ========================================== */
+
+.scanned-receipt-indicator {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(59, 130, 246, 0.06) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+}
+
+.scanned-indicator-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scanned-indicator-icon {
+  font-size: 24px;
+}
+
+.scanned-indicator-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.scanned-indicator-text strong {
+  font-size: 13px;
+  font-weight: 600;
+  color: #60a5fa;
+}
+
+.scanned-indicator-text span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.scanned-indicator-unlock {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.scanned-indicator-unlock:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* ==========================================
+   BILL STATUS SECTION (Add Expense Modal)
+   ========================================== */
+
+.bill-status-section {
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.bill-status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.bill-status-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.bill-status-bill-id {
+  font-size: 12px;
+  font-weight: 500;
+  color: #60a5fa;
+  padding: 2px 8px;
+  background: rgba(96, 165, 250, 0.15);
+  border-radius: 4px;
+}
+
+.bill-status-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+.bill-status-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bill-status-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.bill-status-btn.selected {
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.4);
+}
+
+.bill-status-btn.selected[data-status="open"] {
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.bill-status-btn.selected[data-status="closed"] {
+  background: rgba(74, 222, 128, 0.1);
+  border-color: rgba(74, 222, 128, 0.4);
+}
+
+.bill-status-btn.selected[data-status="split"] {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.4);
+}
+
+.bill-status-btn-icon {
+  font-size: 20px;
+}
+
+.bill-status-btn-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.bill-status-btn.selected .bill-status-btn-label {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.bill-status-hint {
+  margin-top: 10px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
 }
 
 /* ==========================================

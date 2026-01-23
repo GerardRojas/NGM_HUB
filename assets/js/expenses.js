@@ -31,6 +31,7 @@
   let currentReceiptFile = null; // File selected for upload
   let currentReceiptUrl = null;  // URL of existing receipt
   let currentReceiptDeleted = false; // Flag to track if user deleted receipt
+  let currentBlobUrl = null; // Track blob URL for cleanup (memory leak prevention)
   let currentEditingExpense = null; // Expense being edited in single modal
   let columnFilters = {
     date: [],
@@ -55,6 +56,8 @@
   let scannedReceiptBillId = null;  // Bill ID extracted from scanned receipt
   let scannedReceiptVendorId = null; // Vendor ID from scanned receipt
   let scannedReceiptTotal = null;   // Total from scanned receipt (for expected_total)
+  let isScannedReceiptMode = false; // When true, blocks adding rows and marks bill as closed on save
+  let selectedBillStatus = 'open';  // Status to use when saving bill (open, closed, split)
 
   // CSV Import State
   let csvParsedData = {
@@ -143,6 +146,12 @@
     els.btnCancelExpenses = document.getElementById('btnCancelExpenses');
     els.btnSaveAllExpenses = document.getElementById('btnSaveAllExpenses');
 
+    // Bill Status Section (Add Expense Modal)
+    els.billStatusSection = document.getElementById('billStatusSection');
+    els.billStatusBillId = document.getElementById('billStatusBillId');
+    els.billStatusToggle = document.getElementById('billStatusToggle');
+    els.billStatusHint = document.getElementById('billStatusHint');
+
     // Scan Receipt Modal elements
     els.btnScanReceipt = document.getElementById('btnScanReceipt');
     els.scanReceiptModal = document.getElementById('scanReceiptModal');
@@ -188,6 +197,20 @@
     els.btnCloseColumnManagerFooter = document.getElementById('btnCloseColumnManagerFooter');
     els.btnResetColumns = document.getElementById('btnResetColumns');
     els.columnCheckboxes = document.getElementById('columnCheckboxes');
+
+    // Bill edit modal
+    els.billEditModal = document.getElementById('billEditModal');
+    els.btnCloseBillModal = document.getElementById('btnCloseBillModal');
+    els.btnCancelBillEdit = document.getElementById('btnCancelBillEdit');
+    els.btnSaveBillEdit = document.getElementById('btnSaveBillEdit');
+    els.billEditNumber = document.getElementById('billEditNumber');
+    els.billEditExpenseCount = document.getElementById('billEditExpenseCount');
+    els.billEditTotal = document.getElementById('billEditTotal');
+    els.billStatusOptions = document.getElementById('billStatusOptions');
+    els.billEditExpectedTotal = document.getElementById('billEditExpectedTotal');
+    els.billEditVendor = document.getElementById('billEditVendor');
+    els.billEditNotes = document.getElementById('billEditNotes');
+    els.billReceiptSection = document.getElementById('billReceiptSection');
   }
 
   // ================================
@@ -246,7 +269,46 @@
     if (!res.ok) {
       throw new Error(`${options.method || 'GET'} ${url} failed (${res.status}): ${text}`);
     }
-    return text ? JSON.parse(text) : null;
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch (parseErr) {
+      console.error('[API] Invalid JSON response from', url, ':', text.substring(0, 200));
+      throw new Error(`Invalid JSON response from server: ${parseErr.message}`);
+    }
+  }
+
+  /**
+   * Get JWT token from localStorage with validation
+   * Redirects to login if token is missing or expired
+   * @returns {string|null} The JWT token or null if invalid
+   */
+  function getAuthToken() {
+    const token = localStorage.getItem('jwt_token');
+    if (!token) {
+      console.error('[AUTH] No JWT token found in localStorage');
+      alert('Your session has expired. Please log in again.');
+      window.location.href = 'login.html';
+      return null;
+    }
+    // Basic JWT expiration check (JWT has 3 parts separated by dots)
+    try {
+      const parts = token.split('.');
+      if (parts.length === 3) {
+        const payload = JSON.parse(atob(parts[1]));
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          console.error('[AUTH] JWT token has expired');
+          localStorage.removeItem('jwt_token');
+          alert('Your session has expired. Please log in again.');
+          window.location.href = 'login.html';
+          return null;
+        }
+      }
+    } catch (e) {
+      console.warn('[AUTH] Could not parse JWT for expiration check:', e);
+      // Continue with token anyway - server will validate
+    }
+    return token;
   }
 
   // ================================
@@ -741,7 +803,7 @@
     // Find the selected option text
     let selectedText = '';
     if (selectedValue) {
-      const selectedOption = options.find(opt => opt[valueKey] == selectedValue);
+      const selectedOption = options.find(opt => String(opt[valueKey]) === String(selectedValue));
       if (selectedOption) {
         selectedText = selectedOption[textKey] || selectedOption.Name || selectedOption.name ||
                        selectedOption.vendor_name || selectedOption.account_name ||
@@ -778,7 +840,7 @@
 
   function findMetaName(category, value, valueKey, textKey) {
     if (!value) return null;
-    const item = metaData[category]?.find(i => i[valueKey] == value);
+    const item = metaData[category]?.find(i => String(i[valueKey]) === String(value));
     return item ? item[textKey] : null;
   }
 
@@ -921,6 +983,38 @@
     console.log('[EDIT] Total updates to send:', updates.length);
     console.log('[EDIT] Updates:', updates);
 
+    // Validate: Check if any update tries to change to a closed bill
+    const closedBillErrors = [];
+    updates.forEach(update => {
+      const newBillId = update.data.bill_id?.trim() || null;
+      if (newBillId) {
+        // Find original expense to check if bill_id changed
+        const original = originalExpenses.find(exp => String(exp.expense_id || exp.id) === String(update.id));
+        const originalBillId = original?.bill_id || null;
+
+        // Only validate if bill_id changed
+        if (newBillId !== originalBillId) {
+          const billData = getBillMetadata(newBillId);
+          if (billData && billData.status === 'closed') {
+            closedBillErrors.push({
+              expenseId: update.id,
+              billId: newBillId
+            });
+          }
+        }
+      }
+    });
+
+    if (closedBillErrors.length > 0) {
+      let message = '❌ CLOSED BILL DETECTED\n\nCannot change expenses to closed bills:\n';
+      closedBillErrors.forEach(err => {
+        message += `\n• Bill #${err.billId}`;
+      });
+      message += '\n\nTo add expenses to these bills, first reopen them in Bill View.';
+      alert(message);
+      return; // Stop saving
+    }
+
     if (updates.length === 0) {
       alert('No changes to save.');
       toggleEditMode(false);
@@ -932,18 +1026,35 @@
     els.btnSaveChanges.textContent = 'Saving...';
 
     try {
-      // Send PATCH requests for each update
-      for (const update of updates) {
-        console.log(`[EDIT] Sending PATCH for expense ${update.id}:`, update.data);
-        const response = await apiJson(`${apiBase}/expenses/${update.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(update.data)
-        });
-        console.log(`[EDIT] PATCH response for ${update.id}:`, response);
+      console.log('[EDIT] Sending batch update for', updates.length, 'expenses');
+      const batchStartTime = performance.now();
+
+      // Transform updates to match backend schema
+      const batchPayload = {
+        updates: updates.map(u => ({
+          expense_id: u.id,
+          data: u.data
+        }))
+      };
+
+      // Single API call for all updates
+      const response = await apiJson(`${apiBase}/expenses/batch`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(batchPayload)
+      });
+
+      const batchEndTime = performance.now();
+      console.log(`[EDIT] Batch update completed in ${(batchEndTime - batchStartTime).toFixed(0)}ms`);
+      console.log('[EDIT] Batch result:', response.summary);
+
+      // Log any failures
+      if (response.failed && response.failed.length > 0) {
+        console.warn('[EDIT] Some updates failed:', response.failed);
       }
 
-      alert(`${updates.length} expense(s) updated successfully!`);
+      const successCount = response.summary?.total_updated || updates.length;
+      alert(`${successCount} expense(s) updated successfully!`);
 
       // Reload expenses
       await loadExpensesByProject(selectedProjectId);
@@ -960,7 +1071,7 @@
   }
 
   function hasChanges(original, updated) {
-    const fields = ['TxnDate', 'txn_type', 'vendor_id', 'payment_type', 'account_id', 'Amount', 'LineDescription'];
+    const fields = ['TxnDate', 'txn_type', 'vendor_id', 'payment_type', 'account_id', 'Amount', 'LineDescription', 'bill_id'];
     return fields.some(f => {
       const origVal = original[f];
       const updVal = updated[f];
@@ -1029,18 +1140,37 @@
     els.btnBulkDelete.innerHTML = '<span style="font-size: 14px;">⏳</span> Deleting...';
 
     try {
+      // Use Promise.allSettled to handle individual failures without stopping others
       const deletePromises = Array.from(selectedExpenseIds).map(expenseId =>
-        apiJson(`${apiBase}/expenses/${expenseId}`, {
-          method: 'DELETE'
-        })
+        apiJson(`${apiBase}/expenses/${expenseId}`, { method: 'DELETE' })
+          .then(() => ({ expenseId, success: true }))
+          .catch(err => ({ expenseId, success: false, error: err.message }))
       );
 
-      await Promise.all(deletePromises);
+      const results = await Promise.allSettled(deletePromises);
 
-      console.log(`[BULK_DELETE] Deleted ${selectedExpenseIds.size} expenses`);
+      // Process results - separate successes and failures
+      const successfulDeletes = [];
+      const failedDeletes = [];
 
-      // Remove from local arrays
-      selectedExpenseIds.forEach(expenseId => {
+      results.forEach(result => {
+        if (result.status === 'fulfilled') {
+          const { expenseId, success, error } = result.value;
+          if (success) {
+            successfulDeletes.push(expenseId);
+          } else {
+            failedDeletes.push({ expenseId, error });
+          }
+        } else {
+          // Promise itself rejected (shouldn't happen with our .catch above)
+          failedDeletes.push({ expenseId: 'unknown', error: result.reason?.message || 'Unknown error' });
+        }
+      });
+
+      console.log(`[BULK_DELETE] Successful: ${successfulDeletes.length}, Failed: ${failedDeletes.length}`);
+
+      // Remove ONLY successfully deleted expenses from local arrays
+      successfulDeletes.forEach(expenseId => {
         const index = expenses.findIndex(e => (e.expense_id || e.id) === expenseId);
         if (index >= 0) {
           expenses.splice(index, 1);
@@ -1050,17 +1180,26 @@
         if (origIndex >= 0) {
           originalExpenses.splice(origIndex, 1);
         }
+
+        // Remove from selection
+        selectedExpenseIds.delete(expenseId);
       });
 
-      selectedExpenseIds.clear();
       renderExpensesTable();
       updateBulkDeleteButton();
 
-      alert('Expenses deleted successfully!');
+      // Show appropriate message
+      if (failedDeletes.length === 0) {
+        alert(`${successfulDeletes.length} expense(s) deleted successfully!`);
+      } else if (successfulDeletes.length === 0) {
+        alert(`Failed to delete all expenses.\n\nErrors:\n${failedDeletes.map(f => `• ${f.error}`).join('\n')}`);
+      } else {
+        alert(`Partial success:\n• ${successfulDeletes.length} expense(s) deleted\n• ${failedDeletes.length} failed\n\nFailed items remain selected for retry.`);
+      }
 
     } catch (err) {
-      console.error('[BULK_DELETE] Error:', err);
-      alert('Error deleting expenses: ' + err.message);
+      console.error('[BULK_DELETE] Unexpected error:', err);
+      alert('Unexpected error during bulk delete: ' + err.message);
     } finally {
       els.btnBulkDelete.disabled = false;
       els.btnBulkDelete.innerHTML = originalText;
@@ -1094,11 +1233,26 @@
       return;
     }
 
-    const confirmed = confirm(`Authorize ${selectedExpenseIds.size} expense(s)? This will mark them as approved.`);
-    if (!confirmed) return;
-
     const apiBase = getApiBase();
     const userId = currentUser.user_id || currentUser.id;
+
+    // Re-verify permissions with server before executing bulk authorization
+    // This prevents stale permission issues if user's role changed mid-session
+    try {
+      const permCheck = await apiJson(`${apiBase}/permissions/check?user_id=${userId}&action=authorize_expenses`);
+      if (!permCheck || !permCheck.allowed) {
+        canAuthorize = false; // Update local state
+        alert('Your authorization permissions have been revoked.\n\nPlease refresh the page or contact an administrator.');
+        return;
+      }
+    } catch (permErr) {
+      // If permission check fails, log but continue with local canAuthorize state
+      // This maintains backwards compatibility if endpoint doesn't exist
+      console.warn('[BULK_AUTH] Permission check failed, using cached permissions:', permErr.message);
+    }
+
+    const confirmed = confirm(`Authorize ${selectedExpenseIds.size} expense(s)? This will mark them as approved.`);
+    if (!confirmed) return;
 
     // Disable button and show loading state
     els.btnBulkAuthorize.disabled = true;
@@ -1168,7 +1322,7 @@
             processedCount++;
 
             // Update local data immediately
-            const expense = expenses.find(e => (e.expense_id || e.id) == expenseId);
+            const expense = expenses.find(e => String(e.expense_id || e.id) === String(expenseId));
             if (expense) {
               expense.auth_status = true;
               expense.auth_by = userId;
@@ -1245,7 +1399,7 @@
     if (!selectedProjectId) return;
 
     // Find project name
-    const project = metaData.projects.find(p => (p.project_id || p.id) == selectedProjectId);
+    const project = metaData.projects.find(p => String(p.project_id || p.id) === String(selectedProjectId));
     const projectName = project ? (project.project_name || project.name) : '—';
 
     els.modalProjectName.textContent = projectName;
@@ -1260,6 +1414,10 @@
     currentReceiptUrl = null;
     renderReceiptUploader();
 
+    // Reset bill status section
+    selectedBillStatus = 'open';
+    updateBillStatusSection();
+
     // IMPORTANT: Reset Save button to enabled state
     if (els.btnSaveAllExpenses) {
       els.btnSaveAllExpenses.disabled = false;
@@ -1271,12 +1429,136 @@
   }
 
   function closeAddExpenseModal() {
+    // Revoke blob URL to prevent memory leak
+    if (currentBlobUrl) {
+      URL.revokeObjectURL(currentBlobUrl);
+      currentBlobUrl = null;
+    }
     els.modal.classList.add('hidden');
     els.expenseRowsBody.innerHTML = '';
     modalRowCounter = 0;
     currentReceiptFile = null;
     currentReceiptUrl = null;
     scannedReceiptFile = null; // Clear scanned receipt reference
+    scannedReceiptBillId = null;
+    scannedReceiptVendorId = null;
+    scannedReceiptTotal = null;
+    isScannedReceiptMode = false;
+    selectedBillStatus = 'open'; // Reset to default
+    updateScannedReceiptModeUI(); // Reset UI
+    updateBillStatusSection(); // Reset bill status UI
+  }
+
+  /**
+   * Updates the Add Expense modal UI based on scanned receipt mode
+   * When in scanned mode: disables Add Row, shows "bill will be closed" indicator
+   */
+  function updateScannedReceiptModeUI() {
+    const addRowBtn = els.btnAddExpenseRow;
+    const scannedIndicator = document.getElementById('scannedReceiptIndicator');
+
+    if (isScannedReceiptMode) {
+      // Disable Add Row button
+      if (addRowBtn) {
+        addRowBtn.disabled = true;
+        addRowBtn.title = 'Adding rows is disabled for scanned receipts (bill will be closed)';
+      }
+
+      // Show indicator if it exists, or create it
+      if (!scannedIndicator) {
+        const indicator = document.createElement('div');
+        indicator.id = 'scannedReceiptIndicator';
+        indicator.className = 'scanned-receipt-indicator';
+        indicator.innerHTML = `
+          <div class="scanned-indicator-content">
+            <span class="scanned-indicator-icon">📄</span>
+            <div class="scanned-indicator-text">
+              <strong>Scanned Receipt Mode</strong>
+              <span>Bill #${scannedReceiptBillId || 'N/A'} will be marked as <strong>Closed</strong> when saved</span>
+            </div>
+            <button type="button" class="scanned-indicator-unlock" id="btnUnlockScannedMode" title="Allow adding more rows (for multi-bill receipts)">
+              🔓 Unlock
+            </button>
+          </div>
+        `;
+
+        // Insert before the table
+        const tableContainer = els.modal?.querySelector('.modal-table-container');
+        if (tableContainer) {
+          tableContainer.parentNode.insertBefore(indicator, tableContainer);
+        }
+
+        // Add unlock button handler
+        document.getElementById('btnUnlockScannedMode')?.addEventListener('click', () => {
+          isScannedReceiptMode = false;
+          updateScannedReceiptModeUI();
+        });
+      }
+    } else {
+      // Enable Add Row button
+      if (addRowBtn) {
+        addRowBtn.disabled = false;
+        addRowBtn.title = '';
+      }
+
+      // Remove indicator if exists
+      if (scannedIndicator) {
+        scannedIndicator.remove();
+      }
+    }
+  }
+
+  /**
+   * Updates the Bill Status section in the Add Expense modal
+   * Shows when there's a bill_id in the expenses, hidden otherwise
+   */
+  function updateBillStatusSection() {
+    if (!els.billStatusSection) return;
+
+    // Find bill_id from expense rows or scanned receipt
+    let billId = scannedReceiptBillId;
+
+    // Also check if any row has a bill_id filled in
+    if (!billId) {
+      const billInputs = els.expenseRowsBody?.querySelectorAll('.exp-input[data-field="bill_id"]');
+      billInputs?.forEach(input => {
+        if (input.value?.trim()) {
+          billId = input.value.trim();
+        }
+      });
+    }
+
+    if (billId) {
+      // Show the section
+      els.billStatusSection.classList.remove('hidden');
+      els.billStatusBillId.textContent = `#${billId}`;
+
+      // Update selected state on buttons
+      els.billStatusToggle.querySelectorAll('.bill-status-btn').forEach(btn => {
+        btn.classList.toggle('selected', btn.dataset.status === selectedBillStatus);
+      });
+
+      // Update hint based on selection
+      updateBillStatusHint();
+    } else {
+      // Hide the section
+      els.billStatusSection.classList.add('hidden');
+    }
+  }
+
+  /**
+   * Updates the hint text based on selected bill status
+   */
+  function updateBillStatusHint() {
+    if (!els.billStatusHint) return;
+
+    const hints = {
+      'open': 'More expenses can be added to this bill later.',
+      'closed': 'This bill will be marked complete. No more expenses can be added.',
+      'split': 'This bill is split across multiple projects. Totals may not match the receipt.'
+    };
+
+    els.billStatusHint.textContent = hints[selectedBillStatus] || hints['open'];
   }
 
   // ================================
@@ -1320,8 +1602,14 @@
     // Store file for upload when saving expense
     currentReceiptFile = file;
 
-    // Create temporary preview URL
+    // Revoke previous blob URL if exists (prevent memory leak)
+    if (currentBlobUrl) {
+      URL.revokeObjectURL(currentBlobUrl);
+    }
+
+    // Create temporary preview URL and track it for cleanup
     const tempUrl = URL.createObjectURL(file);
+    currentBlobUrl = tempUrl;
     currentReceiptUrl = tempUrl;
 
     // Re-render to show preview
@@ -1329,6 +1617,11 @@
   }
 
   function handleReceiptDelete() {
+    // Revoke blob URL to prevent memory leak
+    if (currentBlobUrl) {
+      URL.revokeObjectURL(currentBlobUrl);
+      currentBlobUrl = null;
+    }
     currentReceiptFile = null;
     currentReceiptUrl = null;
     renderReceiptUploader();
@@ -1638,6 +1931,36 @@
     });
 
     // ============================================
+    // VALIDATION: Reject expenses for closed bills
+    // ============================================
+    const closedBillErrors = [];
+    expensesToSave.forEach((expense, idx) => {
+      if (expense.bill_id) {
+        const billData = getBillMetadata(expense.bill_id);
+        if (billData && billData.status === 'closed') {
+          closedBillErrors.push({
+            row: idx + 1,
+            billId: expense.bill_id
+          });
+        }
+      }
+    });
+
+    if (closedBillErrors.length > 0) {
+      let message = '❌ CLOSED BILL DETECTED\n\nCannot add expenses to closed bills:\n';
+
+      closedBillErrors.forEach(err => {
+        message += `\n• Bill #${err.billId} (Row ${err.row})`;
+      });
+
+      message += '\n\n📋 This bill has been marked as closed, meaning all expenses have been accounted for.';
+      message += '\n\nTo add expenses to this bill, you must first reopen it by changing its status to "Open" in the Bill View.';
+
+      alert(message);
+      return; // Stop saving
+    }
+
+    // ============================================
     // VALIDATION: Reject invalid vendors
     // ============================================
     if (invalidVendors.size > 0) {
@@ -1691,6 +2014,34 @@
 
       message += '\n\n📋 Please select a valid payment method from the dropdown list.';
 
+      alert(message);
+      return; // Stop saving
+    }
+
+    // ============================================
+    // VALIDATION: Reject invalid amounts (negative or extreme values)
+    // ============================================
+    const MAX_AMOUNT = 10000000; // $10 million limit
+    const invalidAmounts = [];
+    expensesToSave.forEach((expense, idx) => {
+      const amount = expense.Amount;
+      if (amount !== null && amount !== undefined) {
+        if (amount < 0) {
+          invalidAmounts.push({ row: idx + 1, amount, reason: 'Negative amount not allowed' });
+        } else if (amount > MAX_AMOUNT) {
+          invalidAmounts.push({ row: idx + 1, amount, reason: `Amount exceeds maximum ($${MAX_AMOUNT.toLocaleString()})` });
+        } else if (!isFinite(amount)) {
+          invalidAmounts.push({ row: idx + 1, amount, reason: 'Invalid number' });
+        }
+      }
+    });
+
+    if (invalidAmounts.length > 0) {
+      let message = '❌ INVALID AMOUNTS DETECTED\n\nThe following amounts are not valid:\n';
+      invalidAmounts.forEach(inv => {
+        message += `\n• Row ${inv.row}: $${inv.amount} - ${inv.reason}`;
+      });
+      message += '\n\n📋 Please correct the amounts before saving.';
       alert(message);
       return; // Stop saving
     }
@@ -1785,37 +2136,55 @@
       console.log('[EXPENSES] Starting save process for', expensesToSave.length, 'expenses');
 
       // ============================================
-      // PHASE 1: Create all expenses first
+      // PHASE 1: Create all expenses with BATCH endpoint
       // ============================================
       const createdExpenses = [];
       const expensesByBillId = {}; // Map bill_id -> array of { expense, receiptFile }
 
-      for (let i = 0; i < expensesToSave.length; i++) {
-        const expenseData = { ...expensesToSave[i] };
+      // Separate receipt files from expense data (can't send files in JSON)
+      const receiptFilesMap = new Map(); // index -> { file, isFromScan }
+      const expensesForBatch = expensesToSave.map((exp, idx) => {
+        const expenseData = { ...exp };
         const receiptFile = expenseData._receiptFile;
         const isFromScan = expenseData._fromScannedReceipt;
-        const billId = expenseData.bill_id?.trim() || null;
         delete expenseData._receiptFile;
         delete expenseData._fromScannedReceipt;
 
-        console.log(`[EXPENSES] Creating expense ${i + 1}/${expensesToSave.length}:`, expenseData);
+        if (receiptFile) {
+          receiptFilesMap.set(idx, { file: receiptFile, isFromScan });
+        }
 
-        // Create expense
-        const created = await apiJson(`${apiBase}/expenses`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(expenseData)
-        });
+        return expenseData;
+      });
 
-        const expenseId = created.expense?.expense_id || created.expense_id || created.id;
-        const createdData = created.expense || created;
+      console.log('[EXPENSES] Sending batch request for', expensesForBatch.length, 'expenses');
+      const batchStartTime = performance.now();
+
+      // Single API call for all expenses
+      const batchResult = await apiJson(`${apiBase}/expenses/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expenses: expensesForBatch })
+      });
+
+      const batchEndTime = performance.now();
+      console.log(`[EXPENSES] Batch insert completed in ${(batchEndTime - batchStartTime).toFixed(0)}ms`);
+      console.log('[EXPENSES] Batch result:', batchResult.summary);
+
+      // Process created expenses
+      const createdList = batchResult.created || [];
+      for (let i = 0; i < createdList.length; i++) {
+        const createdData = createdList[i];
+        const expenseId = createdData.expense_id || createdData.id;
+        const billId = createdData.bill_id?.trim() || null;
+        const receiptInfo = receiptFilesMap.get(i);
 
         createdExpenses.push({
-          created,
+          created: { expense: createdData },
           expenseId,
           billId,
-          receiptFile,
-          isFromScan
+          receiptFile: receiptInfo?.file || null,
+          isFromScan: receiptInfo?.isFromScan || false
         });
 
         // Group by bill_id for receipt sharing
@@ -1825,12 +2194,15 @@
           }
           expensesByBillId[billId].push({
             expenseId,
-            receiptFile,
+            receiptFile: receiptInfo?.file || null,
             createdData
           });
         }
+      }
 
-        console.log(`[EXPENSES] Created expense ${i + 1}/${expensesToSave.length}:`, { expenseId, billId });
+      // Log any failures
+      if (batchResult.failed && batchResult.failed.length > 0) {
+        console.warn('[EXPENSES] Some expenses failed to create:', batchResult.failed);
       }
 
       // ============================================
@@ -1838,6 +2210,7 @@
       // ============================================
       // Receipt URL is stored in bills table, not in individual expenses
       const uploadedReceiptsByBillId = {}; // bill_id -> receipt_url
+      const failedReceiptUploads = []; // Track failed uploads for user notification
 
       if (window.ReceiptUpload) {
         console.log('[EXPENSES] Processing receipts by bill_id...');
@@ -1869,20 +2242,31 @@
 
                 if (existingBill) {
                   // Update existing bill with receipt_url if not set
+                  const updateData = {};
                   if (!existingBill.receipt_url) {
+                    updateData.receipt_url = receiptUrl;
+                  }
+                  // Update status based on user selection (selectedBillStatus)
+                  // Only update if this is the bill the user selected status for
+                  if (scannedReceiptBillId === billId || selectedBillStatus !== 'open') {
+                    updateData.status = selectedBillStatus;
+                  }
+                  if (Object.keys(updateData).length > 0) {
                     await apiJson(`${apiBase}/bills/${billId}`, {
                       method: 'PATCH',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ receipt_url: receiptUrl })
+                      body: JSON.stringify(updateData)
                     });
-                    console.log(`[EXPENSES] Updated existing bill ${billId} with receipt URL`);
+                    console.log(`[EXPENSES] Updated existing bill ${billId}:`, updateData);
                   }
                 } else {
                   // Create new bill record
+                  // Use selectedBillStatus (defaults to 'open', or 'closed' if scanned receipt mode)
+                  const billStatus = selectedBillStatus;
                   const billData = {
                     bill_id: billId,
                     receipt_url: receiptUrl,
-                    status: 'open'
+                    status: billStatus
                   };
 
                   // Add vendor_id if this is from scan and we have it
@@ -1900,7 +2284,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(billData)
                   });
-                  console.log(`[EXPENSES] Created bill record for ${billId} with receipt URL`);
+                  console.log(`[EXPENSES] Created bill record for ${billId} with status '${billStatus}':`, billData);
 
                   // Add to local metadata cache
                   metaData.bills.push(billData);
@@ -1916,6 +2300,12 @@
 
             } catch (uploadErr) {
               console.error(`[EXPENSES] Error uploading receipt for bill ${billId}:`, uploadErr);
+              failedReceiptUploads.push({
+                type: 'bill',
+                id: billId,
+                expenseCount: expensesInBill.length,
+                error: uploadErr.message
+              });
             }
           }
         }
@@ -1946,6 +2336,11 @@
               console.log(`[EXPENSES] Expense ${expData.expenseId} updated with individual receipt URL`);
             } catch (uploadErr) {
               console.error(`[EXPENSES] Error uploading receipt for expense ${expData.expenseId}:`, uploadErr);
+              failedReceiptUploads.push({
+                type: 'expense',
+                id: expData.expenseId,
+                error: uploadErr.message
+              });
             }
           }
         }
@@ -1958,15 +2353,33 @@
       scannedReceiptBillId = null;
       scannedReceiptVendorId = null;
       scannedReceiptTotal = null;
+      isScannedReceiptMode = false;
+      selectedBillStatus = 'open'; // Reset to default
 
-      // Close modal and reload expenses
-      closeAddExpenseModal();
-      console.log('[EXPENSES] Modal closed, reloading expenses...');
-
+      // Reload expenses BEFORE closing modal so user doesn't see stale data
+      console.log('[EXPENSES] Reloading expenses...');
       await loadExpensesByProject(selectedProjectId);
-      console.log('[EXPENSES] Expenses reloaded');
+      console.log('[EXPENSES] Expenses reloaded, now closing modal');
 
-      alert(`${expensesToSave.length} expense(s) saved successfully!`);
+      closeAddExpenseModal();
+
+      // Build success message, including any receipt upload failures
+      let successMessage = `${expensesToSave.length} expense(s) saved successfully!`;
+
+      if (failedReceiptUploads.length > 0) {
+        successMessage += `\n\n⚠️ WARNING: ${failedReceiptUploads.length} receipt(s) failed to upload:\n`;
+        failedReceiptUploads.forEach(fail => {
+          if (fail.type === 'bill') {
+            successMessage += `\n• Bill #${fail.id} (${fail.expenseCount} expenses): ${fail.error}`;
+          } else {
+            successMessage += `\n• Expense ${fail.id}: ${fail.error}`;
+          }
+        });
+        successMessage += '\n\nThe expenses were saved but without receipts attached.';
+        successMessage += '\nYou can attach receipts later by editing the bill in Bill View.';
+      }
+
+      alert(successMessage);
 
     } catch (err) {
       console.error('[EXPENSES] Error saving expenses:', err);
@@ -1983,9 +2396,10 @@
   // ================================
   function openSingleExpenseModal(expenseId) {
     // Backend uses 'expense_id' as primary key
+    // Convert both IDs to strings for safe comparison (IDs may come as strings or numbers)
     const expense = expenses.find(exp => {
       const id = exp.expense_id || exp.id;
-      return id == expenseId;
+      return String(id) === String(expenseId);
     });
 
     if (!expense) {
@@ -2013,22 +2427,22 @@
 
     // Set selected values - display text, store ID in data-value
     // Type
-    const selectedType = metaData.txn_types.find(t => (t.TnxType_id || t.id) == expense.txn_type);
+    const selectedType = metaData.txn_types.find(t => String(t.TnxType_id || t.id) === String(expense.txn_type));
     els.singleExpenseType.value = selectedType ? (selectedType.TnxType_name || selectedType.name || '') : '';
     els.singleExpenseType.setAttribute('data-value', expense.txn_type || '');
 
     // Vendor
-    const selectedVendor = metaData.vendors.find(v => v.id == expense.vendor_id);
+    const selectedVendor = metaData.vendors.find(v => String(v.id) === String(expense.vendor_id));
     els.singleExpenseVendor.value = selectedVendor ? (selectedVendor.vendor_name || selectedVendor.name || '') : '';
     els.singleExpenseVendor.setAttribute('data-value', expense.vendor_id || '');
 
     // Payment
-    const selectedPayment = metaData.payment_methods.find(p => p.id == expense.payment_type);
+    const selectedPayment = metaData.payment_methods.find(p => String(p.id) === String(expense.payment_type));
     els.singleExpensePayment.value = selectedPayment ? (selectedPayment.payment_method_name || selectedPayment.name || '') : '';
     els.singleExpensePayment.setAttribute('data-value', expense.payment_type || '');
 
     // Account
-    const selectedAccount = metaData.accounts.find(a => a.account_id == expense.account_id);
+    const selectedAccount = metaData.accounts.find(a => String(a.account_id) === String(expense.account_id));
     els.singleExpenseAccount.value = selectedAccount ? (selectedAccount.Name || selectedAccount.name || '') : '';
     els.singleExpenseAccount.setAttribute('data-value', expense.account_id || '');
 
@@ -2091,6 +2505,11 @@
   }
 
   function closeSingleExpenseModal() {
+    // Revoke blob URL to prevent memory leak
+    if (currentBlobUrl) {
+      URL.revokeObjectURL(currentBlobUrl);
+      currentBlobUrl = null;
+    }
     els.singleExpenseModal.classList.add('hidden');
     currentEditingExpense = null;
     currentReceiptFile = null;
@@ -2216,12 +2635,25 @@
     }
 
     currentReceiptFile = file;
+
+    // Revoke previous blob URL if exists (prevent memory leak)
+    if (currentBlobUrl) {
+      URL.revokeObjectURL(currentBlobUrl);
+    }
+
+    // Create and track new blob URL
     const tempUrl = URL.createObjectURL(file);
+    currentBlobUrl = tempUrl;
     currentReceiptUrl = tempUrl;
     renderSingleExpenseReceipt();
   }
 
   function handleSingleExpenseReceiptDelete() {
+    // Revoke blob URL to prevent memory leak
+    if (currentBlobUrl) {
+      URL.revokeObjectURL(currentBlobUrl);
+      currentBlobUrl = null;
+    }
     currentReceiptFile = null;
     currentReceiptUrl = null;
     currentReceiptDeleted = true; // Mark that user explicitly deleted the receipt
@@ -2269,6 +2701,19 @@
     }
 
     console.log('[EXPENSES] Saving single expense:', expenseId, updatedData);
+
+    // Validate: Check if trying to add/change to a closed bill
+    const newBillId = updatedData.bill_id?.trim() || null;
+    const originalBillId = currentEditingExpense.bill_id || null;
+
+    // Only validate if bill_id changed or is being set for the first time
+    if (newBillId && newBillId !== originalBillId) {
+      const billData = getBillMetadata(newBillId);
+      if (billData && billData.status === 'closed') {
+        alert(`❌ Cannot assign expense to Bill #${newBillId}\n\nThis bill is marked as "Closed", meaning all expenses have been accounted for.\n\nTo add expenses to this bill, first reopen it in Bill View.`);
+        return;
+      }
+    }
 
     els.btnSaveSingleExpense.disabled = true;
     els.btnSaveSingleExpense.textContent = 'Saving...';
@@ -2398,19 +2843,19 @@
         body: JSON.stringify(updatedData)
       });
 
-      // Reset button state before closing modal
-      els.btnSaveSingleExpense.disabled = false;
-      els.btnSaveSingleExpense.textContent = 'Save Changes';
-
-      alert('Expense updated successfully!');
-      closeSingleExpenseModal();
-
-      // Reload expenses
+      // Reload expenses BEFORE closing modal so user doesn't see stale data
       try {
         await loadExpensesByProject(selectedProjectId);
       } catch (reloadErr) {
         console.error('[EXPENSES] Error reloading expenses after save:', reloadErr);
       }
+
+      // Reset button state and close modal AFTER reload completes
+      els.btnSaveSingleExpense.disabled = false;
+      els.btnSaveSingleExpense.textContent = 'Save Changes';
+
+      alert('Expense updated successfully!');
+      closeSingleExpenseModal();
 
     } catch (err) {
       console.error('[EXPENSES] Error updating expense:', err);
@@ -2474,10 +2919,13 @@
       els.scanReceiptProgressText.textContent = 'Analyzing...';
       els.scanReceiptProgressFill.style.width = '60%';
 
+      const authToken = getAuthToken();
+      if (!authToken) return; // getAuthToken redirects to login if missing
+
       const response = await fetch(`${apiBase}/expenses/parse-receipt`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('jwt_token')}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: formData
       });
@@ -2532,6 +2980,12 @@
       if (result.success && result.data && result.data.expenses) {
         await populateExpensesFromScan(result.data.expenses);
       }
+
+      // Activate scanned receipt mode - blocks adding rows and marks bill as closed on save
+      isScannedReceiptMode = true;
+      selectedBillStatus = 'closed'; // Default to closed for scanned receipts
+      updateScannedReceiptModeUI();
+      updateBillStatusSection(); // Show bill status section with 'closed' pre-selected
 
       els.scanReceiptProgressFill.style.width = '100%';
 
@@ -2756,40 +3210,58 @@
   /**
    * Parses a CSV line respecting quoted fields that may contain commas
    * @param {string} line - CSV line to parse
-   * @returns {string[]} - Array of cell values
+   * @param {number} rowNum - Row number for error reporting (1-indexed)
+   * @returns {{ cells: string[], error: string|null }} - Array of cell values or error
    */
-  function parseCSVLine(line) {
+  function parseCSVLine(line, rowNum = 0) {
     const cells = [];
     let currentCell = '';
     let insideQuotes = false;
+    let cellIndex = 0;
 
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      const nextChar = line[i + 1];
+    try {
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        const nextChar = line[i + 1];
 
-      if (char === '"') {
-        // Handle escaped quotes ("")
-        if (insideQuotes && nextChar === '"') {
-          currentCell += '"';
-          i++; // Skip next quote
+        if (char === '"') {
+          // Handle escaped quotes ("")
+          if (insideQuotes && nextChar === '"') {
+            currentCell += '"';
+            i++; // Skip next quote
+          } else {
+            // Toggle quote state
+            insideQuotes = !insideQuotes;
+          }
+        } else if (char === ',' && !insideQuotes) {
+          // End of cell
+          cells.push(currentCell.trim());
+          currentCell = '';
+          cellIndex++;
         } else {
-          // Toggle quote state
-          insideQuotes = !insideQuotes;
+          // Regular character
+          currentCell += char;
         }
-      } else if (char === ',' && !insideQuotes) {
-        // End of cell
-        cells.push(currentCell.trim());
-        currentCell = '';
-      } else {
-        // Regular character
-        currentCell += char;
       }
+
+      // Add last cell
+      cells.push(currentCell.trim());
+
+      // Check for unclosed quotes
+      if (insideQuotes) {
+        return {
+          cells: null,
+          error: `Row ${rowNum}: Unclosed quote in column ${cellIndex + 1}`
+        };
+      }
+
+      return { cells, error: null };
+    } catch (err) {
+      return {
+        cells: null,
+        error: `Row ${rowNum}: Parse error - ${err.message}`
+      };
     }
-
-    // Add last cell
-    cells.push(currentCell.trim());
-
-    return cells;
   }
 
   async function handleCSVImport(event) {
@@ -2808,21 +3280,53 @@
         return;
       }
 
-      // Parse headers using proper CSV parsing
-      csvParsedData.headers = parseCSVLine(lines[0]);
+      // Parse headers using proper CSV parsing (row 1)
+      const headerResult = parseCSVLine(lines[0], 1);
+      if (headerResult.error) {
+        alert(`❌ CSV Parse Error:\n\n${headerResult.error}\n\nPlease fix the header row and try again.`);
+        return;
+      }
+      csvParsedData.headers = headerResult.cells;
 
       // Parse data rows using proper CSV parsing
       csvParsedData.rows = [];
+      const parseErrors = [];
+
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
 
-        const cells = parseCSVLine(line);
-        csvParsedData.rows.push(cells);
+        const rowNum = i + 1; // 1-indexed for user display
+        const result = parseCSVLine(line, rowNum);
+
+        if (result.error) {
+          parseErrors.push(result.error);
+          // Continue parsing other rows to collect all errors
+        } else {
+          // Validate column count matches headers
+          if (result.cells.length !== csvParsedData.headers.length) {
+            parseErrors.push(`Row ${rowNum}: Expected ${csvParsedData.headers.length} columns, found ${result.cells.length}`);
+          } else {
+            csvParsedData.rows.push(result.cells);
+          }
+        }
+      }
+
+      // Report parsing errors if any
+      if (parseErrors.length > 0) {
+        const maxErrorsToShow = 10;
+        let errorMessage = `❌ CSV Parse Errors Found:\n\n`;
+        errorMessage += parseErrors.slice(0, maxErrorsToShow).join('\n');
+        if (parseErrors.length > maxErrorsToShow) {
+          errorMessage += `\n\n... and ${parseErrors.length - maxErrorsToShow} more errors`;
+        }
+        errorMessage += `\n\nPlease fix these issues and try again.`;
+        alert(errorMessage);
+        return;
       }
 
       if (csvParsedData.rows.length === 0) {
-        alert('No data rows found in CSV file.');
+        alert('No valid data rows found in CSV file.');
         return;
       }
 
@@ -3681,6 +4185,78 @@
       }
     });
 
+    // Bill Edit Modal handlers
+    els.btnCloseBillModal?.addEventListener('click', closeBillEditModal);
+    els.btnCancelBillEdit?.addEventListener('click', closeBillEditModal);
+    els.btnSaveBillEdit?.addEventListener('click', saveBillEdit);
+
+    // Bill status option selection
+    els.billStatusOptions?.addEventListener('click', (e) => {
+      const option = e.target.closest('.bill-status-option');
+      if (option) {
+        els.billStatusOptions.querySelectorAll('.bill-status-option').forEach(btn => {
+          btn.classList.remove('selected');
+        });
+        option.classList.add('selected');
+      }
+    });
+
+    // Bill vendor datalist - update data-value on selection
+    els.billEditVendor?.addEventListener('input', (e) => {
+      const datalist = document.getElementById('billEditVendorList');
+      if (!datalist) return;
+      const matchingOption = Array.from(datalist.options).find(opt => opt.value === e.target.value);
+      if (matchingOption) {
+        e.target.dataset.value = matchingOption.getAttribute('data-id');
+      } else {
+        e.target.dataset.value = '';
+      }
+    });
+
+    // Close bill edit modal on backdrop click
+    els.billEditModal?.addEventListener('click', (e) => {
+      if (e.target === els.billEditModal) {
+        closeBillEditModal();
+      }
+    });
+
+    // Bill card header click handler (event delegation on table body)
+    els.expensesTableBody?.addEventListener('click', (e) => {
+      // Check if clicked on bill card header (not on a regular expense row)
+      const billHeader = e.target.closest('.bill-card-clickable');
+      if (billHeader) {
+        const billId = billHeader.dataset.billId;
+        if (billId) {
+          e.stopPropagation();
+          openBillEditModal(billId);
+        }
+      }
+    });
+
+    // Bill Status Toggle Buttons in Add Expense Modal
+    els.billStatusToggle?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.bill-status-btn');
+      if (btn) {
+        const status = btn.dataset.status;
+        if (status) {
+          selectedBillStatus = status;
+          // Update selected state on all buttons
+          els.billStatusToggle.querySelectorAll('.bill-status-btn').forEach(b => {
+            b.classList.toggle('selected', b.dataset.status === status);
+          });
+          updateBillStatusHint();
+          console.log('[EXPENSES] Bill status changed to:', status);
+        }
+      }
+    });
+
+    // Monitor bill_id changes in modal expense rows to show/hide Bill Status section
+    els.expenseRowsBody?.addEventListener('input', (e) => {
+      if (e.target.dataset?.field === 'bill_id') {
+        updateBillStatusSection();
+      }
+    });
+
     // Initialize column resize handles
     initColumnResize();
   }
@@ -3744,25 +4320,29 @@
       grandTotal += billTotal;
 
       // Determine bill status
-      // For now: check if bill has expected_total field, otherwise show as "Open"
-      // Status can be: closed (complete), open (incomplete), split (expenses in other projects)
       const billStatus = determineBillStatus(billId, billExpenses);
 
-      // Bill group header - full width card header
+      // Determine if this is a Check or Bill based on payment_type of expenses
+      // If any expense has payment_type that matches a "check" method, label as Check
+      const billLabel = determineBillLabel(billExpenses);
+
+      // Get bill metadata for receipt info
+      const billData = getBillMetadata(billId);
+      const hasReceipt = billData?.receipt_url ? true : false;
+
+      // Bill group header - full width card header (clickable to edit bill)
       html += `
         <tr class="bill-group-header">
           <td colspan="12">
-            <div class="bill-card-header">
+            <div class="bill-card-header bill-card-clickable" data-bill-id="${billId}" title="Click to edit bill">
               <div class="bill-card-info">
-                <span class="bill-card-number">Bill #${billId}</span>
+                <span class="bill-card-number">${billLabel} #${billId}</span>
                 <span class="bill-card-count">${billExpenses.length} item${billExpenses.length > 1 ? 's' : ''}</span>
+                <span class="bill-card-total-pill">${formatCurrency(billTotal)}</span>
                 <span class="bill-status bill-status--${billStatus.type}" title="${billStatus.tooltip}">
                   ${billStatus.icon} ${billStatus.label}
                 </span>
-              </div>
-              <div class="bill-card-total">
-                <span class="bill-card-total-label">Total</span>
-                <span class="bill-card-total-amount">${formatCurrency(billTotal)}</span>
+                ${hasReceipt ? '<span class="bill-receipt-indicator" title="Has receipt attached">📎</span>' : ''}
               </div>
             </div>
           </td>
@@ -3951,6 +4531,29 @@
     };
   }
 
+  /**
+   * Determine if this should be labeled "Check" or "Bill" based on payment_type
+   * @param {Array} billExpenses - Expenses in this bill
+   * @returns {string} - "Check" or "Bill"
+   */
+  function determineBillLabel(billExpenses) {
+    // Check if any expense has a payment_type that indicates a check
+    const checkPaymentNames = ['check', 'cheque', 'chk'];
+
+    for (const exp of billExpenses) {
+      // Get payment method name
+      const paymentName = exp.payment_method_name ||
+        findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '';
+
+      // Check if it's a check payment
+      if (paymentName && checkPaymentNames.some(chk => paymentName.toLowerCase().includes(chk))) {
+        return 'Check';
+      }
+    }
+
+    return 'Bill';
+  }
+
   function renderBillGroupRow(exp, index, isFirst, isLast) {
     const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
     const billId = exp.bill_id || '—';
@@ -4002,6 +4605,325 @@
         <td class="col-actions"></td>
       </tr>
     `;
+  }
+
+  // ================================
+  // BILL EDIT MODAL
+  // ================================
+
+  let currentEditBillId = null;
+  let billEditReceiptFile = null;
+  let billEditReceiptDeleted = false;
+  let billEditBlobUrl = null; // Track blob URL for cleanup (memory leak prevention)
+
+  function openBillEditModal(billId) {
+    if (!billId) return;
+
+    currentEditBillId = billId;
+    billEditReceiptFile = null;
+    billEditReceiptDeleted = false;
+
+    // Get bill metadata from cache or create default
+    const billData = getBillMetadata(billId) || {
+      bill_id: billId,
+      status: 'open',
+      expected_total: null,
+      vendor_id: null,
+      notes: null,
+      receipt_url: null
+    };
+
+    // Get expenses for this bill to calculate stats
+    const billExpenses = expenses.filter(exp => exp.bill_id === billId);
+    const billTotal = billExpenses.reduce((sum, exp) => sum + (parseFloat(exp.Amount) || 0), 0);
+
+    // Populate modal header
+    els.billEditNumber.textContent = `#${billId}`;
+    els.billEditExpenseCount.textContent = billExpenses.length;
+    els.billEditTotal.textContent = formatCurrency(billTotal);
+
+    // Populate status options
+    const currentStatus = (billData.status || 'open').toLowerCase();
+    els.billStatusOptions.querySelectorAll('.bill-status-option').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.status === currentStatus);
+    });
+
+    // Populate expected total
+    els.billEditExpectedTotal.value = billData.expected_total || '';
+
+    // Populate vendor datalist
+    const vendorList = document.getElementById('billEditVendorList');
+    vendorList.innerHTML = metaData.vendors.map(v =>
+      `<option value="${v.vendor_name}" data-id="${v.id}"></option>`
+    ).join('');
+
+    // Set vendor value
+    if (billData.vendor_id) {
+      const vendor = metaData.vendors.find(v => v.id === billData.vendor_id);
+      els.billEditVendor.value = vendor?.vendor_name || '';
+      els.billEditVendor.dataset.value = billData.vendor_id;
+    } else {
+      els.billEditVendor.value = '';
+      els.billEditVendor.dataset.value = '';
+    }
+
+    // Populate notes
+    els.billEditNotes.value = billData.notes || '';
+
+    // Render receipt section
+    renderBillReceiptSection(billData.receipt_url);
+
+    // Show modal
+    els.billEditModal.classList.remove('hidden');
+  }
+
+  function closeBillEditModal() {
+    // Revoke blob URL to prevent memory leak
+    if (billEditBlobUrl) {
+      URL.revokeObjectURL(billEditBlobUrl);
+      billEditBlobUrl = null;
+    }
+    els.billEditModal.classList.add('hidden');
+    currentEditBillId = null;
+    billEditReceiptFile = null;
+    billEditReceiptDeleted = false;
+  }
+
+  // Helper to create blob URL with tracking for bill edit modal
+  function createBillEditBlobUrl(file) {
+    // Revoke previous blob URL to prevent memory leak
+    if (billEditBlobUrl) {
+      URL.revokeObjectURL(billEditBlobUrl);
+    }
+    billEditBlobUrl = URL.createObjectURL(file);
+    return billEditBlobUrl;
+  }
+
+  function renderBillReceiptSection(receiptUrl) {
+    if (receiptUrl && !billEditReceiptDeleted) {
+      // Show receipt preview - use generic label instead of filename to avoid info disclosure
+      const isBlob = receiptUrl.startsWith('blob:');
+      const displayName = isBlob ? 'New file selected' : 'Receipt attached';
+      els.billReceiptSection.innerHTML = `
+        <div class="bill-receipt-preview">
+          <span class="bill-receipt-preview-icon">📎</span>
+          <div class="bill-receipt-preview-info">
+            <div class="bill-receipt-preview-name">${displayName}</div>
+            <a href="${receiptUrl}" target="_blank" class="bill-receipt-preview-link">View receipt</a>
+          </div>
+          <div class="bill-receipt-preview-actions">
+            <button type="button" class="bill-receipt-btn" id="btnReplaceBillReceipt">Replace</button>
+            <button type="button" class="bill-receipt-btn bill-receipt-btn--delete" id="btnDeleteBillReceipt">Delete</button>
+          </div>
+        </div>
+        <input type="file" id="billReceiptFileInput" accept="image/*,application/pdf" style="display: none;">
+      `;
+
+      // Attach event listeners
+      document.getElementById('btnReplaceBillReceipt')?.addEventListener('click', () => {
+        document.getElementById('billReceiptFileInput')?.click();
+      });
+      document.getElementById('btnDeleteBillReceipt')?.addEventListener('click', () => {
+        // Revoke blob URL to prevent memory leak
+        if (billEditBlobUrl) {
+          URL.revokeObjectURL(billEditBlobUrl);
+          billEditBlobUrl = null;
+        }
+        billEditReceiptDeleted = true;
+        billEditReceiptFile = null;
+        renderBillReceiptSection(null);
+      });
+      document.getElementById('billReceiptFileInput')?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          billEditReceiptFile = file;
+          billEditReceiptDeleted = false;
+          renderBillReceiptSection(createBillEditBlobUrl(file));
+        }
+      });
+    } else if (billEditReceiptFile) {
+      // Show selected file preview
+      els.billReceiptSection.innerHTML = `
+        <div class="bill-receipt-preview">
+          <span class="bill-receipt-preview-icon">📎</span>
+          <div class="bill-receipt-preview-info">
+            <div class="bill-receipt-preview-name">${billEditReceiptFile.name}</div>
+            <span class="bill-receipt-preview-link">New file (not saved yet)</span>
+          </div>
+          <div class="bill-receipt-preview-actions">
+            <button type="button" class="bill-receipt-btn bill-receipt-btn--delete" id="btnClearBillReceipt">Clear</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('btnClearBillReceipt')?.addEventListener('click', () => {
+        // Revoke blob URL to prevent memory leak
+        if (billEditBlobUrl) {
+          URL.revokeObjectURL(billEditBlobUrl);
+          billEditBlobUrl = null;
+        }
+        billEditReceiptFile = null;
+        renderBillReceiptSection(null);
+      });
+    } else {
+      // Show upload zone
+      els.billReceiptSection.innerHTML = `
+        <div class="bill-receipt-upload" id="billReceiptUploadZone">
+          <span class="bill-receipt-upload-icon">📎</span>
+          <div class="bill-receipt-upload-text">Click to upload or drag and drop</div>
+          <div class="bill-receipt-upload-hint">JPG, PNG, GIF, WebP or PDF (max 5MB)</div>
+        </div>
+        <input type="file" id="billReceiptFileInput" accept="image/*,application/pdf" style="display: none;">
+      `;
+
+      const uploadZone = document.getElementById('billReceiptUploadZone');
+      const fileInput = document.getElementById('billReceiptFileInput');
+
+      uploadZone?.addEventListener('click', () => fileInput?.click());
+      uploadZone?.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadZone.style.borderColor = 'rgba(74, 222, 128, 0.5)';
+      });
+      uploadZone?.addEventListener('dragleave', () => {
+        uploadZone.style.borderColor = '';
+      });
+      uploadZone?.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadZone.style.borderColor = '';
+        const file = e.dataTransfer.files[0];
+        if (file) {
+          billEditReceiptFile = file;
+          renderBillReceiptSection(createBillEditBlobUrl(file));
+        }
+      });
+      fileInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          billEditReceiptFile = file;
+          renderBillReceiptSection(createBillEditBlobUrl(file));
+        }
+      });
+    }
+  }
+
+  async function saveBillEdit() {
+    if (!currentEditBillId) return;
+
+    const apiBase = getApiBase();
+
+    // Get selected status
+    const selectedStatusBtn = els.billStatusOptions.querySelector('.bill-status-option.selected');
+    const status = selectedStatusBtn?.dataset.status || 'open';
+
+    // Check if reopening a closed bill - require confirmation
+    const existingBillData = getBillMetadata(currentEditBillId);
+    if (existingBillData?.status === 'closed' && status === 'open') {
+      const confirmReopen = confirm(
+        '⚠️ REOPEN CLOSED BILL?\n\n' +
+        `Bill #${currentEditBillId} is currently marked as closed.\n\n` +
+        'Reopening will allow new expenses to be added to this bill.\n\n' +
+        'Are you sure you want to reopen this bill?'
+      );
+      if (!confirmReopen) {
+        return; // User cancelled - don't save
+      }
+      console.log('[BILL] User confirmed reopening closed bill:', currentEditBillId);
+    }
+
+    // Get vendor ID from datalist
+    let vendorId = els.billEditVendor.dataset.value || null;
+    if (!vendorId && els.billEditVendor.value) {
+      // Try to find vendor by name
+      const vendor = metaData.vendors.find(v =>
+        v.vendor_name.toLowerCase() === els.billEditVendor.value.toLowerCase()
+      );
+      vendorId = vendor?.id || null;
+    }
+
+    // Build update data
+    const updateData = {
+      status: status,
+      expected_total: els.billEditExpectedTotal.value ? parseFloat(els.billEditExpectedTotal.value) : null,
+      vendor_id: vendorId,
+      notes: els.billEditNotes.value || null
+    };
+
+    // Disable save button
+    els.btnSaveBillEdit.disabled = true;
+    els.btnSaveBillEdit.textContent = 'Saving...';
+
+    try {
+      // Handle receipt upload/delete
+      if (billEditReceiptFile) {
+        // Upload new receipt
+        const receiptUrl = await window.ReceiptUpload.upload(
+          billEditReceiptFile,
+          currentEditBillId, // Use bill_id as identifier
+          selectedProjectId,
+          currentEditBillId
+        );
+        updateData.receipt_url = receiptUrl;
+        console.log('[BILL] Receipt uploaded:', receiptUrl);
+      } else if (billEditReceiptDeleted) {
+        // Delete existing receipt
+        const billData = getBillMetadata(currentEditBillId);
+        if (billData?.receipt_url && window.ReceiptUpload?.delete) {
+          try {
+            await window.ReceiptUpload.delete(billData.receipt_url);
+            console.log('[BILL] Receipt deleted from storage');
+          } catch (deleteErr) {
+            console.warn('[BILL] Could not delete receipt file:', deleteErr.message);
+          }
+        }
+        updateData.receipt_url = null;
+      }
+
+      // Check if bill exists in database
+      const existingBill = getBillMetadata(currentEditBillId);
+
+      if (existingBill) {
+        // Update existing bill
+        await apiJson(`${apiBase}/bills/${currentEditBillId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData)
+        });
+        console.log('[BILL] Bill updated:', currentEditBillId);
+
+        // Update local cache
+        Object.assign(existingBill, updateData);
+      } else {
+        // Create new bill record
+        const createData = {
+          bill_id: currentEditBillId,
+          ...updateData
+        };
+        const response = await apiJson(`${apiBase}/bills`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(createData)
+        });
+        console.log('[BILL] Bill created:', response);
+
+        // Add to local cache
+        metaData.bills.push(createData);
+      }
+
+      closeBillEditModal();
+
+      // Re-render table to show updated status
+      if (isBillViewActive) {
+        renderBillViewTable();
+      } else {
+        renderExpensesTable();
+      }
+
+    } catch (err) {
+      console.error('[BILL] Error saving bill:', err);
+      alert('Error saving bill: ' + err.message);
+    } finally {
+      els.btnSaveBillEdit.disabled = false;
+      els.btnSaveBillEdit.textContent = 'Save Changes';
+    }
   }
 
   // ================================
@@ -5013,13 +5935,18 @@
     // Get unique values for this column
     const uniqueValues = getUniqueColumnValues(column);
 
-    // Position dropdown below the button
+    // Position dropdown below the button (using fixed positioning relative to viewport)
     const rect = toggleBtn.getBoundingClientRect();
-    const tableContainer = document.querySelector('.expenses-table-container');
-    const containerRect = tableContainer.getBoundingClientRect();
 
-    els.filterDropdown.style.left = `${rect.left - containerRect.left}px`;
-    els.filterDropdown.style.top = `${rect.bottom - containerRect.top + 4}px`;
+    // Calculate position - check if dropdown would go off-screen to the right
+    let leftPos = rect.left;
+    const dropdownWidth = 260; // matches CSS width
+    if (leftPos + dropdownWidth > window.innerWidth) {
+      leftPos = window.innerWidth - dropdownWidth - 10; // 10px margin from edge
+    }
+
+    els.filterDropdown.style.left = `${leftPos}px`;
+    els.filterDropdown.style.top = `${rect.bottom + 4}px`;
 
     // Populate options
     populateFilterOptions(uniqueValues, column);
@@ -5211,7 +6138,7 @@
       console.log('[AUTH] Authorization updated:', response);
 
       // Update local expense data
-      const expense = expenses.find(e => (e.expense_id || e.id) == expenseId);
+      const expense = expenses.find(e => String(e.expense_id || e.id) === String(expenseId));
       if (expense) {
         expense.auth_status = newStatus;
         expense.auth_by = newStatus ? userId : null;

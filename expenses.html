@@ -392,6 +392,29 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Bill Status Section (shown when bill_id is present) -->
+                <div class="bill-status-section hidden" id="billStatusSection">
+                    <div class="bill-status-header">
+                        <span class="bill-status-title">Bill Status</span>
+                        <span class="bill-status-bill-id" id="billStatusBillId">—</span>
+                    </div>
+                    <div class="bill-status-toggle" id="billStatusToggle">
+                        <button type="button" class="bill-status-btn" data-status="open" title="Bill has pending expenses - more items can be added">
+                            <span class="bill-status-btn-icon">⏳</span>
+                            <span class="bill-status-btn-label">Open</span>
+                        </button>
+                        <button type="button" class="bill-status-btn" data-status="closed" title="Bill is complete - no more items will be added">
+                            <span class="bill-status-btn-icon">✓</span>
+                            <span class="bill-status-btn-label">Closed</span>
+                        </button>
+                        <button type="button" class="bill-status-btn" data-status="split" title="Bill is split across multiple projects">
+                            <span class="bill-status-btn-icon">⚡</span>
+                            <span class="bill-status-btn-label">Split</span>
+                        </button>
+                    </div>
+                    <p class="bill-status-hint" id="billStatusHint">Select the status for this bill when saving.</p>
+                </div>
             </div>
 
             <div class="modal-footer">
@@ -463,6 +486,91 @@
             <div class="modal-footer">
                 <button type="button" class="btn-modal-secondary" id="btnResetColumns">Reset to Default</button>
                 <button type="button" class="btn-modal-primary" id="btnCloseColumnManagerFooter">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bill Edit Modal -->
+    <div id="billEditModal" class="modal-backdrop hidden">
+        <div class="modal modal-bill-edit">
+            <div class="modal-header">
+                <div class="modal-title">Edit Bill</div>
+                <button type="button" class="modal-close-btn" id="btnCloseBillModal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Bill Info Header -->
+                <div class="bill-edit-header">
+                    <div class="bill-edit-number">
+                        <span class="bill-edit-label">Bill Number</span>
+                        <span class="bill-edit-value" id="billEditNumber">—</span>
+                    </div>
+                    <div class="bill-edit-stats">
+                        <div class="bill-edit-stat">
+                            <span class="bill-edit-stat-label">Expenses</span>
+                            <span class="bill-edit-stat-value" id="billEditExpenseCount">0</span>
+                        </div>
+                        <div class="bill-edit-stat">
+                            <span class="bill-edit-stat-label">Total</span>
+                            <span class="bill-edit-stat-value bill-edit-stat-amount" id="billEditTotal">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bill Status -->
+                <div class="form-field">
+                    <label class="form-label">Status</label>
+                    <div class="bill-status-options" id="billStatusOptions">
+                        <button type="button" class="bill-status-option" data-status="open">
+                            <span class="status-icon">⏳</span>
+                            <span class="status-name">Open</span>
+                            <span class="status-desc">Bill has pending expenses</span>
+                        </button>
+                        <button type="button" class="bill-status-option" data-status="closed">
+                            <span class="status-icon">✓</span>
+                            <span class="status-name">Closed</span>
+                            <span class="status-desc">All expenses accounted for</span>
+                        </button>
+                        <button type="button" class="bill-status-option" data-status="split">
+                            <span class="status-icon">⚡</span>
+                            <span class="status-name">Split</span>
+                            <span class="status-desc">Expenses across multiple projects</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Expected Total -->
+                <div class="form-field">
+                    <label class="form-label">Expected Total (optional)</label>
+                    <input type="number" class="form-input" id="billEditExpectedTotal" step="0.01" min="0" placeholder="Enter expected bill total...">
+                    <span class="form-hint">If set, helps track if all expenses from this bill are registered</span>
+                </div>
+
+                <!-- Vendor -->
+                <div class="form-field">
+                    <label class="form-label">Vendor (optional)</label>
+                    <input type="text" class="form-input" id="billEditVendor" list="billEditVendorList" placeholder="Select vendor..." autocomplete="off">
+                    <datalist id="billEditVendorList"></datalist>
+                </div>
+
+                <!-- Notes -->
+                <div class="form-field">
+                    <label class="form-label">Notes (optional)</label>
+                    <textarea class="form-input form-textarea" id="billEditNotes" rows="2" placeholder="Add notes about this bill..."></textarea>
+                </div>
+
+                <!-- Receipt Section -->
+                <div class="form-field">
+                    <label class="form-label">Receipt / Invoice File</label>
+                    <div class="bill-receipt-section" id="billReceiptSection">
+                        <!-- Will be populated by JS: either upload zone or preview -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCancelBillEdit">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="btnSaveBillEdit">Save Changes</button>
             </div>
         </div>
     </div>

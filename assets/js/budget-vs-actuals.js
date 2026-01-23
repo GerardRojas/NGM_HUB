@@ -41,6 +41,7 @@
     els.optionShowVariance = document.getElementById('optionShowVariance');
     els.optionShowPercentage = document.getElementById('optionShowPercentage');
     els.btnGenerateReport = document.getElementById('btnGenerateReport');
+    els.btnExportPDF = document.getElementById('btnExportPDF');
     els.reportResults = document.getElementById('reportResults');
     els.reportLoadingState = document.getElementById('reportLoadingState');
     els.reportContent = document.getElementById('reportContent');
@@ -183,6 +184,11 @@
     els.btnGenerateReport?.addEventListener('click', async () => {
       await generateReport();
     });
+
+    // Export PDF button (in toolbar)
+    els.btnExportPDF?.addEventListener('click', () => {
+      exportToPDF();
+    });
   }
 
   // ================================
@@ -228,6 +234,11 @@
       // Hide loading, show content
       els.reportLoadingState.style.display = 'none';
       els.reportContent.style.display = 'block';
+
+      // Show Export PDF button in toolbar
+      if (els.btnExportPDF) {
+        els.btnExportPDF.classList.remove('hidden');
+      }
 
       console.log('[BUDGET_VS_ACTUALS] Report generated successfully');
 
@@ -540,26 +551,9 @@
           </p>
         </div>
       </div>
-
-      <!-- Export Button -->
-      <div style="text-align: center; margin-top: 24px; padding: 20px;">
-        <button
-          id="btnExportPDF"
-          style="padding: 12px 32px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-          onmouseover="this.style.background='#2563eb'"
-          onmouseout="this.style.background='#3b82f6'"
-        >
-          Export to PDF
-        </button>
-      </div>
     `;
 
     els.reportContent.innerHTML = html;
-
-    // Add PDF export listener
-    document.getElementById('btnExportPDF')?.addEventListener('click', () => {
-      exportToPDF();
-    });
   }
 
   // ================================

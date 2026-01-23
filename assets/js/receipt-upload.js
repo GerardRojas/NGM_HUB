@@ -205,20 +205,9 @@
     const container = document.createElement('div');
     container.className = 'receipt-preview';
 
-    // Extract filename from URL
-    let filename = 'Receipt File';
-    try {
-      // Try to extract filename from URL (last segment after /)
-      const urlParts = receiptUrl.split('/');
-      const lastPart = urlParts[urlParts.length - 1];
-      // Remove query params if present
-      const filenameWithoutQuery = lastPart.split('?')[0];
-      if (filenameWithoutQuery && filenameWithoutQuery.length > 0) {
-        filename = decodeURIComponent(filenameWithoutQuery);
-      }
-    } catch (err) {
-      console.warn('[RECEIPT] Could not extract filename from URL:', err);
-    }
+    // Use generic label instead of actual filename to avoid info disclosure
+    const isBlob = receiptUrl.startsWith('blob:');
+    const displayName = isBlob ? 'New file selected' : 'Receipt attached';
 
     // Detect file type from URL or blob URL
     const urlLower = receiptUrl.toLowerCase();
@@ -237,15 +226,15 @@
       fileIcon = '📎';
     }
 
-    // Build preview content with filename and link
+    // Build preview content with generic label (no filename disclosure)
     const previewContent = `
       <div class="receipt-preview-file">
         <span class="receipt-preview-file-icon">${fileIcon}</span>
         <div class="receipt-preview-file-info">
-          <a href="${receiptUrl}" target="_blank" class="receipt-preview-file-link" title="Click to open receipt">
-            ${filename}
+          <a href="${receiptUrl}" target="_blank" class="receipt-preview-file-link" title="Click to view receipt">
+            ${displayName}
           </a>
-          <span class="receipt-preview-file-label">Attached Receipt</span>
+          <span class="receipt-preview-file-label">Click to view</span>
         </div>
       </div>`;
 

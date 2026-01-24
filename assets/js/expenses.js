@@ -3272,6 +3272,67 @@
       } else {
         console.log('[POPULATE] ⚠ No transaction_type/category in expense data or no txn_types in metadata');
       }
+
+      // Try to match payment_method
+      const paymentValue = expense.payment_method;
+      const paymentInput = row.querySelector('[data-field="payment_type"]');
+      console.log('[POPULATE] Looking for payment input, found:', !!paymentInput);
+
+      if (paymentInput && metaData.payment_methods) {
+        console.log('[POPULATE] Trying to match payment method:', paymentValue);
+        console.log('[POPULATE] Available payment_methods:', metaData.payment_methods.length);
+
+        let matchedPayment = null;
+
+        if (paymentValue && paymentValue.toLowerCase() !== 'unknown') {
+          // Try exact match first (case-insensitive)
+          matchedPayment = metaData.payment_methods.find(p =>
+            p.payment_method_name && p.payment_method_name.toLowerCase() === paymentValue.toLowerCase()
+          );
+
+          // If no exact match, try fuzzy match
+          if (!matchedPayment) {
+            console.log('[POPULATE] No exact payment match, trying fuzzy match...');
+            matchedPayment = metaData.payment_methods.find(p =>
+              p.payment_method_name && (
+                p.payment_method_name.toLowerCase().includes(paymentValue.toLowerCase()) ||
+                paymentValue.toLowerCase().includes(p.payment_method_name.toLowerCase())
+              )
+            );
+          }
+        }
+
+        if (matchedPayment) {
+          console.log('[POPULATE] ✓ Matched payment method:', matchedPayment.payment_method_name);
+          paymentInput.value = matchedPayment.payment_method_name;
+          paymentInput.setAttribute('data-value', matchedPayment.id);
+          paymentInput.classList.remove('exp-input--no-match');
+        } else {
+          // No match found - try to find "Unknown" payment method or first available
+          const unknownPayment = metaData.payment_methods.find(p =>
+            p.payment_method_name && p.payment_method_name.toLowerCase() === 'unknown'
+          );
+
+          if (unknownPayment) {
+            console.log('[POPULATE] ⚠ No payment match, using Unknown:', unknownPayment.payment_method_name);
+            paymentInput.value = unknownPayment.payment_method_name;
+            paymentInput.setAttribute('data-value', unknownPayment.id);
+            paymentInput.classList.add('exp-input--no-match');
+          } else if (metaData.payment_methods.length > 0) {
+            // If no "Unknown" exists, use the first payment method as default
+            const defaultPayment = metaData.payment_methods[0];
+            console.log('[POPULATE] ⚠ No Unknown payment method, using first available:', defaultPayment.payment_method_name);
+            paymentInput.value = defaultPayment.payment_method_name;
+            paymentInput.setAttribute('data-value', defaultPayment.id);
+            paymentInput.classList.add('exp-input--no-match');
+          } else {
+            console.log('[POPULATE] ⚠ No payment methods available in metadata');
+            paymentInput.classList.add('exp-input--no-match');
+          }
+        }
+      } else {
+        console.log('[POPULATE] ⚠ No payment input found or no payment_methods in metadata');
+      }
     }
   }
 

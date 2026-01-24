@@ -285,7 +285,9 @@
       if (res.status === 401) {
         console.error('[API] Authentication failed - token may be expired');
         localStorage.removeItem('ngmToken');
-        alert('Your session has expired. Please log in again.');
+        if (window.Toast) {
+          Toast.error('Session Expired', 'Please log in again.');
+        }
         window.location.href = 'login.html';
         return null;
       }
@@ -309,7 +311,9 @@
     const token = localStorage.getItem('ngmToken');
     if (!token) {
       console.error('[AUTH] No JWT token found in localStorage');
-      alert('Your session has expired. Please log in again.');
+      if (window.Toast) {
+        Toast.error('Session Expired', 'Please log in again.');
+      }
       window.location.href = 'login.html';
       return null;
     }
@@ -321,7 +325,9 @@
         if (payload.exp && payload.exp * 1000 < Date.now()) {
           console.error('[AUTH] JWT token has expired');
           localStorage.removeItem('ngmToken');
-          alert('Your session has expired. Please log in again.');
+          if (window.Toast) {
+            Toast.error('Session Expired', 'Please log in again.');
+          }
           window.location.href = 'login.html';
           return null;
         }
@@ -397,7 +403,9 @@
 
     } catch (err) {
       console.error('[EXPENSES] Error loading meta data:', err);
-      alert('Error loading data. Please refresh the page.');
+      if (window.Toast) {
+        Toast.error('Error Loading Data', 'Please refresh the page.', { details: err.message });
+      }
     }
   }
 
@@ -1028,17 +1036,17 @@
     });
 
     if (closedBillErrors.length > 0) {
-      let message = '❌ CLOSED BILL DETECTED\n\nCannot change expenses to closed bills:\n';
-      closedBillErrors.forEach(err => {
-        message += `\n• Bill #${err.billId}`;
-      });
-      message += '\n\nTo add expenses to these bills, first reopen them in Bill View.';
-      alert(message);
+      const billList = closedBillErrors.map(err => `Bill #${err.billId}`).join(', ');
+      if (window.Toast) {
+        Toast.error('Closed Bill Detected', 'Cannot change expenses to closed bills. Reopen them in Bill View first.', { details: billList });
+      }
       return; // Stop saving
     }
 
     if (updates.length === 0) {
-      alert('No changes to save.');
+      if (window.Toast) {
+        Toast.info('No Changes', 'No changes to save.');
+      }
       toggleEditMode(false);
       return;
     }
@@ -1076,7 +1084,9 @@
       }
 
       const successCount = response.summary?.total_updated || updates.length;
-      alert(`${successCount} expense(s) updated successfully!`);
+      if (window.Toast) {
+        Toast.success('Changes Saved', `${successCount} expense(s) updated successfully!`);
+      }
 
       // Reload expenses
       await loadExpensesByProject(selectedProjectId);
@@ -1085,7 +1095,9 @@
     } catch (err) {
       console.error('[EXPENSES] Error saving changes:', err);
       console.error('[EXPENSES] Error stack:', err.stack);
-      alert('Error saving changes: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Error Saving', 'Error saving changes.', { details: err.message });
+      }
     } finally {
       els.btnSaveChanges.disabled = false;
       els.btnSaveChanges.textContent = 'Save Changes';
@@ -1141,13 +1153,17 @@
 
     } catch (err) {
       console.error('[EXPENSES] Error deleting expense:', err);
-      alert('Error deleting expense: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Delete Failed', 'Error deleting expense.', { details: err.message });
+      }
     }
   }
 
   async function bulkDeleteExpenses() {
     if (selectedExpenseIds.size === 0) {
-      alert('No expenses selected.');
+      if (window.Toast) {
+        Toast.warning('No Selection', 'No expenses selected.');
+      }
       return;
     }
 
@@ -1211,17 +1227,21 @@
       updateBulkDeleteButton();
 
       // Show appropriate message
-      if (failedDeletes.length === 0) {
-        alert(`${successfulDeletes.length} expense(s) deleted successfully!`);
-      } else if (successfulDeletes.length === 0) {
-        alert(`Failed to delete all expenses.\n\nErrors:\n${failedDeletes.map(f => `• ${f.error}`).join('\n')}`);
-      } else {
-        alert(`Partial success:\n• ${successfulDeletes.length} expense(s) deleted\n• ${failedDeletes.length} failed\n\nFailed items remain selected for retry.`);
+      if (window.Toast) {
+        if (failedDeletes.length === 0) {
+          Toast.success('Deleted', `${successfulDeletes.length} expense(s) deleted successfully!`);
+        } else if (successfulDeletes.length === 0) {
+          Toast.error('Delete Failed', 'Failed to delete all expenses.', { details: failedDeletes.map(f => f.error).join('\n') });
+        } else {
+          Toast.warning('Partial Success', `${successfulDeletes.length} deleted, ${failedDeletes.length} failed. Failed items remain selected.`);
+        }
       }
 
     } catch (err) {
       console.error('[BULK_DELETE] Unexpected error:', err);
-      alert('Unexpected error during bulk delete: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Unexpected Error', 'Error during bulk delete.', { details: err.message });
+      }
     } finally {
       els.btnBulkDelete.disabled = false;
       els.btnBulkDelete.innerHTML = originalText;
@@ -1246,12 +1266,16 @@
 
   async function bulkAuthorizeExpenses() {
     if (selectedExpenseIds.size === 0) {
-      alert('No expenses selected.');
+      if (window.Toast) {
+        Toast.warning('No Selection', 'No expenses selected.');
+      }
       return;
     }
 
     if (!canAuthorize) {
-      alert('You do not have permission to authorize expenses.');
+      if (window.Toast) {
+        Toast.error('Permission Denied', 'You do not have permission to authorize expenses.');
+      }
       return;
     }
 
@@ -1264,7 +1288,9 @@
       const permCheck = await apiJson(`${apiBase}/permissions/check?user_id=${userId}&action=authorize_expenses`);
       if (!permCheck || !permCheck.allowed) {
         canAuthorize = false; // Update local state
-        alert('Your authorization permissions have been revoked.\n\nPlease refresh the page or contact an administrator.');
+        if (window.Toast) {
+          Toast.error('Permissions Revoked', 'Your authorization permissions have been revoked. Please refresh the page.');
+        }
         return;
       }
     } catch (permErr) {
@@ -1374,11 +1400,13 @@
       console.log(`[BULK_AUTH] Completed: ${successCount} succeeded, ${failedCount} failed`);
 
       // Show results
-      if (failedCount === 0) {
-        alert(`Successfully authorized ${successCount} expense(s)!`);
-      } else {
-        alert(`Authorization completed:\n✓ ${successCount} succeeded\n✗ ${failedCount} failed\n\nFailed expense IDs logged to console.`);
-        console.error('[BULK_AUTH] Failed expense IDs:', failedIds);
+      if (window.Toast) {
+        if (failedCount === 0) {
+          Toast.success('Authorization Complete', `Successfully authorized ${successCount} expense(s)!`);
+        } else {
+          Toast.warning('Partial Success', `${successCount} succeeded, ${failedCount} failed. Check console for details.`);
+          console.error('[BULK_AUTH] Failed expense IDs:', failedIds);
+        }
       }
 
       // Clear selection and refresh
@@ -1388,7 +1416,9 @@
 
     } catch (err) {
       console.error('[BULK_AUTH] Unexpected error:', err);
-      alert(`Error during bulk authorization: ${err.message}\n\nProcessed: ${processedCount}/${totalExpenses}\nSucceeded: ${successCount}`);
+      if (window.Toast) {
+        Toast.error('Authorization Error', `Processed: ${processedCount}/${totalExpenses}, Succeeded: ${successCount}`, { details: err.message });
+      }
     } finally {
       // Always reset button state regardless of success or failure
       resetButton();
@@ -1612,12 +1642,16 @@
 
     // Validate file
     if (!window.ReceiptUpload.ALLOWED_TYPES.includes(file.type)) {
-      alert('Invalid file type. Only images (JPG, PNG, GIF, WebP) and PDFs are allowed.');
+      if (window.Toast) {
+        Toast.error('Invalid File', 'Only images (JPG, PNG, GIF, WebP) and PDFs are allowed.');
+      }
       return;
     }
 
     if (file.size > window.ReceiptUpload.MAX_FILE_SIZE) {
-      alert('File size too large. Maximum size is 5MB.');
+      if (window.Toast) {
+        Toast.error('File Too Large', 'Maximum file size is 5MB.');
+      }
       return;
     }
 
@@ -1969,16 +2003,10 @@
     });
 
     if (closedBillErrors.length > 0) {
-      let message = '❌ CLOSED BILL DETECTED\n\nCannot add expenses to closed bills:\n';
-
-      closedBillErrors.forEach(err => {
-        message += `\n• Bill #${err.billId} (Row ${err.row})`;
-      });
-
-      message += '\n\n📋 This bill has been marked as closed, meaning all expenses have been accounted for.';
-      message += '\n\nTo add expenses to this bill, you must first reopen it by changing its status to "Open" in the Bill View.';
-
-      alert(message);
+      const billList = closedBillErrors.map(err => `Bill #${err.billId} (Row ${err.row})`).join(', ');
+      if (window.Toast) {
+        Toast.error('Closed Bill Detected', 'Cannot add expenses to closed bills. Reopen them in Bill View first.', { details: billList });
+      }
       return; // Stop saving
     }
 
@@ -1987,18 +2015,14 @@
     // ============================================
     if (invalidVendors.size > 0) {
       const invalidVendorsList = Array.from(invalidVendors);
-      let message = '❌ INVALID VENDORS DETECTED\n\nThe following vendors are not registered in the system:\n';
-
-      invalidVendorsList.forEach(vendorName => {
+      const vendorDetails = invalidVendorsList.map(vendorName => {
         const rowsWithThis = rowsWithInvalidVendors.filter(r => r.vendorName === vendorName);
         const rowNumbers = rowsWithThis.map(r => r.row).join(', ');
-        message += `\n• "${vendorName}" (Row ${rowNumbers})`;
-      });
-
-      message += '\n\n📋 Please select a valid vendor from the dropdown list.';
-      message += '\n\nIf you need to add a new vendor, go to Settings > Vendors first.';
-
-      alert(message);
+        return `"${vendorName}" (Row ${rowNumbers})`;
+      }).join('\n');
+      if (window.Toast) {
+        Toast.error('Invalid Vendors', 'Some vendors are not registered. Select from dropdown or add new vendors in Settings.', { details: vendorDetails });
+      }
       return; // Stop saving
     }
 
@@ -2007,17 +2031,14 @@
     // ============================================
     if (invalidTxnTypes.size > 0) {
       const invalidTypesList = Array.from(invalidTxnTypes);
-      let message = '❌ INVALID TRANSACTION TYPES DETECTED\n\nThe following transaction types are not valid:\n';
-
-      invalidTypesList.forEach(typeName => {
+      const typeDetails = invalidTypesList.map(typeName => {
         const rowsWithThis = rowsWithInvalidTxnTypes.filter(r => r.typeName === typeName);
         const rowNumbers = rowsWithThis.map(r => r.row).join(', ');
-        message += `\n• "${typeName}" (Row ${rowNumbers})`;
-      });
-
-      message += '\n\n📋 Please select a valid transaction type from the dropdown list.';
-
-      alert(message);
+        return `"${typeName}" (Row ${rowNumbers})`;
+      }).join('\n');
+      if (window.Toast) {
+        Toast.error('Invalid Transaction Types', 'Select a valid transaction type from the dropdown.', { details: typeDetails });
+      }
       return; // Stop saving
     }
 
@@ -2026,17 +2047,14 @@
     // ============================================
     if (invalidPaymentTypes.size > 0) {
       const invalidPaymentsList = Array.from(invalidPaymentTypes);
-      let message = '❌ INVALID PAYMENT METHODS DETECTED\n\nThe following payment methods are not valid:\n';
-
-      invalidPaymentsList.forEach(paymentName => {
+      const paymentDetails = invalidPaymentsList.map(paymentName => {
         const rowsWithThis = rowsWithInvalidPaymentTypes.filter(r => r.paymentName === paymentName);
         const rowNumbers = rowsWithThis.map(r => r.row).join(', ');
-        message += `\n• "${paymentName}" (Row ${rowNumbers})`;
-      });
-
-      message += '\n\n📋 Please select a valid payment method from the dropdown list.';
-
-      alert(message);
+        return `"${paymentName}" (Row ${rowNumbers})`;
+      }).join('\n');
+      if (window.Toast) {
+        Toast.error('Invalid Payment Methods', 'Select a valid payment method from the dropdown.', { details: paymentDetails });
+      }
       return; // Stop saving
     }
 
@@ -2059,17 +2077,17 @@
     });
 
     if (invalidAmounts.length > 0) {
-      let message = '❌ INVALID AMOUNTS DETECTED\n\nThe following amounts are not valid:\n';
-      invalidAmounts.forEach(inv => {
-        message += `\n• Row ${inv.row}: $${inv.amount} - ${inv.reason}`;
-      });
-      message += '\n\n📋 Please correct the amounts before saving.';
-      alert(message);
+      const amountDetails = invalidAmounts.map(inv => `Row ${inv.row}: $${inv.amount} - ${inv.reason}`).join('\n');
+      if (window.Toast) {
+        Toast.error('Invalid Amounts', 'Please correct the amounts before saving.', { details: amountDetails });
+      }
       return; // Stop saving
     }
 
     if (expensesToSave.length === 0) {
-      alert('Please fill in at least one complete expense row (Date and Amount are required).');
+      if (window.Toast) {
+        Toast.warning('Missing Data', 'Please fill in at least one complete expense row (Date and Amount are required).');
+      }
       return;
     }
 
@@ -2144,7 +2162,9 @@
         console.log('[EXPENSES] Successfully created', invalidAccounts.size, 'accounts');
       } catch (err) {
         console.error('[EXPENSES] Error creating accounts:', err);
-        alert('Error creating accounts: ' + err.message + '\n\nPlease create accounts manually or select from existing ones.');
+        if (window.Toast) {
+          Toast.error('Account Creation Failed', 'Please create accounts manually or select from existing ones.', { details: err.message });
+        }
         return;
       }
     }
@@ -2386,26 +2406,25 @@
       closeAddExpenseModal();
 
       // Build success message, including any receipt upload failures
-      let successMessage = `${expensesToSave.length} expense(s) saved successfully!`;
-
-      if (failedReceiptUploads.length > 0) {
-        successMessage += `\n\n⚠️ WARNING: ${failedReceiptUploads.length} receipt(s) failed to upload:\n`;
-        failedReceiptUploads.forEach(fail => {
-          if (fail.type === 'bill') {
-            successMessage += `\n• Bill #${fail.id} (${fail.expenseCount} expenses): ${fail.error}`;
-          } else {
-            successMessage += `\n• Expense ${fail.id}: ${fail.error}`;
-          }
-        });
-        successMessage += '\n\nThe expenses were saved but without receipts attached.';
-        successMessage += '\nYou can attach receipts later by editing the bill in Bill View.';
+      if (window.Toast) {
+        if (failedReceiptUploads.length > 0) {
+          const failDetails = failedReceiptUploads.map(fail => {
+            if (fail.type === 'bill') {
+              return `Bill #${fail.id} (${fail.expenseCount} expenses): ${fail.error}`;
+            }
+            return `Expense ${fail.id}: ${fail.error}`;
+          }).join('\n');
+          Toast.warning('Saved with Warnings', `${expensesToSave.length} expense(s) saved. ${failedReceiptUploads.length} receipt(s) failed to upload.`, { details: failDetails });
+        } else {
+          Toast.success('Expenses Saved', `${expensesToSave.length} expense(s) saved successfully!`);
+        }
       }
-
-      alert(successMessage);
 
     } catch (err) {
       console.error('[EXPENSES] Error saving expenses:', err);
-      alert('Error saving expenses: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Save Failed', 'Error saving expenses.', { details: err.message });
+      }
 
       // Reset button state on error
       els.btnSaveAllExpenses.disabled = false;
@@ -2647,12 +2666,16 @@
     console.log('[EXPENSES] File selected for single expense:', file.name, file.size);
 
     if (!window.ReceiptUpload.ALLOWED_TYPES.includes(file.type)) {
-      alert('Invalid file type. Only images (JPG, PNG, GIF, WebP) and PDFs are allowed.');
+      if (window.Toast) {
+        Toast.error('Invalid File', 'Only images (JPG, PNG, GIF, WebP) and PDFs are allowed.');
+      }
       return;
     }
 
     if (file.size > window.ReceiptUpload.MAX_FILE_SIZE) {
-      alert('File size too large. Maximum size is 5MB.');
+      if (window.Toast) {
+        Toast.error('File Too Large', 'Maximum file size is 5MB.');
+      }
       return;
     }
 
@@ -2732,7 +2755,9 @@
     if (newBillId && newBillId !== originalBillId) {
       const billData = getBillMetadata(newBillId);
       if (billData && billData.status === 'closed') {
-        alert(`❌ Cannot assign expense to Bill #${newBillId}\n\nThis bill is marked as "Closed", meaning all expenses have been accounted for.\n\nTo add expenses to this bill, first reopen it in Bill View.`);
+        if (window.Toast) {
+          Toast.error('Closed Bill', `Cannot assign expense to Bill #${newBillId}. Reopen it in Bill View first.`);
+        }
         return;
       }
     }
@@ -2818,7 +2843,9 @@
           }
         } catch (uploadErr) {
           console.error('[EXPENSES] Error uploading receipt:', uploadErr);
-          alert('Receipt upload failed: ' + uploadErr.message);
+          if (window.Toast) {
+            Toast.error('Upload Failed', 'Receipt upload failed.', { details: uploadErr.message });
+          }
           throw uploadErr;
         }
       } else if (currentReceiptDeleted) {
@@ -2876,12 +2903,16 @@
       els.btnSaveSingleExpense.disabled = false;
       els.btnSaveSingleExpense.textContent = 'Save Changes';
 
-      alert('Expense updated successfully!');
+      if (window.Toast) {
+        Toast.success('Expense Updated', 'Expense updated successfully!');
+      }
       closeSingleExpenseModal();
 
     } catch (err) {
       console.error('[EXPENSES] Error updating expense:', err);
-      alert('Error updating expense: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Update Failed', 'Error updating expense.', { details: err.message });
+      }
       els.btnSaveSingleExpense.disabled = false;
       els.btnSaveSingleExpense.textContent = 'Save Changes';
     }
@@ -2917,13 +2948,17 @@
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
     if (!allowedTypes.includes(file.type)) {
-      alert('Invalid file type. Please upload JPG, PNG, WebP, GIF images or PDF files.');
+      if (window.Toast) {
+        Toast.error('Invalid File', 'Please upload JPG, PNG, WebP, GIF images or PDF files.');
+      }
       return;
     }
 
     // Validate file size (20MB max)
     if (file.size > 20 * 1024 * 1024) {
-      alert('File too large. Maximum size is 20MB.');
+      if (window.Toast) {
+        Toast.error('File Too Large', 'Maximum file size is 20MB.');
+      }
       return;
     }
 
@@ -3058,46 +3093,40 @@
       els.scanReceiptProgressFill.style.width = '100%';
 
       // Build success message with validation and tax info
-      let successMessage = `Successfully scanned ${result.count} expense(s) from receipt!`;
+      if (window.Toast) {
+        let details = '';
 
-      // Show validation info
-      if (result.data?.validation) {
-        const v = result.data.validation;
-        successMessage += `\n\n📋 Validation:`;
-        successMessage += `\n• Invoice Total: $${v.invoice_total?.toFixed(2) || '0.00'}`;
-        successMessage += `\n• Calculated Sum: $${v.calculated_sum?.toFixed(2) || '0.00'}`;
+        // Show validation info
+        if (result.data?.validation) {
+          const v = result.data.validation;
+          details += `Validation:\n`;
+          details += `Invoice Total: $${v.invoice_total?.toFixed(2) || '0.00'}\n`;
+          details += `Calculated Sum: $${v.calculated_sum?.toFixed(2) || '0.00'}\n`;
+          details += v.validation_passed ? 'Totals match!' : `WARNING: ${v.validation_warning || 'Totals do not match!'}`;
+        }
 
-        if (v.validation_passed) {
-          successMessage += `\n✅ Totals match!`;
+        // Show tax distribution info if available
+        if (result.data?.tax_summary) {
+          const tax = result.data.tax_summary;
+          details += `\n\nTax Distribution:\n`;
+          details += `${tax.tax_label || 'Tax'}: $${tax.total_tax_detected?.toFixed(2) || '0.00'}\n`;
+          details += `Subtotal: $${tax.subtotal?.toFixed(2) || '0.00'}\n`;
+          details += `Grand Total: $${tax.grand_total?.toFixed(2) || '0.00'}`;
+        }
+
+        const validationPassed = result.data?.validation?.validation_passed !== false;
+        if (validationPassed) {
+          Toast.success('Receipt Scanned', `Successfully scanned ${result.count} expense(s) from receipt!`, { details: details || null });
         } else {
-          successMessage += `\n⚠️ WARNING: Totals do not match!`;
-          if (v.validation_warning) {
-            successMessage += `\n   ${v.validation_warning}`;
-          }
+          Toast.warning('Receipt Scanned', `Scanned ${result.count} expense(s) but totals do not match.`, { details });
         }
       }
-
-      // Show tax distribution info if available
-      if (result.data?.tax_summary) {
-        const tax = result.data.tax_summary;
-        successMessage += `\n\n📊 Tax Distribution Applied:`;
-        successMessage += `\n• ${tax.tax_label || 'Tax'} detected: $${tax.total_tax_detected?.toFixed(2) || '0.00'}`;
-        successMessage += `\n• Subtotal: $${tax.subtotal?.toFixed(2) || '0.00'}`;
-        successMessage += `\n• Grand Total: $${tax.grand_total?.toFixed(2) || '0.00'}`;
-
-        if (tax.distribution && tax.distribution.length > 0) {
-          successMessage += `\n\nTax was distributed as follows:`;
-          for (const item of tax.distribution) {
-            successMessage += `\n  → ${item.description}: $${item.original_amount?.toFixed(2)} + $${item.tax_added?.toFixed(2)} tax = $${item.final_amount?.toFixed(2)}`;
-          }
-        }
-      }
-
-      alert(successMessage);
 
     } catch (error) {
       console.error('[SCAN RECEIPT] Error:', error);
-      alert('Error scanning receipt: ' + error.message);
+      if (window.Toast) {
+        Toast.error('Scan Failed', 'Error scanning receipt.', { details: error.message });
+      }
       // Hide progress and restore upload zone
       els.scanReceiptProgress.classList.add('hidden');
       if (els.scanReceiptUploadZone) {
@@ -3409,14 +3438,18 @@
       // Parse CSV into headers and rows
       const lines = text.trim().split('\n');
       if (lines.length < 2) {
-        alert('CSV file must contain at least a header row and one data row.');
+        if (window.Toast) {
+          Toast.error('Invalid CSV', 'CSV file must contain at least a header row and one data row.');
+        }
         return;
       }
 
       // Parse headers using proper CSV parsing (row 1)
       const headerResult = parseCSVLine(lines[0], 1);
       if (headerResult.error) {
-        alert(`❌ CSV Parse Error:\n\n${headerResult.error}\n\nPlease fix the header row and try again.`);
+        if (window.Toast) {
+          Toast.error('CSV Parse Error', 'Please fix the header row and try again.', { details: headerResult.error });
+        }
         return;
       }
       csvParsedData.headers = headerResult.cells;
@@ -3448,18 +3481,18 @@
       // Report parsing errors if any
       if (parseErrors.length > 0) {
         const maxErrorsToShow = 10;
-        let errorMessage = `❌ CSV Parse Errors Found:\n\n`;
-        errorMessage += parseErrors.slice(0, maxErrorsToShow).join('\n');
-        if (parseErrors.length > maxErrorsToShow) {
-          errorMessage += `\n\n... and ${parseErrors.length - maxErrorsToShow} more errors`;
+        const errorDetails = parseErrors.slice(0, maxErrorsToShow).join('\n') +
+          (parseErrors.length > maxErrorsToShow ? `\n\n... and ${parseErrors.length - maxErrorsToShow} more errors` : '');
+        if (window.Toast) {
+          Toast.error('CSV Parse Errors', 'Please fix these issues and try again.', { details: errorDetails });
         }
-        errorMessage += `\n\nPlease fix these issues and try again.`;
-        alert(errorMessage);
         return;
       }
 
       if (csvParsedData.rows.length === 0) {
-        alert('No valid data rows found in CSV file.');
+        if (window.Toast) {
+          Toast.error('No Data', 'No valid data rows found in CSV file.');
+        }
         return;
       }
 
@@ -3471,7 +3504,9 @@
 
     } catch (err) {
       console.error('[CSV_IMPORT] Error:', err);
-      alert('Error reading CSV file: ' + err.message);
+      if (window.Toast) {
+        Toast.error('CSV Read Error', 'Error reading CSV file.', { details: err.message });
+      }
     } finally {
       // Reset file input
       event.target.value = '';
@@ -3943,18 +3978,22 @@
       closeCsvMappingModal();
 
       // Show success message
-      let message = `Successfully imported ${csvParsedData.rows.length} expense(s) from CSV.`;
-      if (newVendorsCreated > 0) {
-        message += `\n${newVendorsCreated} new vendor(s) were automatically created.`;
+      if (window.Toast) {
+        let details = '';
+        if (newVendorsCreated > 0) {
+          details += `${newVendorsCreated} new vendor(s) created.\n`;
+        }
+        if (newPaymentMethodsCreated > 0) {
+          details += `${newPaymentMethodsCreated} new payment method(s) created.`;
+        }
+        Toast.success('CSV Imported', `Successfully imported ${csvParsedData.rows.length} expense(s) from CSV.`, { details: details || null });
       }
-      if (newPaymentMethodsCreated > 0) {
-        message += `\n${newPaymentMethodsCreated} new payment method(s) were automatically created.`;
-      }
-      alert(message);
 
     } catch (err) {
       console.error('[CSV_MAPPING] Error importing:', err);
-      alert('Error importing CSV data: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Import Failed', 'Error importing CSV data.', { details: err.message });
+      }
     }
   }
 
@@ -5052,7 +5091,9 @@
 
     } catch (err) {
       console.error('[BILL] Error saving bill:', err);
-      alert('Error saving bill: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Save Failed', 'Error saving bill.', { details: err.message });
+      }
     } finally {
       els.btnSaveBillEdit.disabled = false;
       els.btnSaveBillEdit.textContent = 'Save Changes';
@@ -5385,7 +5426,9 @@
   // ================================
   async function syncQBOExpenses() {
     if (!selectedProjectId) {
-      alert('Please select a project first.');
+      if (window.Toast) {
+        Toast.warning('No Project', 'Please select a project first.');
+      }
       return;
     }
 
@@ -5412,14 +5455,18 @@
 
       // Show success message
       const message = result?.message || `Successfully synced ${result?.count || 0} expenses from QuickBooks.`;
-      alert(message);
+      if (window.Toast) {
+        Toast.success('QBO Sync Complete', message);
+      }
 
       // Reload QBO expenses
       await loadQBOExpenses(selectedProjectId);
 
     } catch (err) {
       console.error('[QBO] Sync error:', err);
-      alert('Error syncing QuickBooks data: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Sync Failed', 'Error syncing QuickBooks data.', { details: err.message });
+      }
     } finally {
       // Restore button state
       if (btnSyncQBO) {
@@ -5444,7 +5491,9 @@
 
   async function openReconciliationModal() {
     if (!selectedProjectId) {
-      alert('Please select a project first.');
+      if (window.Toast) {
+        Toast.warning('No Project', 'Please select a project first.');
+      }
       return;
     }
 
@@ -5479,7 +5528,9 @@
 
     } catch (err) {
       console.error('[RECONCILE] Error opening modal:', err);
-      alert('Error loading reconciliation data: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Load Failed', 'Error loading reconciliation data.', { details: err.message });
+      }
       hideEmptyState();
     }
   }
@@ -5895,7 +5946,9 @@
   function confirmCurrentMatch() {
     if (!activeReconciliation.isActive || !activeReconciliation.qboExpense) return;
     if (activeReconciliation.selectedManualIds.size === 0) {
-      alert('Please select at least one manual expense to match.');
+      if (window.Toast) {
+        Toast.warning('No Selection', 'Please select at least one manual expense to match.');
+      }
       return;
     }
 
@@ -5949,7 +6002,9 @@
 
     details += `\nMatched Amount: $${formatCurrency(match.matched_amount)}`;
 
-    alert(details);
+    if (window.Toast) {
+      Toast.info('Match Details', `QBO Invoice matched with ${match.manual_expense_ids.length} expense(s)`, { details });
+    }
   }
 
   function updateReconciliationSummary() {
@@ -5979,7 +6034,9 @@
 
   async function saveReconciliations() {
     if (activeReconciliation.confirmedMatches.length === 0) {
-      alert('No reconciliations to save. Match QBO invoices with manual expenses first.');
+      if (window.Toast) {
+        Toast.warning('No Matches', 'No reconciliations to save. Match QBO invoices with manual expenses first.');
+      }
       return;
     }
 
@@ -6009,7 +6066,9 @@
       const totalMatches = activeReconciliation.confirmedMatches.length;
       const totalExpenses = activeReconciliation.confirmedMatches.reduce((sum, m) => sum + m.manual_expense_ids.length, 0);
 
-      alert(`Successfully saved ${totalMatches} reconciliation(s) covering ${totalExpenses} manual expense(s)!`);
+      if (window.Toast) {
+        Toast.success('Reconciliations Saved', `Successfully saved ${totalMatches} reconciliation(s) covering ${totalExpenses} manual expense(s)!`);
+      }
 
       // Close modal and reload data
       closeReconciliationModal();
@@ -6021,7 +6080,9 @@
 
     } catch (err) {
       console.error('[RECONCILE] Save error:', err);
-      alert('Error saving reconciliations: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Save Failed', 'Error saving reconciliations.', { details: err.message });
+      }
     } finally {
       if (btnSave) {
         btnSave.disabled = false;
@@ -6289,7 +6350,9 @@
       badgeElement.style.opacity = '';
       badgeElement.style.pointerEvents = '';
 
-      alert('Failed to update authorization status: ' + error.message);
+      if (window.Toast) {
+        Toast.error('Authorization Failed', 'Failed to update authorization status.', { details: error.message });
+      }
     } finally {
       isAuthToggling = false;
     }
@@ -6347,7 +6410,9 @@
       });
 
       if (expenses.length === 0) {
-        alert('No expenses with descriptions found');
+        if (window.Toast) {
+          Toast.warning('No Data', 'No expenses with descriptions found.');
+        }
         closeConstructionStageModal();
         return;
       }
@@ -6395,12 +6460,16 @@
 
         // Show summary
         const summary = getSummary(response.categorizations);
-        alert(`Auto-categorization complete!\n\n${summary}`);
+        if (window.Toast) {
+          Toast.success('Auto-Categorization Complete', 'Expenses have been categorized.', { details: summary });
+        }
       }, 800);
 
     } catch (error) {
       console.error('[AUTO-CATEGORIZE] Error:', error);
-      alert('Error during auto-categorization: ' + error.message);
+      if (window.Toast) {
+        Toast.error('Categorization Failed', 'Error during auto-categorization.', { details: error.message });
+      }
       closeConstructionStageModal();
 
       // IMPORTANT: Ensure Save button is enabled even on error

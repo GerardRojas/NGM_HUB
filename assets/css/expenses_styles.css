@@ -1616,6 +1616,155 @@ select.edit-input option {
 }
 
 /* ==========================================
+   BILL EDIT MODAL - BUTTONS & ENHANCEMENTS
+   ========================================== */
+
+/* Modal footer buttons */
+#billEditModal .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  background: #111111;
+  border-top: 1px solid #1f1f1f;
+}
+
+#billEditModal .btn-modal-secondary,
+#billEditModal .btn-modal-primary {
+  appearance: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+#billEditModal .btn-modal-secondary {
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: var(--text-primary, #ededed);
+}
+
+#billEditModal .btn-modal-secondary:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
+}
+
+#billEditModal .btn-modal-primary {
+  background: #3ecf8e;
+  border: 1px solid #3ecf8e;
+  color: #000;
+  font-weight: 600;
+}
+
+#billEditModal .btn-modal-primary:hover {
+  background: #34b87d;
+  border-color: #34b87d;
+}
+
+#billEditModal .btn-modal-primary:active,
+#billEditModal .btn-modal-secondary:active {
+  transform: scale(0.98);
+}
+
+#billEditModal .btn-modal-primary:disabled,
+#billEditModal .btn-modal-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Status options - more spacing */
+#billEditModal .bill-status-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#billEditModal .bill-status-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+#billEditModal .bill-status-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateX(2px);
+}
+
+#billEditModal .bill-status-option .status-icon {
+  font-size: 20px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+}
+
+#billEditModal .bill-status-option .status-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+#billEditModal .bill-status-option .status-desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: auto;
+}
+
+/* Selected states with specific colors */
+#billEditModal .bill-status-option.selected[data-status="open"] {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.5);
+}
+
+#billEditModal .bill-status-option.selected[data-status="open"] .status-icon {
+  background: rgba(251, 191, 36, 0.2);
+}
+
+#billEditModal .bill-status-option.selected[data-status="open"] .status-name {
+  color: #fbbf24;
+}
+
+#billEditModal .bill-status-option.selected[data-status="closed"] {
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.5);
+}
+
+#billEditModal .bill-status-option.selected[data-status="closed"] .status-icon {
+  background: rgba(74, 222, 128, 0.2);
+}
+
+#billEditModal .bill-status-option.selected[data-status="closed"] .status-name {
+  color: #4ade80;
+}
+
+#billEditModal .bill-status-option.selected[data-status="split"] {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+#billEditModal .bill-status-option.selected[data-status="split"] .status-icon {
+  background: rgba(139, 92, 246, 0.2);
+}
+
+#billEditModal .bill-status-option.selected[data-status="split"] .status-name {
+  color: #a78bfa;
+}
+
+/* ==========================================
    SCANNED RECEIPT INDICATOR (Add Expense Modal)
    ========================================== */
 

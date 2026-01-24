@@ -264,9 +264,30 @@
   }
 
   async function apiJson(url, options = {}) {
-    const res = await fetch(url, { credentials: 'include', ...options });
+    // Get auth token and add to headers
+    const token = localStorage.getItem('ngmToken');
+    const headers = {
+      ...options.headers
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(url, {
+      credentials: 'include',
+      ...options,
+      headers
+    });
     const text = await res.text().catch(() => '');
     if (!res.ok) {
+      // Check for auth errors
+      if (res.status === 401) {
+        console.error('[API] Authentication failed - token may be expired');
+        localStorage.removeItem('ngmToken');
+        alert('Your session has expired. Please log in again.');
+        window.location.href = 'login.html';
+        return null;
+      }
       throw new Error(`${options.method || 'GET'} ${url} failed (${res.status}): ${text}`);
     }
     if (!text) return null;
@@ -2930,12 +2951,46 @@
         body: formData
       });
 
+      // Read response text first to handle both JSON and non-JSON errors
+      const responseText = await response.text();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to parse receipt');
+        let errorMessage = `Failed to parse receipt (HTTP ${response.status})`;
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch {
+          // Response wasn't JSON, use the text directly if short
+          if (responseText && responseText.length < 200) {
+            errorMessage = responseText;
+          }
+        }
+        throw new Error(errorMessage);
       }
 
-      const result = await response.json();
+      // Parse successful response
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseErr) {
+        console.error('[SCAN RECEIPT] Invalid JSON response:', responseText.substring(0, 500));
+        throw new Error('Server returned invalid JSON response');
+      }
+
+      // Validate response structure
+      if (!result || typeof result !== 'object') {
+        console.error('[SCAN RECEIPT] Response is not an object:', result);
+        throw new Error('Server returned unexpected response format');
+      }
+
+      if (!result.success) {
+        throw new Error(result.error || result.message || 'Receipt parsing failed');
+      }
+
+      if (!result.data || !result.data.expenses || !Array.isArray(result.data.expenses)) {
+        console.error('[SCAN RECEIPT] Missing expenses array in response:', result);
+        throw new Error('Server response missing expenses data');
+      }
       console.log('[SCAN RECEIPT] ========================================');
       console.log('[SCAN RECEIPT] FULL RESPONSE:');
       console.log('[SCAN RECEIPT] ========================================');

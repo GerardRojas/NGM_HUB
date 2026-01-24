@@ -203,7 +203,9 @@
     });
 
     if (updates.length === 0) {
-      alert('No changes to save');
+      if (window.Toast) {
+        Toast.info('No Changes', 'No changes to save.');
+      }
       toggleEditMode(false);
       return;
     }
@@ -222,12 +224,16 @@
         }
       }
 
-      alert(`${updates.length} vendor(s) updated successfully!`);
+      if (window.Toast) {
+        Toast.success('Changes Saved', `${updates.length} vendor(s) updated successfully!`);
+      }
       await loadVendors();
       toggleEditMode(false);
     } catch (err) {
       console.error('[VENDORS] Error saving changes:', err);
-      alert(`Error saving changes: ${err.message}`);
+      if (window.Toast) {
+        Toast.error('Save Failed', 'Error saving changes.', { details: err.message });
+      }
     }
   }
 
@@ -251,11 +257,15 @@
         throw new Error(errText);
       }
 
-      alert('Vendor created successfully!');
+      if (window.Toast) {
+        Toast.success('Vendor Created', 'Vendor created successfully!');
+      }
       await loadVendors();
     } catch (err) {
       console.error('[VENDORS] Error creating vendor:', err);
-      alert(`Error creating vendor: ${err.message}`);
+      if (window.Toast) {
+        Toast.error('Create Failed', 'Error creating vendor.', { details: err.message });
+      }
     }
   }
 
@@ -281,13 +291,17 @@
         throw new Error(errText);
       }
 
-      alert('Vendor deleted successfully!');
+      if (window.Toast) {
+        Toast.success('Vendor Deleted', 'Vendor deleted successfully!');
+      }
       selectedVendorIds.delete(vendorId);
       await loadVendors();
       updateBulkDeleteButton();
     } catch (err) {
       console.error('[VENDORS] Error deleting vendor:', err);
-      alert(`Error deleting vendor: ${err.message}`);
+      if (window.Toast) {
+        Toast.error('Delete Failed', 'Error deleting vendor.', { details: err.message });
+      }
     }
   }
 
@@ -297,7 +311,9 @@
 
   async function bulkDeleteVendors() {
     if (selectedVendorIds.size === 0) {
-      alert('No vendors selected.');
+      if (window.Toast) {
+        Toast.warning('No Selection', 'No vendors selected.');
+      }
       return;
     }
 
@@ -324,13 +340,17 @@
 
       await Promise.all(deletePromises);
 
-      alert(`${selectedVendorIds.size} vendor(s) deleted successfully!`);
+      if (window.Toast) {
+        Toast.success('Vendors Deleted', `${selectedVendorIds.size} vendor(s) deleted successfully!`);
+      }
       selectedVendorIds.clear();
       await loadVendors();
       updateBulkDeleteButton();
     } catch (err) {
       console.error('[BULK_DELETE] Error:', err);
-      alert('Error deleting vendors: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Delete Failed', 'Error deleting vendors.', { details: err.message });
+      }
     } finally {
       els.btnBulkDelete.disabled = false;
       els.btnBulkDelete.innerHTML = originalText;

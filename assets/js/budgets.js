@@ -182,7 +182,9 @@
       populateProjectDropdown();
     } catch (err) {
       console.error('[BUDGETS] Error loading projects:', err);
-      alert('Error loading projects: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Load Failed', 'Error loading projects.', { details: err.message });
+      }
     }
   }
 
@@ -296,7 +298,9 @@
   // ================================
   function openImportModal() {
     if (!selectedProjectId) {
-      alert('Please select a project first.');
+      if (window.Toast) {
+        Toast.warning('No Project', 'Please select a project first.');
+      }
       return;
     }
 
@@ -470,7 +474,9 @@
 
     // Check file type
     if (!file.name.toLowerCase().endsWith('.csv')) {
-      alert('Please select a CSV file.');
+      if (window.Toast) {
+        Toast.error('Invalid File', 'Please select a CSV file.');
+      }
       els.csvFileInput.value = '';
       if (els.fileNameDisplay) {
         els.fileNameDisplay.textContent = 'No file selected';
@@ -481,7 +487,9 @@
 
     // Check file size (5MB limit)
     if (file.size > 5 * 1024 * 1024) {
-      alert('File is too large. Maximum size is 5MB.');
+      if (window.Toast) {
+        Toast.error('File Too Large', 'Maximum size is 5MB.');
+      }
       els.csvFileInput.value = '';
       if (els.fileNameDisplay) {
         els.fileNameDisplay.textContent = 'No file selected';
@@ -528,7 +536,9 @@
 
     } catch (err) {
       console.error('[BUDGETS] Error parsing CSV:', err);
-      alert('Error reading CSV file: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Parse Error', 'Error reading CSV file.', { details: err.message });
+      }
       els.csvFileInput.value = '';
       els.csvPreview.style.display = 'none';
       els.btnConfirmImport.disabled = true;
@@ -537,7 +547,9 @@
 
   async function importCSV() {
     if (!parsedCSVData || !selectedProjectId) {
-      alert('No valid CSV data or project selected.');
+      if (window.Toast) {
+        Toast.warning('Missing Data', 'No valid CSV data or project selected.');
+      }
       return;
     }
 
@@ -565,7 +577,9 @@
 
       console.log('[BUDGETS] Import result:', result);
 
-      alert(`Successfully imported ${result.count || parsedCSVData.data.length} budget records!`);
+      if (window.Toast) {
+        Toast.success('Import Complete', `Successfully imported ${result.count || parsedCSVData.data.length} budget records!`);
+      }
 
       // Close modal and reload budgets
       closeImportModal();
@@ -573,7 +587,9 @@
 
     } catch (err) {
       console.error('[BUDGETS] Import error:', err);
-      alert('Error importing CSV: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Import Failed', 'Error importing CSV.', { details: err.message });
+      }
     } finally {
       btnImport.disabled = false;
       btnImport.textContent = originalText;

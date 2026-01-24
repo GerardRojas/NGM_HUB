@@ -57,7 +57,9 @@
 
       if (!rolesRes.ok || !modulesRes.ok) {
         console.error('[ROLES] Error loading data');
-        alert('Error loading roles and modules');
+        if (window.Toast) {
+          Toast.error('Load Failed', 'Error loading roles and modules.');
+        }
         return;
       }
 
@@ -75,7 +77,9 @@
 
     } catch (err) {
       console.error('[ROLES] Error loading data:', err);
-      alert(`Error loading data: ${err.message}`);
+      if (window.Toast) {
+        Toast.error('Load Failed', 'Error loading data.', { details: err.message });
+      }
     }
   }
 
@@ -260,7 +264,9 @@
       }
 
       if (updates.length === 0) {
-        alert('No changes to save');
+        if (window.Toast) {
+          Toast.info('No Changes', 'No changes to save.');
+        }
         toggleEditMode(false);
         return;
       }
@@ -286,15 +292,17 @@
       const result = await res.json();
 
       // Mostrar resultado
-      let message = `Successfully updated ${result.successful_updates} permission(s)!`;
-      if (result.protected_blocked > 0) {
-        message += `\n\n${result.protected_blocked} protected role(s) were skipped (CEO/COO).`;
+      if (window.Toast) {
+        let message = `${result.successful_updates} permission(s) updated!`;
+        if (result.protected_blocked > 0) {
+          message += ` ${result.protected_blocked} protected role(s) skipped.`;
+        }
+        if (result.failed_updates > 0) {
+          Toast.warning('Partial Success', message + ` ${result.failed_updates} update(s) failed.`);
+        } else {
+          Toast.success('Changes Saved', message);
+        }
       }
-      if (result.failed_updates > 0) {
-        message += `\n\n${result.failed_updates} update(s) failed.`;
-      }
-
-      alert(message);
 
       // Recargar datos
       await loadData();
@@ -302,7 +310,9 @@
 
     } catch (err) {
       console.error('[ROLES] Error saving changes:', err);
-      alert(`Error saving changes: ${err.message}`);
+      if (window.Toast) {
+        Toast.error('Save Failed', 'Error saving changes.', { details: err.message });
+      }
     }
   }
 

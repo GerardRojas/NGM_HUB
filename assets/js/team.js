@@ -28,7 +28,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (!allowedRoles.has(role)) {
-    alert("Access denied.");
+    if (window.Toast) {
+      Toast.error('Access Denied', 'You do not have permission to access this page.');
+    }
     window.location.href = "dashboard.html";
     return;
   }
@@ -342,7 +344,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (isInitialLoad) hidePageLoading();
     } catch (err) {
       console.error("[TEAM] loadUsersFromApi failed:", err);
-      alert("Failed to load team users. Check console.");
+      if (window.Toast) {
+        Toast.error('Load Failed', 'Failed to load team users.', { details: err.message });
+      }
       if (isInitialLoad) hidePageLoading();
     }
   }
@@ -358,7 +362,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (action === "edit") {
       const current = usersStore.find((x) => x.user_id === id);
       if (!current) {
-        alert("User not found. Refresh and try again.");
+        if (window.Toast) {
+          Toast.warning('Not Found', 'User not found. Refresh and try again.');
+        }
         return;
       }
 
@@ -381,10 +387,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       try {
         await apiDeleteUser(id);
+        if (window.Toast) {
+          Toast.success('User Deleted', 'User deleted successfully!');
+        }
         await loadUsersFromApi({ keepQuery: true });
       } catch (err) {
         console.error("[TEAM] delete failed:", err);
-        alert("Delete failed. Check console.");
+        if (window.Toast) {
+          Toast.error('Delete Failed', 'Error deleting user.', { details: err.message });
+        }
       }
     }
   });
@@ -416,10 +427,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       await apiCreateRole(name);
-      alert(`Role created: ${name}\n\nTip: reopen the user modal to see it in dropdowns.`);
+      if (window.Toast) {
+        Toast.success('Role Created', `Role "${name}" created! Reopen the user modal to see it in dropdowns.`);
+      }
     } catch (err) {
       console.error("[TEAM] create role failed:", err);
-      alert("Create role failed. Check console.\n\nIf you see 404, backend endpoint /team/roles is missing.");
+      if (window.Toast) {
+        Toast.error('Create Failed', 'Error creating role.', { details: err.message });
+      }
     }
   });
 

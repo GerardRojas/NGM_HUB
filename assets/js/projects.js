@@ -289,7 +289,9 @@
     });
 
     if (updates.length === 0) {
-      alert('No changes to save');
+      if (window.Toast) {
+        Toast.info('No Changes', 'No changes to save.');
+      }
       toggleEditMode(false);
       return;
     }
@@ -308,12 +310,16 @@
         }
       }
 
-      alert(`${updates.length} project(s) updated successfully!`);
+      if (window.Toast) {
+        Toast.success('Changes Saved', `${updates.length} project(s) updated successfully!`);
+      }
       await loadProjects();
       toggleEditMode(false);
     } catch (err) {
       console.error('[PROJECTS] Error saving changes:', err);
-      alert(`Error saving changes: ${err.message}`);
+      if (window.Toast) {
+        Toast.error('Save Failed', 'Error saving changes.', { details: err.message });
+      }
     }
   }
 
@@ -383,13 +389,17 @@
     const sourceCompany = els.newProjectCompany?.value;
 
     if (!projectName) {
-      alert('Please enter a project name');
+      if (window.Toast) {
+        Toast.warning('Missing Field', 'Please enter a project name.');
+      }
       els.newProjectName?.focus();
       return;
     }
 
     if (!sourceCompany) {
-      alert('Please select a company');
+      if (window.Toast) {
+        Toast.warning('Missing Field', 'Please select a company.');
+      }
       els.newProjectCompany?.focus();
       return;
     }
@@ -431,10 +441,14 @@
       closeAddProjectModal();
       await loadProjects();
 
-      alert('Project created successfully!');
+      if (window.Toast) {
+        Toast.success('Project Created', 'Project created successfully!');
+      }
     } catch (err) {
       console.error('[PROJECTS] Error creating project:', err);
-      alert(`Error creating project: ${err.message}`);
+      if (window.Toast) {
+        Toast.error('Create Failed', 'Error creating project.', { details: err.message });
+      }
     } finally {
       // Restore button
       if (btn) {

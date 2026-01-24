@@ -134,7 +134,9 @@
     if (!ui.department) missing.push("Department");
 
     if (missing.length) {
-      alert("Missing required fields: " + missing.join(", "));
+      if (window.Toast) {
+        Toast.warning('Missing Fields', 'Please fill in: ' + missing.join(', '));
+      }
       return null;
     }
 
@@ -191,7 +193,9 @@
         const created = await res.json();
         console.log("[NEW TASK] Created:", created);
 
-        alert("Task created successfully!");
+        if (window.Toast) {
+          Toast.success('Task Created', 'Task created successfully!');
+        }
         close();
 
         // Refresh pipeline data if fetchPipeline exists
@@ -201,7 +205,9 @@
 
       } catch (err) {
         console.error("[NEW TASK] Error:", err);
-        alert("Error creating task: " + err.message);
+        if (window.Toast) {
+          Toast.error('Create Failed', 'Error creating task.', { details: err.message });
+        }
       } finally {
         btn.disabled = false;
         btn.textContent = originalText;

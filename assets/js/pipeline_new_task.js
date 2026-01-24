@@ -116,7 +116,9 @@
     } catch (err) {
       console.warn("[NEW TASK] backend not ready or error:", err);
       // fallback: no rompemos UI
-      alert("Could not create task (backend endpoint missing or error). Check console.");
+      if (window.Toast) {
+        Toast.error('Create Failed', 'Could not create task.', { details: err.message });
+      }
     } finally {
       btnCreate.disabled = false;
     }

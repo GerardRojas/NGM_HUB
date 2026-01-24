@@ -599,6 +599,7 @@
 /* Authorization column */
 .expenses-table .col-auth {
   text-align: center;
+  overflow: visible;
 }
 
 /* Actions column */
@@ -606,6 +607,14 @@
   width: 50px;
   min-width: 50px;
   text-align: center;
+}
+
+/* In Bill View, hide the actions column since it's empty */
+.bill-group-row .col-actions {
+  width: 0;
+  min-width: 0;
+  padding: 0 !important;
+  border-left: none !important;
 }
 
 .expenses-table .col-checkbox {
@@ -636,6 +645,7 @@
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
+  white-space: nowrap;
 }
 
 .auth-badge-pending {
@@ -1285,6 +1295,47 @@ select.edit-input option {
   border-color: rgba(255, 255, 255, 0.25);
 }
 
+/* Collapse/Expand button */
+.bill-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  transition: all 0.2s ease;
+}
+
+.bill-collapse-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.bill-collapse-btn .collapse-icon {
+  transition: transform 0.2s ease;
+}
+
+.bill-collapse-btn.collapsed .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+/* Collapsed state for rows */
+.bill-row-collapsed {
+  display: none !important;
+}
+
+/* Header when group is collapsed - full border radius */
+.bill-group-header.bill-group-collapsed .bill-card-header {
+  border-radius: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
 /* Receipt indicator in bill header */
 .bill-receipt-indicator {
   font-size: 14px;
@@ -1306,7 +1357,7 @@ select.edit-input option {
   border-left: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.bill-group-row.bill-group-first td:last-child {
+.bill-group-row.bill-group-first td.col-auth {
   border-right: 1px solid rgba(255, 255, 255, 0.12);
 }
 
@@ -1314,7 +1365,7 @@ select.edit-input option {
   border-left: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.bill-group-row td:last-child {
+.bill-group-row td.col-auth {
   border-right: 1px solid rgba(255, 255, 255, 0.12);
 }
 

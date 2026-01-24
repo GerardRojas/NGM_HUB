@@ -209,7 +209,9 @@
     });
 
     if (updates.length === 0) {
-      alert('No changes to save');
+      if (window.Toast) {
+        Toast.info('No Changes', 'No changes to save.');
+      }
       toggleEditMode(false);
       return;
     }
@@ -228,12 +230,16 @@
         }
       }
 
-      alert(`${updates.length} account(s) updated successfully!`);
+      if (window.Toast) {
+        Toast.success('Changes Saved', `${updates.length} account(s) updated successfully!`);
+      }
       await loadAccounts();
       toggleEditMode(false);
     } catch (err) {
       console.error('[ACCOUNTS] Error saving changes:', err);
-      alert(`Error saving changes: ${err.message}`);
+      if (window.Toast) {
+        Toast.error('Save Failed', 'Error saving changes.', { details: err.message });
+      }
     }
   }
 
@@ -257,11 +263,15 @@
         throw new Error(errText);
       }
 
-      alert('Account created successfully!');
+      if (window.Toast) {
+        Toast.success('Account Created', 'Account created successfully!');
+      }
       await loadAccounts();
     } catch (err) {
       console.error('[ACCOUNTS] Error creating account:', err);
-      alert(`Error creating account: ${err.message}`);
+      if (window.Toast) {
+        Toast.error('Create Failed', 'Error creating account.', { details: err.message });
+      }
     }
   }
 
@@ -283,11 +293,15 @@
         throw new Error(errText);
       }
 
-      alert('Account deleted successfully!');
+      if (window.Toast) {
+        Toast.success('Account Deleted', 'Account deleted successfully!');
+      }
       await loadAccounts();
     } catch (err) {
       console.error('[ACCOUNTS] Error deleting account:', err);
-      alert(`Error deleting account: ${err.message}`);
+      if (window.Toast) {
+        Toast.error('Delete Failed', 'Error deleting account.', { details: err.message });
+      }
     }
   }
 

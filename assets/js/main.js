@@ -5,7 +5,9 @@ document.getElementById("loginForm").addEventListener("submit", function (e) {
     const password = document.getElementById("password").value.trim();
 
     if (!user || !password) {
-        alert("Please enter your user and password.");
+        if (window.Toast) {
+            Toast.warning('Missing Credentials', 'Please enter your user and password.');
+        }
         return;
     }
 

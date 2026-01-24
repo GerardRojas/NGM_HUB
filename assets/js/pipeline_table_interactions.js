@@ -205,7 +205,9 @@
       td.classList.remove("pm-cell-saving");
       td.classList.add("pm-cell-error");
       setTimeout(() => td.classList.remove("pm-cell-error"), 2000);
-      alert("Error saving: " + err.message);
+      if (window.Toast) {
+        Toast.error('Save Failed', 'Error saving field.', { details: err.message });
+      }
     }
   }
 

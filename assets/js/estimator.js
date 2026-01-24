@@ -1360,22 +1360,30 @@
 
   function handleAddConcept() {
     // TODO: Open concept picker modal
-    alert('Add Concept: Opens concept picker from catalog');
+    if (window.Toast) {
+      Toast.info('Coming Soon', 'Add Concept: Opens concept picker from catalog');
+    }
   }
 
   function handleOverhead() {
     // TODO: Open overhead configuration modal
-    alert('Overhead: Configure overhead percentage/amount');
+    if (window.Toast) {
+      Toast.info('Coming Soon', 'Overhead: Configure overhead percentage/amount');
+    }
   }
 
   function handleImportRevit() {
     // TODO: Open Revit import modal
-    alert('Import from Revit: Import quantities from Revit export');
+    if (window.Toast) {
+      Toast.info('Coming Soon', 'Import from Revit: Import quantities from Revit export');
+    }
   }
 
   function handleExport() {
     // TODO: Open export options modal (PDF, CSV, .ngm)
-    alert('Export: Choose format (PDF, CSV, .ngm)');
+    if (window.Toast) {
+      Toast.info('Coming Soon', 'Export: Choose format (PDF, CSV, .ngm)');
+    }
   }
 
   async function handleSave() {
@@ -1600,7 +1608,9 @@
 
       const name = nameInput?.value?.trim();
       if (!name) {
-        alert('Please enter a template name');
+        if (window.Toast) {
+          Toast.warning('Missing Name', 'Please enter a template name.');
+        }
         return;
       }
 

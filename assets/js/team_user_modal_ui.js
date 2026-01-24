@@ -280,7 +280,9 @@
   function buildPayload() {
     const name = (qs("tu_name")?.value || "").trim();
     if (!name) {
-      alert("Missing required field: Name");
+      if (window.Toast) {
+        Toast.warning('Missing Field', 'Please enter a name.');
+      }
       return null;
     }
 
@@ -289,7 +291,9 @@
     if (colorRaw !== "") {
       const n = Number(colorRaw);
       if (!Number.isFinite(n) || n < 0 || n > 360) {
-        alert("Avatar Color must be a number between 0 and 360.");
+        if (window.Toast) {
+          Toast.warning('Invalid Color', 'Avatar Color must be a number between 0 and 360.');
+        }
         return null;
       }
       avatar_color = Math.round(n);
@@ -362,7 +366,9 @@
         if (typeof state.onSaved === "function") await state.onSaved(out);
       } catch (err) {
         console.error("[TeamUserModal] save failed:", err);
-        alert("Save failed. Check console.");
+        if (window.Toast) {
+          Toast.error('Save Failed', 'Error saving user.', { details: err.message });
+        }
       } finally {
         btn && (btn.disabled = false);
       }
@@ -384,7 +390,9 @@
         if (typeof state.onDeleted === "function") await state.onDeleted(state.userId);
       } catch (err) {
         console.error("[TeamUserModal] delete failed:", err);
-        alert("Delete failed. Check console.");
+        if (window.Toast) {
+          Toast.error('Delete Failed', 'Error deleting user.', { details: err.message });
+        }
       } finally {
         btn && (btn.disabled = false);
       }

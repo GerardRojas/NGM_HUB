@@ -4394,6 +4394,17 @@
 
     // Bill card header click handler (event delegation on table body)
     els.expensesTableBody?.addEventListener('click', (e) => {
+      // Check if clicked on collapse button
+      const collapseBtn = e.target.closest('.bill-collapse-btn');
+      if (collapseBtn) {
+        e.stopPropagation();
+        const billGroup = collapseBtn.dataset.billGroup;
+        if (billGroup) {
+          toggleBillGroupCollapse(billGroup, collapseBtn);
+        }
+        return;
+      }
+
       // Check if clicked on bill card header (not on a regular expense row)
       const billHeader = e.target.closest('.bill-card-clickable');
       if (billHeader) {
@@ -4504,10 +4515,10 @@
 
       // Bill group header - full width card header (clickable to edit bill)
       html += `
-        <tr class="bill-group-header">
+        <tr class="bill-group-header" data-bill-group="${billId}">
           <td colspan="12">
-            <div class="bill-card-header bill-card-clickable" data-bill-id="${billId}" title="Click to edit bill">
-              <div class="bill-card-info">
+            <div class="bill-card-header">
+              <div class="bill-card-info bill-card-clickable" data-bill-id="${billId}" title="Click to edit bill">
                 <span class="bill-card-number">${billLabel} #${billId}</span>
                 <span class="bill-card-count">${billExpenses.length} item${billExpenses.length > 1 ? 's' : ''}</span>
                 <span class="bill-card-total-pill">${formatCurrency(billTotal)}</span>
@@ -4515,6 +4526,11 @@
                   ${billStatus.icon} ${billStatus.label}
                 </span>
                 ${hasReceipt ? '<span class="bill-receipt-indicator" title="Has receipt attached">📎</span>' : ''}
+              </div>
+              <div class="bill-card-actions">
+                <button type="button" class="bill-collapse-btn" data-bill-group="${billId}" title="Collapse/Expand">
+                  <span class="collapse-icon">▼</span>
+                </button>
               </div>
             </div>
           </td>
@@ -4525,12 +4541,12 @@
       billExpenses.forEach((exp, idx) => {
         const isFirst = idx === 0;
         const isLast = idx === billExpenses.length - 1;
-        html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), isFirst, isLast);
+        html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), isFirst, isLast, billId);
       });
 
       // Bill group footer with summary
       html += `
-        <tr class="bill-group-footer">
+        <tr class="bill-group-footer" data-bill-group="${billId}">
           <td colspan="12">
             <div class="bill-card-footer">
               <span class="bill-footer-items">${billExpenses.length} expense${billExpenses.length > 1 ? 's' : ''} in this bill</span>
@@ -4546,12 +4562,17 @@
     // Render expenses without bill (in a separate section)
     if (groups.withoutBill.length > 0) {
       html += `
-        <tr class="bill-group-header bill-group-header--no-bill">
+        <tr class="bill-group-header bill-group-header--no-bill" data-bill-group="no-bill">
           <td colspan="12">
             <div class="bill-card-header bill-card-header--no-bill">
               <div class="bill-card-info">
                 <span class="bill-card-number">No Bill Assigned</span>
                 <span class="bill-card-count">${groups.withoutBill.length} item${groups.withoutBill.length > 1 ? 's' : ''}</span>
+              </div>
+              <div class="bill-card-actions">
+                <button type="button" class="bill-collapse-btn" data-bill-group="no-bill" title="Collapse/Expand">
+                  <span class="collapse-icon">▼</span>
+                </button>
               </div>
             </div>
           </td>
@@ -4562,7 +4583,7 @@
         grandTotal += parseFloat(exp.Amount) || 0;
         const isFirst = idx === 0;
         const isLast = idx === groups.withoutBill.length - 1;
-        html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), isFirst, isLast);
+        html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), isFirst, isLast, 'no-bill');
       });
 
       html += `<tr class="bill-group-spacer"><td colspan="12"></td></tr>`;
@@ -4583,6 +4604,79 @@
     els.expensesTableBody.innerHTML = html;
     applyColumnVisibility();
     loadColumnWidths();
+    restoreCollapsedBillGroups();
+  }
+
+  // Track collapsed bill groups
+  const collapsedBillGroups = new Set();
+
+  /**
+   * Toggle collapse/expand state of a bill group
+   * @param {string} billGroup - The bill group ID
+   * @param {HTMLElement} btn - The collapse button element
+   */
+  function toggleBillGroupCollapse(billGroup, btn) {
+    const isCollapsed = collapsedBillGroups.has(billGroup);
+
+    if (isCollapsed) {
+      // Expand
+      collapsedBillGroups.delete(billGroup);
+      expandBillGroup(billGroup);
+      btn.classList.remove('collapsed');
+    } else {
+      // Collapse
+      collapsedBillGroups.add(billGroup);
+      collapseBillGroup(billGroup);
+      btn.classList.add('collapsed');
+    }
+  }
+
+  /**
+   * Collapse a bill group (hide rows and footer)
+   * @param {string} billGroup - The bill group ID
+   */
+  function collapseBillGroup(billGroup) {
+    // Hide all expense rows in this group
+    const rows = document.querySelectorAll(`tr.bill-group-row[data-bill-group="${billGroup}"]`);
+    rows.forEach(row => row.classList.add('bill-row-collapsed'));
+
+    // Hide the footer
+    const footer = document.querySelector(`tr.bill-group-footer[data-bill-group="${billGroup}"]`);
+    if (footer) footer.classList.add('bill-row-collapsed');
+
+    // Update header border radius when collapsed
+    const header = document.querySelector(`tr.bill-group-header[data-bill-group="${billGroup}"]`);
+    if (header) header.classList.add('bill-group-collapsed');
+  }
+
+  /**
+   * Expand a bill group (show rows and footer)
+   * @param {string} billGroup - The bill group ID
+   */
+  function expandBillGroup(billGroup) {
+    // Show all expense rows in this group
+    const rows = document.querySelectorAll(`tr.bill-group-row[data-bill-group="${billGroup}"]`);
+    rows.forEach(row => row.classList.remove('bill-row-collapsed'));
+
+    // Show the footer
+    const footer = document.querySelector(`tr.bill-group-footer[data-bill-group="${billGroup}"]`);
+    if (footer) footer.classList.remove('bill-row-collapsed');
+
+    // Update header border radius when expanded
+    const header = document.querySelector(`tr.bill-group-header[data-bill-group="${billGroup}"]`);
+    if (header) header.classList.remove('bill-group-collapsed');
+  }
+
+  /**
+   * Restore collapsed state after re-render
+   */
+  function restoreCollapsedBillGroups() {
+    collapsedBillGroups.forEach(billGroup => {
+      collapseBillGroup(billGroup);
+      // Also update the button state
+      const btn = document.querySelector(`.bill-collapse-btn[data-bill-group="${billGroup}"]`);
+      if (btn) btn.classList.add('collapsed');
+    });
   }
 
   /**
@@ -4726,9 +4820,10 @@
     return 'Bill';
   }
 
-  function renderBillGroupRow(exp, index, isFirst, isLast) {
+  function renderBillGroupRow(exp, index, isFirst, isLast, groupBillId = null) {
     const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
     const billId = exp.bill_id || '—';
+    const billGroupAttr = groupBillId ? `data-bill-group="${groupBillId}"` : '';
     const description = exp.LineDescription || '—';
     const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || '—';
     const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
@@ -4762,7 +4857,7 @@
     if (isLast) borderClass += ' bill-group-last';
 
     return `
-      <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable ${borderClass}" style="cursor: pointer;">
+      <tr data-index="${index}" data-id="${expenseId}" ${billGroupAttr} class="expense-row-clickable ${borderClass}" style="cursor: pointer;">
         <td class="col-checkbox" style="display: none;"></td>
         <td class="col-date">${date}</td>
         <td class="col-bill-id">${billId}</td>

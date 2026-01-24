@@ -132,7 +132,9 @@
 
     } catch (err) {
       console.error('[BUDGET_VS_ACTUALS] Error loading projects:', err);
-      alert('Error loading projects: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Load Failed', 'Error loading projects.', { details: err.message });
+      }
     }
   }
 
@@ -196,7 +198,9 @@
   // ================================
   async function generateReport() {
     if (!selectedProjectId) {
-      alert('Please select a project first.');
+      if (window.Toast) {
+        Toast.warning('No Project', 'Please select a project first.');
+      }
       return;
     }
 
@@ -244,7 +248,9 @@
 
     } catch (err) {
       console.error('[BUDGET_VS_ACTUALS] Error generating report:', err);
-      alert('Error generating report: ' + err.message);
+      if (window.Toast) {
+        Toast.error('Report Failed', 'Error generating report.', { details: err.message });
+      }
 
       // Hide loading state
       els.reportLoadingState.style.display = 'none';
@@ -574,7 +580,9 @@
   function exportToPDF() {
     const printContent = document.getElementById('reportPrintable');
     if (!printContent) {
-      alert('Report content not found');
+      if (window.Toast) {
+        Toast.warning('No Content', 'Report content not found.');
+      }
       return;
     }
 

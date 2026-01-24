@@ -52,7 +52,9 @@ document.addEventListener("DOMContentLoaded", () => {
       card.classList.add("module-coming-soon");
       card.addEventListener("click", (event) => {
         event.preventDefault();
-        alert("This module is coming soon.");
+        if (window.Toast) {
+          Toast.info('Coming Soon', 'This module is coming soon.');
+        }
       });
     }
   });

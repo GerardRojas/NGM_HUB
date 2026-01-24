@@ -2217,3 +2217,76 @@ select.edit-input option {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Generic modal form elements */
+.modal-container .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-container .form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.modal-container .form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #2a2a2a;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.modal-container .form-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.modal-container .form-input:focus {
+  border-color: #3ecf8e;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ngm-select inside modal */
+.modal-container .ngm-select {
+  width: 100%;
+  min-width: unset;
+  padding: 10px 36px 10px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #2a2a2a;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.5) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 8px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.modal-container .ngm-select:focus {
+  border-color: #3ecf8e;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.modal-container .ngm-select option {
+  background: #1a1a1a;
+  color: rgba(255, 255, 255, 0.92);
+  padding: 10px;
+}

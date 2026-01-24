@@ -159,6 +159,7 @@
     els.btnCancelScanReceipt = document.getElementById('btnCancelScanReceipt');
     els.scanReceiptFileInput = document.getElementById('scanReceiptFileInput');
     els.scanReceiptDropArea = document.getElementById('scanReceiptDropArea');
+    els.scanReceiptUploadZone = document.getElementById('scanReceiptUploadZone');
     els.scanReceiptProgress = document.getElementById('scanReceiptProgress');
     els.scanReceiptProgressFill = document.getElementById('scanReceiptProgressFill');
     els.scanReceiptProgressText = document.getElementById('scanReceiptProgressText');
@@ -2894,11 +2895,20 @@
     els.scanReceiptModal.classList.remove('hidden');
     els.scanReceiptProgress.classList.add('hidden');
     els.scanReceiptProgressFill.style.width = '0%';
+    // Ensure upload zone is visible
+    if (els.scanReceiptUploadZone) {
+      els.scanReceiptUploadZone.style.display = '';
+    }
   }
 
   function closeScanReceiptModal() {
     els.scanReceiptModal.classList.add('hidden');
     els.scanReceiptFileInput.value = '';
+    // Reset upload zone visibility for next time
+    if (els.scanReceiptUploadZone) {
+      els.scanReceiptUploadZone.style.display = '';
+    }
+    els.scanReceiptProgress.classList.add('hidden');
   }
 
   async function handleScanReceiptFile(file) {
@@ -2920,7 +2930,10 @@
     const apiBase = getApiBase();
 
     try {
-      // Show progress
+      // Hide upload zone and show progress
+      if (els.scanReceiptUploadZone) {
+        els.scanReceiptUploadZone.style.display = 'none';
+      }
       els.scanReceiptProgress.classList.remove('hidden');
       els.scanReceiptProgressText.textContent = 'Uploading receipt...';
       els.scanReceiptProgressFill.style.width = '30%';
@@ -3085,7 +3098,11 @@
     } catch (error) {
       console.error('[SCAN RECEIPT] Error:', error);
       alert('Error scanning receipt: ' + error.message);
+      // Hide progress and restore upload zone
       els.scanReceiptProgress.classList.add('hidden');
+      if (els.scanReceiptUploadZone) {
+        els.scanReceiptUploadZone.style.display = '';
+      }
     }
   }
 

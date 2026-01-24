@@ -13,7 +13,8 @@
   let isEditMode = false;
   let metaData = {
     companies: [],
-    statuses: []
+    statuses: [],
+    clients: []
   };
 
   // DOM Elements
@@ -26,7 +27,20 @@
     btnCancelEdit: document.getElementById('btnCancelEdit'),
     btnSaveChanges: document.getElementById('btnSaveChanges'),
     editModeFooter: document.getElementById('editModeFooter'),
-    pageLoadingOverlay: document.getElementById('pageLoadingOverlay')
+    pageLoadingOverlay: document.getElementById('pageLoadingOverlay'),
+    // Add Project Modal
+    addProjectModal: document.getElementById('addProjectModal'),
+    addProjectForm: document.getElementById('addProjectForm'),
+    btnCloseAddModal: document.getElementById('btnCloseAddModal'),
+    btnCancelAddProject: document.getElementById('btnCancelAddProject'),
+    btnConfirmAddProject: document.getElementById('btnConfirmAddProject'),
+    // Add Project Form Fields
+    newProjectName: document.getElementById('newProjectName'),
+    newProjectCompany: document.getElementById('newProjectCompany'),
+    newProjectClient: document.getElementById('newProjectClient'),
+    newProjectAddress: document.getElementById('newProjectAddress'),
+    newProjectCity: document.getElementById('newProjectCity'),
+    newProjectStatus: document.getElementById('newProjectStatus')
   };
 
   // ================================
@@ -53,6 +67,7 @@
       const json = await res.json();
       metaData.companies = json.companies || [];
       metaData.statuses = json.statuses || [];
+      metaData.clients = json.clients || [];
       console.log('[PROJECTS] Meta loaded:', metaData);
     } catch (err) {
       console.error('[PROJECTS] Network error loading meta:', err);
@@ -314,6 +329,122 @@
   }
 
   // ================================
+  // ADD PROJECT MODAL
+  // ================================
+
+  function openAddProjectModal() {
+    // Reset form
+    els.addProjectForm?.reset();
+
+    // Populate company dropdown
+    if (els.newProjectCompany) {
+      els.newProjectCompany.innerHTML = '<option value="">Select a company...</option>';
+      metaData.companies.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.company_id;
+        opt.textContent = c.name;
+        els.newProjectCompany.appendChild(opt);
+      });
+    }
+
+    // Populate client dropdown
+    if (els.newProjectClient) {
+      els.newProjectClient.innerHTML = '<option value="">Select a client (optional)...</option>';
+      metaData.clients.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.client_id;
+        opt.textContent = c.client_name;
+        els.newProjectClient.appendChild(opt);
+      });
+    }
+
+    // Populate status dropdown
+    if (els.newProjectStatus) {
+      els.newProjectStatus.innerHTML = '<option value="">Select a status (optional)...</option>';
+      metaData.statuses.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.status_id;
+        opt.textContent = s.status;
+        els.newProjectStatus.appendChild(opt);
+      });
+    }
+
+    // Show modal
+    els.addProjectModal?.classList.remove('hidden');
+  }
+
+  function closeAddProjectModal() {
+    els.addProjectModal?.classList.add('hidden');
+  }
+
+  async function createProject() {
+    // Validate required fields
+    const projectName = els.newProjectName?.value.trim();
+    const sourceCompany = els.newProjectCompany?.value;
+
+    if (!projectName) {
+      alert('Please enter a project name');
+      els.newProjectName?.focus();
+      return;
+    }
+
+    if (!sourceCompany) {
+      alert('Please select a company');
+      els.newProjectCompany?.focus();
+      return;
+    }
+
+    // Build payload
+    const payload = {
+      project_name: projectName,
+      source_company: sourceCompany,
+      client: els.newProjectClient?.value || null,
+      address: els.newProjectAddress?.value.trim() || null,
+      city: els.newProjectCity?.value.trim() || null,
+      status: els.newProjectStatus?.value || null
+    };
+
+    // Disable button and show loading
+    const btn = els.btnConfirmAddProject;
+    const originalText = btn?.textContent;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Creating...';
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/projects/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || 'Failed to create project');
+      }
+
+      const json = await res.json();
+      console.log('[PROJECTS] Project created:', json);
+
+      // Close modal and reload projects
+      closeAddProjectModal();
+      await loadProjects();
+
+      alert('Project created successfully!');
+    } catch (err) {
+      console.error('[PROJECTS] Error creating project:', err);
+      alert(`Error creating project: ${err.message}`);
+    } finally {
+      // Restore button
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+  }
+
+  // ================================
   // EVENT LISTENERS
   // ================================
 
@@ -333,9 +464,30 @@
       saveChanges();
     });
 
-    // Add project
+    // Add project - open modal
     els.btnAddProject?.addEventListener('click', () => {
-      alert('Add project functionality - to be implemented');
+      openAddProjectModal();
+    });
+
+    // Close add project modal
+    els.btnCloseAddModal?.addEventListener('click', () => {
+      closeAddProjectModal();
+    });
+
+    els.btnCancelAddProject?.addEventListener('click', () => {
+      closeAddProjectModal();
+    });
+
+    // Confirm add project
+    els.btnConfirmAddProject?.addEventListener('click', () => {
+      createProject();
+    });
+
+    // Close modal on overlay click
+    els.addProjectModal?.addEventListener('click', (e) => {
+      if (e.target === els.addProjectModal) {
+        closeAddProjectModal();
+      }
     });
 
     // Datalist selection - update data-value-id when user selects an option

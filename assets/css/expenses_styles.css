@@ -2097,3 +2097,123 @@ select.edit-input option {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.1) rgba(255, 255, 255, 0.02);
 }
+
+/* ==========================================
+   GENERIC MODAL OVERLAY
+   Used for Projects, and other simple modals
+   ========================================== */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(0, 0, 0, 0.80);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vh, 28px);
+  overflow-y: auto;
+}
+
+.modal-overlay.hidden {
+  display: none !important;
+}
+
+.modal-container {
+  width: 100%;
+  max-height: calc(100vh - 2 * clamp(12px, 3vh, 28px));
+  display: flex;
+  flex-direction: column;
+  background: #111111;
+  border: 1px solid #1f1f1f;
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.modal-container .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #111111;
+  border-bottom: 1px solid #1f1f1f;
+}
+
+.modal-container .modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  margin: 0;
+}
+
+.modal-container .modal-close {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.modal-container .modal-close:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.modal-container .modal-body {
+  padding: 18px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-container .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #111111;
+  border-top: 1px solid #1f1f1f;
+}
+
+/* Generic modal buttons */
+.btn-modal {
+  appearance: none;
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-modal-secondary {
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: var(--text-primary, #ededed);
+}
+
+.btn-modal-secondary:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
+}
+
+.btn-modal-primary {
+  background: #3ecf8e;
+  border: 1px solid #3ecf8e;
+  color: #000;
+  font-weight: 600;
+}
+
+.btn-modal-primary:hover:not(:disabled) {
+  background: #34b87d;
+  border-color: #34b87d;
+}
+
+.btn-modal-primary:disabled,
+.btn-modal-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

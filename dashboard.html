@@ -116,30 +116,50 @@
                 </div>
                 </section>
 
-                <!-- Separador visual entre pipeline y módulos -->
+                <!-- Separador visual entre pipeline y my work -->
+                <div class="section-divider"></div>
+
+                <!-- My Work Section -->
+                <section class="my-work-section">
+                    <div class="section-header-row">
+                        <div>
+                            <h2 class="section-title">My Work</h2>
+                            <p class="section-subtitle">
+                                Pending tasks and action items assigned to you across all modules.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="my-work-tasks" class="module-card my-work-card">
+                        <!-- Mock task for German -->
+                        <div class="my-work-task-list">
+                            <div class="my-work-task">
+                                <div class="my-work-task-icon">
+                                    <span class="task-icon-badge task-icon-pending">!</span>
+                                </div>
+                                <div class="my-work-task-content">
+                                    <div class="my-work-task-title">Autorización de gastos pendiente</div>
+                                    <div class="my-work-task-meta">
+                                        <span class="task-meta-module">Expenses Engine</span>
+                                        <span class="task-meta-separator">·</span>
+                                        <span class="task-meta-date">Today</span>
+                                    </div>
+                                </div>
+                                <div class="my-work-task-action">
+                                    <a href="expenses.html" class="task-action-btn">Review</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Separador visual entre my work y módulos -->
                 <div class="section-divider"></div>
 
                 <!-- Grid de módulos (webapps) -->
                 <section class="modules-section">
                     <h2 class="section-title">Modules</h2>
                     <div class="modules-grid">
-
-                        <!-- My Work (coming soon) -->
-                        <button
-                            class="module-card module-coming-soon"
-                            type="button"
-                            data-roles="COO,CEO,General Coordinator,Project Coordinator,Accounting Manager,Bookkeeper,Estimator,Architect,Intern"
-                            data-status="coming-soon"
-                            disabled
-                        >
-                            <div class="module-icon">
-                                <span class="module-icon-badge">MY</span>
-                            </div>
-                            <h3 class="module-title">My Work</h3>
-                            <p class="module-desc">
-                                Central view for your tasks, tickets and pipeline items across all modules.
-                            </p>
-                        </button>
 
                         <!-- Expenses Engine (activo) -->
                         <a

@@ -93,21 +93,7 @@
             <!-- Welcome message -->
             <div class="arturito-welcome" id="welcomeMessage">
               <div class="arturito-welcome-avatar">A</div>
-              <h3 class="arturito-welcome-title">Arturito</h3>
-              <p class="arturito-welcome-text">
-                Asistente administrativo de NGM. Puedo ayudarte con reportes, proyectos y consultas del sistema.
-              </p>
-              <div class="arturito-suggestions">
-                <button type="button" class="suggestion-chip" data-suggestion="¿Cuál es el estado del Budget vs Actuals del proyecto Del Rio?">
-                  Budget vs Actuals
-                </button>
-                <button type="button" class="suggestion-chip" data-suggestion="¿Qué puedes hacer?">
-                  Capacidades
-                </button>
-                <button type="button" class="suggestion-chip" data-suggestion="Dame un resumen de los proyectos activos">
-                  Proyectos activos
-                </button>
-              </div>
+              <h3 class="arturito-welcome-title">How can I help you today?</h3>
             </div>
 
             <!-- Messages will be rendered here -->
@@ -124,25 +110,19 @@
             </div>
           </div>
 
-          <!-- Input area -->
+          <!-- Input area - ChatGPT style floating pill -->
           <div class="arturito-input-area">
             <div class="arturito-input-container">
               <textarea
                 id="chatInput"
                 class="arturito-input"
-                placeholder="Escribe tu mensaje..."
+                placeholder="Message Arturito..."
                 rows="1"
               ></textarea>
-              <button type="button" class="arturito-btn-send" id="btnSend" title="Enviar" disabled>
+              <button type="button" class="arturito-btn-send" id="btnSend" title="Send" disabled>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
                 </svg>
-              </button>
-            </div>
-            <div class="arturito-input-footer">
-              <span class="arturito-input-hint">Enter para enviar</span>
-              <button type="button" class="arturito-btn-clear" id="btnClearChat" title="Limpiar conversacion">
-                Limpiar chat
               </button>
             </div>
           </div>
@@ -150,6 +130,9 @@
       </main>
     </div>
   </div>
+
+  <!-- Hidden clear button for JS -->
+  <button type="button" id="btnClearChat" style="display:none;"></button>
 
   <!-- Arturito module -->
   <script src="assets/js/arturito.js" defer></script>

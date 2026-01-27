@@ -81,11 +81,12 @@
       const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
 
       // Upload file
+      // upsert: true allows overwriting orphaned/existing files with same name
       const { data, error } = await supabase.storage
         .from(SUPABASE_CONFIG.bucketName)
         .upload(filepath, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true
         });
 
       if (error) {

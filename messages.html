@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NGM HUB — Messages</title>
+  <link rel="icon" type="image/png" href="assets/img/greenblack_icon.png" />
+
+  <!-- Fonts: Inter + Roboto (NGM standard) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Base layout + Messages styles -->
+  <link rel="stylesheet" href="assets/css/styles.css" />
+  <link rel="stylesheet" href="assets/css/messages_styles.css" />
+  <link rel="stylesheet" href="assets/css/toast.css" />
+
+  <!-- Supabase client for realtime -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Global scripts -->
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/toast.js" defer></script>
+  <script src="assets/js/permissions.js" defer></script>
+  <script src="assets/js/pills.js" defer></script>
+  <script src="assets/js/sidebar.js" defer></script>
+</head>
+
+<body class="page-messages page-loading">
+  <!-- Page Loading Overlay -->
+  <div class="page-loading-overlay" id="pageLoadingOverlay">
+    <img src="assets/img/white_icon.png" class="loading-logo loading-logo-xl" alt="Loading...">
+    <span class="loading-text">Loading...</span>
+  </div>
+
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <img src="assets/img/logo.png" alt="NGM HUB Logo" class="sidebar-logo-img" />
+      </div>
+
+      <div class="sidebar-title-block">
+        <p class="sidebar-title">NGM HUB</p>
+      </div>
+
+      <div class="sidebar-nav-card">
+        <nav class="sidebar-nav" id="sidebar-nav">
+          <a href="dashboard.html" class="nav-item" data-module="dashboard">Dashboard</a>
+          <a href="expenses.html" class="nav-item" data-module="expenses">Expenses Engine</a>
+          <a href="pipeline.html" class="nav-item" data-module="pipeline">Pipeline Manager</a>
+          <a href="projects.html" class="nav-item" data-module="projects">Projects</a>
+          <a href="vendors.html" class="nav-item" data-module="vendors">Vendors</a>
+          <a href="accounts.html" class="nav-item" data-module="accounts">Accounts</a>
+          <a href="estimator.html" class="nav-item" data-module="estimator">Estimator Suite</a>
+          <a href="team.html" class="nav-item" data-module="team">Team Management</a>
+          <a href="messages.html" class="nav-item nav-item-active" data-module="messages">Messages</a>
+          <a href="arturito.html" class="nav-item" data-module="arturito">Arturito</a>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Main area -->
+    <div class="main-area">
+      <!-- Topbar -->
+      <header class="ngm-topbar">
+        <div class="ngm-bar-left">
+          <div class="ngm-brand">
+            <div class="ngm-brand-icon-small"><img src="assets/img/white_icon.png" alt="NGM"></div>
+            <div class="ngm-brand-text">
+              <span class="ngm-brand-org">Next Generation Management</span>
+              <span class="ngm-brand-context">NGM Hub · Messages</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ngm-topbar-right">
+          <div class="ngm-meta">
+            <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
+            <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · —</span>
+          </div>
+
+          <!-- Search bar -->
+          <form class="ngm-search" role="search" onsubmit="return false;">
+            <span class="ngm-global-search-icon">⌕</span>
+            <input
+              id="messages-search-input"
+              type="search"
+              class="ngm-search-input"
+              placeholder="Search messages…"
+              aria-label="Search messages"
+            />
+          </form>
+
+          <span id="user-pill" class="user-pill">User · —</span>
+        </div>
+      </header>
+
+      <!-- Main content: Chat layout -->
+      <main class="main-content messages-main">
+        <div class="messages-layout">
+
+          <!-- LEFT: Channels sidebar -->
+          <aside class="msg-channels-sidebar">
+            <!-- Header -->
+            <div class="msg-channels-header">
+              <h3 class="msg-channels-title">Channels</h3>
+              <button type="button" class="msg-btn-icon" id="btnNewChannel" title="New Channel">
+                <span>+</span>
+              </button>
+            </div>
+
+            <!-- Search channels -->
+            <div class="msg-channels-search">
+              <input
+                type="text"
+                id="channelSearchInput"
+                class="msg-search-input"
+                placeholder="Search channels..."
+              />
+            </div>
+
+            <!-- Channels list -->
+            <div class="msg-channels-list" id="channelsList">
+              <!-- Project channels section -->
+              <div class="msg-channel-section">
+                <div class="msg-channel-section-header" data-section="projects">
+                  <span class="msg-section-icon">▾</span>
+                  <span class="msg-section-title">Projects</span>
+                </div>
+                <div class="msg-channel-section-content" id="projectChannels">
+                  <!-- Rendered by JS -->
+                  <div class="msg-channel-loading">Loading projects...</div>
+                </div>
+              </div>
+
+              <!-- Direct Messages section -->
+              <div class="msg-channel-section">
+                <div class="msg-channel-section-header" data-section="direct">
+                  <span class="msg-section-icon">▾</span>
+                  <span class="msg-section-title">Direct Messages</span>
+                </div>
+                <div class="msg-channel-section-content" id="directMessages">
+                  <!-- Rendered by JS -->
+                </div>
+              </div>
+
+              <!-- Custom Channels section -->
+              <div class="msg-channel-section">
+                <div class="msg-channel-section-header" data-section="custom">
+                  <span class="msg-section-icon">▾</span>
+                  <span class="msg-section-title">Custom Channels</span>
+                </div>
+                <div class="msg-channel-section-content" id="customChannels">
+                  <!-- Rendered by JS -->
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- CENTER: Chat area -->
+          <section class="msg-chat-area">
+            <!-- Chat header -->
+            <div class="msg-chat-header">
+              <div class="msg-chat-header-left">
+                <span class="msg-chat-icon">#</span>
+                <div class="msg-chat-info">
+                  <h2 class="msg-chat-name" id="chatName">Select a channel</h2>
+                  <span class="msg-chat-description" id="chatDescription">Choose a channel from the sidebar to start</span>
+                </div>
+              </div>
+              <div class="msg-chat-header-actions">
+                <button type="button" class="msg-btn-icon" id="btnSearchMessages" title="Search in channel">
+                  <span>⌕</span>
+                </button>
+                <button type="button" class="msg-btn-icon" id="btnChannelInfo" title="Channel info">
+                  <span>ℹ</span>
+                </button>
+                <button type="button" class="msg-btn-icon" id="btnToggleThread" title="Toggle thread panel">
+                  <span>▤</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Messages container -->
+            <div class="msg-messages-container" id="messagesContainer">
+              <!-- Welcome state -->
+              <div class="msg-empty-state" id="emptyState">
+                <div class="msg-empty-icon">💬</div>
+                <h3 class="msg-empty-title">Welcome to Messages</h3>
+                <p class="msg-empty-text">Select a channel from the sidebar to view messages and start collaborating with your team.</p>
+              </div>
+
+              <!-- Messages will be rendered here -->
+              <div class="msg-messages-list" id="messagesList" style="display: none;">
+                <!-- Messages rendered by JS -->
+              </div>
+            </div>
+
+            <!-- Typing indicator -->
+            <div class="msg-typing-indicator" id="typingIndicator" style="display: none;">
+              <div class="msg-typing-dots">
+                <span></span><span></span><span></span>
+              </div>
+              <span class="msg-typing-text" id="typingText">Someone is typing...</span>
+            </div>
+
+            <!-- Message input -->
+            <div class="msg-input-area" id="messageInputArea" style="display: none;">
+              <!-- Attachments preview -->
+              <div class="msg-attachments-preview" id="attachmentsPreview" style="display: none;">
+                <!-- Rendered by JS -->
+              </div>
+
+              <!-- Reply preview -->
+              <div class="msg-reply-preview" id="replyPreview" style="display: none;">
+                <div class="msg-reply-content">
+                  <span class="msg-reply-label">Replying to</span>
+                  <span class="msg-reply-author" id="replyAuthor"></span>
+                  <span class="msg-reply-text" id="replyText"></span>
+                </div>
+                <button type="button" class="msg-btn-icon msg-btn-cancel-reply" id="btnCancelReply">×</button>
+              </div>
+
+              <!-- Input row -->
+              <div class="msg-input-row">
+                <button type="button" class="msg-btn-icon" id="btnAttachFile" title="Attach file">
+                  <span>📎</span>
+                </button>
+                <div class="msg-input-wrapper">
+                  <textarea
+                    id="messageInput"
+                    class="msg-input"
+                    placeholder="Type a message... (@ to mention)"
+                    rows="1"
+                  ></textarea>
+                  <!-- Mention suggestions dropdown -->
+                  <div class="msg-mention-dropdown" id="mentionDropdown" style="display: none;">
+                    <!-- Rendered by JS -->
+                  </div>
+                </div>
+                <button type="button" class="msg-btn-icon" id="btnEmoji" title="Add emoji">
+                  <span>😊</span>
+                </button>
+                <button type="button" class="msg-btn-send" id="btnSendMessage" title="Send message" disabled>
+                  <span>➤</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <!-- RIGHT: Thread panel (hidden by default) -->
+          <aside class="msg-thread-panel" id="threadPanel" style="display: none;">
+            <div class="msg-thread-header">
+              <h3 class="msg-thread-title">Thread</h3>
+              <button type="button" class="msg-btn-icon" id="btnCloseThread" title="Close thread">×</button>
+            </div>
+
+            <!-- Original message -->
+            <div class="msg-thread-original" id="threadOriginal">
+              <!-- Rendered by JS -->
+            </div>
+
+            <!-- Thread replies -->
+            <div class="msg-thread-replies" id="threadReplies">
+              <!-- Rendered by JS -->
+            </div>
+
+            <!-- Thread input -->
+            <div class="msg-thread-input-area">
+              <textarea
+                id="threadInput"
+                class="msg-input"
+                placeholder="Reply to thread..."
+                rows="1"
+              ></textarea>
+              <button type="button" class="msg-btn-send" id="btnSendThreadReply" disabled>
+                <span>➤</span>
+              </button>
+            </div>
+          </aside>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- New Channel Modal -->
+  <div id="newChannelModal" class="modal-backdrop hidden">
+    <div class="modal msg-modal">
+      <div class="modal-header">
+        <div class="modal-title">Create New Channel</div>
+        <button type="button" class="modal-btn header-action" id="btnCloseNewChannelModal">×</button>
+      </div>
+
+      <div class="modal-body">
+        <form id="newChannelForm">
+          <div class="msg-form-field">
+            <label class="msg-form-label">Channel Type</label>
+            <div class="msg-radio-group">
+              <label class="msg-radio">
+                <input type="radio" name="channelType" value="custom" checked />
+                <span class="msg-radio-label">Custom Channel</span>
+                <span class="msg-radio-desc">Create a channel for a specific topic</span>
+              </label>
+              <label class="msg-radio">
+                <input type="radio" name="channelType" value="direct" />
+                <span class="msg-radio-label">Direct Message</span>
+                <span class="msg-radio-desc">Private conversation with selected users</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="msg-form-field" id="channelNameField">
+            <label class="msg-form-label">Channel Name</label>
+            <input type="text" id="newChannelName" class="msg-form-input" placeholder="e.g. design-reviews" />
+          </div>
+
+          <div class="msg-form-field">
+            <label class="msg-form-label">Description (optional)</label>
+            <input type="text" id="newChannelDescription" class="msg-form-input" placeholder="What's this channel about?" />
+          </div>
+
+          <div class="msg-form-field">
+            <label class="msg-form-label">Add Members</label>
+            <div id="channelMembersPicker">
+              <!-- People picker rendered here -->
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="btnCancelNewChannel">Cancel</button>
+        <button type="button" class="btn-primary" id="btnCreateChannel">Create Channel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Channel Info Modal -->
+  <div id="channelInfoModal" class="modal-backdrop hidden">
+    <div class="modal msg-modal">
+      <div class="modal-header">
+        <div class="modal-title">Channel Info</div>
+        <button type="button" class="modal-btn header-action" id="btnCloseChannelInfoModal">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="msg-channel-info-content" id="channelInfoContent">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="btnCloseChannelInfo">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Messages Modal -->
+  <div id="searchMessagesModal" class="modal-backdrop hidden">
+    <div class="modal msg-modal msg-modal--search">
+      <div class="modal-header">
+        <div class="modal-title">Search Messages</div>
+        <button type="button" class="modal-btn header-action" id="btnCloseSearchModal">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="msg-search-form">
+          <input type="text" id="searchMessagesInput" class="msg-form-input" placeholder="Search for messages..." autofocus />
+          <div class="msg-search-filters">
+            <label class="msg-checkbox">
+              <input type="checkbox" id="searchInCurrentChannel" checked />
+              <span>Current channel only</span>
+            </label>
+          </div>
+        </div>
+        <div class="msg-search-results" id="searchResults">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- People Picker (reuse from pipeline) -->
+  <script src="assets/js/pipeline_people_picker.js"></script>
+
+  <!-- Messages module -->
+  <script src="assets/js/messages.js" defer></script>
+</body>
+</html>

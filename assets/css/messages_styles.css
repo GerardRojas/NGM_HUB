@@ -320,9 +320,13 @@
 }
 
 .msg-empty-icon {
-  font-size: 48px;
   margin-bottom: 16px;
-  opacity: 0.5;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.msg-empty-icon svg {
+  width: 48px;
+  height: 48px;
 }
 
 .msg-empty-title {

@@ -317,8 +317,9 @@
   function renderMessage(msg) {
     const isUser = msg.role === "user";
     const isError = msg.isError;
-    const userName = isUser ? (msg.user_name || "Tú") : "Arturito";
-    const avatar = isUser ? "👤" : "🤖";
+    const userName = isUser ? (msg.user_name || "Tu") : "Arturito";
+    // Use initials instead of emojis
+    const avatar = isUser ? getInitials(msg.user_name || "Tu") : "A";
     const time = formatTime(msg.timestamp);
     const formattedContent = formatMessageContent(msg.content);
 
@@ -337,6 +338,15 @@
         </div>
       </div>
     `;
+  }
+
+  function getInitials(name) {
+    if (!name) return "U";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   }
 
   function formatMessageContent(content) {

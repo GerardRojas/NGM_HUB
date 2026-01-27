@@ -70,7 +70,7 @@
             <div class="ngm-brand-icon-small"><img src="assets/img/white_icon.png" alt="NGM"></div>
             <div class="ngm-brand-text">
               <span class="ngm-brand-org">Next Generation Management</span>
-              <span class="ngm-brand-context">NGM Hub · Arturito Assistant</span>
+              <span class="ngm-brand-context">NGM Hub · Arturito</span>
             </div>
           </div>
         </div>
@@ -87,161 +87,65 @@
 
       <!-- Main content: Chat interface -->
       <main class="main-content arturito-main">
-        <div class="arturito-layout">
-          <!-- Chat container -->
-          <section class="arturito-chat-container">
-            <!-- Chat header -->
-            <div class="arturito-chat-header">
-              <div class="arturito-header-left">
-                <div class="arturito-avatar">
-                  <span class="arturito-avatar-icon">🤖</span>
-                </div>
-                <div class="arturito-header-info">
-                  <h2 class="arturito-name">Arturito</h2>
-                  <span class="arturito-status" id="arturtoStatus">
-                    <span class="status-dot status-dot--online"></span>
-                    Online
-                  </span>
-                </div>
-              </div>
-              <div class="arturito-header-actions">
-                <button type="button" class="arturito-btn-icon" id="btnClearChat" title="Clear conversation">
-                  <span>🗑️</span>
+        <div class="arturito-chat-wrapper">
+          <!-- Messages area -->
+          <div class="arturito-messages" id="arturitoMessages">
+            <!-- Welcome message -->
+            <div class="arturito-welcome" id="welcomeMessage">
+              <div class="arturito-welcome-avatar">A</div>
+              <h3 class="arturito-welcome-title">Arturito</h3>
+              <p class="arturito-welcome-text">
+                Asistente administrativo de NGM. Puedo ayudarte con reportes, proyectos y consultas del sistema.
+              </p>
+              <div class="arturito-suggestions">
+                <button type="button" class="suggestion-chip" data-suggestion="¿Cuál es el estado del Budget vs Actuals del proyecto Del Rio?">
+                  Budget vs Actuals
+                </button>
+                <button type="button" class="suggestion-chip" data-suggestion="¿Qué puedes hacer?">
+                  Capacidades
+                </button>
+                <button type="button" class="suggestion-chip" data-suggestion="Dame un resumen de los proyectos activos">
+                  Proyectos activos
                 </button>
               </div>
             </div>
 
-            <!-- Messages area -->
-            <div class="arturito-messages" id="arturitoMessages">
-              <!-- Welcome message -->
-              <div class="arturito-welcome" id="welcomeMessage">
-                <div class="arturito-welcome-icon">🤖</div>
-                <h3 class="arturito-welcome-title">Hola! Soy Arturito</h3>
-                <p class="arturito-welcome-text">
-                  Tu asistente administrativo y técnico de NGM. Puedo ayudarte con:
-                </p>
-                <div class="arturito-capabilities">
-                  <div class="capability-item">
-                    <span class="capability-icon">📊</span>
-                    <span class="capability-text">Budget vs Actuals</span>
-                  </div>
-                  <div class="capability-item">
-                    <span class="capability-icon">📋</span>
-                    <span class="capability-text">Scope of Work</span>
-                  </div>
-                  <div class="capability-item">
-                    <span class="capability-icon">💰</span>
-                    <span class="capability-text">QuickBooks & Expenses</span>
-                  </div>
-                  <div class="capability-item">
-                    <span class="capability-icon">📈</span>
-                    <span class="capability-text">Project Management</span>
-                  </div>
-                </div>
-                <div class="arturito-suggestions">
-                  <p class="suggestions-label">Prueba preguntarme:</p>
-                  <button type="button" class="suggestion-chip" data-suggestion="¿Cuál es el estado del Budget vs Actuals del proyecto Del Rio?">
-                    BVA Del Rio
-                  </button>
-                  <button type="button" class="suggestion-chip" data-suggestion="¿Qué puedes hacer?">
-                    ¿Qué puedes hacer?
-                  </button>
-                  <button type="button" class="suggestion-chip" data-suggestion="Dame un resumen de los proyectos activos">
-                    Proyectos activos
-                  </button>
-                </div>
-              </div>
-
-              <!-- Messages will be rendered here -->
-              <div class="arturito-messages-list" id="messagesList">
-                <!-- Messages rendered by JS -->
-              </div>
+            <!-- Messages will be rendered here -->
+            <div class="arturito-messages-list" id="messagesList">
+              <!-- Messages rendered by JS -->
             </div>
+          </div>
 
-            <!-- Typing indicator -->
-            <div class="arturito-typing" id="typingIndicator" style="display: none;">
-              <div class="arturito-typing-avatar">🤖</div>
-              <div class="arturito-typing-dots">
-                <span></span><span></span><span></span>
-              </div>
-              <span class="arturito-typing-text">Arturito está pensando...</span>
+          <!-- Typing indicator -->
+          <div class="arturito-typing" id="typingIndicator" style="display: none;">
+            <div class="arturito-typing-avatar">A</div>
+            <div class="arturito-typing-dots">
+              <span></span><span></span><span></span>
             </div>
+          </div>
 
-            <!-- Input area -->
-            <div class="arturito-input-area">
-              <div class="arturito-input-row">
-                <div class="arturito-input-wrapper">
-                  <textarea
-                    id="chatInput"
-                    class="arturito-input"
-                    placeholder="Escribe tu mensaje..."
-                    rows="1"
-                  ></textarea>
-                </div>
-                <button type="button" class="arturito-btn-send" id="btnSend" title="Enviar mensaje" disabled>
-                  <span>➤</span>
-                </button>
-              </div>
-              <div class="arturito-input-hint">
-                <span>Enter para enviar · Shift+Enter para nueva línea</span>
-              </div>
+          <!-- Input area -->
+          <div class="arturito-input-area">
+            <div class="arturito-input-container">
+              <textarea
+                id="chatInput"
+                class="arturito-input"
+                placeholder="Escribe tu mensaje..."
+                rows="1"
+              ></textarea>
+              <button type="button" class="arturito-btn-send" id="btnSend" title="Enviar" disabled>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                </svg>
+              </button>
             </div>
-          </section>
-
-          <!-- Sidebar panel -->
-          <aside class="arturito-sidebar" id="arturitoSidebar">
-            <!-- Context info panel -->
-            <div class="arturito-panel" id="contextPanel">
-              <div class="arturito-panel-header">
-                <h3 class="arturito-panel-title">Memoria Contextual</h3>
-              </div>
-              <div class="arturito-panel-content">
-                <div class="context-stats">
-                  <div class="context-stat">
-                    <span class="context-stat-value" id="messageCount">0</span>
-                    <span class="context-stat-label">mensajes</span>
-                  </div>
-                  <div class="context-stat">
-                    <span class="context-stat-value" id="contextSize">nuevo</span>
-                    <span class="context-stat-label">thread</span>
-                  </div>
-                </div>
-                <p class="context-description">
-                  Arturito usa <strong>Assistants API</strong> para recordar toda la conversación de forma eficiente.
-                </p>
-                <button type="button" class="btn-secondary btn-small" id="btnClearContext">
-                  Limpiar memoria
-                </button>
-              </div>
+            <div class="arturito-input-footer">
+              <span class="arturito-input-hint">Enter para enviar</span>
+              <button type="button" class="arturito-btn-clear" id="btnClearChat" title="Limpiar conversacion">
+                Limpiar chat
+              </button>
             </div>
-
-            <!-- Quick actions panel -->
-            <div class="arturito-panel" id="actionsPanel">
-              <div class="arturito-panel-header">
-                <h3 class="arturito-panel-title">Acciones Rápidas</h3>
-              </div>
-              <div class="arturito-panel-content">
-                <div class="quick-actions">
-                  <button type="button" class="quick-action" data-action="/help">
-                    <span class="quick-action-icon">❓</span>
-                    <span class="quick-action-text">Ayuda</span>
-                  </button>
-                  <button type="button" class="quick-action" data-action="/ping">
-                    <span class="quick-action-icon">📡</span>
-                    <span class="quick-action-text">Ping</span>
-                  </button>
-                  <button type="button" class="quick-action" data-action="¿Cuáles son mis proyectos activos?">
-                    <span class="quick-action-icon">📁</span>
-                    <span class="quick-action-text">Proyectos</span>
-                  </button>
-                  <button type="button" class="quick-action" data-action="Dame el estado del sistema">
-                    <span class="quick-action-icon">🔧</span>
-                    <span class="quick-action-text">Estado</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </aside>
+          </div>
         </div>
       </main>
     </div>
@@ -249,5 +153,18 @@
 
   <!-- Arturito module -->
   <script src="assets/js/arturito.js" defer></script>
+  <script>
+    // Remove loading overlay when page is ready
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.initTopbarPills) window.initTopbarPills();
+
+      // Short delay to allow styles to settle
+      setTimeout(function() {
+        document.body.classList.remove('page-loading');
+        var overlay = document.getElementById('pageLoadingOverlay');
+        if (overlay) overlay.style.display = 'none';
+      }, 300);
+    });
+  </script>
 </body>
 </html>

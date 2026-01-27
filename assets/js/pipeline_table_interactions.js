@@ -625,4 +625,77 @@
     }
   });
 
+  // ================================
+  // DOUBLE CLICK TO OPEN EDIT MODAL
+  // ================================
+  wrapper.addEventListener("dblclick", (e) => {
+    // Close any active inline editor
+    if (activeEditor) {
+      closeActiveEditor(false);
+    }
+
+    const tr = e.target.closest("tr[data-task-id], tr.pm-row");
+    if (!tr) return;
+
+    const taskId = tr.dataset?.taskId;
+    if (!taskId) return;
+
+    // Build task object from row data
+    const task = buildTaskFromRow(tr);
+
+    // Open edit modal
+    if (typeof window.PM_EditTask?.open === "function") {
+      window.PM_EditTask.open(task);
+    } else {
+      console.warn("[PIPELINE] PM_EditTask not loaded");
+    }
+  });
+
+  /**
+   * Build task object from row dataset attributes
+   */
+  function buildTaskFromRow(tr) {
+    const ds = tr.dataset;
+
+    // Get cell values
+    const getTextFromCell = (colKey) => {
+      const td = tr.querySelector(`td[data-col="${colKey}"]`);
+      if (!td) return '';
+
+      // For person columns, get the name from .pm-person-name
+      const personName = td.querySelector('.pm-person-name');
+      if (personName) return personName.textContent?.trim() || '';
+
+      // For other columns, get text content
+      const div = td.querySelector('div');
+      const text = (div?.textContent || td.textContent || '').trim();
+      return text === '-' ? '' : text;
+    };
+
+    return {
+      task_id: ds.taskId || null,
+      id: ds.taskId || null,
+      task_description: getTextFromCell('task'),
+      task_notes: ds.taskNotes || '',
+      company_name: getTextFromCell('company'),
+      project_name: getTextFromCell('project'),
+      department: getTextFromCell('department') || ds.department || '',
+      type: getTextFromCell('type') || ds.type || '',
+      status_name: ds.status || '',
+      owner_name: getTextFromCell('owner'),
+      collaborators: [],
+      manager_name: getTextFromCell('manager'),
+      start_date: ds.startDate || '',
+      due_date: getTextFromCell('due'),
+      deadline: ds.deadline || '',
+      time_start: ds.timeStart || '',
+      time_finish: ds.timeFinish || '',
+      estimated_hours: ds.estimatedHours ? parseFloat(ds.estimatedHours) : null,
+      docs_link: ds.docsLink || '',
+      result_link: ds.resultLink || '',
+      priority: ds.priorityId || '',
+      finished_status: ds.finishedStatusId || '',
+    };
+  }
+
 })();

@@ -560,6 +560,12 @@
   background: rgba(34, 197, 94, 0.5);
 }
 
+/* Hide resize handle for auth and actions columns in header */
+.expenses-table th.col-auth .col-resize-handle,
+.expenses-table th.col-actions .col-resize-handle {
+  display: none;
+}
+
 .expenses-table.resizing {
   cursor: col-resize;
   user-select: none;
@@ -602,6 +608,12 @@
   overflow: visible;
 }
 
+/* In Bill View, ensure auth badges display properly */
+.bill-group-row .col-auth {
+  overflow: visible !important;
+  padding-right: 16px;
+}
+
 /* Actions column */
 .expenses-table .col-actions {
   width: 50px;
@@ -614,7 +626,8 @@
   width: 0;
   min-width: 0;
   padding: 0 !important;
-  border-left: none !important;
+  border: none !important;
+  visibility: hidden;
 }
 
 .expenses-table .col-checkbox {
@@ -1349,24 +1362,23 @@ select.edit-input option {
 }
 
 .bill-group-row td {
+  border: none !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
 }
 
-/* First row after header */
-.bill-group-row.bill-group-first td:first-child {
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
+/* Bill group row borders - only left and right edges of the card */
+.bill-group-row td:first-child:not(.col-checkbox) {
+  border-left: 1px solid rgba(255, 255, 255, 0.12) !important;
 }
 
-.bill-group-row.bill-group-first td.col-auth {
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.bill-group-row td:first-child {
-  border-left: 1px solid rgba(255, 255, 255, 0.12);
+/* When checkbox is hidden, date becomes first visible */
+.bill-group-row td.col-date {
+  border-left: 1px solid rgba(255, 255, 255, 0.12) !important;
 }
 
 .bill-group-row td.col-auth {
-  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  border-right: 1px solid rgba(255, 255, 255, 0.12) !important;
 }
 
 /* Last row before footer */

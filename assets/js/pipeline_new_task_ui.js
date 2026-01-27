@@ -2,12 +2,16 @@
 (function () {
   const qs = (id) => document.getElementById(id);
 
+  // People picker instances
+  let ownerPicker = null;
+  let collaboratorPicker = null;
+
   function open() {
     const modal = qs("newTaskModal");
     if (!modal) return console.warn("[NewTask] newTaskModal not found (partial not loaded?)");
     modal.classList.remove("hidden");
 
-    // focus al primer input si existe
+    // Focus al primer input si existe
     const first = modal.querySelector("input, textarea, select, button");
     if (first) setTimeout(() => first.focus(), 30);
   }
@@ -16,6 +20,10 @@
     const modal = qs("newTaskModal");
     if (!modal) return;
     modal.classList.add("hidden");
+
+    // Clear pickers
+    ownerPicker?.clear();
+    collaboratorPicker?.clear();
   }
 
   // ================================
@@ -26,103 +34,153 @@
     if (!form) return;
 
     form.innerHTML = `
-        <!-- BASICS -->
-        <section class="pm-modal-section">
-        <h3 class="pm-modal-section-title">Basics</h3>
+      <!-- BASICS -->
+      <section class="pm-form-section">
+        <h3 class="pm-form-section-title">Basics</h3>
 
         <div class="pm-form-grid">
-            <label class="pm-field pm-field--full">
-            <span class="pm-field-label">Task Description <b>*</b></span>
-            <input id="nt_task" class="pm-input" type="text" placeholder="Describe the task…" required />
-            </label>
+          <div class="pm-form-field pm-form-field--full">
+            <label class="pm-form-label">Task Description <span class="required">*</span></label>
+            <input id="nt_task" class="pm-form-input" type="text" placeholder="Describe the task…" required />
+          </div>
 
-            <label class="pm-field">
-            <span class="pm-field-label">Company <b>*</b></span>
-            <input id="nt_company" class="pm-input" type="text" placeholder="e.g. NGM" required />
-            </label>
+          <div class="pm-form-field">
+            <label class="pm-form-label">Company <span class="required">*</span></label>
+            <input id="nt_company" class="pm-form-input" type="text" placeholder="e.g. NGM" required />
+          </div>
 
-            <label class="pm-field">
-            <span class="pm-field-label">Project</span>
-            <input id="nt_project" class="pm-input" type="text" placeholder="Project name" />
-            </label>
+          <div class="pm-form-field">
+            <label class="pm-form-label">Project</label>
+            <input id="nt_project" class="pm-form-input" type="text" placeholder="Project name" />
+          </div>
 
-            <label class="pm-field">
-            <span class="pm-field-label">Department <b>*</b></span>
-            <input id="nt_department" class="pm-input" type="text" placeholder="e.g. Construction" required />
-            </label>
+          <div class="pm-form-field">
+            <label class="pm-form-label">Department <span class="required">*</span></label>
+            <input id="nt_department" class="pm-form-input" type="text" placeholder="e.g. Construction" required />
+          </div>
 
-            <label class="pm-field">
-            <span class="pm-field-label">Type <b>*</b></span>
-            <input id="nt_type" class="pm-input" type="text" placeholder="e.g. Admin / Field / Design…" required />
-            </label>
+          <div class="pm-form-field">
+            <label class="pm-form-label">Type <span class="required">*</span></label>
+            <input id="nt_type" class="pm-form-input" type="text" placeholder="e.g. Admin / Field / Design…" required />
+          </div>
         </div>
-        </section>
+      </section>
 
-        <!-- PEOPLE -->
-        <section class="pm-modal-section">
-        <h3 class="pm-modal-section-title">People</h3>
+      <!-- PEOPLE -->
+      <section class="pm-form-section">
+        <h3 class="pm-form-section-title">People</h3>
 
         <div class="pm-form-grid">
-            <label class="pm-field">
-            <span class="pm-field-label">Owner <b>*</b></span>
-            <input id="nt_owner" class="pm-input" type="text" placeholder="Owner name" required />
-            </label>
+          <div class="pm-form-field">
+            <label class="pm-form-label">Owner <span class="required">*</span></label>
+            <div id="nt_owner_picker"></div>
+          </div>
 
-            <label class="pm-field">
-            <span class="pm-field-label">Collaborator</span>
-            <input id="nt_collaborator" class="pm-input" type="text" placeholder="Collaborator (optional)" />
-            </label>
+          <div class="pm-form-field">
+            <label class="pm-form-label">Collaborator</label>
+            <div id="nt_collaborator_picker"></div>
+          </div>
         </div>
-        </section>
+      </section>
 
-        <!-- SCHEDULE -->
-        <section class="pm-modal-section">
-        <h3 class="pm-modal-section-title">Schedule</h3>
+      <!-- SCHEDULE -->
+      <section class="pm-form-section">
+        <h3 class="pm-form-section-title">Schedule</h3>
 
         <div class="pm-form-grid">
-            <label class="pm-field">
-            <span class="pm-field-label">Due Date</span>
-            <input id="nt_due" class="pm-input" type="date" />
-            </label>
+          <div class="pm-form-field">
+            <label class="pm-form-label">Due Date</label>
+            <input id="nt_due" class="pm-form-input" type="date" />
+          </div>
 
-            <label class="pm-field">
-            <span class="pm-field-label">Deadline</span>
-            <input id="nt_deadline" class="pm-input" type="date" />
-            </label>
+          <div class="pm-form-field">
+            <label class="pm-form-label">Deadline</label>
+            <input id="nt_deadline" class="pm-form-input" type="date" />
+          </div>
         </div>
-        </section>
+      </section>
 
-        <!-- LINKS -->
-        <section class="pm-modal-section">
-        <h3 class="pm-modal-section-title">Links</h3>
+      <!-- NOTES -->
+      <section class="pm-form-section">
+        <h3 class="pm-form-section-title">Notes</h3>
 
-        <button type="button" class="pm-btn pm-btn-secondary btn-small" id="nt_attach_link">
-            <span class="pm-btn-icon">🔗</span>
-            <span>Add Initial Info Link (soon)</span>
-        </button>
-
-        <div class="pm-hint" style="margin-top:10px; opacity:.75;">
-            This will be connected to Supabase Storage later.
+        <div class="pm-form-grid pm-form-grid--single">
+          <div class="pm-form-field">
+            <label class="pm-form-label">Task Notes</label>
+            <textarea id="nt_notes" class="pm-form-textarea" placeholder="Additional details or instructions..."></textarea>
+          </div>
         </div>
-        </section>
+      </section>
     `;
+
+    // Initialize people pickers
+    initPeoplePickers();
   }
 
+  // ================================
+  // Initialize People Pickers
+  // ================================
+  function initPeoplePickers() {
+    // Wait for PeoplePicker to be available
+    if (typeof window.createPeoplePicker !== 'function') {
+      console.warn('[NewTask] PeoplePicker not loaded yet, retrying...');
+      setTimeout(initPeoplePickers, 100);
+      return;
+    }
+
+    // Owner picker (single select, required)
+    const ownerContainer = qs('nt_owner_picker');
+    if (ownerContainer) {
+      ownerPicker = window.createPeoplePicker(ownerContainer, {
+        multiple: false,
+        placeholder: 'Select owner...',
+        onChange: (users) => {
+          console.log('[NewTask] Owner selected:', users);
+        }
+      });
+    }
+
+    // Collaborator picker (multi-select, optional)
+    const collabContainer = qs('nt_collaborator_picker');
+    if (collabContainer) {
+      collaboratorPicker = window.createPeoplePicker(collabContainer, {
+        multiple: true,
+        placeholder: 'Add collaborators...',
+        maxDisplay: 2,
+        onChange: (users) => {
+          console.log('[NewTask] Collaborators selected:', users);
+        }
+      });
+    }
+  }
 
   // ================================
   // Build + validate payload
   // ================================
   function buildPayloadFromForm() {
+    // Get owner from picker
+    const ownerUser = ownerPicker?.getValue();
+    const ownerName = ownerUser?.name || '';
+    const ownerId = ownerUser?.id || null;
+
+    // Get collaborators from picker
+    const collaborators = collaboratorPicker?.getValue() || [];
+    const collaboratorNames = collaboratorPicker?.getNames() || [];
+    const collaboratorIds = collaboratorPicker?.getIds() || [];
+
     const ui = {
       task: qs("nt_task")?.value?.trim() || "",
       company: qs("nt_company")?.value?.trim() || "",
       project: qs("nt_project")?.value?.trim() || null,
-      owner: qs("nt_owner")?.value?.trim() || "",
-      collaborator: qs("nt_collaborator")?.value?.trim() || null,
+      owner: ownerName,
+      owner_id: ownerId,
+      collaborators: collaboratorNames,
+      collaborator_ids: collaboratorIds,
       type: qs("nt_type")?.value?.trim() || "",
       department: qs("nt_department")?.value?.trim() || "",
       due: qs("nt_due")?.value || null,
       deadline: qs("nt_deadline")?.value || null,
+      notes: qs("nt_notes")?.value?.trim() || null,
     };
 
     // Required fields (frontend guard)
@@ -140,17 +198,20 @@
       return null;
     }
 
-    // UI -> backend payload (names can change later in one place)
+    // UI -> backend payload
     return {
       task_description: ui.task,
       company: ui.company,
       project: ui.project,
       owner: ui.owner,
-      collaborator: ui.collaborator,
+      owner_id: ui.owner_id,
+      collaborators: ui.collaborators.length > 0 ? ui.collaborators : null,
+      collaborator_ids: ui.collaborator_ids.length > 0 ? ui.collaborator_ids : null,
       type: ui.type,
       department: ui.department,
       due_date: ui.due,
       deadline: ui.deadline,
+      task_notes: ui.notes,
 
       // forced by business rule
       status: "not started",

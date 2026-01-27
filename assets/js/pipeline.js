@@ -1257,6 +1257,13 @@
     if (t.type) tr.dataset.type = String(t.type);
     if (t.time_start) tr.dataset.timeStart = String(t.time_start);
     if (t.time_finish) tr.dataset.timeFinish = String(t.time_finish);
+
+    // Store status
+    const status = t.status?.name || t.status_name || t.status || '';
+    if (status) tr.dataset.status = String(status).toLowerCase();
+
+    // Store deadline
+    if (t.deadline) tr.dataset.deadline = String(t.deadline);
   }
 
   /**

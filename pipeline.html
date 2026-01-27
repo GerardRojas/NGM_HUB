@@ -278,19 +278,34 @@
     <!-- Root donde vamos a inyectar modales (partials) -->
     <div id="modals-root"></div>
 
+    <!-- People Picker component (Monday.com style) -->
+    <script src="assets/js/pipeline_people_picker.js"></script>
+
     <!-- UI handlers del modal (abre/cierra/bind) -->
     <script src="assets/js/pipeline_new_task_ui.js"></script>
+
+    <!-- Edit Task Modal UI -->
+    <script src="assets/js/pipeline_edit_task_ui.js"></script>
 
     <!-- Carga del partial + bind SOLO cuando ya existe en el DOM -->
     <script type="module">
      import { loadHtmlFragment } from "./assets/js/html_loader.js";
 
+    // Load New Task Modal
     loadHtmlFragment("./partials/new_task_modal.html", "#modals-root")
         .then(() => {
          console.log("[PARTIAL] New Task modal loaded");
          window.PM_NewTask?.bind();
         })
-        .catch((err) => console.error("[PARTIAL] load failed:", err));
+        .catch((err) => console.error("[PARTIAL] New Task load failed:", err));
+
+    // Load Edit Task Modal
+    loadHtmlFragment("./partials/edit_task_modal.html", "#modals-root")
+        .then(() => {
+         console.log("[PARTIAL] Edit Task modal loaded");
+         window.PM_EditTask?.bind();
+        })
+        .catch((err) => console.error("[PARTIAL] Edit Task load failed:", err));
     </script>
 
     <script src="assets/js/pipeline_table_interactions.js"></script>

@@ -511,6 +511,12 @@
     // Clear existing options except first
     els.projectFilter.innerHTML = '<option value="">Select project...</option>';
 
+    // Add "All Projects" option
+    const allOpt = document.createElement('option');
+    allOpt.value = 'all';
+    allOpt.textContent = '📊 All Projects';
+    els.projectFilter.appendChild(allOpt);
+
     metaData.projects.forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.project_id || p.id;
@@ -532,8 +538,8 @@
       return;
     }
 
-    // Check if we're in QBO mode, redirect to QBO loading
-    if (currentDataSource === 'qbo') {
+    // Check if we're in QBO mode, redirect to QBO loading (not supported for "all")
+    if (currentDataSource === 'qbo' && projectId !== 'all') {
       await loadQBOExpenses(projectId);
       return;
     }
@@ -543,7 +549,10 @@
     try {
       showEmptyState('Loading expenses...');
 
-      const url = `${apiBase}/expenses?project=${projectId}`;
+      // Use different endpoint for "all projects"
+      const url = projectId === 'all'
+        ? `${apiBase}/expenses/all`
+        : `${apiBase}/expenses?project=${projectId}`;
       console.log('[EXPENSES] Fetching from:', url);
 
       const result = await apiJson(url);
@@ -565,8 +574,11 @@
       console.log('[EXPENSES] Processed expenses count:', expenses.length);
       console.log('[EXPENSES] First expense:', expenses[0]);
 
+      // Detect duplicate bill numbers with different vendors
+      detectDuplicateBillNumbers();
+
       if (expenses.length === 0) {
-        showEmptyState('No expenses found for this project');
+        showEmptyState(projectId === 'all' ? 'No expenses found' : 'No expenses found for this project');
       } else {
         renderExpensesTable();
       }
@@ -576,6 +588,86 @@
       console.error('[EXPENSES] Error details:', err.message);
       showEmptyState('Error loading expenses: ' + err.message);
     }
+  }
+
+  // ================================
+  // DUPLICATE BILL NUMBER DETECTION
+  // ================================
+  // Stores bill_id -> { vendor_id, vendor_name, expense_id }[] for quick lookup
+  let duplicateBillWarnings = new Map();
+
+  /**
+   * Detects expenses with same bill_id but different vendor_id
+   * Stores results in duplicateBillWarnings for display
+   */
+  function detectDuplicateBillNumbers() {
+    duplicateBillWarnings.clear();
+
+    // Group expenses by bill_id
+    const billGroups = new Map();
+
+    expenses.forEach(exp => {
+      const billId = exp.bill_id?.trim();
+      if (!billId) return;
+
+      if (!billGroups.has(billId)) {
+        billGroups.set(billId, []);
+      }
+      billGroups.get(billId).push({
+        expense_id: exp.expense_id || exp.id,
+        vendor_id: exp.vendor_id,
+        vendor_name: exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || 'Unknown'
+      });
+    });
+
+    // Find bills with different vendors
+    billGroups.forEach((exps, billId) => {
+      const uniqueVendors = new Set(exps.map(e => e.vendor_id).filter(v => v));
+      if (uniqueVendors.size > 1) {
+        duplicateBillWarnings.set(billId, exps);
+        console.warn(`[EXPENSES] Duplicate bill warning: Bill #${billId} has ${uniqueVendors.size} different vendors`);
+      }
+    });
+
+    // Show toast if duplicates found
+    if (duplicateBillWarnings.size > 0) {
+      const billList = Array.from(duplicateBillWarnings.keys()).slice(0, 5).join(', ');
+      const moreCount = duplicateBillWarnings.size > 5 ? ` and ${duplicateBillWarnings.size - 5} more` : '';
+      if (window.Toast) {
+        Toast.warning(
+          'Duplicate Bill Numbers Detected',
+          `Bills with same number but different vendors: ${billList}${moreCount}. Check highlighted rows.`
+        );
+      }
+    }
+  }
+
+  /**
+   * Checks if a bill_id exists with a different vendor
+   * @param {string} billId - The bill number to check
+   * @param {string} vendorId - The vendor ID for the new expense
+   * @returns {object|null} - Returns conflict info or null
+   */
+  function checkBillVendorConflict(billId, vendorId) {
+    if (!billId?.trim() || !vendorId) return null;
+
+    const trimmedBillId = billId.trim();
+
+    // Check in current expenses
+    const existingWithBill = expenses.filter(exp =>
+      exp.bill_id?.trim() === trimmedBillId && exp.vendor_id && exp.vendor_id !== vendorId
+    );
+
+    if (existingWithBill.length > 0) {
+      const conflictVendor = existingWithBill[0];
+      return {
+        billId: trimmedBillId,
+        existingVendorId: conflictVendor.vendor_id,
+        existingVendorName: conflictVendor.vendor_name || findMetaName('vendors', conflictVendor.vendor_id, 'id', 'vendor_name') || 'Unknown'
+      };
+    }
+
+    return null;
   }
 
   // ================================
@@ -735,7 +827,8 @@
 
   function renderReadOnlyRow(exp, index) {
     const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
-    const billId = exp.bill_id || '—';
+    const billIdRaw = exp.bill_id || '';
+    const billId = billIdRaw || '—';
     const description = exp.LineDescription || '—';
     const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || '—';
     const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
@@ -747,6 +840,18 @@
     const expenseId = exp.expense_id || exp.id || '';
     if (index === 0) {
       console.log('[EXPENSES] First expense - using expense_id:', expenseId);
+    }
+
+    // Check for duplicate bill number warning
+    const hasDuplicateBillWarning = billIdRaw && duplicateBillWarnings.has(billIdRaw.trim());
+    let billDisplayHtml = billId;
+    let rowWarningClass = '';
+
+    if (hasDuplicateBillWarning) {
+      const conflictInfo = duplicateBillWarnings.get(billIdRaw.trim());
+      const vendorNames = [...new Set(conflictInfo.map(c => c.vendor_name))].join(', ');
+      billDisplayHtml = `<span class="bill-warning-badge" title="Multiple vendors for this bill: ${vendorNames}">⚠️ ${billId}</span>`;
+      rowWarningClass = ' expense-row-warning';
     }
 
     // Receipt icon - check bills table first, then expense (legacy)
@@ -770,10 +875,10 @@
       title="${canAuthorize ? 'Click to toggle authorization' : 'You do not have permission to authorize'}">${authBadgeText}</span>`;
 
     return `
-      <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable" style="cursor: pointer;">
+      <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable${rowWarningClass}" style="cursor: pointer;">
         <td class="col-checkbox" style="display: none;"></td>
         <td class="col-date">${date}</td>
-        <td class="col-bill-id">${billId}</td>
+        <td class="col-bill-id">${billDisplayHtml}</td>
         <td class="col-description">${description}</td>
         <td class="col-account">${account}</td>
         <td class="col-type">${type}</td>
@@ -2032,6 +2137,42 @@
     }
 
     // ============================================
+    // WARNING: Duplicate bill numbers with different vendors
+    // ============================================
+    const billVendorConflicts = [];
+    expensesToSave.forEach((expense, idx) => {
+      if (expense.bill_id && expense.vendor_id) {
+        const conflict = checkBillVendorConflict(expense.bill_id, expense.vendor_id);
+        if (conflict) {
+          // Get the new vendor name
+          const newVendorName = findMetaName('vendors', expense.vendor_id, 'id', 'vendor_name') || 'Unknown';
+          billVendorConflicts.push({
+            row: idx + 1,
+            billId: conflict.billId,
+            existingVendor: conflict.existingVendorName,
+            newVendor: newVendorName
+          });
+        }
+      }
+    });
+
+    if (billVendorConflicts.length > 0) {
+      const conflictDetails = billVendorConflicts.map(c =>
+        `Row ${c.row}: Bill #${c.billId} - existing vendor: "${c.existingVendor}", new vendor: "${c.newVendor}"`
+      ).join('\n');
+
+      // Show warning but allow user to proceed
+      if (window.Toast) {
+        Toast.warning(
+          'Duplicate Bill Number Alert',
+          `${billVendorConflicts.length} expense(s) have the same bill number as existing expenses but with different vendors. This may indicate a duplicate bill.`,
+          { details: conflictDetails, duration: 8000 }
+        );
+      }
+      // Note: We show a warning but don't block saving - user can proceed
+    }
+
+    // ============================================
     // VALIDATION: Reject invalid vendors
     // ============================================
     if (invalidVendors.size > 0) {
@@ -2780,6 +2921,32 @@
           Toast.error('Closed Bill', `Cannot assign expense to Bill #${newBillId}. Reopen it in Bill View first.`);
         }
         return;
+      }
+    }
+
+    // Check for duplicate bill number with different vendor
+    if (newBillId && updatedData.vendor_id) {
+      // Exclude current expense from the check
+      const originalExpenses = expenses;
+      const tempExpenses = expenses.filter(exp =>
+        (exp.expense_id || exp.id) !== expenseId
+      );
+      expenses = tempExpenses;
+
+      const conflict = checkBillVendorConflict(newBillId, updatedData.vendor_id);
+
+      expenses = originalExpenses; // Restore
+
+      if (conflict) {
+        const newVendorName = findMetaName('vendors', updatedData.vendor_id, 'id', 'vendor_name') || 'Unknown';
+        if (window.Toast) {
+          Toast.warning(
+            'Duplicate Bill Number Alert',
+            `Bill #${newBillId} already exists with vendor "${conflict.existingVendorName}". You are assigning it to "${newVendorName}". This may indicate a duplicate bill.`,
+            { duration: 8000 }
+          );
+        }
+        // Warning only, allow saving
       }
     }
 
@@ -4028,13 +4195,16 @@
       selectedProjectId = e.target.value || null;
 
       // Enable/disable toolbar buttons
-      els.btnAddExpense.disabled = !selectedProjectId;
+      // Add Expense disabled for "all" projects view (must select specific project)
+      const isAllProjects = selectedProjectId === 'all';
+      els.btnAddExpense.disabled = !selectedProjectId || isAllProjects;
 
       // Load expenses for selected project
       await loadExpensesByProject(selectedProjectId);
 
       // Enable edit button and bill view if we have expenses
-      els.btnEditExpenses.disabled = !selectedProjectId || expenses.length === 0;
+      // Edit mode disabled for "all" projects view
+      els.btnEditExpenses.disabled = !selectedProjectId || expenses.length === 0 || isAllProjects;
       els.btnBillView.disabled = !selectedProjectId || expenses.length === 0;
     });
 

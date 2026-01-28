@@ -1,24 +1,134 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    NGM HUB — Arturito Chat Styles
-   ChatGPT-inspired minimalist design
+   Premium minimalist design with gradient background
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Layout
+   Main Layout - Gradient Background
    ───────────────────────────────────────────────────────────────────────────── */
 
 .arturito-main {
-  padding: 0;
+  padding: 24px;
   height: calc(100vh - 60px);
   overflow: hidden;
-  background: #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Premium gradient background like login */
+  background:
+    radial-gradient(circle at 15% 25%, rgba(62, 207, 142, 0.08), transparent 50%),
+    radial-gradient(circle at 85% 75%, rgba(0, 0, 0, 0.6), transparent 60%),
+    radial-gradient(circle at 50% 50%, rgba(30, 30, 30, 0.4), transparent 70%),
+    #0a0a0a;
 }
 
-.arturito-chat-wrapper {
+/* ─────────────────────────────────────────────────────────────────────────────
+   Chat Card Container
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.arturito-chat-card {
+  width: 100%;
+  max-width: 800px;
+  height: calc(100vh - 120px);
+  max-height: 700px;
   display: flex;
   flex-direction: column;
-  height: 100%;
   position: relative;
+
+  /* Card styling like login panel */
+  background: rgba(26, 26, 26, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  overflow: hidden;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Card Header
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.arturito-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.arturito-card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.arturito-card-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3ecf8e, #10b981);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arturito-card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e5e7eb;
+  letter-spacing: -0.01em;
+}
+
+.arturito-card-status {
+  font-size: 12px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arturito-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3ecf8e;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.arturito-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.arturito-btn-icon {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.arturito-btn-icon:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e5e7eb;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -28,7 +138,7 @@
 .arturito-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 32px 24px 120px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
 }
@@ -42,7 +152,7 @@
 }
 
 .arturito-messages::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 3px;
 }
 
@@ -57,29 +167,36 @@
 .arturito-welcome {
   margin: auto;
   text-align: center;
-  padding: 48px 24px;
+  padding: 32px 24px;
 }
 
-.arturito-welcome-avatar {
-  width: 64px;
-  height: 64px;
+.arturito-welcome-icon {
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #3ecf8e, #10b981);
   color: white;
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 24px;
+  margin: 0 auto 20px;
+  box-shadow: 0 8px 24px rgba(62, 207, 142, 0.25);
 }
 
 .arturito-welcome-title {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 500;
   color: #e5e7eb;
-  margin: 0;
+  margin: 0 0 8px 0;
   letter-spacing: -0.02em;
+}
+
+.arturito-welcome-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -89,10 +206,7 @@
 .arturito-messages-list {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  max-width: 768px;
-  margin: 0 auto;
-  width: 100%;
+  gap: 20px;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -101,7 +215,7 @@
 
 .arturito-message {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   animation: messageIn 0.2s ease;
 }
 
@@ -121,13 +235,13 @@
 }
 
 .arturito-message-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   flex-shrink: 0;
   color: white;
@@ -138,13 +252,13 @@
 }
 
 .arturito-message--bot .arturito-message-avatar {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #3ecf8e, #10b981);
 }
 
 .arturito-message-content {
   flex: 1;
   min-width: 0;
-  max-width: 100%;
+  max-width: 85%;
 }
 
 .arturito-message--user .arturito-message-content {
@@ -153,49 +267,30 @@
   align-items: flex-end;
 }
 
-.arturito-message-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.arturito-message--user .arturito-message-header {
-  flex-direction: row-reverse;
-}
-
-.arturito-message-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #e5e7eb;
-}
-
-.arturito-message-time {
-  font-size: 11px;
-  color: #6b7280;
-}
-
 .arturito-message-bubble {
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 14px;
+  line-height: 1.6;
   color: #d1d5db;
 }
 
 .arturito-message--user .arturito-message-bubble {
-  background: #2f2f2f;
-  padding: 12px 16px;
-  border-radius: 18px;
-  max-width: fit-content;
+  background: rgba(91, 95, 199, 0.15);
+  border: 1px solid rgba(91, 95, 199, 0.2);
+  padding: 10px 14px;
+  border-radius: 16px 16px 4px 16px;
   color: #e5e7eb;
 }
 
 .arturito-message--bot .arturito-message-bubble {
-  color: #d1d5db;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 10px 14px;
+  border-radius: 16px 16px 16px 4px;
 }
 
 /* Message content formatting */
 .arturito-message-bubble p {
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
 }
 
 .arturito-message-bubble p:last-child {
@@ -204,12 +299,12 @@
 
 .arturito-message-bubble ul,
 .arturito-message-bubble ol {
-  margin: 16px 0;
-  padding-left: 24px;
+  margin: 12px 0;
+  padding-left: 20px;
 }
 
 .arturito-message-bubble li {
-  margin: 8px 0;
+  margin: 6px 0;
 }
 
 .arturito-message-bubble code {
@@ -217,15 +312,15 @@
   padding: 2px 6px;
   border-radius: 4px;
   font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .arturito-message-bubble pre {
-  background: #1a1a1a;
-  padding: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 12px;
   border-radius: 8px;
   overflow-x: auto;
-  margin: 16px 0;
+  margin: 12px 0;
 }
 
 .arturito-message-bubble pre code {
@@ -241,6 +336,8 @@
 /* Error Message */
 .arturito-message--error .arturito-message-bubble {
   color: #f87171;
+  border-color: rgba(248, 113, 113, 0.2);
+  background: rgba(248, 113, 113, 0.05);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -250,20 +347,17 @@
 .arturito-typing {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 24px;
-  max-width: 768px;
-  margin: 0 auto;
-  width: 100%;
+  gap: 12px;
+  padding: 8px 0;
 }
 
 .arturito-typing-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #3ecf8e, #10b981);
   color: white;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -273,11 +367,15 @@
 .arturito-typing-dots {
   display: flex;
   gap: 4px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px 16px 16px 4px;
 }
 
 .arturito-typing-dots span {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #6b7280;
   animation: typingDot 1.4s infinite ease-in-out both;
@@ -299,47 +397,42 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Input Area - ChatGPT Style Floating Pill
+   Input Area
    ───────────────────────────────────────────────────────────────────────────── */
 
 .arturito-input-area {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 16px 24px 24px;
-  background: linear-gradient(to top, #0a0a0a 70%, transparent);
+  padding: 16px 24px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .arturito-input-container {
   display: flex;
   align-items: flex-end;
-  gap: 0;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  border-radius: 24px;
-  padding: 8px 8px 8px 20px;
-  max-width: 768px;
-  margin: 0 auto;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 10px 10px 16px;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .arturito-input-container:focus-within {
-  border-color: #3f3f46;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+  border-color: rgba(62, 207, 142, 0.3);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .arturito-input {
   flex: 1;
-  padding: 8px 0;
+  padding: 4px 0;
   background: transparent;
   border: none;
   color: #e5e7eb;
-  font-size: 15px;
+  font-size: 14px;
   font-family: inherit;
   resize: none;
-  min-height: 24px;
-  max-height: 200px;
+  min-height: 20px;
+  max-height: 150px;
   line-height: 1.5;
 }
 
@@ -355,9 +448,9 @@
   width: 36px;
   height: 36px;
   border: none;
-  border-radius: 50%;
-  background: #10b981;
-  color: white;
+  border-radius: 10px;
+  background: #3ecf8e;
+  color: #0a0a0a;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -367,18 +460,22 @@
 }
 
 .arturito-btn-send:hover:not(:disabled) {
-  background: #059669;
+  background: #34d399;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(62, 207, 142, 0.3);
 }
 
 .arturito-btn-send:disabled {
-  background: #27272a;
-  color: #52525b;
+  background: rgba(255, 255, 255, 0.08);
+  color: #4b5563;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .arturito-btn-send svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -386,24 +483,33 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
+  .arturito-main {
+    padding: 16px;
+  }
+
+  .arturito-chat-card {
+    max-height: none;
+    height: calc(100vh - 92px);
+    border-radius: 12px;
+  }
+
+  .arturito-card-header {
+    padding: 12px 16px;
+  }
+
   .arturito-messages {
-    padding: 24px 16px 100px;
+    padding: 16px;
   }
 
   .arturito-input-area {
     padding: 12px 16px 16px;
   }
 
-  .arturito-input-container {
-    border-radius: 20px;
-    padding: 6px 6px 6px 16px;
-  }
-
   .arturito-welcome-title {
-    font-size: 22px;
+    font-size: 18px;
   }
 
-  .arturito-message {
-    gap: 12px;
+  .arturito-message-content {
+    max-width: 90%;
   }
 }

@@ -694,6 +694,39 @@
 }
 
 /* ==========================================
+   DUPLICATE BILL WARNING STYLES
+   ========================================== */
+
+/* Row with duplicate bill warning */
+.expenses-table tbody tr.expense-row-warning {
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.expenses-table tbody tr.expense-row-warning:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Bill warning badge */
+.bill-warning-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: help;
+}
+
+.bill-warning-badge:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* ==========================================
    EDIT MODE — SUBTLE INLINE EDITING
    ========================================== */
 

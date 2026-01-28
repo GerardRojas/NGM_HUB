@@ -87,30 +87,52 @@
 
       <!-- Main content: Chat interface -->
       <main class="main-content arturito-main">
-        <div class="arturito-chat-wrapper">
+        <div class="arturito-chat-card">
+          <!-- Card Header -->
+          <div class="arturito-card-header">
+            <div class="arturito-card-title">
+              <div class="arturito-card-avatar">A</div>
+              <div>
+                <div class="arturito-card-name">Arturito</div>
+                <div class="arturito-card-status">
+                  <span class="arturito-status-dot"></span>
+                  <span>AI Assistant</span>
+                </div>
+              </div>
+            </div>
+            <div class="arturito-card-actions">
+              <button type="button" class="arturito-btn-icon" id="btnClearChat" title="New conversation">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
           <!-- Messages area -->
           <div class="arturito-messages" id="arturitoMessages">
             <!-- Welcome message -->
             <div class="arturito-welcome" id="welcomeMessage">
-              <div class="arturito-welcome-avatar">A</div>
+              <div class="arturito-welcome-icon">A</div>
               <h3 class="arturito-welcome-title">How can I help you today?</h3>
+              <p class="arturito-welcome-subtitle">Ask me anything about your projects, data, or operations.</p>
             </div>
 
             <!-- Messages will be rendered here -->
             <div class="arturito-messages-list" id="messagesList">
               <!-- Messages rendered by JS -->
             </div>
-          </div>
 
-          <!-- Typing indicator -->
-          <div class="arturito-typing" id="typingIndicator" style="display: none;">
-            <div class="arturito-typing-avatar">A</div>
-            <div class="arturito-typing-dots">
-              <span></span><span></span><span></span>
+            <!-- Typing indicator -->
+            <div class="arturito-typing" id="typingIndicator" style="display: none;">
+              <div class="arturito-typing-avatar">A</div>
+              <div class="arturito-typing-dots">
+                <span></span><span></span><span></span>
+              </div>
             </div>
           </div>
 
-          <!-- Input area - ChatGPT style floating pill -->
+          <!-- Input area -->
           <div class="arturito-input-area">
             <div class="arturito-input-container">
               <textarea
@@ -120,7 +142,7 @@
                 rows="1"
               ></textarea>
               <button type="button" class="arturito-btn-send" id="btnSend" title="Send" disabled>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
                 </svg>
               </button>
@@ -130,9 +152,6 @@
       </main>
     </div>
   </div>
-
-  <!-- Hidden clear button for JS -->
-  <button type="button" id="btnClearChat" style="display:none;"></button>
 
   <!-- Arturito module -->
   <script src="assets/js/arturito.js" defer></script>

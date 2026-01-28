@@ -735,3 +735,79 @@ button {
 .page-loading .sidebar {
     visibility: visible;
 }
+
+/* ==========================================
+   GLOBAL UTILITY CLASSES
+   ========================================== */
+
+/* Generic hidden class for show/hide functionality */
+.hidden {
+    display: none !important;
+}
+
+/* ==========================================
+   NGM LOGO LOADING ANIMATION SYSTEM
+   ========================================== */
+
+/* Base loading logo class - shimmer effect */
+.loading-logo {
+    display: inline-block;
+    position: relative;
+    animation: logoShimmer 2s ease-in-out infinite;
+}
+
+/* Size variants */
+.loading-logo-xs {
+    width: 24px;
+    height: 24px;
+}
+
+.loading-logo-sm {
+    width: 36px;
+    height: 36px;
+}
+
+.loading-logo-md {
+    width: 72px;
+    height: 72px;
+}
+
+.loading-logo-lg {
+    width: 96px;
+    height: 96px;
+}
+
+.loading-logo-xl {
+    width: 120px;
+    height: 120px;
+}
+
+/* Default size if no size class specified */
+.loading-logo:not([class*="loading-logo-"]) {
+    width: 96px;
+    height: 96px;
+}
+
+/* Shimmer animation - progressive fade */
+@keyframes logoShimmer {
+    0% {
+        opacity: 1;
+        filter: brightness(1);
+    }
+    50% {
+        opacity: 0.5;
+        filter: brightness(0.6);
+    }
+    100% {
+        opacity: 1;
+        filter: brightness(1);
+    }
+}
+
+/* Loading text styling */
+.loading-text {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}

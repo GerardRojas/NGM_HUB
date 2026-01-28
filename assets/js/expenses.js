@@ -451,6 +451,27 @@
   }
 
   /**
+   * Upsert bill data in local cache
+   * Prevents duplicates by updating existing entry or adding new one
+   * @param {Object} billData - Bill data object with bill_id
+   */
+  function upsertBillInCache(billData) {
+    if (!billData || !billData.bill_id) return;
+
+    const existingIndex = metaData.bills.findIndex(b => b.bill_id === billData.bill_id);
+
+    if (existingIndex >= 0) {
+      // Update existing entry
+      Object.assign(metaData.bills[existingIndex], billData);
+      console.log('[BILLS] Updated bill in cache:', billData.bill_id);
+    } else {
+      // Add new entry
+      metaData.bills.push(billData);
+      console.log('[BILLS] Added bill to cache:', billData.bill_id);
+    }
+  }
+
+  /**
    * Get receipt URL for an expense
    * Checks bills table first (new system), then expense.receipt_url (legacy)
    * @param {Object} expense - The expense object
@@ -2328,8 +2349,8 @@
                   });
                   console.log(`[EXPENSES] Created bill record for ${billId} with status '${billStatus}':`, billData);
 
-                  // Add to local metadata cache
-                  metaData.bills.push(billData);
+                  // Add to local metadata cache (using upsert to prevent duplicates)
+                  upsertBillInCache(billData);
                 }
               } catch (billErr) {
                 // Bill creation might fail if it already exists - that's OK
@@ -2825,8 +2846,8 @@
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(billData)
                 });
-                // Add to local cache
-                metaData.bills.push(billData);
+                // Add to local cache (using upsert to prevent duplicates)
+                upsertBillInCache(billData);
                 console.log(`[EXPENSES] Created bill ${billId} with receipt URL`);
               }
               // Don't store receipt_url in expense when using bills table
@@ -5171,8 +5192,8 @@
         });
         console.log('[BILL] Bill created:', response);
 
-        // Add to local cache
-        metaData.bills.push(createData);
+        // Add to local cache (using upsert to prevent duplicates)
+        upsertBillInCache(createData);
       }
 
       closeBillEditModal();

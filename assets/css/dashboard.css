@@ -1,6 +1,11 @@
 /* ---------- CONTENIDO PRINCIPAL DEL DASHBOARD ---------- */
 /* Supabase-inspired dark theme */
 
+/* Hide main content while loading */
+.page-loading .dashboard-main {
+    visibility: hidden;
+}
+
 .main-content.dashboard-main {
     /* Variables SOLO para el dashboard */
     --dashboard-modules-max-width: 1400px;

@@ -6,7 +6,19 @@ const DASHBOARD_API = window.API_BASE || window.NGM_CONFIG?.API_BASE || "http://
 // Store current user for reference
 let currentUser = null;
 
-document.addEventListener("DOMContentLoaded", () => {
+// ─────────────────────────────────────────────────────────────────────────
+// PAGE LOADING
+// ─────────────────────────────────────────────────────────────────────────
+
+function hidePageLoading() {
+  const overlay = document.getElementById("pageLoadingOverlay");
+  if (overlay) {
+    overlay.classList.add("hidden");
+  }
+  document.body.classList.remove("page-loading");
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
   // 1) Leer usuario desde localStorage
   const rawUser = localStorage.getItem("ngmUser");
 
@@ -28,11 +40,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   currentUser = user;
 
-  // Load mentions for the user
-  loadMentions(user);
+  // Load data in parallel for faster loading
+  try {
+    await Promise.all([
+      loadMentions(user),
+      loadMyWorkTasks(user)
+    ]);
+  } catch (err) {
+    console.error("[Dashboard] Error loading data:", err);
+  }
 
-  // Load My Work tasks (pending authorizations, pipeline tasks, etc.)
-  loadMyWorkTasks(user);
+  // Hide loading overlay after data is loaded
+  hidePageLoading();
 
   // 2) Rellenar pill de usuario
   const userPill = document.getElementById("user-pill");

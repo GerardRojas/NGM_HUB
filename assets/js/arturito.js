@@ -318,17 +318,34 @@
     const isUser = msg.role === "user";
     const isError = msg.isError;
     const userName = isUser ? (msg.user_name || "Tu") : "Arturito";
-    // Use initials instead of emojis
-    const avatar = isUser ? getInitials(msg.user_name || "Tu") : "A";
     const time = formatTime(msg.timestamp);
     const formattedContent = formatMessageContent(msg.content);
 
     const errorClass = isError ? "arturito-message--error" : "";
     const roleClass = isUser ? "arturito-message--user" : "arturito-message--bot";
 
+    // Build avatar HTML - for user messages use their photo/color, for bot use green "A"
+    let avatarHtml;
+    if (isUser) {
+      const userPhoto = state.currentUser?.user_photo;
+      const avatarColor = getAvatarColor(state.currentUser);
+      const initials = getInitials(state.currentUser?.user_name || msg.user_name || "Tu");
+
+      if (userPhoto) {
+        // User has a photo - use image avatar
+        avatarHtml = `<div class="arturito-message-avatar arturito-message-avatar--img" style="background-image: url('${escapeHtml(userPhoto)}')"></div>`;
+      } else {
+        // Use initials with user's color
+        avatarHtml = `<div class="arturito-message-avatar" style="background: ${avatarColor}">${initials}</div>`;
+      }
+    } else {
+      // Bot avatar - green "A"
+      avatarHtml = `<div class="arturito-message-avatar">A</div>`;
+    }
+
     return `
       <div class="arturito-message ${roleClass} ${errorClass}">
-        <div class="arturito-message-avatar">${avatar}</div>
+        ${avatarHtml}
         <div class="arturito-message-content">
           <div class="arturito-message-header">
             <span class="arturito-message-name">${escapeHtml(userName)}</span>
@@ -347,6 +364,26 @@
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();
+  }
+
+  // Generate stable hue from string (for avatar color fallback)
+  function stableHueFromString(str) {
+    const s = String(str || "");
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = s.charCodeAt(i) + ((h << 5) - h);
+    }
+    return Math.abs(h % 360);
+  }
+
+  // Get avatar color from user data (uses avatar_color if set, otherwise generates from user_id)
+  function getAvatarColor(user) {
+    if (!user) return "hsl(200, 70%, 45%)";
+    const ac = Number(user.avatar_color);
+    const hue = Number.isFinite(ac) && ac >= 0 && ac <= 360
+      ? ac
+      : stableHueFromString(user.user_id || user.email || user.user_name);
+    return `hsl(${hue}, 70%, 45%)`;
   }
 
   function formatMessageContent(content) {

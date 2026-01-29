@@ -1297,6 +1297,182 @@
   // Global Init
   // ================================
 
+  // ================================
+  // ARTURITO COPILOT HANDLERS
+  // ================================
+
+  function registerCopilotHandlers() {
+    if (typeof ArturitoWidget === 'undefined' || !ArturitoWidget.registerCopilotHandlers) {
+      console.log('[PIPELINE] ArturitoWidget not available, skipping copilot registration');
+      return;
+    }
+
+    ArturitoWidget.registerCopilotHandlers('pipeline.html', {
+      // Filter by task status
+      filterByStatus: (params) => {
+        const status = params.status;
+        console.log('[PIPELINE COPILOT] filterByStatus:', status);
+
+        // Status mapping to visible groups
+        const statusMap = {
+          'todo': 'not started',
+          'not_started': 'not started',
+          'in_progress': 'working on it',
+          'working': 'working on it',
+          'review': 'awaiting approval',
+          'awaiting_approval': 'awaiting approval',
+          'done': 'done',
+          'completed': 'done',
+        };
+
+        const targetStatus = statusMap[status] || status;
+
+        // Toggle visibility - show only the requested status
+        const visibleGroups = getDefaultVisibleGroups();
+        Object.keys(visibleGroups).forEach(key => {
+          visibleGroups[key] = (key === targetStatus);
+        });
+        saveVisibleGroups(visibleGroups);
+        renderGroups();
+
+        if (typeof Toast !== 'undefined') {
+          Toast.success('Filtro aplicado', `Estado: ${targetStatus}`);
+        }
+      },
+
+      // Filter by assignee/owner
+      filterByAssignee: (params) => {
+        const userName = params.user_name;
+        console.log('[PIPELINE COPILOT] filterByAssignee:', userName);
+
+        if (ownerFilter) {
+          // Find matching owner in select options
+          const options = Array.from(ownerFilter.options);
+          const match = options.find(opt =>
+            opt.value.toLowerCase().includes(userName.toLowerCase()) ||
+            opt.textContent.toLowerCase().includes(userName.toLowerCase())
+          );
+
+          if (match) {
+            ownerFilter.value = match.value;
+            renderGroups();
+
+            if (typeof Toast !== 'undefined') {
+              Toast.success('Filtro aplicado', `Asignado: ${match.textContent}`);
+            }
+          } else {
+            if (typeof Toast !== 'undefined') {
+              Toast.error('Usuario no encontrado', userName);
+            }
+          }
+        }
+      },
+
+      // Filter by priority
+      filterByPriority: (params) => {
+        const priority = params.priority;
+        console.log('[PIPELINE COPILOT] filterByPriority:', priority);
+
+        if (priorityFilter) {
+          // Find matching priority in select options
+          const options = Array.from(priorityFilter.options);
+          const match = options.find(opt =>
+            opt.value.toLowerCase().includes(priority.toLowerCase()) ||
+            opt.textContent.toLowerCase().includes(priority.toLowerCase())
+          );
+
+          if (match) {
+            priorityFilter.value = match.value;
+            renderGroups();
+
+            if (typeof Toast !== 'undefined') {
+              Toast.success('Filtro aplicado', `Prioridad: ${match.textContent}`);
+            }
+          } else {
+            if (typeof Toast !== 'undefined') {
+              Toast.error('Prioridad no encontrada', priority);
+            }
+          }
+        }
+      },
+
+      // Filter by project
+      filterByProject: (params) => {
+        const projectName = params.project_name;
+        console.log('[PIPELINE COPILOT] filterByProject:', projectName);
+
+        if (projectFilter) {
+          // Find matching project in select options
+          const options = Array.from(projectFilter.options);
+          const match = options.find(opt =>
+            opt.value.toLowerCase().includes(projectName.toLowerCase()) ||
+            opt.textContent.toLowerCase().includes(projectName.toLowerCase())
+          );
+
+          if (match) {
+            projectFilter.value = match.value;
+            renderGroups();
+
+            if (typeof Toast !== 'undefined') {
+              Toast.success('Filtro aplicado', `Proyecto: ${match.textContent}`);
+            }
+          } else {
+            if (typeof Toast !== 'undefined') {
+              Toast.error('Proyecto no encontrado', projectName);
+            }
+          }
+        }
+      },
+
+      // Clear all filters
+      clearFilters: () => {
+        console.log('[PIPELINE COPILOT] clearFilters');
+
+        // Reset all select filters
+        if (projectFilter) projectFilter.value = 'all';
+        if (ownerFilter) ownerFilter.value = 'all';
+        if (priorityFilter) priorityFilter.value = 'all';
+
+        // Clear search
+        if (searchInput) {
+          searchInput.value = '';
+          searchQuery = '';
+        }
+
+        // Reset visible groups to show all
+        saveVisibleGroups(getDefaultVisibleGroups());
+
+        renderGroups();
+
+        if (typeof Toast !== 'undefined') {
+          Toast.success('Filtros limpiados', '');
+        }
+      },
+
+      // Search text
+      searchText: (params) => {
+        const query = params.query;
+        console.log('[PIPELINE COPILOT] searchText:', query);
+
+        if (searchInput) {
+          searchInput.value = query;
+          searchQuery = query.toLowerCase();
+          renderGroups();
+
+          if (typeof Toast !== 'undefined') {
+            Toast.success('Busqueda aplicada', query);
+          }
+        }
+      },
+    });
+
+    console.log('[PIPELINE] Copilot handlers registered');
+  }
+
+  // ================================
+  // Global Init
+  // ================================
+
   window.addEventListener("DOMContentLoaded", () => {
     // Check authentication first
     if (!initAuth()) return;
@@ -1330,6 +1506,9 @@
     if (typeof initTableWidthSlider === "function") {
       initTableWidthSlider();
     }
+
+    // Register Arturito copilot handlers
+    registerCopilotHandlers();
   });
 
 })();

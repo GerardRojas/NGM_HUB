@@ -6992,6 +6992,263 @@
 
     // Show initial empty state
     showEmptyState('Select a project to view expenses');
+
+    // Register Arturito copilot handlers
+    registerCopilotHandlers();
+  }
+
+  // ================================
+  // ARTURITO COPILOT HANDLERS
+  // ================================
+  function registerCopilotHandlers() {
+    // Check if ArturitoWidget is available
+    if (typeof ArturitoWidget === 'undefined' || !ArturitoWidget.registerCopilotHandlers) {
+      console.log('[EXPENSES] ArturitoWidget not available, skipping copilot registration');
+      return;
+    }
+
+    ArturitoWidget.registerCopilotHandlers('expenses.html', {
+      // Filter by authorization status
+      filterByAuthStatus: (params) => {
+        const status = params.status;
+        console.log('[EXPENSES COPILOT] filterByAuthStatus:', status);
+
+        // Clear existing auth filter
+        columnFilters.auth = [];
+
+        if (status === 'pending') {
+          columnFilters.auth = ['Pending'];
+        } else if (status === 'authorized') {
+          columnFilters.auth = ['Authorized'];
+        }
+        // status === 'all' leaves the filter empty (shows all)
+
+        renderExpensesTable();
+        updateFilterIndicators();
+
+        if (typeof Toast !== 'undefined') {
+          const msg = status === 'all' ? 'Mostrando todos los gastos' :
+                      status === 'pending' ? 'Mostrando gastos pendientes' :
+                      'Mostrando gastos autorizados';
+          Toast.success('Filtro aplicado', msg);
+        }
+      },
+
+      // Filter by project
+      filterByProject: (params) => {
+        const projectName = params.project_name;
+        console.log('[EXPENSES COPILOT] filterByProject:', projectName);
+
+        // Find the project in metadata
+        const project = metaData.projects.find(p =>
+          p.project_name?.toLowerCase().includes(projectName.toLowerCase())
+        );
+
+        if (project && els.projectFilter) {
+          els.projectFilter.value = project.project_id;
+          loadExpenses(project.project_id);
+
+          if (typeof Toast !== 'undefined') {
+            Toast.success('Proyecto seleccionado', project.project_name);
+          }
+        } else {
+          if (typeof Toast !== 'undefined') {
+            Toast.error('Proyecto no encontrado', projectName);
+          }
+        }
+      },
+
+      // Filter by vendor
+      filterByVendor: (params) => {
+        const vendorName = params.vendor_name;
+        console.log('[EXPENSES COPILOT] filterByVendor:', vendorName);
+
+        // Find matching vendor values in current expenses
+        const matchingVendors = [...new Set(expenses.map(exp => {
+          const name = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '';
+          return name;
+        }).filter(name =>
+          name.toLowerCase().includes(vendorName.toLowerCase())
+        ))];
+
+        if (matchingVendors.length > 0) {
+          columnFilters.vendor = matchingVendors;
+          renderExpensesTable();
+          updateFilterIndicators();
+
+          if (typeof Toast !== 'undefined') {
+            Toast.success('Filtro aplicado', `Vendor: ${matchingVendors[0]}`);
+          }
+        } else {
+          if (typeof Toast !== 'undefined') {
+            Toast.error('Vendor no encontrado', vendorName);
+          }
+        }
+      },
+
+      // Filter by date range
+      filterByDateRange: (params) => {
+        console.log('[EXPENSES COPILOT] filterByDateRange:', params);
+
+        const startDate = params.start_date ? new Date(params.start_date) : null;
+        const endDate = params.end_date ? new Date(params.end_date) : null;
+
+        if (startDate && endDate) {
+          // Get all unique dates that fall within range
+          const matchingDates = [...new Set(expenses.map(exp => {
+            if (!exp.TxnDate) return null;
+            const expDate = new Date(exp.TxnDate);
+            if (expDate >= startDate && expDate <= endDate) {
+              return expDate.toLocaleDateString();
+            }
+            return null;
+          }).filter(d => d !== null))];
+
+          columnFilters.date = matchingDates;
+          renderExpensesTable();
+          updateFilterIndicators();
+
+          if (typeof Toast !== 'undefined') {
+            Toast.success('Filtro de fechas aplicado', `${matchingDates.length} fechas`);
+          }
+        }
+      },
+
+      // Clear all filters
+      clearFilters: () => {
+        console.log('[EXPENSES COPILOT] clearFilters');
+
+        // Reset all column filters
+        columnFilters.date = [];
+        columnFilters.bill_id = [];
+        columnFilters.type = [];
+        columnFilters.vendor = [];
+        columnFilters.payment = [];
+        columnFilters.account = [];
+        columnFilters.description = [];
+        columnFilters.auth = [];
+
+        // Clear global search
+        globalSearchTerm = '';
+        if (els.globalSearch) {
+          els.globalSearch.value = '';
+        }
+
+        renderExpensesTable();
+        updateFilterIndicators();
+
+        if (typeof Toast !== 'undefined') {
+          Toast.success('Filtros limpiados', '');
+        }
+      },
+
+      // Sort by column
+      sortByColumn: (params) => {
+        const column = params.column;
+        const direction = params.direction || 'asc';
+        console.log('[EXPENSES COPILOT] sortByColumn:', column, direction);
+
+        // Map common column names to expense fields
+        const columnMap = {
+          'date': 'TxnDate',
+          'fecha': 'TxnDate',
+          'amount': 'Amount',
+          'monto': 'Amount',
+          'vendor': 'vendor_name',
+          'proveedor': 'vendor_name',
+          'bill': 'bill_id',
+          'factura': 'bill_id',
+        };
+
+        const field = columnMap[column?.toLowerCase()] || 'TxnDate';
+
+        expenses.sort((a, b) => {
+          let valA = a[field];
+          let valB = b[field];
+
+          // Handle dates
+          if (field === 'TxnDate') {
+            valA = new Date(valA || 0);
+            valB = new Date(valB || 0);
+          }
+
+          // Handle numbers
+          if (field === 'Amount') {
+            valA = parseFloat(valA) || 0;
+            valB = parseFloat(valB) || 0;
+          }
+
+          // Handle strings
+          if (typeof valA === 'string') valA = valA.toLowerCase();
+          if (typeof valB === 'string') valB = valB.toLowerCase();
+
+          if (direction === 'desc') {
+            return valA > valB ? -1 : valA < valB ? 1 : 0;
+          }
+          return valA < valB ? -1 : valA > valB ? 1 : 0;
+        });
+
+        renderExpensesTable();
+
+        if (typeof Toast !== 'undefined') {
+          Toast.success('Ordenado', `Por ${field} ${direction === 'desc' ? 'descendente' : 'ascendente'}`);
+        }
+      },
+
+      // Expand all bills (in bill view mode)
+      expandAllBills: () => {
+        console.log('[EXPENSES COPILOT] expandAllBills');
+
+        const expandBtns = document.querySelectorAll('.bill-expand-btn[data-expanded="false"]');
+        expandBtns.forEach(btn => btn.click());
+
+        if (typeof Toast !== 'undefined') {
+          Toast.success('Expandido', `${expandBtns.length} facturas`);
+        }
+      },
+
+      // Collapse all bills
+      collapseAllBills: () => {
+        console.log('[EXPENSES COPILOT] collapseAllBills');
+
+        const collapseBtns = document.querySelectorAll('.bill-expand-btn[data-expanded="true"]');
+        collapseBtns.forEach(btn => btn.click());
+
+        if (typeof Toast !== 'undefined') {
+          Toast.success('Colapsado', `${collapseBtns.length} facturas`);
+        }
+      },
+
+      // Search text
+      searchText: (params) => {
+        const query = params.query;
+        console.log('[EXPENSES COPILOT] searchText:', query);
+
+        globalSearchTerm = query || '';
+
+        if (els.globalSearch) {
+          els.globalSearch.value = globalSearchTerm;
+        }
+
+        renderExpensesTable();
+
+        if (typeof Toast !== 'undefined') {
+          Toast.success('Buscando', `"${query}"`);
+        }
+      },
+    });
+
+    console.log('[EXPENSES] Arturito copilot handlers registered');
+  }
+
+  function updateFilterIndicators() {
+    // Update any visual indicators for active filters
+    // This is a helper to show the user which filters are active
+    const hasFilters = Object.values(columnFilters).some(f => f.length > 0) || globalSearchTerm;
+    const filterIndicator = document.getElementById('filterIndicator');
+    if (filterIndicator) {
+      filterIndicator.style.display = hasFilters ? 'inline-flex' : 'none';
+    }
   }
 
   // Run on DOM load

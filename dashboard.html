@@ -19,6 +19,7 @@
     <!-- 2) Estilos específicos del dashboard (cards, pipeline, separadores, etc.) -->
     <link rel="stylesheet" href="assets/css/dashboard.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
+    <link rel="stylesheet" href="assets/css/arturito_widget.css" />
 
     <!-- Scripts globales -->
     <script src="assets/js/config.js" defer></script>
@@ -100,6 +101,35 @@
             </header>
 
             <main class="main-content dashboard-main">
+                <!-- Mentions Section (personal notifications) -->
+                <section class="mentions-section">
+                    <div class="section-header-row">
+                        <div>
+                            <h2 class="section-title">Mentions</h2>
+                            <p class="section-subtitle">
+                                Recent messages where you were mentioned.
+                            </p>
+                        </div>
+                        <a href="messages.html" class="section-action-link">View all messages →</a>
+                    </div>
+
+                    <div id="mentions-container" class="module-card mentions-card">
+                        <div class="mentions-loading" id="mentions-loading">
+                            <span class="mentions-loading-text">Loading mentions...</span>
+                        </div>
+                        <div class="mentions-empty" id="mentions-empty" style="display: none;">
+                            <div class="mentions-empty-icon">@</div>
+                            <p class="mentions-empty-text">No recent mentions</p>
+                        </div>
+                        <div class="mentions-list" id="mentions-list" style="display: none;">
+                            <!-- Mentions rendered by JS -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Separador visual entre mentions y pipeline -->
+                <div class="section-divider"></div>
+
                 <!-- Pipeline (visor rápido) -->
                 <section class="pipeline-section">
                 <div class="section-header-row">
@@ -461,5 +491,6 @@
     </div>
 
     <script src="assets/js/dashboard.js"></script>
+    <script src="assets/js/arturito_widget.js"></script>
 </body>
 </html>

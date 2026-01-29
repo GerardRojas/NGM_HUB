@@ -1253,8 +1253,124 @@
     state.messages.push(message);
     renderMessages();
 
-    // Play notification sound (optional)
-    // playNotificationSound();
+    // Show toast notification for new message
+    showMessageNotification(message);
+  }
+
+  /**
+   * Show toast notification for incoming message
+   */
+  function showMessageNotification(message) {
+    if (typeof Toast === "undefined") return;
+
+    const sender = state.users.find((u) => u.user_id === message.user_id);
+    const senderName = sender?.user_name || message.user_name || "Unknown";
+    const senderPhoto = sender?.user_photo;
+    const senderColor = sender?.avatar_color
+      ? `hsl(${sender.avatar_color}, 70%, 45%)`
+      : getDefaultAvatarColor(senderName);
+    const initials = getInitials(senderName);
+
+    // Check if current user is mentioned
+    const isMentioned = checkIfMentioned(message.content, state.currentUser);
+
+    // Truncate message content
+    const contentPreview = message.content?.length > 60
+      ? message.content.substring(0, 60) + "..."
+      : message.content || "";
+
+    // Build channel name for title
+    let channelName = "";
+    if (state.currentChannel) {
+      channelName = state.currentChannel.name || "Message";
+    }
+
+    const toastOptions = {
+      avatar: {
+        photo: senderPhoto,
+        color: senderColor,
+        initials: initials,
+      },
+      onClick: () => {
+        // Scroll to message if we're in the same channel
+        scrollToMessage(message.id);
+      },
+    };
+
+    if (isMentioned) {
+      // Mention notification (highlighted)
+      Toast.mention(
+        `${senderName} mentioned you`,
+        contentPreview,
+        toastOptions
+      );
+      // Play mention sound
+      playNotificationSound("mention");
+    } else {
+      // Regular chat notification
+      Toast.chat(
+        `${senderName} in ${channelName}`,
+        contentPreview,
+        toastOptions
+      );
+      // Play regular notification sound
+      playNotificationSound("message");
+    }
+  }
+
+  /**
+   * Check if message mentions the current user
+   */
+  function checkIfMentioned(content, currentUser) {
+    if (!content || !currentUser) return false;
+    const mentionPattern = new RegExp(`@${escapeRegex(currentUser.user_name)}\\b`, "i");
+    return mentionPattern.test(content);
+  }
+
+  /**
+   * Play notification sound
+   */
+  function playNotificationSound(type = "message") {
+    try {
+      // Create audio context for notification sounds
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      if (type === "mention") {
+        // Higher pitch for mentions
+        oscillator.frequency.value = 880;
+        gainNode.gain.value = 0.1;
+      } else {
+        // Normal pitch for messages
+        oscillator.frequency.value = 660;
+        gainNode.gain.value = 0.08;
+      }
+
+      oscillator.type = "sine";
+      oscillator.start();
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+      oscillator.stop(audioContext.currentTime + 0.2);
+    } catch (err) {
+      // Silently fail if audio context not available
+      console.log("[Messages] Audio notification not available");
+    }
+  }
+
+  /**
+   * Scroll to a specific message
+   */
+  function scrollToMessage(messageId) {
+    const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (messageEl) {
+      messageEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Brief highlight
+      messageEl.classList.add("msg-message--highlight");
+      setTimeout(() => messageEl.classList.remove("msg-message--highlight"), 2000);
+    }
   }
 
   function broadcastTyping() {

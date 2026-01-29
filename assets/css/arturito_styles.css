@@ -253,8 +253,16 @@
   color: white;
 }
 
+/* User avatar color is set via inline style (uses user's avatar_color) */
 .arturito-message--user .arturito-message-avatar {
-  background: #5b5fc7;
+  /* Color applied via inline style */
+}
+
+/* Image avatar for users with user_photo */
+.arturito-message-avatar--img {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 .arturito-message--bot .arturito-message-avatar {

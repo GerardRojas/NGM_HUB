@@ -448,6 +448,20 @@
   background: rgba(62, 207, 142, 0.06);
 }
 
+/* Highlight animation when clicking notification */
+.msg-message--highlight {
+  animation: messageHighlight 2s ease-out;
+}
+
+@keyframes messageHighlight {
+  0% {
+    background: rgba(251, 191, 36, 0.15);
+  }
+  100% {
+    background: transparent;
+  }
+}
+
 /* Message avatar */
 .msg-message-avatar {
   width: 36px;

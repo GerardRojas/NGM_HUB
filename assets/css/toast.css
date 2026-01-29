@@ -236,3 +236,104 @@
     position: relative;
     overflow: hidden;
 }
+
+/* ================================
+   CHAT NOTIFICATIONS (bottom-right)
+   ================================ */
+
+.toast-container--bottom-right {
+    top: auto;
+    bottom: 20px;
+}
+
+/* Chat message toast style */
+.toast-chat {
+    border-color: rgba(99, 102, 241, 0.3);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.toast-chat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+.toast-chat .toast-icon {
+    background: rgba(99, 102, 241, 0.15);
+    color: #6366f1;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.toast-chat .toast-title {
+    color: #e5e7eb;
+}
+
+/* Chat avatar in toast */
+.toast-chat-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+}
+
+.toast-chat-avatar--img {
+    background-size: cover;
+    background-position: center;
+}
+
+/* Mention highlight in toast */
+.toast-mention {
+    border-color: rgba(251, 191, 36, 0.4);
+    background: linear-gradient(135deg, #1a1a1a 0%, rgba(251, 191, 36, 0.05) 100%);
+}
+
+.toast-mention .toast-icon {
+    background: rgba(251, 191, 36, 0.15);
+    color: #fbbf24;
+}
+
+.toast-mention .toast-title {
+    color: #fbbf24;
+}
+
+.toast-mention .toast-progress-bar {
+    background: #fbbf24;
+}
+
+/* Animations for bottom-right */
+.toast-container--bottom-right .toast {
+    animation: toastSlideInBottom 0.3s ease-out;
+}
+
+.toast-container--bottom-right .toast.toast-hiding {
+    animation: toastSlideOutBottom 0.25s ease-in forwards;
+}
+
+@keyframes toastSlideInBottom {
+    from {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes toastSlideOutBottom {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(100%);
+    }
+}

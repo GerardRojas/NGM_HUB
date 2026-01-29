@@ -183,6 +183,9 @@
       // Render channel lists
       renderChannels();
 
+      // Load mentions badge count (async, don't await)
+      loadMentionsBadge();
+
       // Setup event listeners
       setupEventListeners();
 
@@ -2683,6 +2686,276 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // MENTIONS FUNCTIONALITY
+  // ─────────────────────────────────────────────────────────────────────────
+
+  let mentionsCache = [];
+  let mentionsLoaded = false;
+
+  async function loadMentions() {
+    try {
+      console.log("[Messages] Loading mentions...");
+      const response = await authFetch(`${API_BASE}/messages/mentions`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to load mentions: ${response.status}`);
+      }
+
+      const data = await response.json();
+      mentionsCache = data.mentions || [];
+      mentionsLoaded = true;
+
+      console.log(`[Messages] Loaded ${mentionsCache.length} mentions`);
+      return mentionsCache;
+    } catch (error) {
+      console.error("[Messages] Error loading mentions:", error);
+      return [];
+    }
+  }
+
+  function renderMentions(mentions) {
+    const listContainer = document.getElementById("mentionsList");
+    const emptyState = document.getElementById("mentionsEmpty");
+    const countEl = document.getElementById("mentionsCount");
+
+    if (!listContainer) return;
+
+    // Clear existing items (keep empty state)
+    const existingItems = listContainer.querySelectorAll(".msg-mention-item");
+    existingItems.forEach((item) => item.remove());
+
+    // Update count
+    const unreadCount = mentions.filter((m) => !m.is_read).length;
+    if (countEl) {
+      countEl.textContent = unreadCount > 0 ? `${unreadCount} unread` : "All read";
+    }
+
+    // Update badge
+    updateMentionsBadge(unreadCount);
+
+    // Show empty state if no mentions
+    if (mentions.length === 0) {
+      if (emptyState) emptyState.style.display = "";
+      return;
+    }
+
+    if (emptyState) emptyState.style.display = "none";
+
+    // Render mention items
+    mentions.forEach((mention) => {
+      const item = createMentionItem(mention);
+      listContainer.appendChild(item);
+    });
+  }
+
+  function createMentionItem(mention) {
+    const item = document.createElement("div");
+    item.className = `msg-mention-item${mention.is_read ? "" : " unread"}`;
+    item.setAttribute("data-mention-id", mention.id);
+    item.setAttribute("data-message-id", mention.message_id);
+    item.setAttribute("data-channel-id", mention.channel_id);
+    item.setAttribute("data-channel-type", mention.channel_type || "custom");
+    if (mention.project_id) {
+      item.setAttribute("data-project-id", mention.project_id);
+    }
+
+    // Get sender info
+    const sender = state.users.find((u) => u.id === mention.sender_id) || {};
+    const senderName = sender.full_name || sender.username || "Unknown";
+    const initials = getInitials(senderName);
+
+    // Format timestamp
+    const timeAgo = formatRelativeTime(mention.created_at);
+
+    // Channel name
+    const channelName = mention.channel_name || "Unknown channel";
+
+    // Message preview with mention highlighted
+    const preview = highlightMention(mention.content || "", state.currentUser?.username);
+
+    item.innerHTML = `
+      <div class="msg-mention-avatar" style="color: ${getAvatarColor(senderName)}">${initials}</div>
+      <div class="msg-mention-content">
+        <div class="msg-mention-header">
+          <span class="msg-mention-author">${escapeHtml(senderName)}</span>
+          <span class="msg-mention-time">${timeAgo}</span>
+        </div>
+        <div class="msg-mention-channel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 9h16M4 15h16M10 3v18M14 3v18"/>
+          </svg>
+          <span>${escapeHtml(channelName)}</span>
+        </div>
+        <div class="msg-mention-preview">${preview}</div>
+      </div>
+    `;
+
+    // Click handler - navigate to the message
+    item.addEventListener("click", () => handleMentionClick(mention));
+
+    return item;
+  }
+
+  function highlightMention(content, username) {
+    if (!content || !username) return escapeHtml(content);
+
+    // Truncate content if too long
+    let text = content.length > 150 ? content.substring(0, 150) + "..." : content;
+
+    // Escape HTML first
+    text = escapeHtml(text);
+
+    // Highlight @mentions
+    const mentionRegex = new RegExp(`@(${username})`, "gi");
+    text = text.replace(mentionRegex, '<span class="mention-highlight">@$1</span>');
+
+    return text;
+  }
+
+  function formatRelativeTime(timestamp) {
+    if (!timestamp) return "";
+
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return date.toLocaleDateString();
+  }
+
+  async function handleMentionClick(mention) {
+    console.log("[Messages] Clicking mention:", mention);
+
+    // Mark as read
+    if (!mention.is_read) {
+      markMentionAsRead(mention.id);
+    }
+
+    // Navigate to the channel and message
+    const channelType = mention.channel_type || "custom";
+    const channelId = mention.channel_id;
+    const projectId = mention.project_id;
+    const channelName = mention.channel_name || "Channel";
+
+    // Hide mentions view
+    hideMentionsView();
+
+    // Select the channel
+    await selectChannel(channelType, channelId, projectId, channelName);
+
+    // Scroll to the message after a short delay
+    setTimeout(() => {
+      scrollToMessage(mention.message_id);
+    }, 300);
+  }
+
+  async function markMentionAsRead(mentionId) {
+    try {
+      await authFetch(`${API_BASE}/messages/mentions/${mentionId}/read`, {
+        method: "POST",
+      });
+
+      // Update cache
+      const mention = mentionsCache.find((m) => m.id === mentionId);
+      if (mention) {
+        mention.is_read = true;
+      }
+
+      // Update badge
+      const unreadCount = mentionsCache.filter((m) => !m.is_read).length;
+      updateMentionsBadge(unreadCount);
+
+      // Update UI
+      const item = document.querySelector(`[data-mention-id="${mentionId}"]`);
+      if (item) {
+        item.classList.remove("unread");
+      }
+    } catch (error) {
+      console.error("[Messages] Error marking mention as read:", error);
+    }
+  }
+
+  function updateMentionsBadge(count) {
+    // Update mobile badge
+    const mobileBadge = document.getElementById("mentionsBadge");
+    // Update web badge
+    const webBadge = document.getElementById("mentionsWebBadge");
+
+    const badges = [mobileBadge, webBadge].filter(Boolean);
+
+    badges.forEach((badge) => {
+      if (count > 0) {
+        badge.textContent = count > 99 ? "99+" : count;
+        badge.style.display = "";
+      } else {
+        badge.style.display = "none";
+      }
+    });
+  }
+
+  function showMentionsView() {
+    const mentionsView = document.getElementById("mentionsView");
+    const channelsList = document.getElementById("channelsList");
+    const searchContainer = document.querySelector(".msg-channels-search");
+    const headerBtn = document.querySelector(".msg-channels-header");
+
+    if (mentionsView) mentionsView.style.display = "flex";
+    if (channelsList) channelsList.style.display = "none";
+    if (searchContainer) searchContainer.style.display = "none";
+    if (headerBtn) headerBtn.style.display = "none";
+
+    // Load mentions if not loaded yet
+    if (!mentionsLoaded) {
+      // Show loading state
+      const listContainer = document.getElementById("mentionsList");
+      if (listContainer) {
+        listContainer.innerHTML = `
+          <div class="msg-mentions-loading">
+            <div class="msg-mentions-loading-spinner"></div>
+            <span class="msg-mentions-loading-text">Loading mentions...</span>
+          </div>
+        `;
+      }
+
+      loadMentions().then((mentions) => {
+        renderMentions(mentions);
+      });
+    } else {
+      renderMentions(mentionsCache);
+    }
+  }
+
+  function hideMentionsView() {
+    const mentionsView = document.getElementById("mentionsView");
+    const channelsList = document.getElementById("channelsList");
+    const searchContainer = document.querySelector(".msg-channels-search");
+    const headerBtn = document.querySelector(".msg-channels-header");
+
+    if (mentionsView) mentionsView.style.display = "none";
+    if (channelsList) channelsList.style.display = "";
+    if (searchContainer) searchContainer.style.display = "";
+    if (headerBtn) headerBtn.style.display = "";
+  }
+
+  // Load mentions badge count on init
+  async function loadMentionsBadge() {
+    try {
+      const mentions = await loadMentions();
+      const unreadCount = mentions.filter((m) => !m.is_read).length;
+      updateMentionsBadge(unreadCount);
+    } catch (error) {
+      console.error("[Messages] Error loading mentions badge:", error);
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // INIT ON DOM READY
   // ─────────────────────────────────────────────────────────────────────────
   if (document.readyState === "loading") {
@@ -2699,5 +2972,9 @@
     searchMessages,
     openSearchModal,
     updateReceiptStatusInMessages,
+    showMentionsView,
+    hideMentionsView,
+    loadMentions,
+    loadMentionsBadge,
   };
 })();

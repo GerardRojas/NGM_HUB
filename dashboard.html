@@ -157,30 +157,7 @@
                     </div>
                 </section>
 
-                <!-- Separador visual entre mentions y pipeline -->
-                <div class="section-divider"></div>
-
-                <!-- Pipeline (visor rápido) -->
-                <section class="pipeline-section">
-                <div class="section-header-row">
-                    <div>
-                    <h2 class="section-title">Pipeline</h2>
-                    <p class="section-subtitle">
-                        Tasks assigned to you from the Pipeline Manager. Mark them as done in the pipeline view.
-                    </p>
-                    </div>
-                </div>
-
-                <!-- Misma “card” visual que los módulos -->
-                <div id="pipeline-tasks" class="module-card pipeline-card">
-                    <p class="panel-text" id="pipeline-placeholder">
-                    No tasks loaded yet. This area will connect to the Pipeline Manager soon.
-                    </p>
-                    <!-- Aquí luego renderizamos tarjetas de tareas -->
-                </div>
-                </section>
-
-                <!-- Separador visual entre pipeline y my work -->
+                <!-- Separador visual entre mentions y my work -->
                 <div class="section-divider"></div>
 
                 <!-- My Work Section -->
@@ -195,24 +172,18 @@
                     </div>
 
                     <div id="my-work-tasks" class="module-card my-work-card">
-                        <!-- Mock task for German -->
-                        <div class="my-work-task-list">
-                            <div class="my-work-task">
-                                <div class="my-work-task-icon">
-                                    <span class="task-icon-badge task-icon-pending">!</span>
-                                </div>
-                                <div class="my-work-task-content">
-                                    <div class="my-work-task-title">Autorización de gastos pendiente</div>
-                                    <div class="my-work-task-meta">
-                                        <span class="task-meta-module">Expenses Engine</span>
-                                        <span class="task-meta-separator">·</span>
-                                        <span class="task-meta-date">Today</span>
-                                    </div>
-                                </div>
-                                <div class="my-work-task-action">
-                                    <a href="expenses.html" class="task-action-btn">Review</a>
-                                </div>
-                            </div>
+                        <!-- Loading state -->
+                        <div class="my-work-loading" id="my-work-loading">
+                            <span class="my-work-loading-text">Loading tasks...</span>
+                        </div>
+                        <!-- Empty state -->
+                        <div class="my-work-empty" id="my-work-empty" style="display: none;">
+                            <div class="my-work-empty-icon">✓</div>
+                            <p class="my-work-empty-text">No pending tasks</p>
+                        </div>
+                        <!-- Task list - rendered by JS -->
+                        <div class="my-work-task-list" id="my-work-list" style="display: none;">
+                            <!-- Tasks rendered by dashboard.js -->
                         </div>
                     </div>
                 </section>

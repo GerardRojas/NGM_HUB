@@ -26,6 +26,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Load mentions for the user
   loadMentions(user);
 
+  // Load My Work tasks (pending authorizations, etc.)
+  loadMyWorkTasks(user);
+
   // 2) Rellenar pill de usuario
   const userPill = document.getElementById("user-pill");
   if (userPill) {
@@ -65,18 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 4) Placeholder para Pipeline
-  // Más adelante aquí podemos llamar a /pipeline/my-tasks y pintar tarjetas
-  const pipelineBox = document.getElementById("pipeline-tasks");
-  const placeholder = document.getElementById("pipeline-placeholder");
-
-  if (pipelineBox && placeholder) {
-    // Por ahora solo mensaje dinámico con el nombre del usuario
-    placeholder.textContent = `No tasks loaded yet for ${user.username || "you"}. ` +
-      "This area will connect to the Pipeline Manager soon.";
-  }
-
-  // 5) (Opcional) Logout rápido si luego quieres un botón
+  // 4) (Opcional) Logout rápido si luego quieres un botón
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
     logoutBtn.addEventListener("click", () => {
@@ -238,4 +230,104 @@ function escapeHtml(text) {
 
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// MY WORK SECTION - Pending Tasks
+// ─────────────────────────────────────────────────────────────────────────
+
+async function loadMyWorkTasks(user) {
+  const loadingEl = document.getElementById("my-work-loading");
+  const emptyEl = document.getElementById("my-work-empty");
+  const listEl = document.getElementById("my-work-list");
+
+  if (!loadingEl || !emptyEl || !listEl) return;
+
+  const tasks = [];
+
+  try {
+    const token = localStorage.getItem("ngmToken");
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    // Load pending expense authorizations
+    const authResponse = await fetch(
+      `${DASHBOARD_API}/expenses/pending-authorization/summary?user_id=${user.user_id}`,
+      { credentials: "include", headers }
+    );
+
+    if (authResponse.ok) {
+      const authData = await authResponse.json();
+
+      if (authData.can_authorize && authData.total_count > 0) {
+        tasks.push({
+          type: "expense_authorization",
+          title: `${authData.total_count} expense${authData.total_count > 1 ? 's' : ''} pending authorization`,
+          subtitle: `$${formatCurrency(authData.total_amount)} total`,
+          module: "Expenses Engine",
+          icon: "!",
+          iconClass: "task-icon-pending",
+          link: "expenses.html?filter=pending_auth",
+          actionText: "Review"
+        });
+      }
+    }
+
+    // Future: Add more task sources here
+    // - Pending receipts
+    // - Pipeline tasks
+    // - Pending approvals
+    // - etc.
+
+  } catch (err) {
+    console.error("[Dashboard] Failed to load My Work tasks:", err);
+  }
+
+  // Hide loading
+  loadingEl.style.display = "none";
+
+  if (tasks.length === 0) {
+    // Show empty state
+    emptyEl.style.display = "flex";
+    listEl.style.display = "none";
+  } else {
+    // Render tasks
+    emptyEl.style.display = "none";
+    listEl.style.display = "block";
+    renderMyWorkTasks(tasks);
+  }
+}
+
+function renderMyWorkTasks(tasks) {
+  const listEl = document.getElementById("my-work-list");
+  if (!listEl) return;
+
+  const html = tasks.map((task) => {
+    return `
+      <div class="my-work-task" data-type="${task.type}">
+        <div class="my-work-task-icon">
+          <span class="task-icon-badge ${task.iconClass}">${task.icon}</span>
+        </div>
+        <div class="my-work-task-content">
+          <div class="my-work-task-title">${escapeHtml(task.title)}</div>
+          <div class="my-work-task-meta">
+            <span class="task-meta-module">${escapeHtml(task.module)}</span>
+            ${task.subtitle ? `<span class="task-meta-separator">·</span><span class="task-meta-amount">${escapeHtml(task.subtitle)}</span>` : ''}
+          </div>
+        </div>
+        <div class="my-work-task-action">
+          <a href="${task.link}" class="task-action-btn">${task.actionText}</a>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  listEl.innerHTML = html;
+}
+
+function formatCurrency(amount) {
+  if (!amount && amount !== 0) return "0.00";
+  return amount.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 }

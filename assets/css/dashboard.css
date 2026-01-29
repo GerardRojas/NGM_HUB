@@ -346,12 +346,53 @@
     border-color: rgba(62, 207, 142, 0.5);
 }
 
-/* Empty state for My Work */
-.my-work-empty {
+/* Loading state for My Work */
+.my-work-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.my-work-loading-text {
     font-size: 13px;
     color: #666666;
-    text-align: center;
-    padding: 24px 0;
+}
+
+/* Empty state for My Work */
+.my-work-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    gap: 8px;
+}
+
+.my-work-empty-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(62, 207, 142, 0.1);
+    border: 1px solid rgba(62, 207, 142, 0.2);
+    color: #3ecf8e;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.my-work-empty-text {
+    margin: 0;
+    font-size: 13px;
+    color: #666666;
+}
+
+/* Amount in task meta */
+.task-meta-amount {
+    color: #888888;
+    font-weight: 500;
 }
 
 /* ---------- MENTIONS SECTION ---------- */

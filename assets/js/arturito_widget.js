@@ -545,6 +545,39 @@
           `;
         }
         break;
+
+      case "bva_report_pdf":
+        // Show PDF download button
+        if (actionData.pdf_url) {
+          const projectName = actionData.project_name || "BVA Report";
+          return `
+            <div class="arturito-widget-action-btns">
+              <a href="${escapeHtml(actionData.pdf_url)}"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 class="arturito-widget-action-btn-inline arturito-widget-action-btn-primary arturito-widget-pdf-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right: 6px;">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="12" y1="18" x2="12" y2="12"/>
+                  <line x1="9" y1="15" x2="15" y2="15"/>
+                </svg>
+                Abrir PDF
+              </a>
+              <button type="button"
+                      class="arturito-widget-action-btn-inline"
+                      onclick="ArturitoWidget.downloadPDF('${escapeHtml(actionData.pdf_url)}', '${escapeHtml(projectName)}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right: 6px;">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Descargar
+              </button>
+            </div>
+          `;
+        }
+        break;
     }
 
     return "";
@@ -652,6 +685,7 @@
     const command = actionData.command;
     const params = actionData.params || {};
     const page = actionData.page;
+    const expectsResult = actionData.expects_result || false;
 
     console.log("[Arturito Widget] Executing copilot command:", command, params);
 
@@ -675,18 +709,69 @@
         params.user_name = state.currentUser.user_name;
       }
 
-      handler(params);
+      // Execute handler and capture result
+      const result = handler(params);
 
-      // Show success toast if available
-      if (typeof Toast !== "undefined") {
-        Toast.success("Comando ejecutado", actionData.command);
+      // If command expects results, add a follow-up message with the findings
+      if (expectsResult && result) {
+        setTimeout(() => {
+          const followUpMsg = formatCopilotResult(command, result);
+          if (followUpMsg) {
+            addBotMessage(followUpMsg);
+          }
+        }, 500); // Small delay to let UI update first
       }
+
     } catch (err) {
       console.error("[Arturito Widget] Error executing copilot command:", err);
       if (typeof Toast !== "undefined") {
         Toast.error("Error ejecutando comando", err.message);
       }
     }
+  }
+
+  /**
+   * Format copilot command results into a readable message
+   */
+  function formatCopilotResult(command, result) {
+    if (command === "healthCheckDuplicateBills") {
+      if (!result || result.total_issues === 0) {
+        return "✅ **Health Check completado**: No encontré ningún conflicto. Todos los bills tienen vendors consistentes.";
+      }
+
+      let msg = `⚠️ **Encontré ${result.total_issues} bill(s) con conflictos**:\n\n`;
+
+      result.issues.slice(0, 5).forEach((issue, i) => {
+        msg += `${i + 1}. **Bill #${issue.bill_id}** tiene ${issue.vendors.length} vendors diferentes:\n`;
+        msg += `   - ${issue.vendors.join(", ")}\n`;
+      });
+
+      if (result.has_more || result.total_issues > 5) {
+        msg += `\n...y ${result.total_issues - 5} más.\n`;
+      }
+
+      msg += "\nLas filas con conflictos están resaltadas en **naranja** en la tabla.";
+
+      return msg;
+    }
+
+    return null;
+  }
+
+  /**
+   * Add a bot message to the chat
+   */
+  function addBotMessage(text) {
+    const msg = {
+      id: `msg_${Date.now()}`,
+      role: "assistant",
+      content: text,
+      timestamp: new Date().toISOString(),
+    };
+    state.messages.push(msg);
+    renderMessages();
+    saveConversation();
+    scrollToBottom();
   }
 
   function openModalByAction(modalId) {
@@ -770,6 +855,12 @@
     // Bold
     formatted = formatted.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
     formatted = formatted.replace(/\*(.+?)\*/g, "<strong>$1</strong>");
+
+    // Markdown links [text](url) - convert to clickable links
+    formatted = formatted.replace(
+      /\[([^\]]+)\]\(([^)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer" class="arturito-widget-link">$1</a>'
+    );
 
     // Line breaks
     formatted = formatted.replace(/\n/g, "<br>");

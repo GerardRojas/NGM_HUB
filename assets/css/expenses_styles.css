@@ -2386,3 +2386,43 @@ select.edit-input option {
   color: rgba(255, 255, 255, 0.92);
   padding: 10px;
 }
+
+/* ==========================================
+   Health Check - Duplicate Bill Warnings
+   ========================================== */
+
+.expense-row-duplicate-warning {
+  background: rgba(255, 152, 0, 0.15) !important;
+  border-left: 3px solid #ff9800 !important;
+}
+
+.expense-row-duplicate-warning:hover {
+  background: rgba(255, 152, 0, 0.25) !important;
+}
+
+.expense-row-duplicate-warning td {
+  position: relative;
+}
+
+.expense-row-duplicate-warning td:first-child::before {
+  content: "⚠️";
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+}
+
+/* Bill group header with warning */
+.bill-group-header.has-duplicate-warning {
+  background: rgba(255, 152, 0, 0.2) !important;
+  border-left: 3px solid #ff9800;
+}
+
+.bill-group-header.has-duplicate-warning .bill-id::after {
+  content: " ⚠️ Conflicto de vendor";
+  color: #ff9800;
+  font-size: 11px;
+  font-weight: normal;
+  margin-left: 8px;
+}

@@ -201,7 +201,9 @@
       if (!res.ok) throw new Error("Failed to load projects");
       const data = await res.json();
       // API returns { data: [...] } or { projects: [...] } or array directly
-      state.projects = data.data || data.projects || (Array.isArray(data) ? data : []);
+      // Ensure we always get an array
+      const projects = data.data || data.projects || data;
+      state.projects = Array.isArray(projects) ? projects : [];
       console.log("[Messages] Loaded", state.projects.length, "projects");
     } catch (err) {
       console.error("[Messages] Failed to load projects:", err);

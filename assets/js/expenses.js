@@ -670,6 +670,31 @@
     return null;
   }
 
+  /**
+   * Highlights rows in the table that have duplicate bill warnings
+   */
+  function highlightDuplicateBills() {
+    // Remove existing highlights
+    document.querySelectorAll('.expense-row-duplicate-warning').forEach(row => {
+      row.classList.remove('expense-row-duplicate-warning');
+    });
+
+    // Add highlights to rows with duplicate bills
+    duplicateBillWarnings.forEach((vendors, billId) => {
+      // Find all rows with this bill_id
+      document.querySelectorAll(`[data-bill-id="${billId}"]`).forEach(row => {
+        row.classList.add('expense-row-duplicate-warning');
+      });
+      // Also try by text content in bill column
+      document.querySelectorAll('.expense-row').forEach(row => {
+        const billCell = row.querySelector('[data-column="bill_id"]');
+        if (billCell && billCell.textContent.trim() === billId) {
+          row.classList.add('expense-row-duplicate-warning');
+        }
+      });
+    });
+  }
+
   // ================================
   // RENDER EXPENSES TABLE
   // ================================
@@ -7235,6 +7260,54 @@
         if (typeof Toast !== 'undefined') {
           Toast.success('Buscando', `"${query}"`);
         }
+      },
+
+      // Health check: Detect duplicate bill numbers with different vendors
+      healthCheckDuplicateBills: () => {
+        console.log('[EXPENSES COPILOT] healthCheckDuplicateBills');
+
+        // Run the detection
+        detectDuplicateBillNumbers();
+
+        // Build detailed report
+        const issues = [];
+        duplicateBillWarnings.forEach((vendors, billId) => {
+          const vendorNames = [...new Set(vendors.map(v => v.vendor_name))];
+          issues.push({
+            bill_id: billId,
+            vendors: vendorNames,
+            count: vendors.length
+          });
+        });
+
+        // Return data for Arturito to report
+        const result = {
+          total_issues: issues.length,
+          issues: issues.slice(0, 10), // Limit to first 10
+          has_more: issues.length > 10
+        };
+
+        // Show visual feedback
+        if (issues.length === 0) {
+          if (typeof Toast !== 'undefined') {
+            Toast.success('Health Check', 'No se encontraron bills duplicados con diferentes vendors');
+          }
+        } else {
+          if (typeof Toast !== 'undefined') {
+            Toast.warning('Health Check', `Se encontraron ${issues.length} bills con posibles conflictos`);
+          }
+          // Highlight the problematic rows
+          highlightDuplicateBills();
+        }
+
+        // Store result for Arturito to read
+        window._lastHealthCheckResult = result;
+        return result;
+      },
+
+      // Get health check summary (for Arturito to read results)
+      getHealthCheckSummary: () => {
+        return window._lastHealthCheckResult || { total_issues: 0, issues: [] };
       },
     });
 

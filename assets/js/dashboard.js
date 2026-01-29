@@ -98,8 +98,10 @@ async function loadMentions(user) {
   if (!loadingEl || !emptyEl || !listEl) return;
 
   try {
+    const token = localStorage.getItem("ngmToken");
     const response = await fetch(`${DASHBOARD_API}/messages/mentions`, {
       credentials: "include",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
 
     if (!response.ok) {

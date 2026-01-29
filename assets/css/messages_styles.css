@@ -627,7 +627,7 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
-/* Message avatar - Google Chat style (larger, top-aligned) */
+/* Message avatar - Ring style like Team Management */
 .msg-message-avatar {
   width: 44px;
   height: 44px;
@@ -638,8 +638,10 @@
   font-size: 16px;
   font-weight: 600;
   flex-shrink: 0;
-  color: white;
-  background: #5b5fc7;
+  /* Ring style: transparent center, colored border */
+  background: transparent;
+  border: 2px solid currentColor;
+  color: #888;
   margin-top: 0;
 }
 
@@ -1239,6 +1241,24 @@
 
 .msg-thread-input-area .msg-input {
   flex: 1;
+}
+
+/* Thread states */
+.msg-thread-empty,
+.msg-thread-loading,
+.msg-thread-error {
+  padding: 24px 16px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+}
+
+.msg-thread-loading {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.msg-thread-error {
+  color: rgba(239, 68, 68, 0.7);
 }
 
 /* ==========================================

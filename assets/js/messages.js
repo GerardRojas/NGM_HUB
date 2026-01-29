@@ -638,7 +638,14 @@
   // ─────────────────────────────────────────────────────────────────────────
   // CHANNEL SELECTION
   // ─────────────────────────────────────────────────────────────────────────
+
+  // Request counter to handle race conditions when switching channels quickly
+  let channelRequestId = 0;
+
   async function selectChannel(channelType, channelId, projectId, channelName, clickedElement) {
+    // Generate unique request ID for this selection
+    const thisRequestId = ++channelRequestId;
+
     // Update UI state
     document.querySelectorAll(".msg-channel-item").forEach((el) => {
       el.classList.remove("active");
@@ -666,6 +673,14 @@
 
     // Load messages
     const messages = await loadMessages(channelType, channelId, projectId);
+
+    // RACE CONDITION CHECK: If user switched to another channel while loading,
+    // discard these results and don't render
+    if (thisRequestId !== channelRequestId) {
+      console.log("[Messages] Discarding stale response for channel:", channelId);
+      return;
+    }
+
     state.messages = messages;
 
     // Hide loading, show messages
@@ -857,7 +872,7 @@
 
     return `
       <div class="${classes.join(' ')}" data-message-id="${msg.id}">
-        <div class="msg-message-avatar" style="background-color: ${avatarColor}">
+        <div class="msg-message-avatar" style="color: ${avatarColor}; border-color: ${avatarColor}">
           ${initials}
         </div>
         <div class="msg-message-content">
@@ -1206,18 +1221,38 @@
   // ─────────────────────────────────────────────────────────────────────────
   // THREADS
   // ─────────────────────────────────────────────────────────────────────────
+
+  // Request counter for thread loading race conditions
+  let threadRequestId = 0;
+
   async function openThread(messageId) {
+    // Generate unique request ID for this thread
+    const thisThreadRequestId = ++threadRequestId;
+
     const message = state.messages.find((m) => m.id === messageId);
     if (!message) return;
 
     DOM.threadPanel.style.display = "flex";
 
+    // Store current thread immediately
+    DOM.threadPanel.dataset.messageId = messageId;
+
     // Render original message
     DOM.threadOriginal.innerHTML = renderMessage(message);
+
+    // Show loading state for replies
+    DOM.threadReplies.innerHTML = `<div class="msg-thread-loading">Loading replies...</div>`;
 
     // Load thread replies
     try {
       const res = await authFetch(`${API_BASE}/messages/${messageId}/thread`);
+
+      // RACE CONDITION CHECK: If user opened another thread while loading, discard
+      if (thisThreadRequestId !== threadRequestId) {
+        console.log("[Messages] Discarding stale thread response for:", messageId);
+        return;
+      }
+
       if (res.ok) {
         const data = await res.json();
         const replies = data.replies || data || [];
@@ -1225,10 +1260,11 @@
       }
     } catch (err) {
       console.error("[Messages] Failed to load thread:", err);
+      // Only show error if this is still the current thread request
+      if (thisThreadRequestId === threadRequestId) {
+        DOM.threadReplies.innerHTML = `<div class="msg-thread-error">Failed to load replies</div>`;
+      }
     }
-
-    // Store current thread
-    DOM.threadPanel.dataset.messageId = messageId;
   }
 
   function renderThreadReplies(replies) {

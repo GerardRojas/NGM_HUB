@@ -207,12 +207,20 @@
     }
   }
 
-  async function loadMessages(channelId, channelType) {
+  async function loadMessages(channelType, channelId, projectId) {
     try {
-      const res = await fetch(
-        `${API_BASE}/messages?channel_id=${channelId}&channel_type=${channelType}`,
-        { credentials: "include" }
-      );
+      // Build query params based on channel type
+      let url = `${API_BASE}/messages?channel_type=${channelType}`;
+
+      if (channelType.startsWith("project_")) {
+        // Project channels use project_id
+        url += `&project_id=${projectId}`;
+      } else {
+        // Custom and direct channels use channel_id
+        url += `&channel_id=${channelId}`;
+      }
+
+      const res = await fetch(url, { credentials: "include" });
       if (!res.ok) {
         console.warn("[Messages] Messages API not available");
         return [];
@@ -381,7 +389,7 @@
     DOM.messageInputArea.style.display = "flex";
 
     // Load messages
-    const messages = await loadMessages(channelId || projectId, channelType);
+    const messages = await loadMessages(channelType, channelId, projectId);
     state.messages = messages;
     renderMessages();
 
@@ -608,12 +616,17 @@
     const messageData = {
       content: content,
       channel_type: state.currentChannel.type,
-      channel_id: state.currentChannel.id || state.currentChannel.projectId,
-      project_id: state.currentChannel.projectId,
       user_id: state.currentUser?.user_id,
       reply_to_id: state.replyingTo?.id || null,
       attachments: state.attachments,
     };
+
+    // Set channel reference based on type
+    if (state.currentChannel.type.startsWith("project_")) {
+      messageData.project_id = state.currentChannel.projectId;
+    } else {
+      messageData.channel_id = state.currentChannel.id;
+    }
 
     // Optimistic UI update
     const tempMessage = {
@@ -1005,7 +1018,12 @@
       let url = `${API_BASE}/messages/search?q=${encodeURIComponent(query)}`;
       if (currentChannelOnly && state.currentChannel) {
         url += `&channel_type=${state.currentChannel.type}`;
-        url += `&channel_id=${state.currentChannel.id || state.currentChannel.projectId}`;
+        // Use project_id for project channels, channel_id for custom/direct
+        if (state.currentChannel.type.startsWith("project_")) {
+          url += `&project_id=${state.currentChannel.projectId}`;
+        } else {
+          url += `&channel_id=${state.currentChannel.id}`;
+        }
       }
 
       const res = await fetch(url, { credentials: "include" });

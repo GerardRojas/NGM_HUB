@@ -211,6 +211,20 @@ ALTER TABLE message_reactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE message_attachments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE message_mentions ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies first (to allow re-running this script)
+DROP POLICY IF EXISTS "Users can view their channels" ON channels;
+DROP POLICY IF EXISTS "Users can create channels" ON channels;
+DROP POLICY IF EXISTS "Users can view channel members" ON channel_members;
+DROP POLICY IF EXISTS "Channel admins can manage members" ON channel_members;
+DROP POLICY IF EXISTS "Users can view messages in their channels" ON messages;
+DROP POLICY IF EXISTS "Authenticated users can send messages" ON messages;
+DROP POLICY IF EXISTS "Users can view reactions" ON message_reactions;
+DROP POLICY IF EXISTS "Users can add/remove their reactions" ON message_reactions;
+DROP POLICY IF EXISTS "Users can view attachments" ON message_attachments;
+DROP POLICY IF EXISTS "Users can add attachments to their messages" ON message_attachments;
+DROP POLICY IF EXISTS "Users can view their mentions" ON message_mentions;
+DROP POLICY IF EXISTS "Users can mark their mentions as read" ON message_mentions;
+
 -- Policies for channels (users can see channels they're members of)
 CREATE POLICY "Users can view their channels" ON channels
     FOR SELECT USING (
@@ -274,10 +288,27 @@ CREATE POLICY "Users can mark their mentions as read" ON message_mentions
 -- ─────────────────────────────────────────────────────────────────────────────
 -- REALTIME SUBSCRIPTIONS
 -- ─────────────────────────────────────────────────────────────────────────────
--- Enable realtime for messages table
+-- Enable realtime for messages table (ignore if already added)
 
-ALTER PUBLICATION supabase_realtime ADD TABLE messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE message_reactions;
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables
+        WHERE pubname = 'supabase_realtime' AND tablename = 'messages'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE messages;
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_publication_tables
+        WHERE pubname = 'supabase_realtime' AND tablename = 'message_reactions'
+    ) THEN
+        ALTER PUBLICATION supabase_realtime ADD TABLE message_reactions;
+    END IF;
+END $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- HELPER VIEWS

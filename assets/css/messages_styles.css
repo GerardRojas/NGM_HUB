@@ -991,18 +991,18 @@
 
 .msg-input {
   width: 100%;
-  padding: 12px 16px;
+  padding: 14px 20px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
+  border-radius: 26px;
   color: rgba(255, 255, 255, 0.95);
   font-size: 15px;
   font-family: inherit;
   resize: none;
   outline: none;
   transition: all 0.15s ease;
-  max-height: 120px;
-  min-height: 48px;
+  max-height: 140px;
+  min-height: 52px;
   line-height: 1.5;
   box-sizing: border-box;
   overflow-y: auto;
@@ -1072,8 +1072,8 @@
 
 /* Buttons */
 .msg-btn-icon {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1084,7 +1084,6 @@
   color: rgba(255, 255, 255, 0.5);
   flex-shrink: 0;
   transition: all 0.15s ease;
-  flex-shrink: 0;
 }
 
 .msg-btn-icon:hover {
@@ -1093,13 +1092,13 @@
 }
 
 .msg-btn-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 
 .msg-btn-send {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1127,8 +1126,8 @@
 }
 
 .msg-btn-send svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
 /* ==========================================

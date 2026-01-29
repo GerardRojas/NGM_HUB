@@ -37,7 +37,12 @@
   }
 
   async function fetchJSON(path) {
+    if (!window.API_BASE) {
+      console.error("[SIDEBAR] API_BASE not defined!");
+      return { ok: false, status: 0, data: null };
+    }
     const url = `${window.API_BASE}${path}`;
+    console.log("[SIDEBAR] Fetching:", url);
     const res = await fetch(url, {
       credentials: "include",
       headers: { ...getAuthHeaders() },
@@ -125,6 +130,14 @@
 
   async function initSidebar() {
     try {
+      // 0) Verificar que tenemos token antes de hacer cualquier fetch
+      const token = localStorage.getItem("ngmToken");
+      if (!token) {
+        console.warn("[SIDEBAR] No token found, showing minimal menu");
+        render([{ module_key: "dashboard", can_view: true }]);
+        return;
+      }
+
       // 1) Intentar usar cache primero
       const cached = getCachedPermissions();
       if (cached) {
@@ -133,11 +146,15 @@
         return;
       }
 
+      console.log("[SIDEBAR] Fetching /auth/me with token...");
+
       // 2) Obtener user_id desde /auth/me
-      const { ok: authOk, data: authData } = await fetchJSON("/auth/me");
+      const { ok: authOk, status: authStatus, data: authData } = await fetchJSON("/auth/me");
+
+      console.log("[SIDEBAR] /auth/me response:", { ok: authOk, status: authStatus, data: authData });
 
       if (!authOk || !authData || !authData.user_id) {
-        console.warn("[SIDEBAR] No user data, showing minimal menu");
+        console.warn("[SIDEBAR] No user data from /auth/me, status:", authStatus);
         // Mostrar solo dashboard como fallback
         render([{ module_key: "dashboard", can_view: true }]);
         return;
@@ -147,10 +164,12 @@
       console.log("[SIDEBAR] Fetching permissions for user:", userId);
 
       // 3) Consultar permisos del usuario desde el endpoint
-      const { ok: permOk, data: permData } = await fetchJSON(`/permissions/user/${userId}`);
+      const { ok: permOk, status: permStatus, data: permData } = await fetchJSON(`/permissions/user/${userId}`);
+
+      console.log("[SIDEBAR] /permissions response:", { ok: permOk, status: permStatus, data: permData });
 
       if (!permOk || !permData || !permData.permissions) {
-        console.warn("[SIDEBAR] No permissions data, showing minimal menu");
+        console.warn("[SIDEBAR] No permissions data, status:", permStatus);
         render([{ module_key: "dashboard", can_view: true }]);
         return;
       }
@@ -179,6 +198,21 @@
 
   window.initSidebar = initSidebar;
 
-  // Auto-init
-  initSidebar();
+  // Auto-init - esperar a que API_BASE esté definido
+  function waitForAPIAndInit() {
+    if (window.API_BASE) {
+      console.log("[SIDEBAR] API_BASE ready, initializing...");
+      initSidebar();
+    } else {
+      console.log("[SIDEBAR] Waiting for API_BASE...");
+      setTimeout(waitForAPIAndInit, 50);
+    }
+  }
+
+  // Iniciar cuando el DOM esté listo
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitForAPIAndInit);
+  } else {
+    waitForAPIAndInit();
+  }
 })();

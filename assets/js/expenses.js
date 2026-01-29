@@ -514,7 +514,7 @@
     // Add "All Projects" option
     const allOpt = document.createElement('option');
     allOpt.value = 'all';
-    allOpt.textContent = '📊 All Projects';
+    allOpt.textContent = 'All Projects';
     els.projectFilter.appendChild(allOpt);
 
     metaData.projects.forEach(p => {

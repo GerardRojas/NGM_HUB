@@ -24,6 +24,35 @@
     <link rel="stylesheet" href="assets/css/styles.css" />
     <!-- 2) Estilos específicos de login (degradado, panel, loading, mensajes) -->
     <link rel="stylesheet" href="assets/css/login.css" />
+
+    <!-- Early redirect: Check for valid session BEFORE page renders -->
+    <script>
+      (function() {
+        'use strict';
+
+        // Quick token validation
+        function isTokenValid(token) {
+          if (!token) return false;
+          try {
+            var parts = token.split('.');
+            if (parts.length !== 3) return false;
+            var payload = JSON.parse(atob(parts[1]));
+            if (payload.exp && Date.now() >= payload.exp * 1000) return false;
+            return true;
+          } catch (e) {
+            return false;
+          }
+        }
+
+        var token = localStorage.getItem('ngmToken');
+        var user = localStorage.getItem('ngmUser');
+
+        // If valid session exists, redirect to index.html (splash router) immediately
+        if (token && user && isTokenValid(token)) {
+          window.location.replace('index.html');
+        }
+      })();
+    </script>
 </head>
 <body class="login-page">
     <main class="login-screen">

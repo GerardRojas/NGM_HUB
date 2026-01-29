@@ -140,7 +140,7 @@
   // ============================================================================
 
   async function saveTokenToBackend(token) {
-    const authToken = localStorage.getItem("auth_token");
+    const authToken = localStorage.getItem("ngmToken");
     if (!authToken) {
       console.warn("[Firebase] No auth token, skipping token save");
       return false;
@@ -229,7 +229,7 @@
     }
 
     // Only initialize on authenticated pages
-    const authToken = localStorage.getItem("auth_token");
+    const authToken = localStorage.getItem("ngmToken");
     if (!authToken) {
       console.log("[Firebase] Not authenticated, skipping push setup");
       return;

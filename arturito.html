@@ -149,8 +149,6 @@
             <!-- Welcome message -->
             <div class="arturito-welcome" id="welcomeMessage">
               <div class="arturito-welcome-icon">A</div>
-              <h3 class="arturito-welcome-title">How can I help you today?</h3>
-              <p class="arturito-welcome-subtitle">Ask me anything about your projects, data, or operations.</p>
             </div>
 
             <!-- Messages will be rendered here -->
@@ -232,6 +230,8 @@
 
       var chatInput = document.getElementById('chatInput');
       var messagesContainer = document.getElementById('arturitoMessages');
+      var mainArea = document.querySelector('.page-arturito .main-area');
+      var inputArea = document.querySelector('.arturito-input-area');
 
       if (!chatInput) return;
 
@@ -240,26 +240,45 @@
         var initialHeight = window.visualViewport.height;
         var keyboardVisible = false;
 
-        window.visualViewport.addEventListener('resize', function() {
-          var currentHeight = window.visualViewport.height;
-          var heightDiff = initialHeight - currentHeight;
+        function handleViewportResize() {
+          var viewportHeight = window.visualViewport.height;
+          var heightDiff = initialHeight - viewportHeight;
 
           // Keyboard is likely visible if height decreased significantly
-          if (heightDiff > 150 && !keyboardVisible) {
-            keyboardVisible = true;
-            document.body.classList.add('keyboard-open');
-
-            // Scroll messages to bottom when keyboard opens
-            if (messagesContainer) {
-              setTimeout(function() {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-              }, 100);
+          if (heightDiff > 150) {
+            if (!keyboardVisible) {
+              keyboardVisible = true;
+              document.body.classList.add('keyboard-open');
             }
-          } else if (heightDiff < 150 && keyboardVisible) {
+
+            // Adjust main area height to match visual viewport
+            if (mainArea) {
+              mainArea.style.height = viewportHeight + 'px';
+            }
+
+            // Scroll input into view and messages to bottom
+            setTimeout(function() {
+              if (inputArea) {
+                inputArea.scrollIntoView({ block: 'end', behavior: 'smooth' });
+              }
+              if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+              }
+            }, 50);
+
+          } else if (keyboardVisible) {
             keyboardVisible = false;
             document.body.classList.remove('keyboard-open');
+
+            // Reset main area height
+            if (mainArea) {
+              mainArea.style.height = '';
+            }
           }
-        });
+        }
+
+        window.visualViewport.addEventListener('resize', handleViewportResize);
+        window.visualViewport.addEventListener('scroll', handleViewportResize);
 
         // Update initial height on orientation change
         window.addEventListener('orientationchange', function() {
@@ -276,7 +295,11 @@
           if (messagesContainer) {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
           }
-        }, 300);
+          // Scroll input into view
+          if (inputArea) {
+            inputArea.scrollIntoView({ block: 'end', behavior: 'smooth' });
+          }
+        }, 350);
       });
 
       // Prevent body scroll when input is focused

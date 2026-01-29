@@ -297,13 +297,13 @@
 }
 
 .msg-channel-avatar {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   flex-shrink: 0;
   color: white;
@@ -323,8 +323,8 @@
 
 /* Direct Message Avatar */
 .msg-dm-avatar {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -2927,29 +2927,42 @@
 @media (max-width: 768px) {
   /* When keyboard is open, adjust layout */
   .page-messages.keyboard-open .msg-chat-area {
-    height: 100%;
-    height: -webkit-fill-available;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .page-messages.keyboard-open .msg-chat-header {
+    flex-shrink: 0;
   }
 
   .page-messages.keyboard-open .msg-messages-container {
     flex: 1;
     min-height: 0;
     max-height: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .page-messages.keyboard-open .msg-input-area {
+    flex-shrink: 0;
     position: relative;
     padding-bottom: 12px;
+    z-index: 10;
   }
 
   /* Hide bottom nav when keyboard is open */
   .page-messages.keyboard-open .msg-bottom-nav {
-    display: none;
+    display: none !important;
   }
 
   /* Hide FAB when keyboard is open */
   .page-messages.keyboard-open .msg-fab-new-chat {
-    display: none;
+    display: none !important;
   }
 }
 

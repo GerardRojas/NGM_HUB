@@ -832,6 +832,7 @@
         const messageInput = document.getElementById('messageInput');
         const inputArea = document.getElementById('messageInputArea');
         const messagesContainer = document.getElementById('messagesContainer');
+        const chatArea = document.querySelector('.msg-chat-area');
 
         if (!messageInput || !inputArea) return;
 
@@ -840,26 +841,46 @@
           let initialHeight = window.visualViewport.height;
           let keyboardVisible = false;
 
-          window.visualViewport.addEventListener('resize', function() {
-            const currentHeight = window.visualViewport.height;
-            const heightDiff = initialHeight - currentHeight;
+          function handleViewportResize() {
+            const viewportHeight = window.visualViewport.height;
+            const heightDiff = initialHeight - viewportHeight;
 
             // Keyboard is likely visible if height decreased significantly
-            if (heightDiff > 150 && !keyboardVisible) {
-              keyboardVisible = true;
-              document.body.classList.add('keyboard-open');
+            if (heightDiff > 150) {
+              if (!keyboardVisible) {
+                keyboardVisible = true;
+                document.body.classList.add('keyboard-open');
+              }
+
+              // Adjust chat area height to match visual viewport
+              if (chatArea) {
+                chatArea.style.height = viewportHeight + 'px';
+              }
 
               // Scroll messages to bottom when keyboard opens
-              if (messagesContainer) {
-                setTimeout(function() {
+              setTimeout(function() {
+                if (messagesContainer) {
                   messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                }, 100);
-              }
-            } else if (heightDiff < 150 && keyboardVisible) {
+                }
+                // Scroll input into view
+                if (inputArea) {
+                  inputArea.scrollIntoView({ block: 'end', behavior: 'smooth' });
+                }
+              }, 50);
+
+            } else if (keyboardVisible) {
               keyboardVisible = false;
               document.body.classList.remove('keyboard-open');
+
+              // Reset chat area height
+              if (chatArea) {
+                chatArea.style.height = '';
+              }
             }
-          });
+          }
+
+          window.visualViewport.addEventListener('resize', handleViewportResize);
+          window.visualViewport.addEventListener('scroll', handleViewportResize);
 
           // Update initial height on orientation change
           window.addEventListener('orientationchange', function() {
@@ -877,8 +898,10 @@
               messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
             // Ensure input is visible
-            messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }, 300);
+            if (inputArea) {
+              inputArea.scrollIntoView({ block: 'end', behavior: 'smooth' });
+            }
+          }, 350);
         });
 
         // Prevent body scroll when input is focused

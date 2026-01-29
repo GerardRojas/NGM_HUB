@@ -897,6 +897,22 @@
         </div>
     </div>
 
+    <!-- Context Menu for Fill Down -->
+    <div id="expenseContextMenu" class="expense-context-menu hidden">
+        <button type="button" class="expense-context-menu-item" data-action="fill-down">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12l7 7 7-7"/>
+            </svg>
+            <span>Fill Down</span>
+        </button>
+        <button type="button" class="expense-context-menu-item" data-action="clear-below">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18M8 6V4h8v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+            </svg>
+            <span>Clear Below</span>
+        </button>
+    </div>
+
     <!-- Config and Expenses Logic -->
     <script src="assets/js/expenses.js"></script>
 

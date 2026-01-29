@@ -5087,6 +5087,217 @@
 
     // Initialize column resize handles
     initColumnResize();
+
+    // Initialize context menu for fill down
+    initContextMenu();
+  }
+
+  // ================================
+  // CONTEXT MENU - FILL DOWN
+  // ================================
+
+  let contextMenuTarget = null;
+  let contextMenuField = null;
+  let contextMenuRowIndex = null;
+
+  function initContextMenu() {
+    const contextMenu = document.getElementById('expenseContextMenu');
+    if (!contextMenu) return;
+
+    // Right-click on expense rows table
+    els.expenseRowsBody?.addEventListener('contextmenu', (e) => {
+      const input = e.target.closest('.exp-input, .exp-select');
+      if (!input) return;
+
+      e.preventDefault();
+
+      // Get the field and row info
+      const row = input.closest('tr');
+      if (!row) return;
+
+      contextMenuTarget = input;
+      contextMenuField = input.dataset.field || input.closest('td')?.cellIndex;
+      contextMenuRowIndex = parseInt(row.dataset.rowIndex, 10);
+
+      // Highlight the cell
+      input.classList.add('context-active');
+
+      // Position and show context menu
+      const x = e.clientX;
+      const y = e.clientY;
+
+      // Ensure menu doesn't go off-screen
+      const menuWidth = 180;
+      const menuHeight = 100;
+      const posX = x + menuWidth > window.innerWidth ? x - menuWidth : x;
+      const posY = y + menuHeight > window.innerHeight ? y - menuHeight : y;
+
+      contextMenu.style.left = posX + 'px';
+      contextMenu.style.top = posY + 'px';
+      contextMenu.classList.remove('hidden');
+    });
+
+    // Handle context menu actions
+    contextMenu.addEventListener('click', (e) => {
+      const actionBtn = e.target.closest('[data-action]');
+      if (!actionBtn) return;
+
+      const action = actionBtn.dataset.action;
+
+      if (action === 'fill-down') {
+        fillDown();
+      } else if (action === 'clear-below') {
+        clearBelow();
+      }
+
+      hideContextMenu();
+    });
+
+    // Hide context menu on click outside
+    document.addEventListener('click', (e) => {
+      if (!contextMenu.contains(e.target)) {
+        hideContextMenu();
+      }
+    });
+
+    // Hide context menu on scroll
+    document.addEventListener('scroll', hideContextMenu, true);
+
+    // Hide context menu on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        hideContextMenu();
+      }
+    });
+  }
+
+  function hideContextMenu() {
+    const contextMenu = document.getElementById('expenseContextMenu');
+    if (contextMenu) {
+      contextMenu.classList.add('hidden');
+    }
+
+    // Remove highlight from cell
+    if (contextMenuTarget) {
+      contextMenuTarget.classList.remove('context-active');
+    }
+
+    contextMenuTarget = null;
+    contextMenuField = null;
+    contextMenuRowIndex = null;
+  }
+
+  function fillDown() {
+    if (!contextMenuTarget || contextMenuRowIndex === null) return;
+
+    const rows = els.expenseRowsBody?.querySelectorAll('tr') || [];
+    const isSelect = contextMenuTarget.tagName === 'SELECT';
+    const isInput = contextMenuTarget.tagName === 'INPUT';
+
+    // Get the value to copy
+    let valueToCopy;
+    let textToCopy; // For selects, we need to copy the text too for datalist matching
+
+    if (isSelect) {
+      valueToCopy = contextMenuTarget.value;
+      textToCopy = contextMenuTarget.options[contextMenuTarget.selectedIndex]?.text || '';
+    } else if (isInput) {
+      valueToCopy = contextMenuTarget.value;
+    }
+
+    if (!valueToCopy && valueToCopy !== 0) return;
+
+    // Get the cell index to find the same column in other rows
+    const cell = contextMenuTarget.closest('td');
+    const cellIndex = cell?.cellIndex;
+    if (cellIndex === undefined) return;
+
+    let filledCount = 0;
+
+    // Fill all rows below the current one
+    rows.forEach((row) => {
+      const rowIndex = parseInt(row.dataset.rowIndex, 10);
+      if (rowIndex <= contextMenuRowIndex) return; // Skip current and above rows
+
+      const targetCell = row.cells[cellIndex];
+      if (!targetCell) return;
+
+      const targetInput = targetCell.querySelector('.exp-input, .exp-select');
+      if (!targetInput) return;
+
+      // Set the value
+      if (targetInput.tagName === 'SELECT') {
+        // For selects, find the option with matching value
+        const option = Array.from(targetInput.options).find(opt => opt.value === valueToCopy);
+        if (option) {
+          targetInput.value = valueToCopy;
+          filledCount++;
+        }
+      } else if (targetInput.tagName === 'INPUT') {
+        targetInput.value = valueToCopy;
+        filledCount++;
+      }
+
+      // Trigger input event to update any dependent logic
+      targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+      targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    // Show toast notification
+    if (filledCount > 0 && window.Toast) {
+      Toast.success('Fill Down', `Copied to ${filledCount} row${filledCount > 1 ? 's' : ''} below`);
+    }
+
+    // Update auto-categorize button state
+    updateAutoCategorizeButton();
+  }
+
+  function clearBelow() {
+    if (!contextMenuTarget || contextMenuRowIndex === null) return;
+
+    const rows = els.expenseRowsBody?.querySelectorAll('tr') || [];
+
+    // Get the cell index
+    const cell = contextMenuTarget.closest('td');
+    const cellIndex = cell?.cellIndex;
+    if (cellIndex === undefined) return;
+
+    let clearedCount = 0;
+
+    // Clear all rows below the current one
+    rows.forEach((row) => {
+      const rowIndex = parseInt(row.dataset.rowIndex, 10);
+      if (rowIndex <= contextMenuRowIndex) return; // Skip current and above rows
+
+      const targetCell = row.cells[cellIndex];
+      if (!targetCell) return;
+
+      const targetInput = targetCell.querySelector('.exp-input, .exp-select');
+      if (!targetInput) return;
+
+      // Clear the value
+      if (targetInput.tagName === 'SELECT') {
+        targetInput.selectedIndex = 0; // Reset to first option (usually empty/placeholder)
+        clearedCount++;
+      } else if (targetInput.tagName === 'INPUT') {
+        // For date fields, don't clear to today's date
+        if (targetInput.type === 'date') {
+          targetInput.value = '';
+        } else {
+          targetInput.value = '';
+        }
+        clearedCount++;
+      }
+
+      // Trigger events
+      targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+      targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+
+    // Show toast notification
+    if (clearedCount > 0 && window.Toast) {
+      Toast.info('Clear Below', `Cleared ${clearedCount} row${clearedCount > 1 ? 's' : ''} below`);
+    }
   }
 
   // ================================

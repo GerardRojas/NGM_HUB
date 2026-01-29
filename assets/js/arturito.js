@@ -17,6 +17,417 @@
   const SESSION_ID = `web_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
   // ─────────────────────────────────────────────────────────────────────────
+  // MODULE KNOWLEDGE BASE
+  // ─────────────────────────────────────────────────────────────────────────
+  // Help content for each NGM Hub module. Respond in the same language the user asks.
+
+  const MODULE_KNOWLEDGE = {
+    expenses: {
+      name: "Expenses Engine",
+      description: "Module for managing company expenses, receipts, and reimbursements",
+      help: `
+## EXPENSES ENGINE - User Guide
+
+### How to Register an Expense / Cómo registrar un gasto:
+1. Go to the Expenses page (sidebar → "Expenses Engine") / Ir a la página de Expenses (sidebar → "Expenses Engine")
+2. Click the "+ Add Expense" button in the top right / Clic en el botón "+ Add Expense" arriba a la derecha
+3. A modal will open where you can enter expense details / Se abrirá un modal donde puedes ingresar los detalles del gasto
+4. Fill in the required fields: Date, Amount, Vendor, Category, Project / Llena los campos requeridos: Fecha, Monto, Vendor, Categoría, Proyecto
+5. Click "Save" to register the expense / Clic en "Save" para registrar el gasto
+
+### How to Scan a Receipt / Cómo escanear un recibo:
+1. In the Add Expense modal, click the "Scan Receipt" or camera icon button / En el modal de Add Expense, clic en el botón "Scan Receipt" o el ícono de cámara
+2. You can either take a photo or upload an existing image / Puedes tomar una foto o subir una imagen existente
+3. The system uses AI (OCR) to automatically extract: vendor name, date, amount, and line items / El sistema usa IA (OCR) para extraer automáticamente: nombre del vendor, fecha, monto, y líneas de detalle
+4. Review and confirm the extracted data before saving / Revisa y confirma los datos extraídos antes de guardar
+
+### How to Auto-Categorize / Cómo auto-categorizar:
+1. When scanning a receipt or adding expenses manually, click "Auto-Categorize" / Al escanear un recibo o agregar gastos manualmente, clic en "Auto-Categorize"
+2. The AI analyzes the vendor and expense description to suggest the best category / La IA analiza el vendor y la descripción del gasto para sugerir la mejor categoría
+3. It can also suggest the appropriate project based on context / También puede sugerir el proyecto apropiado basándose en el contexto
+4. You can accept the suggestions or change them manually / Puedes aceptar las sugerencias o cambiarlas manualmente
+
+### Fill Down Feature (Right-Click) / Función "Fill Down" (Clic derecho):
+1. When entering multiple expenses in the modal table, right-click on any cell / Al ingresar múltiples gastos en la tabla del modal, clic derecho en cualquier celda
+2. Select "Fill Down" to copy that cell's value to all rows below / Selecciona "Fill Down" para copiar el valor de esa celda a todas las filas de abajo
+3. This is useful when many expenses share the same category, project, or vendor / Es útil cuando muchos gastos comparten la misma categoría, proyecto, o vendor
+
+### Expense Statuses / Estados de gastos:
+- **Draft**: Expense saved but not submitted / Gasto guardado pero no enviado
+- **Pending**: Submitted and waiting for approval / Enviado y esperando aprobación
+- **Approved**: Approved by manager / Aprobado por el manager
+- **Rejected**: Rejected, needs revision / Rechazado, necesita revisión
+- **Paid**: Reimbursement processed / Reembolso procesado
+
+### Filters and Search / Filtros y búsqueda:
+- Use the status pills at the top to filter by expense status / Usa las pills de estado arriba para filtrar por estado del gasto
+- Use the search bar to find expenses by vendor, description, or amount / Usa la barra de búsqueda para encontrar gastos por vendor, descripción, o monto
+- Filter by date range, project, or category using the filter options / Filtra por rango de fechas, proyecto, o categoría usando las opciones de filtro
+
+### Syncing with QuickBooks Online (QBO) / Sincronización con QuickBooks Online:
+- Approved expenses can be synced to QuickBooks / Los gastos aprobados pueden sincronizarse con QuickBooks
+- Click the sync icon or "Sync to QBO" button / Clic en el ícono de sync o botón "Sync to QBO"
+- The expense will be created as a bill or expense in QuickBooks / El gasto se creará como bill o expense en QuickBooks
+
+### Tips / Consejos:
+- Always attach a receipt image for expense compliance / Siempre adjunta una imagen del recibo para cumplimiento
+- Use descriptive notes to help approvers understand the expense / Usa notas descriptivas para ayudar a los aprobadores a entender el gasto
+- Check the "Billable" checkbox if the expense should be billed to a client / Marca "Billable" si el gasto debe facturarse a un cliente
+`
+    },
+
+    dashboard: {
+      name: "Dashboard",
+      description: "Main overview page with mentions and tasks",
+      help: `
+## DASHBOARD - User Guide
+
+### Overview / Descripción general:
+- The Dashboard is your home page after login / El Dashboard es tu página de inicio después de hacer login
+- Shows a summary of your pending work and notifications / Muestra un resumen de tu trabajo pendiente y notificaciones
+
+### My Work Section / Sección Mi Trabajo:
+- Displays tasks assigned to you / Muestra las tareas asignadas a ti
+- **Not Started**: Tasks you haven't begun yet / Tareas que aún no has comenzado
+- **Working**: Tasks currently in progress / Tareas actualmente en progreso
+- **In Review**: Tasks pending approval / Tareas pendientes de aprobación
+- Click "Start" to begin working on a task / Clic en "Start" para comenzar a trabajar en una tarea
+- Click "Send to Review" when done working / Clic en "Send to Review" cuando termines de trabajar
+
+### Mentions Section / Sección de Menciones:
+- Shows messages where you were @mentioned / Muestra mensajes donde te mencionaron con @
+- Click on a mention to go directly to that conversation / Clic en una mención para ir directamente a esa conversación
+- Unread mentions are highlighted / Las menciones no leídas están resaltadas
+
+### Quick Navigation / Navegación rápida:
+- Use the sidebar to navigate to other modules / Usa el sidebar para navegar a otros módulos
+- The topbar shows your current user and environment / La topbar muestra tu usuario actual y ambiente
+`
+    },
+
+    pipeline: {
+      name: "Pipeline Manager",
+      description: "Task and workflow management system",
+      help: `
+## PIPELINE MANAGER - User Guide
+
+### What is Pipeline? / ¿Qué es Pipeline?:
+- Pipeline is NGM Hub's task management system / Pipeline es el sistema de gestión de tareas de NGM Hub
+- Organize work into projects, tasks, and subtasks / Organiza el trabajo en proyectos, tareas y subtareas
+- Track progress through customizable stages / Sigue el progreso a través de etapas personalizables
+
+### Viewing Tasks / Ver tareas:
+- Go to Pipeline Manager from the sidebar / Ve a Pipeline Manager desde el sidebar
+- Use status filters to see tasks by stage / Usa los filtros de estado para ver tareas por etapa
+- Search bar to find specific tasks / Barra de búsqueda para encontrar tareas específicas
+- Click on any task to see details / Clic en cualquier tarea para ver detalles
+
+### Creating a Task / Crear una tarea:
+1. Click "+ Add Task" button / Clic en el botón "+ Add Task"
+2. Fill in task title and description / Completa el título y descripción de la tarea
+3. Assign to a project (optional) / Asigna a un proyecto (opcional)
+4. Set assignee, due date, and priority / Establece asignado, fecha límite y prioridad
+5. Click "Save" to create the task / Clic en "Save" para crear la tarea
+
+### Task Workflow / Flujo de trabajo de tareas:
+- **Not Started**: Task created but not begun / Tarea creada pero no iniciada
+- **Working**: Task in progress (timer running) / Tarea en progreso (cronómetro corriendo)
+- **In Review**: Submitted for approval / Enviada para aprobación
+- **Approved**: Completed and approved / Completada y aprobada
+- **Needs Changes**: Reviewer requested modifications / El revisor solicitó modificaciones
+
+### Starting Work / Iniciar trabajo:
+1. Find your assigned task / Encuentra tu tarea asignada
+2. Click "Start" to begin tracking time / Clic en "Start" para comenzar a trackear tiempo
+3. The task moves to "Working" status / La tarea pasa a estado "Working"
+4. When done, click "Send to Review" / Cuando termines, clic en "Send to Review"
+
+### Reviewing Tasks / Revisar tareas:
+- Reviewers see tasks in "In Review" status / Los revisores ven tareas en estado "In Review"
+- Click "Approve" to accept the work / Clic en "Approve" para aceptar el trabajo
+- Click "Request Changes" if modifications needed / Clic en "Request Changes" si necesita modificaciones
+- Add notes to explain your decision / Agrega notas para explicar tu decisión
+
+### Assigning Tasks / Asignar tareas:
+- Open task details / Abre los detalles de la tarea
+- Click on the assignee field / Clic en el campo de asignado
+- Select team member from the dropdown / Selecciona miembro del equipo del dropdown
+- The assignee will be notified / El asignado será notificado
+`
+    },
+
+    projects: {
+      name: "Projects",
+      description: "Project management and organization",
+      help: `
+## PROJECTS - User Guide
+
+### What are Projects? / ¿Qué son los Proyectos?:
+- Projects group related work together / Los proyectos agrupan trabajo relacionado
+- Each project can have multiple tasks, expenses, and communications / Cada proyecto puede tener múltiples tareas, gastos y comunicaciones
+- Projects have budgets, timelines, and team assignments / Los proyectos tienen presupuestos, timelines y asignaciones de equipo
+
+### Viewing Projects / Ver proyectos:
+- Go to Projects from the sidebar / Ve a Projects desde el sidebar
+- See all active projects in a list or card view / Ve todos los proyectos activos en lista o tarjetas
+- Use filters to find projects by status, client, or team / Usa filtros para encontrar proyectos por estado, cliente o equipo
+
+### Project Details / Detalles del proyecto:
+- Click on any project to see its details / Clic en cualquier proyecto para ver sus detalles
+- **Overview**: General info, status, budget / Información general, estado, presupuesto
+- **Tasks**: All pipeline tasks for this project / Todas las tareas de pipeline para este proyecto
+- **Expenses**: Expenses charged to this project / Gastos cargados a este proyecto
+- **Team**: People assigned to work on this project / Personas asignadas a trabajar en este proyecto
+
+### Creating a Project / Crear un proyecto:
+1. Click "+ New Project" button / Clic en el botón "+ New Project"
+2. Enter project name and code / Ingresa nombre y código del proyecto
+3. Select client (if applicable) / Selecciona cliente (si aplica)
+4. Set start date and budget / Establece fecha de inicio y presupuesto
+5. Assign team members / Asigna miembros del equipo
+6. Click "Create" to save / Clic en "Create" para guardar
+
+### Project Statuses / Estados de proyectos:
+- **Active**: Currently in progress / Actualmente en progreso
+- **On Hold**: Temporarily paused / Temporalmente pausado
+- **Completed**: Finished successfully / Terminado exitosamente
+- **Cancelled**: Discontinued / Descontinuado
+`
+    },
+
+    vendors: {
+      name: "Vendors",
+      description: "Vendor and supplier management",
+      help: `
+## VENDORS - User Guide
+
+### What are Vendors? / ¿Qué son los Vendors?:
+- Vendors are suppliers, contractors, or companies you do business with / Los vendors son proveedores, contratistas o empresas con las que haces negocios
+- Track vendor information, contacts, and payment details / Rastrea información de vendors, contactos y detalles de pago
+- Link vendors to expenses for better tracking / Vincula vendors a gastos para mejor seguimiento
+
+### Viewing Vendors / Ver vendors:
+- Go to Vendors from the sidebar / Ve a Vendors desde el sidebar
+- See all vendors in a searchable list / Ve todos los vendors en una lista con búsqueda
+- Click on any vendor to see details / Clic en cualquier vendor para ver detalles
+
+### Adding a Vendor / Agregar un vendor:
+1. Click "+ Add Vendor" button / Clic en el botón "+ Add Vendor"
+2. Enter vendor name and type / Ingresa nombre y tipo del vendor
+3. Add contact information (email, phone, address) / Agrega información de contacto (email, teléfono, dirección)
+4. Set payment terms and tax ID if applicable / Establece términos de pago y tax ID si aplica
+5. Click "Save" to create the vendor / Clic en "Save" para crear el vendor
+
+### Vendor Categories / Categorías de vendors:
+- **Supplier**: Product providers / Proveedores de productos
+- **Contractor**: Service providers / Proveedores de servicios
+- **Utility**: Utilities (electric, water, internet) / Servicios (luz, agua, internet)
+- **Government**: Government entities / Entidades gubernamentales
+- **Other**: Miscellaneous vendors / Vendors varios
+
+### Syncing with QuickBooks / Sincronización con QuickBooks:
+- Vendors can be synced to QuickBooks Online / Los vendors pueden sincronizarse con QuickBooks Online
+- Click the sync icon to push vendor to QBO / Clic en el ícono de sync para enviar vendor a QBO
+- Synced vendors will have a QBO badge / Los vendors sincronizados tendrán una insignia de QBO
+`
+    },
+
+    accounts: {
+      name: "Accounts",
+      description: "Chart of accounts and financial categories",
+      help: `
+## ACCOUNTS - User Guide
+
+### What are Accounts? / ¿Qué son las Cuentas?:
+- Accounts are the categories used for financial tracking / Las cuentas son las categorías usadas para seguimiento financiero
+- Based on your Chart of Accounts from QuickBooks / Basadas en tu Catálogo de Cuentas de QuickBooks
+- Used to categorize expenses, income, and transactions / Usadas para categorizar gastos, ingresos y transacciones
+
+### Viewing Accounts / Ver cuentas:
+- Go to Accounts from the sidebar / Ve a Accounts desde el sidebar
+- Accounts are organized by type (Expense, Income, Asset, etc.) / Las cuentas están organizadas por tipo (Gasto, Ingreso, Activo, etc.)
+- Search to find specific accounts / Busca para encontrar cuentas específicas
+
+### Account Types / Tipos de cuentas:
+- **Expense**: Operating costs and purchases / Costos operativos y compras
+- **Income**: Revenue and sales / Ingresos y ventas
+- **Asset**: Things you own / Cosas que posees
+- **Liability**: Things you owe / Cosas que debes
+- **Equity**: Owner's investment and retained earnings / Inversión del dueño y ganancias retenidas
+
+### Using Accounts / Usar cuentas:
+- When adding an expense, select the appropriate account / Al agregar un gasto, selecciona la cuenta apropiada
+- The account determines how the expense is categorized in reports / La cuenta determina cómo se categoriza el gasto en reportes
+- Auto-categorize feature suggests accounts based on vendor / La función auto-categorizar sugiere cuentas basadas en el vendor
+`
+    },
+
+    estimator: {
+      name: "Estimator Suite",
+      description: "Project estimation and quoting tools",
+      help: `
+## ESTIMATOR SUITE - User Guide
+
+### What is Estimator? / ¿Qué es Estimator?:
+- Create professional estimates and quotes for clients / Crea estimaciones y cotizaciones profesionales para clientes
+- Calculate project costs, labor, and materials / Calcula costos de proyecto, mano de obra y materiales
+- Generate PDF proposals to send to clients / Genera propuestas PDF para enviar a clientes
+
+### Creating an Estimate / Crear una estimación:
+1. Click "+ New Estimate" button / Clic en el botón "+ New Estimate"
+2. Select the client or create new one / Selecciona el cliente o crea uno nuevo
+3. Add line items (services, products, labor) / Agrega líneas (servicios, productos, mano de obra)
+4. Set quantities, rates, and descriptions / Establece cantidades, tarifas y descripciones
+5. Apply discounts or taxes if needed / Aplica descuentos o impuestos si es necesario
+6. Click "Save" or "Generate PDF" / Clic en "Save" o "Generate PDF"
+
+### Estimate Templates / Plantillas de estimación:
+- Use templates for common project types / Usa plantillas para tipos de proyecto comunes
+- Templates pre-fill items and pricing / Las plantillas pre-llenan artículos y precios
+- Customize templates to fit your business / Personaliza plantillas para tu negocio
+
+### Converting to Project / Convertir a proyecto:
+- Approved estimates can become projects / Las estimaciones aprobadas pueden convertirse en proyectos
+- Click "Convert to Project" to create a linked project / Clic en "Convert to Project" para crear un proyecto vinculado
+- Budget and details transfer automatically / El presupuesto y detalles se transfieren automáticamente
+`
+    },
+
+    team: {
+      name: "Team Management",
+      description: "User and team administration",
+      help: `
+## TEAM MANAGEMENT - User Guide
+
+### What is Team Management? / ¿Qué es Team Management?:
+- Manage users, roles, and permissions / Administra usuarios, roles y permisos
+- See all team members and their status / Ve todos los miembros del equipo y su estado
+- Admin-only module for user administration / Módulo solo para admins para administración de usuarios
+
+### Viewing Team Members / Ver miembros del equipo:
+- Go to Team Management from the sidebar / Ve a Team Management desde el sidebar
+- See all users with their roles and status / Ve todos los usuarios con sus roles y estado
+- Search by name or email / Busca por nombre o email
+
+### User Roles / Roles de usuario:
+- **CEO/COO**: Full administrative access / Acceso administrativo completo
+- **Manager**: Can approve tasks and expenses / Puede aprobar tareas y gastos
+- **Team Lead**: Can assign tasks and view reports / Puede asignar tareas y ver reportes
+- **Employee**: Standard user access / Acceso de usuario estándar
+
+### Adding a User / Agregar un usuario:
+1. Click "+ Add User" (Admin only) / Clic en "+ Add User" (Solo admin)
+2. Enter name, email, and role / Ingresa nombre, email y rol
+3. Set temporary password / Establece contraseña temporal
+4. Assign to projects if needed / Asigna a proyectos si es necesario
+5. Click "Create User" / Clic en "Create User"
+
+### User Status / Estado de usuario:
+- **Active**: Can log in and use the system / Puede iniciar sesión y usar el sistema
+- **Inactive**: Account disabled, cannot log in / Cuenta deshabilitada, no puede iniciar sesión
+- **Pending**: Awaiting email verification / Esperando verificación de email
+`
+    },
+
+    messages: {
+      name: "Messages / Connect",
+      description: "Team communication and chat system",
+      help: `
+## MESSAGES (CONNECT) - User Guide
+
+### What is Connect? / ¿Qué es Connect?:
+- Connect is NGM Hub's internal messaging system / Connect es el sistema de mensajería interna de NGM Hub
+- Chat with team members individually or in channels / Chatea con miembros del equipo individualmente o en canales
+- Each project automatically gets its own channel / Cada proyecto automáticamente tiene su propio canal
+
+### Channel Types / Tipos de canales:
+- **Project Channels**: Auto-created for each project, named after the project / Auto-creados para cada proyecto, nombrados como el proyecto
+- **Direct Messages (DMs)**: Private 1-on-1 conversations / Conversaciones privadas 1 a 1
+- **Custom Channels**: Created for specific topics or teams / Creados para temas o equipos específicos
+
+### Sending Messages / Enviar mensajes:
+1. Select a channel from the sidebar / Selecciona un canal del sidebar
+2. Type your message in the input at the bottom / Escribe tu mensaje en el input de abajo
+3. Press Enter or click the send button / Presiona Enter o clic en el botón enviar
+4. Your message appears in the conversation / Tu mensaje aparece en la conversación
+
+### Mentioning Users / Mencionar usuarios:
+- Type @ followed by the person's name to mention them / Escribe @ seguido del nombre de la persona para mencionarla
+- Example: @Juan please review this / Ejemplo: @Juan por favor revisa esto
+- Mentioned users receive a notification / Los usuarios mencionados reciben una notificación
+- Mentions appear in the "Mentions" tab / Las menciones aparecen en la pestaña "Mentions"
+
+### Creating Channels / Crear canales:
+1. Click "New chat" button / Clic en el botón "New chat"
+2. Choose channel type (Custom or Direct Message) / Elige tipo de canal (Custom o Mensaje Directo)
+3. For custom: enter channel name / Para custom: ingresa nombre del canal
+4. Add members to the channel / Agrega miembros al canal
+5. Click "Create" / Clic en "Create"
+
+### Mobile Navigation (Bottom tabs) / Navegación móvil (tabs de abajo):
+- **Home**: See all channels / Ver todos los canales
+- **Chats**: Direct messages only / Solo mensajes directos
+- **Spaces**: Project and custom channels / Canales de proyecto y custom
+- **Mentions**: Messages where you were @mentioned / Mensajes donde te mencionaron con @
+
+### Tips / Consejos:
+- Use project channels for project-related discussions / Usa canales de proyecto para discusiones relacionadas al proyecto
+- Use DMs for private conversations / Usa DMs para conversaciones privadas
+- Check Mentions regularly to not miss important messages / Revisa Mentions regularmente para no perder mensajes importantes
+`
+    },
+
+    arturito: {
+      name: "Arturito",
+      description: "AI Assistant for NGM Hub",
+      help: `
+## ARTURITO - User Guide
+
+### What is Arturito? / ¿Qué es Arturito?:
+- Arturito is NGM Hub's AI assistant / Arturito es el asistente de IA de NGM Hub
+- Ask questions about how to use any module / Pregunta cómo usar cualquier módulo
+- Get help with tasks and navigation / Obtén ayuda con tareas y navegación
+
+### How to Use / Cómo usar:
+1. Go to Arturito from the sidebar / Ve a Arturito desde el sidebar
+2. Type your question in the input box / Escribe tu pregunta en el cuadro de texto
+3. Press Enter or click send / Presiona Enter o clic en enviar
+4. Arturito will respond with helpful information / Arturito responderá con información útil
+
+### Example Questions / Preguntas de ejemplo:
+- "How do I add an expense?" / "¿Cómo agrego un gasto?"
+- "What is auto-categorize?" / "¿Qué es auto-categorizar?"
+- "How do I scan a receipt?" / "¿Cómo escaneo un recibo?"
+- "How do I create a project?" / "¿Cómo creo un proyecto?"
+- "How do I mention someone in Connect?" / "¿Cómo menciono a alguien en Connect?"
+
+### Language / Idioma:
+- Arturito responds in the language you ask / Arturito responde en el idioma que preguntas
+- Ask in Spanish, get Spanish answers / Pregunta en español, obtén respuestas en español
+- Ask in English, get English answers / Pregunta en inglés, obtén respuestas en inglés
+
+### New Conversation / Nueva conversación:
+- Click the "+" button in the header to start fresh / Clic en el botón "+" en el header para empezar de nuevo
+- Previous conversations are cleared / Las conversaciones anteriores se borran
+`
+    }
+  };
+
+  // Compile all module knowledge into a single context string
+  function getModuleKnowledgeContext() {
+    let context = "=== NGM HUB MODULE HELP KNOWLEDGE ===\n";
+    context += "IMPORTANT: Always respond in the SAME LANGUAGE the user asks their question.\n";
+    context += "If they ask in Spanish, respond in Spanish. If they ask in English, respond in English.\n\n";
+
+    for (const [key, module] of Object.entries(MODULE_KNOWLEDGE)) {
+      context += `--- ${module.name.toUpperCase()} ---\n`;
+      context += module.help + "\n\n";
+    }
+
+    return context;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // STATE
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -243,6 +654,7 @@
           user_email: state.currentUser?.email,
           session_id: state.sessionId,
           thread_id: state.threadId,  // Send existing thread ID if we have one
+          module_knowledge: getModuleKnowledgeContext(),  // Include module help knowledge
         }),
       });
 

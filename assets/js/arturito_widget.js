@@ -23,6 +23,12 @@
   const STORAGE_KEY = "arturito_widget_conversation";
   const SESSION_ID = `widget_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
+  // Auth helper
+  function getAuthHeaders() {
+    const token = localStorage.getItem("ngmToken");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // STATE
   // ─────────────────────────────────────────────────────────────────────────
@@ -192,7 +198,10 @@
 
   async function loadCurrentUser() {
     try {
-      const res = await fetch(`${API_BASE}/auth/me`, { credentials: "include" });
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        credentials: "include",
+        headers: { ...getAuthHeaders() }
+      });
       if (!res.ok) throw new Error("Failed to load user");
       const data = await res.json();
       state.currentUser = data.user || data;
@@ -353,7 +362,10 @@
     try {
       const response = await fetch(`${API_BASE}/arturito/web-chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
+        },
         credentials: "include",
         body: JSON.stringify({
           text: content,
@@ -549,6 +561,7 @@
       await fetch(`${API_BASE}/arturito/clear-thread?session_id=${state.sessionId}`, {
         method: "POST",
         credentials: "include",
+        headers: { ...getAuthHeaders() }
       });
     } catch (err) {
       console.warn("[Arturito Widget] Failed to clear server thread:", err);
@@ -817,7 +830,10 @@
     try {
       const response = await fetch(`${API_BASE}/arturito/web-chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
+        },
         credentials: "include",
         body: JSON.stringify({
           text: `Enviar mensaje de ayuda a ${helperName} para ${state.pendingAction.requestedAction}`,
@@ -881,7 +897,10 @@
     try {
       const response = await fetch(`${API_BASE}/arturito/create-bug-task`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
+        },
         credentials: "include",
         body: JSON.stringify({
           task_data: state.pendingAction.taskData,

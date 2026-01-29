@@ -200,7 +200,8 @@
       const res = await authFetch(`${API_BASE}/projects`);
       if (!res.ok) throw new Error("Failed to load projects");
       const data = await res.json();
-      state.projects = data.projects || data || [];
+      // API returns { data: [...] } or { projects: [...] } or array directly
+      state.projects = data.data || data.projects || (Array.isArray(data) ? data : []);
       console.log("[Messages] Loaded", state.projects.length, "projects");
     } catch (err) {
       console.error("[Messages] Failed to load projects:", err);

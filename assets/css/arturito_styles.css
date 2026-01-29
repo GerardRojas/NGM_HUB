@@ -1,11 +1,19 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    NGM HUB — Arturito Chat Styles
-   Premium minimalist design with gradient background
+   Premium minimalist design with gradient background like login
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Main Layout - Gradient Background
+   Full Layout - Gradient Background (covers entire main-area)
    ───────────────────────────────────────────────────────────────────────────── */
+
+.page-arturito .main-area {
+  /* Gradient background exactly like login - black/white grayscale */
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.06), transparent 55%),
+    radial-gradient(circle at 80% 80%, rgba(0, 0, 0, 0.85), transparent 65%),
+    #0a0a0a;
+}
 
 .arturito-main {
   padding: 24px;
@@ -14,20 +22,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Premium gradient background like login */
-  background:
-    radial-gradient(circle at 15% 25%, rgba(62, 207, 142, 0.08), transparent 50%),
-    radial-gradient(circle at 85% 75%, rgba(0, 0, 0, 0.6), transparent 60%),
-    radial-gradient(circle at 50% 50%, rgba(30, 30, 30, 0.4), transparent 70%),
-    #0a0a0a;
+  /* No background here - it's on .main-area */
+  background: transparent;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Chat Card Container
+   Chat Card Container - Fixed width
    ───────────────────────────────────────────────────────────────────────────── */
 
 .arturito-chat-card {
-  width: 100%;
+  /* Fixed width - doesn't change with content */
+  width: 800px;
+  min-width: 800px;
   max-width: 800px;
   height: calc(100vh - 120px);
   max-height: 700px;
@@ -267,6 +273,31 @@
   align-items: flex-end;
 }
 
+/* Message header with name and time */
+.arturito-message-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.arturito-message-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.arturito-message-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  font-weight: 400;
+}
+
+/* User messages - align header to right */
+.arturito-message--user .arturito-message-header {
+  justify-content: flex-end;
+}
+
 .arturito-message-bubble {
   font-size: 14px;
   line-height: 1.6;
@@ -482,12 +513,23 @@
    Responsive
    ───────────────────────────────────────────────────────────────────────────── */
 
+@media (max-width: 900px) {
+  .arturito-chat-card {
+    width: calc(100% - 48px);
+    min-width: auto;
+    max-width: 800px;
+  }
+}
+
 @media (max-width: 768px) {
   .arturito-main {
     padding: 16px;
   }
 
   .arturito-chat-card {
+    width: calc(100% - 32px);
+    min-width: auto;
+    max-width: none;
     max-height: none;
     height: calc(100vh - 92px);
     border-radius: 12px;

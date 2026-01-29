@@ -4,19 +4,34 @@
    ========================================== */
 
 /* ==========================================
-   LAYOUT: 3-Column Chat Interface
+   LAYOUT: Full-height 3-Column Chat Interface
    ========================================== */
 
-.messages-main {
+/* Ensure main-area takes full height */
+.page-messages .main-area {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Override main-content constraints for Messages */
+.page-messages .main-content,
+.page-messages .messages-main {
+  max-width: none;
   padding: 0 !important;
-  height: calc(100vh - 56px);
+  margin: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+  min-height: 0;
 }
 
 .messages-layout {
   display: flex;
-  height: 100%;
+  flex: 1;
   background: #0a0a0a;
+  min-height: 0; /* Important for flex children to shrink */
 }
 
 /* ==========================================
@@ -287,6 +302,7 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0; /* Important for flex children to shrink properly */
   background: #0a0a0a;
 }
 

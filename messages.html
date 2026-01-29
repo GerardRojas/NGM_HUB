@@ -659,14 +659,8 @@
           });
         }
 
-        // Mobile avatar - can link to profile or settings
-        if (mobileAvatar) {
-          mobileAvatar.addEventListener('click', function(e) {
-            e.preventDefault();
-            // Could open a profile menu or navigate to settings
-            window.location.href = 'team.html';
-          });
-        }
+        // Mobile avatar - display only, no action
+        // Could be extended later for profile menu
 
         // Bottom navigation handler
         bottomNavItems.forEach(function(item) {
@@ -713,8 +707,14 @@
                 });
                 break;
               case 'more':
-                // Navigate to main app or show menu
-                window.location.href = 'dashboard.html';
+                // Open sidebar menu instead of navigating away
+                var sidebar = document.getElementById('sidebar');
+                var overlay = document.getElementById('sidebarOverlay');
+                if (sidebar && overlay) {
+                  sidebar.classList.add('open');
+                  overlay.classList.add('visible');
+                  document.body.style.overflow = 'hidden';
+                }
                 break;
             }
           });

@@ -2488,13 +2488,7 @@
     font-weight: 600;
     color: white;
     flex-shrink: 0;
-    cursor: pointer;
-    transition: transform 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .msg-mobile-topbar-avatar:active {
-    transform: scale(0.92);
+    /* Display only - no click action */
   }
 
   /* ========== CHANNELS LIST (Main View) ========== */
@@ -2560,6 +2554,15 @@
   .msg-channel-name {
     font-size: 15px;
     font-weight: 500;
+  }
+
+  /* Sub-channels more indentation on mobile */
+  .msg-project-channels {
+    padding-left: 24px;
+  }
+
+  .msg-project-channels .msg-channel-item {
+    padding: 12px 16px;
   }
 
   .msg-channel-preview {

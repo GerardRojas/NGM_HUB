@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1a1a1a" />
+    <title>NGM HUB — Arturito Control Panel</title>
+    <link rel="icon" type="image/png" href="assets/img/arturito_icon.png" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="assets/img/greenblack_icon.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/expenses_styles.css" />
+    <link rel="stylesheet" href="assets/css/toast.css" />
+
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/auth-guard.js"></script>
+    <script src="assets/js/permissions.js" defer></script>
+    <script src="assets/js/pills.js" defer></script>
+    <script src="assets/js/sidebar.js" defer></script>
+    <script src="assets/js/toast.js" defer></script>
+
+    <style>
+        /* Arturito Settings specific styles */
+        .arturito-settings-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .permission-card {
+            background: #18181b;
+            border: 1px solid #27272f;
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .permission-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #27272f;
+        }
+
+        .permission-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e5e7eb;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .permission-card-title .category-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .category-read { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .category-create { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+        .category-update { background: rgba(249, 115, 22, 0.2); color: #f97316; }
+        .category-delete { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .category-notification { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+        .category-navigation { background: rgba(20, 184, 166, 0.2); color: #14b8a6; }
+
+        .permission-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .permission-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: #0a0a0b;
+            border: 1px solid #27272f;
+            border-radius: 6px;
+            transition: border-color 0.2s;
+        }
+
+        .permission-item:hover {
+            border-color: #3f3f46;
+        }
+
+        .permission-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .permission-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #e5e7eb;
+        }
+
+        .permission-desc {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .permission-risk {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+
+        .risk-low { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .risk-medium { background: rgba(249, 115, 22, 0.15); color: #f97316; }
+        .risk-high { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+        /* Toggle switch */
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #3f3f46;
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #e5e7eb;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #8b5cf6;
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        .toggle-switch input:disabled + .toggle-slider {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Access denied overlay */
+        .access-denied-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .access-denied-icon {
+            width: 80px;
+            height: 80px;
+            background: rgba(239, 68, 68, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            font-size: 40px;
+        }
+
+        .access-denied-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #e5e7eb;
+            margin-bottom: 8px;
+        }
+
+        .access-denied-message {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 24px;
+            text-align: center;
+            max-width: 400px;
+        }
+
+        .access-denied-btn {
+            padding: 10px 24px;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .access-denied-btn:hover {
+            background: #7c3aed;
+        }
+
+        /* Stats cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #18181b;
+            border: 1px solid #27272f;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        .stat-value.enabled { color: #22c55e; }
+        .stat-value.disabled { color: #ef4444; }
+
+        /* Two column layout */
+        .two-col-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 1200px) {
+            .two-col-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Capabilities Tree */
+        .capabilities-card {
+            background: #18181b;
+            border: 1px solid #27272f;
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .capabilities-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e5e7eb;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0 0 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .module-tree {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .module-group {
+            border-left: 2px solid #3f3f46;
+            padding-left: 16px;
+        }
+
+        .module-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #8b5cf6;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .module-functions {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-left: 8px;
+        }
+
+        .function-item {
+            font-size: 12px;
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .function-item::before {
+            content: "├─";
+            color: #4b5563;
+            font-family: monospace;
+        }
+
+        .function-item:last-child::before {
+            content: "└─";
+        }
+
+        .function-item .fn-icon {
+            font-size: 10px;
+        }
+
+        .function-item.enabled { color: #e5e7eb; }
+        .function-item.disabled { color: #6b7280; text-decoration: line-through; }
+
+        /* Volume Chart */
+        .chart-card {
+            background: #18181b;
+            border: 1px solid #27272f;
+            border-radius: 8px;
+            padding: 24px;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #e5e7eb;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0 0 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .bar-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bar-label {
+            font-size: 12px;
+            color: #9ca3af;
+            width: 100px;
+            flex-shrink: 0;
+            text-align: right;
+        }
+
+        .bar-container {
+            flex: 1;
+            height: 24px;
+            background: #27272f;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            padding-left: 8px;
+        }
+
+        .bar-value {
+            font-size: 11px;
+            font-weight: 500;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .bar-read { background: linear-gradient(90deg, #22c55e, #16a34a); }
+        .bar-create { background: linear-gradient(90deg, #3b82f6, #2563eb); }
+        .bar-navigation { background: linear-gradient(90deg, #14b8a6, #0d9488); }
+        .bar-notification { background: linear-gradient(90deg, #a855f7, #9333ea); }
+        .bar-update { background: linear-gradient(90deg, #f97316, #ea580c); }
+        .bar-delete { background: linear-gradient(90deg, #ef4444, #dc2626); }
+
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #27272f;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+
+        .legend-dot.read { background: #22c55e; }
+        .legend-dot.create { background: #3b82f6; }
+        .legend-dot.navigation { background: #14b8a6; }
+        .legend-dot.notification { background: #a855f7; }
+        .legend-dot.update { background: #f97316; }
+        .legend-dot.delete { background: #ef4444; }
+    </style>
+</head>
+<body class="page-settings">
+    <!-- Access Denied Overlay (hidden by default, shown if not CEO/COO) -->
+    <div class="access-denied-overlay" id="accessDeniedOverlay" style="display: none;">
+        <div class="access-denied-icon">🔒</div>
+        <h2 class="access-denied-title">Access Restricted</h2>
+        <p class="access-denied-message">
+            This page is only available to CEO and COO roles. If you believe you should have access, please contact your administrator.
+        </p>
+        <button type="button" class="access-denied-btn" onclick="window.location.href='dashboard.html'">
+            Go to Dashboard
+        </button>
+    </div>
+
+    <div class="app-layout" id="mainContent" style="display: none;">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img src="assets/img/logo.png" alt="NGM HUB Logo" class="sidebar-logo-img" />
+            </div>
+            <div class="sidebar-title-block">
+                <p class="sidebar-title">NGM HUB</p>
+            </div>
+            <div class="sidebar-nav-card">
+                <nav class="sidebar-nav" id="sidebar-nav">
+                    <a href="dashboard.html" class="nav-item" data-module="dashboard">Dashboard</a>
+                    <a href="expenses.html" class="nav-item" data-module="expenses">Expenses Engine</a>
+                    <a href="pipeline.html" class="nav-item" data-module="pipeline">Pipeline Manager</a>
+                    <a href="projects.html" class="nav-item" data-module="projects">Projects</a>
+                    <a href="vendors.html" class="nav-item" data-module="vendors">Vendors</a>
+                    <a href="accounts.html" class="nav-item" data-module="accounts">Accounts</a>
+                    <a href="estimator.html" class="nav-item" data-module="estimator">Estimator Suite</a>
+                    <a href="team.html" class="nav-item" data-module="team">Team Management</a>
+                    <a href="messages.html" class="nav-item" data-module="messages">Messages</a>
+                    <a href="arturito.html" class="nav-item nav-item-active" data-module="arturito">Arturito</a>
+                </nav>
+            </div>
+        </aside>
+
+        <div class="main-area">
+            <header class="ngm-topbar">
+                <div class="ngm-bar-left">
+                    <div class="ngm-brand">
+                        <div class="ngm-brand-icon-small"><img src="assets/img/white_icon.png" alt="NGM"></div>
+                        <div class="ngm-brand-text">
+                            <span class="ngm-brand-org">Next Generation Management</span>
+                            <span class="ngm-brand-context">NGM Hub · Arturito Control Panel</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ngm-topbar-right">
+                    <div class="ngm-meta">
+                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
+                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · —</span>
+                    </div>
+                    <form class="ngm-search" role="search" onsubmit="return false;">
+                        <span class="ngm-global-search-icon">⌕</span>
+                        <input type="search" class="ngm-search-input" placeholder="Search..." />
+                    </form>
+                    <span id="user-pill" class="user-pill">User · —</span>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="workspace">
+                    <section class="data-section">
+                        <div class="expenses-toolbar">
+                            <div class="toolbar-left">
+                                <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Arturito Control Panel</h2>
+                                <p style="font-size: 13px; color: #6b7280; margin: 4px 0 0 0;">Configure AI assistant permissions and capabilities</p>
+                            </div>
+                            <div class="toolbar-right">
+                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnResetDefaults">Reset to Defaults</button>
+                                <a href="arturito.html" class="btn-toolbar btn-toolbar-primary" style="text-decoration: none;">Open Arturito Chat</a>
+                            </div>
+                        </div>
+
+                        <div class="expenses-table-container">
+                            <div id="loadingState" class="expenses-loading-state">
+                                <img src="assets/img/white_icon.png" class="loading-logo loading-logo-lg" alt="Loading...">
+                                <span class="loading-text">Loading permissions...</span>
+                            </div>
+
+                            <div id="settingsContent" style="display: none; padding: 24px;">
+                                <!-- Stats Row -->
+                                <div class="stats-row">
+                                    <div class="stat-card">
+                                        <span class="stat-label">Total Permissions</span>
+                                        <span class="stat-value" id="statTotal">-</span>
+                                    </div>
+                                    <div class="stat-card">
+                                        <span class="stat-label">Enabled</span>
+                                        <span class="stat-value enabled" id="statEnabled">-</span>
+                                    </div>
+                                    <div class="stat-card">
+                                        <span class="stat-label">Disabled</span>
+                                        <span class="stat-value disabled" id="statDisabled">-</span>
+                                    </div>
+                                    <div class="stat-card">
+                                        <span class="stat-label">High Risk Enabled</span>
+                                        <span class="stat-value" id="statHighRisk">-</span>
+                                    </div>
+                                </div>
+
+                                <!-- Capabilities Tree + Volume Chart -->
+                                <div class="two-col-grid">
+                                    <!-- Capabilities Tree -->
+                                    <div class="capabilities-card">
+                                        <h3 class="capabilities-title">
+                                            <span style="font-size: 16px;">🌳</span>
+                                            Arturito Capabilities by Module
+                                        </h3>
+                                        <div class="module-tree" id="capabilitiesTree">
+                                            <!-- Tree will be rendered by JS -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Volume Chart -->
+                                    <div class="chart-card">
+                                        <h3 class="chart-title">
+                                            <span style="font-size: 16px;">📊</span>
+                                            Capabilities by Category
+                                        </h3>
+                                        <div class="bar-chart" id="volumeChart">
+                                            <!-- Chart will be rendered by JS -->
+                                        </div>
+                                        <div class="chart-legend">
+                                            <div class="legend-item"><span class="legend-dot read"></span> Read (Query data)</div>
+                                            <div class="legend-item"><span class="legend-dot create"></span> Create (Add new records)</div>
+                                            <div class="legend-item"><span class="legend-dot navigation"></span> Navigation (UI control)</div>
+                                            <div class="legend-item"><span class="legend-dot notification"></span> Notification (Alerts)</div>
+                                            <div class="legend-item"><span class="legend-dot update"></span> Update (Modify)</div>
+                                            <div class="legend-item"><span class="legend-dot delete"></span> Delete (Remove)</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Permissions by Category -->
+                                <div class="arturito-settings-grid" id="permissionsContainer">
+                                    <!-- Permissions cards will be rendered here -->
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        const API_BASE = window.API_BASE || "https://ngm-fastapi.onrender.com";
+        const ALLOWED_ROLES = ['CEO', 'COO', 'KD COO'];
+
+        let permissionsData = null;
+
+        // Category display names and icons
+        const CATEGORY_INFO = {
+            read: { name: 'Read Operations', icon: '📖' },
+            create: { name: 'Create Operations', icon: '➕' },
+            update: { name: 'Update Operations', icon: '✏️' },
+            delete: { name: 'Delete Operations', icon: '🗑️' },
+            notification: { name: 'Notifications', icon: '🔔' },
+            navigation: { name: 'Navigation & UI', icon: '🧭' },
+        };
+
+        // Capabilities tree structure (static definition of Arturito's functions)
+        const CAPABILITIES_TREE = {
+            "Budget & Finance": {
+                icon: "💰",
+                functions: [
+                    { name: "Budget vs Actuals (BVA)", intent: "BUDGET_VS_ACTUALS", desc: "Generate project budget reports" },
+                    { name: "Category Queries", intent: "CONSULTA_ESPECIFICA", desc: "Query specific BVA categories" },
+                    { name: "Search Expenses", intent: "SEARCH_EXPENSES", desc: "Find expenses by amount/vendor/category" },
+                ]
+            },
+            "Projects": {
+                icon: "📁",
+                functions: [
+                    { name: "List Projects", intent: "LIST_PROJECTS", desc: "View all active projects" },
+                    { name: "Create Project", intent: "CREATE_PROJECT", desc: "Add new project to system" },
+                    { name: "Scope of Work (SOW)", intent: "SCOPE_OF_WORK", desc: "Query project scope details" },
+                ]
+            },
+            "Vendors": {
+                icon: "🏪",
+                functions: [
+                    { name: "List Vendors", intent: "LIST_VENDORS", desc: "View all vendors/suppliers" },
+                    { name: "Create Vendor", intent: "CREATE_VENDOR", desc: "Add new vendor to system" },
+                ]
+            },
+            "Communication": {
+                icon: "📨",
+                functions: [
+                    { name: "Expense Reminders", intent: "EXPENSE_REMINDER", desc: "Send pending expense notifications" },
+                    { name: "Bug Reports", intent: "REPORT_BUG", desc: "Report issues to dev team" },
+                ]
+            },
+            "Navigation & UI": {
+                icon: "🧭",
+                functions: [
+                    { name: "NGM Actions", intent: "NGM_ACTION", desc: "Navigate pages, open modals" },
+                    { name: "Copilot Commands", intent: "COPILOT", desc: "Control page filters and UI" },
+                ]
+            },
+            "Conversation": {
+                icon: "💬",
+                functions: [
+                    { name: "Small Talk", intent: null, desc: "General conversation (always enabled)" },
+                    { name: "Greetings", intent: null, desc: "Respond to user greetings" },
+                    { name: "NGM Help", intent: null, desc: "Answer how-to questions" },
+                ]
+            }
+        };
+
+        // Check user role access
+        function checkAccess() {
+            const userStr = localStorage.getItem('ngm_user');
+            if (!userStr) {
+                window.location.href = 'login.html';
+                return false;
+            }
+
+            try {
+                const user = JSON.parse(userStr);
+                const userRole = user.user_role || user.role || '';
+
+                if (!ALLOWED_ROLES.includes(userRole)) {
+                    document.getElementById('accessDeniedOverlay').style.display = 'flex';
+                    document.getElementById('mainContent').style.display = 'none';
+                    return false;
+                }
+
+                document.getElementById('accessDeniedOverlay').style.display = 'none';
+                document.getElementById('mainContent').style.display = '';
+                return true;
+
+            } catch (err) {
+                console.error('[ARTURITO-SETTINGS] Error parsing user:', err);
+                window.location.href = 'login.html';
+                return false;
+            }
+        }
+
+        // Load permissions from API
+        async function loadPermissions() {
+            try {
+                const res = await fetch(`${API_BASE}/arturito/permissions`);
+                if (!res.ok) throw new Error('Failed to load permissions');
+
+                const data = await res.json();
+                permissionsData = data;
+
+                renderPermissions(data.by_category);
+                updateStats(data.permissions);
+                renderCapabilitiesTree(data.permissions);
+                renderVolumeChart(data.by_category);
+
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('settingsContent').style.display = 'block';
+
+            } catch (err) {
+                console.error('[ARTURITO-SETTINGS] Error loading permissions:', err);
+                document.getElementById('loadingState').innerHTML = `
+                    <span style="color: #ef4444;">Error loading permissions. Please refresh.</span>
+                `;
+            }
+        }
+
+        // Update stats cards
+        function updateStats(permissions) {
+            const total = permissions.length;
+            const enabled = permissions.filter(p => p.enabled).length;
+            const disabled = total - enabled;
+            const highRiskEnabled = permissions.filter(p => p.enabled && p.risk_level === 'high').length;
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statEnabled').textContent = enabled;
+            document.getElementById('statDisabled').textContent = disabled;
+            document.getElementById('statHighRisk').textContent = highRiskEnabled;
+        }
+
+        // Render capabilities tree
+        function renderCapabilitiesTree(permissions) {
+            const container = document.getElementById('capabilitiesTree');
+            container.innerHTML = '';
+
+            // Create a map of intent -> enabled status
+            const enabledMap = {};
+            permissions.forEach(p => {
+                enabledMap[p.intent] = p.enabled;
+            });
+
+            for (const [moduleName, moduleData] of Object.entries(CAPABILITIES_TREE)) {
+                const moduleDiv = document.createElement('div');
+                moduleDiv.className = 'module-group';
+
+                const functionsHtml = moduleData.functions.map(fn => {
+                    // null intent means always enabled (like SMALL_TALK)
+                    const isEnabled = fn.intent === null || enabledMap[fn.intent] !== false;
+                    const statusIcon = isEnabled ? '✓' : '✗';
+                    const statusClass = isEnabled ? 'enabled' : 'disabled';
+
+                    return `
+                        <div class="function-item ${statusClass}" title="${fn.desc}">
+                            <span class="fn-icon">${statusIcon}</span>
+                            ${fn.name}
+                        </div>
+                    `;
+                }).join('');
+
+                moduleDiv.innerHTML = `
+                    <div class="module-name">
+                        <span>${moduleData.icon}</span>
+                        ${moduleName}
+                    </div>
+                    <div class="module-functions">
+                        ${functionsHtml}
+                    </div>
+                `;
+
+                container.appendChild(moduleDiv);
+            }
+        }
+
+        // Render volume chart
+        function renderVolumeChart(byCategory) {
+            const container = document.getElementById('volumeChart');
+            container.innerHTML = '';
+
+            // Calculate totals per category
+            const categoryOrder = ['read', 'create', 'navigation', 'notification', 'update', 'delete'];
+            const categoryLabels = {
+                read: 'Read',
+                create: 'Create',
+                navigation: 'Navigation',
+                notification: 'Notification',
+                update: 'Update',
+                delete: 'Delete'
+            };
+
+            // Find max for scaling
+            let maxCount = 0;
+            const counts = {};
+            for (const cat of categoryOrder) {
+                const perms = byCategory[cat] || [];
+                const enabledCount = perms.filter(p => p.enabled).length;
+                counts[cat] = { total: perms.length, enabled: enabledCount };
+                if (perms.length > maxCount) maxCount = perms.length;
+            }
+
+            // Render bars
+            for (const cat of categoryOrder) {
+                const data = counts[cat];
+                if (data.total === 0) continue;
+
+                const widthPercent = (data.total / maxCount) * 100;
+                const enabledPercent = data.total > 0 ? Math.round((data.enabled / data.total) * 100) : 0;
+
+                const barHtml = `
+                    <div class="bar-row">
+                        <span class="bar-label">${categoryLabels[cat]}</span>
+                        <div class="bar-container">
+                            <div class="bar-fill bar-${cat}" style="width: ${widthPercent}%;">
+                                <span class="bar-value">${data.enabled}/${data.total} enabled</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                container.insertAdjacentHTML('beforeend', barHtml);
+            }
+        }
+
+        // Render permissions by category
+        function renderPermissions(byCategory) {
+            const container = document.getElementById('permissionsContainer');
+            container.innerHTML = '';
+
+            // Order categories
+            const categoryOrder = ['read', 'create', 'update', 'delete', 'notification', 'navigation'];
+
+            for (const category of categoryOrder) {
+                const permissions = byCategory[category];
+                if (!permissions || permissions.length === 0) continue;
+
+                const info = CATEGORY_INFO[category] || { name: category, icon: '📋' };
+
+                const card = document.createElement('div');
+                card.className = 'permission-card';
+                card.innerHTML = `
+                    <div class="permission-card-header">
+                        <h3 class="permission-card-title">
+                            <span class="category-icon category-${category}">${info.icon}</span>
+                            ${info.name}
+                        </h3>
+                        <span style="font-size: 12px; color: #6b7280;">${permissions.length} permissions</span>
+                    </div>
+                    <div class="permission-list">
+                        ${permissions.map(p => renderPermissionItem(p)).join('')}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            }
+        }
+
+        // Render single permission item
+        function renderPermissionItem(permission) {
+            const isHighRisk = permission.risk_level === 'high';
+            const isMediumRisk = permission.risk_level === 'medium';
+
+            return `
+                <div class="permission-item" data-intent="${permission.intent}">
+                    <div class="permission-info">
+                        <span class="permission-name">${permission.intent}</span>
+                        <span class="permission-desc">${permission.description}</span>
+                        <span class="permission-risk risk-${permission.risk_level}">
+                            ${permission.risk_level === 'high' ? '⚠️' : permission.risk_level === 'medium' ? '⚡' : '✓'}
+                            ${permission.risk_level} risk
+                        </span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox"
+                               ${permission.enabled ? 'checked' : ''}
+                               data-intent="${permission.intent}"
+                               onchange="ArturitoSettings.togglePermission('${permission.intent}', this.checked)"
+                               ${isHighRisk ? 'title="High risk operation - enable with caution"' : ''}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            `;
+        }
+
+        // Toggle permission
+        async function togglePermission(intent, enabled) {
+            try {
+                const res = await fetch(`${API_BASE}/arturito/permissions`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ intent, enabled })
+                });
+
+                if (!res.ok) throw new Error('Failed to update permission');
+
+                const result = await res.json();
+
+                // Show toast
+                if (window.showToast) {
+                    window.showToast(
+                        `${intent} ${enabled ? 'enabled' : 'disabled'}`,
+                        enabled ? 'success' : 'info'
+                    );
+                }
+
+                // Reload to update stats
+                await loadPermissions();
+
+            } catch (err) {
+                console.error('[ARTURITO-SETTINGS] Error toggling permission:', err);
+
+                // Revert checkbox
+                const checkbox = document.querySelector(`input[data-intent="${intent}"]`);
+                if (checkbox) checkbox.checked = !enabled;
+
+                if (window.showToast) {
+                    window.showToast('Error updating permission', 'error');
+                }
+            }
+        }
+
+        // Reset to defaults
+        async function resetToDefaults() {
+            if (!confirm('Reset all permissions to their default values?')) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/arturito/permissions/reset`, {
+                    method: 'POST'
+                });
+
+                if (!res.ok) throw new Error('Failed to reset permissions');
+
+                if (window.showToast) {
+                    window.showToast('Permissions reset to defaults', 'success');
+                }
+
+                await loadPermissions();
+
+            } catch (err) {
+                console.error('[ARTURITO-SETTINGS] Error resetting permissions:', err);
+                if (window.showToast) {
+                    window.showToast('Error resetting permissions', 'error');
+                }
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!checkAccess()) return;
+
+            loadPermissions();
+
+            // Reset button
+            document.getElementById('btnResetDefaults').addEventListener('click', resetToDefaults);
+
+            // Init topbar pills
+            if (window.initTopbarPills) window.initTopbarPills();
+        });
+
+        // Expose for inline handlers
+        window.ArturitoSettings = {
+            togglePermission,
+            resetToDefaults
+        };
+
+    })();
+    </script>
+</body>
+</html>

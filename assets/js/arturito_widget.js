@@ -135,14 +135,8 @@
 
         <!-- Messages -->
         <div class="arturito-widget-messages" id="arturito-widget-messages">
-          <!-- Welcome -->
-          <div class="arturito-widget-welcome" id="arturito-widget-welcome">
-            <div class="arturito-widget-welcome-icon">A</div>
-            <p class="arturito-widget-welcome-text">
-              Hi! I'm Arturito, your AI assistant.<br>
-              How can I help you today?
-            </p>
-          </div>
+          <!-- Welcome (empty - waits for user input) -->
+          <div class="arturito-widget-welcome" id="arturito-widget-welcome" style="display: none;"></div>
 
           <!-- Messages list -->
           <div id="arturito-widget-messages-list"></div>
@@ -209,6 +203,7 @@
         user_id: user.user_id || user.id,
         user_name: user.username || user.user_name || user.name,
         email: user.email,
+        user_role: user.user_role || user.role,  // Rol del usuario
         avatar_color: user.avatar_color,
         user_photo: user.user_photo || user.photo || user.avatar,
       };
@@ -222,12 +217,13 @@
             user_id: user.user_id || user.id,
             user_name: user.username || user.user_name || user.name,
             email: user.email,
+            user_role: user.user_role || user.role,  // Rol del usuario
             avatar_color: user.avatar_color,
             user_photo: user.user_photo || user.photo || user.avatar,
           };
         }
       } catch (e) {
-        state.currentUser = { user_id: "guest", user_name: "Usuario", email: "" };
+        state.currentUser = { user_id: "guest", user_name: "Usuario", email: "", user_role: null };
       }
     }
   }
@@ -379,6 +375,7 @@
           text: content,
           user_name: state.currentUser?.user_name,
           user_email: state.currentUser?.email,
+          user_role: state.currentUser?.user_role,  // Rol para control de permisos
           user_id: state.currentUser?.user_id,
           session_id: state.sessionId,
           thread_id: state.threadId,
@@ -532,6 +529,21 @@
           </div>
         `;
 
+      case "suggest_delegation":
+        // Show delegation confirmation buttons
+        const delegation = actionData.delegation || {};
+        const teamName = delegation.team_name || "el equipo responsable";
+        return `
+          <div class="arturito-widget-action-btns">
+            <button type="button" class="arturito-widget-action-btn-inline arturito-widget-action-btn-primary" onclick="ArturitoWidget.confirmDelegation()">
+              Si, enviar mensaje
+            </button>
+            <button type="button" class="arturito-widget-action-btn-inline" onclick="ArturitoWidget.cancelDelegation()">
+              No, gracias
+            </button>
+          </div>
+        `;
+
       case "navigate":
       case "navigate_then_action":
         // Show navigation indicator
@@ -678,6 +690,16 @@
           type: "send_help_request",
           helpers: actionData.helpers,
           requestedAction: actionData.requested_action,
+        };
+        break;
+
+      case "suggest_delegation":
+        // Store delegation data for user confirmation
+        state.pendingAction = {
+          type: "delegation_request",
+          delegation: actionData.delegation,
+          originalIntent: actionData.intent,
+          originalText: actionData.raw_text,
         };
         break;
 
@@ -1169,6 +1191,117 @@
     sendMessage();
   }
 
+  /**
+   * Confirm delegation - send message to the responsible team
+   */
+  async function confirmDelegation() {
+    if (!state.pendingAction || state.pendingAction.type !== "delegation_request") {
+      return;
+    }
+
+    const delegation = state.pendingAction.delegation;
+    const originalText = state.pendingAction.originalText;
+    const teamName = delegation.team_name || "el equipo responsable";
+
+    // Clear pending action
+    state.pendingAction = null;
+
+    // Add user confirmation
+    const userMsg = {
+      id: `msg_${Date.now()}`,
+      role: "user",
+      content: "Si, enviar mensaje",
+      timestamp: new Date().toISOString(),
+    };
+    state.messages.push(userMsg);
+
+    // Show typing
+    state.isLoading = true;
+    DOM.typing.style.display = "flex";
+    renderMessages();
+    scrollToBottom();
+
+    try {
+      // Send delegation request to backend
+      const response = await fetch(`${API_BASE}/arturito/delegate-task`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          team_key: delegation.team_key,
+          action_description: delegation.action_description,
+          original_request: originalText,
+          user_name: state.currentUser?.user_name,
+          user_email: state.currentUser?.email,
+          session_id: state.sessionId,
+        }),
+      });
+
+      const data = await response.json();
+
+      const botMsg = {
+        id: `msg_${Date.now()}`,
+        role: "assistant",
+        content: data.text || `He enviado tu solicitud al ${teamName}. Te notificaran cuando este lista.`,
+        timestamp: new Date().toISOString(),
+      };
+      state.messages.push(botMsg);
+
+    } catch (err) {
+      console.error("[Arturito Widget] Error sending delegation:", err);
+      const botMsg = {
+        id: `msg_${Date.now()}`,
+        role: "assistant",
+        content: `No pude enviar el mensaje al ${teamName}. Por favor contactalos directamente.`,
+        timestamp: new Date().toISOString(),
+        isError: true,
+      };
+      state.messages.push(botMsg);
+    } finally {
+      state.isLoading = false;
+      DOM.typing.style.display = "none";
+      saveConversation();
+      renderMessages();
+      scrollToBottom();
+    }
+  }
+
+  /**
+   * Cancel delegation - user doesn't want to send message
+   */
+  function cancelDelegation() {
+    if (!state.pendingAction || state.pendingAction.type !== "delegation_request") {
+      return;
+    }
+
+    // Clear pending action
+    state.pendingAction = null;
+
+    // Add user cancellation
+    const userMsg = {
+      id: `msg_${Date.now()}`,
+      role: "user",
+      content: "No, gracias",
+      timestamp: new Date().toISOString(),
+    };
+    state.messages.push(userMsg);
+
+    const botMsg = {
+      id: `msg_${Date.now()}`,
+      role: "assistant",
+      content: "Entendido. Si necesitas algo mas, estoy aqui para ayudarte.",
+      timestamp: new Date().toISOString(),
+    };
+    state.messages.push(botMsg);
+
+    saveConversation();
+    renderMessages();
+    scrollToBottom();
+  }
+
   window.ArturitoWidget = {
     open: openPanel,
     close: closePanel,
@@ -1178,6 +1311,8 @@
     sendHelpRequest,
     confirmBugReport,
     cancelBugReport,
+    confirmDelegation,
+    cancelDelegation,
     registerCopilotHandlers,
     downloadPDF,
     selectProjectForBVA,

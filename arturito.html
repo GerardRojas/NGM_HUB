@@ -185,16 +185,10 @@
   <!-- Arturito module -->
   <script src="assets/js/arturito.js" defer></script>
   <script>
-    // Remove loading overlay when page is ready
+    // Initialize topbar pills and iOS handling on DOM ready
+    // Loading overlay is controlled by arturito.js after data loads
     document.addEventListener('DOMContentLoaded', function() {
       if (window.initTopbarPills) window.initTopbarPills();
-
-      // Short delay to allow styles to settle
-      setTimeout(function() {
-        document.body.classList.remove('page-loading');
-        var overlay = document.getElementById('pageLoadingOverlay');
-        if (overlay) overlay.style.display = 'none';
-      }, 300);
 
       // Initialize iOS keyboard handling
       initIOSKeyboardHandling();

@@ -155,9 +155,13 @@
                             </div>
                             <div class="pm-toolbar-card-body pm-toolbar-layout-body">
                                 <div class="pm-layout-actions">
-                                    <button id="btnNewTask" type="button" class="pm-btn pm-btn-secondary btn-small"> 
+                                    <button id="btnNewTask" type="button" class="pm-btn pm-btn-secondary btn-small">
                                      <span class="pm-btn-icon">＋</span>
                                      <span>New Task</span>
+                                    </button>
+
+                                    <button id="btnAutomations" type="button" class="pm-btn pm-btn-secondary btn-small">
+                                        <span>Automations</span>
                                     </button>
 
                                     <button
@@ -313,12 +317,25 @@
          window.PM_EditTask?.bind();
         })
         .catch((err) => console.error("[PARTIAL] Edit Task load failed:", err));
+
+    // Load Automations Modal
+    loadHtmlFragment("./partials/automations_modal.html", "#modals-root")
+        .then(() => {
+         console.log("[PARTIAL] Automations modal loaded");
+         window.PM_Automations?.bind();
+        })
+        .catch((err) => console.error("[PARTIAL] Automations load failed:", err));
     </script>
 
     <script src="assets/js/pipeline_table_interactions.js"></script>
+    <script src="assets/js/pipeline_automations.js"></script>
     <script src="assets/js/pipeline.js" defer></script>
     <script src="assets/js/pipeline_layout.js"></script>
     <script src="assets/js/arturito_widget.js"></script>
+
+    <!-- Supabase Realtime -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/pipeline_realtime.js"></script>
 
     <!-- Firebase Push Notifications -->
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>

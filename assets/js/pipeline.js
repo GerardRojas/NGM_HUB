@@ -85,17 +85,47 @@
   const Renderers = {
     /**
      * Renders a person badge with avatar and name
+     * @param {string|object} personOrName - Can be a name string or user object with {name, avatar_color, photo}
      */
-    renderPerson(name) {
-      const raw = String(name || "").trim();
+    renderPerson(personOrName) {
+      // Handle both string (legacy) and object (new) format
+      let name, avatarColor, photo;
+
+      if (personOrName && typeof personOrName === "object") {
+        name = personOrName.name || personOrName.username || "";
+        avatarColor = personOrName.avatar_color;
+        photo = personOrName.photo || personOrName.user_photo;
+      } else {
+        name = String(personOrName || "");
+      }
+
+      const raw = name.trim();
       const safeName = Utils.escapeHtml(raw || "-");
       const initial = Utils.escapeHtml(Utils.getInitial(raw || "-"));
 
-      const key = raw ? raw.toLowerCase() : "__unknown__";
-      const hue = Utils.hashStringToHue(key);
+      // Use avatar_color if available (official user color), otherwise generate from name
+      let hue;
+      if (avatarColor !== undefined && avatarColor !== null && !isNaN(Number(avatarColor))) {
+        hue = Math.max(0, Math.min(360, Number(avatarColor)));
+      } else {
+        const key = raw ? raw.toLowerCase() : "__unknown__";
+        hue = Utils.hashStringToHue(key);
+      }
 
       const bg = raw ? `hsl(${hue} 55% 35%)` : "#334155";
       const ring = raw ? `hsl(${hue} 65% 55%)` : "rgba(148, 163, 184, 0.6)";
+
+      // If photo is available, use it
+      if (photo && raw) {
+        return `
+          <span class="pm-person" title="${safeName}">
+            <span class="pm-avatar pm-avatar-img" style="--av-ring:${ring};">
+              <img src="${Utils.escapeHtml(photo)}" alt="${safeName}" />
+            </span>
+            <span class="pm-person-name">${safeName}</span>
+          </span>
+        `;
+      }
 
       return `
         <span class="pm-person" title="${safeName}">
@@ -125,28 +155,33 @@
           );
 
         case "owner": {
-          const name =
-            (t.owner && (t.owner.name || t.owner.username || t.owner.email)) ||
-            t.owner_name ||
-            t.assigned_to ||
-            "";
+          // Pass full user object to use avatar_color and photo
+          if (t.owner && (t.owner.name || t.owner.id)) {
+            return this.renderPerson(t.owner);
+          }
+          // Fallback to name string
+          const name = t.owner_name || t.assigned_to || "";
           return this.renderPerson(name || "-");
         }
 
         case "collaborator": {
-          const name =
-            (Array.isArray(t.collaborators) &&
-              t.collaborators.length > 0 &&
-              (t.collaborators[0].name || t.collaborators[0].id)) ||
-            "";
-          return this.renderPerson(name || "-");
+          // Pass full user object to use avatar_color and photo
+          if (Array.isArray(t.collaborators) && t.collaborators.length > 0) {
+            const collab = t.collaborators[0];
+            if (collab && (collab.name || collab.id)) {
+              return this.renderPerson(collab);
+            }
+          }
+          return this.renderPerson("-");
         }
 
         case "manager": {
-          const name =
-            (t.manager && (t.manager.name || t.manager.username || t.manager.email)) ||
-            t.manager_name ||
-            "";
+          // Pass full user object to use avatar_color and photo
+          if (t.manager && (t.manager.name || t.manager.id)) {
+            return this.renderPerson(t.manager);
+          }
+          // Fallback to name string
+          const name = t.manager_name || "";
           return this.renderPerson(name || "-");
         }
 

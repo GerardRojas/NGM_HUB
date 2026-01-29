@@ -3,6 +3,9 @@
 // Usa API_BASE de config.js (ya definido globalmente)
 const DASHBOARD_API = window.API_BASE || window.NGM_CONFIG?.API_BASE || "http://localhost:3000";
 
+// Store current user for reference
+let currentUser = null;
+
 document.addEventListener("DOMContentLoaded", () => {
   // 1) Leer usuario desde localStorage
   const rawUser = localStorage.getItem("ngmUser");
@@ -23,10 +26,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
+  currentUser = user;
+
   // Load mentions for the user
   loadMentions(user);
 
-  // Load My Work tasks (pending authorizations, etc.)
+  // Load My Work tasks (pending authorizations, pipeline tasks, etc.)
   loadMyWorkTasks(user);
 
   // 2) Rellenar pill de usuario
@@ -272,11 +277,56 @@ async function loadMyWorkTasks(user) {
       }
     }
 
-    // Future: Add more task sources here
-    // - Pending receipts
-    // - Pipeline tasks
-    // - Pending approvals
-    // - etc.
+    // Load Pipeline tasks assigned to user
+    const pipelineResponse = await fetch(
+      `${DASHBOARD_API}/pipeline/tasks/my-tasks/${user.user_id}`,
+      { credentials: "include", headers }
+    );
+
+    if (pipelineResponse.ok) {
+      const pipelineData = await pipelineResponse.json();
+      const pipelineTasks = pipelineData.tasks || [];
+
+      pipelineTasks.forEach((task) => {
+        const statusLower = (task.status_name || "").toLowerCase();
+        const isWorking = statusLower === "working on it";
+        const isNotStarted = statusLower === "not started";
+
+        // Determine icon based on priority or status
+        let icon = "T";
+        let iconClass = "task-icon-pipeline";
+
+        if (task.priority_name) {
+          const priorityLower = task.priority_name.toLowerCase();
+          if (priorityLower === "high" || priorityLower === "urgent") {
+            icon = "!";
+            iconClass = "task-icon-urgent";
+          } else if (priorityLower === "medium") {
+            iconClass = "task-icon-pending";
+          }
+        }
+
+        if (isWorking) {
+          iconClass = "task-icon-working";
+        }
+
+        tasks.push({
+          type: "pipeline_task",
+          taskId: task.task_id,
+          title: task.task_description || "Untitled task",
+          subtitle: task.project_name || null,
+          module: "Pipeline Manager",
+          icon: icon,
+          iconClass: iconClass,
+          link: `pipeline.html?task=${task.task_id}`,
+          actionText: isWorking ? "Working" : (isNotStarted ? "Start" : "View"),
+          isStartable: isNotStarted,
+          isWorking: isWorking,
+          timeStart: task.time_start,
+          statusName: task.status_name,
+        });
+      });
+    }
 
   } catch (err) {
     console.error("[Dashboard] Failed to load My Work tasks:", err);
@@ -302,26 +352,350 @@ function renderMyWorkTasks(tasks) {
   if (!listEl) return;
 
   const html = tasks.map((task) => {
+    // Determine action button based on task type
+    let actionHtml;
+
+    if (task.type === "pipeline_task") {
+      if (task.isStartable) {
+        // Start button for "Not Started" tasks
+        actionHtml = `
+          <button type="button" class="task-action-btn task-start-btn" data-task-id="${task.taskId}">
+            <span class="task-btn-icon">▶</span> Start
+          </button>
+        `;
+      } else if (task.isWorking) {
+        // Working task: show elapsed time + Send to Review button
+        const elapsedTime = task.timeStart ? formatElapsedTime(task.timeStart) : "";
+        actionHtml = `
+          <div class="task-working-actions">
+            <span class="task-working-timer" data-time-start="${task.timeStart || ''}">
+              <span class="task-working-dot"></span>
+              ${elapsedTime ? `<span class="task-elapsed-time">${elapsedTime}</span>` : '<span class="task-elapsed-time">0m</span>'}
+            </span>
+            <button type="button" class="task-action-btn task-review-btn" data-task-id="${task.taskId}" data-task-title="${escapeHtml(task.title)}">
+              Send to Review
+            </button>
+          </div>
+        `;
+      } else {
+        // View button for other statuses
+        actionHtml = `<a href="${task.link}" class="task-action-btn task-view-btn">${task.actionText}</a>`;
+      }
+    } else {
+      // Default action for other task types
+      actionHtml = `<a href="${task.link}" class="task-action-btn">${task.actionText}</a>`;
+    }
+
+    // Status badge for pipeline tasks
+    let statusBadge = "";
+    if (task.type === "pipeline_task" && task.statusName && !task.isNotStarted && !task.isWorking) {
+      statusBadge = `<span class="task-status-badge">${escapeHtml(task.statusName)}</span>`;
+    }
+
     return `
-      <div class="my-work-task" data-type="${task.type}">
+      <div class="my-work-task" data-type="${task.type}" data-task-id="${task.taskId || ''}">
         <div class="my-work-task-icon">
           <span class="task-icon-badge ${task.iconClass}">${task.icon}</span>
         </div>
         <div class="my-work-task-content">
-          <div class="my-work-task-title">${escapeHtml(task.title)}</div>
+          <div class="my-work-task-title">${escapeHtml(task.title)} ${statusBadge}</div>
           <div class="my-work-task-meta">
             <span class="task-meta-module">${escapeHtml(task.module)}</span>
-            ${task.subtitle ? `<span class="task-meta-separator">·</span><span class="task-meta-amount">${escapeHtml(task.subtitle)}</span>` : ''}
+            ${task.subtitle ? `<span class="task-meta-separator">·</span><span class="task-meta-project">${escapeHtml(task.subtitle)}</span>` : ''}
           </div>
         </div>
         <div class="my-work-task-action">
-          <a href="${task.link}" class="task-action-btn">${task.actionText}</a>
+          ${actionHtml}
         </div>
       </div>
     `;
   }).join("");
 
   listEl.innerHTML = html;
+
+  // Attach click handlers for Start buttons
+  listEl.querySelectorAll(".task-start-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const taskId = btn.dataset.taskId;
+      if (taskId) {
+        handleStartTask(taskId, btn);
+      }
+    });
+  });
+
+  // Attach click handlers for Send to Review buttons
+  listEl.querySelectorAll(".task-review-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const taskId = btn.dataset.taskId;
+      const taskTitle = btn.dataset.taskTitle;
+      if (taskId) {
+        showReviewModal(taskId, taskTitle, btn);
+      }
+    });
+  });
+
+  // Start elapsed time updater for working tasks
+  startElapsedTimeUpdater();
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// START TASK FUNCTIONALITY
+// ─────────────────────────────────────────────────────────────────────────
+
+async function handleStartTask(taskId, buttonEl) {
+  console.log("[Dashboard] Starting task:", taskId);
+
+  // Disable button and show loading state
+  buttonEl.disabled = true;
+  buttonEl.innerHTML = '<span class="task-btn-icon">⏳</span> Starting...';
+
+  try {
+    const token = localStorage.getItem("ngmToken");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+
+    const response = await fetch(`${DASHBOARD_API}/pipeline/tasks/${taskId}/start`, {
+      method: "POST",
+      credentials: "include",
+      headers
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Server error (${response.status}): ${errText}`);
+    }
+
+    const result = await response.json();
+    console.log("[Dashboard] Task started:", result);
+
+    // Show success toast
+    if (window.Toast) {
+      Toast.success("Task Started", "Timer is now running. Good luck!");
+    }
+
+    // Reload tasks to reflect the change
+    if (currentUser) {
+      loadMyWorkTasks(currentUser);
+    }
+
+  } catch (err) {
+    console.error("[Dashboard] Failed to start task:", err);
+
+    // Re-enable button
+    buttonEl.disabled = false;
+    buttonEl.innerHTML = '<span class="task-btn-icon">▶</span> Start';
+
+    if (window.Toast) {
+      Toast.error("Start Failed", err.message);
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// SEND TO REVIEW FUNCTIONALITY
+// ─────────────────────────────────────────────────────────────────────────
+
+function showReviewModal(taskId, taskTitle, buttonEl) {
+  // Remove any existing modal
+  const existingModal = document.getElementById("reviewModal");
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  // Create modal HTML
+  const modalHtml = `
+    <div id="reviewModal" class="dashboard-modal-backdrop">
+      <div class="dashboard-modal">
+        <div class="dashboard-modal-header">
+          <h3 class="dashboard-modal-title">Send to Review</h3>
+          <button type="button" class="dashboard-modal-close" id="closeReviewModal">&times;</button>
+        </div>
+        <div class="dashboard-modal-body">
+          <p class="review-task-name">${escapeHtml(taskTitle)}</p>
+          <label class="review-notes-label">Notes (optional)</label>
+          <textarea
+            id="reviewNotes"
+            class="review-notes-input"
+            placeholder="Add any notes for the reviewer..."
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="dashboard-modal-footer">
+          <button type="button" class="btn-secondary" id="cancelReview">Cancel</button>
+          <button type="button" class="btn-primary" id="confirmReview">
+            <span class="btn-icon">→</span> Send to Review
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+  const modal = document.getElementById("reviewModal");
+  const notesInput = document.getElementById("reviewNotes");
+  const confirmBtn = document.getElementById("confirmReview");
+  const cancelBtn = document.getElementById("cancelReview");
+  const closeBtn = document.getElementById("closeReviewModal");
+
+  // Focus notes input
+  setTimeout(() => notesInput.focus(), 100);
+
+  // Close modal function
+  const closeModal = () => {
+    modal.remove();
+  };
+
+  // Handle confirm
+  confirmBtn.addEventListener("click", async () => {
+    const notes = notesInput.value.trim();
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<span class="btn-icon">⏳</span> Sending...';
+
+    await handleSendToReview(taskId, notes, closeModal);
+  });
+
+  // Handle cancel/close
+  cancelBtn.addEventListener("click", closeModal);
+  closeBtn.addEventListener("click", closeModal);
+
+  // Close on backdrop click
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  // Close on Escape
+  const handleEscape = (e) => {
+    if (e.key === "Escape") {
+      closeModal();
+      document.removeEventListener("keydown", handleEscape);
+    }
+  };
+  document.addEventListener("keydown", handleEscape);
+}
+
+async function handleSendToReview(taskId, notes, closeModalFn) {
+  console.log("[Dashboard] Sending task to review:", taskId);
+
+  try {
+    const token = localStorage.getItem("ngmToken");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+
+    const response = await fetch(`${DASHBOARD_API}/pipeline/tasks/${taskId}/send-to-review`, {
+      method: "POST",
+      credentials: "include",
+      headers,
+      body: JSON.stringify({ notes: notes || null })
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Server error (${response.status}): ${errText}`);
+    }
+
+    const result = await response.json();
+    console.log("[Dashboard] Task sent to review:", result);
+
+    // Close modal
+    closeModalFn();
+
+    // Show success toast
+    if (window.Toast) {
+      let message = "Task sent for approval.";
+      if (result.elapsed_time) {
+        message += ` Time worked: ${result.elapsed_time}`;
+      }
+      if (result.reviewer_task_created) {
+        message += " Reviewer has been notified.";
+      }
+      Toast.success("Sent to Review", message);
+    }
+
+    // Reload tasks to reflect the change
+    if (currentUser) {
+      loadMyWorkTasks(currentUser);
+    }
+
+  } catch (err) {
+    console.error("[Dashboard] Failed to send task to review:", err);
+
+    if (window.Toast) {
+      Toast.error("Send Failed", err.message);
+    }
+
+    // Re-enable button in modal if still open
+    const confirmBtn = document.getElementById("confirmReview");
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = '<span class="btn-icon">→</span> Send to Review';
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// ELAPSED TIME TRACKING
+// ─────────────────────────────────────────────────────────────────────────
+
+let elapsedTimeInterval = null;
+
+function startElapsedTimeUpdater() {
+  // Clear existing interval
+  if (elapsedTimeInterval) {
+    clearInterval(elapsedTimeInterval);
+  }
+
+  // Update elapsed times every minute
+  elapsedTimeInterval = setInterval(() => {
+    // Update working indicators (old style)
+    document.querySelectorAll(".task-working-indicator").forEach((indicator) => {
+      const timeStart = indicator.dataset.timeStart;
+      if (timeStart) {
+        const elapsedEl = indicator.querySelector(".task-elapsed-time");
+        if (elapsedEl) {
+          elapsedEl.textContent = formatElapsedTime(timeStart);
+        }
+      }
+    });
+
+    // Update working timers (new style)
+    document.querySelectorAll(".task-working-timer").forEach((timer) => {
+      const timeStart = timer.dataset.timeStart;
+      if (timeStart) {
+        const elapsedEl = timer.querySelector(".task-elapsed-time");
+        if (elapsedEl) {
+          elapsedEl.textContent = formatElapsedTime(timeStart);
+        }
+      }
+    });
+  }, 60000); // Update every minute
+}
+
+function formatElapsedTime(timeStartStr) {
+  if (!timeStartStr) return "";
+
+  const startTime = new Date(timeStartStr);
+  const now = new Date();
+  const diffMs = now - startTime;
+
+  if (diffMs < 0) return "";
+
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const remainingMins = diffMins % 60;
+
+  if (diffHours > 0) {
+    return `${diffHours}h ${remainingMins}m`;
+  }
+  return `${diffMins}m`;
 }
 
 function formatCurrency(amount) {

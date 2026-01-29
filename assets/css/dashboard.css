@@ -650,3 +650,339 @@
         padding-bottom: calc(16px + env(safe-area-inset-bottom));
     }
 }
+
+/* ==========================================
+   PIPELINE TASK STYLES
+   ========================================== */
+
+/* Pipeline task icon */
+.task-icon-pipeline {
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    color: #6366f1;
+}
+
+/* Working task icon */
+.task-icon-working {
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    color: #3b82f6;
+}
+
+/* Project name in meta */
+.task-meta-project {
+    color: #888888;
+}
+
+/* Status badge */
+.task-status-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    margin-left: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    color: #888888;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+/* Start button */
+.task-start-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    background: rgba(62, 207, 142, 0.15);
+    border: 1px solid rgba(62, 207, 142, 0.4);
+    color: #3ecf8e;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.task-start-btn:hover {
+    background: rgba(62, 207, 142, 0.25);
+    border-color: rgba(62, 207, 142, 0.6);
+}
+
+.task-start-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.task-btn-icon {
+    font-size: 10px;
+}
+
+/* View button variant */
+.task-view-btn {
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    color: #818cf8;
+}
+
+.task-view-btn:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+/* Working indicator */
+.task-working-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 6px;
+    font-size: 13px;
+    color: #60a5fa;
+}
+
+.task-working-dot {
+    width: 8px;
+    height: 8px;
+    background: #3b82f6;
+    border-radius: 50%;
+    animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+    }
+}
+
+.task-working-text {
+    font-weight: 500;
+}
+
+.task-elapsed-time {
+    font-size: 11px;
+    color: rgba(96, 165, 250, 0.7);
+    font-weight: 400;
+}
+
+/* Working actions layout (timer + send to review) */
+.task-working-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.task-working-timer {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 6px;
+    font-size: 12px;
+    color: #60a5fa;
+}
+
+/* Send to Review button */
+.task-review-btn {
+    background: rgba(251, 146, 60, 0.15) !important;
+    border: 1px solid rgba(251, 146, 60, 0.4) !important;
+    color: #fb923c !important;
+}
+
+.task-review-btn:hover {
+    background: rgba(251, 146, 60, 0.25) !important;
+    border-color: rgba(251, 146, 60, 0.6) !important;
+}
+
+/* ==========================================
+   REVIEW MODAL
+   ========================================== */
+
+.dashboard-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.dashboard-modal {
+    background: #111111;
+    border: 1px solid #1f1f1f;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 420px;
+    margin: 16px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dashboard-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #1f1f1f;
+}
+
+.dashboard-modal-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #ededed;
+}
+
+.dashboard-modal-close {
+    background: none;
+    border: none;
+    color: #666666;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+.dashboard-modal-close:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ededed;
+}
+
+.dashboard-modal-body {
+    padding: 20px;
+}
+
+.review-task-name {
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    color: #ededed;
+    font-weight: 500;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    border: 1px solid #1f1f1f;
+}
+
+.review-notes-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #888888;
+}
+
+.review-notes-input {
+    width: 100%;
+    padding: 12px;
+    background: #0a0a0a;
+    border: 1px solid #1f1f1f;
+    border-radius: 8px;
+    color: #ededed;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color 0.15s ease;
+}
+
+.review-notes-input:focus {
+    outline: none;
+    border-color: #3ecf8e;
+}
+
+.review-notes-input::placeholder {
+    color: #444444;
+}
+
+.dashboard-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid #1f1f1f;
+    background: #0a0a0a;
+    border-radius: 0 0 12px 12px;
+}
+
+.dashboard-modal-footer .btn-secondary {
+    padding: 10px 16px;
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    color: #888888;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.dashboard-modal-footer .btn-secondary:hover {
+    border-color: #444444;
+    color: #ededed;
+}
+
+.dashboard-modal-footer .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 18px;
+    background: rgba(251, 146, 60, 0.15);
+    border: 1px solid rgba(251, 146, 60, 0.4);
+    border-radius: 6px;
+    color: #fb923c;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.dashboard-modal-footer .btn-primary:hover {
+    background: rgba(251, 146, 60, 0.25);
+    border-color: rgba(251, 146, 60, 0.6);
+}
+
+.dashboard-modal-footer .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.dashboard-modal-footer .btn-icon {
+    font-size: 12px;
+}

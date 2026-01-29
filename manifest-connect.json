@@ -1,0 +1,37 @@
+{
+  "name": "NGM Connect",
+  "short_name": "Connect",
+  "description": "NGM Team Messaging & Communication",
+  "start_url": "/messages.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#3ecf8e",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "assets/img/connect_icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/img/connect_icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["social", "communication"],
+  "lang": "en",
+  "dir": "ltr",
+  "shortcuts": [
+    {
+      "name": "New Message",
+      "short_name": "New",
+      "description": "Start a new conversation",
+      "url": "/messages.html?action=new",
+      "icons": [{ "src": "assets/img/connect_icon.png", "sizes": "96x96" }]
+    }
+  ]
+}

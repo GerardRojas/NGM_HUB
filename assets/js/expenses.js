@@ -164,6 +164,17 @@
     els.scanReceiptProgressFill = document.getElementById('scanReceiptProgressFill');
     els.scanReceiptProgressText = document.getElementById('scanReceiptProgressText');
 
+    // Pending Receipts Modal elements
+    els.btnPendingReceipts = document.getElementById('btnPendingReceipts');
+    els.pendingReceiptsModal = document.getElementById('pendingReceiptsModal');
+    els.btnClosePendingReceipts = document.getElementById('btnClosePendingReceipts');
+    els.btnCancelPendingReceipts = document.getElementById('btnCancelPendingReceipts');
+    els.pendingReceiptsGrid = document.getElementById('pendingReceiptsGrid');
+    els.pendingReceiptsEmpty = document.getElementById('pendingReceiptsEmpty');
+    els.pendingCountReady = document.getElementById('pendingCountReady');
+    els.pendingCountPending = document.getElementById('pendingCountPending');
+    els.pendingCountProcessing = document.getElementById('pendingCountProcessing');
+
     // Filter dropdown elements
     els.filterDropdown = document.getElementById('filterDropdown');
     els.filterDropdownOptions = document.getElementById('filterDropdownOptions');
@@ -2131,6 +2142,16 @@
         rowData._fromScannedReceipt = true; // Mark as coming from scanned receipt
       }
 
+      // Check if row has a pending receipt ID (from pending receipts modal)
+      if (row.dataset.pendingReceiptId) {
+        rowData._pendingReceiptId = row.dataset.pendingReceiptId;
+      }
+
+      // Check if row has a receipt URL from pending receipt
+      if (row.dataset.receiptUrl) {
+        rowData.receipt_url = row.dataset.receiptUrl;
+      }
+
       // Validate required fields
       if (rowData.TxnDate && rowData.Amount) {
         expensesToSave.push(rowData);
@@ -2432,6 +2453,53 @@
       // Log any failures
       if (batchResult.failed && batchResult.failed.length > 0) {
         console.warn('[EXPENSES] Some expenses failed to create:', batchResult.failed);
+      }
+
+      // ============================================
+      // PHASE 1.5: Link pending receipts to created expenses
+      // ============================================
+      const pendingReceiptLinks = [];
+      for (let i = 0; i < expensesToSave.length; i++) {
+        const expenseData = expensesToSave[i];
+        const createdExpense = createdList[i];
+
+        if (expenseData._pendingReceiptId && createdExpense) {
+          pendingReceiptLinks.push({
+            receiptId: expenseData._pendingReceiptId,
+            expenseId: createdExpense.expense_id || createdExpense.id
+          });
+        }
+      }
+
+      // Link pending receipts to expenses
+      if (pendingReceiptLinks.length > 0) {
+        console.log('[EXPENSES] Linking', pendingReceiptLinks.length, 'pending receipts to expenses...');
+
+        for (const link of pendingReceiptLinks) {
+          try {
+            const linkResponse = await fetch(`${apiBase}/pending-receipts/${link.receiptId}/link`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+              },
+              body: JSON.stringify({ expense_id: link.expenseId })
+            });
+
+            if (linkResponse.ok) {
+              console.log(`[EXPENSES] Linked receipt ${link.receiptId} to expense ${link.expenseId}`);
+
+              // Update message status in Messages module if available
+              if (window.MessagesModule?.updateReceiptStatusInMessages) {
+                window.MessagesModule.updateReceiptStatusInMessages(link.receiptId, 'linked');
+              }
+            } else {
+              console.warn(`[EXPENSES] Failed to link receipt ${link.receiptId}:`, await linkResponse.text());
+            }
+          } catch (linkErr) {
+            console.error(`[EXPENSES] Error linking receipt ${link.receiptId}:`, linkErr);
+          }
+        }
       }
 
       // ============================================
@@ -3153,6 +3221,214 @@
       els.scanReceiptUploadZone.style.display = '';
     }
     els.scanReceiptProgress.classList.add('hidden');
+  }
+
+  // ================================
+  // PENDING RECEIPTS FUNCTIONALITY
+  // ================================
+
+  let pendingReceiptsData = [];
+  let currentPendingStatus = 'ready';
+
+  function openPendingReceiptsModal() {
+    if (!selectedProjectId) {
+      if (window.Toast) Toast.warning('Select Project', 'Please select a project first.');
+      return;
+    }
+    els.pendingReceiptsModal?.classList.remove('hidden');
+    // Reset to "ready" tab
+    currentPendingStatus = 'ready';
+    document.querySelectorAll('.pending-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.status === 'ready');
+    });
+    loadPendingReceipts('ready');
+  }
+
+  function closePendingReceiptsModal() {
+    els.pendingReceiptsModal?.classList.add('hidden');
+    pendingReceiptsData = [];
+  }
+
+  async function loadPendingReceipts(status = 'ready') {
+    currentPendingStatus = status;
+    const grid = els.pendingReceiptsGrid;
+    const empty = els.pendingReceiptsEmpty;
+
+    if (!grid) return;
+
+    // Show loading
+    grid.innerHTML = `
+      <div class="pending-receipts-loading">
+        <div class="pending-loading-spinner"></div>
+        <span>Loading receipts...</span>
+      </div>
+    `;
+    empty?.classList.add('hidden');
+
+    const apiBase = getApiBase();
+    const authToken = getAuthToken();
+    if (!authToken) return;
+
+    try {
+      const url = `${apiBase}/pending-receipts/project/${selectedProjectId}?status=${status}`;
+      const resp = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+
+      if (!resp.ok) throw new Error('Failed to load pending receipts');
+
+      const result = await resp.json();
+      pendingReceiptsData = result.data || [];
+
+      // Update counts in tabs
+      if (result.counts) {
+        if (els.pendingCountReady) els.pendingCountReady.textContent = result.counts.ready || 0;
+        if (els.pendingCountPending) els.pendingCountPending.textContent = result.counts.pending || 0;
+        if (els.pendingCountProcessing) els.pendingCountProcessing.textContent = result.counts.processing || 0;
+      }
+
+      renderPendingReceipts();
+
+    } catch (err) {
+      console.error('[PendingReceipts] Error loading:', err);
+      grid.innerHTML = `
+        <div class="pending-receipts-loading">
+          <span style="color: #f87171;">Error loading receipts</span>
+        </div>
+      `;
+    }
+  }
+
+  function renderPendingReceipts() {
+    const grid = els.pendingReceiptsGrid;
+    const empty = els.pendingReceiptsEmpty;
+
+    if (!grid) return;
+
+    if (pendingReceiptsData.length === 0) {
+      grid.innerHTML = '';
+      empty?.classList.remove('hidden');
+      return;
+    }
+
+    empty?.classList.add('hidden');
+
+    grid.innerHTML = pendingReceiptsData.map(receipt => {
+      const isPdf = receipt.file_type === 'application/pdf';
+      const vendor = receipt.vendor_name || 'Unknown Vendor';
+      const amount = receipt.amount ? `$${parseFloat(receipt.amount).toFixed(2)}` : '';
+      const date = receipt.receipt_date || '';
+      const statusClass = `pending-receipt-status--${receipt.status}`;
+
+      return `
+        <div class="pending-receipt-card" data-receipt-id="${receipt.id}">
+          <div class="pending-receipt-thumb ${isPdf ? 'pending-receipt-thumb--pdf' : ''}">
+            ${isPdf ? `
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+            ` : `
+              <img src="${receipt.thumbnail_url || receipt.file_url}" alt="${receipt.file_name}" loading="lazy">
+            `}
+            <span class="pending-receipt-status ${statusClass}">${receipt.status}</span>
+          </div>
+          <div class="pending-receipt-info">
+            <div class="pending-receipt-vendor">${escapeHtml(vendor)}</div>
+            ${amount ? `<div class="pending-receipt-amount">${amount}</div>` : ''}
+            ${date ? `<div class="pending-receipt-date">${date}</div>` : ''}
+            <div class="pending-receipt-filename">${escapeHtml(receipt.file_name || '')}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Add click handlers to cards
+    grid.querySelectorAll('.pending-receipt-card').forEach(card => {
+      card.addEventListener('click', () => handlePendingReceiptSelect(card.dataset.receiptId));
+    });
+  }
+
+  async function handlePendingReceiptSelect(receiptId) {
+    const receipt = pendingReceiptsData.find(r => r.id === receiptId);
+    if (!receipt) return;
+
+    // If receipt is not processed yet, process it first
+    if (receipt.status === 'pending') {
+      if (window.Toast) Toast.info('Processing', 'Processing receipt with AI...');
+
+      const apiBase = getApiBase();
+      const authToken = getAuthToken();
+      if (!authToken) return;
+
+      try {
+        const resp = await fetch(`${apiBase}/pending-receipts/${receiptId}/process`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        if (!resp.ok) throw new Error('Failed to process receipt');
+
+        const result = await resp.json();
+        if (window.Toast) Toast.success('Processed', 'Receipt data extracted successfully!');
+
+        // Reload to get updated data
+        await loadPendingReceipts(currentPendingStatus);
+        return;
+      } catch (err) {
+        console.error('[PendingReceipts] Process error:', err);
+        if (window.Toast) Toast.error('Error', 'Failed to process receipt');
+        return;
+      }
+    }
+
+    // For ready receipts, populate the expense form
+    closePendingReceiptsModal();
+
+    // Add a new row with the receipt data
+    const rowIndex = addModalRow();
+    if (rowIndex !== undefined) {
+      const row = els.expenseRowsBody?.querySelector(`tr[data-row-index="${rowIndex}"]`);
+      if (row) {
+        // Fill in the extracted data
+        const dateInput = row.querySelector('.exp-input--date');
+        const descInput = row.querySelector('.exp-input--desc');
+        const amountInput = row.querySelector('.exp-input--amount');
+        const vendorInput = row.querySelector('.exp-input--vendor');
+        const accountInput = row.querySelector('.exp-input--account');
+
+        if (dateInput && receipt.receipt_date) dateInput.value = receipt.receipt_date;
+        if (descInput) descInput.value = receipt.parsed_data?.description || `Receipt: ${receipt.file_name}`;
+        if (amountInput && receipt.amount) amountInput.value = receipt.amount;
+        if (vendorInput && receipt.vendor_name) vendorInput.value = receipt.vendor_name;
+        if (accountInput && receipt.suggested_category) accountInput.value = receipt.suggested_category;
+
+        // Store the receipt ID for linking when saving
+        row.dataset.pendingReceiptId = receiptId;
+
+        // Store receipt URL for the row
+        row.dataset.receiptUrl = receipt.file_url || '';
+
+        // Update the receipt button to show it has a receipt
+        const receiptBtn = row.querySelector('.btn-row-receipt');
+        if (receiptBtn) {
+          receiptBtn.classList.add('receipt-icon-btn--has-receipt');
+          receiptBtn.title = 'Receipt attached from pending';
+        }
+      }
+    }
+
+    if (window.Toast) Toast.success('Added', 'Receipt data added to expense form');
+  }
+
+  // Helper function to escape HTML
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 
   async function handleScanReceiptFile(file) {
@@ -4347,6 +4623,23 @@
       els.scanReceiptDropArea.classList.remove('drag-over');
       const file = e.dataTransfer.files[0];
       if (file) handleScanReceiptFile(file);
+    });
+
+    // Pending Receipts Modal: Open button
+    els.btnPendingReceipts?.addEventListener('click', openPendingReceiptsModal);
+
+    // Pending Receipts Modal: Close buttons
+    els.btnClosePendingReceipts?.addEventListener('click', closePendingReceiptsModal);
+    els.btnCancelPendingReceipts?.addEventListener('click', closePendingReceiptsModal);
+
+    // Pending Receipts Modal: Tab clicks
+    document.querySelectorAll('.pending-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const status = tab.dataset.status;
+        document.querySelectorAll('.pending-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        loadPendingReceipts(status);
+      });
     });
 
     // Modal: Remove row button

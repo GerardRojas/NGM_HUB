@@ -117,10 +117,15 @@
     DOM.btnSearchMessages = document.getElementById("btnSearchMessages");
     DOM.btnChannelInfo = document.getElementById("btnChannelInfo");
 
+    // Mobile navigation
+    DOM.btnMobileMenu = document.getElementById("btnMobileMenu");
+    DOM.sidebarOverlay = document.getElementById("sidebarOverlay");
+
     // Modals
     DOM.newChannelModal = document.getElementById("newChannelModal");
     DOM.channelInfoModal = document.getElementById("channelInfoModal");
     DOM.searchMessagesModal = document.getElementById("searchMessagesModal");
+    DOM.manageProjectChannelsModal = document.getElementById("manageProjectChannelsModal");
 
     // Global search
     DOM.globalSearchInput = document.getElementById("messages-search-input");
@@ -154,6 +159,9 @@
 
       // Initialize Supabase Realtime
       initSupabaseRealtime();
+
+      // Apply saved collapsed states for main sections
+      initSectionCollapsedStates();
 
       // Remove page loading state
       document.body.classList.remove("page-loading");
@@ -264,6 +272,154 @@
     renderCustomChannels();
   }
 
+  // Project colors for sidebar
+  const PROJECT_COLORS = [
+    '#3ecf8e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
+    '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+    '#ec4899', '#f43f5e', '#ef4444', '#f97316', '#f59e0b',
+    '#eab308', '#84cc16', '#22c55e'
+  ];
+
+  function getProjectColor(projectId) {
+    const colors = JSON.parse(localStorage.getItem('ngm_project_colors') || '{}');
+    return colors[projectId] || PROJECT_COLORS[Math.abs(hashCode(projectId)) % PROJECT_COLORS.length];
+  }
+
+  function setProjectColor(projectId, color) {
+    const colors = JSON.parse(localStorage.getItem('ngm_project_colors') || '{}');
+    colors[projectId] = color;
+    localStorage.setItem('ngm_project_colors', JSON.stringify(colors));
+  }
+
+  function hashCode(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return hash;
+  }
+
+  // Store for project channel configurations (which channels each project has enabled)
+  // Default channels: General (always), Receipts (always, cannot be deleted)
+  // Optional channels: Accounting (can be added/removed)
+  const DEFAULT_PROJECT_CHANNELS = ["general", "receipts"];
+  const OPTIONAL_PROJECT_CHANNELS = [
+    { key: "accounting", label: "Accounting", type: CHANNEL_TYPES.PROJECT_ACCOUNTING }
+  ];
+
+  function getProjectChannelConfig(projectId) {
+    try {
+      const configs = JSON.parse(localStorage.getItem("ngm_project_channel_configs") || "{}");
+      return configs[projectId] || { channels: [...DEFAULT_PROJECT_CHANNELS] };
+    } catch (e) {
+      return { channels: [...DEFAULT_PROJECT_CHANNELS] };
+    }
+  }
+
+  function saveProjectChannelConfig(projectId, config) {
+    try {
+      const configs = JSON.parse(localStorage.getItem("ngm_project_channel_configs") || "{}");
+      configs[projectId] = config;
+      localStorage.setItem("ngm_project_channel_configs", JSON.stringify(configs));
+    } catch (e) {
+      console.warn("[Messages] Failed to save channel config:", e);
+    }
+  }
+
+  // Collapsed state for project groups
+  function getProjectCollapsedState(projectId) {
+    try {
+      const states = JSON.parse(localStorage.getItem("ngm_project_collapsed_states") || "{}");
+      return states[projectId] === true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function setProjectCollapsedState(projectId, isCollapsed) {
+    try {
+      const states = JSON.parse(localStorage.getItem("ngm_project_collapsed_states") || "{}");
+      states[projectId] = isCollapsed;
+      localStorage.setItem("ngm_project_collapsed_states", JSON.stringify(states));
+    } catch (e) {
+      console.warn("[Messages] Failed to save collapsed state:", e);
+    }
+  }
+
+  function toggleProjectCollapse(projectId) {
+    const isCollapsed = getProjectCollapsedState(projectId);
+    setProjectCollapsedState(projectId, !isCollapsed);
+
+    // Update UI
+    const projectGroup = document.querySelector(`.msg-project-group[data-project-id="${projectId}"]`);
+    if (projectGroup) {
+      projectGroup.classList.toggle("collapsed", !isCollapsed);
+      const chevron = projectGroup.querySelector(".msg-project-chevron");
+      if (chevron) {
+        chevron.classList.toggle("collapsed", !isCollapsed);
+      }
+    }
+  }
+
+  // Main section collapse state (Projects, Direct Messages, Custom Channels)
+  function getSectionCollapsedState(sectionName) {
+    try {
+      const states = JSON.parse(localStorage.getItem("ngm_section_collapsed_states") || "{}");
+      return states[sectionName] === true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function setSectionCollapsedState(sectionName, isCollapsed) {
+    try {
+      const states = JSON.parse(localStorage.getItem("ngm_section_collapsed_states") || "{}");
+      states[sectionName] = isCollapsed;
+      localStorage.setItem("ngm_section_collapsed_states", JSON.stringify(states));
+    } catch (e) {
+      console.warn("[Messages] Failed to save section collapsed state:", e);
+    }
+  }
+
+  function toggleSectionCollapse(sectionName) {
+    const isCollapsed = getSectionCollapsedState(sectionName);
+    setSectionCollapsedState(sectionName, !isCollapsed);
+
+    // Update UI
+    const sectionHeader = document.querySelector(`.msg-channel-section-header[data-section="${sectionName}"]`);
+    if (sectionHeader) {
+      const section = sectionHeader.closest(".msg-channel-section");
+      if (section) {
+        section.classList.toggle("collapsed", !isCollapsed);
+      }
+      const chevron = sectionHeader.querySelector(".msg-section-chevron");
+      if (chevron) {
+        chevron.classList.toggle("collapsed", !isCollapsed);
+      }
+    }
+  }
+
+  function initSectionCollapsedStates() {
+    // Apply saved collapsed states on init
+    ["projects", "direct", "custom"].forEach(sectionName => {
+      const isCollapsed = getSectionCollapsedState(sectionName);
+      if (isCollapsed) {
+        const sectionHeader = document.querySelector(`.msg-channel-section-header[data-section="${sectionName}"]`);
+        if (sectionHeader) {
+          const section = sectionHeader.closest(".msg-channel-section");
+          if (section) {
+            section.classList.add("collapsed");
+          }
+          const chevron = sectionHeader.querySelector(".msg-section-chevron");
+          if (chevron) {
+            chevron.classList.add("collapsed");
+          }
+        }
+      }
+    });
+  }
+
   function renderProjectChannels() {
     if (!DOM.projectChannels) return;
 
@@ -278,12 +434,32 @@
     state.projects.forEach((project) => {
       const projectName = project.project_name || "Unnamed";
       const projectId = project.project_id;
+      const projectColor = getProjectColor(projectId);
+      const channelConfig = getProjectChannelConfig(projectId);
+      const isCollapsed = getProjectCollapsedState(projectId);
 
       html += `
-        <div class="msg-project-group" data-project-id="${projectId}">
-          <div class="msg-project-header">
-            <span class="msg-project-icon">📁</span>
+        <div class="msg-project-group${isCollapsed ? ' collapsed' : ''}" data-project-id="${projectId}">
+          <div class="msg-project-header" data-project-id="${projectId}">
+            <span class="msg-project-chevron${isCollapsed ? ' collapsed' : ''}" data-project-id="${projectId}">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </span>
+            <span class="msg-project-color-dot"
+                  data-project-id="${projectId}"
+                  style="background-color: ${projectColor};"
+                  title="Click to change color"></span>
             <span class="msg-project-name">${escapeHtml(projectName)}</span>
+            <button type="button" class="msg-project-settings-btn"
+                    data-project-id="${projectId}"
+                    data-project-name="${escapeHtml(projectName)}"
+                    title="Manage channels">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </button>
           </div>
           <div class="msg-project-channels">
             <button type="button" class="msg-channel-item"
@@ -293,6 +469,7 @@
               <span class="msg-channel-hash">#</span>
               <span class="msg-channel-name">General</span>
             </button>
+            ${channelConfig.channels.includes("accounting") ? `
             <button type="button" class="msg-channel-item"
                     data-channel-type="${CHANNEL_TYPES.PROJECT_ACCOUNTING}"
                     data-project-id="${projectId}"
@@ -300,6 +477,7 @@
               <span class="msg-channel-hash">#</span>
               <span class="msg-channel-name">Accounting</span>
             </button>
+            ` : ""}
             <button type="button" class="msg-channel-item"
                     data-channel-type="${CHANNEL_TYPES.PROJECT_RECEIPTS}"
                     data-project-id="${projectId}"
@@ -313,6 +491,52 @@
     });
 
     DOM.projectChannels.innerHTML = html;
+  }
+
+  function showProjectColorPicker(dotElement, projectId) {
+    // Remove any existing picker
+    document.querySelector(".msg-color-picker-popup")?.remove();
+
+    // Create color picker popup
+    const popup = document.createElement("div");
+    popup.className = "msg-color-picker-popup";
+
+    let colorsHtml = PROJECT_COLORS.map(color => `
+      <button type="button" class="msg-color-option"
+              data-color="${color}"
+              style="background-color: ${color};"
+              title="${color}"></button>
+    `).join('');
+
+    popup.innerHTML = `
+      <div class="msg-color-picker-grid">
+        ${colorsHtml}
+      </div>
+    `;
+
+    // Position popup near the dot
+    const rect = dotElement.getBoundingClientRect();
+    popup.style.position = "fixed";
+    popup.style.left = `${rect.right + 8}px`;
+    popup.style.top = `${rect.top - 4}px`;
+    popup.style.zIndex = "1000";
+
+    // Handle color selection
+    popup.addEventListener("click", (e) => {
+      const colorBtn = e.target.closest(".msg-color-option");
+      if (colorBtn) {
+        const newColor = colorBtn.dataset.color;
+        setProjectColor(projectId, newColor);
+        // Update the dot color
+        dotElement.style.backgroundColor = newColor;
+        // Update all dots with same project ID
+        document.querySelectorAll(`.msg-project-color-dot[data-project-id="${projectId}"]`)
+          .forEach(dot => dot.style.backgroundColor = newColor);
+        popup.remove();
+      }
+    });
+
+    document.body.appendChild(popup);
   }
 
   function renderDirectMessages() {
@@ -333,14 +557,14 @@
     directChannels.forEach((channel) => {
       const otherUser = getOtherUserInDM(channel);
       const userName = otherUser?.user_name || "Unknown";
-      const avatarColor = otherUser?.avatar_color || getDefaultAvatarColor(userName);
+      const avatarColor = getAvatarColor(otherUser);
       const initials = getInitials(userName);
 
       html += `
         <button type="button" class="msg-channel-item msg-dm-item"
                 data-channel-id="${channel.id}"
                 data-channel-type="${CHANNEL_TYPES.DIRECT}">
-          <span class="msg-dm-avatar" style="--avatar-color: ${avatarColor}">
+          <span class="msg-dm-avatar" style="background-color: ${avatarColor}">
             ${initials}
           </span>
           <span class="msg-channel-name">${escapeHtml(userName)}</span>
@@ -420,6 +644,9 @@
 
     // Scroll to bottom
     scrollToBottom();
+
+    // Close mobile sidebar after selecting channel
+    closeMobileSidebar();
   }
 
   function updateChatHeader(channel) {
@@ -566,30 +793,35 @@
   }
 
   function renderMessage(msg) {
-    const user = state.users.find((u) => u.user_id === msg.user_id) || {};
+    const user = state.users.find((u) => u.user_id === msg.user_id) || { user_name: msg.user_name };
     const userName = user.user_name || msg.user_name || "Unknown";
-    const avatarColor = user.avatar_color || getDefaultAvatarColor(userName);
+    const avatarColor = getAvatarColor(user);
     const initials = getInitials(userName);
     const time = formatTime(msg.created_at);
     const content = formatMessageContent(msg.content);
     const hasAttachments = msg.attachments && msg.attachments.length > 0;
     const hasReactions = msg.reactions && Object.keys(msg.reactions).length > 0;
     const threadCount = msg.thread_count || 0;
+    const isOwnMessage = msg.user_id === state.currentUser?.user_id;
+
+    // Check for receipt status tag
+    const receiptStatusTag = renderReceiptStatusTag(msg);
 
     return `
-      <div class="msg-message" data-message-id="${msg.id}">
-        <div class="msg-message-avatar" style="--avatar-color: ${avatarColor}">
+      <div class="msg-message ${isOwnMessage ? 'msg-message--own' : ''}" data-message-id="${msg.id}">
+        <div class="msg-message-avatar" style="background-color: ${avatarColor}">
           ${initials}
         </div>
         <div class="msg-message-content">
           <div class="msg-message-header">
             <span class="msg-message-author">${escapeHtml(userName)}</span>
             <span class="msg-message-time">${time}</span>
+            ${receiptStatusTag}
           </div>
           <div class="msg-message-body">
             ${content}
           </div>
-          ${hasAttachments ? renderAttachments(msg.attachments) : ""}
+          ${hasAttachments ? renderAttachments(msg.attachments, msg) : ""}
           ${hasReactions ? renderReactions(msg.reactions, msg.id) : ""}
           <div class="msg-message-actions">
             <button type="button" class="msg-action-btn" data-action="react" data-message-id="${msg.id}" title="Add reaction">
@@ -607,20 +839,47 @@
     `;
   }
 
-  function renderAttachments(attachments) {
+  /**
+   * Render receipt status tag if the message has receipt metadata
+   */
+  function renderReceiptStatusTag(msg) {
+    if (!msg.metadata?.pending_receipt_id) return '';
+
+    const status = msg.metadata.receipt_status || 'pending';
+    const statusConfig = {
+      pending: { label: 'Pending', class: 'msg-receipt-status--pending', icon: '⏳' },
+      processing: { label: 'Processing', class: 'msg-receipt-status--processing', icon: '⚙️' },
+      ready: { label: 'Ready', class: 'msg-receipt-status--ready', icon: '✅' },
+      linked: { label: 'Done', class: 'msg-receipt-status--linked', icon: '✓' },
+      error: { label: 'Error', class: 'msg-receipt-status--error', icon: '⚠️' }
+    };
+
+    const config = statusConfig[status] || statusConfig.pending;
+    return `
+      <span class="msg-receipt-status ${config.class}" data-receipt-id="${msg.metadata.pending_receipt_id}">
+        <span class="msg-receipt-status-icon">${config.icon}</span>
+        <span class="msg-receipt-status-label">${config.label}</span>
+      </span>
+    `;
+  }
+
+  function renderAttachments(attachments, msg = null) {
     if (!attachments || attachments.length === 0) return "";
+
+    const isReceiptMessage = msg?.metadata?.pending_receipt_id;
 
     let html = '<div class="msg-attachments">';
     attachments.forEach((att) => {
       if (att.type?.startsWith("image/")) {
         html += `
-          <div class="msg-attachment msg-attachment--image">
-            <img src="${escapeHtml(att.url)}" alt="${escapeHtml(att.name)}" loading="lazy" />
+          <div class="msg-attachment msg-attachment--image ${isReceiptMessage ? 'msg-attachment--receipt' : ''}">
+            <img src="${escapeHtml(att.thumbnail_url || att.url)}" alt="${escapeHtml(att.name)}" loading="lazy" />
+            ${isReceiptMessage ? `<a href="${escapeHtml(att.url)}" target="_blank" class="msg-attachment-view">View Full</a>` : ''}
           </div>
         `;
       } else {
         html += `
-          <a href="${escapeHtml(att.url)}" class="msg-attachment msg-attachment--file" target="_blank" download>
+          <a href="${escapeHtml(att.url)}" class="msg-attachment msg-attachment--file ${isReceiptMessage ? 'msg-attachment--receipt' : ''}" target="_blank" download>
             <span class="msg-attachment-icon">📄</span>
             <span class="msg-attachment-name">${escapeHtml(att.name)}</span>
             <span class="msg-attachment-size">${formatFileSize(att.size)}</span>
@@ -739,6 +998,7 @@
       const tempIndex = state.messages.findIndex((m) => m.id === tempMessage.id);
       if (tempIndex !== -1) {
         state.messages[tempIndex] = data.message || data;
+        renderMessages();
       }
     } catch (err) {
       console.error("[Messages] Send error:", err);
@@ -781,11 +1041,11 @@
 
     let html = "";
     filtered.slice(0, 8).forEach((user) => {
-      const avatarColor = user.avatar_color || getDefaultAvatarColor(user.user_name);
+      const avatarColor = getAvatarColor(user);
       const initials = getInitials(user.user_name);
       html += `
         <button type="button" class="msg-mention-item" data-user-id="${user.user_id}" data-user-name="${escapeHtml(user.user_name)}">
-          <span class="msg-mention-avatar" style="--avatar-color: ${avatarColor}">${initials}</span>
+          <span class="msg-mention-avatar" style="background-color: ${avatarColor}">${initials}</span>
           <span class="msg-mention-name">${escapeHtml(user.user_name)}</span>
         </button>
       `;
@@ -1109,17 +1369,13 @@
         if (result.success) {
           const receipt = result.data;
 
-          // Auto-send a message with the receipt link
-          const receiptMessage = `📄 **Receipt uploaded:** ${file.name}\n🔗 [View Receipt](${receipt.file_url})`;
-          DOM.messageInput.value = receiptMessage;
-          await sendMessage();
+          // Send a message with receipt metadata for status tracking
+          await sendReceiptMessage(receipt, file.name);
 
           showToast(`Receipt uploaded successfully!`, "success");
 
-          // Ask if user wants to process it now
-          if (confirm(`Receipt "${file.name}" uploaded.\n\nDo you want to scan it now to extract expense data?`)) {
-            await processReceiptNow(receipt.id, file.name);
-          }
+          // Auto-process the receipt
+          await processReceiptNow(receipt.id, file.name);
         }
       } catch (err) {
         console.error("[Messages] Receipt upload error:", err);
@@ -1129,10 +1385,80 @@
   }
 
   /**
+   * Send a message with receipt metadata for status tracking
+   */
+  async function sendReceiptMessage(receipt, fileName) {
+    const content = DOM.messageInput.value.trim();
+    if (!state.currentChannel) return;
+
+    const messageData = {
+      content: `📄 **Receipt:** ${fileName}`,
+      channel_type: state.currentChannel.type,
+      user_id: state.currentUser?.user_id,
+      reply_to_id: null,
+      attachments: [{
+        id: `receipt-${receipt.id}`,
+        name: fileName,
+        size: receipt.file_size || 0,
+        type: receipt.file_type || 'image/jpeg',
+        url: receipt.file_url,
+        thumbnail_url: receipt.thumbnail_url
+      }],
+      metadata: {
+        pending_receipt_id: receipt.id,
+        receipt_status: receipt.status || 'pending'
+      }
+    };
+
+    // Set channel reference based on type
+    if (state.currentChannel.type.startsWith("project_")) {
+      messageData.project_id = state.currentChannel.projectId;
+    } else {
+      messageData.channel_id = state.currentChannel.id;
+    }
+
+    // Optimistic UI update
+    const tempMessage = {
+      id: `temp-${Date.now()}`,
+      ...messageData,
+      created_at: new Date().toISOString(),
+      user_name: state.currentUser?.user_name,
+    };
+    state.messages.push(tempMessage);
+    renderMessages();
+
+    try {
+      const res = await authFetch(`${API_BASE}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(messageData),
+      });
+
+      if (!res.ok) throw new Error("Failed to send message");
+
+      const data = await res.json();
+      // Replace temp message with real one
+      const tempIndex = state.messages.findIndex((m) => m.id === tempMessage.id);
+      if (tempIndex !== -1) {
+        state.messages[tempIndex] = data.message || data;
+        renderMessages();
+      }
+    } catch (err) {
+      console.error("[Messages] Receipt message send error:", err);
+      // Remove temp message on error
+      state.messages = state.messages.filter((m) => m.id !== tempMessage.id);
+      renderMessages();
+    }
+  }
+
+  /**
    * Process a receipt using OCR (calls the process endpoint)
    */
   async function processReceiptNow(receiptId, fileName) {
     showToast(`Processing receipt: ${fileName}...`, "info");
+
+    // Update message status to "processing"
+    updateReceiptStatusInMessages(receiptId, 'processing');
 
     try {
       const response = await authFetch(`${API_BASE}/pending-receipts/${receiptId}/process`, {
@@ -1141,30 +1467,68 @@
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
+        updateReceiptStatusInMessages(receiptId, 'error');
         throw new Error(error.detail || "Processing failed");
       }
 
       const result = await response.json();
 
-      if (result.success && result.parsed) {
-        const parsed = result.parsed;
-        let summaryMsg = `✅ **Receipt scanned:**\n`;
-        if (parsed.vendor_name) summaryMsg += `• Vendor: ${parsed.vendor_name}\n`;
-        if (parsed.amount) summaryMsg += `• Amount: $${parsed.amount.toFixed(2)}\n`;
-        if (parsed.receipt_date) summaryMsg += `• Date: ${parsed.receipt_date}\n`;
-        if (parsed.suggested_category) summaryMsg += `• Category: ${parsed.suggested_category}\n`;
-        summaryMsg += `\n💡 Ready to create expense from this receipt.`;
-
-        // Send summary to channel
-        DOM.messageInput.value = summaryMsg;
-        await sendMessage();
-
-        showToast("Receipt processed! Check the channel for details.", "success");
+      if (result.success) {
+        // Update message status to "ready"
+        updateReceiptStatusInMessages(receiptId, 'ready');
+        showToast("Receipt processed and ready!", "success");
       }
     } catch (err) {
       console.error("[Messages] Receipt processing error:", err);
       showToast(`Failed to process receipt: ${err.message}`, "error");
     }
+  }
+
+  /**
+   * Update the receipt status in messages (for UI feedback)
+   */
+  function updateReceiptStatusInMessages(receiptId, newStatus) {
+    // Find messages with this receipt ID and update their status
+    let updated = false;
+    state.messages.forEach(msg => {
+      if (msg.metadata?.pending_receipt_id === receiptId) {
+        msg.metadata.receipt_status = newStatus;
+        updated = true;
+      }
+    });
+
+    if (updated) {
+      renderMessages();
+    }
+
+    // Also update the DOM directly for immediate feedback
+    const statusElements = document.querySelectorAll(`[data-receipt-id="${receiptId}"]`);
+    statusElements.forEach(el => {
+      // Remove old status classes
+      el.classList.remove(
+        'msg-receipt-status--pending',
+        'msg-receipt-status--processing',
+        'msg-receipt-status--ready',
+        'msg-receipt-status--linked',
+        'msg-receipt-status--error'
+      );
+      // Add new status class
+      el.classList.add(`msg-receipt-status--${newStatus}`);
+
+      // Update label and icon
+      const statusConfig = {
+        pending: { label: 'Pending', icon: '⏳' },
+        processing: { label: 'Processing', icon: '⚙️' },
+        ready: { label: 'Ready', icon: '✅' },
+        linked: { label: 'Done', icon: '✓' },
+        error: { label: 'Error', icon: '⚠️' }
+      };
+      const config = statusConfig[newStatus] || statusConfig.pending;
+      const labelEl = el.querySelector('.msg-receipt-status-label');
+      const iconEl = el.querySelector('.msg-receipt-status-icon');
+      if (labelEl) labelEl.textContent = config.label;
+      if (iconEl) iconEl.textContent = config.icon;
+    });
   }
 
   function renderAttachmentsPreview() {
@@ -1338,10 +1702,30 @@
       if (!res.ok) throw new Error("Failed to create channel");
 
       const data = await res.json();
-      state.channels.push(data.channel || data);
+      const channel = data.channel || data;
+
+      // Check if channel already existed or is new
+      if (data.existing) {
+        showToast("Opening existing conversation", "info");
+      } else {
+        state.channels.push(channel);
+        showToast("Channel created successfully", "success");
+      }
+
       renderChannels();
       closeNewChannelModal();
-      showToast("Channel created successfully", "success");
+
+      // Auto-select and open the channel
+      setTimeout(() => {
+        const channelItem = document.querySelector(
+          `.msg-channel-item[data-channel-type="${channel.type}"][data-channel-id="${channel.id}"]`
+        );
+        if (channelItem) {
+          channelItem.click();
+        } else {
+          selectChannel(channel.type, channel.id, null, channel.name);
+        }
+      }, 100);
     } catch (err) {
       console.error("[Messages] Create channel error:", err);
       showToast("Failed to create channel", "error");
@@ -1386,6 +1770,118 @@
 
   function closeChannelInfoModal() {
     DOM.channelInfoModal.classList.add("hidden");
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // MANAGE PROJECT CHANNELS MODAL
+  // ─────────────────────────────────────────────────────────────────────────
+  let currentManageProjectId = null;
+  let currentManageProjectName = "";
+
+  function openManageProjectChannelsModal(projectId, projectName) {
+    if (!DOM.manageProjectChannelsModal) return;
+
+    currentManageProjectId = projectId;
+    currentManageProjectName = projectName;
+
+    // Update modal title
+    const titleEl = document.getElementById("manageChannelsProjectName");
+    if (titleEl) titleEl.textContent = projectName;
+
+    // Get current config
+    const config = getProjectChannelConfig(projectId);
+
+    // Render channel toggles
+    renderChannelToggles(config);
+
+    DOM.manageProjectChannelsModal.classList.remove("hidden");
+  }
+
+  function closeManageProjectChannelsModal() {
+    if (DOM.manageProjectChannelsModal) {
+      DOM.manageProjectChannelsModal.classList.add("hidden");
+    }
+    currentManageProjectId = null;
+    currentManageProjectName = "";
+  }
+
+  function renderChannelToggles(config) {
+    const container = document.getElementById("channelTogglesList");
+    if (!container) return;
+
+    let html = `
+      <!-- Fixed channels (cannot be removed) -->
+      <div class="channel-toggle-item channel-toggle-fixed">
+        <div class="channel-toggle-info">
+          <span class="channel-toggle-hash">#</span>
+          <span class="channel-toggle-name">General</span>
+          <span class="channel-toggle-badge">Default</span>
+        </div>
+        <span class="channel-toggle-status">Always enabled</span>
+      </div>
+      <div class="channel-toggle-item channel-toggle-fixed">
+        <div class="channel-toggle-info">
+          <span class="channel-toggle-hash">#</span>
+          <span class="channel-toggle-name">Receipts</span>
+          <span class="channel-toggle-badge channel-toggle-badge-protected">Protected</span>
+        </div>
+        <span class="channel-toggle-status">Cannot be removed</span>
+      </div>
+
+      <!-- Optional channels -->
+      <div class="channel-toggles-divider">
+        <span>Optional Channels</span>
+      </div>
+    `;
+
+    // Add optional channels
+    OPTIONAL_PROJECT_CHANNELS.forEach(channel => {
+      const isEnabled = config.channels.includes(channel.key);
+      html += `
+        <div class="channel-toggle-item">
+          <div class="channel-toggle-info">
+            <span class="channel-toggle-hash">#</span>
+            <span class="channel-toggle-name">${escapeHtml(channel.label)}</span>
+          </div>
+          <label class="channel-toggle-switch">
+            <input type="checkbox"
+                   data-channel-key="${channel.key}"
+                   ${isEnabled ? "checked" : ""} />
+            <span class="channel-toggle-slider"></span>
+          </label>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  }
+
+  function saveProjectChannelChanges() {
+    if (!currentManageProjectId) return;
+
+    const container = document.getElementById("channelTogglesList");
+    if (!container) return;
+
+    // Collect enabled channels (always include default ones)
+    const enabledChannels = [...DEFAULT_PROJECT_CHANNELS];
+
+    // Add optional channels that are checked
+    container.querySelectorAll("input[type='checkbox']").forEach(checkbox => {
+      if (checkbox.checked && checkbox.dataset.channelKey) {
+        enabledChannels.push(checkbox.dataset.channelKey);
+      }
+    });
+
+    // Save config
+    saveProjectChannelConfig(currentManageProjectId, { channels: enabledChannels });
+
+    // Re-render project channels
+    renderProjectChannels();
+
+    // Close modal
+    closeManageProjectChannelsModal();
+
+    showToast("Channel settings saved", "success");
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1464,17 +1960,24 @@
   }
 
   function handleNewMessage(message) {
-    // Don't add if it's our own message (already added optimistically)
+    // Don't add duplicate if it's our own message (already added optimistically)
     if (message.user_id === state.currentUser?.user_id) {
-      // But update the temp message with real data
+      // Update the temp message with real data
       const tempIndex = state.messages.findIndex((m) =>
         m.id?.toString().startsWith("temp-")
       );
       if (tempIndex !== -1) {
         state.messages[tempIndex] = message;
+        renderMessages();
       }
-      return;
+      // Check if message already exists (avoid duplicates)
+      const exists = state.messages.some((m) => m.id === message.id);
+      if (exists) return;
     }
+
+    // Check if message already exists before adding
+    const alreadyExists = state.messages.some((m) => m.id === message.id);
+    if (alreadyExists) return;
 
     // Add new message
     state.messages.push(message);
@@ -1490,12 +1993,10 @@
   function showMessageNotification(message) {
     if (typeof Toast === "undefined") return;
 
-    const sender = state.users.find((u) => u.user_id === message.user_id);
+    const sender = state.users.find((u) => u.user_id === message.user_id) || { user_name: message.user_name };
     const senderName = sender?.user_name || message.user_name || "Unknown";
     const senderPhoto = sender?.user_photo;
-    const senderColor = sender?.avatar_color
-      ? `hsl(${sender.avatar_color}, 70%, 45%)`
-      : getDefaultAvatarColor(senderName);
+    const senderColor = getAvatarColor(sender);
     const initials = getInitials(senderName);
 
     // Check if current user is mentioned
@@ -1666,6 +2167,21 @@
       });
     });
 
+    // Project color picker
+    document.addEventListener("click", (e) => {
+      const colorDot = e.target.closest(".msg-project-color-dot");
+      if (colorDot) {
+        e.stopPropagation();
+        showProjectColorPicker(colorDot, colorDot.dataset.projectId);
+        return;
+      }
+      // Close color picker if clicking outside
+      const picker = document.querySelector(".msg-color-picker-popup");
+      if (picker && !e.target.closest(".msg-color-picker-popup")) {
+        picker.remove();
+      }
+    });
+
     // Channel search
     DOM.channelSearchInput?.addEventListener("input", (e) => {
       const query = e.target.value.toLowerCase();
@@ -1779,6 +2295,10 @@
     DOM.btnSearchMessages?.addEventListener("click", openSearchModal);
     DOM.btnChannelInfo?.addEventListener("click", openChannelInfoModal);
 
+    // Mobile sidebar toggle
+    DOM.btnMobileMenu?.addEventListener("click", toggleMobileSidebar);
+    DOM.sidebarOverlay?.addEventListener("click", closeMobileSidebar);
+
     // New Channel Modal
     document.getElementById("btnCloseNewChannelModal")?.addEventListener("click", closeNewChannelModal);
     document.getElementById("btnCancelNewChannel")?.addEventListener("click", closeNewChannelModal);
@@ -1797,6 +2317,48 @@
     // Channel Info Modal
     document.getElementById("btnCloseChannelInfoModal")?.addEventListener("click", closeChannelInfoModal);
     document.getElementById("btnCloseChannelInfo")?.addEventListener("click", closeChannelInfoModal);
+
+    // Manage Project Channels Modal
+    document.getElementById("btnCloseManageChannelsModal")?.addEventListener("click", closeManageProjectChannelsModal);
+    document.getElementById("btnCancelManageChannels")?.addEventListener("click", closeManageProjectChannelsModal);
+    document.getElementById("btnSaveChannelSettings")?.addEventListener("click", saveProjectChannelChanges);
+
+    // Project settings button (gear icon) - event delegation
+    document.addEventListener("click", (e) => {
+      const settingsBtn = e.target.closest(".msg-project-settings-btn");
+      if (settingsBtn) {
+        e.stopPropagation();
+        const projectId = settingsBtn.dataset.projectId;
+        const projectName = settingsBtn.dataset.projectName;
+        openManageProjectChannelsModal(projectId, projectName);
+      }
+    });
+
+    // Project header click - toggle collapse (but not if clicking on color dot or settings)
+    document.addEventListener("click", (e) => {
+      const projectHeader = e.target.closest(".msg-project-header");
+      if (projectHeader) {
+        // Don't toggle if clicking on color dot or settings button
+        if (e.target.closest(".msg-project-color-dot") || e.target.closest(".msg-project-settings-btn")) {
+          return;
+        }
+        const projectId = projectHeader.dataset.projectId;
+        if (projectId) {
+          toggleProjectCollapse(projectId);
+        }
+      }
+    });
+
+    // Main section header click - toggle collapse (Projects, Direct Messages, Custom Channels)
+    document.addEventListener("click", (e) => {
+      const sectionHeader = e.target.closest(".msg-channel-section-header");
+      if (sectionHeader) {
+        const sectionName = sectionHeader.dataset.section;
+        if (sectionName) {
+          toggleSectionCollapse(sectionName);
+        }
+      }
+    });
 
     // Search Modal
     document.getElementById("btnCloseSearchModal")?.addEventListener("click", closeSearchModal);
@@ -1832,7 +2394,7 @@
     });
 
     // Click outside modals to close
-    [DOM.newChannelModal, DOM.channelInfoModal, DOM.searchMessagesModal].forEach(
+    [DOM.newChannelModal, DOM.channelInfoModal, DOM.searchMessagesModal, DOM.manageProjectChannelsModal].forEach(
       (modal) => {
         modal?.addEventListener("click", (e) => {
           if (e.target === modal) {
@@ -1849,6 +2411,7 @@
         closeNewChannelModal();
         closeChannelInfoModal();
         closeSearchModal();
+        closeManageProjectChannelsModal();
         closeThread();
       }
       // Cmd/Ctrl + K for search
@@ -1857,6 +2420,34 @@
         openSearchModal();
       }
     });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // MOBILE SIDEBAR
+  // ─────────────────────────────────────────────────────────────────────────
+  function toggleMobileSidebar() {
+    const sidebar = DOM.channelsSidebar;
+    const overlay = DOM.sidebarOverlay;
+    if (!sidebar) return;
+
+    const isOpen = sidebar.classList.contains("is-open");
+    if (isOpen) {
+      closeMobileSidebar();
+    } else {
+      sidebar.classList.add("is-open");
+      overlay?.classList.add("is-visible");
+      document.body.style.overflow = "hidden";
+    }
+  }
+
+  function closeMobileSidebar() {
+    const sidebar = DOM.channelsSidebar;
+    const overlay = DOM.sidebarOverlay;
+    if (!sidebar) return;
+
+    sidebar.classList.remove("is-open");
+    overlay?.classList.remove("is-visible");
+    document.body.style.overflow = "";
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1883,14 +2474,21 @@
       .substring(0, 2);
   }
 
-  function getDefaultAvatarColor(name) {
-    if (!name) return "hsl(200, 60%, 50%)";
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  // Avatar color helper - matches team.js format
+  function getAvatarColor(user) {
+    if (!user) return "hsl(200 70% 45%)";
+    const ac = Number(user.avatar_color);
+    const hue = Number.isFinite(ac) ? Math.max(0, Math.min(360, ac)) : stableHueFromString(user.user_id || user.user_name);
+    return `hsl(${hue} 70% 45%)`;
+  }
+
+  function stableHueFromString(str) {
+    const s = String(str || "");
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = (h * 31 + s.charCodeAt(i)) >>> 0;
     }
-    const hue = Math.abs(hash % 360);
-    return `hsl(${hue}, 60%, 50%)`;
+    return h % 360;
   }
 
   function getOtherUserInDM(channel) {
@@ -1966,11 +2564,12 @@
     init();
   }
 
-  // Export for debugging
+  // Export for debugging and external access
   window.MessagesModule = {
     state,
     selectChannel,
     sendMessage,
     searchMessages,
+    updateReceiptStatusInMessages,
   };
 })();

@@ -4,6 +4,35 @@ document.addEventListener("DOMContentLoaded", () => {
   const API =
     window.API_BASE || (typeof API_BASE !== "undefined" ? API_BASE : undefined);
 
+  // ========================================
+  // AUTO-REDIRECT IF ALREADY LOGGED IN
+  // ========================================
+  const existingToken = localStorage.getItem("ngmToken");
+  if (existingToken) {
+    // Check if token is still valid (not expired)
+    try {
+      const payload = JSON.parse(atob(existingToken.split(".")[1]));
+      const isExpired = payload.exp && payload.exp * 1000 < Date.now();
+
+      if (!isExpired) {
+        // Token is valid - redirect to dashboard
+        console.log("[Login] Valid session found, redirecting...");
+        window.location.href = "dashboard.html";
+        return; // Stop execution
+      } else {
+        // Token expired - clean it up
+        console.log("[Login] Session expired, please log in again");
+        localStorage.removeItem("ngmToken");
+        localStorage.removeItem("ngmUser");
+      }
+    } catch (e) {
+      // Invalid token format - clean it up
+      console.warn("[Login] Invalid token format:", e);
+      localStorage.removeItem("ngmToken");
+      localStorage.removeItem("ngmUser");
+    }
+  }
+
   const form = document.getElementById("loginForm");
   const userInput = document.getElementById("user");
   const passwordInput = document.getElementById("password");
@@ -93,8 +122,10 @@ document.addEventListener("DOMContentLoaded", () => {
       // Opcional: pequeño mensaje antes de redirigir
       showMessage("Login successful. Redirecting...", "info");
 
-      // Redirigir al dashboard
-      window.location.href = "dashboard.html";
+      // Redirigir a dashboard o a donde venía el usuario
+      const redirectTo = sessionStorage.getItem("loginRedirect") || "dashboard.html";
+      sessionStorage.removeItem("loginRedirect");
+      window.location.href = redirectTo;
     } catch (err) {
       console.error("Error in login:", err);
       showMessage("Network error. Check your connection or contact support.", "error");

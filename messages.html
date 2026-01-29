@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#1a1a1a" />
-  <title>NGM HUB — Messages</title>
-  <link rel="icon" type="image/png" href="assets/img/greenblack_icon.png" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="assets/img/greenblack_icon.png" />
+  <meta name="theme-color" content="#3ecf8e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="NGM Connect" />
+  <title>NGM Connect</title>
+  <link rel="icon" type="image/png" href="assets/img/connect_icon.png" />
+  <link rel="manifest" href="manifest-connect.json" />
+  <link rel="apple-touch-icon" href="assets/img/connect_icon.png" />
 
   <!-- Fonts: Inter + Roboto (NGM standard) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -134,9 +137,13 @@
             <!-- Channels list -->
             <div class="msg-channels-list" id="channelsList">
               <!-- Project channels section -->
-              <div class="msg-channel-section">
+              <div class="msg-channel-section" id="sectionProjects">
                 <div class="msg-channel-section-header" data-section="projects">
-                  <span class="msg-section-icon">▾</span>
+                  <span class="msg-section-chevron">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
                   <span class="msg-section-title">Projects</span>
                 </div>
                 <div class="msg-channel-section-content" id="projectChannels">
@@ -146,9 +153,13 @@
               </div>
 
               <!-- Direct Messages section -->
-              <div class="msg-channel-section">
+              <div class="msg-channel-section" id="sectionDirect">
                 <div class="msg-channel-section-header" data-section="direct">
-                  <span class="msg-section-icon">▾</span>
+                  <span class="msg-section-chevron">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
                   <span class="msg-section-title">Direct Messages</span>
                 </div>
                 <div class="msg-channel-section-content" id="directMessages">
@@ -157,9 +168,13 @@
               </div>
 
               <!-- Custom Channels section -->
-              <div class="msg-channel-section">
+              <div class="msg-channel-section" id="sectionCustom">
                 <div class="msg-channel-section-header" data-section="custom">
-                  <span class="msg-section-icon">▾</span>
+                  <span class="msg-section-chevron">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
                   <span class="msg-section-title">Custom Channels</span>
                 </div>
                 <div class="msg-channel-section-content" id="customChannels">
@@ -169,11 +184,22 @@
             </div>
           </aside>
 
+          <!-- Mobile sidebar overlay -->
+          <div class="msg-sidebar-overlay" id="sidebarOverlay"></div>
+
           <!-- CENTER: Chat area -->
           <section class="msg-chat-area">
             <!-- Chat header -->
             <div class="msg-chat-header">
               <div class="msg-chat-header-left">
+                <!-- Mobile hamburger menu -->
+                <button type="button" class="msg-mobile-menu-btn" id="btnMobileMenu" title="Open menu">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                  </svg>
+                </button>
                 <span class="msg-chat-icon">#</span>
                 <div class="msg-chat-info">
                   <h2 class="msg-chat-name" id="chatName">Select a channel</h2>
@@ -396,6 +422,35 @@
         <div class="msg-search-results" id="searchResults">
           <!-- Rendered by JS -->
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Project Channels Modal -->
+  <div id="manageProjectChannelsModal" class="modal-backdrop hidden">
+    <div class="modal msg-modal msg-modal--manage-channels">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>Manage Channels — </span>
+          <span id="manageChannelsProjectName">Project</span>
+        </div>
+        <button type="button" class="modal-btn header-action" id="btnCloseManageChannelsModal">×</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="manage-channels-description">
+          Configure which channels are available for this project.
+          <strong>General</strong> and <strong>Receipts</strong> channels cannot be removed.
+        </p>
+
+        <div class="channel-toggles-list" id="channelTogglesList">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="btnCancelManageChannels">Cancel</button>
+        <button type="button" class="btn-primary" id="btnSaveChannelSettings">Save Changes</button>
       </div>
     </div>
   </div>

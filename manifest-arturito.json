@@ -1,28 +1,28 @@
 {
-  "name": "NGM Hub",
-  "short_name": "NGM Hub",
-  "description": "NGM Internal Management Platform",
-  "start_url": "/login.html",
+  "name": "Arturito",
+  "short_name": "Arturito",
+  "description": "NGM AI Assistant",
+  "start_url": "/arturito.html",
   "scope": "/",
   "display": "standalone",
   "background_color": "#1a1a1a",
-  "theme_color": "#1a1a1a",
+  "theme_color": "#8b5cf6",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "assets/img/greenblack_icon.png",
+      "src": "assets/img/arturito_icon.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "assets/img/greenblack_icon.png",
+      "src": "assets/img/arturito_icon.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "categories": ["business", "productivity"],
+  "categories": ["productivity", "utilities"],
   "lang": "en",
   "dir": "ltr"
 }

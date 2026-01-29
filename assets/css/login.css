@@ -273,3 +273,81 @@
     background-color: var(--bg-input) !important;
     color: var(--text-primary) !important;
 }
+
+/* ==========================================
+   MOBILE & PWA RESPONSIVE
+   ========================================== */
+
+/* Safe area insets for PWA standalone mode */
+@media (display-mode: standalone) {
+    .login-screen {
+        padding-top: calc(32px + env(safe-area-inset-top));
+        padding-bottom: calc(32px + env(safe-area-inset-bottom));
+        padding-left: calc(16px + env(safe-area-inset-left));
+        padding-right: calc(16px + env(safe-area-inset-right));
+    }
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+    .login-screen {
+        padding: 16px;
+        padding-top: calc(16px + env(safe-area-inset-top));
+        padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+
+    .login-panel {
+        padding: 28px 24px 24px;
+        gap: 20px;
+    }
+
+    .logo-block {
+        margin-top: -80px;
+        margin-bottom: -100px;
+    }
+
+    .logo-img {
+        width: 260px;
+        height: 260px;
+    }
+
+    /* Prevent iOS zoom on input focus */
+    .input {
+        font-size: 16px;
+        padding: 12px 14px;
+    }
+
+    .login-form {
+        gap: 20px;
+    }
+
+    .login-screen .btn-primary {
+        height: 48px;
+        width: 100%;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 360px) {
+    .login-panel {
+        padding: 24px 20px 20px;
+    }
+
+    .logo-block {
+        margin-top: -60px;
+        margin-bottom: -80px;
+    }
+
+    .logo-img {
+        width: 200px;
+        height: 200px;
+    }
+}
+
+/* iOS specific fixes */
+@supports (-webkit-touch-callout: none) {
+    .input {
+        /* Prevent zoom on iOS when focusing input */
+        font-size: 16px;
+    }
+}

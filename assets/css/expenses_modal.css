@@ -2111,3 +2111,428 @@ input[type="number"].form-input {
   font-weight: 500;
 }
 
+
+/* ==========================================
+   PENDING RECEIPTS MODAL & BUTTON
+   ========================================== */
+
+/* From Pending Button - Orange theme for pending items */
+.btn-pending-receipts {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(251, 146, 60, 0.3);
+  background: rgba(251, 146, 60, 0.08);
+  color: #fb923c;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+
+.btn-pending-receipts:hover {
+  background: rgba(251, 146, 60, 0.15);
+  border-color: rgba(251, 146, 60, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-pending-receipts:active {
+  transform: translateY(0);
+}
+
+/* Pending badge on button */
+.btn-pending-receipts .pending-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: rgba(251, 146, 60, 0.25);
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fb923c;
+}
+
+/* Hidden state */
+#pendingReceiptsModal.modal-backdrop.hidden {
+  display: none !important;
+}
+
+/* Pending Receipts Modal Backdrop */
+#pendingReceiptsModal.modal-backdrop {
+  background: rgba(0, 0, 0, 0.80);
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* Modal Card */
+.modal-pending-receipts {
+  width: min(700px, 95%);
+  max-width: 700px;
+  max-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  background: #111111 !important;
+  border: 1px solid #1f1f1f;
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Header */
+#pendingReceiptsModal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: #111111 !important;
+  border-bottom: 1px solid #1f1f1f;
+}
+
+#pendingReceiptsModal .modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+#pendingReceiptsModal .modal-close-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  color: #9ca3af;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+#pendingReceiptsModal .modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e5e7eb;
+}
+
+/* Body */
+#pendingReceiptsModal .modal-body {
+  flex: 1;
+  padding: 20px 18px;
+  overflow-y: auto;
+  background: #111111;
+}
+
+#pendingReceiptsModal .modal-hint {
+  font-size: 13px;
+  color: #9ca3af;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+}
+
+/* Status Tabs */
+.pending-receipts-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 12px;
+}
+
+.pending-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pending-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e5e7eb;
+}
+
+.pending-tab.active {
+  background: rgba(251, 146, 60, 0.12);
+  border-color: rgba(251, 146, 60, 0.3);
+  color: #fb923c;
+}
+
+.pending-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.pending-tab.active .pending-tab-count {
+  background: rgba(251, 146, 60, 0.2);
+  color: #fb923c;
+}
+
+/* Receipts Grid */
+.pending-receipts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+/* Loading State */
+.pending-receipts-loading {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 20px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.pending-loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid rgba(251, 146, 60, 0.2);
+  border-top-color: #fb923c;
+  border-radius: 50%;
+  animation: pendingSpinner 0.8s linear infinite;
+}
+
+@keyframes pendingSpinner {
+  to { transform: rotate(360deg); }
+}
+
+/* Empty State */
+.pending-receipts-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.pending-receipts-empty svg {
+  color: rgba(148, 163, 184, 0.4);
+}
+
+.pending-receipts-empty span {
+  font-size: 14px;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.pending-receipts-empty p {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+/* Receipt Card */
+.pending-receipt-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pending-receipt-card:hover {
+  background: rgba(251, 146, 60, 0.06);
+  border-color: rgba(251, 146, 60, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.pending-receipt-card.selected {
+  border-color: #3ecf8e;
+  background: rgba(62, 207, 142, 0.08);
+  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.25);
+}
+
+/* Thumbnail */
+.pending-receipt-thumb {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  background: rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.pending-receipt-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.pending-receipt-card:hover .pending-receipt-thumb img {
+  transform: scale(1.05);
+}
+
+/* PDF placeholder */
+.pending-receipt-thumb--pdf {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.pending-receipt-thumb--pdf svg {
+  width: 40px;
+  height: 40px;
+  color: #f87171;
+}
+
+/* Status Badge */
+.pending-receipt-status {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.pending-receipt-status--pending {
+  background: rgba(148, 163, 184, 0.2);
+  color: #94a3b8;
+}
+
+.pending-receipt-status--processing {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.pending-receipt-status--ready {
+  background: rgba(62, 207, 142, 0.2);
+  color: #3ecf8e;
+}
+
+.pending-receipt-status--error {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* Receipt Info */
+.pending-receipt-info {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pending-receipt-vendor {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e5e7eb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pending-receipt-amount {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fb923c;
+}
+
+.pending-receipt-date {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.pending-receipt-filename {
+  font-size: 11px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Footer */
+#pendingReceiptsModal .modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 18px;
+  background: #111111;
+  border-top: 1px solid #1f1f1f;
+}
+
+#pendingReceiptsModal .btn-modal-secondary {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.03);
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+#pendingReceiptsModal .btn-modal-secondary:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #e5e7eb;
+}
+
+/* Scrollbar for grid */
+.pending-receipts-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pending-receipts-grid::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+
+.pending-receipts-grid::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.pending-receipts-grid::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+

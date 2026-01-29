@@ -524,7 +524,7 @@
 /* Own messages - Right aligned like Google Chat (no avatar) */
 .msg-message--own {
   flex-direction: row-reverse;
-  margin-left: auto;
+  justify-content: flex-start;
 }
 
 .msg-message--own .msg-message-avatar {
@@ -533,6 +533,7 @@
 
 .msg-message--own .msg-message-content {
   align-items: flex-end;
+  max-width: 70%;
 }
 
 .msg-message--own .msg-message-header {
@@ -549,6 +550,7 @@
   padding: 10px 14px;
   border-radius: 18px 18px 4px 18px;
   text-align: left;
+  max-width: 100%; /* Let content determine width within parent constraint */
 }
 
 .msg-message--own .msg-message-actions {
@@ -656,8 +658,9 @@
   color: rgba(255, 255, 255, 0.9);
   line-height: 1.5;
   word-wrap: break-word;
-  max-width: 65%;
-  display: inline-block;
+  word-break: break-word;
+  max-width: 70%;
+  min-width: 60px;
 }
 
 /* Mention in message */
@@ -976,8 +979,8 @@
 /* Input row */
 .msg-input-row {
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  align-items: center;
+  gap: 12px;
 }
 
 .msg-input-wrapper {
@@ -988,20 +991,27 @@
 
 .msg-input {
   width: 100%;
-  padding: 14px 18px;
+  padding: 12px 16px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
+  border-radius: 24px;
   color: rgba(255, 255, 255, 0.95);
   font-size: 15px;
   font-family: inherit;
   resize: none;
   outline: none;
   transition: all 0.15s ease;
-  max-height: 200px;
-  min-height: 52px;
+  max-height: 120px;
+  min-height: 48px;
   line-height: 1.5;
   box-sizing: border-box;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+
+.msg-input::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 
 .msg-input:focus {
@@ -1062,8 +1072,8 @@
 
 /* Buttons */
 .msg-btn-icon {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1072,6 +1082,7 @@
   border-radius: 50%;
   cursor: pointer;
   color: rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
   transition: all 0.15s ease;
   flex-shrink: 0;
 }
@@ -1087,8 +1098,8 @@
 }
 
 .msg-btn-send {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;

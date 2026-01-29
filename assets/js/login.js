@@ -15,9 +15,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const isExpired = payload.exp && payload.exp * 1000 < Date.now();
 
       if (!isExpired) {
-        // Token is valid - redirect to dashboard
+        // Token is valid - redirect through index for smooth splash
         console.log("[Login] Valid session found, redirecting...");
-        window.location.href = "dashboard.html";
+        window.location.replace("index.html");
         return; // Stop execution
       } else {
         // Token expired - clean it up

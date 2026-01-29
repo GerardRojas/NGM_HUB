@@ -1,13 +1,128 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url=login.html">
-    <title>Redirigiendo...</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0d0d0d">
+  <title>NGM Hub</title>
+  <link rel="icon" type="image/png" href="assets/img/favicon.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/img/favicon.png">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0d0d0d;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .splash-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .splash-logo {
+      width: 80px;
+      height: 80px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .splash-text {
+      color: #666;
+      font-size: 14px;
+      letter-spacing: 0.05em;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 0.6;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.05);
+      }
+    }
+  </style>
 </head>
 <body>
-    <script>
-        window.location.href = "login.html";
-    </script>
+  <div class="splash-container">
+    <img src="assets/img/white_icon.png" alt="NGM Hub" class="splash-logo">
+    <span class="splash-text">Loading...</span>
+  </div>
+
+  <script>
+    (function() {
+      'use strict';
+
+      // Check if token exists and is valid
+      function isTokenValid(token) {
+        if (!token) return false;
+
+        try {
+          const parts = token.split('.');
+          if (parts.length !== 3) return false;
+
+          const payload = JSON.parse(atob(parts[1]));
+
+          // Check expiration
+          if (payload.exp) {
+            const expirationTime = payload.exp * 1000;
+            if (Date.now() >= expirationTime) {
+              console.log('[Router] Token expired');
+              return false;
+            }
+          }
+
+          return true;
+        } catch (e) {
+          console.warn('[Router] Invalid token:', e);
+          return false;
+        }
+      }
+
+      // Get saved redirect target or default to dashboard
+      function getRedirectTarget() {
+        const saved = sessionStorage.getItem('loginRedirect');
+        if (saved && saved !== 'login.html' && saved !== 'index.html') {
+          sessionStorage.removeItem('loginRedirect');
+          return saved;
+        }
+        return 'dashboard.html';
+      }
+
+      // Main routing logic
+      function route() {
+        const token = localStorage.getItem('ngmToken');
+        const user = localStorage.getItem('ngmUser');
+
+        if (token && user && isTokenValid(token)) {
+          // User is logged in, go to dashboard (or saved redirect)
+          console.log('[Router] Valid session found, redirecting to app');
+          window.location.replace(getRedirectTarget());
+        } else {
+          // No valid session, clear any stale data and go to login
+          console.log('[Router] No valid session, redirecting to login');
+          localStorage.removeItem('ngmToken');
+          localStorage.removeItem('ngmUser');
+          window.location.replace('login.html');
+        }
+      }
+
+      // Small delay to ensure splash is visible (prevents flicker)
+      setTimeout(route, 100);
+    })();
+  </script>
 </body>
 </html>

@@ -602,107 +602,216 @@
   }
 
   // ================================
-  // DUPLICATE BILL NUMBER DETECTION
+  // DUPLICATE BILL DETECTION (Improved)
   // ================================
-  // Stores bill_id -> { vendor_id, vendor_name, expense_id }[] for quick lookup
+  // Stores expense_id -> { type, details, relatedExpenses } for confirmed/likely duplicates
   let duplicateBillWarnings = new Map();
 
   /**
-   * Detects expenses with same bill_id but different vendor_id
-   * Stores results in duplicateBillWarnings for display
+   * Detects expenses that are almost certainly duplicates.
+   *
+   * Criteria for "almost certain" duplicate:
+   * 1. EXACT: Same vendor + same bill_id + same amount + same date
+   * 2. STRONG: Same vendor + same bill_id + same amount (different dates allowed - could be entry error)
+   * 3. LIKELY: Same vendor + same amount + same date (no bill_id needed - very suspicious)
+   *
+   * We do NOT alert on:
+   * - Same bill_id but different vendors (could be coincidence - different vendors can have same invoice #)
+   * - Same vendor + same bill_id but different amounts (could be intentional line items)
    */
   function detectDuplicateBillNumbers() {
     duplicateBillWarnings.clear();
 
-    // Group expenses by bill_id
-    const billGroups = new Map();
+    // Skip if no expenses
+    if (!expenses || expenses.length < 2) return;
 
-    expenses.forEach(exp => {
-      const billId = exp.bill_id?.trim();
-      if (!billId) return;
+    // Build lookup structures
+    const duplicates = [];
 
-      if (!billGroups.has(billId)) {
-        billGroups.set(billId, []);
+    // Compare each expense with others
+    for (let i = 0; i < expenses.length; i++) {
+      const exp1 = expenses[i];
+      const exp1Id = exp1.expense_id || exp1.id;
+      const exp1VendorId = exp1.vendor_id;
+      const exp1BillId = exp1.bill_id?.trim();
+      const exp1Amount = parseFloat(exp1.Amount) || 0;
+      const exp1Date = exp1.TxnDate?.split('T')[0]; // Normalize date
+
+      // Skip if no vendor (can't determine duplicate without vendor)
+      if (!exp1VendorId) continue;
+
+      for (let j = i + 1; j < expenses.length; j++) {
+        const exp2 = expenses[j];
+        const exp2Id = exp2.expense_id || exp2.id;
+        const exp2VendorId = exp2.vendor_id;
+        const exp2BillId = exp2.bill_id?.trim();
+        const exp2Amount = parseFloat(exp2.Amount) || 0;
+        const exp2Date = exp2.TxnDate?.split('T')[0];
+
+        // Must have same vendor
+        if (exp1VendorId !== exp2VendorId) continue;
+
+        // Check for different duplicate scenarios
+        const sameBillId = exp1BillId && exp2BillId && exp1BillId === exp2BillId;
+        const sameAmount = exp1Amount > 0 && exp2Amount > 0 && Math.abs(exp1Amount - exp2Amount) < 0.01;
+        const sameDate = exp1Date && exp2Date && exp1Date === exp2Date;
+
+        let duplicateType = null;
+        let confidence = null;
+
+        // Scenario 1: EXACT duplicate - same vendor, bill, amount, date
+        if (sameBillId && sameAmount && sameDate) {
+          duplicateType = 'exact';
+          confidence = 'very_high';
+        }
+        // Scenario 2: STRONG duplicate - same vendor, bill, amount (different dates)
+        else if (sameBillId && sameAmount && !sameDate) {
+          duplicateType = 'strong';
+          confidence = 'high';
+        }
+        // Scenario 3: LIKELY duplicate - same vendor, amount, date (no bill_id match needed)
+        else if (sameAmount && sameDate && exp1Amount >= 50) {
+          // Only flag if amount is significant ($50+) to avoid false positives on small amounts
+          duplicateType = 'likely';
+          confidence = 'medium_high';
+        }
+
+        if (duplicateType) {
+          const vendorName = exp1.vendor_name || findMetaName('vendors', exp1VendorId, 'id', 'vendor_name') || 'Unknown';
+
+          duplicates.push({
+            type: duplicateType,
+            confidence,
+            expense1Id: exp1Id,
+            expense2Id: exp2Id,
+            vendorId: exp1VendorId,
+            vendorName,
+            billId: exp1BillId || exp2BillId || null,
+            amount: exp1Amount,
+            date1: exp1Date,
+            date2: exp2Date
+          });
+
+          // Mark both expenses in the warnings map
+          if (!duplicateBillWarnings.has(exp1Id)) {
+            duplicateBillWarnings.set(exp1Id, { type: duplicateType, confidence, relatedTo: exp2Id, vendorName, billId: exp1BillId || exp2BillId, amount: exp1Amount });
+          }
+          if (!duplicateBillWarnings.has(exp2Id)) {
+            duplicateBillWarnings.set(exp2Id, { type: duplicateType, confidence, relatedTo: exp1Id, vendorName, billId: exp1BillId || exp2BillId, amount: exp1Amount });
+          }
+
+          console.warn(`[EXPENSES] Duplicate detected (${duplicateType}): Vendor "${vendorName}", Amount $${exp1Amount.toFixed(2)}${exp1BillId ? `, Bill #${exp1BillId}` : ''}`);
+        }
       }
-      billGroups.get(billId).push({
-        expense_id: exp.expense_id || exp.id,
-        vendor_id: exp.vendor_id,
-        vendor_name: exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || 'Unknown'
-      });
-    });
-
-    // Find bills with different vendors
-    billGroups.forEach((exps, billId) => {
-      const uniqueVendors = new Set(exps.map(e => e.vendor_id).filter(v => v));
-      if (uniqueVendors.size > 1) {
-        duplicateBillWarnings.set(billId, exps);
-        console.warn(`[EXPENSES] Duplicate bill warning: Bill #${billId} has ${uniqueVendors.size} different vendors`);
-      }
-    });
+    }
 
     // Show toast if duplicates found
-    if (duplicateBillWarnings.size > 0) {
-      const billList = Array.from(duplicateBillWarnings.keys()).slice(0, 5).join(', ');
-      const moreCount = duplicateBillWarnings.size > 5 ? ` and ${duplicateBillWarnings.size - 5} more` : '';
+    if (duplicates.length > 0) {
+      const exactCount = duplicates.filter(d => d.type === 'exact').length;
+      const strongCount = duplicates.filter(d => d.type === 'strong').length;
+      const likelyCount = duplicates.filter(d => d.type === 'likely').length;
+
+      let message = '';
+      if (exactCount > 0) message += `${exactCount} exact duplicate${exactCount > 1 ? 's' : ''}`;
+      if (strongCount > 0) message += `${message ? ', ' : ''}${strongCount} strong match${strongCount > 1 ? 'es' : ''}`;
+      if (likelyCount > 0) message += `${message ? ', ' : ''}${likelyCount} likely duplicate${likelyCount > 1 ? 's' : ''}`;
+
+      // Build details
+      const details = duplicates.slice(0, 5).map(d => {
+        const typeLabel = d.type === 'exact' ? '🔴 EXACT' : d.type === 'strong' ? '🟠 STRONG' : '🟡 LIKELY';
+        return `${typeLabel}: ${d.vendorName} - $${d.amount.toFixed(2)}${d.billId ? ` (Bill #${d.billId})` : ''}`;
+      }).join('\n');
+
       if (window.Toast) {
         Toast.warning(
-          'Duplicate Bill Numbers Detected',
-          `Bills with same number but different vendors: ${billList}${moreCount}. Check highlighted rows.`
+          'Possible Duplicate Bills Detected',
+          `Found ${message}. Review highlighted rows.`,
+          { details, duration: 10000 }
         );
       }
     }
   }
 
   /**
-   * Checks if a bill_id exists with a different vendor
+   * Checks if a new expense would create a duplicate
+   * Only returns conflict if it's almost certainly a duplicate:
+   * - Same vendor + same bill_id + same amount
+   * - Same vendor + same amount + same date
+   *
    * @param {string} billId - The bill number to check
    * @param {string} vendorId - The vendor ID for the new expense
+   * @param {number} amount - The amount of the new expense (optional)
+   * @param {string} date - The date of the new expense (optional)
    * @returns {object|null} - Returns conflict info or null
    */
-  function checkBillVendorConflict(billId, vendorId) {
-    if (!billId?.trim() || !vendorId) return null;
+  function checkBillVendorConflict(billId, vendorId, amount = null, date = null) {
+    if (!vendorId) return null;
 
-    const trimmedBillId = billId.trim();
+    const trimmedBillId = billId?.trim() || null;
+    const normalizedDate = date?.split('T')[0] || null;
+    const numAmount = amount !== null ? parseFloat(amount) : null;
 
-    // Check in current expenses
-    const existingWithBill = expenses.filter(exp =>
-      exp.bill_id?.trim() === trimmedBillId && exp.vendor_id && exp.vendor_id !== vendorId
-    );
+    // Look for potential duplicates with same vendor
+    const sameVendorExpenses = expenses.filter(exp => exp.vendor_id === vendorId);
 
-    if (existingWithBill.length > 0) {
-      const conflictVendor = existingWithBill[0];
-      return {
-        billId: trimmedBillId,
-        existingVendorId: conflictVendor.vendor_id,
-        existingVendorName: conflictVendor.vendor_name || findMetaName('vendors', conflictVendor.vendor_id, 'id', 'vendor_name') || 'Unknown'
-      };
+    for (const exp of sameVendorExpenses) {
+      const expBillId = exp.bill_id?.trim();
+      const expAmount = parseFloat(exp.Amount) || 0;
+      const expDate = exp.TxnDate?.split('T')[0];
+
+      const sameBillId = trimmedBillId && expBillId && trimmedBillId === expBillId;
+      const sameAmount = numAmount !== null && numAmount > 0 && Math.abs(numAmount - expAmount) < 0.01;
+      const sameDate = normalizedDate && expDate && normalizedDate === expDate;
+
+      // Check for strong duplicate indicators
+      let duplicateType = null;
+
+      if (sameBillId && sameAmount) {
+        duplicateType = 'strong'; // Same vendor + bill + amount
+      } else if (sameAmount && sameDate && numAmount >= 50) {
+        duplicateType = 'likely'; // Same vendor + amount + date (significant amount)
+      }
+
+      if (duplicateType) {
+        const vendorName = exp.vendor_name || findMetaName('vendors', vendorId, 'id', 'vendor_name') || 'Unknown';
+        return {
+          type: duplicateType,
+          billId: expBillId || trimmedBillId,
+          existingVendorId: vendorId,
+          existingVendorName: vendorName,
+          existingAmount: expAmount,
+          existingDate: expDate,
+          existingExpenseId: exp.expense_id || exp.id
+        };
+      }
     }
 
     return null;
   }
 
   /**
-   * Highlights rows in the table that have duplicate bill warnings
+   * Highlights rows in the table that have duplicate warnings
    */
   function highlightDuplicateBills() {
     // Remove existing highlights
-    document.querySelectorAll('.expense-row-duplicate-warning').forEach(row => {
-      row.classList.remove('expense-row-duplicate-warning');
+    document.querySelectorAll('.expense-row-duplicate-warning, .expense-row-duplicate-exact, .expense-row-duplicate-strong, .expense-row-duplicate-likely').forEach(row => {
+      row.classList.remove('expense-row-duplicate-warning', 'expense-row-duplicate-exact', 'expense-row-duplicate-strong', 'expense-row-duplicate-likely');
     });
 
-    // Add highlights to rows with duplicate bills
-    duplicateBillWarnings.forEach((vendors, billId) => {
-      // Find all rows with this bill_id
-      document.querySelectorAll(`[data-bill-id="${billId}"]`).forEach(row => {
+    // Add highlights to rows with duplicate warnings (keyed by expense_id now)
+    duplicateBillWarnings.forEach((warning, expenseId) => {
+      const row = document.querySelector(`tr[data-id="${expenseId}"]`);
+      if (row) {
         row.classList.add('expense-row-duplicate-warning');
-      });
-      // Also try by text content in bill column
-      document.querySelectorAll('.expense-row').forEach(row => {
-        const billCell = row.querySelector('[data-column="bill_id"]');
-        if (billCell && billCell.textContent.trim() === billId) {
-          row.classList.add('expense-row-duplicate-warning');
+        // Add specific class based on duplicate type for styling
+        if (warning.type === 'exact') {
+          row.classList.add('expense-row-duplicate-exact');
+        } else if (warning.type === 'strong') {
+          row.classList.add('expense-row-duplicate-strong');
+        } else if (warning.type === 'likely') {
+          row.classList.add('expense-row-duplicate-likely');
         }
-      });
+      }
     });
   }
 
@@ -878,16 +987,29 @@
       console.log('[EXPENSES] First expense - using expense_id:', expenseId);
     }
 
-    // Check for duplicate bill number warning
-    const hasDuplicateBillWarning = billIdRaw && duplicateBillWarnings.has(billIdRaw.trim());
+    // Check for duplicate warning (now keyed by expense_id)
+    const duplicateWarning = duplicateBillWarnings.get(expenseId);
     let billDisplayHtml = billId;
     let rowWarningClass = '';
 
-    if (hasDuplicateBillWarning) {
-      const conflictInfo = duplicateBillWarnings.get(billIdRaw.trim());
-      const vendorNames = [...new Set(conflictInfo.map(c => c.vendor_name))].join(', ');
-      billDisplayHtml = `<span class="bill-warning-badge" title="Multiple vendors for this bill: ${vendorNames}">⚠️ ${billId}</span>`;
-      rowWarningClass = ' expense-row-warning';
+    if (duplicateWarning) {
+      // Build tooltip based on duplicate type
+      let warningIcon = '⚠️';
+      let tooltipText = '';
+
+      if (duplicateWarning.type === 'exact') {
+        warningIcon = '🔴';
+        tooltipText = `EXACT DUPLICATE: Same vendor (${duplicateWarning.vendorName}), bill, amount ($${duplicateWarning.amount?.toFixed(2)}), and date`;
+      } else if (duplicateWarning.type === 'strong') {
+        warningIcon = '🟠';
+        tooltipText = `STRONG MATCH: Same vendor (${duplicateWarning.vendorName}) and bill #${duplicateWarning.billId} with same amount ($${duplicateWarning.amount?.toFixed(2)})`;
+      } else if (duplicateWarning.type === 'likely') {
+        warningIcon = '🟡';
+        tooltipText = `LIKELY DUPLICATE: Same vendor (${duplicateWarning.vendorName}), amount ($${duplicateWarning.amount?.toFixed(2)}), and date`;
+      }
+
+      billDisplayHtml = `<span class="bill-warning-badge bill-warning-${duplicateWarning.type}" title="${tooltipText}">${warningIcon} ${billId}</span>`;
+      rowWarningClass = ` expense-row-warning expense-row-duplicate-${duplicateWarning.type}`;
     }
 
     // Receipt icon - check bills table first, then expense (legacy)
@@ -2183,36 +2305,44 @@
     }
 
     // ============================================
-    // WARNING: Duplicate bill numbers with different vendors
+    // WARNING: Almost certain duplicate bills
     // ============================================
-    const billVendorConflicts = [];
+    const duplicateConflicts = [];
     expensesToSave.forEach((expense, idx) => {
-      if (expense.bill_id && expense.vendor_id) {
-        const conflict = checkBillVendorConflict(expense.bill_id, expense.vendor_id);
+      if (expense.vendor_id) {
+        // Pass all parameters for accurate duplicate detection
+        const conflict = checkBillVendorConflict(
+          expense.bill_id,
+          expense.vendor_id,
+          expense.Amount,
+          expense.TxnDate
+        );
         if (conflict) {
-          // Get the new vendor name
-          const newVendorName = findMetaName('vendors', expense.vendor_id, 'id', 'vendor_name') || 'Unknown';
-          billVendorConflicts.push({
+          const vendorName = findMetaName('vendors', expense.vendor_id, 'id', 'vendor_name') || 'Unknown';
+          duplicateConflicts.push({
             row: idx + 1,
+            type: conflict.type,
             billId: conflict.billId,
-            existingVendor: conflict.existingVendorName,
-            newVendor: newVendorName
+            vendor: vendorName,
+            amount: conflict.existingAmount,
+            existingDate: conflict.existingDate
           });
         }
       }
     });
 
-    if (billVendorConflicts.length > 0) {
-      const conflictDetails = billVendorConflicts.map(c =>
-        `Row ${c.row}: Bill #${c.billId} - existing vendor: "${c.existingVendor}", new vendor: "${c.newVendor}"`
-      ).join('\n');
+    if (duplicateConflicts.length > 0) {
+      const conflictDetails = duplicateConflicts.map(c => {
+        const typeLabel = c.type === 'strong' ? '🟠 STRONG' : '🟡 LIKELY';
+        return `${typeLabel} Row ${c.row}: ${c.vendor} - $${c.amount?.toFixed(2)}${c.billId ? ` (Bill #${c.billId})` : ''}`;
+      }).join('\n');
 
       // Show warning but allow user to proceed
       if (window.Toast) {
         Toast.warning(
-          'Duplicate Bill Number Alert',
-          `${billVendorConflicts.length} expense(s) have the same bill number as existing expenses but with different vendors. This may indicate a duplicate bill.`,
-          { details: conflictDetails, duration: 8000 }
+          'Possible Duplicate Bills Detected',
+          `${duplicateConflicts.length} expense(s) appear to be duplicates. Review before saving.`,
+          { details: conflictDetails, duration: 10000 }
         );
       }
       // Note: We show a warning but don't block saving - user can proceed
@@ -3017,8 +3147,8 @@
       }
     }
 
-    // Check for duplicate bill number with different vendor
-    if (newBillId && updatedData.vendor_id) {
+    // Check for possible duplicate (same vendor + bill + amount, or same vendor + amount + date)
+    if (updatedData.vendor_id) {
       // Exclude current expense from the check
       const originalExpenses = expenses;
       const tempExpenses = expenses.filter(exp =>
@@ -3026,17 +3156,23 @@
       );
       expenses = tempExpenses;
 
-      const conflict = checkBillVendorConflict(newBillId, updatedData.vendor_id);
+      const conflict = checkBillVendorConflict(
+        newBillId,
+        updatedData.vendor_id,
+        updatedData.Amount,
+        updatedData.TxnDate
+      );
 
       expenses = originalExpenses; // Restore
 
       if (conflict) {
-        const newVendorName = findMetaName('vendors', updatedData.vendor_id, 'id', 'vendor_name') || 'Unknown';
+        const vendorName = findMetaName('vendors', updatedData.vendor_id, 'id', 'vendor_name') || 'Unknown';
+        const typeLabel = conflict.type === 'strong' ? 'Strong match' : 'Likely duplicate';
         if (window.Toast) {
           Toast.warning(
-            'Duplicate Bill Number Alert',
-            `Bill #${newBillId} already exists with vendor "${conflict.existingVendorName}". You are assigning it to "${newVendorName}". This may indicate a duplicate bill.`,
-            { duration: 8000 }
+            'Possible Duplicate Detected',
+            `${typeLabel}: ${vendorName} already has an expense for $${conflict.existingAmount?.toFixed(2)}${conflict.billId ? ` (Bill #${conflict.billId})` : ''} on ${conflict.existingDate || 'same date'}. Review before saving.`,
+            { duration: 10000 }
           );
         }
         // Warning only, allow saving
@@ -7593,27 +7729,43 @@
         }
       },
 
-      // Health check: Detect duplicate bill numbers with different vendors
+      // Health check: Detect almost-certain duplicate bills
       healthCheckDuplicateBills: () => {
         console.log('[EXPENSES COPILOT] healthCheckDuplicateBills');
 
         // Run the detection
         detectDuplicateBillNumbers();
 
-        // Build detailed report
+        // Build detailed report from the new map structure (keyed by expense_id)
         const issues = [];
-        duplicateBillWarnings.forEach((vendors, billId) => {
-          const vendorNames = [...new Set(vendors.map(v => v.vendor_name))];
+        const processedPairs = new Set();
+
+        duplicateBillWarnings.forEach((warning, expenseId) => {
+          // Create a unique key for this duplicate pair to avoid double-counting
+          const pairKey = [expenseId, warning.relatedTo].sort().join('-');
+          if (processedPairs.has(pairKey)) return;
+          processedPairs.add(pairKey);
+
           issues.push({
-            bill_id: billId,
-            vendors: vendorNames,
-            count: vendors.length
+            type: warning.type,
+            confidence: warning.confidence,
+            vendor: warning.vendorName,
+            bill_id: warning.billId || null,
+            amount: warning.amount,
+            expense_ids: [expenseId, warning.relatedTo]
           });
         });
 
         // Return data for Arturito to report
+        const exactCount = issues.filter(i => i.type === 'exact').length;
+        const strongCount = issues.filter(i => i.type === 'strong').length;
+        const likelyCount = issues.filter(i => i.type === 'likely').length;
+
         const result = {
           total_issues: issues.length,
+          exact_duplicates: exactCount,
+          strong_matches: strongCount,
+          likely_duplicates: likelyCount,
           issues: issues.slice(0, 10), // Limit to first 10
           has_more: issues.length > 10
         };
@@ -7621,11 +7773,16 @@
         // Show visual feedback
         if (issues.length === 0) {
           if (typeof Toast !== 'undefined') {
-            Toast.success('Health Check', 'No se encontraron bills duplicados con diferentes vendors');
+            Toast.success('Health Check', 'No se encontraron duplicados casi seguros');
           }
         } else {
+          let summary = '';
+          if (exactCount > 0) summary += `${exactCount} exacto${exactCount > 1 ? 's' : ''}`;
+          if (strongCount > 0) summary += `${summary ? ', ' : ''}${strongCount} fuerte${strongCount > 1 ? 's' : ''}`;
+          if (likelyCount > 0) summary += `${summary ? ', ' : ''}${likelyCount} probable${likelyCount > 1 ? 's' : ''}`;
+
           if (typeof Toast !== 'undefined') {
-            Toast.warning('Health Check', `Se encontraron ${issues.length} bills con posibles conflictos`);
+            Toast.warning('Health Check', `Se encontraron ${issues.length} posibles duplicados: ${summary}`);
           }
           // Highlight the problematic rows
           highlightDuplicateBills();

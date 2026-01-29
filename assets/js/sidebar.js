@@ -217,3 +217,71 @@
     waitForAPIAndInit();
   }
 })();
+
+// ============================================
+// Mobile Sidebar Toggle
+// ============================================
+(function() {
+  function initMobileSidebar() {
+    const sidebar = document.getElementById('sidebar') || document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebarOverlay') || document.querySelector('.sidebar-overlay');
+    const openBtn = document.getElementById('btnMobileMenu') || document.querySelector('.mobile-menu-btn');
+    const closeBtn = document.getElementById('btnCloseSidebar') || document.querySelector('.sidebar-close-btn');
+
+    if (!sidebar) return;
+
+    function openSidebar() {
+      sidebar.classList.add('is-open');
+      if (overlay) overlay.classList.add('is-visible');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove('is-open');
+      if (overlay) overlay.classList.remove('is-visible');
+      document.body.style.overflow = '';
+    }
+
+    // Open button click
+    if (openBtn) {
+      openBtn.addEventListener('click', openSidebar);
+    }
+
+    // Close button click
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeSidebar);
+    }
+
+    // Overlay click closes sidebar
+    if (overlay) {
+      overlay.addEventListener('click', closeSidebar);
+    }
+
+    // Close sidebar when clicking a nav link (mobile)
+    sidebar.querySelectorAll('.nav-item').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+          closeSidebar();
+        }
+      });
+    });
+
+    // Close sidebar on escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && sidebar.classList.contains('is-open')) {
+        closeSidebar();
+      }
+    });
+
+    // Expose functions globally
+    window.openMobileSidebar = openSidebar;
+    window.closeMobileSidebar = closeSidebar;
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMobileSidebar);
+  } else {
+    initMobileSidebar();
+  }
+})();

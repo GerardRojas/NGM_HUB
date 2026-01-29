@@ -811,3 +811,218 @@ button {
     font-weight: 500;
     letter-spacing: 0.02em;
 }
+
+/* ==========================================
+   MOBILE RESPONSIVE LAYOUT
+   ========================================== */
+
+/* Mobile menu button - hidden by default */
+.mobile-menu-btn {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.7);
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.mobile-menu-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.mobile-menu-btn svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Mobile sidebar overlay */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 90;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+/* Mobile back button in sidebar header */
+.sidebar-mobile-header {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.sidebar-close-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-close-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+.sidebar-mobile-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Tablet breakpoint */
+@media (max-width: 1024px) {
+    .sidebar {
+        width: 220px;
+    }
+}
+
+/* Mobile breakpoint */
+@media (max-width: 768px) {
+    /* Show mobile menu button */
+    .mobile-menu-btn {
+        display: flex;
+    }
+
+    /* Show sidebar overlay */
+    .sidebar-overlay {
+        display: block;
+    }
+
+    .sidebar-overlay.is-visible {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* Sidebar becomes slide-out drawer */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        height: 100dvh;
+        width: 280px;
+        max-width: 85vw;
+        z-index: 100;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        padding-top: 0;
+    }
+
+    .sidebar.is-open {
+        transform: translateX(0);
+    }
+
+    /* Show mobile header in sidebar */
+    .sidebar-mobile-header {
+        display: flex;
+    }
+
+    /* Hide logo in mobile sidebar (saves space) */
+    .sidebar .sidebar-logo {
+        display: none;
+    }
+
+    .sidebar .sidebar-title-block {
+        display: none;
+    }
+
+    /* Main content takes full width */
+    .main-content,
+    .arturito-main,
+    .page-content {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    /* Topbar adjustments */
+    .ngm-topbar {
+        padding: 12px 16px;
+    }
+
+    .ngm-topbar-left {
+        gap: 8px;
+    }
+
+    .ngm-topbar-title {
+        font-size: 16px;
+    }
+
+    /* Hide less important topbar elements on mobile */
+    .ngm-search-pill {
+        display: none;
+    }
+
+    /* User pill compact on mobile */
+    .user-pill-text {
+        display: none;
+    }
+
+    .user-pill {
+        padding: 6px;
+    }
+}
+
+/* Small mobile screens */
+@media (max-width: 480px) {
+    .sidebar {
+        width: 100%;
+        max-width: none;
+    }
+
+    .ngm-topbar {
+        padding: 10px 12px;
+    }
+
+    .ngm-topbar-title {
+        font-size: 14px;
+    }
+}
+
+/* PWA standalone mode */
+@media (display-mode: standalone) {
+    .sidebar {
+        padding-top: env(safe-area-inset-top);
+    }
+
+    .ngm-topbar {
+        padding-top: calc(12px + env(safe-area-inset-top));
+    }
+
+    .main-content,
+    .arturito-main,
+    .page-content {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/* iOS specific - prevent zoom on inputs */
+@supports (-webkit-touch-callout: none) {
+    input, textarea, select {
+        font-size: 16px !important;
+    }
+}

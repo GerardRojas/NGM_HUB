@@ -533,3 +533,79 @@
     color: #fbbf24;
     font-weight: 500;
 }
+
+/* ==========================================
+   MOBILE RESPONSIVE DASHBOARD
+   ========================================== */
+
+@media (max-width: 768px) {
+    /* Stack cards vertically */
+    .dashboard-main {
+        padding: 16px;
+    }
+
+    /* Section titles smaller */
+    .section-title {
+        font-size: 16px;
+    }
+
+    .section-subtitle {
+        font-size: 12px;
+    }
+
+    /* Hide some topbar elements */
+    .ngm-meta {
+        display: none;
+    }
+
+    .ngm-search {
+        display: none;
+    }
+
+    .ngm-brand-org {
+        display: none;
+    }
+
+    .ngm-brand-context {
+        font-size: 14px;
+    }
+
+    /* Mention cards stack */
+    .mention-card {
+        padding: 12px;
+    }
+
+    .mention-author {
+        font-size: 13px;
+    }
+
+    .mention-text {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-main {
+        padding: 12px;
+    }
+
+    .section-header-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .section-title {
+        font-size: 14px;
+    }
+
+    .mention-card {
+        padding: 10px;
+    }
+}
+
+/* PWA standalone mode */
+@media (display-mode: standalone) {
+    .dashboard-main {
+        padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+}

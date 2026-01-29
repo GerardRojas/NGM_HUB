@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#3ecf8e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -32,6 +32,7 @@
 
   <!-- Global scripts -->
   <script src="assets/js/config.js"></script>
+  <script src="assets/js/auth-guard.js"></script>
   <script src="assets/js/toast.js" defer></script>
   <script src="assets/js/permissions.js" defer></script>
   <script src="assets/js/pills.js" defer></script>
@@ -46,8 +47,22 @@
   </div>
 
   <div class="app-layout">
+    <!-- Mobile sidebar overlay -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <!-- Sidebar -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
+      <!-- Mobile header with close button -->
+      <div class="sidebar-mobile-header">
+        <span class="sidebar-mobile-title">NGM Hub</span>
+        <button type="button" class="sidebar-close-btn" id="btnCloseSidebar" title="Close menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
       <div class="sidebar-logo">
         <img src="assets/img/logo.png" alt="NGM HUB Logo" class="sidebar-logo-img" />
       </div>
@@ -77,6 +92,14 @@
       <!-- Topbar -->
       <header class="ngm-topbar">
         <div class="ngm-bar-left">
+          <!-- Mobile menu button -->
+          <button type="button" class="mobile-menu-btn" id="btnMobileMenu" title="Open menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
           <div class="ngm-brand">
             <div class="ngm-brand-icon-small"><img src="assets/img/white_icon.png" alt="NGM"></div>
             <div class="ngm-brand-text">
@@ -111,6 +134,20 @@
       <!-- Main content: Chat layout -->
       <main class="main-content messages-main">
         <div class="messages-layout">
+
+          <!-- Mobile Top Bar (only visible on mobile) -->
+          <div class="msg-mobile-topbar">
+            <div class="msg-mobile-topbar-search" id="btnMobileSearch">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </svg>
+              <span>Buscar en el chat</span>
+            </div>
+            <div class="msg-mobile-topbar-avatar" id="mobileUserAvatar">
+              <!-- Initials set by JS -->
+            </div>
+          </div>
 
           <!-- LEFT: Channels sidebar -->
           <aside class="msg-channels-sidebar">
@@ -192,6 +229,12 @@
             <!-- Chat header -->
             <div class="msg-chat-header">
               <div class="msg-chat-header-left">
+                <!-- Mobile back button (only visible on mobile) -->
+                <button type="button" class="msg-mobile-back-btn" id="btnMobileBack" title="Back">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                  </svg>
+                </button>
                 <!-- Mobile hamburger menu -->
                 <button type="button" class="msg-mobile-menu-btn" id="btnMobileMenu" title="Open menu">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -323,6 +366,47 @@
               </button>
             </div>
           </aside>
+
+          <!-- Mobile Bottom Navigation (only visible on mobile) -->
+          <nav class="msg-bottom-nav">
+            <button type="button" class="msg-bottom-nav-item active" data-tab="home">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              </svg>
+              <span>Inicio</span>
+            </button>
+            <button type="button" class="msg-bottom-nav-item" data-tab="chats">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span>Chats</span>
+              <span class="msg-bottom-nav-badge" id="chatsBadge" style="display: none;">0</span>
+            </button>
+            <button type="button" class="msg-bottom-nav-item" data-tab="spaces">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <span>Espacios</span>
+            </button>
+            <button type="button" class="msg-bottom-nav-item" data-tab="more">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="12" r="2"/>
+                <circle cx="12" cy="5" r="2"/>
+                <circle cx="12" cy="19" r="2"/>
+              </svg>
+              <span>Más</span>
+            </button>
+          </nav>
+
+          <!-- Mobile FAB for new chat (only visible on mobile) -->
+          <button type="button" class="msg-fab-new-chat" id="btnMobileFabNewChat" title="New chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              <path d="M12 8v8M8 12h8"/>
+            </svg>
+          </button>
 
         </div>
       </main>
@@ -473,6 +557,118 @@
         if (overlay) overlay.style.display = 'none';
       }, 300);
     });
+  </script>
+
+  <!-- Mobile View Controller -->
+  <script>
+    (function() {
+      'use strict';
+
+      function isMobile() {
+        return window.innerWidth <= 768;
+      }
+
+      function initMobileMessages() {
+        const body = document.body;
+        const backBtn = document.getElementById('btnMobileBack');
+        const fabBtn = document.getElementById('btnMobileFabNewChat');
+        const mobileSearch = document.getElementById('btnMobileSearch');
+        const mobileAvatar = document.getElementById('mobileUserAvatar');
+        const channelItems = document.querySelectorAll('.msg-channel-item');
+
+        // Set user avatar initials
+        function setUserAvatar() {
+          try {
+            const userData = localStorage.getItem('ngmUser');
+            if (userData && mobileAvatar) {
+              const user = JSON.parse(userData);
+              const name = user.full_name || user.username || 'U';
+              const initials = name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+              mobileAvatar.textContent = initials;
+            }
+          } catch (e) {
+            if (mobileAvatar) mobileAvatar.textContent = 'U';
+          }
+        }
+
+        // Open chat view on mobile
+        function openMobileChat() {
+          if (isMobile()) {
+            body.classList.add('mobile-chat-open');
+          }
+        }
+
+        // Close chat view on mobile (go back to list)
+        function closeMobileChat() {
+          body.classList.remove('mobile-chat-open');
+        }
+
+        // Back button handler
+        if (backBtn) {
+          backBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            closeMobileChat();
+          });
+        }
+
+        // FAB new chat button
+        if (fabBtn) {
+          fabBtn.addEventListener('click', function() {
+            const newChannelBtn = document.getElementById('btnNewChannel');
+            if (newChannelBtn) newChannelBtn.click();
+          });
+        }
+
+        // Mobile search
+        if (mobileSearch) {
+          mobileSearch.addEventListener('click', function() {
+            const searchBtn = document.getElementById('btnSearchMessages');
+            if (searchBtn) searchBtn.click();
+          });
+        }
+
+        // Handle channel selection - open chat on mobile
+        // We need to hook into the existing channel click handlers
+        // Using event delegation on the channels list
+        const channelsList = document.getElementById('channelsList');
+        if (channelsList) {
+          channelsList.addEventListener('click', function(e) {
+            const channelItem = e.target.closest('.msg-channel-item');
+            if (channelItem && isMobile()) {
+              // Small delay to allow the existing handler to run first
+              setTimeout(openMobileChat, 50);
+            }
+          });
+        }
+
+        // Handle resize - close mobile chat if we resize to desktop
+        window.addEventListener('resize', function() {
+          if (!isMobile()) {
+            body.classList.remove('mobile-chat-open');
+          }
+        });
+
+        // Handle back button (browser/device)
+        window.addEventListener('popstate', function() {
+          if (isMobile() && body.classList.contains('mobile-chat-open')) {
+            closeMobileChat();
+          }
+        });
+
+        // Expose functions globally for messages.js to use
+        window.openMobileChat = openMobileChat;
+        window.closeMobileChat = closeMobileChat;
+
+        setUserAvatar();
+      }
+
+      // Initialize when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initMobileMessages);
+      } else {
+        initMobileMessages();
+      }
+    })();
   </script>
 
   <!-- Firebase Push Notifications -->

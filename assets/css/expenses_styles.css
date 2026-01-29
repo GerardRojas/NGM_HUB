@@ -2391,6 +2391,7 @@ select.edit-input option {
    Health Check - Duplicate Bill Warnings
    ========================================== */
 
+/* Base duplicate warning style */
 .expense-row-duplicate-warning {
   background: rgba(255, 152, 0, 0.15) !important;
   border-left: 3px solid #ff9800 !important;
@@ -2400,17 +2401,53 @@ select.edit-input option {
   background: rgba(255, 152, 0, 0.25) !important;
 }
 
-.expense-row-duplicate-warning td {
-  position: relative;
+/* EXACT duplicate - Red (highest confidence) */
+.expense-row-duplicate-exact {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-left: 3px solid #ef4444 !important;
 }
 
-.expense-row-duplicate-warning td:first-child::before {
-  content: "⚠️";
-  position: absolute;
-  left: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 12px;
+.expense-row-duplicate-exact:hover {
+  background: rgba(239, 68, 68, 0.25) !important;
+}
+
+/* STRONG duplicate - Orange (high confidence) */
+.expense-row-duplicate-strong {
+  background: rgba(251, 146, 60, 0.15) !important;
+  border-left: 3px solid #fb923c !important;
+}
+
+.expense-row-duplicate-strong:hover {
+  background: rgba(251, 146, 60, 0.25) !important;
+}
+
+/* LIKELY duplicate - Yellow (medium-high confidence) */
+.expense-row-duplicate-likely {
+  background: rgba(250, 204, 21, 0.12) !important;
+  border-left: 3px solid #facc15 !important;
+}
+
+.expense-row-duplicate-likely:hover {
+  background: rgba(250, 204, 21, 0.2) !important;
+}
+
+/* Bill warning badges by type */
+.bill-warning-badge.bill-warning-exact {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.bill-warning-badge.bill-warning-strong {
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+  border-color: rgba(251, 146, 60, 0.4);
+}
+
+.bill-warning-badge.bill-warning-likely {
+  background: rgba(250, 204, 21, 0.15);
+  color: #eab308;
+  border-color: rgba(250, 204, 21, 0.4);
 }
 
 /* Bill group header with warning */
@@ -2420,7 +2457,7 @@ select.edit-input option {
 }
 
 .bill-group-header.has-duplicate-warning .bill-id::after {
-  content: " ⚠️ Conflicto de vendor";
+  content: " ⚠️ Posible duplicado";
   color: #ff9800;
   font-size: 11px;
   font-weight: normal;

@@ -219,13 +219,25 @@
   border-radius: 8px;
   transition: background 0.1s ease;
   position: relative;
+  /* Reset button defaults */
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
 }
 
 .msg-channel-item:hover {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.msg-channel-item.is-active {
+.msg-channel-item:focus-visible {
+  background: rgba(255, 255, 255, 0.06);
+  outline: 1px solid rgba(62, 207, 142, 0.3);
+}
+
+.msg-channel-item.active {
   background: rgba(62, 207, 142, 0.1);
 }
 
@@ -277,7 +289,7 @@
   flex-shrink: 0;
 }
 
-.msg-channel-item.is-active .msg-channel-icon {
+.msg-channel-item.active .msg-channel-icon {
   color: #3ecf8e;
 }
 
@@ -294,7 +306,7 @@
   text-overflow: ellipsis;
 }
 
-.msg-channel-item.is-active .msg-channel-name {
+.msg-channel-item.active .msg-channel-name {
   color: #fff;
   font-weight: 500;
 }
@@ -920,19 +932,19 @@
 
 .msg-input {
   width: 100%;
-  padding: 12px 16px;
+  padding: 16px 20px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
+  border-radius: 16px;
   color: rgba(255, 255, 255, 0.95);
-  font-size: 14px;
+  font-size: 15px;
   font-family: inherit;
   resize: none;
   outline: none;
   transition: all 0.15s ease;
-  max-height: 150px;
-  min-height: 44px;
-  line-height: 1.4;
+  max-height: 300px;
+  min-height: 100px;
+  line-height: 1.5;
   box-sizing: border-box;
 }
 
@@ -2138,4 +2150,402 @@
 
 .msg-attachment--receipt:hover .msg-attachment-view {
   opacity: 1;
+}
+
+/* ==========================================
+   MOBILE GOOGLE CHAT-LIKE LAYOUT
+   Only affects screens <= 768px
+   Desktop layout remains unchanged
+   ========================================== */
+
+@media (max-width: 768px) {
+  /* Hide main app sidebar on mobile for messages */
+  .page-messages .sidebar {
+    display: none !important;
+  }
+
+  .page-messages .sidebar-overlay {
+    display: none !important;
+  }
+
+  /* Main area takes full width */
+  .page-messages .main-area {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  /* Hide desktop topbar on mobile */
+  .page-messages .ngm-topbar {
+    display: none;
+  }
+
+  /* Messages layout - full screen */
+  .page-messages .messages-layout {
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
+  }
+
+  /* ========== MOBILE TOP BAR ========== */
+  .msg-mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    padding-top: calc(12px + env(safe-area-inset-top));
+    background: #0f0f0f;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .msg-mobile-topbar-search {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 24px;
+    cursor: pointer;
+  }
+
+  .msg-mobile-topbar-search svg {
+    width: 20px;
+    height: 20px;
+    color: rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+  }
+
+  .msg-mobile-topbar-search span {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .msg-mobile-topbar-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3ecf8e, #10b981);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  /* ========== CHANNELS LIST (Main View) ========== */
+  .msg-channels-sidebar {
+    position: static;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    height: auto;
+    flex: 1;
+    transform: none;
+    border-right: none;
+    background: #0a0a0a;
+    overflow-y: auto;
+    padding-bottom: 80px; /* Space for bottom nav */
+  }
+
+  /* Hide the "New Chat" button header - we'll use bottom nav */
+  .msg-channels-header {
+    display: none;
+  }
+
+  /* Section title styling for mobile */
+  .msg-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Channel items - larger touch targets */
+  .msg-channel-item {
+    padding: 14px 16px;
+    gap: 14px;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  .msg-channel-item:active {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .msg-channel-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+  }
+
+  .msg-dm-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
+  }
+
+  .msg-channel-name {
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .msg-channel-preview {
+    font-size: 13px;
+    margin-top: 3px;
+  }
+
+  .msg-channel-time {
+    font-size: 12px;
+  }
+
+  .msg-channel-badge {
+    min-width: 10px;
+    height: 10px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 0; /* Hide number, just show dot */
+  }
+
+  /* ========== CHAT AREA (Hidden by default on mobile) ========== */
+  .msg-chat-area {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 200;
+    background: #0a0a0a;
+    flex-direction: column;
+  }
+
+  /* Show chat when active */
+  .page-messages.mobile-chat-open .msg-chat-area {
+    display: flex;
+  }
+
+  .page-messages.mobile-chat-open .msg-channels-sidebar {
+    display: none;
+  }
+
+  .page-messages.mobile-chat-open .msg-mobile-topbar {
+    display: none;
+  }
+
+  .page-messages.mobile-chat-open .msg-bottom-nav {
+    display: none;
+  }
+
+  /* Mobile chat header */
+  .msg-chat-header {
+    padding: 12px 8px;
+    padding-top: calc(12px + env(safe-area-inset-top));
+    gap: 8px;
+  }
+
+  .msg-chat-header-left {
+    gap: 8px;
+  }
+
+  /* Back button for mobile */
+  .msg-mobile-back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.8);
+    flex-shrink: 0;
+  }
+
+  .msg-mobile-back-btn:active {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .msg-mobile-back-btn svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .msg-chat-icon {
+    display: none;
+  }
+
+  .msg-chat-name {
+    font-size: 15px;
+  }
+
+  .msg-chat-description {
+    font-size: 12px;
+  }
+
+  /* Messages container */
+  .msg-messages-container {
+    padding: 12px 16px;
+    padding-bottom: 8px;
+  }
+
+  /* Input area */
+  .msg-input-area {
+    padding: 8px 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .msg-input {
+    min-height: 44px;
+    padding: 12px 16px;
+    border-radius: 22px;
+  }
+
+  .msg-input-row {
+    gap: 8px;
+  }
+
+  .msg-btn-icon,
+  .msg-btn-send {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Hide attach button on mobile */
+  #btnAttachFile {
+    display: none;
+  }
+
+  /* ========== BOTTOM NAVIGATION ========== */
+  .msg-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #0f0f0f;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 8px 0;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    z-index: 150;
+  }
+
+  .msg-bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 4px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.5);
+    transition: color 0.15s ease;
+    position: relative;
+  }
+
+  .msg-bottom-nav-item:active {
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .msg-bottom-nav-item.active {
+    color: #3ecf8e;
+  }
+
+  .msg-bottom-nav-item svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .msg-bottom-nav-item span {
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .msg-bottom-nav-badge {
+    position: absolute;
+    top: 4px;
+    right: calc(50% - 18px);
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: #3ecf8e;
+    color: #000;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* FAB for new chat */
+  .msg-fab-new-chat {
+    display: flex;
+    position: fixed;
+    bottom: calc(80px + env(safe-area-inset-bottom));
+    right: 16px;
+    width: 56px;
+    height: 56px;
+    background: #3ecf8e;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    color: #000;
+    box-shadow: 0 4px 12px rgba(62, 207, 142, 0.4);
+    z-index: 140;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .msg-fab-new-chat:active {
+    transform: scale(0.95);
+  }
+
+  .msg-fab-new-chat svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Hide thread panel on mobile */
+  .msg-thread-panel {
+    display: none !important;
+  }
+
+  /* Hide channels sidebar mobile menu button - not needed anymore */
+  .msg-mobile-menu-btn {
+    display: none !important;
+  }
+
+  .msg-sidebar-overlay {
+    display: none !important;
+  }
+}
+
+/* Hide mobile-only elements on desktop */
+@media (min-width: 769px) {
+  .msg-mobile-topbar,
+  .msg-bottom-nav,
+  .msg-fab-new-chat,
+  .msg-mobile-back-btn {
+    display: none !important;
+  }
+}
+
+/* PWA standalone mode adjustments for mobile */
+@media (max-width: 768px) and (display-mode: standalone) {
+  .msg-mobile-topbar {
+    padding-top: calc(16px + env(safe-area-inset-top));
+  }
+
+  .msg-chat-header {
+    padding-top: calc(16px + env(safe-area-inset-top));
+  }
 }

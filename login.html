@@ -47,9 +47,13 @@
         var token = localStorage.getItem('ngmToken');
         var user = localStorage.getItem('ngmUser');
 
-        // If valid session exists, redirect to index.html (splash router) immediately
+        // If valid session exists, redirect directly to target page
         if (token && user && isTokenValid(token)) {
-          window.location.replace('index.html');
+          // Get saved redirect target or default to dashboard
+          var saved = sessionStorage.getItem('loginRedirect');
+          var target = (saved && saved !== 'login.html' && saved !== 'index.html') ? saved : 'dashboard.html';
+          if (saved) sessionStorage.removeItem('loginRedirect');
+          window.location.replace(target);
         }
       })();
     </script>

@@ -25,7 +25,7 @@
     <!-- 2) Estilos específicos de login (degradado, panel, loading, mensajes) -->
     <link rel="stylesheet" href="assets/css/login.css" />
 </head>
-<body>
+<body class="login-page">
     <main class="login-screen">
         <div class="login-panel">
             <!-- Logo + branding -->
@@ -102,6 +102,55 @@
     <script>
       // Año automático en el footer
       document.getElementById("year").textContent = new Date().getFullYear();
+
+      // iOS Keyboard handling
+      (function() {
+        // Detect iOS
+        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+        if (!isIOS) return;
+
+        var loginPanel = document.querySelector('.login-panel');
+        var inputs = document.querySelectorAll('.input');
+
+        if (!loginPanel || !inputs.length) return;
+
+        // Use visualViewport API for keyboard detection
+        if (window.visualViewport) {
+          var initialHeight = window.visualViewport.height;
+          var keyboardVisible = false;
+
+          window.visualViewport.addEventListener('resize', function() {
+            var currentHeight = window.visualViewport.height;
+            var heightDiff = initialHeight - currentHeight;
+
+            if (heightDiff > 150 && !keyboardVisible) {
+              keyboardVisible = true;
+              document.body.classList.add('keyboard-open');
+            } else if (heightDiff < 150 && keyboardVisible) {
+              keyboardVisible = false;
+              document.body.classList.remove('keyboard-open');
+            }
+          });
+
+          window.addEventListener('orientationchange', function() {
+            setTimeout(function() {
+              initialHeight = window.visualViewport.height;
+            }, 500);
+          });
+        }
+
+        // Scroll input into view when focused
+        inputs.forEach(function(input) {
+          input.addEventListener('focus', function() {
+            var self = this;
+            setTimeout(function() {
+              self.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+          });
+        });
+      })();
     </script>
 </body>
 </html>

@@ -195,7 +195,73 @@
         var overlay = document.getElementById('pageLoadingOverlay');
         if (overlay) overlay.style.display = 'none';
       }, 300);
+
+      // Initialize iOS keyboard handling
+      initIOSKeyboardHandling();
     });
+
+    // Handle iOS virtual keyboard
+    function initIOSKeyboardHandling() {
+      // Detect iOS
+      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      if (!isIOS) return;
+
+      var chatInput = document.getElementById('chatInput');
+      var messagesContainer = document.getElementById('arturitoMessages');
+
+      if (!chatInput) return;
+
+      // Use visualViewport API for better keyboard detection
+      if (window.visualViewport) {
+        var initialHeight = window.visualViewport.height;
+        var keyboardVisible = false;
+
+        window.visualViewport.addEventListener('resize', function() {
+          var currentHeight = window.visualViewport.height;
+          var heightDiff = initialHeight - currentHeight;
+
+          // Keyboard is likely visible if height decreased significantly
+          if (heightDiff > 150 && !keyboardVisible) {
+            keyboardVisible = true;
+            document.body.classList.add('keyboard-open');
+
+            // Scroll messages to bottom when keyboard opens
+            if (messagesContainer) {
+              setTimeout(function() {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+              }, 100);
+            }
+          } else if (heightDiff < 150 && keyboardVisible) {
+            keyboardVisible = false;
+            document.body.classList.remove('keyboard-open');
+          }
+        });
+
+        // Update initial height on orientation change
+        window.addEventListener('orientationchange', function() {
+          setTimeout(function() {
+            initialHeight = window.visualViewport.height;
+          }, 500);
+        });
+      }
+
+      // Focus handler for input
+      chatInput.addEventListener('focus', function() {
+        // Small delay to let keyboard animate in
+        setTimeout(function() {
+          if (messagesContainer) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          }
+        }, 300);
+      });
+
+      // Prevent body scroll when input is focused
+      chatInput.addEventListener('touchmove', function(e) {
+        e.stopPropagation();
+      }, { passive: true });
+    }
   </script>
 
   <!-- Firebase Push Notifications -->

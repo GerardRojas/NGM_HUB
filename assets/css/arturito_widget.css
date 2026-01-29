@@ -579,3 +579,12 @@
 .page-arturito .arturito-widget-panel {
   display: none !important;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Hide on Messages page (has its own FAB and bottom nav)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.page-messages .arturito-widget-btn,
+.page-messages .arturito-widget-panel {
+  display: none !important;
+}

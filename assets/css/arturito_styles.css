@@ -8,19 +8,23 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .page-arturito .main-area {
-  /* Gradient background exactly like login - black/white grayscale */
-  background:
-    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.06), transparent 55%),
-    radial-gradient(circle at 80% 80%, rgba(0, 0, 0, 0.85), transparent 65%),
-    #0a0a0a;
+  /* Solid background like mobile PWA */
+  background: #1a1a1a;
+  /* Prevent page scroll - native app feel */
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
 .arturito-main {
-  padding: 24px;
-  height: calc(100vh - 60px);
+  padding: 0;
+  height: 100%;
   overflow: hidden;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   /* No background here - it's on .main-area */
   background: transparent;
@@ -31,25 +35,23 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .arturito-chat-card {
-  /* Fixed width - doesn't change with content */
-  width: 800px;
-  min-width: 800px;
-  max-width: 800px;
-  height: calc(100vh - 120px);
-  max-height: 700px;
+  /* Full width/height for native app feel */
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: none;
   display: flex;
   flex-direction: column;
   position: relative;
 
-  /* Card styling like login panel */
-  background: rgba(26, 26, 26, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
-  box-shadow:
-    0 25px 50px -12px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+  /* Solid background like mobile */
+  background: #1a1a1a;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -63,7 +65,7 @@
   justify-content: space-between;
   padding: 16px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(0, 0, 0, 0.2);
+  background: #0f0f0f;
 }
 
 .arturito-card-title {
@@ -442,7 +444,7 @@
 .arturito-input-area {
   padding: 16px 24px 20px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(0, 0, 0, 0.2);
+  background: #0f0f0f;
 }
 
 .arturito-input-container {
@@ -523,24 +525,24 @@
 
 @media (max-width: 900px) {
   .arturito-chat-card {
-    width: calc(100% - 48px);
-    min-width: auto;
-    max-width: 800px;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
   }
 }
 
 @media (max-width: 768px) {
   .arturito-main {
-    padding: 16px;
+    padding: 0;
   }
 
   .arturito-chat-card {
-    width: calc(100% - 32px);
-    min-width: auto;
-    max-width: none;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
     max-height: none;
-    height: calc(100vh - 92px);
-    border-radius: 12px;
+    height: 100%;
+    border-radius: 0;
   }
 
   .arturito-card-header {
@@ -591,13 +593,13 @@
 /* Extra small screens */
 @media (max-width: 480px) {
   .arturito-main {
-    padding: 8px;
+    padding: 0;
   }
 
   .arturito-chat-card {
     width: 100%;
-    height: calc(100vh - 76px);
-    border-radius: 8px;
+    height: 100%;
+    border-radius: 0;
   }
 
   .arturito-card-header {
@@ -625,10 +627,67 @@
   }
 
   .arturito-chat-card {
-    height: calc(100vh - 76px - env(safe-area-inset-top));
+    height: 100%;
+  }
+
+  .arturito-card-header {
+    padding-top: calc(16px + env(safe-area-inset-top));
   }
 
   .arturito-input-area {
     padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   iOS Keyboard Handling
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* iOS specific fixes */
+@supports (-webkit-touch-callout: none) {
+  .page-arturito .main-area {
+    height: 100%;
+    height: -webkit-fill-available;
+  }
+
+  .arturito-main {
+    height: 100%;
+    height: -webkit-fill-available;
+  }
+
+  .arturito-chat-card {
+    height: 100%;
+    height: -webkit-fill-available;
+  }
+
+  /* Ensure input area stays visible above keyboard */
+  .arturito-input-area {
+    position: relative;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+
+  /* Messages container should shrink when keyboard appears */
+  .arturito-messages {
+    flex: 1;
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Keyboard open state */
+@media (max-width: 768px) {
+  .page-arturito.keyboard-open .arturito-chat-card {
+    height: 100%;
+    height: -webkit-fill-available;
+  }
+
+  .page-arturito.keyboard-open .arturito-messages {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .page-arturito.keyboard-open .arturito-input-area {
+    padding-bottom: 12px;
   }
 }

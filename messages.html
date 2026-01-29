@@ -574,7 +574,7 @@
         const fabBtn = document.getElementById('btnMobileFabNewChat');
         const mobileSearch = document.getElementById('btnMobileSearch');
         const mobileAvatar = document.getElementById('mobileUserAvatar');
-        const channelItems = document.querySelectorAll('.msg-channel-item');
+        const bottomNavItems = document.querySelectorAll('.msg-bottom-nav-item');
 
         // Set user avatar initials
         function setUserAvatar() {
@@ -595,6 +595,10 @@
         function openMobileChat() {
           if (isMobile()) {
             body.classList.add('mobile-chat-open');
+            // Push state for browser back button support
+            if (!history.state || !history.state.chatOpen) {
+              history.pushState({ chatOpen: true }, '', window.location.href);
+            }
           }
         }
 
@@ -607,13 +611,20 @@
         if (backBtn) {
           backBtn.addEventListener('click', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             closeMobileChat();
+            // Go back in history if we pushed state
+            if (history.state && history.state.chatOpen) {
+              history.back();
+            }
           });
         }
 
         // FAB new chat button
         if (fabBtn) {
-          fabBtn.addEventListener('click', function() {
+          fabBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             const newChannelBtn = document.getElementById('btnNewChannel');
             if (newChannelBtn) newChannelBtn.click();
           });
@@ -621,15 +632,76 @@
 
         // Mobile search
         if (mobileSearch) {
-          mobileSearch.addEventListener('click', function() {
+          mobileSearch.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
             const searchBtn = document.getElementById('btnSearchMessages');
             if (searchBtn) searchBtn.click();
           });
         }
 
+        // Mobile avatar - can link to profile or settings
+        if (mobileAvatar) {
+          mobileAvatar.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Could open a profile menu or navigate to settings
+            window.location.href = 'team.html';
+          });
+        }
+
+        // Bottom navigation handler
+        bottomNavItems.forEach(function(item) {
+          item.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const tab = this.getAttribute('data-tab');
+
+            // Remove active from all items
+            bottomNavItems.forEach(function(btn) {
+              btn.classList.remove('active');
+            });
+
+            // Add active to clicked item
+            this.classList.add('active');
+
+            // Handle tab actions
+            switch(tab) {
+              case 'home':
+                // Show all channels (default view)
+                document.querySelectorAll('.msg-channel-section').forEach(function(section) {
+                  section.style.display = '';
+                });
+                break;
+              case 'chats':
+                // Filter to show only direct messages
+                document.querySelectorAll('.msg-channel-section').forEach(function(section) {
+                  if (section.id === 'sectionDirect') {
+                    section.style.display = '';
+                  } else {
+                    section.style.display = 'none';
+                  }
+                });
+                break;
+              case 'spaces':
+                // Filter to show only project channels
+                document.querySelectorAll('.msg-channel-section').forEach(function(section) {
+                  if (section.id === 'sectionProjects' || section.id === 'sectionCustom') {
+                    section.style.display = '';
+                  } else {
+                    section.style.display = 'none';
+                  }
+                });
+                break;
+              case 'more':
+                // Navigate to main app or show menu
+                window.location.href = 'dashboard.html';
+                break;
+            }
+          });
+        });
+
         // Handle channel selection - open chat on mobile
-        // We need to hook into the existing channel click handlers
-        // Using event delegation on the channels list
         const channelsList = document.getElementById('channelsList');
         if (channelsList) {
           channelsList.addEventListener('click', function(e) {
@@ -648,8 +720,8 @@
           }
         });
 
-        // Handle back button (browser/device)
-        window.addEventListener('popstate', function() {
+        // Handle browser back button
+        window.addEventListener('popstate', function(e) {
           if (isMobile() && body.classList.contains('mobile-chat-open')) {
             closeMobileChat();
           }
@@ -660,6 +732,75 @@
         window.closeMobileChat = closeMobileChat;
 
         setUserAvatar();
+
+        // iOS Keyboard handling
+        initIOSKeyboardHandling();
+      }
+
+      // Handle iOS virtual keyboard
+      function initIOSKeyboardHandling() {
+        // Detect iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+        if (!isIOS) return;
+
+        const messageInput = document.getElementById('messageInput');
+        const inputArea = document.getElementById('messageInputArea');
+        const messagesContainer = document.getElementById('messagesContainer');
+
+        if (!messageInput || !inputArea) return;
+
+        // Use visualViewport API for better keyboard detection
+        if (window.visualViewport) {
+          let initialHeight = window.visualViewport.height;
+          let keyboardVisible = false;
+
+          window.visualViewport.addEventListener('resize', function() {
+            const currentHeight = window.visualViewport.height;
+            const heightDiff = initialHeight - currentHeight;
+
+            // Keyboard is likely visible if height decreased significantly
+            if (heightDiff > 150 && !keyboardVisible) {
+              keyboardVisible = true;
+              document.body.classList.add('keyboard-open');
+
+              // Scroll messages to bottom when keyboard opens
+              if (messagesContainer) {
+                setTimeout(function() {
+                  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }, 100);
+              }
+            } else if (heightDiff < 150 && keyboardVisible) {
+              keyboardVisible = false;
+              document.body.classList.remove('keyboard-open');
+            }
+          });
+
+          // Update initial height on orientation change
+          window.addEventListener('orientationchange', function() {
+            setTimeout(function() {
+              initialHeight = window.visualViewport.height;
+            }, 500);
+          });
+        }
+
+        // Focus/blur handlers for input
+        messageInput.addEventListener('focus', function() {
+          // Small delay to let keyboard animate in
+          setTimeout(function() {
+            if (messagesContainer) {
+              messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            // Ensure input is visible
+            messageInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 300);
+        });
+
+        // Prevent body scroll when input is focused
+        messageInput.addEventListener('touchmove', function(e) {
+          e.stopPropagation();
+        }, { passive: true });
       }
 
       // Initialize when DOM is ready

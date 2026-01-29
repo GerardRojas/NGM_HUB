@@ -55,7 +55,22 @@
     messageSubscription: null,
     typingSubscription: null,
     lastTypingBroadcast: 0,
+    renderDebounceTimer: null,
   };
+
+  // Debounced render to prevent rapid re-renders causing flicker
+  function debouncedRenderMessages(immediate = false) {
+    if (state.renderDebounceTimer) {
+      clearTimeout(state.renderDebounceTimer);
+    }
+    if (immediate) {
+      renderMessagesInternal();
+    } else {
+      state.renderDebounceTimer = setTimeout(() => {
+        renderMessagesInternal();
+      }, 50); // Small delay to batch rapid updates
+    }
+  }
 
   // Channel types
   const CHANNEL_TYPES = {
@@ -735,7 +750,14 @@
   // ─────────────────────────────────────────────────────────────────────────
   // MESSAGE RENDERING
   // ─────────────────────────────────────────────────────────────────────────
-  function renderMessages() {
+
+  // Public render function - uses debouncing to prevent flicker
+  function renderMessages(immediate = false) {
+    debouncedRenderMessages(immediate);
+  }
+
+  // Internal render function - does the actual DOM update
+  function renderMessagesInternal() {
     if (!DOM.messagesList) return;
 
     if (state.messages.length === 0) {
@@ -759,7 +781,9 @@
         lastDate = msgDate;
       }
 
-      html += renderMessage(msg);
+      // Check if this is a temporary/sending message
+      const isSending = msg.id?.toString().startsWith("temp-");
+      html += renderMessage(msg, isSending);
     });
 
     DOM.messagesList.innerHTML = html;
@@ -792,7 +816,7 @@
     `;
   }
 
-  function renderMessage(msg) {
+  function renderMessage(msg, isSending = false) {
     const user = state.users.find((u) => u.user_id === msg.user_id) || { user_name: msg.user_name };
     const userName = user.user_name || msg.user_name || "Unknown";
     const avatarColor = getAvatarColor(user);
@@ -804,11 +828,16 @@
     const threadCount = msg.thread_count || 0;
     const isOwnMessage = msg.user_id === state.currentUser?.user_id;
 
+    // Build CSS classes
+    const classes = ['msg-message'];
+    if (isOwnMessage) classes.push('msg-message--own');
+    if (isSending) classes.push('msg-message--sending');
+
     // Check for receipt status tag
     const receiptStatusTag = renderReceiptStatusTag(msg);
 
     return `
-      <div class="msg-message ${isOwnMessage ? 'msg-message--own' : ''}" data-message-id="${msg.id}">
+      <div class="${classes.join(' ')}" data-message-id="${msg.id}">
         <div class="msg-message-avatar" style="background-color: ${avatarColor}">
           ${initials}
         </div>
@@ -967,7 +996,7 @@
       messageData.channel_id = state.currentChannel.id;
     }
 
-    // Optimistic UI update
+    // Optimistic UI update - show immediately
     const tempMessage = {
       id: `temp-${Date.now()}`,
       ...messageData,
@@ -975,7 +1004,7 @@
       user_name: state.currentUser?.user_name,
     };
     state.messages.push(tempMessage);
-    renderMessages();
+    renderMessages(true); // Immediate render for user feedback
 
     // Clear input
     DOM.messageInput.value = "";
@@ -1932,7 +1961,8 @@
 
     const channelKey = `${channel.type}:${channel.id || channel.projectId}`;
 
-    // Subscribe to new messages
+    // Subscribe to new messages (Postgres Changes)
+    console.log("[Messages] Subscribing to channel:", channelKey);
     state.messageSubscription = state.supabaseClient
       .channel(`messages:${channelKey}`)
       .on(
@@ -1944,47 +1974,63 @@
           filter: `channel_key=eq.${channelKey}`,
         },
         (payload) => {
+          console.log("[Messages] Realtime message received:", payload.new?.id);
           handleNewMessage(payload.new);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("[Messages] Realtime subscription status:", status);
+      });
 
-    // Subscribe to typing indicators
+    // Subscribe to typing indicators (Presence channel)
     state.typingSubscription = state.supabaseClient
       .channel(`typing:${channelKey}`)
       .on("presence", { event: "sync" }, () => {
         const presenceState = state.typingSubscription.presenceState();
         updateTypingIndicator(presenceState);
       })
-      .subscribe();
+      .on("presence", { event: "join" }, ({ key, newPresences }) => {
+        console.log("[Messages] User joined typing:", newPresences);
+      })
+      .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
+        console.log("[Messages] User left typing:", leftPresences);
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          console.log("[Messages] Typing presence subscribed");
+        }
+      });
   }
 
   function handleNewMessage(message) {
-    // Don't add duplicate if it's our own message (already added optimistically)
+    // Check if message already exists (by real ID)
+    const existingIndex = state.messages.findIndex((m) => m.id === message.id);
+    if (existingIndex !== -1) {
+      // Message already exists, skip
+      return;
+    }
+
+    // For own messages: replace temp message with real one (optimistic update completion)
     if (message.user_id === state.currentUser?.user_id) {
-      // Update the temp message with real data
       const tempIndex = state.messages.findIndex((m) =>
         m.id?.toString().startsWith("temp-")
       );
       if (tempIndex !== -1) {
+        // Replace temp with real - no need to re-render, just update in place
         state.messages[tempIndex] = message;
-        renderMessages();
+        renderMessages(); // Single render after replacing temp
+        return; // Don't add again or show notification for own message
       }
-      // Check if message already exists (avoid duplicates)
-      const exists = state.messages.some((m) => m.id === message.id);
-      if (exists) return;
     }
 
-    // Check if message already exists before adding
-    const alreadyExists = state.messages.some((m) => m.id === message.id);
-    if (alreadyExists) return;
-
-    // Add new message
+    // New message from another user - add and notify
     state.messages.push(message);
     renderMessages();
 
-    // Show toast notification for new message
-    showMessageNotification(message);
+    // Show toast notification only for messages from others
+    if (message.user_id !== state.currentUser?.user_id) {
+      showMessageNotification(message);
+    }
   }
 
   /**
@@ -2498,11 +2544,30 @@
 
   function formatTime(dateStr) {
     const date = new Date(dateStr);
-    return date.toLocaleTimeString("en-US", {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    const timeStr = date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
     });
+
+    // Google Chat style: "Today 3:23 PM", "Yesterday 3:23 PM", "Jan 15, 3:23 PM"
+    if (msgDate.getTime() === today.getTime()) {
+      return timeStr; // Just show time for today
+    } else if (msgDate.getTime() === yesterday.getTime()) {
+      return `Yesterday ${timeStr}`;
+    } else {
+      const dateStr = date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      return `${dateStr}, ${timeStr}`;
+    }
   }
 
   function formatDateTime(dateStr) {
@@ -2532,9 +2597,16 @@
     textarea.style.height = Math.min(textarea.scrollHeight, 150) + "px";
   }
 
-  function scrollToBottom() {
+  function scrollToBottom(smooth = false) {
     if (DOM.messagesContainer) {
-      DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
+      if (smooth) {
+        DOM.messagesContainer.scrollTo({
+          top: DOM.messagesContainer.scrollHeight,
+          behavior: 'smooth'
+        });
+      } else {
+        DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
+      }
     }
   }
 

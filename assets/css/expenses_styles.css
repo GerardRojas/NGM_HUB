@@ -1923,97 +1923,99 @@ select.edit-input option {
    ========================================== */
 
 .bill-status-section {
-  margin-top: 16px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
 }
 
 .bill-status-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 .bill-status-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .bill-status-bill-id {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 500;
   color: #60a5fa;
-  padding: 2px 8px;
-  background: rgba(96, 165, 250, 0.15);
-  border-radius: 4px;
+  padding: 1px 6px;
+  background: rgba(96, 165, 250, 0.12);
+  border-radius: 3px;
 }
 
 .bill-status-toggle {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .bill-status-btn {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 12px 8px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .bill-status-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .bill-status-btn.selected {
-  background: rgba(74, 222, 128, 0.1);
-  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.3);
 }
 
 .bill-status-btn.selected[data-status="open"] {
-  background: rgba(251, 191, 36, 0.1);
-  border-color: rgba(251, 191, 36, 0.4);
+  background: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.3);
 }
 
 .bill-status-btn.selected[data-status="closed"] {
-  background: rgba(74, 222, 128, 0.1);
-  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.3);
 }
 
 .bill-status-btn.selected[data-status="split"] {
-  background: rgba(139, 92, 246, 0.1);
-  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.3);
 }
 
 .bill-status-btn-icon {
-  font-size: 20px;
+  font-size: 12px;
+  line-height: 1;
 }
 
 .bill-status-btn-label {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .bill-status-btn.selected .bill-status-btn-label {
-  color: rgba(255, 255, 255, 0.95);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .bill-status-hint {
-  margin-top: 10px;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
+  margin-top: 4px;
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.4);
   text-align: center;
 }
 

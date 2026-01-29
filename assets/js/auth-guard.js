@@ -69,10 +69,24 @@
     window.location.href = 'login.html';
   }
 
+  // Show the page content (remove visibility:hidden)
+  function showPage() {
+    // Use requestAnimationFrame to ensure DOM is ready
+    if (document.body) {
+      document.body.classList.add('auth-ready');
+    } else {
+      // If body not ready yet, wait for DOMContentLoaded
+      document.addEventListener('DOMContentLoaded', () => {
+        document.body.classList.add('auth-ready');
+      });
+    }
+  }
+
   // Main guard check
   function checkAuth() {
     // Skip check for public pages
     if (isPublicPage()) {
+      showPage(); // Show public pages immediately
       return true;
     }
 
@@ -92,6 +106,7 @@
     }
 
     console.log('[Auth Guard] Authentication valid');
+    showPage(); // Show protected pages only after auth check passes
     return true;
   }
 

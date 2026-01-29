@@ -1,4 +1,19 @@
 /* ==========================================
+   00 — AUTH GUARD: Hide body until authenticated
+   ========================================== */
+
+/* Hide body by default on protected pages - auth-guard.js will show it */
+body:not(.auth-ready) {
+    visibility: hidden;
+}
+
+/* Login page doesn't need to wait for auth */
+body.login-page,
+body.public-page {
+    visibility: visible !important;
+}
+
+/* ==========================================
    01 — THEME & TOKENS GLOBALES (Supabase-inspired)
    ========================================== */
 

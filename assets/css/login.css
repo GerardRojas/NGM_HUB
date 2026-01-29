@@ -3,16 +3,21 @@
    ========================================== */
 
 .login-screen {
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 32px 16px;
-    /* ÚNICO lugar con degradado, en escala de grises */
-    background:
-        radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.06), transparent 55%),
-        radial-gradient(circle at 80% 80%, rgba(0, 0, 0, 0.85), transparent 65%),
-        var(--bg-main);
+    /* Native app feel - no scroll */
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Solid background like other pages */
+    background: #1a1a1a;
 }
 
 /* Panel principal */
@@ -20,18 +25,21 @@
 .login-panel {
     width: 100%;
     max-width: 400px;
+    max-height: calc(100vh - 64px);
+    max-height: calc(100dvh - 64px);
     display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 26px;
+    overflow-y: auto;
 
-    /* Blur + card oscuro */
-    backdrop-filter: blur(25px);
-    background: var(--ngm-bg-card); 
+    /* Solid card background */
+    backdrop-filter: none;
+    background: #1a1a1a;
     padding: 36px 34px 28px;
     border-radius: var(--radius-lg);
-    box-shadow: var(--ngm-shadow-soft);
-     border: 1px solid var(--border-soft);    /* leve borde para separarlo */
+    box-shadow: none;
+    border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .login-screen label {
@@ -281,10 +289,14 @@
 /* Safe area insets for PWA standalone mode */
 @media (display-mode: standalone) {
     .login-screen {
-        padding-top: calc(32px + env(safe-area-inset-top));
-        padding-bottom: calc(32px + env(safe-area-inset-bottom));
+        padding-top: calc(24px + env(safe-area-inset-top));
+        padding-bottom: calc(24px + env(safe-area-inset-bottom));
         padding-left: calc(16px + env(safe-area-inset-left));
         padding-right: calc(16px + env(safe-area-inset-right));
+    }
+
+    .login-panel {
+        max-height: calc(100dvh - 48px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     }
 }
 
@@ -297,40 +309,12 @@
     }
 
     .login-panel {
-        padding: 28px 24px 24px;
-        gap: 20px;
-    }
-
-    .logo-block {
-        margin-top: -80px;
-        margin-bottom: -100px;
-    }
-
-    .logo-img {
-        width: 260px;
-        height: 260px;
-    }
-
-    /* Prevent iOS zoom on input focus */
-    .input {
-        font-size: 16px;
-        padding: 12px 14px;
-    }
-
-    .login-form {
-        gap: 20px;
-    }
-
-    .login-screen .btn-primary {
-        height: 48px;
-        width: 100%;
-    }
-}
-
-/* Extra small screens */
-@media (max-width: 360px) {
-    .login-panel {
         padding: 24px 20px 20px;
+        gap: 16px;
+        max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        border-radius: 12px;
+        border: none;
+        background: transparent;
     }
 
     .logo-block {
@@ -339,8 +323,81 @@
     }
 
     .logo-img {
-        width: 200px;
-        height: 200px;
+        width: 220px;
+        height: 220px;
+    }
+
+    /* Prevent iOS zoom on input focus */
+    .input {
+        font-size: 16px;
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .input:focus {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(62, 207, 142, 0.4);
+    }
+
+    .login-form {
+        gap: 18px;
+    }
+
+    .login-screen .btn-primary {
+        height: 50px;
+        width: 100%;
+        border-radius: 12px;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+    }
+
+    .login-screen .btn-primary:active {
+        transform: scale(0.98);
+    }
+
+    .brand-title {
+        font-size: 18px;
+    }
+
+    .brand-subtitle {
+        font-size: 12px;
+    }
+
+    .footer-block {
+        margin-top: 8px;
+    }
+
+    .legal-text {
+        font-size: 10px;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 360px) {
+    .login-panel {
+        padding: 20px 16px 16px;
+        gap: 14px;
+    }
+
+    .logo-block {
+        margin-top: -50px;
+        margin-bottom: -70px;
+    }
+
+    .logo-img {
+        width: 180px;
+        height: 180px;
+    }
+
+    .brand-title {
+        font-size: 16px;
+    }
+
+    .login-form {
+        gap: 14px;
     }
 }
 
@@ -349,5 +406,43 @@
     .input {
         /* Prevent zoom on iOS when focusing input */
         font-size: 16px;
+    }
+
+    /* Fix for iOS keyboard pushing content */
+    .login-screen {
+        height: 100%;
+        height: -webkit-fill-available;
+    }
+
+    .login-panel {
+        max-height: 100%;
+        max-height: -webkit-fill-available;
+    }
+}
+
+/* Keyboard open state */
+@media (max-width: 480px) {
+    .login-page.keyboard-open .login-screen {
+        align-items: flex-start;
+        padding-top: calc(24px + env(safe-area-inset-top));
+    }
+
+    .login-page.keyboard-open .login-panel {
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    /* Hide logo when keyboard is open to save space */
+    .login-page.keyboard-open .logo-block {
+        display: none;
+    }
+
+    /* Hide footer when keyboard is open */
+    .login-page.keyboard-open .footer-block {
+        display: none;
+    }
+
+    .login-page.keyboard-open .brand-subtitle {
+        display: none;
     }
 }

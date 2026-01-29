@@ -8,50 +8,43 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .page-arturito .main-area {
-  /* Solid background like mobile PWA */
-  background: #1a1a1a;
-  /* Prevent page scroll - native app feel */
-  overflow: hidden;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  /* Gradient background for desktop */
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+  min-height: 100vh;
+  overflow: auto;
 }
 
 .arturito-main {
-  padding: 0;
-  height: 100%;
-  overflow: hidden;
+  padding: 40px 24px;
+  min-height: calc(100vh - 60px);
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: center;
-  /* No background here - it's on .main-area */
   background: transparent;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Chat Card Container - Fixed width
+   Chat Card Container - Desktop: centered card, Mobile: full screen
    ───────────────────────────────────────────────────────────────────────────── */
 
 .arturito-chat-card {
-  /* Full width/height for native app feel */
+  /* Desktop: fixed width card */
   width: 100%;
-  min-width: 100%;
-  max-width: 100%;
-  height: 100%;
-  max-height: none;
+  max-width: 700px;
+  height: calc(100vh - 180px);
+  max-height: 800px;
+  min-height: 500px;
   display: flex;
   flex-direction: column;
   position: relative;
 
-  /* Solid background like mobile */
-  background: #1a1a1a;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
+  /* Card styling for desktop */
+  background: rgba(20, 20, 25, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
   overflow: hidden;
 }
 
@@ -523,30 +516,54 @@
    Responsive
    ───────────────────────────────────────────────────────────────────────────── */
 
+/* Tablet */
 @media (max-width: 900px) {
+  .arturito-main {
+    padding: 24px 16px;
+  }
+
   .arturito-chat-card {
-    width: 100%;
-    min-width: 100%;
     max-width: 100%;
+    height: calc(100vh - 140px);
+    max-height: none;
   }
 }
 
+/* Mobile - Full screen like native app */
 @media (max-width: 768px) {
+  .page-arturito .main-area {
+    background: #1a1a1a;
+    overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
+
   .arturito-main {
     padding: 0;
+    height: 100%;
+    min-height: 100%;
+    align-items: stretch;
   }
 
   .arturito-chat-card {
     width: 100%;
-    min-width: 100%;
     max-width: 100%;
-    max-height: none;
     height: 100%;
+    max-height: none;
+    min-height: 100%;
     border-radius: 0;
+    border: none;
+    box-shadow: none;
+    background: #1a1a1a;
+    backdrop-filter: none;
   }
 
   .arturito-card-header {
     padding: 12px 16px;
+    background: #0f0f0f;
   }
 
   .arturito-messages {
@@ -555,6 +572,8 @@
 
   .arturito-input-area {
     padding: 12px 16px 16px;
+    background: #0f0f0f;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
   }
 
   .arturito-welcome-title {
@@ -565,7 +584,7 @@
     max-width: 90%;
   }
 
-  /* Hide topbar elements on mobile for Arturito */
+  /* Hide topbar elements on mobile */
   .page-arturito .ngm-meta,
   .page-arturito .ngm-search {
     display: none;
@@ -579,11 +598,6 @@
     font-size: 14px;
   }
 
-  /* Input area safe for keyboard */
-  .arturito-input-area {
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
-  }
-
   /* Make input 16px to prevent iOS zoom */
   .arturito-input {
     font-size: 16px !important;
@@ -592,16 +606,6 @@
 
 /* Extra small screens */
 @media (max-width: 480px) {
-  .arturito-main {
-    padding: 0;
-  }
-
-  .arturito-chat-card {
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
-  }
-
   .arturito-card-header {
     padding: 10px 12px;
   }
@@ -620,8 +624,8 @@
   }
 }
 
-/* PWA standalone mode */
-@media (display-mode: standalone) {
+/* PWA standalone mode - Mobile only */
+@media (display-mode: standalone) and (max-width: 768px) {
   .page-arturito .ngm-topbar {
     padding-top: calc(12px + env(safe-area-inset-top));
   }
@@ -640,42 +644,44 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   iOS Keyboard Handling
+   iOS Keyboard Handling - Mobile only
    ───────────────────────────────────────────────────────────────────────────── */
 
-/* iOS specific fixes */
+/* iOS specific fixes - only on mobile */
 @supports (-webkit-touch-callout: none) {
-  .page-arturito .main-area {
-    height: 100%;
-    height: -webkit-fill-available;
-  }
+  @media (max-width: 768px) {
+    .page-arturito .main-area {
+      height: 100%;
+      height: -webkit-fill-available;
+    }
 
-  .arturito-main {
-    height: 100%;
-    height: -webkit-fill-available;
-  }
+    .arturito-main {
+      height: 100%;
+      height: -webkit-fill-available;
+    }
 
-  .arturito-chat-card {
-    height: 100%;
-    height: -webkit-fill-available;
-  }
+    .arturito-chat-card {
+      height: 100%;
+      height: -webkit-fill-available;
+    }
 
-  /* Ensure input area stays visible above keyboard */
-  .arturito-input-area {
-    position: relative;
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-  }
+    /* Ensure input area stays visible above keyboard */
+    .arturito-input-area {
+      position: relative;
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+    }
 
-  /* Messages container should shrink when keyboard appears */
-  .arturito-messages {
-    flex: 1;
-    min-height: 0;
-    -webkit-overflow-scrolling: touch;
+    /* Messages container should shrink when keyboard appears */
+    .arturito-messages {
+      flex: 1;
+      min-height: 0;
+      -webkit-overflow-scrolling: touch;
+    }
   }
 }
 
-/* Keyboard open state */
+/* Keyboard open state - Mobile only */
 @media (max-width: 768px) {
   .page-arturito.keyboard-open .arturito-chat-card {
     height: 100%;

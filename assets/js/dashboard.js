@@ -1,6 +1,7 @@
 // assets/js/dashboard.js
 
-const API_BASE = window.NGM_CONFIG?.API_BASE || "http://localhost:3000";
+// Usa API_BASE de config.js (ya definido globalmente)
+const DASHBOARD_API = window.API_BASE || window.NGM_CONFIG?.API_BASE || "http://localhost:3000";
 
 document.addEventListener("DOMContentLoaded", () => {
   // 1) Leer usuario desde localStorage
@@ -97,7 +98,7 @@ async function loadMentions(user) {
   if (!loadingEl || !emptyEl || !listEl) return;
 
   try {
-    const response = await fetch(`${API_BASE}/messages/mentions`, {
+    const response = await fetch(`${DASHBOARD_API}/messages/mentions`, {
       credentials: "include",
     });
 

@@ -547,15 +547,10 @@
   <script src="assets/js/arturito_widget.js" defer></script>
 
   <script>
-    // Remove loading overlay when page is ready
+    // Initialize topbar pills on DOM ready
+    // Loading overlay is controlled by messages.js after data loads
     document.addEventListener('DOMContentLoaded', function() {
       if (window.initTopbarPills) window.initTopbarPills();
-
-      setTimeout(function() {
-        document.body.classList.remove('page-loading');
-        var overlay = document.getElementById('pageLoadingOverlay');
-        if (overlay) overlay.style.display = 'none';
-      }, 300);
     });
   </script>
 

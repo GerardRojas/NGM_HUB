@@ -41,6 +41,19 @@
     });
   }
 
+  // Hide loading overlay after data is loaded
+  function hidePageLoading() {
+    const overlay = document.getElementById("pageLoadingOverlay");
+    if (overlay) {
+      overlay.classList.add("hidden");
+      // Also hide with style for fallback
+      setTimeout(() => {
+        overlay.style.display = "none";
+      }, 300);
+    }
+    document.body.classList.remove("page-loading");
+  }
+
   const state = {
     currentUser: null,
     users: [],
@@ -178,13 +191,13 @@
       // Apply saved collapsed states for main sections
       initSectionCollapsedStates();
 
-      // Remove page loading state
-      document.body.classList.remove("page-loading");
+      // Hide loading overlay after all data is loaded
+      hidePageLoading();
       console.log("[Messages] Initialized successfully");
     } catch (err) {
       console.error("[Messages] Init error:", err);
       showToast("Failed to initialize messages", "error");
-      document.body.classList.remove("page-loading");
+      hidePageLoading();
     }
   }
 

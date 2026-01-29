@@ -1353,3 +1353,123 @@
     padding: 12px 16px 16px;
   }
 }
+
+/* ==========================================
+   RECEIPTS CHANNEL INDICATOR
+   ========================================== */
+
+.msg-receipts-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 0 24px 8px;
+  background: linear-gradient(135deg, rgba(62, 207, 142, 0.1), rgba(62, 207, 142, 0.05));
+  border: 1px solid rgba(62, 207, 142, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #3ecf8e;
+}
+
+.msg-receipts-indicator svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.msg-receipts-indicator-text {
+  flex: 1;
+}
+
+.msg-receipts-indicator-count {
+  background: rgba(62, 207, 142, 0.2);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+/* Receipt attachment preview in messages */
+.msg-receipt-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(62, 207, 142, 0.08);
+  border: 1px solid rgba(62, 207, 142, 0.2);
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.msg-receipt-preview-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(62, 207, 142, 0.15);
+  border-radius: 6px;
+  font-size: 20px;
+}
+
+.msg-receipt-preview-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.msg-receipt-preview-name {
+  font-weight: 500;
+  font-size: 13px;
+  color: #f0f0f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-receipt-preview-status {
+  font-size: 11px;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.msg-receipt-preview-status.ready {
+  color: #3ecf8e;
+}
+
+.msg-receipt-preview-status.pending {
+  color: #f5a623;
+}
+
+.msg-receipt-preview-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.msg-receipt-preview-btn {
+  padding: 6px 10px;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: #ccc;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.msg-receipt-preview-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.msg-receipt-preview-btn.primary {
+  background: rgba(62, 207, 142, 0.15);
+  border-color: rgba(62, 207, 142, 0.3);
+  color: #3ecf8e;
+}
+
+.msg-receipt-preview-btn.primary:hover {
+  background: rgba(62, 207, 142, 0.25);
+}

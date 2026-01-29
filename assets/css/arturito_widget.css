@@ -490,6 +490,60 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   Links in Messages
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.arturito-widget-link {
+  color: #3ecf8e;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s ease;
+}
+
+.arturito-widget-link:hover {
+  border-bottom-color: #3ecf8e;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PDF Button (with icon)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.arturito-widget-pdf-btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.arturito-widget-pdf-btn svg {
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Project Selection Grid (for BVA project picker)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.arturito-widget-project-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.arturito-widget-project-btn {
+  padding: 8px 10px;
+  font-size: 11px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arturito-widget-project-btn:hover {
+  background: rgba(62, 207, 142, 0.15);
+  border-color: rgba(62, 207, 142, 0.3);
+  color: #3ecf8e;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    Responsive
    ───────────────────────────────────────────────────────────────────────────── */
 

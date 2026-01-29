@@ -144,6 +144,119 @@
                                     </div>
                                 </div>
 
+                                <!-- Budget Alerts Settings -->
+                                <div id="budgetAlertsCard" style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                        <h3 style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">Budget Alerts</h3>
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                            <input type="checkbox" id="budgetAlertsEnabled" checked style="width: 16px; height: 16px; cursor: pointer;" />
+                                            <span style="font-size: 12px; color: #9ca3af;">Enabled</span>
+                                        </label>
+                                    </div>
+                                    <p style="font-size: 12px; color: #6b7280; margin: 0 0 16px 0;">
+                                        Receive automatic notifications when project expenses approach or exceed budget limits.
+                                    </p>
+
+                                    <!-- Threshold Settings -->
+                                    <div style="background: #0a0a0b; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                                        <div style="font-size: 12px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Alert Thresholds</div>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                            <div>
+                                                <label style="display: block; font-size: 12px; color: #e5e7eb; margin-bottom: 6px;">
+                                                    Warning at
+                                                    <span style="color: #f59e0b;">(%)</span>
+                                                </label>
+                                                <div style="display: flex; align-items: center; gap: 8px;">
+                                                    <input type="number" id="warningThreshold" value="80" min="50" max="99" style="width: 70px; padding: 8px 12px; background: #18181b; border: 1px solid #27272f; border-radius: 6px; color: #e5e7eb; font-size: 13px; text-align: center;" />
+                                                    <span style="font-size: 12px; color: #6b7280;">% of budget used</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label style="display: block; font-size: 12px; color: #e5e7eb; margin-bottom: 6px;">
+                                                    Critical at
+                                                    <span style="color: #ef4444;">(%)</span>
+                                                </label>
+                                                <div style="display: flex; align-items: center; gap: 8px;">
+                                                    <input type="number" id="criticalThreshold" value="95" min="80" max="100" style="width: 70px; padding: 8px 12px; background: #18181b; border: 1px solid #27272f; border-radius: 6px; color: #e5e7eb; font-size: 13px; text-align: center;" />
+                                                    <span style="font-size: 12px; color: #6b7280;">% of budget used</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Alert Types -->
+                                    <div style="background: #0a0a0b; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                                        <div style="font-size: 12px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Alert Types</div>
+                                        <div style="display: grid; gap: 10px;">
+                                            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                                                <input type="checkbox" id="overspendAlert" checked style="width: 16px; height: 16px; cursor: pointer;" />
+                                                <div>
+                                                    <span style="font-size: 13px; color: #e5e7eb;">Over Budget Alert</span>
+                                                    <span style="display: block; font-size: 11px; color: #6b7280;">Notify when expenses exceed the budget</span>
+                                                </div>
+                                            </label>
+                                            <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+                                                <input type="checkbox" id="noBudgetAlert" checked style="width: 16px; height: 16px; cursor: pointer;" />
+                                                <div>
+                                                    <span style="font-size: 13px; color: #e5e7eb;">No Budget Alert</span>
+                                                    <span style="display: block; font-size: 11px; color: #6b7280;">Notify when expenses are made without a budget</span>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Recipients -->
+                                    <div style="background: #0a0a0b; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                            <div style="font-size: 12px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em;">Alert Recipients</div>
+                                            <button onclick="openAddRecipientModal()" style="padding: 4px 12px; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: #3b82f6; border-radius: 4px; font-size: 11px; cursor: pointer;">
+                                                + Add Recipient
+                                            </button>
+                                        </div>
+                                        <div id="budgetAlertRecipients" style="display: grid; gap: 8px;">
+                                            <div style="text-align: center; padding: 20px; color: #6b7280; font-size: 12px;">
+                                                Loading recipients...
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Quiet Hours -->
+                                    <div style="background: #0a0a0b; border-radius: 8px; padding: 16px;">
+                                        <div style="font-size: 12px; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">Quiet Hours</div>
+                                        <p style="font-size: 11px; color: #6b7280; margin: 0 0 12px 0;">
+                                            Notifications won't be sent during these hours.
+                                        </p>
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <div>
+                                                <label style="display: block; font-size: 11px; color: #9ca3af; margin-bottom: 4px;">From</label>
+                                                <select id="quietStartHour" style="padding: 6px 10px; background: #18181b; border: 1px solid #27272f; border-radius: 4px; color: #e5e7eb; font-size: 12px;">
+                                                    <option value="20">8:00 PM</option>
+                                                    <option value="21">9:00 PM</option>
+                                                    <option value="22" selected>10:00 PM</option>
+                                                    <option value="23">11:00 PM</option>
+                                                </select>
+                                            </div>
+                                            <span style="color: #6b7280; margin-top: 16px;">to</span>
+                                            <div>
+                                                <label style="display: block; font-size: 11px; color: #9ca3af; margin-bottom: 4px;">Until</label>
+                                                <select id="quietEndHour" style="padding: 6px 10px; background: #18181b; border: 1px solid #27272f; border-radius: 4px; color: #e5e7eb; font-size: 12px;">
+                                                    <option value="6">6:00 AM</option>
+                                                    <option value="7" selected>7:00 AM</option>
+                                                    <option value="8">8:00 AM</option>
+                                                    <option value="9">9:00 AM</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Save Button -->
+                                    <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+                                        <button onclick="saveBudgetAlertSettings()" style="padding: 10px 20px; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%); border: none; border-radius: 6px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer;">
+                                            Save Alert Settings
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <!-- QuickBooks Online Integration -->
                                 <div id="qboIntegrationCard" style="background: #18181b; border: 1px solid #27272f; border-radius: 8px; padding: 24px; margin-bottom: 20px;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
@@ -315,6 +428,202 @@
     </style>
 
     <script>
+        // ====== Budget Alerts Variables ======
+        let budgetAlertSettings = null;
+        let budgetAlertRecipients = [];
+
+        // ====== Budget Alerts Functions ======
+
+        async function loadBudgetAlertSettings() {
+            try {
+                const token = localStorage.getItem('ngmToken');
+                const response = await fetch(`${window.API_BASE}/budget-alerts/settings`, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+
+                if (!response.ok) throw new Error('Failed to load settings');
+
+                const data = await response.json();
+                budgetAlertSettings = data.data;
+
+                // Populate form
+                document.getElementById('budgetAlertsEnabled').checked = budgetAlertSettings.is_enabled !== false;
+                document.getElementById('warningThreshold').value = budgetAlertSettings.warning_threshold || 80;
+                document.getElementById('criticalThreshold').value = budgetAlertSettings.critical_threshold || 95;
+                document.getElementById('overspendAlert').checked = budgetAlertSettings.overspend_alert !== false;
+                document.getElementById('noBudgetAlert').checked = budgetAlertSettings.no_budget_alert !== false;
+                document.getElementById('quietStartHour').value = budgetAlertSettings.quiet_start_hour || 22;
+                document.getElementById('quietEndHour').value = budgetAlertSettings.quiet_end_hour || 7;
+
+                // Load recipients
+                await loadBudgetAlertRecipients();
+
+            } catch (error) {
+                console.error('[BudgetAlerts] Error loading settings:', error);
+                // Use defaults if API fails
+            }
+        }
+
+        async function loadBudgetAlertRecipients() {
+            const container = document.getElementById('budgetAlertRecipients');
+
+            try {
+                const token = localStorage.getItem('ngmToken');
+                const response = await fetch(`${window.API_BASE}/budget-alerts/recipients`, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+
+                if (!response.ok) throw new Error('Failed to load recipients');
+
+                const data = await response.json();
+                budgetAlertRecipients = data.data || [];
+
+                if (budgetAlertRecipients.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 20px; color: #6b7280; font-size: 12px;">
+                            No recipients configured. Add users to receive budget alerts.
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = budgetAlertRecipients.map(r => {
+                    const user = r.users || {};
+                    const initials = (user.user_name || 'U').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                    const color = user.avatar_color || '#3b82f6';
+
+                    return `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px; background: rgba(255,255,255,0.02); border-radius: 6px; border: 1px solid #27272f;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 32px; height: 32px; background: ${color}; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #fff;">
+                                    ${initials}
+                                </div>
+                                <div>
+                                    <div style="font-size: 13px; color: #e5e7eb;">${user.user_name || 'Unknown'}</div>
+                                    <div style="font-size: 11px; color: #6b7280;">${user.user_email || ''}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-size: 10px; color: ${r.notify_push ? '#22c55e' : '#6b7280'};" title="Push notifications">
+                                    ${r.notify_push ? '🔔' : '🔕'}
+                                </span>
+                                <span style="font-size: 10px; color: ${r.notify_dashboard ? '#22c55e' : '#6b7280'};" title="Dashboard notifications">
+                                    ${r.notify_dashboard ? '📋' : '📋'}
+                                </span>
+                                <button onclick="removeAlertRecipient('${r.id}')" style="padding: 4px 8px; background: transparent; border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; border-radius: 4px; font-size: 10px; cursor: pointer;">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('[BudgetAlerts] Error loading recipients:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #6b7280; font-size: 12px;">
+                        Unable to load recipients. <button onclick="loadBudgetAlertRecipients()" style="color: #3b82f6; background: none; border: none; cursor: pointer; text-decoration: underline;">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        async function saveBudgetAlertSettings() {
+            try {
+                const settings = {
+                    is_enabled: document.getElementById('budgetAlertsEnabled').checked,
+                    warning_threshold: parseInt(document.getElementById('warningThreshold').value) || 80,
+                    critical_threshold: parseInt(document.getElementById('criticalThreshold').value) || 95,
+                    overspend_alert: document.getElementById('overspendAlert').checked,
+                    no_budget_alert: document.getElementById('noBudgetAlert').checked,
+                    quiet_start_hour: parseInt(document.getElementById('quietStartHour').value) || 22,
+                    quiet_end_hour: parseInt(document.getElementById('quietEndHour').value) || 7,
+                };
+
+                // Validate thresholds
+                if (settings.warning_threshold >= settings.critical_threshold) {
+                    alert('Warning threshold must be less than critical threshold.');
+                    return;
+                }
+
+                const token = localStorage.getItem('ngmToken');
+                const response = await fetch(`${window.API_BASE}/budget-alerts/settings`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify(settings)
+                });
+
+                if (!response.ok) throw new Error('Failed to save settings');
+
+                alert('Budget alert settings saved successfully!');
+
+            } catch (error) {
+                console.error('[BudgetAlerts] Error saving settings:', error);
+                alert('Failed to save settings: ' + error.message);
+            }
+        }
+
+        async function openAddRecipientModal() {
+            // For now, use a simple prompt - in production, use a proper modal with user picker
+            const userId = prompt('Enter user ID to add as recipient:');
+            if (!userId) return;
+
+            try {
+                const token = localStorage.getItem('ngmToken');
+                const response = await fetch(`${window.API_BASE}/budget-alerts/recipients`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        receive_warning: true,
+                        receive_critical: true,
+                        receive_overspend: true,
+                        receive_no_budget: true,
+                        notify_push: true,
+                        notify_dashboard: true
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to add recipient');
+                }
+
+                await loadBudgetAlertRecipients();
+                alert('Recipient added successfully!');
+
+            } catch (error) {
+                console.error('[BudgetAlerts] Error adding recipient:', error);
+                alert('Failed to add recipient: ' + error.message);
+            }
+        }
+
+        async function removeAlertRecipient(recipientId) {
+            if (!confirm('Remove this recipient from budget alerts?')) return;
+
+            try {
+                const token = localStorage.getItem('ngmToken');
+                const response = await fetch(`${window.API_BASE}/budget-alerts/recipients/${recipientId}`, {
+                    method: 'DELETE',
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+
+                if (!response.ok) throw new Error('Failed to remove recipient');
+
+                await loadBudgetAlertRecipients();
+
+            } catch (error) {
+                console.error('[BudgetAlerts] Error removing recipient:', error);
+                alert('Failed to remove recipient: ' + error.message);
+            }
+        }
+
         // ====== QBO Integration Variables ======
         let currentQBOConnection = null;
 
@@ -558,11 +867,12 @@
                 document.getElementById('settingsLoadingState').style.display = 'none';
                 document.getElementById('settingsContent').style.display = 'block';
 
-                // Check QBO status after content loads
+                // Check QBO status and load budget alerts after content loads
                 // Wait a bit more to ensure config.js has loaded
                 console.log('[Settings] About to check QBO status, API_BASE:', window.API_BASE);
                 if (window.API_BASE) {
                     checkQBOStatus();
+                    loadBudgetAlertSettings();
                 } else {
                     console.error('[Settings] API_BASE not defined! Check config.js loading.');
                     // Show error state

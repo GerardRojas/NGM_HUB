@@ -445,6 +445,64 @@
 
     DOM.chatName.textContent = name;
     DOM.chatDescription.textContent = description;
+
+    // Show/hide receipts channel indicator
+    updateReceiptsIndicator(channel);
+  }
+
+  /**
+   * Show indicator when in receipts channel with pending receipts count
+   */
+  async function updateReceiptsIndicator(channel) {
+    // Remove existing indicator
+    const existing = document.querySelector(".msg-receipts-indicator");
+    if (existing) existing.remove();
+
+    // Only show for receipts channel
+    if (channel?.type !== "project_receipts") return;
+
+    // Fetch pending receipts count
+    let pendingCount = 0;
+    let readyCount = 0;
+
+    try {
+      const res = await authFetch(
+        `${API_BASE}/pending-receipts/project/${channel.projectId}?status=pending&limit=1`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        pendingCount = data.counts?.pending || 0;
+        readyCount = data.counts?.ready || 0;
+      }
+    } catch (err) {
+      console.warn("[Messages] Could not fetch receipts count:", err);
+    }
+
+    // Create indicator
+    const indicator = document.createElement("div");
+    indicator.className = "msg-receipts-indicator";
+    indicator.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+      </svg>
+      <span class="msg-receipts-indicator-text">
+        Upload receipts here — they'll be tracked for expense processing
+      </span>
+      ${pendingCount + readyCount > 0
+        ? `<span class="msg-receipts-indicator-count">${pendingCount + readyCount} pending</span>`
+        : ""
+      }
+    `;
+
+    // Insert before messages container
+    const chatArea = document.querySelector(".msg-chat-main");
+    const messagesContainer = document.querySelector(".msg-messages-container");
+    if (chatArea && messagesContainer) {
+      chatArea.insertBefore(indicator, messagesContainer);
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -938,11 +996,52 @@
   // ─────────────────────────────────────────────────────────────────────────
   // ATTACHMENTS
   // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Check if current channel is a receipts channel (for special handling)
+   */
+  function isReceiptsChannel() {
+    return state.currentChannel?.type === "project_receipts";
+  }
+
+  /**
+   * Upload a receipt file to the pending-receipts API
+   * Only for project_receipts channels
+   */
+  async function uploadReceiptToPending(file) {
+    if (!state.currentChannel?.projectId || !state.currentUser?.user_id) {
+      throw new Error("Missing project or user context");
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("project_id", state.currentChannel.projectId);
+    formData.append("uploaded_by", state.currentUser.user_id);
+
+    const response = await authFetch(`${API_BASE}/pending-receipts/upload`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.detail || "Failed to upload receipt");
+    }
+
+    return response.json();
+  }
+
   function openFilePicker() {
     const input = document.createElement("input");
     input.type = "file";
     input.multiple = true;
-    input.accept = "image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt";
+
+    // For receipts channel, limit to receipt-friendly formats
+    if (isReceiptsChannel()) {
+      input.accept = "image/jpeg,image/png,image/webp,image/gif,.pdf";
+    } else {
+      input.accept = "image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt";
+    }
 
     input.addEventListener("change", handleFileSelect);
     input.click();
@@ -952,6 +1051,13 @@
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
+    // Special handling for receipts channel
+    if (isReceiptsChannel()) {
+      await handleReceiptUpload(files);
+      return;
+    }
+
+    // Regular attachment handling
     for (const file of files) {
       if (file.size > 10 * 1024 * 1024) {
         showToast(`File ${file.name} is too large (max 10MB)`, "warning");
@@ -972,6 +1078,93 @@
     }
 
     renderAttachmentsPreview();
+  }
+
+  /**
+   * Handle receipt uploads for the Receipts channel
+   * Uploads to pending-receipts API and optionally triggers processing
+   */
+  async function handleReceiptUpload(files) {
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
+
+    for (const file of files) {
+      // Validate file type
+      if (!allowedTypes.includes(file.type)) {
+        showToast(`${file.name}: Only images and PDFs allowed for receipts`, "warning");
+        continue;
+      }
+
+      // Validate size (20MB max for receipts)
+      if (file.size > 20 * 1024 * 1024) {
+        showToast(`${file.name} is too large (max 20MB)`, "warning");
+        continue;
+      }
+
+      // Show uploading indicator
+      showToast(`Uploading receipt: ${file.name}...`, "info");
+
+      try {
+        const result = await uploadReceiptToPending(file);
+
+        if (result.success) {
+          const receipt = result.data;
+
+          // Auto-send a message with the receipt link
+          const receiptMessage = `📄 **Receipt uploaded:** ${file.name}\n🔗 [View Receipt](${receipt.file_url})`;
+          DOM.messageInput.value = receiptMessage;
+          await sendMessage();
+
+          showToast(`Receipt uploaded successfully!`, "success");
+
+          // Ask if user wants to process it now
+          if (confirm(`Receipt "${file.name}" uploaded.\n\nDo you want to scan it now to extract expense data?`)) {
+            await processReceiptNow(receipt.id, file.name);
+          }
+        }
+      } catch (err) {
+        console.error("[Messages] Receipt upload error:", err);
+        showToast(`Failed to upload ${file.name}: ${err.message}`, "error");
+      }
+    }
+  }
+
+  /**
+   * Process a receipt using OCR (calls the process endpoint)
+   */
+  async function processReceiptNow(receiptId, fileName) {
+    showToast(`Processing receipt: ${fileName}...`, "info");
+
+    try {
+      const response = await authFetch(`${API_BASE}/pending-receipts/${receiptId}/process`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || "Processing failed");
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.parsed) {
+        const parsed = result.parsed;
+        let summaryMsg = `✅ **Receipt scanned:**\n`;
+        if (parsed.vendor_name) summaryMsg += `• Vendor: ${parsed.vendor_name}\n`;
+        if (parsed.amount) summaryMsg += `• Amount: $${parsed.amount.toFixed(2)}\n`;
+        if (parsed.receipt_date) summaryMsg += `• Date: ${parsed.receipt_date}\n`;
+        if (parsed.suggested_category) summaryMsg += `• Category: ${parsed.suggested_category}\n`;
+        summaryMsg += `\n💡 Ready to create expense from this receipt.`;
+
+        // Send summary to channel
+        DOM.messageInput.value = summaryMsg;
+        await sendMessage();
+
+        showToast("Receipt processed! Check the channel for details.", "success");
+      }
+    } catch (err) {
+      console.error("[Messages] Receipt processing error:", err);
+      showToast(`Failed to process receipt: ${err.message}`, "error");
+    }
   }
 
   function renderAttachmentsPreview() {

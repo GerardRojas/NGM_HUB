@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1a1a1a" />
+    <title>NGM HUB - Budget Monitor</title>
+    <link rel="icon" type="image/png" href="assets/img/greenblack_icon.png" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="assets/img/greenblack_icon.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/budget_monitor.css" />
+    <link rel="stylesheet" href="assets/css/toast.css" />
+    <link rel="stylesheet" href="assets/css/arturito_widget.css" />
+
+    <!-- Global env/server/user pills -->
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/permissions.js" defer></script>
+    <script src="assets/js/pills.js" defer></script>
+    <script src="assets/js/sidebar.js" defer></script>
+    <script src="assets/js/toast.js" defer></script>
+</head>
+<body class="page-budget-monitor">
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <img
+                    src="assets/img/logo.png"
+                    alt="NGM HUB Logo"
+                    class="sidebar-logo-img"
+                />
+            </div>
+            <div class="sidebar-title-block">
+                <p class="sidebar-title">NGM HUB</p>
+            </div>
+
+            <div class="sidebar-nav-card">
+                <nav class="sidebar-nav" id="sidebar-nav">
+                    <a href="dashboard.html" class="nav-item" data-module="dashboard">Dashboard</a>
+                    <a href="expenses.html" class="nav-item" data-module="expenses">Expenses Engine</a>
+                    <a href="budget_monitor.html" class="nav-item nav-item-active" data-module="budget_monitor">Budget Monitor</a>
+                    <a href="pipeline.html" class="nav-item" data-module="pipeline">Pipeline Manager</a>
+                    <a href="projects.html" class="nav-item" data-module="projects">Projects</a>
+                    <a href="vendors.html" class="nav-item" data-module="vendors">Vendors</a>
+                    <a href="accounts.html" class="nav-item" data-module="accounts">Accounts</a>
+                    <a href="estimator.html" class="nav-item" data-module="estimator">Estimator Suite</a>
+                    <a href="team.html" class="nav-item" data-module="team">Team Management</a>
+                    <a href="messages.html" class="nav-item" data-module="messages">Messages</a>
+                    <a href="arturito.html" class="nav-item" data-module="arturito">Arturito</a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main area -->
+        <div class="main-area">
+
+            <!-- Topbar -->
+            <header class="ngm-topbar">
+                <div class="ngm-bar-left">
+                    <div class="ngm-brand">
+                        <div class="ngm-brand-icon-small"><img src="assets/img/white_icon.png" alt="NGM"></div>
+                        <div class="ngm-brand-text">
+                            <span class="ngm-brand-org">Next Generation Management</span>
+                            <span class="ngm-brand-context">NGM Hub - Budget Monitor</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ngm-topbar-right">
+                    <div class="ngm-meta">
+                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment - —</span>
+                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server - —</span>
+                    </div>
+                    <span id="user-pill" class="user-pill">User - —</span>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="workspace">
+
+                    <!-- Budget Monitor Section -->
+                    <section class="data-section">
+
+                        <!-- Page Header -->
+                        <div class="page-header">
+                            <div class="page-header-left">
+                                <h1 class="page-title">Budget Monitor</h1>
+                                <p class="page-subtitle">Monitor budget vs actuals and manage overspend acknowledgments</p>
+                            </div>
+                            <div class="page-header-right">
+                                <button type="button" class="btn-refresh" id="btnRefreshData" title="Refresh data">
+                                    <span class="refresh-icon">↻</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Toolbar -->
+                        <div class="budget-toolbar">
+                            <div class="toolbar-left">
+                                <div class="toolbar-field">
+                                    <label class="toolbar-label" for="projectFilter">Project</label>
+                                    <select id="projectFilter" class="ngm-select">
+                                        <option value="">Select project...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="toolbar-right">
+                                <!-- Pending Alerts Badge -->
+                                <div class="pending-alerts-badge" id="pendingAlertsBadge">
+                                    <span class="pending-alerts-icon">⚠️</span>
+                                    <span class="pending-alerts-count" id="pendingAlertsCount">0</span>
+                                    <span class="pending-alerts-label">Pending Acknowledgments</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Summary Cards -->
+                        <div class="budget-summary-cards" id="budgetSummaryCards">
+                            <div class="summary-card card-budget">
+                                <div class="summary-card-icon">💰</div>
+                                <div class="summary-card-content">
+                                    <span class="summary-card-label">Total Budget</span>
+                                    <span class="summary-card-value" id="totalBudget">$0.00</span>
+                                </div>
+                            </div>
+                            <div class="summary-card card-actuals">
+                                <div class="summary-card-icon">📊</div>
+                                <div class="summary-card-content">
+                                    <span class="summary-card-label">Total Actuals</span>
+                                    <span class="summary-card-value" id="totalActuals">$0.00</span>
+                                </div>
+                            </div>
+                            <div class="summary-card card-remaining">
+                                <div class="summary-card-icon">📈</div>
+                                <div class="summary-card-content">
+                                    <span class="summary-card-label">Remaining</span>
+                                    <span class="summary-card-value" id="totalRemaining">$0.00</span>
+                                </div>
+                            </div>
+                            <div class="summary-card card-percentage">
+                                <div class="summary-card-icon">📉</div>
+                                <div class="summary-card-content">
+                                    <span class="summary-card-label">Used</span>
+                                    <span class="summary-card-value" id="totalPercentage">0%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabs -->
+                        <div class="budget-tabs">
+                            <button type="button" class="budget-tab active" data-tab="overview" id="tabOverview">
+                                Overview
+                            </button>
+                            <button type="button" class="budget-tab" data-tab="alerts" id="tabAlerts">
+                                <span>Pending Alerts</span>
+                                <span class="tab-badge" id="tabAlertsBadge">0</span>
+                            </button>
+                            <button type="button" class="budget-tab" data-tab="history" id="tabHistory">
+                                Alert History
+                            </button>
+                        </div>
+
+                        <!-- Tab Content: Overview -->
+                        <div class="tab-content active" id="tabContentOverview">
+                            <div class="budget-overview-table-container">
+                                <div id="overviewEmptyState" class="empty-state">
+                                    <img src="assets/img/white_icon.png" class="empty-state-logo" alt="">
+                                    <span class="empty-state-text">Select a project to view budget overview</span>
+                                </div>
+
+                                <table class="budget-table" id="budgetOverviewTable" style="display: none;">
+                                    <thead>
+                                        <tr>
+                                            <th>Account</th>
+                                            <th>Budget</th>
+                                            <th>Actuals</th>
+                                            <th>Remaining</th>
+                                            <th>Used %</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="budgetOverviewBody">
+                                        <!-- Rendered by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Tab Content: Pending Alerts -->
+                        <div class="tab-content" id="tabContentAlerts">
+                            <div class="alerts-container">
+                                <div id="alertsEmptyState" class="empty-state">
+                                    <div class="empty-state-icon">✅</div>
+                                    <span class="empty-state-text">No pending alerts to acknowledge</span>
+                                    <span class="empty-state-hint">All budget alerts have been reviewed</span>
+                                </div>
+
+                                <div class="alerts-list" id="alertsList">
+                                    <!-- Alert cards rendered by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab Content: History -->
+                        <div class="tab-content" id="tabContentHistory">
+                            <div class="history-container">
+                                <div id="historyEmptyState" class="empty-state">
+                                    <img src="assets/img/white_icon.png" class="empty-state-logo" alt="">
+                                    <span class="empty-state-text">No alert history for this project</span>
+                                </div>
+
+                                <table class="history-table" id="historyTable" style="display: none;">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Account</th>
+                                            <th>Budget</th>
+                                            <th>Actual</th>
+                                            <th>Status</th>
+                                            <th>Acknowledged By</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="historyTableBody">
+                                        <!-- Rendered by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </section>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Acknowledge Alert Modal -->
+    <div id="acknowledgeModal" class="modal-backdrop hidden">
+        <div class="modal modal-acknowledge">
+            <div class="modal-header">
+                <div class="modal-title">Acknowledge Budget Alert</div>
+                <button type="button" class="modal-close-btn" id="btnCloseAckModal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Alert details -->
+                <div class="ack-alert-details">
+                    <div class="ack-alert-type" id="ackAlertType">Overspend</div>
+                    <div class="ack-alert-account" id="ackAlertAccount">—</div>
+                    <div class="ack-alert-message" id="ackAlertMessage">—</div>
+
+                    <div class="ack-alert-amounts">
+                        <div class="ack-amount-box">
+                            <span class="ack-amount-label">Budget</span>
+                            <span class="ack-amount-value" id="ackBudgetAmount">$0.00</span>
+                        </div>
+                        <div class="ack-amount-box ack-amount-actual">
+                            <span class="ack-amount-label">Actual</span>
+                            <span class="ack-amount-value" id="ackActualAmount">$0.00</span>
+                        </div>
+                        <div class="ack-amount-box ack-amount-over">
+                            <span class="ack-amount-label">Over/No Budget</span>
+                            <span class="ack-amount-value" id="ackOverAmount">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Acknowledgment form -->
+                <div class="form-field">
+                    <label class="form-label">Justification Note <span class="required">*</span></label>
+                    <textarea
+                        class="form-input form-textarea"
+                        id="ackAlertNote"
+                        rows="4"
+                        placeholder="Please explain why this overspend occurred and any corrective actions taken..."
+                        required
+                    ></textarea>
+                    <span class="form-hint">This note will be saved for audit purposes and cannot be edited later.</span>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCancelAck">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="btnConfirmAck">
+                    <span style="font-size: 14px;">✓</span> Acknowledge Alert
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Note Modal -->
+    <div id="viewNoteModal" class="modal-backdrop hidden">
+        <div class="modal modal-view-note">
+            <div class="modal-header">
+                <div class="modal-title">Acknowledgment Details</div>
+                <button type="button" class="modal-close-btn" id="btnCloseViewNote">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="note-details">
+                    <div class="note-detail-row">
+                        <span class="note-label">Account:</span>
+                        <span class="note-value" id="viewNoteAccount">—</span>
+                    </div>
+                    <div class="note-detail-row">
+                        <span class="note-label">Alert Type:</span>
+                        <span class="note-value" id="viewNoteType">—</span>
+                    </div>
+                    <div class="note-detail-row">
+                        <span class="note-label">Acknowledged By:</span>
+                        <span class="note-value" id="viewNoteAckBy">—</span>
+                    </div>
+                    <div class="note-detail-row">
+                        <span class="note-label">Acknowledged At:</span>
+                        <span class="note-value" id="viewNoteAckAt">—</span>
+                    </div>
+                </div>
+                <div class="note-content">
+                    <label class="note-content-label">Justification Note:</label>
+                    <div class="note-content-text" id="viewNoteText">—</div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCloseViewNoteFooter">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Monitor Logic -->
+    <script src="assets/js/budget_monitor.js"></script>
+
+    <script>
+        window.addEventListener("DOMContentLoaded", () => {
+            if (window.initTopbarPills) window.initTopbarPills();
+            if (window.initSidebar) window.initSidebar();
+        });
+    </script>
+
+    <script src="assets/js/arturito_widget.js"></script>
+
+    <!-- Firebase Push Notifications -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
+    <script src="assets/js/firebase-init.js"></script>
+</body>
+</html>

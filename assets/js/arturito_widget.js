@@ -578,6 +578,24 @@
           `;
         }
         break;
+
+      case "ask_project":
+        // Show clickable project buttons when user asks for BVA without specifying project
+        if (actionData.projects && actionData.projects.length > 0) {
+          const projectButtons = actionData.projects.slice(0, 6).map(p =>
+            `<button type="button"
+                    class="arturito-widget-action-btn-inline arturito-widget-project-btn"
+                    onclick="ArturitoWidget.selectProjectForBVA('${escapeHtml(p.name)}')">
+              ${escapeHtml(p.name)}
+            </button>`
+          ).join("");
+          return `
+            <div class="arturito-widget-action-btns arturito-widget-project-grid">
+              ${projectButtons}
+            </div>
+          `;
+        }
+        break;
     }
 
     return "";
@@ -1075,6 +1093,74 @@
     console.log(`[Arturito Widget] Registered copilot handlers for ${page}:`, Object.keys(handlers));
   }
 
+  /**
+   * Download a PDF file with a proper filename
+   * @param {string} pdfUrl - URL of the PDF to download
+   * @param {string} projectName - Name of the project for the filename
+   */
+  async function downloadPDF(pdfUrl, projectName) {
+    try {
+      // Fetch the PDF as a blob
+      const response = await fetch(pdfUrl);
+      if (!response.ok) throw new Error("Failed to fetch PDF");
+
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+
+      // Generate filename with date
+      const date = new Date().toISOString().split("T")[0];
+      const safeName = projectName.replace(/[^a-zA-Z0-9\s-]/g, "").trim();
+      a.download = `${safeName}_BVA_${date}.pdf`;
+
+      // Trigger download
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      if (typeof Toast !== "undefined") {
+        Toast.success("Descarga iniciada", `${safeName}_BVA_${date}.pdf`);
+      }
+    } catch (err) {
+      console.error("[Arturito Widget] Error downloading PDF:", err);
+      // Fallback: open in new tab
+      window.open(pdfUrl, "_blank");
+      if (typeof Toast !== "undefined") {
+        Toast.warning("Descarga alternativa", "El PDF se abrió en una nueva pestaña");
+      }
+    }
+  }
+
+  /**
+   * Select a project and request its BVA report
+   * Called when user clicks on a project button after asking for BVA without project
+   * @param {string} projectName - Name of the project to generate BVA for
+   */
+  function selectProjectForBVA(projectName) {
+    // Simulate user typing "bva [project]"
+    const message = `bva ${projectName}`;
+
+    // Add as user message
+    const userMsg = {
+      id: `msg_${Date.now()}`,
+      role: "user",
+      content: message,
+      timestamp: new Date().toISOString(),
+    };
+    state.messages.push(userMsg);
+    saveConversation();
+    renderMessages();
+    scrollToBottom();
+
+    // Set the input and send
+    DOM.input.value = message;
+    sendMessage();
+  }
+
   window.ArturitoWidget = {
     open: openPanel,
     close: closePanel,
@@ -1085,6 +1171,8 @@
     confirmBugReport,
     cancelBugReport,
     registerCopilotHandlers,
+    downloadPDF,
+    selectProjectForBVA,
   };
 
   // ─────────────────────────────────────────────────────────────────────────

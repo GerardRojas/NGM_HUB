@@ -7018,8 +7018,46 @@
     // Show initial empty state
     showEmptyState('Select a project to view expenses');
 
+    // Check for pending budget alerts
+    checkPendingBudgetAlerts();
+
     // Register Arturito copilot handlers
     registerCopilotHandlers();
+  }
+
+  // ================================
+  // BUDGET ALERTS BANNER
+  // ================================
+  async function checkPendingBudgetAlerts() {
+    const banner = document.getElementById('budgetAlertsBanner');
+    const countEl = document.getElementById('budgetAlertsCount');
+    if (!banner) return;
+
+    try {
+      const token = localStorage.getItem('ngmToken');
+      const API_BASE = window.API_BASE || 'http://localhost:8000';
+
+      const response = await fetch(`${API_BASE}/budget-alerts/pending/count`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const count = data.count || 0;
+
+      if (count > 0) {
+        banner.classList.remove('hidden');
+        if (countEl) {
+          countEl.textContent = `${count} alert${count !== 1 ? 's' : ''} require acknowledgment`;
+        }
+      } else {
+        banner.classList.add('hidden');
+      }
+    } catch (err) {
+      console.log('[EXPENSES] Error checking pending alerts:', err.message);
+      // Silently fail - banner stays hidden
+    }
   }
 
   // ================================

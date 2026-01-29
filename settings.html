@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1a1a1a" />
     <title>NGM HUB — Settings</title>
     <link rel="icon" type="image/png" href="assets/img/greenblack_icon.png" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="assets/img/greenblack_icon.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -570,5 +573,10 @@
             }, 600);
         });
     </script>
+
+    <!-- Firebase Push Notifications -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
+    <script src="assets/js/firebase-init.js"></script>
 </body>
 </html>

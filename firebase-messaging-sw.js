@@ -9,12 +9,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-comp
 
 // Firebase configuration (must match the one in firebase-init.js)
 const firebaseConfig = {
-  apiKey: "AIzaSyAYuDYdk6MhnCuUR1ijl73WBYOhjDUL8e4",
-  authDomain: "ngm-connect-d3de2.firebaseapp.com",
-  projectId: "ngm-connect-d3de2",
-  storageBucket: "ngm-connect-d3de2.firebasestorage.app",
-  messagingSenderId: "85280702945",
-  appId: "1:85280702945:web:b1cd17350979c87ce012a0"
+  apiKey: "AIzaSyDmeapFbTtmCLb2URK1ZO2DImOxLrhX0f4",
+  authDomain: "ngm-connect-2db75.firebaseapp.com",
+  projectId: "ngm-connect-2db75",
+  storageBucket: "ngm-connect-2db75.firebasestorage.app",
+  messagingSenderId: "679265932190",
+  appId: "1:679265932190:web:9a6931cdefff7d01a3fc8f"
 };
 
 // Initialize Firebase in the service worker

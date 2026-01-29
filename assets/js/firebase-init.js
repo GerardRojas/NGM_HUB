@@ -9,16 +9,16 @@
 
   // Firebase configuration
   const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyAYuDYdk6MhnCuUR1ijl73WBYOhjDUL8e4",
-    authDomain: "ngm-connect-d3de2.firebaseapp.com",
-    projectId: "ngm-connect-d3de2",
-    storageBucket: "ngm-connect-d3de2.firebasestorage.app",
-    messagingSenderId: "85280702945",
-    appId: "1:85280702945:web:b1cd17350979c87ce012a0"
+    apiKey: "AIzaSyDmeapFbTtmCLb2URK1ZO2DImOxLrhX0f4",
+    authDomain: "ngm-connect-2db75.firebaseapp.com",
+    projectId: "ngm-connect-2db75",
+    storageBucket: "ngm-connect-2db75.firebasestorage.app",
+    messagingSenderId: "679265932190",
+    appId: "1:679265932190:web:9a6931cdefff7d01a3fc8f"
   };
 
   // VAPID key for web push
-  const VAPID_KEY = "BCfWuZ71PKn32uBY6P2XhJNHA59lpRFJSaeOWs0pns2V9TeT7SiNITtxOpGWPpKvuW51IS0Gs_pzvegnxHCBexg";
+  const VAPID_KEY = "BIeAOO2Y2iiPMytGULMRcN3mDKTCvwb0AsrgucKH2lU3n30l0l558w6tafidLk2XZftX1YgvoX39tBA15QbdBsg";
 
   // State
   let firebaseApp = null;

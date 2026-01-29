@@ -18,9 +18,28 @@
   // ─────────────────────────────────────────────────────────────────────────
   // CONFIG & STATE
   // ─────────────────────────────────────────────────────────────────────────
-  const API_BASE = window.NGM_CONFIG?.API_BASE || "http://localhost:3000";
-  const SUPABASE_URL = window.NGM_CONFIG?.SUPABASE_URL || "";
-  const SUPABASE_ANON_KEY = window.NGM_CONFIG?.SUPABASE_ANON_KEY || "";
+  const API_BASE = window.API_BASE || window.NGM_CONFIG?.API_BASE || "http://localhost:3000";
+  const SUPABASE_URL = window.SUPABASE_URL || window.NGM_CONFIG?.SUPABASE_URL || "";
+  const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || window.NGM_CONFIG?.SUPABASE_ANON_KEY || "";
+
+  // Helper function to get auth headers with JWT token
+  function getAuthHeaders() {
+    const token = localStorage.getItem("ngmToken");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  // Helper function for authenticated fetch calls
+  async function authFetch(url, options = {}) {
+    const headers = {
+      ...getAuthHeaders(),
+      ...(options.headers || {}),
+    };
+    return fetch(url, {
+      ...options,
+      credentials: "include",
+      headers,
+    });
+  }
 
   const state = {
     currentUser: null,
@@ -151,7 +170,7 @@
   // ─────────────────────────────────────────────────────────────────────────
   async function loadCurrentUser() {
     try {
-      const res = await fetch(`${API_BASE}/auth/me`, { credentials: "include" });
+      const res = await authFetch(`${API_BASE}/auth/me`);
       if (!res.ok) throw new Error("Failed to load user");
       const data = await res.json();
       state.currentUser = data.user || data;
@@ -165,7 +184,7 @@
 
   async function loadUsers() {
     try {
-      const res = await fetch(`${API_BASE}/team/users`, { credentials: "include" });
+      const res = await authFetch(`${API_BASE}/team/users`);
       if (!res.ok) throw new Error("Failed to load users");
       const data = await res.json();
       state.users = data.users || data || [];
@@ -178,7 +197,7 @@
 
   async function loadProjects() {
     try {
-      const res = await fetch(`${API_BASE}/projects`, { credentials: "include" });
+      const res = await authFetch(`${API_BASE}/projects`);
       if (!res.ok) throw new Error("Failed to load projects");
       const data = await res.json();
       state.projects = data.projects || data || [];
@@ -191,7 +210,7 @@
 
   async function loadChannels() {
     try {
-      const res = await fetch(`${API_BASE}/messages/channels`, { credentials: "include" });
+      const res = await authFetch(`${API_BASE}/messages/channels`);
       if (!res.ok) {
         // API might not exist yet, use empty array
         console.warn("[Messages] Channels API not available, using defaults");
@@ -220,7 +239,7 @@
         url += `&channel_id=${channelId}`;
       }
 
-      const res = await fetch(url, { credentials: "include" });
+      const res = await authFetch(url);
       if (!res.ok) {
         console.warn("[Messages] Messages API not available");
         return [];
@@ -646,10 +665,9 @@
     autoResizeTextarea(DOM.messageInput);
 
     try {
-      const res = await fetch(`${API_BASE}/messages`, {
+      const res = await authFetch(`${API_BASE}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(messageData),
       });
 
@@ -770,10 +788,9 @@
     renderMessages();
 
     try {
-      await fetch(`${API_BASE}/messages/${messageId}/reactions`, {
+      await authFetch(`${API_BASE}/messages/${messageId}/reactions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ emoji, action: hasReacted ? "remove" : "add" }),
       });
     } catch (err) {
@@ -831,9 +848,7 @@
 
     // Load thread replies
     try {
-      const res = await fetch(`${API_BASE}/messages/${messageId}/thread`, {
-        credentials: "include",
-      });
+      const res = await authFetch(`${API_BASE}/messages/${messageId}/thread`);
       if (res.ok) {
         const data = await res.json();
         const replies = data.replies || data || [];
@@ -871,10 +886,9 @@
     if (!parentId) return;
 
     try {
-      const res = await fetch(`${API_BASE}/messages/${parentId}/thread`, {
+      const res = await authFetch(`${API_BASE}/messages/${parentId}/thread`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ content }),
       });
 
@@ -1026,7 +1040,7 @@
         }
       }
 
-      const res = await fetch(url, { credentials: "include" });
+      const res = await authFetch(url);
       if (!res.ok) throw new Error("Search failed");
 
       const data = await res.json();
@@ -1114,10 +1128,9 @@
     }
 
     try {
-      const res = await fetch(`${API_BASE}/messages/channels`, {
+      const res = await authFetch(`${API_BASE}/messages/channels`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           type: channelType === "direct" ? CHANNEL_TYPES.DIRECT : CHANNEL_TYPES.CUSTOM,
           name: name,

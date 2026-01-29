@@ -58,6 +58,11 @@
   // ================================
   // API
   // ================================
+  function getAuthHeaders() {
+    const token = localStorage.getItem("ngmToken");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
   async function fetchUsers() {
     const now = Date.now();
 
@@ -70,7 +75,10 @@
       const apiBase = window.API_BASE || '';
       const res = await fetch(`${apiBase}/team/users`, {
         credentials: 'include',
-        headers: { 'Accept': 'application/json' }
+        headers: {
+          'Accept': 'application/json',
+          ...getAuthHeaders()
+        }
       });
 
       if (!res.ok) throw new Error(`Failed to load users: ${res.status}`);

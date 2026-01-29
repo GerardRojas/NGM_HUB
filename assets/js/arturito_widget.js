@@ -204,7 +204,14 @@
       });
       if (!res.ok) throw new Error("Failed to load user");
       const data = await res.json();
-      state.currentUser = data.user || data;
+      const user = data.user || data;
+      state.currentUser = {
+        user_id: user.user_id || user.id,
+        user_name: user.username || user.user_name || user.name,
+        email: user.email,
+        avatar_color: user.avatar_color,
+        user_photo: user.user_photo || user.photo || user.avatar,
+      };
     } catch (err) {
       // Try localStorage fallback
       try {
@@ -213,9 +220,10 @@
           const user = JSON.parse(rawUser);
           state.currentUser = {
             user_id: user.user_id || user.id,
-            user_name: user.username || user.user_name,
+            user_name: user.username || user.user_name || user.name,
             email: user.email,
             avatar_color: user.avatar_color,
+            user_photo: user.user_photo || user.photo || user.avatar,
           };
         }
       } catch (e) {

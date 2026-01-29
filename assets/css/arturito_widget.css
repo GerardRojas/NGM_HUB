@@ -78,6 +78,7 @@
   z-index: 9999;
   width: 380px;
   height: 520px;
+  min-height: 520px;
   max-height: calc(100vh - 100px);
   border-radius: 16px;
   background: rgba(26, 26, 26, 0.95);
@@ -91,7 +92,7 @@
   opacity: 0;
   transform: translateY(20px) scale(0.95);
   pointer-events: none;
-  transition: all 0.25s ease;
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
 .arturito-widget-panel.is-open {
@@ -305,8 +306,8 @@
 }
 
 .arturito-widget-msg--user .arturito-widget-msg-bubble {
-  background: rgba(91, 95, 199, 0.15);
-  border: 1px solid rgba(91, 95, 199, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px 12px 4px 12px;
   color: #e5e7eb;
 }

@@ -112,6 +112,7 @@
     DOM.messagesContainer = document.getElementById("messagesContainer");
     DOM.messagesList = document.getElementById("messagesList");
     DOM.emptyState = document.getElementById("emptyState");
+    DOM.chatLoading = document.getElementById("chatLoading");
     DOM.messageInputArea = document.getElementById("messageInputArea");
     DOM.messageInput = document.getElementById("messageInput");
     DOM.btnSendMessage = document.getElementById("btnSendMessage");
@@ -494,7 +495,7 @@
                     data-channel-type="${CHANNEL_TYPES.PROJECT_GENERAL}"
                     data-project-id="${projectId}"
                     data-channel-name="General">
-              <span class="msg-channel-hash">#</span>
+              <span class="msg-channel-dot" style="background-color: ${projectColor};"></span>
               <span class="msg-channel-name">General</span>
             </button>
             ${channelConfig.channels.includes("accounting") ? `
@@ -502,7 +503,7 @@
                     data-channel-type="${CHANNEL_TYPES.PROJECT_ACCOUNTING}"
                     data-project-id="${projectId}"
                     data-channel-name="Accounting">
-              <span class="msg-channel-hash">#</span>
+              <span class="msg-channel-dot" style="background-color: ${projectColor};"></span>
               <span class="msg-channel-name">Accounting</span>
             </button>
             ` : ""}
@@ -510,7 +511,7 @@
                     data-channel-type="${CHANNEL_TYPES.PROJECT_RECEIPTS}"
                     data-project-id="${projectId}"
                     data-channel-name="Receipts">
-              <span class="msg-channel-hash">#</span>
+              <span class="msg-channel-dot" style="background-color: ${projectColor};"></span>
               <span class="msg-channel-name">Receipts</span>
             </button>
           </div>
@@ -624,7 +625,7 @@
         <button type="button" class="msg-channel-item"
                 data-channel-id="${channel.id}"
                 data-channel-type="${CHANNEL_TYPES.CUSTOM}">
-          <span class="msg-channel-hash">#</span>
+          <span class="msg-channel-dot" style="background-color: #f59e0b;"></span>
           <span class="msg-channel-name">${escapeHtml(channel.name)}</span>
           ${channel.unread_count ? `<span class="msg-unread-badge">${channel.unread_count}</span>` : ""}
         </button>
@@ -657,14 +658,19 @@
     // Update header
     updateChatHeader(channel);
 
-    // Show input area
+    // Show loading spinner, hide other states
     DOM.emptyState.style.display = "none";
-    DOM.messagesList.style.display = "flex";
+    DOM.messagesList.style.display = "none";
+    if (DOM.chatLoading) DOM.chatLoading.style.display = "flex";
     DOM.messageInputArea.style.display = "flex";
 
     // Load messages
     const messages = await loadMessages(channelType, channelId, projectId);
     state.messages = messages;
+
+    // Hide loading, show messages
+    if (DOM.chatLoading) DOM.chatLoading.style.display = "none";
+    DOM.messagesList.style.display = "flex";
     renderMessages();
 
     // Subscribe to realtime updates
@@ -2655,6 +2661,7 @@
     selectChannel,
     sendMessage,
     searchMessages,
+    openSearchModal,
     updateReceiptStatusInMessages,
   };
 })();

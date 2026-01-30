@@ -538,6 +538,124 @@
     return response;
   }
 
+  /**
+   * Handle expenses filter commands
+   * Returns object with message if handled, null if not a filter command
+   */
+  function handleExpensesFilterCommand(text) {
+    // Check if ExpensesArturito interface is available (only on expenses page)
+    if (!window.ExpensesArturito) {
+      return null; // Not on expenses page
+    }
+
+    const lower = text.toLowerCase().trim();
+
+    // Clear all filters commands
+    const clearAllPatterns = [
+      /^(quita|elimina|limpia|borra|clear|remove)\s*(todos?\s*los?\s*)?(filtros?|filters?)/i,
+      /^(sin|no)\s*filtros?/i,
+      /^reset(ear?)?\s*filtros?/i,
+      /^mostrar\s*todo/i,
+      /^show\s*all/i,
+    ];
+
+    for (const pattern of clearAllPatterns) {
+      if (pattern.test(lower)) {
+        const result = window.ExpensesArturito.clearAllFilters();
+        return {
+          handled: true,
+          message: "✅ **Filtros eliminados**\n\nAhora se muestran todos los gastos sin filtrar."
+        };
+      }
+    }
+
+    // Filter by bill number
+    const billPatterns = [
+      /(?:filtra|filter|muestra|show|busca|search).*(?:bill|factura|recibo)\s*#?\s*(\d+)/i,
+      /(?:bill|factura|recibo)\s*#?\s*(\d+)/i,
+      /^#?\s*(\d{3,})\s*$/i, // Just a number (3+ digits) might be a bill number
+    ];
+
+    for (const pattern of billPatterns) {
+      const match = lower.match(pattern);
+      if (match && match[1]) {
+        const billNumber = match[1];
+        const result = window.ExpensesArturito.filterBy('bill_id', billNumber);
+        const summary = window.ExpensesArturito.getSummary();
+        return {
+          handled: true,
+          message: `✅ **Filtro aplicado: Bill #${billNumber}**\n\nMostrando ${summary.filteredExpenses} gasto(s) con este número de factura.\n\n💡 Para quitar el filtro, escribe: "quita filtros"`
+        };
+      }
+    }
+
+    // Filter by vendor
+    const vendorPatterns = [
+      /(?:filtra|filter|muestra|show).*(?:vendor|proveedor|vendedor)\s+["']?(.+?)["']?$/i,
+      /(?:gastos?\s*(?:de|del|from))\s+["']?(.+?)["']?$/i,
+    ];
+
+    for (const pattern of vendorPatterns) {
+      const match = lower.match(pattern);
+      if (match && match[1] && match[1].length > 2) {
+        const vendorName = match[1].trim();
+        const result = window.ExpensesArturito.filterBy('vendor', vendorName);
+        const summary = window.ExpensesArturito.getSummary();
+        return {
+          handled: true,
+          message: `✅ **Filtro aplicado: Vendor "${vendorName}"**\n\nMostrando ${summary.filteredExpenses} gasto(s) de este proveedor.\n\n💡 Para quitar el filtro, escribe: "quita filtros"`
+        };
+      }
+    }
+
+    // Search command
+    const searchPatterns = [
+      /(?:busca|search|encuentra|find)\s+["']?(.+?)["']?$/i,
+    ];
+
+    for (const pattern of searchPatterns) {
+      const match = lower.match(pattern);
+      if (match && match[1] && match[1].length > 1) {
+        const searchTerm = match[1].trim();
+        const result = window.ExpensesArturito.search(searchTerm);
+        const summary = window.ExpensesArturito.getSummary();
+        return {
+          handled: true,
+          message: `🔍 **Búsqueda: "${searchTerm}"**\n\nEncontrados ${summary.filteredExpenses} gasto(s).\n\n💡 Para quitar el filtro, escribe: "quita filtros"`
+        };
+      }
+    }
+
+    // Get summary command
+    const summaryPatterns = [
+      /(?:resumen|summary|cuantos?|how\s*many).*(?:gastos?|expenses?)/i,
+      /(?:total|dame el total)/i,
+    ];
+
+    for (const pattern of summaryPatterns) {
+      if (pattern.test(lower)) {
+        const summary = window.ExpensesArturito.getSummary();
+        const activeFilters = Object.keys(summary.activeFilters);
+        const filterText = activeFilters.length > 0
+          ? `\n\n📋 **Filtros activos:** ${activeFilters.join(', ')}`
+          : '';
+
+        return {
+          handled: true,
+          message: `📊 **Resumen de Gastos**\n\n` +
+            `• **Total de gastos:** ${summary.totalExpenses}\n` +
+            `• **Gastos mostrados:** ${summary.filteredExpenses}\n` +
+            `• **Monto total:** $${summary.totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}\n` +
+            `• **Monto filtrado:** $${summary.filteredAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}` +
+            filterText
+        };
+      }
+    }
+
+    // Not a filter command
+    return null;
+  }
+
   // ─────────────────────────────────────────────────────────────────────────
   // STATE
   // ─────────────────────────────────────────────────────────────────────────
@@ -846,6 +964,23 @@
         id: `msg_${Date.now()}`,
         role: "assistant",
         content: generateCapabilitiesResponse(),
+        timestamp: new Date().toISOString(),
+      };
+      state.messages.push(botMessage);
+      saveConversation();
+      renderMessages();
+      scrollToBottom();
+      updateContextStats();
+      return;
+    }
+
+    // Check for expenses filter commands (only works when on expenses page)
+    const filterResult = handleExpensesFilterCommand(content);
+    if (filterResult) {
+      const botMessage = {
+        id: `msg_${Date.now()}`,
+        role: "assistant",
+        content: filterResult.message,
         timestamp: new Date().toISOString(),
       };
       state.messages.push(botMessage);

@@ -9931,6 +9931,142 @@
     }
   }
 
+  // ================================
+  // ARTURITO COMMAND INTERFACE
+  // Exposed functions for Arturito to control filters
+  // ================================
+
+  /**
+   * Filter expenses by a specific column and value
+   * @param {string} column - Column name: 'bill_id', 'vendor', 'date', 'type', 'payment', 'account', 'description', 'auth'
+   * @param {string|string[]} values - Value(s) to filter by
+   */
+  function arturitoFilterBy(column, values) {
+    const validColumns = ['date', 'bill_id', 'type', 'vendor', 'payment', 'account', 'description', 'auth'];
+
+    if (!validColumns.includes(column)) {
+      console.warn(`[ARTURITO] Invalid filter column: ${column}. Valid columns: ${validColumns.join(', ')}`);
+      return { success: false, message: `Columna inválida: ${column}` };
+    }
+
+    // Ensure values is an array
+    const filterValues = Array.isArray(values) ? values : [values];
+
+    // Apply filter
+    columnFilters[column] = filterValues.map(v => String(v));
+
+    // Re-render table
+    renderExpensesTable();
+
+    console.log(`[ARTURITO] Filter applied: ${column} = ${filterValues.join(', ')}`);
+    return {
+      success: true,
+      message: `Filtro aplicado: ${column} = ${filterValues.join(', ')}`,
+      activeFilters: getActiveFilters()
+    };
+  }
+
+  /**
+   * Clear all filters
+   */
+  function arturitoClearAllFilters() {
+    // Reset all column filters
+    columnFilters = {
+      date: [],
+      bill_id: [],
+      type: [],
+      vendor: [],
+      payment: [],
+      account: [],
+      description: [],
+      auth: []
+    };
+
+    // Clear global search
+    globalSearchTerm = '';
+    const searchInput = document.querySelector('.global-search-input');
+    if (searchInput) searchInput.value = '';
+
+    // Re-render table
+    renderExpensesTable();
+
+    console.log('[ARTURITO] All filters cleared');
+    return { success: true, message: 'Todos los filtros han sido eliminados' };
+  }
+
+  /**
+   * Clear a specific column filter
+   */
+  function arturitoClearFilter(column) {
+    if (columnFilters.hasOwnProperty(column)) {
+      columnFilters[column] = [];
+      renderExpensesTable();
+      console.log(`[ARTURITO] Filter cleared: ${column}`);
+      return { success: true, message: `Filtro eliminado: ${column}` };
+    }
+    return { success: false, message: `Columna no encontrada: ${column}` };
+  }
+
+  /**
+   * Get current active filters
+   */
+  function getActiveFilters() {
+    const active = {};
+    Object.entries(columnFilters).forEach(([key, values]) => {
+      if (values.length > 0) {
+        active[key] = values;
+      }
+    });
+    if (globalSearchTerm) {
+      active.search = globalSearchTerm;
+    }
+    return active;
+  }
+
+  /**
+   * Search expenses globally
+   */
+  function arturitoSearch(term) {
+    globalSearchTerm = term || '';
+    const searchInput = document.querySelector('.global-search-input');
+    if (searchInput) searchInput.value = term;
+    renderExpensesTable();
+    console.log(`[ARTURITO] Search applied: "${term}"`);
+    return { success: true, message: `Búsqueda: "${term}"` };
+  }
+
+  /**
+   * Get expenses summary for Arturito
+   */
+  function arturitoGetSummary() {
+    const total = expenses.length;
+    const filtered = filteredExpenses.length;
+    const hasFilters = Object.values(columnFilters).some(f => f.length > 0) || globalSearchTerm;
+    const totalAmount = expenses.reduce((sum, e) => sum + (parseFloat(e.Amount) || 0), 0);
+    const filteredAmount = filteredExpenses.reduce((sum, e) => sum + (parseFloat(e.Amount) || 0), 0);
+
+    return {
+      totalExpenses: total,
+      filteredExpenses: hasFilters ? filtered : total,
+      totalAmount: totalAmount,
+      filteredAmount: hasFilters ? filteredAmount : totalAmount,
+      activeFilters: getActiveFilters(),
+      selectedProject: selectedProjectId
+    };
+  }
+
+  // Expose Arturito interface to window
+  window.ExpensesArturito = {
+    filterBy: arturitoFilterBy,
+    clearAllFilters: arturitoClearAllFilters,
+    clearFilter: arturitoClearFilter,
+    search: arturitoSearch,
+    getSummary: arturitoGetSummary,
+    getActiveFilters: getActiveFilters
+  };
+
+  console.log('[EXPENSES] Arturito interface exposed as window.ExpensesArturito');
+
   // Run on DOM load
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

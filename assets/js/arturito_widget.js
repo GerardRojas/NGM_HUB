@@ -518,13 +518,14 @@
     const lower = text.toLowerCase().trim();
     console.log('[WIDGET] Testing patterns against:', lower);
 
-    // Clear all filters commands
+    // Clear all filters commands - more flexible patterns
     const clearAllPatterns = [
-      /^(quita|elimina|limpia|borra|clear|remove)\s*(todos?\s*los?\s*)?(filtros?|filters?)/i,
-      /^(sin|no)\s*filtros?/i,
-      /^reset(ear?)?\s*filtros?/i,
-      /^mostrar\s*todo/i,
-      /^show\s*all/i,
+      /(?:quita|elimina|limpia|borra|clear|remove|quit[ao]).*(?:filtros?|filters?)/i,
+      /(?:sin|no)\s*filtros?/i,
+      /reset(?:ear?)?\s*(?:los?\s*)?filtros?/i,
+      /mostrar?\s*(?:todos?|todo)/i,
+      /show\s*all/i,
+      /(?:filtros?|filters?)\s*(?:off|fuera|no)/i,
     ];
 
     for (const pattern of clearAllPatterns) {
@@ -617,8 +618,72 @@
       }
     }
 
-    // No match found
+    // No match found - check if it looks like a filter intent for GPT fallback
+    console.log('[WIDGET] No pattern matched, checking for filter intent...');
+
+    // Keywords that suggest filter/expense intent
+    const filterKeywords = ['filtr', 'bill', 'factura', 'vendor', 'proveedor', 'gasto', 'expense', 'busca', 'search', 'muestra', 'show', 'quita', 'limpia', 'clear'];
+    const hasFilterIntent = filterKeywords.some(kw => lower.includes(kw));
+
+    if (hasFilterIntent) {
+      console.log('[WIDGET] Filter intent detected, using GPT fallback');
+      // Return special marker to use GPT for interpretation
+      return { useGPT: true, originalText: text };
+    }
+
     return null;
+  }
+
+  /**
+   * Use GPT to interpret an expense filter command
+   */
+  async function interpretFilterCommandWithGPT(text) {
+    try {
+      const response = await fetch(`${API_BASE}/arturito/interpret-filter`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
+        },
+        credentials: "include",
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        console.warn('[WIDGET] GPT interpretation failed:', response.status);
+        return null;
+      }
+
+      const data = await response.json();
+      console.log('[WIDGET] GPT interpretation result:', data);
+
+      // Execute the interpreted command
+      if (data.action === 'clear_filters') {
+        window.ExpensesArturito.clearAllFilters();
+        return { message: data.message || "✅ **Filtros eliminados**" };
+      } else if (data.action === 'filter_bill' && data.value) {
+        window.ExpensesArturito.filterBy('bill_id', data.value);
+        const summary = window.ExpensesArturito.getSummary();
+        return { message: data.message || `✅ **Filtro aplicado: Bill #${data.value}**\n\nMostrando ${summary.filteredExpenses} gasto(s).` };
+      } else if (data.action === 'filter_vendor' && data.value) {
+        window.ExpensesArturito.filterBy('vendor', data.value);
+        const summary = window.ExpensesArturito.getSummary();
+        return { message: data.message || `✅ **Filtro aplicado: Vendor "${data.value}"**\n\nMostrando ${summary.filteredExpenses} gasto(s).` };
+      } else if (data.action === 'search' && data.value) {
+        window.ExpensesArturito.search(data.value);
+        const summary = window.ExpensesArturito.getSummary();
+        return { message: data.message || `🔍 **Búsqueda: "${data.value}"**\n\nEncontrados ${summary.filteredExpenses} gasto(s).` };
+      } else if (data.action === 'summary') {
+        const summary = window.ExpensesArturito.getSummary();
+        return { message: `📊 **Resumen de gastos**\n\n• Total visible: ${summary.filteredExpenses} gastos\n• Total: ${summary.totalExpenses} gastos` };
+      }
+
+      // GPT didn't understand it as a filter command
+      return null;
+    } catch (err) {
+      console.error('[WIDGET] GPT interpretation error:', err);
+      return null;
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -670,17 +735,46 @@
     // Check for expenses filter commands (only works when on expenses page)
     const filterResult = handleExpensesFilterCommand(content);
     if (filterResult) {
-      const botMessage = {
-        id: `msg_${Date.now()}`,
-        role: "assistant",
-        content: filterResult.message,
-        timestamp: new Date().toISOString(),
-      };
-      state.messages.push(botMessage);
-      saveConversation();
-      renderMessages();
-      scrollToBottom();
-      return;
+      // Check if we need GPT interpretation
+      if (filterResult.useGPT) {
+        // Show typing while GPT processes
+        state.isLoading = true;
+        DOM.typing.style.display = "flex";
+        scrollToBottom();
+
+        const gptResult = await interpretFilterCommandWithGPT(filterResult.originalText);
+
+        state.isLoading = false;
+        DOM.typing.style.display = "none";
+
+        if (gptResult && gptResult.message) {
+          const botMessage = {
+            id: `msg_${Date.now()}`,
+            role: "assistant",
+            content: gptResult.message,
+            timestamp: new Date().toISOString(),
+          };
+          state.messages.push(botMessage);
+          saveConversation();
+          renderMessages();
+          scrollToBottom();
+          return;
+        }
+        // If GPT didn't understand, fall through to normal API call
+      } else {
+        // Direct pattern match - execute immediately
+        const botMessage = {
+          id: `msg_${Date.now()}`,
+          role: "assistant",
+          content: filterResult.message,
+          timestamp: new Date().toISOString(),
+        };
+        state.messages.push(botMessage);
+        saveConversation();
+        renderMessages();
+        scrollToBottom();
+        return;
+      }
     }
 
     // Show typing

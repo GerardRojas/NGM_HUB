@@ -8043,8 +8043,8 @@
 
       // Build project dropdown options
       const options = ngmProjectsList.map(proj => {
-        const selected = mapping.ngm_project_id === proj.id ? 'selected' : '';
-        return `<option value="${proj.id}" ${selected}>${proj.name}</option>`;
+        const selected = mapping.ngm_project_id === proj.project_id ? 'selected' : '';
+        return `<option value="${proj.project_id}" ${selected}>${proj.project_name}</option>`;
       }).join('');
 
       return `

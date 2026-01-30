@@ -8003,19 +8003,81 @@
           <div class="qbo-mapping-header">
             <h3>QBO Project Mapping</h3>
             <p class="qbo-mapping-subtitle">Match QuickBooks customers to NGM projects</p>
-            <button class="qbo-mapping-close" onclick="document.getElementById('qboMappingModal').classList.add('hidden')">&times;</button>
+            <button class="qbo-mapping-close" id="btnCloseMappingModal">&times;</button>
           </div>
           <div id="qboMappingContent" class="qbo-mapping-content">
             <!-- Content loaded dynamically -->
           </div>
           <div class="qbo-mapping-footer">
-            <button class="btn-secondary" onclick="document.getElementById('qboMappingModal').classList.add('hidden')">Close</button>
-            <button class="btn-primary" id="btnSaveQBOMappings" onclick="saveQBOMappings()">Save Mappings</button>
+            <button class="btn-secondary" id="btnCancelMapping">Close</button>
+            <button class="btn-primary" id="btnSaveQBOMappings">Save Mappings</button>
           </div>
         </div>
       </div>
     `;
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Add event listeners
+    document.getElementById('btnCloseMappingModal').addEventListener('click', () => {
+      document.getElementById('qboMappingModal').classList.add('hidden');
+    });
+    document.getElementById('btnCancelMapping').addEventListener('click', () => {
+      document.getElementById('qboMappingModal').classList.add('hidden');
+    });
+    document.getElementById('btnSaveQBOMappings').addEventListener('click', () => {
+      saveQBOMappings();
+    });
+  }
+
+  // Fuzzy match helper - find best matching project by name similarity
+  function fuzzyMatchProject(qboName, projects) {
+    if (!qboName || !projects || projects.length === 0) return null;
+
+    const normalize = str => (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const qboNorm = normalize(qboName);
+
+    let bestMatch = null;
+    let bestScore = 0;
+
+    for (const proj of projects) {
+      const projNorm = normalize(proj.project_name);
+
+      // Exact match
+      if (qboNorm === projNorm) {
+        return proj.project_id;
+      }
+
+      // Contains match
+      if (qboNorm.includes(projNorm) || projNorm.includes(qboNorm)) {
+        const score = Math.min(qboNorm.length, projNorm.length) / Math.max(qboNorm.length, projNorm.length);
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = proj.project_id;
+        }
+      }
+
+      // Word overlap score
+      const qboWords = qboNorm.split(/\s+/).filter(w => w.length > 2);
+      const projWords = projNorm.split(/\s+/).filter(w => w.length > 2);
+      let matchedWords = 0;
+      for (const qw of qboWords) {
+        for (const pw of projWords) {
+          if (qw.includes(pw) || pw.includes(qw)) {
+            matchedWords++;
+            break;
+          }
+        }
+      }
+      if (qboWords.length > 0 && projWords.length > 0) {
+        const wordScore = matchedWords / Math.max(qboWords.length, projWords.length);
+        if (wordScore > bestScore && wordScore >= 0.5) {
+          bestScore = wordScore;
+          bestMatch = proj.project_id;
+        }
+      }
+    }
+
+    return bestScore >= 0.4 ? bestMatch : null;
   }
 
   function renderQBOMappingList() {
@@ -8038,12 +8100,24 @@
 
     const rows = sorted.map(mapping => {
       const isMapped = !!mapping.ngm_project_id;
-      const statusClass = isMapped ? 'mapping-status--mapped' : 'mapping-status--unmapped';
-      const statusText = isMapped ? 'Mapped' : 'Unmapped';
+
+      // If not mapped, try fuzzy match
+      let selectedProjectId = mapping.ngm_project_id;
+      let isSuggested = false;
+      if (!selectedProjectId && mapping.qbo_customer_name) {
+        const suggestedId = fuzzyMatchProject(mapping.qbo_customer_name, ngmProjectsList);
+        if (suggestedId) {
+          selectedProjectId = suggestedId;
+          isSuggested = true;
+        }
+      }
+
+      const statusClass = isMapped ? 'mapping-status--mapped' : (isSuggested ? 'mapping-status--suggested' : 'mapping-status--unmapped');
+      const statusText = isMapped ? 'Mapped' : (isSuggested ? 'Suggested' : 'Unmapped');
 
       // Build project dropdown options
       const options = ngmProjectsList.map(proj => {
-        const selected = mapping.ngm_project_id === proj.project_id ? 'selected' : '';
+        const selected = selectedProjectId === proj.project_id ? 'selected' : '';
         return `<option value="${proj.project_id}" ${selected}>${proj.project_name}</option>`;
       }).join('');
 

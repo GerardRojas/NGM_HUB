@@ -496,6 +496,7 @@
 
     // Remove loading state
     document.body.classList.remove("page-loading");
+    document.body.classList.add("auth-ready");
     const overlay = document.getElementById("pageLoadingOverlay");
     if (overlay) overlay.style.display = "none";
 

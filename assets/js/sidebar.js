@@ -21,12 +21,13 @@
     "team": { label: "Team Management", href: "team.html", order: 10 },
     "messages": { label: "Messages", href: "messages.html", order: 11 },
     "arturito": { label: "Arturito", href: "arturito.html", order: 12 },
-    "god_view": { label: "God View", href: "god-view.html", order: 13 },
-    "reporting": { label: "Reporting", href: "reporting.html", order: 14 },
-    "budgets": { label: "Budgets", href: "budgets.html", order: 15 },
-    "roles": { label: "Roles Management", href: "roles.html", order: 16 },
-    "settings": { label: "Settings", href: "settings.html", order: 17 },
-    "audit": { label: "Audit Logs", href: "audit.html", order: 18 },
+    "arturito_settings": { label: "Arturito Settings", href: "arturito-settings.html", order: 13 },
+    "god_view": { label: "God View", href: "god-view.html", order: 14 },
+    "reporting": { label: "Reporting", href: "reporting.html", order: 15 },
+    "budgets": { label: "Budgets", href: "budgets.html", order: 16 },
+    "roles": { label: "Roles Management", href: "roles.html", order: 17 },
+    "settings": { label: "Settings", href: "settings.html", order: 18 },
+    "audit": { label: "Audit Logs", href: "audit.html", order: 19 },
   };
 
   // Cache para evitar llamadas repetidas

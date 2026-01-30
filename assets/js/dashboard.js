@@ -16,6 +16,8 @@ function hidePageLoading() {
     overlay.classList.add("hidden");
   }
   document.body.classList.remove("page-loading");
+  // Now that loading is complete, mark as auth-ready to show content
+  document.body.classList.add("auth-ready");
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

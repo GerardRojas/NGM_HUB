@@ -321,19 +321,26 @@
   background: #f59e0b;
 }
 
-/* Direct Message Avatar */
+/* DM and Custom items alignment - add space to align with project dots (chevron width + gap) */
+.msg-dm-item,
+.msg-custom-item {
+  padding-left: 38px; /* 12px base + 16px chevron + 10px gap */
+}
+
+/* Direct Message Avatar - Ring style */
 .msg-dm-avatar {
-  width: 40px;
-  height: 40px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
   flex-shrink: 0;
-  color: white;
-  /* background-color is set inline via JS */
+  background: transparent;
+  border: 2px solid;
+  /* border-color inherits from inline color style set by JS */
 }
 
 .msg-channel-icon {
@@ -348,14 +355,16 @@
   color: #3ecf8e;
 }
 
-/* Sub-channel dot (replaces #) */
+/* Sub-channel dot - Ring style */
 .msg-channel-dot {
-  width: 10px;
-  height: 10px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
-  opacity: 0.7;
-  /* Color set via inline style from JS */
+  background: transparent;
+  border: 1.5px solid;
+  opacity: 0.6;
+  /* border-color set via inline style from JS */
 }
 
 .msg-channel-item.active .msg-channel-dot {
@@ -364,7 +373,7 @@
 
 /* Project sub-channels indentation */
 .msg-project-channels {
-  padding-left: 36px;
+  padding-left: 45px;
 }
 
 .msg-project-channels .msg-channel-item {
@@ -493,7 +502,8 @@
 .msg-chat-name {
   font-size: 16px;
   font-weight: 600;
-  color: #fff;
+  color: #e8eaed;
+  letter-spacing: 0.01em;
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -501,12 +511,13 @@
 }
 
 .msg-chat-description {
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  color: #9aa0a6;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-top: 2px;
+  margin-top: 3px;
+  letter-spacing: 0.02em;
 }
 
 .msg-chat-header-actions {
@@ -554,16 +565,33 @@
 .msg-empty-title {
   font-size: 20px;
   font-weight: 600;
-  color: #fff;
+  color: #e8eaed;
   margin: 0 0 8px;
 }
 
 .msg-empty-text {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
+  color: #9aa0a6;
   max-width: 320px;
   margin: 0;
   line-height: 1.5;
+}
+
+/* No messages inline state */
+.msg-no-messages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.msg-no-messages p {
+  color: #9aa0a6;
+  font-size: 14px;
+  margin: 0;
+  font-weight: 400;
 }
 
 /* Messages list */
@@ -1164,17 +1192,19 @@
   background: rgba(88, 166, 255, 0.1);
 }
 
+/* Mention autocomplete avatar - Ring style */
 .msg-mention-avatar {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: white;
-  background: #5b5fc7;
+  background: transparent;
+  border: 2px solid;
+  /* color and border-color set via inline style from JS */
 }
 
 .msg-mention-name {
@@ -2083,19 +2113,22 @@
    PROJECT COLOR INDICATOR
    ========================================== */
 
+/* Project color ring - 25px with ring style */
 .msg-project-color-dot {
-  width: 12px;
-  height: 12px;
+  width: 25px;
+  height: 25px;
   border-radius: 50%;
   flex-shrink: 0;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  border: 2.5px solid;
+  /* border-color set via inline style from JS */
 }
 
 .msg-project-color-dot:hover {
-  transform: scale(1.15);
-  box-shadow: 0 0 8px currentColor;
+  transform: scale(1.1);
+  box-shadow: 0 0 12px currentColor;
 }
 
 .msg-project-header {
@@ -2638,9 +2671,9 @@
   }
 
   .msg-dm-avatar {
-    width: 48px;
-    height: 48px;
-    font-size: 16px;
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
   }
 
   .msg-channel-name {

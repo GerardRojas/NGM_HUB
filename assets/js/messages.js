@@ -52,6 +52,7 @@
       }, 300);
     }
     document.body.classList.remove("page-loading");
+    document.body.classList.add("auth-ready");
   }
 
   const state = {
@@ -566,7 +567,7 @@
             </span>
             <span class="msg-project-color-dot"
                   data-project-id="${projectId}"
-                  style="background-color: ${projectColor};"
+                  style="border-color: ${projectColor}; color: ${projectColor};"
                   title="Click to change color"></span>
             <span class="msg-project-name">${escapeHtml(projectName)}</span>
             <button type="button" class="msg-project-settings-btn"
@@ -584,7 +585,7 @@
                     data-channel-type="${CHANNEL_TYPES.PROJECT_GENERAL}"
                     data-project-id="${projectId}"
                     data-channel-name="General">
-              <span class="msg-channel-dot" style="background-color: ${projectColor};"></span>
+              <span class="msg-channel-dot" style="border-color: ${projectColor};"></span>
               <span class="msg-channel-name">General</span>
             </button>
             ${channelConfig.channels.includes("accounting") ? `
@@ -592,7 +593,7 @@
                     data-channel-type="${CHANNEL_TYPES.PROJECT_ACCOUNTING}"
                     data-project-id="${projectId}"
                     data-channel-name="Accounting">
-              <span class="msg-channel-dot" style="background-color: ${projectColor};"></span>
+              <span class="msg-channel-dot" style="border-color: ${projectColor};"></span>
               <span class="msg-channel-name">Accounting</span>
             </button>
             ` : ""}
@@ -600,7 +601,7 @@
                     data-channel-type="${CHANNEL_TYPES.PROJECT_RECEIPTS}"
                     data-project-id="${projectId}"
                     data-channel-name="Receipts">
-              <span class="msg-channel-dot" style="background-color: ${projectColor};"></span>
+              <span class="msg-channel-dot" style="border-color: ${projectColor};"></span>
               <span class="msg-channel-name">Receipts</span>
             </button>
           </div>
@@ -645,11 +646,21 @@
       if (colorBtn) {
         const newColor = colorBtn.dataset.color;
         setProjectColor(projectId, newColor);
-        // Update the dot color
-        dotElement.style.backgroundColor = newColor;
-        // Update all dots with same project ID
+        // Update the project dot ring color
+        dotElement.style.borderColor = newColor;
+        dotElement.style.color = newColor;
+        // Update all dots with same project ID (both project dots and channel dots)
         document.querySelectorAll(`.msg-project-color-dot[data-project-id="${projectId}"]`)
-          .forEach(dot => dot.style.backgroundColor = newColor);
+          .forEach(dot => {
+            dot.style.borderColor = newColor;
+            dot.style.color = newColor;
+          });
+        // Update channel dots under this project
+        const projectGroup = document.querySelector(`.msg-project-group[data-project-id="${projectId}"]`);
+        if (projectGroup) {
+          projectGroup.querySelectorAll('.msg-channel-dot')
+            .forEach(dot => dot.style.borderColor = newColor);
+        }
         popup.remove();
       }
     });
@@ -682,7 +693,7 @@
         <button type="button" class="msg-channel-item msg-dm-item"
                 data-channel-id="${channel.id}"
                 data-channel-type="${CHANNEL_TYPES.DIRECT}">
-          <span class="msg-dm-avatar" style="background-color: ${avatarColor}">
+          <span class="msg-dm-avatar" style="color: ${avatarColor}; border-color: ${avatarColor}">
             ${initials}
           </span>
           <span class="msg-channel-name">${escapeHtml(userName)}</span>
@@ -711,10 +722,10 @@
     let html = "";
     customChannels.forEach((channel) => {
       html += `
-        <button type="button" class="msg-channel-item"
+        <button type="button" class="msg-channel-item msg-custom-item"
                 data-channel-id="${channel.id}"
                 data-channel-type="${CHANNEL_TYPES.CUSTOM}">
-          <span class="msg-channel-dot" style="background-color: #f59e0b;"></span>
+          <span class="msg-channel-dot" style="border-color: #f59e0b;"></span>
           <span class="msg-channel-name">${escapeHtml(channel.name)}</span>
           ${channel.unread_count ? `<span class="msg-unread-badge">${channel.unread_count}</span>` : ""}
         </button>
@@ -1202,7 +1213,7 @@
       const initials = getInitials(user.user_name);
       html += `
         <button type="button" class="msg-mention-item" data-user-id="${user.user_id}" data-user-name="${escapeHtml(user.user_name)}">
-          <span class="msg-mention-avatar" style="background-color: ${avatarColor}">${initials}</span>
+          <span class="msg-mention-avatar" style="color: ${avatarColor}; border-color: ${avatarColor}">${initials}</span>
           <span class="msg-mention-name">${escapeHtml(user.user_name)}</span>
         </button>
       `;
@@ -2865,7 +2876,7 @@
     const preview = highlightMention(mention.content || "", state.currentUser?.username);
 
     item.innerHTML = `
-      <div class="msg-mention-avatar" style="color: ${getAvatarColor(senderName)}">${initials}</div>
+      <div class="msg-mention-avatar" style="color: ${getAvatarColor(senderName)}; border-color: ${getAvatarColor(senderName)}">${initials}</div>
       <div class="msg-mention-content">
         <div class="msg-mention-header">
           <span class="msg-mention-author">${escapeHtml(senderName)}</span>

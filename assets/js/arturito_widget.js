@@ -80,6 +80,9 @@
     // Setup event listeners
     setupEventListeners();
 
+    // Setup mobile keyboard detection
+    setupMobileKeyboardDetection();
+
     // Render messages
     renderMessages();
 
@@ -301,12 +304,72 @@
     DOM.btn.classList.add("is-hidden");
     DOM.input.focus();
     scrollToBottom();
+
+    // Prevent body scroll on mobile
+    if (window.innerWidth <= 480) {
+      document.body.classList.add("arturito-widget-active");
+    }
   }
 
   function closePanel() {
     state.isOpen = false;
     DOM.panel.classList.remove("is-open");
     DOM.btn.classList.remove("is-hidden");
+
+    // Restore body scroll
+    document.body.classList.remove("arturito-widget-active");
+    DOM.panel.classList.remove("keyboard-open");
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // MOBILE KEYBOARD DETECTION
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function setupMobileKeyboardDetection() {
+    // Use visualViewport API if available (more reliable)
+    if (window.visualViewport) {
+      let initialHeight = window.visualViewport.height;
+
+      window.visualViewport.addEventListener("resize", () => {
+        if (!state.isOpen || window.innerWidth > 480) return;
+
+        const currentHeight = window.visualViewport.height;
+        const heightDiff = initialHeight - currentHeight;
+
+        // If viewport shrunk by more than 150px, keyboard is likely open
+        if (heightDiff > 150) {
+          DOM.panel.classList.add("keyboard-open");
+          // Adjust panel height to visible area
+          DOM.panel.style.height = `${currentHeight - 60}px`;
+        } else {
+          DOM.panel.classList.remove("keyboard-open");
+          DOM.panel.style.height = "";
+        }
+
+        scrollToBottom();
+      });
+
+      // Update initial height on orientation change
+      window.addEventListener("orientationchange", () => {
+        setTimeout(() => {
+          initialHeight = window.visualViewport.height;
+        }, 100);
+      });
+    } else {
+      // Fallback for older browsers: detect via focus/blur
+      DOM.input.addEventListener("focus", () => {
+        if (window.innerWidth <= 480) {
+          setTimeout(() => {
+            DOM.panel.classList.add("keyboard-open");
+            scrollToBottom();
+          }, 300);
+        }
+      });
+
+      DOM.input.addEventListener("blur", () => {
+        DOM.panel.classList.remove("keyboard-open");
+      });
+    }
   }
 
   function handleInputChange() {

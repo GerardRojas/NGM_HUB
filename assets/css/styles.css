@@ -14,6 +14,23 @@ body.public-page {
 }
 
 /* ==========================================
+   00.1 — PAGE LOADING: Ensure no flash of content
+   ========================================== */
+
+/* For pages with loading overlay, hide content until fully loaded */
+/* This works with page-loading class to prevent flash before overlay appears */
+body.page-loading .app-layout {
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
+/* Show content only when BOTH auth-ready AND page-loading is removed */
+body.auth-ready:not(.page-loading) .app-layout {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ==========================================
    01 — THEME & TOKENS GLOBALES (Supabase-inspired)
    ========================================== */
 

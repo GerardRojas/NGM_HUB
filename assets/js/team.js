@@ -68,6 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function hidePageLoading() {
     document.body.classList.remove("page-loading");
+    document.body.classList.add("auth-ready");
     if (pageLoadingOverlay) {
       pageLoadingOverlay.classList.add("hidden");
     }

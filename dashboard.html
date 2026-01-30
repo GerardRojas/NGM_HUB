@@ -22,6 +22,15 @@
 
     <!-- Critical CSS for loading overlay - prevents flash of content -->
     <style>
+        /* CRITICAL: Hide content until explicitly shown by JS */
+        /* This prevents any flash before CSS/JS loads */
+        .app-layout {
+            opacity: 0;
+        }
+        /* Only show content when auth-ready AND page-loading is removed */
+        body.auth-ready:not(.page-loading) .app-layout {
+            opacity: 1;
+        }
         /* Immediate loading state - shown before external CSS loads */
         body.page-loading {
             overflow: hidden;
@@ -37,8 +46,9 @@
             z-index: 9999;
             gap: 16px;
         }
-        .page-loading .app-layout {
-            visibility: hidden;
+        /* Hide overlay when loading is done */
+        .page-loading-overlay.hidden {
+            display: none;
         }
         .loading-logo {
             width: 80px;

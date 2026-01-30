@@ -250,6 +250,23 @@
   color: #3ecf8e;
 }
 
+/* Badge indicator for receipts with attached files */
+.receipt-icon-btn {
+  position: relative;
+}
+
+.receipt-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background: #3ecf8e;
+  border-radius: 50%;
+  border: 1.5px solid #1a1a1a;
+  box-shadow: 0 0 4px rgba(62, 207, 142, 0.5);
+}
+
 /* Loading state */
 .receipt-loading {
   display: flex;

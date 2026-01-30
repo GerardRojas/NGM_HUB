@@ -75,6 +75,11 @@
   let dismissedDuplicates = new Set(); // Set of "expense_id1:expense_id2" pairs dismissed as not duplicates
   let duplicateBillWarnings = new Map(); // Map of expense_id -> duplicate info (legacy compatibility)
 
+  // Health Check: Missing Info State
+  let missingInfoExpenses = [];      // Array of expenses missing bill number or receipt
+  let currentMissingInfoIndex = 0;   // Currently viewing missing info index
+  let healthCheckActiveTab = 'duplicates'; // 'duplicates' or 'missing'
+
   // QBO Integration State
   let currentDataSource = 'manual';  // 'manual' or 'qbo'
   let qboExpenses = [];              // QBO expenses for current project
@@ -1336,11 +1341,18 @@
   // ================================
 
   /**
-   * Shows the duplicate review panel with navigation
+   * Shows the Health Check panel with navigation
    */
   function showDuplicateReviewPanel() {
-    if (duplicateClusters.length === 0) {
-      console.log('[DUPLICATES] No clusters to show');
+    // Detect missing info expenses
+    detectMissingInfo();
+
+    // If no issues at all, show success toast and return
+    if (duplicateClusters.length === 0 && missingInfoExpenses.length === 0) {
+      console.log('[HEALTH CHECK] No issues found');
+      if (window.Toast) {
+        Toast.success('All Clear! ✓', 'No duplicates or missing info found. Your expenses are healthy!');
+      }
       return;
     }
 
@@ -1350,49 +1362,373 @@
       panel = createDuplicateReviewPanel();
     }
 
+    // Reset panel position when showing
+    panel.style.transform = '';
+    panel.style.right = '20px';
+    panel.style.top = '80px';
+    panel.style.left = 'auto';
+
     panel.style.display = 'flex'; // Use flex to show properly
-    updateDuplicateReviewPanel();
-    highlightCurrentCluster();
+
+    // Update tab badges
+    const duplicatesBadge = document.getElementById('tabBadgeDuplicates');
+    const missingBadge = document.getElementById('tabBadgeMissing');
+    if (duplicatesBadge) duplicatesBadge.textContent = duplicateClusters.length;
+    if (missingBadge) missingBadge.textContent = missingInfoExpenses.length;
+
+    // Switch to appropriate tab based on what has issues
+    if (duplicateClusters.length > 0) {
+      switchHealthCheckTab('duplicates');
+      updateDuplicateReviewPanel();
+      highlightCurrentCluster();
+    } else if (missingInfoExpenses.length > 0) {
+      switchHealthCheckTab('missing');
+      updateMissingInfoPanel();
+    }
+
+    updateHealthCheckSuccessState();
   }
 
   /**
-   * Creates the duplicate review panel DOM element
+   * Creates the Health Check panel DOM element with tabs
    */
   function createDuplicateReviewPanel() {
     const panel = document.createElement('div');
     panel.id = 'duplicateReviewPanel';
-    panel.className = 'duplicate-review-panel';
+    panel.className = 'duplicate-review-panel health-check-panel';
     panel.innerHTML = `
-      <div class="duplicate-panel-header">
-        <h3 class="duplicate-panel-title">Review Duplicates</h3>
+      <div class="duplicate-panel-header health-check-header" id="healthCheckDragHandle">
+        <h3 class="duplicate-panel-title">
+          <span class="health-check-icon">🔍</span>
+          Health Check
+        </h3>
         <button type="button" class="duplicate-panel-close" onclick="hideDuplicateReviewPanel()">×</button>
       </div>
-      <div class="duplicate-panel-body">
-        <div class="duplicate-panel-counter">
-          <span id="duplicateCurrentCluster">1</span> of <span id="duplicateTotalClusters">0</span>
+
+      <!-- Tabs -->
+      <div class="health-check-tabs">
+        <button type="button" class="health-check-tab active" data-tab="duplicates" onclick="switchHealthCheckTab('duplicates')">
+          <span class="tab-icon">📋</span>
+          Duplicates
+          <span class="tab-badge" id="tabBadgeDuplicates">0</span>
+        </button>
+        <button type="button" class="health-check-tab" data-tab="missing" onclick="switchHealthCheckTab('missing')">
+          <span class="tab-icon">⚠️</span>
+          Missing Info
+          <span class="tab-badge" id="tabBadgeMissing">0</span>
+        </button>
+      </div>
+
+      <!-- Success State (shown when all clear) -->
+      <div class="health-check-success hidden" id="healthCheckSuccess">
+        <div class="success-icon">✓</div>
+        <div class="success-title">All Clear!</div>
+        <div class="success-message">No issues found. Your expenses are healthy.</div>
+      </div>
+
+      <!-- Duplicates Tab Content -->
+      <div class="health-check-tab-content" id="tabContentDuplicates">
+        <div class="duplicate-panel-body">
+          <div class="duplicate-panel-counter">
+            <span id="duplicateCurrentCluster">1</span> of <span id="duplicateTotalClusters">0</span>
+          </div>
+          <div class="duplicate-panel-info" id="duplicatePanelInfo">
+            <!-- Cluster info populated here -->
+          </div>
+          <div class="duplicate-panel-expenses" id="duplicatePanelExpenses">
+            <!-- Expense cards populated here -->
+          </div>
         </div>
-        <div class="duplicate-panel-info" id="duplicatePanelInfo">
-          <!-- Cluster info populated here -->
-        </div>
-        <div class="duplicate-panel-expenses" id="duplicatePanelExpenses">
-          <!-- Expense cards populated here -->
+        <div class="duplicate-panel-actions">
+          <button type="button" class="btn-duplicate-nav" id="btnPrevCluster" onclick="prevDuplicateCluster()">
+            ← Previous
+          </button>
+          <button type="button" class="btn-duplicate-dismiss" onclick="dismissCurrentCluster()">
+            Not a Duplicate
+          </button>
+          <button type="button" class="btn-duplicate-nav" id="btnNextCluster" onclick="nextDuplicateCluster()">
+            Next →
+          </button>
         </div>
       </div>
-      <div class="duplicate-panel-actions">
-        <button type="button" class="btn-duplicate-nav" id="btnPrevCluster" onclick="prevDuplicateCluster()">
-          ← Previous
-        </button>
-        <button type="button" class="btn-duplicate-dismiss" onclick="dismissCurrentCluster()">
-          Not a Duplicate
-        </button>
-        <button type="button" class="btn-duplicate-nav" id="btnNextCluster" onclick="nextDuplicateCluster()">
-          Next →
-        </button>
+
+      <!-- Missing Info Tab Content -->
+      <div class="health-check-tab-content hidden" id="tabContentMissing">
+        <div class="duplicate-panel-body">
+          <div class="duplicate-panel-counter">
+            <span id="missingCurrentIndex">1</span> of <span id="missingTotalCount">0</span>
+          </div>
+          <div class="missing-info-card" id="missingInfoCard">
+            <!-- Missing info expense populated here -->
+          </div>
+        </div>
+        <div class="duplicate-panel-actions">
+          <button type="button" class="btn-duplicate-nav" id="btnPrevMissing" onclick="prevMissingInfo()">
+            ← Previous
+          </button>
+          <button type="button" class="btn-missing-goto" onclick="goToMissingExpense()">
+            📝 Edit Expense
+          </button>
+          <button type="button" class="btn-duplicate-nav" id="btnNextMissing" onclick="nextMissingInfo()">
+            Next →
+          </button>
+        </div>
       </div>
     `;
 
     document.body.appendChild(panel);
+
+    // Make panel draggable
+    initDraggablePanel(panel);
+
     return panel;
+  }
+
+  /**
+   * Initialize draggable functionality for a panel
+   */
+  function initDraggablePanel(panel) {
+    const handle = panel.querySelector('#healthCheckDragHandle');
+    if (!handle) return;
+
+    let isDragging = false;
+    let currentX;
+    let currentY;
+    let initialX;
+    let initialY;
+    let xOffset = 0;
+    let yOffset = 0;
+
+    handle.style.cursor = 'grab';
+
+    handle.addEventListener('mousedown', dragStart);
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', dragEnd);
+
+    function dragStart(e) {
+      // Don't drag if clicking close button
+      if (e.target.closest('.duplicate-panel-close')) return;
+
+      initialX = e.clientX - xOffset;
+      initialY = e.clientY - yOffset;
+      isDragging = true;
+      handle.style.cursor = 'grabbing';
+      panel.style.transition = 'none';
+    }
+
+    function drag(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+
+      currentX = e.clientX - initialX;
+      currentY = e.clientY - initialY;
+
+      xOffset = currentX;
+      yOffset = currentY;
+
+      // Keep panel within viewport
+      const rect = panel.getBoundingClientRect();
+      const maxX = window.innerWidth - rect.width;
+      const maxY = window.innerHeight - rect.height;
+
+      currentX = Math.min(Math.max(0, currentX), maxX);
+      currentY = Math.min(Math.max(0, currentY), maxY);
+
+      panel.style.transform = `translate(${currentX}px, ${currentY}px)`;
+      panel.style.right = 'auto';
+      panel.style.top = '0';
+      panel.style.left = '0';
+    }
+
+    function dragEnd() {
+      isDragging = false;
+      handle.style.cursor = 'grab';
+      panel.style.transition = '';
+    }
+  }
+
+  /**
+   * Switch between Health Check tabs
+   */
+  function switchHealthCheckTab(tabName) {
+    healthCheckActiveTab = tabName;
+
+    // Update tab buttons
+    document.querySelectorAll('.health-check-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.tab === tabName);
+    });
+
+    // Update tab content
+    document.getElementById('tabContentDuplicates').classList.toggle('hidden', tabName !== 'duplicates');
+    document.getElementById('tabContentMissing').classList.toggle('hidden', tabName !== 'missing');
+
+    // Update highlighting based on active tab
+    if (tabName === 'duplicates') {
+      highlightCurrentCluster();
+    } else {
+      // Remove duplicate highlights
+      document.querySelectorAll('.expense-row-duplicate-warning, .expense-row-duplicate-current').forEach(row => {
+        row.classList.remove('expense-row-duplicate-warning', 'expense-row-duplicate-current');
+      });
+      // Navigate to current missing info expense
+      scrollToMissingExpense();
+    }
+  }
+
+  window.switchHealthCheckTab = switchHealthCheckTab;
+
+  /**
+   * Detect expenses missing bill number or receipt
+   */
+  function detectMissingInfo() {
+    missingInfoExpenses = expenses.filter(exp => {
+      const hasBillNumber = exp.bill_id && exp.bill_id.trim() !== '';
+      const hasReceipt = !!getExpenseReceiptUrl(exp);
+      return !hasBillNumber || !hasReceipt;
+    });
+
+    currentMissingInfoIndex = 0;
+    console.log(`[HEALTH CHECK] Found ${missingInfoExpenses.length} expenses with missing info`);
+    return missingInfoExpenses.length;
+  }
+
+  /**
+   * Update the Missing Info tab content
+   */
+  function updateMissingInfoPanel() {
+    const countEl = document.getElementById('missingCurrentIndex');
+    const totalEl = document.getElementById('missingTotalCount');
+    const cardEl = document.getElementById('missingInfoCard');
+    const badgeEl = document.getElementById('tabBadgeMissing');
+
+    if (badgeEl) badgeEl.textContent = missingInfoExpenses.length;
+
+    if (missingInfoExpenses.length === 0) {
+      if (countEl) countEl.textContent = '0';
+      if (totalEl) totalEl.textContent = '0';
+      if (cardEl) cardEl.innerHTML = `
+        <div class="missing-empty-state">
+          <span class="missing-empty-icon">✓</span>
+          <span class="missing-empty-text">All expenses have bill numbers and receipts!</span>
+        </div>
+      `;
+      return;
+    }
+
+    const exp = missingInfoExpenses[currentMissingInfoIndex];
+    if (!exp) return;
+
+    if (countEl) countEl.textContent = currentMissingInfoIndex + 1;
+    if (totalEl) totalEl.textContent = missingInfoExpenses.length;
+
+    const expId = exp.expense_id || exp.id;
+    const hasBillNumber = exp.bill_id && exp.bill_id.trim() !== '';
+    const hasReceipt = !!getExpenseReceiptUrl(exp);
+    const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : 'No date';
+    const desc = exp.LineDescription || 'No description';
+    const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
+    const amount = exp.Amount ? formatCurrency(Number(exp.Amount)) : '$0.00';
+
+    const missingItems = [];
+    if (!hasBillNumber) missingItems.push('<span class="missing-item">📋 No Bill Number</span>');
+    if (!hasReceipt) missingItems.push('<span class="missing-item">📎 No Receipt</span>');
+
+    if (cardEl) cardEl.innerHTML = `
+      <div class="missing-expense-card" data-expense-id="${expId}">
+        <div class="missing-expense-header">
+          <span class="missing-expense-date">${date}</span>
+          <span class="missing-expense-amount">${amount}</span>
+        </div>
+        <div class="missing-expense-body">
+          <div class="missing-expense-vendor">${vendor}</div>
+          <div class="missing-expense-desc">${desc}</div>
+        </div>
+        <div class="missing-expense-issues">
+          <span class="missing-issues-label">Missing:</span>
+          ${missingItems.join('')}
+        </div>
+      </div>
+    `;
+
+    // Update navigation buttons
+    const btnPrev = document.getElementById('btnPrevMissing');
+    const btnNext = document.getElementById('btnNextMissing');
+    if (btnPrev) btnPrev.disabled = (currentMissingInfoIndex === 0);
+    if (btnNext) btnNext.disabled = (currentMissingInfoIndex >= missingInfoExpenses.length - 1);
+  }
+
+  /**
+   * Navigate to next missing info expense
+   */
+  function nextMissingInfo() {
+    if (currentMissingInfoIndex < missingInfoExpenses.length - 1) {
+      currentMissingInfoIndex++;
+      updateMissingInfoPanel();
+      scrollToMissingExpense();
+    }
+  }
+  window.nextMissingInfo = nextMissingInfo;
+
+  /**
+   * Navigate to previous missing info expense
+   */
+  function prevMissingInfo() {
+    if (currentMissingInfoIndex > 0) {
+      currentMissingInfoIndex--;
+      updateMissingInfoPanel();
+      scrollToMissingExpense();
+    }
+  }
+  window.prevMissingInfo = prevMissingInfo;
+
+  /**
+   * Scroll to current missing info expense in table
+   */
+  function scrollToMissingExpense() {
+    if (missingInfoExpenses.length === 0) return;
+    const exp = missingInfoExpenses[currentMissingInfoIndex];
+    if (!exp) return;
+
+    const expId = exp.expense_id || exp.id;
+    const row = document.querySelector(`tr[data-id="${expId}"]`);
+    if (row) {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  /**
+   * Open the edit modal for current missing expense
+   */
+  function goToMissingExpense() {
+    if (missingInfoExpenses.length === 0) return;
+    const exp = missingInfoExpenses[currentMissingInfoIndex];
+    if (!exp) return;
+
+    const expId = exp.expense_id || exp.id;
+    openSingleExpenseModal(expId);
+  }
+  window.goToMissingExpense = goToMissingExpense;
+
+  /**
+   * Check if health check is all clear and show success state
+   */
+  function updateHealthCheckSuccessState() {
+    const successEl = document.getElementById('healthCheckSuccess');
+    const duplicatesContent = document.getElementById('tabContentDuplicates');
+    const missingContent = document.getElementById('tabContentMissing');
+    const tabsEl = document.querySelector('.health-check-tabs');
+
+    const totalIssues = duplicateClusters.length + missingInfoExpenses.length;
+
+    if (totalIssues === 0 && successEl) {
+      successEl.classList.remove('hidden');
+      if (duplicatesContent) duplicatesContent.classList.add('hidden');
+      if (missingContent) missingContent.classList.add('hidden');
+      if (tabsEl) tabsEl.classList.add('hidden');
+    } else if (successEl) {
+      successEl.classList.add('hidden');
+      if (tabsEl) tabsEl.classList.remove('hidden');
+    }
   }
 
   /**
@@ -1565,11 +1901,23 @@
       Toast.success('Dismissed', 'This cluster marked as not duplicate');
     }
 
-    // If no more clusters, hide panel
+    // If no more duplicate clusters
     if (duplicateClusters.length === 0) {
-      hideDuplicateReviewPanel();
-      if (window.Toast) {
-        Toast.success('Health Check Complete', 'All duplicates reviewed! Your expenses are clean. ✓');
+      // Check if there are missing info issues
+      detectMissingInfo();
+      if (missingInfoExpenses.length > 0) {
+        // Switch to missing info tab
+        switchHealthCheckTab('missing');
+        updateMissingInfoPanel();
+        if (window.Toast) {
+          Toast.info('Duplicates Done', 'All duplicates reviewed! Now checking missing info...');
+        }
+      } else {
+        // All clear - show success state or close panel
+        updateHealthCheckSuccessState();
+        if (window.Toast) {
+          Toast.success('Health Check Complete', 'All issues resolved! Your expenses are healthy. ✓');
+        }
       }
       return;
     }
@@ -1617,9 +1965,21 @@
           updateDuplicatesButtonBadge(); // Update button badge
 
           if (duplicateClusters.length === 0) {
-            hideDuplicateReviewPanel();
-            if (window.Toast) {
-              Toast.success('All Done', 'No more duplicates to review!');
+            // Check if there are missing info issues
+            detectMissingInfo();
+            if (missingInfoExpenses.length > 0) {
+              // Switch to missing info tab
+              switchHealthCheckTab('missing');
+              updateMissingInfoPanel();
+              if (window.Toast) {
+                Toast.info('Duplicates Done', 'Now checking missing info...');
+              }
+            } else {
+              // All clear
+              updateHealthCheckSuccessState();
+              if (window.Toast) {
+                Toast.success('All Done', 'No more issues to review!');
+              }
             }
             return;
           }
@@ -1680,9 +2040,16 @@
     const btn = document.getElementById('btnDetectDuplicates');
     if (!btn) return;
 
-    const count = duplicateClusters.length;
+    // Also update missing info if we have expenses loaded
+    if (expenses.length > 0) {
+      detectMissingInfo();
+    }
 
-    if (count > 0) {
+    const duplicateCount = duplicateClusters.length;
+    const missingCount = missingInfoExpenses.length;
+    const totalCount = duplicateCount + missingCount;
+
+    if (totalCount > 0) {
       // Show badge with count
       btn.innerHTML = `Health Check <span style="
         display: inline-block;
@@ -1693,13 +2060,31 @@
         font-size: 11px;
         font-weight: 600;
         margin-left: 6px;
-      ">${count}</span>`;
+      ">${totalCount}</span>`;
       btn.style.borderColor = 'rgba(239, 68, 68, 0.3)';
     } else {
-      // Reset to default
-      btn.innerHTML = 'Health Check';
-      btn.style.borderColor = '';
+      // Show green checkmark when all clear
+      btn.innerHTML = `Health Check <span style="
+        display: inline-block;
+        background: #22c55e;
+        color: white;
+        border-radius: 10px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 6px;
+      ">✓</span>`;
+      btn.style.borderColor = 'rgba(34, 197, 94, 0.3)';
     }
+
+    // Update tab badges if panel exists
+    const duplicatesBadge = document.getElementById('tabBadgeDuplicates');
+    const missingBadge = document.getElementById('tabBadgeMissing');
+    if (duplicatesBadge) duplicatesBadge.textContent = duplicateCount;
+    if (missingBadge) missingBadge.textContent = missingCount;
+
+    // Update success state if panel is open
+    updateHealthCheckSuccessState();
   }
 
   // Make functions globally accessible
@@ -2004,11 +2389,12 @@
     }
 
     // Receipt icon - check bills table first, then expense (legacy)
+    // Click opens the edit modal; badge indicates if receipt is attached
     const receiptUrl = getExpenseReceiptUrl(exp);
     const hasReceipt = !!receiptUrl;
     const receiptIcon = hasReceipt
-      ? `<a href="${receiptUrl}" target="_blank" class="receipt-icon-btn receipt-icon-btn--has-receipt" title="View receipt" onclick="event.stopPropagation()">📎</a>`
-      : `<span class="receipt-icon-btn" title="No receipt">📎</span>`;
+      ? `<span class="receipt-icon-btn receipt-icon-btn--has-receipt" title="Click to view/edit receipt">📎<span class="receipt-badge"></span></span>`
+      : `<span class="receipt-icon-btn" title="No receipt attached">📎</span>`;
 
     // Authorization badge
     const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
@@ -2045,11 +2431,12 @@
     const dateVal = exp.TxnDate ? exp.TxnDate.split('T')[0] : '';
 
     // Receipt icon - check bills table first, then expense (legacy)
+    // Badge indicates if receipt is attached
     const receiptUrl = getExpenseReceiptUrl(exp);
     const hasReceipt = !!receiptUrl;
     const receiptIcon = hasReceipt
-      ? `<a href="${receiptUrl}" target="_blank" class="receipt-icon-btn receipt-icon-btn--has-receipt" title="View receipt">📎</a>`
-      : `<span class="receipt-icon-btn" title="No receipt">📎</span>`;
+      ? `<span class="receipt-icon-btn receipt-icon-btn--has-receipt" title="Has receipt attached">📎<span class="receipt-badge"></span></span>`
+      : `<span class="receipt-icon-btn" title="No receipt attached">📎</span>`;
 
     // Authorization badge (not editable in bulk edit mode)
     const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
@@ -4323,6 +4710,32 @@
       }
       closeSingleExpenseModal();
 
+      // Update Health Check - expense may now have bill # or receipt
+      updateDuplicatesButtonBadge();
+
+      // If Health Check panel is open and we're on Missing Info tab, refresh it
+      const panel = document.getElementById('duplicateReviewPanel');
+      if (panel && panel.style.display !== 'none' && healthCheckActiveTab === 'missing') {
+        detectMissingInfo();
+        // If this was the current missing info expense and it's now fixed, advance
+        const currentExpId = missingInfoExpenses[currentMissingInfoIndex]?.expense_id ||
+                            missingInfoExpenses[currentMissingInfoIndex]?.id;
+        if (currentExpId === expenseId) {
+          // Check if it's still missing info after reload
+          const stillMissing = missingInfoExpenses.find(e =>
+            (e.expense_id || e.id) === expenseId
+          );
+          if (!stillMissing && missingInfoExpenses.length > 0) {
+            // Move to next (or stay at adjusted index)
+            if (currentMissingInfoIndex >= missingInfoExpenses.length) {
+              currentMissingInfoIndex = Math.max(0, missingInfoExpenses.length - 1);
+            }
+          }
+        }
+        updateMissingInfoPanel();
+        updateHealthCheckSuccessState();
+      }
+
     } catch (err) {
       console.error('[EXPENSES] Error updating expense:', err);
       if (window.Toast) {
@@ -5953,42 +6366,46 @@
       openColumnManager();
     });
 
-    // Detect Duplicates button
+    // Health Check button (Duplicates + Missing Info)
     els.btnDetectDuplicates?.addEventListener('click', async () => {
       const btn = els.btnDetectDuplicates;
 
-      // If there are already clusters detected, just reopen the panel
-      if (duplicateClusters.length > 0) {
+      // Check for existing issues - reopen panel if any exist
+      detectMissingInfo();
+      if (duplicateClusters.length > 0 || missingInfoExpenses.length > 0) {
         showDuplicateReviewPanel();
         return;
       }
 
-      // Otherwise, run detection
+      // Otherwise, run full detection
       const originalText = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = '<span style="font-size: 14px;">⏳</span> Scanning...';
 
       try {
         await detectDuplicateBillNumbers();
+        detectMissingInfo();
 
-        // If duplicates found, panel is already shown and button gets badge
-        if (duplicateClusters.length > 0) {
+        // Show panel if any issues found
+        if (duplicateClusters.length > 0 || missingInfoExpenses.length > 0) {
           updateDuplicatesButtonBadge();
+          showDuplicateReviewPanel();
         } else {
-          // No duplicates
+          // All clear!
+          updateDuplicatesButtonBadge(); // Shows green checkmark
           if (window.Toast) {
-            Toast.success('No Duplicates', 'No duplicate expenses detected!');
+            Toast.success('All Clear! ✓', 'No duplicates or missing info found. Your expenses are healthy!');
           }
         }
       } catch (error) {
-        console.error('[DUPLICATES] Error detecting duplicates:', error);
+        console.error('[HEALTH CHECK] Error during scan:', error);
         if (window.Toast) {
-          Toast.error('Error', 'Failed to scan for duplicates');
+          Toast.error('Error', 'Failed to complete health check');
         }
       } finally {
         // Restore button
         btn.disabled = false;
-        btn.innerHTML = originalText;
+        updateDuplicatesButtonBadge(); // Update button with results
       }
     });
 
@@ -6741,11 +7158,12 @@
     const expenseId = exp.expense_id || exp.id || '';
 
     // Receipt icon - check bills table first, then expense (legacy)
+    // Click opens the edit modal; badge indicates if receipt is attached
     const receiptUrl = getExpenseReceiptUrl(exp);
     const hasReceipt = !!receiptUrl;
     const receiptIcon = hasReceipt
-      ? `<a href="${receiptUrl}" target="_blank" class="receipt-icon-btn receipt-icon-btn--has-receipt" title="View receipt" onclick="event.stopPropagation()">📎</a>`
-      : `<span class="receipt-icon-btn" title="No receipt">📎</span>`;
+      ? `<span class="receipt-icon-btn receipt-icon-btn--has-receipt" title="Click to view/edit receipt">📎<span class="receipt-badge"></span></span>`
+      : `<span class="receipt-icon-btn" title="No receipt attached">📎</span>`;
 
     const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
     const authBadgeClass = isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending';

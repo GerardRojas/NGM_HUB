@@ -3158,3 +3158,284 @@ select.edit-input option {
     width: 100%;
   }
 }
+
+/* ==========================================
+   HEALTH CHECK PANEL - TABS & ENHANCED STYLES
+   ========================================== */
+
+.health-check-panel {
+  width: 440px;
+}
+
+.health-check-header {
+  cursor: grab;
+  user-select: none;
+}
+
+.health-check-header:active {
+  cursor: grabbing;
+}
+
+.health-check-icon {
+  margin-right: 8px;
+}
+
+/* Tabs */
+.health-check-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 16px;
+  background: #0f0f10;
+  border-bottom: 1px solid #27272f;
+}
+
+.health-check-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.health-check-tab:hover {
+  color: #9ca3af;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.health-check-tab.active {
+  color: #e5e7eb;
+  border-bottom-color: #3ecf8e;
+  background: rgba(62, 207, 142, 0.05);
+}
+
+.health-check-tab .tab-icon {
+  font-size: 14px;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.health-check-tab.active .tab-badge {
+  background: rgba(62, 207, 142, 0.2);
+  color: #3ecf8e;
+}
+
+.health-check-tabs.hidden {
+  display: none;
+}
+
+/* Tab Content */
+.health-check-tab-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.health-check-tab-content.hidden {
+  display: none;
+}
+
+/* Success State */
+.health-check-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 40px;
+  text-align: center;
+}
+
+.health-check-success.hidden {
+  display: none;
+}
+
+.health-check-success .success-icon {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
+  border: 2px solid #22c55e;
+  border-radius: 50%;
+  font-size: 40px;
+  color: #22c55e;
+  margin-bottom: 20px;
+  animation: successPulse 2s ease-in-out infinite;
+}
+
+@keyframes successPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(34, 197, 94, 0);
+  }
+}
+
+.health-check-success .success-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #22c55e;
+  margin-bottom: 8px;
+}
+
+.health-check-success .success-message {
+  font-size: 14px;
+  color: #9ca3af;
+  line-height: 1.5;
+}
+
+/* Missing Info Tab Styles */
+.missing-info-card {
+  padding: 0;
+}
+
+.missing-expense-card {
+  background: #0a0a0b;
+  border: 1px solid #27272f;
+  border-radius: 10px;
+  padding: 16px;
+  transition: all 0.2s;
+}
+
+.missing-expense-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.missing-expense-date {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.missing-expense-amount {
+  font-size: 18px;
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+.missing-expense-body {
+  margin-bottom: 16px;
+}
+
+.missing-expense-vendor {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e5e7eb;
+  margin-bottom: 4px;
+}
+
+.missing-expense-desc {
+  font-size: 13px;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+.missing-expense-issues {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.2);
+  border-radius: 8px;
+}
+
+.missing-issues-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fbbf24;
+}
+
+.missing-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(251, 191, 36, 0.15);
+  border-radius: 6px;
+  font-size: 12px;
+  color: #fcd34d;
+  font-weight: 500;
+}
+
+.missing-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.missing-empty-icon {
+  font-size: 48px;
+  color: #22c55e;
+  margin-bottom: 12px;
+}
+
+.missing-empty-text {
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+/* Go to expense button */
+.btn-missing-goto {
+  flex: 1.5;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #3ecf8e 0%, #2ebd7e 100%);
+  border: none;
+  color: #0a0a0b;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(62, 207, 142, 0.3);
+}
+
+.btn-missing-goto:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(62, 207, 142, 0.4);
+}
+
+/* Mobile responsive for Health Check */
+@media (max-width: 768px) {
+  .health-check-panel {
+    width: auto;
+  }
+
+  .health-check-tabs {
+    padding: 0 10px;
+  }
+
+  .health-check-tab {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+}

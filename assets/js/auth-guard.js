@@ -86,10 +86,19 @@
   function showPage() {
     // Use requestAnimationFrame to ensure DOM is ready
     if (document.body) {
+      // If page has its own loading overlay (page-loading class), don't add auth-ready yet.
+      // The page's own JS will handle showing content after data is loaded.
+      if (document.body.classList.contains('page-loading')) {
+        // Page has custom loading - it will manage visibility itself
+        return;
+      }
       document.body.classList.add('auth-ready');
     } else {
       // If body not ready yet, wait for DOMContentLoaded
       document.addEventListener('DOMContentLoaded', () => {
+        if (document.body.classList.contains('page-loading')) {
+          return;
+        }
         document.body.classList.add('auth-ready');
       });
     }

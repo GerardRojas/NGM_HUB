@@ -7711,6 +7711,7 @@
       btnManual?.classList.add('active');
       btnQBO?.classList.remove('active');
       btnSyncQBO?.classList.add('hidden');
+      btnSyncQBO?.setAttribute('disabled', 'true');
       btnAdd?.removeAttribute('disabled');
       btnEdit?.removeAttribute('disabled');
       btnReconcile?.removeAttribute('disabled');
@@ -7718,6 +7719,7 @@
       btnManual?.classList.remove('active');
       btnQBO?.classList.add('active');
       btnSyncQBO?.classList.remove('hidden');
+      btnSyncQBO?.removeAttribute('disabled');
       btnAdd?.setAttribute('disabled', 'true');
       btnEdit?.setAttribute('disabled', 'true');
       btnReconcile?.removeAttribute('disabled'); // Can still reconcile from QBO view
@@ -7877,13 +7879,7 @@
   // QBO SYNC
   // ================================
   async function syncQBOExpenses() {
-    if (!selectedProjectId) {
-      if (window.Toast) {
-        Toast.warning('No Project', 'Please select a project first.');
-      }
-      return;
-    }
-
+    const apiBase = getApiBase();
     const btnSyncQBO = document.getElementById('btnSyncQBO');
     const originalText = btnSyncQBO?.innerHTML;
 
@@ -7894,30 +7890,46 @@
         btnSyncQBO.innerHTML = '<span style="font-size: 14px;">⏳</span> Syncing...';
       }
 
-      console.log('[QBO] Syncing expenses for project:', selectedProjectId);
+      // First get the QBO connection status to get realm_id
+      const statusResult = await apiJson(`${apiBase}/qbo/status`);
+      const connections = statusResult?.connections || [];
 
-      const url = `${apiBase}/expenses/qbo/sync`;
-      const result = await apiJson(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ project_id: selectedProjectId })
+      if (connections.length === 0) {
+        throw new Error('No QuickBooks connection found. Please connect to QBO first.');
+      }
+
+      // Use the first active connection
+      const activeConnection = connections.find(c => c.refresh_token_valid) || connections[0];
+      const realmId = activeConnection?.realm_id;
+
+      if (!realmId) {
+        throw new Error('No valid QuickBooks realm ID found.');
+      }
+
+      console.log('[QBO] Syncing expenses from realm:', realmId);
+
+      // Call sync endpoint with realm_id
+      const result = await apiJson(`${apiBase}/qbo/sync/${realmId}`, {
+        method: 'POST'
       });
 
       console.log('[QBO] Sync result:', result);
 
       // Show success message
-      const message = result?.message || `Successfully synced ${result?.count || 0} expenses from QuickBooks.`;
+      const message = result?.message || `Successfully synced ${result?.imported_count || 0} expenses from QuickBooks.`;
       if (window.Toast) {
         Toast.success('QBO Sync Complete', message);
       }
 
-      // Reload QBO expenses
-      await loadQBOExpenses(selectedProjectId);
+      // Reload QBO expenses for current project
+      if (selectedProjectId) {
+        await loadQBOExpenses(selectedProjectId);
+      }
 
     } catch (err) {
       console.error('[QBO] Sync error:', err);
       if (window.Toast) {
-        Toast.error('Sync Failed', 'Error syncing QuickBooks data.', { details: err.message });
+        Toast.error('Sync Failed', err.message || 'Error syncing QuickBooks data.');
       }
     } finally {
       // Restore button state

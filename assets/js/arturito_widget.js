@@ -506,12 +506,17 @@
   // ─────────────────────────────────────────────────────────────────────────
 
   function handleExpensesFilterCommand(text) {
+    console.log('[WIDGET] handleExpensesFilterCommand called with:', text);
+    console.log('[WIDGET] window.ExpensesArturito available:', !!window.ExpensesArturito);
+
     // Check if ExpensesArturito interface is available (only on expenses page)
     if (!window.ExpensesArturito) {
+      console.log('[WIDGET] ExpensesArturito not found, returning null');
       return null; // Not on expenses page
     }
 
     const lower = text.toLowerCase().trim();
+    console.log('[WIDGET] Testing patterns against:', lower);
 
     // Clear all filters commands
     const clearAllPatterns = [
@@ -541,8 +546,10 @@
 
     for (const pattern of billPatterns) {
       const match = lower.match(pattern);
+      console.log('[WIDGET] Testing bill pattern:', pattern, 'Match:', match);
       if (match && match[1]) {
         const billNumber = match[1];
+        console.log('[WIDGET] Bill number matched:', billNumber);
         window.ExpensesArturito.filterBy('bill_id', billNumber);
         const summary = window.ExpensesArturito.getSummary();
         return {

@@ -515,6 +515,22 @@
   outline: none;
 }
 
+/* Ensure cursor color matches theme and no selection highlight issues */
+.arturito-input {
+  caret-color: #3ecf8e;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.arturito-input::selection {
+  background: rgba(62, 207, 142, 0.3);
+}
+
+/* Prevent iOS selection handles from appearing outside input */
+.arturito-input-area,
+.arturito-input-container {
+  -webkit-tap-highlight-color: transparent;
+}
+
 .arturito-input::placeholder {
   color: #6b7280;
 }
@@ -712,7 +728,7 @@
   }
 
   .page-arturito.keyboard-open .arturito-input-area {
-    padding-bottom: 16px;
+    padding-bottom: 4px;
   }
 }
 
@@ -816,12 +832,13 @@
   }
 
   .page-arturito.keyboard-open .arturito-input-area {
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom, 0);
     flex-shrink: 0;
     position: sticky;
     bottom: 0;
     z-index: 100;
     background: #0f0f0f;
+    overflow: hidden;
   }
 
   .page-arturito.keyboard-open .arturito-input-container {

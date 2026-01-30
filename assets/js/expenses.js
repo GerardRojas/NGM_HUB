@@ -1398,22 +1398,17 @@
     panel.className = 'duplicate-review-panel health-check-panel';
     panel.innerHTML = `
       <div class="duplicate-panel-header health-check-header" id="healthCheckDragHandle">
-        <h3 class="duplicate-panel-title">
-          <span class="health-check-icon">🔍</span>
-          Health Check
-        </h3>
+        <h3 class="duplicate-panel-title">Health Check</h3>
         <button type="button" class="duplicate-panel-close" onclick="hideDuplicateReviewPanel()">×</button>
       </div>
 
       <!-- Tabs -->
       <div class="health-check-tabs">
         <button type="button" class="health-check-tab active" data-tab="duplicates" onclick="switchHealthCheckTab('duplicates')">
-          <span class="tab-icon">📋</span>
           Duplicates
           <span class="tab-badge" id="tabBadgeDuplicates">0</span>
         </button>
         <button type="button" class="health-check-tab" data-tab="missing" onclick="switchHealthCheckTab('missing')">
-          <span class="tab-icon">⚠️</span>
           Missing Info
           <span class="tab-badge" id="tabBadgeMissing">0</span>
         </button>
@@ -1421,8 +1416,12 @@
 
       <!-- Success State (shown when all clear) -->
       <div class="health-check-success hidden" id="healthCheckSuccess">
-        <div class="success-icon">✓</div>
-        <div class="success-title">All Clear!</div>
+        <div class="success-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <div class="success-title">All Clear</div>
         <div class="success-message">No issues found. Your expenses are healthy.</div>
       </div>
 
@@ -1441,13 +1440,13 @@
         </div>
         <div class="duplicate-panel-actions">
           <button type="button" class="btn-duplicate-nav" id="btnPrevCluster" onclick="prevDuplicateCluster()">
-            ← Previous
+            Previous
           </button>
           <button type="button" class="btn-duplicate-dismiss" onclick="dismissCurrentCluster()">
             Not a Duplicate
           </button>
           <button type="button" class="btn-duplicate-nav" id="btnNextCluster" onclick="nextDuplicateCluster()">
-            Next →
+            Next
           </button>
         </div>
       </div>
@@ -1464,13 +1463,13 @@
         </div>
         <div class="duplicate-panel-actions">
           <button type="button" class="btn-duplicate-nav" id="btnPrevMissing" onclick="prevMissingInfo()">
-            ← Previous
+            Previous
           </button>
           <button type="button" class="btn-missing-goto" onclick="goToMissingExpense()">
-            📝 Edit Expense
+            Edit Expense
           </button>
           <button type="button" class="btn-duplicate-nav" id="btnNextMissing" onclick="nextMissingInfo()">
-            Next →
+            Next
           </button>
         </div>
       </div>
@@ -1492,12 +1491,11 @@
     if (!handle) return;
 
     let isDragging = false;
-    let currentX;
-    let currentY;
-    let initialX;
-    let initialY;
-    let xOffset = 0;
-    let yOffset = 0;
+    let startX;
+    let startY;
+    let panelStartX;
+    let panelStartY;
+    let hasBeenDragged = false;
 
     handle.style.cursor = 'grab';
 
@@ -1509,8 +1507,16 @@
       // Don't drag if clicking close button
       if (e.target.closest('.duplicate-panel-close')) return;
 
-      initialX = e.clientX - xOffset;
-      initialY = e.clientY - yOffset;
+      const rect = panel.getBoundingClientRect();
+
+      // Store mouse start position
+      startX = e.clientX;
+      startY = e.clientY;
+
+      // Store panel's current position
+      panelStartX = rect.left;
+      panelStartY = rect.top;
+
       isDragging = true;
       handle.style.cursor = 'grabbing';
       panel.style.transition = 'none';
@@ -1520,27 +1526,41 @@
       if (!isDragging) return;
       e.preventDefault();
 
-      currentX = e.clientX - initialX;
-      currentY = e.clientY - initialY;
+      // Calculate how much the mouse has moved
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
 
-      xOffset = currentX;
-      yOffset = currentY;
+      // New position = start position + delta
+      let newX = panelStartX + deltaX;
+      let newY = panelStartY + deltaY;
 
       // Keep panel within viewport
       const rect = panel.getBoundingClientRect();
       const maxX = window.innerWidth - rect.width;
       const maxY = window.innerHeight - rect.height;
 
-      currentX = Math.min(Math.max(0, currentX), maxX);
-      currentY = Math.min(Math.max(0, currentY), maxY);
+      newX = Math.min(Math.max(0, newX), maxX);
+      newY = Math.min(Math.max(0, newY), maxY);
 
-      panel.style.transform = `translate(${currentX}px, ${currentY}px)`;
-      panel.style.right = 'auto';
-      panel.style.top = '0';
-      panel.style.left = '0';
+      // On first drag, switch from right/top positioning to left/top
+      if (!hasBeenDragged) {
+        panel.style.right = 'auto';
+        panel.style.position = 'fixed';
+        hasBeenDragged = true;
+      }
+
+      panel.style.left = `${newX}px`;
+      panel.style.top = `${newY}px`;
+      panel.style.transform = 'none';
     }
 
     function dragEnd() {
+      if (isDragging) {
+        // Update start positions for next drag
+        const rect = panel.getBoundingClientRect();
+        panelStartX = rect.left;
+        panelStartY = rect.top;
+      }
       isDragging = false;
       handle.style.cursor = 'grab';
       panel.style.transition = '';
@@ -1608,8 +1628,10 @@
       if (totalEl) totalEl.textContent = '0';
       if (cardEl) cardEl.innerHTML = `
         <div class="missing-empty-state">
-          <span class="missing-empty-icon">✓</span>
-          <span class="missing-empty-text">All expenses have bill numbers and receipts!</span>
+          <svg class="missing-empty-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          <span class="missing-empty-text">All expenses have bill numbers and receipts</span>
         </div>
       `;
       return;
@@ -1630,8 +1652,8 @@
     const amount = exp.Amount ? formatCurrency(Number(exp.Amount)) : '$0.00';
 
     const missingItems = [];
-    if (!hasBillNumber) missingItems.push('<span class="missing-item">📋 No Bill Number</span>');
-    if (!hasReceipt) missingItems.push('<span class="missing-item">📎 No Receipt</span>');
+    if (!hasBillNumber) missingItems.push('<span class="missing-item">No Bill Number</span>');
+    if (!hasReceipt) missingItems.push('<span class="missing-item">No Receipt</span>');
 
     if (cardEl) cardEl.innerHTML = `
       <div class="missing-expense-card" data-expense-id="${expId}">
@@ -1743,8 +1765,8 @@
     document.getElementById('duplicateTotalClusters').textContent = duplicateClusters.length;
 
     // Update cluster info
-    const typeLabel = cluster.type === 'exact' ? '🔴 EXACT MATCH' :
-                      cluster.type === 'strong' ? '🟠 STRONG MATCH' : '🟡 LIKELY DUPLICATE';
+    const typeLabel = cluster.type === 'exact' ? 'EXACT MATCH' :
+                      cluster.type === 'strong' ? 'STRONG MATCH' : 'LIKELY DUPLICATE';
 
     // Get match score and reasons (from first pair in cluster metadata)
     const scoreDisplay = cluster.score ? `${cluster.score}%` : '';

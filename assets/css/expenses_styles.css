@@ -2872,10 +2872,10 @@ select.edit-input option {
   right: 20px;
   width: 420px;
   max-height: calc(100vh - 100px);
-  background: #18181b;
-  border: 1px solid #3f3f46;
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  background: #111111;
+  border: 1px solid #1f1f1f;
+  border-radius: 8px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
   z-index: 9999;
   display: none;
   flex-direction: column;
@@ -2898,15 +2898,15 @@ select.edit-input option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid #27272f;
-  background: linear-gradient(135deg, #1a1a1d 0%, #18181b 100%);
+  padding: 14px 18px;
+  border-bottom: 1px solid #1f1f1f;
+  background: #111111;
 }
 
 .duplicate-panel-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  color: #e5e7eb;
+  color: #ededed;
   margin: 0;
 }
 
@@ -2951,7 +2951,7 @@ select.edit-input option {
 }
 
 .duplicate-panel-counter span {
-  color: #3b82f6;
+  color: #e5e7eb;
   font-weight: 600;
 }
 
@@ -2960,25 +2960,22 @@ select.edit-input option {
   flex-direction: column;
   gap: 10px;
   padding: 16px;
-  background: #0a0a0b;
-  border: 1px solid #27272f;
-  border-radius: 8px;
+  background: #0d0d0d;
+  border: 1px solid #1f1f1f;
+  border-radius: 6px;
 }
 
 .duplicate-type-badge {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 5px 10px;
+  border-radius: 4px;
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-}
-
-.duplicate-type-badge:contains('🔴') {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: #1f1f1f;
+  color: #9ca3af;
+  border: 1px solid #2a2a2a;
 }
 
 .duplicate-details {
@@ -2999,16 +2996,16 @@ select.edit-input option {
 }
 
 .duplicate-expense-card {
-  background: #0a0a0b;
-  border: 1px solid #27272f;
-  border-radius: 8px;
+  background: #0d0d0d;
+  border: 1px solid #1f1f1f;
+  border-radius: 6px;
   padding: 14px;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .duplicate-expense-card:hover {
-  border-color: #3f3f46;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-color: #2a2a2a;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .duplicate-expense-header {
@@ -3086,27 +3083,27 @@ select.edit-input option {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 20px;
-  border-top: 1px solid #27272f;
-  background: #0a0a0b;
+  padding: 14px 18px;
+  border-top: 1px solid #1f1f1f;
+  background: #111111;
 }
 
 .btn-duplicate-nav {
   flex: 1;
   padding: 10px 16px;
-  background: #27272a;
-  border: 1px solid #3f3f46;
-  color: #d1d5db;
-  border-radius: 8px;
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: #ededed;
+  border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .btn-duplicate-nav:hover:not(:disabled) {
-  background: #3f3f46;
-  border-color: #52525b;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
 }
 
 .btn-duplicate-nav:disabled {
@@ -3117,26 +3114,25 @@ select.edit-input option {
 .btn-duplicate-dismiss {
   flex: 1.5;
   padding: 10px 16px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border: none;
-  color: white;
-  border-radius: 8px;
+  background: #3ecf8e;
+  border: 1px solid #3ecf8e;
+  color: #000;
+  border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transition: all 0.15s ease;
 }
 
 .btn-duplicate-dismiss:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  background: #34b87d;
+  border-color: #34b87d;
 }
 
 /* Enhanced highlight for current cluster */
 .expense-row-duplicate-current {
-  background: rgba(59, 130, 246, 0.08) !important;
-  border-left: 3px solid #3b82f6 !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-left: 3px solid #6b7280 !important;
 }
 
 /* Mobile responsive */
@@ -3176,17 +3172,13 @@ select.edit-input option {
   cursor: grabbing;
 }
 
-.health-check-icon {
-  margin-right: 8px;
-}
-
 /* Tabs */
 .health-check-tabs {
   display: flex;
-  gap: 2px;
-  padding: 0 16px;
-  background: #0f0f10;
-  border-bottom: 1px solid #27272f;
+  gap: 0;
+  padding: 0;
+  background: #111111;
+  border-bottom: 1px solid #1f1f1f;
 }
 
 .health-check-tab {
@@ -3203,7 +3195,7 @@ select.edit-input option {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .health-check-tab:hover {
@@ -3212,13 +3204,9 @@ select.edit-input option {
 }
 
 .health-check-tab.active {
-  color: #e5e7eb;
-  border-bottom-color: #3ecf8e;
-  background: rgba(62, 207, 142, 0.05);
-}
-
-.health-check-tab .tab-icon {
-  font-size: 14px;
+  color: #ededed;
+  border-bottom-color: #9ca3af;
+  background: transparent;
 }
 
 .tab-badge {
@@ -3228,16 +3216,16 @@ select.edit-input option {
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
-  background: rgba(255, 255, 255, 0.1);
+  background: #1f1f1f;
   border-radius: 10px;
   font-size: 11px;
   font-weight: 600;
-  color: #9ca3af;
+  color: #6b7280;
 }
 
 .health-check-tab.active .tab-badge {
-  background: rgba(62, 207, 142, 0.2);
-  color: #3ecf8e;
+  background: #2a2a2a;
+  color: #ededed;
 }
 
 .health-check-tabs.hidden {
@@ -3262,7 +3250,7 @@ select.edit-input option {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 40px;
+  padding: 48px 40px;
   text-align: center;
 }
 
@@ -3271,39 +3259,33 @@ select.edit-input option {
 }
 
 .health-check-success .success-icon {
-  width: 80px;
-  height: 80px;
+  width: 64px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.2) 0%, rgba(34, 197, 94, 0.1) 100%);
-  border: 2px solid #22c55e;
+  background: #1f1f1f;
+  border: 1px solid #2a2a2a;
   border-radius: 50%;
-  font-size: 40px;
-  color: #22c55e;
-  margin-bottom: 20px;
-  animation: successPulse 2s ease-in-out infinite;
+  color: #9ca3af;
+  margin-bottom: 16px;
 }
 
-@keyframes successPulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 15px rgba(34, 197, 94, 0);
-  }
+.health-check-success .success-icon svg {
+  width: 28px;
+  height: 28px;
 }
 
 .health-check-success .success-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #22c55e;
-  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #ededed;
+  margin-bottom: 6px;
 }
 
 .health-check-success .success-message {
-  font-size: 14px;
-  color: #9ca3af;
+  font-size: 13px;
+  color: #6b7280;
   line-height: 1.5;
 }
 
@@ -3313,11 +3295,11 @@ select.edit-input option {
 }
 
 .missing-expense-card {
-  background: #0a0a0b;
-  border: 1px solid #27272f;
-  border-radius: 10px;
+  background: #0d0d0d;
+  border: 1px solid #1f1f1f;
+  border-radius: 6px;
   padding: 16px;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .missing-expense-header {
@@ -3361,15 +3343,15 @@ select.edit-input option {
   align-items: center;
   gap: 8px;
   padding: 12px;
-  background: rgba(251, 191, 36, 0.08);
-  border: 1px solid rgba(251, 191, 36, 0.2);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid #1f1f1f;
+  border-radius: 6px;
 }
 
 .missing-issues-label {
   font-size: 12px;
   font-weight: 600;
-  color: #fbbf24;
+  color: #6b7280;
 }
 
 .missing-item {
@@ -3377,10 +3359,11 @@ select.edit-input option {
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  background: rgba(251, 191, 36, 0.15);
-  border-radius: 6px;
+  background: #1f1f1f;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
   font-size: 12px;
-  color: #fcd34d;
+  color: #9ca3af;
   font-weight: 500;
 }
 
@@ -3394,34 +3377,34 @@ select.edit-input option {
 }
 
 .missing-empty-icon {
-  font-size: 48px;
-  color: #22c55e;
+  width: 32px;
+  height: 32px;
+  color: #6b7280;
   margin-bottom: 12px;
 }
 
 .missing-empty-text {
-  font-size: 14px;
-  color: #9ca3af;
+  font-size: 13px;
+  color: #6b7280;
 }
 
 /* Go to expense button */
 .btn-missing-goto {
   flex: 1.5;
   padding: 10px 16px;
-  background: linear-gradient(135deg, #3ecf8e 0%, #2ebd7e 100%);
-  border: none;
-  color: #0a0a0b;
-  border-radius: 8px;
+  background: #3ecf8e;
+  border: 1px solid #3ecf8e;
+  color: #000;
+  border-radius: 6px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(62, 207, 142, 0.3);
+  transition: all 0.15s ease;
 }
 
 .btn-missing-goto:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(62, 207, 142, 0.4);
+  background: #34b87d;
+  border-color: #34b87d;
 }
 
 /* Mobile responsive for Health Check */

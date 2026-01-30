@@ -592,7 +592,7 @@
       const botMessage = {
         id: `msg_${Date.now()}`,
         role: "assistant",
-        content: data.text || "No pude procesar tu mensaje.",
+        content: data.text || "I couldn't process your message.",
         timestamp: new Date().toISOString(),
         action: data.action,
         actionData: data.data,
@@ -607,7 +607,7 @@
       const errorMessage = {
         id: `msg_${Date.now()}`,
         role: "assistant",
-        content: "Lo siento, hubo un error. Por favor intenta de nuevo.",
+        content: "Sorry, there was an error. Please try again.",
         timestamp: new Date().toISOString(),
         isError: true,
       };
@@ -699,7 +699,7 @@
           return `
             <div class="arturito-widget-action-btns">
               <button type="button" class="arturito-widget-action-btn-inline" onclick="ArturitoWidget.sendHelpRequest('${escapeHtml(helperName)}')">
-                Enviar mensaje a ${escapeHtml(helperName)}
+                Send message to ${escapeHtml(helperName)}
               </button>
             </div>
           `;
@@ -710,10 +710,10 @@
         return `
           <div class="arturito-widget-action-btns">
             <button type="button" class="arturito-widget-action-btn-inline arturito-widget-action-btn-primary" onclick="ArturitoWidget.confirmBugReport()">
-              Crear ticket
+              Create ticket
             </button>
             <button type="button" class="arturito-widget-action-btn-inline" onclick="ArturitoWidget.cancelBugReport()">
-              Cancelar
+              Cancel
             </button>
           </div>
         `;
@@ -721,14 +721,14 @@
       case "suggest_delegation":
         // Show delegation confirmation buttons
         const delegation = actionData.delegation || {};
-        const teamName = delegation.team_name || "el equipo responsable";
+        const teamName = delegation.team_name || "the responsible team";
         return `
           <div class="arturito-widget-action-btns">
             <button type="button" class="arturito-widget-action-btn-inline arturito-widget-action-btn-primary" onclick="ArturitoWidget.confirmDelegation()">
-              Si, enviar mensaje
+              Yes, send message
             </button>
             <button type="button" class="arturito-widget-action-btn-inline" onclick="ArturitoWidget.cancelDelegation()">
-              No, gracias
+              No, thanks
             </button>
           </div>
         `;
@@ -962,7 +962,7 @@
     } catch (err) {
       console.error("[Arturito Widget] Error executing copilot command:", err);
       if (typeof Toast !== "undefined") {
-        Toast.error("Error ejecutando comando", err.message);
+        Toast.error("Error executing command", err.message);
       }
     }
   }
@@ -1146,7 +1146,7 @@
     const userMsg = {
       id: `msg_${Date.now()}`,
       role: "user",
-      content: `Si, enviale un mensaje a ${helperName}`,
+      content: `Yes, send a message to ${helperName}`,
       timestamp: new Date().toISOString(),
     };
     state.messages.push(userMsg);
@@ -1164,7 +1164,7 @@
         },
         credentials: "include",
         body: JSON.stringify({
-          text: `Enviar mensaje de ayuda a ${helperName} para ${state.pendingAction.requestedAction}`,
+          text: `Send help message to ${helperName} for ${state.pendingAction.requestedAction}`,
           user_name: state.currentUser?.user_name,
           user_id: state.currentUser?.user_id,
           session_id: state.sessionId,
@@ -1179,7 +1179,7 @@
       const botMsg = {
         id: `msg_${Date.now()}`,
         role: "assistant",
-        content: data.text || "Mensaje enviado.",
+        content: data.text || "Message sent.",
         timestamp: new Date().toISOString(),
       };
       state.messages.push(botMsg);
@@ -1188,7 +1188,7 @@
       const errorMsg = {
         id: `msg_${Date.now()}`,
         role: "assistant",
-        content: "No pude enviar el mensaje. Puedes contactar directamente via Messages.",
+        content: "I couldn't send the message. You can contact them directly via Messages.",
         timestamp: new Date().toISOString(),
         isError: true,
       };
@@ -1212,7 +1212,7 @@
     const userMsg = {
       id: `msg_${Date.now()}`,
       role: "user",
-      content: "Si, crear el ticket",
+      content: "Yes, create the ticket",
       timestamp: new Date().toISOString(),
     };
     state.messages.push(userMsg);
@@ -1241,20 +1241,20 @@
       const botMsg = {
         id: `msg_${Date.now()}`,
         role: "assistant",
-        content: data.text || "Ticket creado exitosamente.",
+        content: data.text || "Ticket created successfully.",
         timestamp: new Date().toISOString(),
       };
       state.messages.push(botMsg);
 
       if (typeof Toast !== "undefined") {
-        Toast.success("Ticket creado", "El equipo tecnico lo revisara pronto");
+        Toast.success("Ticket created", "The tech team will review it soon");
       }
 
     } catch (err) {
       const errorMsg = {
         id: `msg_${Date.now()}`,
         role: "assistant",
-        content: "No pude crear el ticket. Por favor, crealo manualmente en Pipeline.",
+        content: "I couldn't create the ticket. Please create it manually in Pipeline.",
         timestamp: new Date().toISOString(),
         isError: true,
       };
@@ -1275,7 +1275,7 @@
     const userMsg = {
       id: `msg_${Date.now()}`,
       role: "user",
-      content: "Cancelar",
+      content: "Cancel",
       timestamp: new Date().toISOString(),
     };
     state.messages.push(userMsg);
@@ -1283,7 +1283,7 @@
     const botMsg = {
       id: `msg_${Date.now()}`,
       role: "assistant",
-      content: "Entendido, no creare el ticket. Si necesitas reportar algo mas adelante, estoy aqui para ayudarte.",
+      content: "Got it, I won't create the ticket. If you need to report something later, I'm here to help.",
       timestamp: new Date().toISOString(),
     };
     state.messages.push(botMsg);
@@ -1390,7 +1390,7 @@
 
     const delegation = state.pendingAction.delegation;
     const originalText = state.pendingAction.originalText;
-    const teamName = delegation.team_name || "el equipo responsable";
+    const teamName = delegation.team_name || "the responsible team";
 
     // Clear pending action
     state.pendingAction = null;
@@ -1399,7 +1399,7 @@
     const userMsg = {
       id: `msg_${Date.now()}`,
       role: "user",
-      content: "Si, enviar mensaje",
+      content: "Yes, send message",
       timestamp: new Date().toISOString(),
     };
     state.messages.push(userMsg);
@@ -1434,7 +1434,7 @@
       const botMsg = {
         id: `msg_${Date.now()}`,
         role: "assistant",
-        content: data.text || `He enviado tu solicitud al ${teamName}. Te notificaran cuando este lista.`,
+        content: data.text || `I've sent your request to ${teamName}. They will notify you when it's ready.`,
         timestamp: new Date().toISOString(),
       };
       state.messages.push(botMsg);
@@ -1444,7 +1444,7 @@
       const botMsg = {
         id: `msg_${Date.now()}`,
         role: "assistant",
-        content: `No pude enviar el mensaje al ${teamName}. Por favor contactalos directamente.`,
+        content: `I couldn't send the message to ${teamName}. Please contact them directly.`,
         timestamp: new Date().toISOString(),
         isError: true,
       };
@@ -1473,7 +1473,7 @@
     const userMsg = {
       id: `msg_${Date.now()}`,
       role: "user",
-      content: "No, gracias",
+      content: "No, thanks",
       timestamp: new Date().toISOString(),
     };
     state.messages.push(userMsg);
@@ -1481,7 +1481,7 @@
     const botMsg = {
       id: `msg_${Date.now()}`,
       role: "assistant",
-      content: "Entendido. Si necesitas algo mas, estoy aqui para ayudarte.",
+      content: "Got it. If you need anything else, I'm here to help.",
       timestamp: new Date().toISOString(),
     };
     state.messages.push(botMsg);

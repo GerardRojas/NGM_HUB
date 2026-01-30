@@ -810,7 +810,7 @@
       const botMessage = {
         id: `msg_${Date.now()}`,
         role: "assistant",
-        content: data.text || "No pude procesar tu mensaje.",
+        content: data.text || "I couldn't process your message.",
         timestamp: new Date().toISOString(),
         action: data.action,
         data: data.data,
@@ -825,7 +825,7 @@
       const errorMessage = {
         id: `msg_${Date.now()}`,
         role: "assistant",
-        content: "Lo siento, hubo un error al procesar tu mensaje. Por favor intenta de nuevo.",
+        content: "Sorry, there was an error processing your message. Please try again.",
         timestamp: new Date().toISOString(),
         isError: true,
       };

@@ -428,6 +428,117 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // ARTURITO CAPABILITIES (Dynamic Knowledge Base)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const ARTURITO_CAPABILITIES = {
+    navigation: [
+      "Navigate to any page in the system (Expenses, Projects, Pipeline, etc.)",
+      "Open specific sections within modules",
+    ],
+    expenses: [
+      "Register new expenses with details (date, amount, vendor, category)",
+      "Scan receipts using AI (OCR) to auto-extract data",
+      "Auto-categorize expenses based on vendor and description",
+      "Filter and search expenses by status, date, project, or vendor",
+      "Check expense authorization status",
+      "View and manage receipts/attachments",
+    ],
+    projects: [
+      "List and search projects",
+      "View project details and status",
+      "Navigate to specific project pages",
+    ],
+    pipeline: [
+      "View pipeline opportunities",
+      "Check deal status and progress",
+      "Navigate to pipeline details",
+    ],
+    tasks: [
+      "View your assigned tasks",
+      "Check task status (Not Started, Working, In Review)",
+      "Navigate to task details",
+    ],
+    team: [
+      "Look up team members",
+      "Find contact information",
+      "View team structure",
+    ],
+    messages: [
+      "Navigate to Messages/Connect",
+      "Help compose messages",
+    ],
+    help: [
+      "Answer questions about how to use any NGM Hub module",
+      "Provide step-by-step guides for common tasks",
+      "Explain features and workflows",
+    ],
+    general: [
+      "Respond in English or Spanish based on your question",
+      "Remember context within a conversation",
+      "Provide quick actions with confirmation buttons",
+    ],
+  };
+
+  /**
+   * Check if the user is asking what Arturito can do
+   */
+  function isCapabilitiesQuery(text) {
+    const lower = text.toLowerCase().trim();
+    const patterns = [
+      /what can you do/i,
+      /what do you do/i,
+      /what are your (capabilities|features|functions)/i,
+      /how can you help/i,
+      /what can i ask/i,
+      /help me understand what you/i,
+      /qué puedes hacer/i,
+      /que puedes hacer/i,
+      /qué sabes hacer/i,
+      /que sabes hacer/i,
+      /en qué me puedes ayudar/i,
+      /cómo me puedes ayudar/i,
+      /como me puedes ayudar/i,
+    ];
+    return patterns.some(p => p.test(lower));
+  }
+
+  /**
+   * Generate dynamic capabilities response
+   */
+  function generateCapabilitiesResponse() {
+    const sections = [
+      { title: "Navigation", items: ARTURITO_CAPABILITIES.navigation },
+      { title: "Expenses Management", items: ARTURITO_CAPABILITIES.expenses },
+      { title: "Projects", items: ARTURITO_CAPABILITIES.projects },
+      { title: "Pipeline", items: ARTURITO_CAPABILITIES.pipeline },
+      { title: "Tasks", items: ARTURITO_CAPABILITIES.tasks },
+      { title: "Team", items: ARTURITO_CAPABILITIES.team },
+      { title: "Messages", items: ARTURITO_CAPABILITIES.messages },
+      { title: "Help & Guidance", items: ARTURITO_CAPABILITIES.help },
+      { title: "General", items: ARTURITO_CAPABILITIES.general },
+    ];
+
+    let response = "I'm **Arturito**, your NGM Hub assistant! Here's what I can help you with:\n\n";
+
+    sections.forEach(section => {
+      response += `**${section.title}:**\n`;
+      section.items.forEach(item => {
+        response += `• ${item}\n`;
+      });
+      response += "\n";
+    });
+
+    response += "💡 **Tip:** Just ask me in natural language! For example:\n";
+    response += "• \"Take me to expenses\"\n";
+    response += "• \"How do I scan a receipt?\"\n";
+    response += "• \"Show me my tasks\"\n";
+    response += "• \"Help me register an expense\"";
+
+    return response;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // STATE
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -647,6 +758,22 @@
     DOM.chatInput.value = "";
     DOM.chatInput.style.height = "auto";
     DOM.btnSend.disabled = true;
+
+    // Check if this is a "what can you do" type query - handle locally
+    if (isCapabilitiesQuery(content)) {
+      const botMessage = {
+        id: `msg_${Date.now()}`,
+        role: "assistant",
+        content: generateCapabilitiesResponse(),
+        timestamp: new Date().toISOString(),
+      };
+      state.messages.push(botMessage);
+      saveConversation();
+      renderMessages();
+      scrollToBottom();
+      updateContextStats();
+      return;
+    }
 
     // Show typing indicator
     state.isLoading = true;

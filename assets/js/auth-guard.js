@@ -49,9 +49,9 @@
           console.warn('[Auth Guard] Token expires soon:', new Date(expirationTime).toISOString());
         }
       } else {
-        console.warn('[Auth Guard] Token has no expiration (exp) field');
-        // Decide if tokens without exp are valid - for security, we'll consider them invalid
-        return false;
+        console.warn('[Auth Guard] Token has no expiration (exp) field - allowing for now');
+        // TODO: Backend should add exp field to tokens
+        // For now, allow tokens without exp
       }
 
       return true;

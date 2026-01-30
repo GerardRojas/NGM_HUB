@@ -7779,7 +7779,7 @@
 
     try {
       showEmptyState('Loading QBO expenses...');
-      const url = `${apiBase}/qbo/expenses?project=${projectId}`;
+      const url = `${apiBase}/qbo/expenses?project=${projectId}&is_cogs=true`;
       const result = await apiJson(url);
 
       // Handle response format (similar to manual expenses)

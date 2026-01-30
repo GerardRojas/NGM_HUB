@@ -2,6 +2,9 @@
   "permissions": {
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"
+    ],
+    "allow": [
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd mobile keyboard detection for Messages and Arturito\n\n- Messages: Add setupMobileKeyboardDetection\\(\\) using Visual Viewport API\n- Messages CSS: Use 100dvh/100svh for dynamic viewport, sticky input area\n- Arturito Widget CSS: Update to use 100dvh, sticky positioning, env\\(safe-area-inset-bottom\\)\n- Arturito Full Page: Add keyboard detection JS and update CSS with modern viewport units\n\nEnsures input stays visible above keyboard on iOS/Android devices.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

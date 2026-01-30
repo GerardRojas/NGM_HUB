@@ -1113,6 +1113,30 @@
             matchReasons.push('⚠ Different payment type');
           }
 
+          // TIMESTAMP PROXIMITY CHECK: If created within seconds of each other,
+          // they're likely intentional line items from the same bill entry, NOT duplicates
+          const exp1CreatedAt = exp1.created_at;
+          const exp2CreatedAt = exp2.created_at;
+          if (exp1CreatedAt && exp2CreatedAt) {
+            const ts1 = new Date(exp1CreatedAt).getTime();
+            const ts2 = new Date(exp2CreatedAt).getTime();
+            const timestampDiffSeconds = Math.abs(ts1 - ts2) / 1000;
+
+            if (timestampDiffSeconds < 30) {
+              // Created within 30 seconds - very likely same batch entry, skip entirely
+              console.log(`[DUPLICATES] Skipping pair (created ${timestampDiffSeconds.toFixed(1)}s apart): ${exp1Id} <-> ${exp2Id}`);
+              continue;
+            } else if (timestampDiffSeconds < 120) {
+              // Created within 2 minutes - probably same session, strong penalty
+              score -= 40;
+              matchReasons.push(`⚠ Created ${Math.round(timestampDiffSeconds)}s apart (same batch?)`);
+            } else if (timestampDiffSeconds < 300) {
+              // Created within 5 minutes - possibly same session, moderate penalty
+              score -= 20;
+              matchReasons.push(`⚠ Created ${Math.round(timestampDiffSeconds / 60)}min apart`);
+            }
+          }
+
           // Classify based on score
           let duplicateType = null;
           let confidence = null;

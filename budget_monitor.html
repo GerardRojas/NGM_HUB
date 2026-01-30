@@ -125,115 +125,47 @@
                             </div>
                         </div>
 
-                        <!-- Summary Cards -->
-                        <div class="budget-summary-cards" id="budgetSummaryCards">
-                            <div class="summary-card card-budget">
-                                <div class="summary-card-content">
-                                    <span class="summary-card-label">Total Budget</span>
-                                    <span class="summary-card-value" id="totalBudget">$0.00</span>
-                                </div>
+                        <!-- Summary Stats -->
+                        <div class="budget-summary-stats" id="budgetSummaryStats">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Alerts</span>
+                                <span class="stat-value" id="totalAlerts">0</span>
                             </div>
-                            <div class="summary-card card-actuals">
-                                <div class="summary-card-content">
-                                    <span class="summary-card-label">Total Actuals</span>
-                                    <span class="summary-card-value" id="totalActuals">$0.00</span>
-                                </div>
+                            <div class="stat-item stat-pending">
+                                <span class="stat-label">Pending Authorization</span>
+                                <span class="stat-value" id="pendingAlerts">0</span>
                             </div>
-                            <div class="summary-card card-remaining">
-                                <div class="summary-card-content">
-                                    <span class="summary-card-label">Remaining</span>
-                                    <span class="summary-card-value" id="totalRemaining">$0.00</span>
-                                </div>
-                            </div>
-                            <div class="summary-card card-percentage">
-                                <div class="summary-card-content">
-                                    <span class="summary-card-label">Used</span>
-                                    <span class="summary-card-value" id="totalPercentage">0%</span>
-                                </div>
+                            <div class="stat-item stat-authorized">
+                                <span class="stat-label">Authorized</span>
+                                <span class="stat-value" id="authorizedAlerts">0</span>
                             </div>
                         </div>
 
-                        <!-- Tabs -->
-                        <div class="budget-tabs">
-                            <button type="button" class="budget-tab active" data-tab="overview" id="tabOverview">
-                                Overview
-                            </button>
-                            <button type="button" class="budget-tab" data-tab="alerts" id="tabAlerts">
-                                <span>Pending Alerts</span>
-                                <span class="tab-badge" id="tabAlertsBadge">0</span>
-                            </button>
-                            <button type="button" class="budget-tab" data-tab="history" id="tabHistory">
-                                Alert History
-                            </button>
-                        </div>
-
-                        <!-- Tab Content: Overview -->
-                        <div class="tab-content active" id="tabContentOverview">
-                            <div class="budget-overview-table-container">
-                                <div id="overviewEmptyState" class="empty-state">
-                                    <img src="assets/img/white_icon.png" class="empty-state-logo" alt="">
-                                    <span class="empty-state-text">Select a project to view budget overview</span>
-                                </div>
-
-                                <table class="budget-table" id="budgetOverviewTable" style="display: none;">
-                                    <thead>
-                                        <tr>
-                                            <th>Account</th>
-                                            <th>Budget</th>
-                                            <th>Actuals</th>
-                                            <th>Remaining</th>
-                                            <th>Used %</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="budgetOverviewBody">
-                                        <!-- Rendered by JS -->
-                                    </tbody>
-                                </table>
+                        <!-- Alerts Log Table -->
+                        <div class="alerts-log-container">
+                            <div id="alertsEmptyState" class="empty-state">
+                                <img src="assets/img/white_icon.png" class="empty-state-logo" alt="">
+                                <span class="empty-state-text">Select a project to view budget alerts</span>
                             </div>
-                        </div>
 
-                        <!-- Tab Content: Pending Alerts -->
-                        <div class="tab-content" id="tabContentAlerts">
-                            <div class="alerts-container">
-                                <div id="alertsEmptyState" class="empty-state">
-                                    <img src="assets/img/white_icon.png" class="empty-state-logo" alt="">
-                                    <span class="empty-state-text">No pending alerts to acknowledge</span>
-                                    <span class="empty-state-hint">All budget alerts have been reviewed</span>
-                                </div>
-
-                                <div class="alerts-list" id="alertsList">
-                                    <!-- Alert cards rendered by JS -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Tab Content: History -->
-                        <div class="tab-content" id="tabContentHistory">
-                            <div class="history-container">
-                                <div id="historyEmptyState" class="empty-state">
-                                    <img src="assets/img/white_icon.png" class="empty-state-logo" alt="">
-                                    <span class="empty-state-text">No alert history for this project</span>
-                                </div>
-
-                                <table class="history-table" id="historyTable" style="display: none;">
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Type</th>
-                                            <th>Account</th>
-                                            <th>Budget</th>
-                                            <th>Actual</th>
-                                            <th>Status</th>
-                                            <th>Acknowledged By</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="historyTableBody">
-                                        <!-- Rendered by JS -->
-                                    </tbody>
-                                </table>
-                            </div>
+                            <table class="alerts-log-table" id="alertsLogTable" style="display: none;">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Alert Type</th>
+                                        <th>Account</th>
+                                        <th>Budget</th>
+                                        <th>Actual</th>
+                                        <th>Variance</th>
+                                        <th>Authorization</th>
+                                        <th>Authorized By</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="alertsLogBody">
+                                    <!-- Rendered by JS -->
+                                </tbody>
+                            </table>
                         </div>
 
                     </section>
@@ -243,55 +175,64 @@
         </div>
     </div>
 
-    <!-- Acknowledge Alert Modal -->
-    <div id="acknowledgeModal" class="modal-backdrop hidden">
-        <div class="modal modal-acknowledge">
+    <!-- Authorize Alert Modal -->
+    <div id="authorizeModal" class="modal-backdrop hidden">
+        <div class="modal modal-authorize">
             <div class="modal-header">
-                <div class="modal-title">Acknowledge Budget Alert</div>
-                <button type="button" class="modal-close-btn" id="btnCloseAckModal">&times;</button>
+                <div class="modal-title">Authorize Budget Alert</div>
+                <button type="button" class="modal-close-btn" id="btnCloseAuthModal">&times;</button>
             </div>
 
             <div class="modal-body">
                 <!-- Alert details -->
-                <div class="ack-alert-details">
-                    <div class="ack-alert-type" id="ackAlertType">Overspend</div>
-                    <div class="ack-alert-account" id="ackAlertAccount">—</div>
-                    <div class="ack-alert-message" id="ackAlertMessage">—</div>
+                <div class="auth-alert-details">
+                    <div class="auth-alert-row">
+                        <span class="auth-detail-label">Alert Type:</span>
+                        <span class="auth-detail-value" id="authAlertType">—</span>
+                    </div>
+                    <div class="auth-alert-row">
+                        <span class="auth-detail-label">Account:</span>
+                        <span class="auth-detail-value" id="authAlertAccount">—</span>
+                    </div>
+                    <div class="auth-alert-row">
+                        <span class="auth-detail-label">Date:</span>
+                        <span class="auth-detail-value" id="authAlertDate">—</span>
+                    </div>
 
-                    <div class="ack-alert-amounts">
-                        <div class="ack-amount-box">
-                            <span class="ack-amount-label">Budget</span>
-                            <span class="ack-amount-value" id="ackBudgetAmount">$0.00</span>
+                    <div class="auth-alert-amounts">
+                        <div class="auth-amount-item">
+                            <span class="auth-amount-label">Budget</span>
+                            <span class="auth-amount-value" id="authBudgetAmount">$0.00</span>
                         </div>
-                        <div class="ack-amount-box ack-amount-actual">
-                            <span class="ack-amount-label">Actual</span>
-                            <span class="ack-amount-value" id="ackActualAmount">$0.00</span>
+                        <div class="auth-amount-item">
+                            <span class="auth-amount-label">Actual</span>
+                            <span class="auth-amount-value auth-actual" id="authActualAmount">$0.00</span>
                         </div>
-                        <div class="ack-amount-box ack-amount-over">
-                            <span class="ack-amount-label">Over/No Budget</span>
-                            <span class="ack-amount-value" id="ackOverAmount">$0.00</span>
+                        <div class="auth-amount-item">
+                            <span class="auth-amount-label">Variance</span>
+                            <span class="auth-amount-value auth-variance" id="authVarianceAmount">$0.00</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Acknowledgment form -->
+                <!-- Authorization note -->
                 <div class="form-field">
-                    <label class="form-label">Justification Note <span class="required">*</span></label>
+                    <label class="form-label">Authorization Note <span class="required">*</span></label>
                     <textarea
                         class="form-input form-textarea"
-                        id="ackAlertNote"
+                        id="authAlertNote"
                         rows="4"
-                        placeholder="Please explain why this overspend occurred and any corrective actions taken..."
+                        placeholder="Provide justification for this budget variance and any corrective actions taken..."
                         required
                     ></textarea>
-                    <span class="form-hint">This note will be saved for audit purposes and cannot be edited later.</span>
+                    <span class="form-hint">This note will be saved for audit purposes.</span>
                 </div>
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn-modal-secondary" id="btnCancelAck">Cancel</button>
-                <button type="button" class="btn-modal-primary" id="btnConfirmAck">
-                    Acknowledge Alert
+                <button type="button" class="btn-modal-secondary" id="btnCancelAuth">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="btnConfirmAuth">
+                    Authorize Alert
                 </button>
             </div>
         </div>

@@ -11,11 +11,8 @@
   // ================================
   let currentUser = null;
   let selectedProjectId = null;
-  let currentTab = 'overview';
-  let budgetData = [];
-  let pendingAlerts = [];
-  let alertHistory = [];
-  let currentAckAlert = null; // Alert being acknowledged
+  let allAlerts = [];
+  let currentAuthAlert = null; // Alert being authorized
 
   // ================================
   // DOM ELEMENTS
@@ -29,49 +26,28 @@
     els.pendingAlertsBadge = document.getElementById('pendingAlertsBadge');
     els.pendingAlertsCount = document.getElementById('pendingAlertsCount');
 
-    // Summary cards
-    els.totalBudget = document.getElementById('totalBudget');
-    els.totalActuals = document.getElementById('totalActuals');
-    els.totalRemaining = document.getElementById('totalRemaining');
-    els.totalPercentage = document.getElementById('totalPercentage');
+    // Summary stats
+    els.totalAlerts = document.getElementById('totalAlerts');
+    els.pendingAlerts = document.getElementById('pendingAlerts');
+    els.authorizedAlerts = document.getElementById('authorizedAlerts');
 
-    // Tabs
-    els.tabOverview = document.getElementById('tabOverview');
-    els.tabAlerts = document.getElementById('tabAlerts');
-    els.tabHistory = document.getElementById('tabHistory');
-    els.tabAlertsBadge = document.getElementById('tabAlertsBadge');
-
-    // Tab content
-    els.tabContentOverview = document.getElementById('tabContentOverview');
-    els.tabContentAlerts = document.getElementById('tabContentAlerts');
-    els.tabContentHistory = document.getElementById('tabContentHistory');
-
-    // Overview tab
-    els.overviewEmptyState = document.getElementById('overviewEmptyState');
-    els.budgetOverviewTable = document.getElementById('budgetOverviewTable');
-    els.budgetOverviewBody = document.getElementById('budgetOverviewBody');
-
-    // Alerts tab
+    // Alerts log table
     els.alertsEmptyState = document.getElementById('alertsEmptyState');
-    els.alertsList = document.getElementById('alertsList');
+    els.alertsLogTable = document.getElementById('alertsLogTable');
+    els.alertsLogBody = document.getElementById('alertsLogBody');
 
-    // History tab
-    els.historyEmptyState = document.getElementById('historyEmptyState');
-    els.historyTable = document.getElementById('historyTable');
-    els.historyTableBody = document.getElementById('historyTableBody');
-
-    // Acknowledge Modal
-    els.acknowledgeModal = document.getElementById('acknowledgeModal');
-    els.btnCloseAckModal = document.getElementById('btnCloseAckModal');
-    els.btnCancelAck = document.getElementById('btnCancelAck');
-    els.btnConfirmAck = document.getElementById('btnConfirmAck');
-    els.ackAlertType = document.getElementById('ackAlertType');
-    els.ackAlertAccount = document.getElementById('ackAlertAccount');
-    els.ackAlertMessage = document.getElementById('ackAlertMessage');
-    els.ackBudgetAmount = document.getElementById('ackBudgetAmount');
-    els.ackActualAmount = document.getElementById('ackActualAmount');
-    els.ackOverAmount = document.getElementById('ackOverAmount');
-    els.ackAlertNote = document.getElementById('ackAlertNote');
+    // Authorize Modal
+    els.authorizeModal = document.getElementById('authorizeModal');
+    els.btnCloseAuthModal = document.getElementById('btnCloseAuthModal');
+    els.btnCancelAuth = document.getElementById('btnCancelAuth');
+    els.btnConfirmAuth = document.getElementById('btnConfirmAuth');
+    els.authAlertType = document.getElementById('authAlertType');
+    els.authAlertAccount = document.getElementById('authAlertAccount');
+    els.authAlertDate = document.getElementById('authAlertDate');
+    els.authBudgetAmount = document.getElementById('authBudgetAmount');
+    els.authActualAmount = document.getElementById('authActualAmount');
+    els.authVarianceAmount = document.getElementById('authVarianceAmount');
+    els.authAlertNote = document.getElementById('authAlertNote');
 
     // View Note Modal
     els.viewNoteModal = document.getElementById('viewNoteModal');

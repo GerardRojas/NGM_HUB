@@ -164,38 +164,26 @@
 }
 
 /* ==========================================
-   SUMMARY CARDS
+   SUMMARY STATS
    ========================================== */
 
-.budget-summary-cards {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.summary-card {
+.budget-summary-stats {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 18px 20px;
+  gap: 24px;
+  margin-bottom: 24px;
+  padding: 16px 20px;
   background: #1e1e24;
   border: 1px solid #27272f;
   border-radius: 8px;
-  transition: border-color 0.2s ease;
 }
 
-.summary-card:hover {
-  border-color: #323238;
-}
-
-.summary-card-content {
+.stat-item {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.summary-card-label {
+.stat-label {
   font-size: 12px;
   font-weight: 500;
   color: #6b7280;
@@ -203,92 +191,142 @@
   letter-spacing: 0.5px;
 }
 
-.summary-card-value {
+.stat-value {
   font-size: 24px;
   font-weight: 600;
   color: #e5e7eb;
 }
 
-.summary-card-value.value-success {
-  color: #4ade80;
+.stat-item.stat-pending .stat-value {
+  color: #fbbf24;
 }
 
-.summary-card-value.value-warning {
-  color: #fb923c;
-}
-
-.summary-card-value.value-danger {
-  color: #ef4444;
+.stat-item.stat-authorized .stat-value {
+  color: #3ecf8e;
 }
 
 /* ==========================================
-   TABS
+   ALERTS LOG TABLE
    ========================================== */
 
-.budget-tabs {
-  display: flex;
-  gap: 2px;
-  margin-bottom: 20px;
-  padding: 3px;
+.alerts-log-container {
   background: #1e1e24;
+  border: 1px solid #27272f;
   border-radius: 8px;
-  width: fit-content;
+  overflow: hidden;
 }
 
-.budget-tab {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  color: #6b7280;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
+.alerts-log-table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-.budget-tab:hover {
-  background: rgba(255, 255, 255, 0.04);
+.alerts-log-table th,
+.alerts-log-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #27272f;
+}
+
+.alerts-log-table th {
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 11px;
+  font-weight: 600;
   color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.budget-tab.active {
-  background: #252530;
+.alerts-log-table td {
+  font-size: 13px;
   color: #e5e7eb;
 }
 
-.tab-badge {
+.alerts-log-table tr:last-child td {
+  border-bottom: none;
+}
+
+.alerts-log-table tr:hover {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.alerts-log-table .col-auth {
+  text-align: center;
+}
+
+/* Authorization badges */
+.auth-badge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  background: #27272f;
-  border-radius: 9px;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
-  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
-.tab-badge.has-alerts {
-  background: rgba(251, 146, 60, 0.15);
+.auth-badge-pending {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.auth-badge-pending:hover {
+  background: rgba(251, 191, 36, 0.18);
+  border-color: rgba(251, 191, 36, 0.5);
+}
+
+.auth-badge-authorized {
+  background: rgba(62, 207, 142, 0.12);
+  color: #3ecf8e;
+  border: 1px solid rgba(62, 207, 142, 0.3);
+  cursor: default;
+}
+
+.auth-badge-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.auth-badge-disabled:hover {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+/* Alert Type badges */
+.alert-type-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.alert-type-overspend {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.alert-type-no_budget {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+
+.alert-type-warning {
+  background: rgba(234, 179, 8, 0.12);
+  color: #eab308;
+}
+
+.alert-type-critical {
+  background: rgba(251, 146, 60, 0.12);
   color: #fb923c;
-}
-
-/* ==========================================
-   TAB CONTENT
-   ========================================== */
-
-.tab-content {
-  display: none;
-}
-
-.tab-content.active {
-  display: block;
 }
 
 /* ==========================================
@@ -766,8 +804,8 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-.modal-acknowledge {
-  max-width: 500px;
+.modal-authorize {
+  max-width: 550px;
 }
 
 .modal-view-note {
@@ -863,52 +901,46 @@
   cursor: not-allowed;
 }
 
-/* Acknowledge Alert Details */
-.ack-alert-details {
+/* Authorize Alert Details */
+.auth-alert-details {
   background: #252530;
   border: 1px solid #27272f;
   border-radius: 8px;
-  padding: 20px;
+  padding: 18px;
   margin-bottom: 20px;
 }
 
-.ack-alert-type {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+.auth-alert-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #27272f;
+}
+
+.auth-alert-row:last-of-type {
+  border-bottom: none;
   margin-bottom: 12px;
 }
 
-.ack-alert-type.type-no_budget {
-  background: rgba(59, 130, 246, 0.2);
-  color: #3b82f6;
+.auth-detail-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
 }
 
-.ack-alert-account {
-  font-size: 16px;
-  font-weight: 600;
+.auth-detail-value {
+  font-size: 13px;
+  font-weight: 500;
   color: #e5e7eb;
-  margin-bottom: 8px;
 }
 
-.ack-alert-message {
-  font-size: 14px;
-  color: #9ca3af;
-  line-height: 1.5;
-  margin-bottom: 16px;
-}
-
-.ack-alert-amounts {
+.auth-alert-amounts {
   display: flex;
   gap: 12px;
+  padding-top: 12px;
 }
 
-.ack-amount-box {
+.auth-amount-item {
   flex: 1;
   background: #1e1e24;
   border-radius: 6px;
@@ -916,25 +948,26 @@
   text-align: center;
 }
 
-.ack-amount-label {
+.auth-amount-label {
   display: block;
   font-size: 10px;
   color: #6b7280;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
 }
 
-.ack-amount-value {
+.auth-amount-value {
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 600;
   color: #e5e7eb;
 }
 
-.ack-amount-actual .ack-amount-value {
+.auth-amount-value.auth-actual {
   color: #fb923c;
 }
 
-.ack-amount-over .ack-amount-value {
+.auth-amount-value.auth-variance {
   color: #ef4444;
 }
 

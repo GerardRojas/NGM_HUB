@@ -386,6 +386,14 @@
     return result;
   }
 
+  function getAuthHeaders() {
+    const token = localStorage.getItem('ngmToken');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  }
+
   async function apiJson(url, options = {}) {
     // Get auth token and add to headers
     const token = localStorage.getItem('ngmToken');
@@ -750,10 +758,13 @@
    * @returns {number} - Percentage threshold (0-5)
    */
   function getDuplicateThreshold(amount) {
-    if (amount >= 10000) return 0.5;  // 0.5% for large amounts ($10k+)
-    if (amount >= 1000) return 1;     // 1% for medium amounts ($1k-$10k)
-    if (amount >= 100) return 2;      // 2% for small amounts ($100-$1k)
-    return 5;                          // 5% for very small amounts (<$100)
+    // Ultra-strict thresholds - detect even cent differences
+    // Returns maximum percentage difference allowed
+    if (amount >= 10000) return 0.1;   // 0.1% for large amounts ($10k+ = max $10 diff)
+    if (amount >= 1000) return 0.2;    // 0.2% for medium amounts ($1k-$10k = max $2 diff)
+    if (amount >= 100) return 0.5;     // 0.5% for small amounts ($100-$1k = max $0.50 diff)
+    if (amount >= 10) return 1;        // 1% for tiny amounts ($10-$100 = max $0.10 diff)
+    return 2;                           // 2% for very small amounts (<$10 = max $0.20 diff)
   }
 
   /**
@@ -1033,6 +1044,18 @@
           score += 40; // Base score for same vendor + amount
           matchReasons.push('Same vendor & amount');
 
+          // Bonus for near-identical amounts (within cents)
+          if (amountDiff <= 0.05) {
+            score += 15;
+            matchReasons.push('Near-identical amount');
+          } else if (amountDiff <= 0.50) {
+            score += 10;
+            matchReasons.push(`Amount diff: $${amountDiff.toFixed(2)}`);
+          } else if (amountDiff <= 2.00) {
+            score += 5;
+            matchReasons.push(`Amount diff: $${amountDiff.toFixed(2)}`);
+          }
+
           // Core field bonuses
           if (sameDate) {
             score += 25;
@@ -1094,11 +1117,11 @@
           } else if (score >= 75) {
             duplicateType = 'strong';
             confidence = 'high';
-          } else if (score >= 50) {
+          } else if (score >= 40) {
             duplicateType = 'likely';
             confidence = 'medium';
           }
-          // Below 50 = not reported as duplicate
+          // Below 40 = not reported as duplicate
 
           if (duplicateType) {
             const vendorName = exp1.vendor_name || findMetaName('vendors', vendorId, 'id', 'vendor_name') || 'Unknown';

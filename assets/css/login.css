@@ -16,8 +16,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    /* Solid background like other pages */
-    background: #1a1a1a;
+    /* Premium gradient background */
+    background: radial-gradient(ellipse at top, #1e2a23 0%, #1a1a1a 50%, #0f0f0f 100%);
 }
 
 /* Panel principal */
@@ -33,13 +33,13 @@
     gap: 26px;
     overflow-y: auto;
 
-    /* Solid card background */
-    backdrop-filter: none;
-    background: #1a1a1a;
+    /* Glass card effect with blur */
+    backdrop-filter: blur(12px);
+    background: rgba(26, 26, 26, 0.75);
     padding: 36px 34px 28px;
     border-radius: var(--radius-lg);
-    box-shadow: none;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .login-screen label {
@@ -313,8 +313,9 @@
         gap: 14px;
         max-height: calc(100dvh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
         border-radius: 12px;
-        border: none;
-        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(26, 26, 26, 0.75);
+        backdrop-filter: blur(12px);
         /* Allow content to shrink to fit */
         justify-content: center;
     }

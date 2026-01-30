@@ -141,8 +141,17 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("ngmToken", data.access_token);
         localStorage.setItem("ngmUser", JSON.stringify(data.user));
 
-        // Log successful login
+        // Verify data was saved
+        const savedToken = localStorage.getItem("ngmToken");
+        const savedUser = localStorage.getItem("ngmUser");
+
         console.log("[Login] Authentication successful for user:", data.user.user_name);
+        console.log("[Login] Token saved:", savedToken ? "YES" : "NO");
+        console.log("[Login] User saved:", savedUser ? "YES" : "NO");
+
+        if (!savedToken || !savedUser) {
+          throw new Error("Failed to verify saved auth data");
+        }
       } catch (e) {
         console.error("[Login] Failed to save auth data to localStorage:", e);
         showMessage("Login error: Unable to save session. Check browser settings.", "error");
@@ -152,12 +161,15 @@ document.addEventListener("DOMContentLoaded", () => {
       // Show success message
       showMessage("Login successful. Redirecting...", "info");
 
-      // Small delay to show success message, then redirect
-      setTimeout(() => {
-        const redirectTo = sessionStorage.getItem("loginRedirect") || "dashboard.html";
-        sessionStorage.removeItem("loginRedirect");
-        window.location.replace(redirectTo); // Use replace to avoid back button issues
-      }, 300);
+      // Get redirect target BEFORE clearing
+      const redirectTo = sessionStorage.getItem("loginRedirect") || "dashboard.html";
+      sessionStorage.removeItem("loginRedirect");
+
+      console.log("[Login] Redirecting to:", redirectTo);
+
+      // Immediate redirect - no delay needed
+      // Use href instead of replace to ensure navigation happens
+      window.location.href = redirectTo;
     } catch (err) {
       console.error("Error in login:", err);
       showMessage("Network error. Check your connection or contact support.", "error");

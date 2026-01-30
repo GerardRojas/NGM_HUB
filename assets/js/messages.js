@@ -95,6 +95,53 @@
   };
 
   // ─────────────────────────────────────────────────────────────────────────
+  // LOCAL CACHE SYSTEM - For instant loading like Google Chat
+  // ─────────────────────────────────────────────────────────────────────────
+  const CACHE_KEYS = {
+    USERS: "ngm_cache_users",
+    PROJECTS: "ngm_cache_projects",
+    CHANNELS: "ngm_cache_channels",
+    CURRENT_USER: "ngm_cache_current_user",
+    LAST_CHANNEL: "ngm_last_channel",
+  };
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache validity
+
+  function saveToCache(key, data) {
+    try {
+      const cacheItem = {
+        data: data,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(key, JSON.stringify(cacheItem));
+    } catch (e) {
+      console.warn("[Messages] Cache save failed:", e);
+    }
+  }
+
+  function loadFromCache(key) {
+    try {
+      const cached = localStorage.getItem(key);
+      if (!cached) return null;
+      const cacheItem = JSON.parse(cached);
+      // Check if cache is still valid (within TTL)
+      if (Date.now() - cacheItem.timestamp < CACHE_TTL) {
+        return cacheItem.data;
+      }
+      // Cache expired but still return it for instant display
+      // Fresh data will replace it shortly
+      return cacheItem.data;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function clearCache() {
+    Object.values(CACHE_KEYS).forEach(key => {
+      localStorage.removeItem(key);
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // DOM REFERENCES
   // ─────────────────────────────────────────────────────────────────────────
   const DOM = {};
@@ -161,43 +208,68 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // INITIALIZATION
+  // INITIALIZATION - Optimized for instant loading like Google Chat
   // ─────────────────────────────────────────────────────────────────────────
   async function init() {
-    console.log("[Messages] Initializing...");
+    console.log("[Messages] Initializing with optimized loading...");
+    const startTime = performance.now();
     cacheDOMReferences();
 
     try {
-      // Load current user
-      await loadCurrentUser();
+      // PHASE 1: Load cached data INSTANTLY (no network wait)
+      const cachedUser = loadFromCache(CACHE_KEYS.CURRENT_USER);
+      const cachedUsers = loadFromCache(CACHE_KEYS.USERS);
+      const cachedProjects = loadFromCache(CACHE_KEYS.PROJECTS);
+      const cachedChannels = loadFromCache(CACHE_KEYS.CHANNELS);
 
-      // Load users for mentions
-      await loadUsers();
+      // If we have cached data, render UI immediately
+      if (cachedUser && cachedUsers && cachedProjects) {
+        state.currentUser = cachedUser;
+        state.users = cachedUsers;
+        state.projects = cachedProjects;
+        state.channels = cachedChannels || [];
 
-      // Load projects and build channels
-      await loadProjects();
+        // Render channels INSTANTLY from cache
+        renderChannels();
+        setupEventListeners();
+        initSectionCollapsedStates();
+        hidePageLoading();
+        console.log(`[Messages] Instant render from cache in ${(performance.now() - startTime).toFixed(0)}ms`);
+      }
 
-      // Load custom and direct channels
-      await loadChannels();
+      // PHASE 2: Fetch fresh data IN PARALLEL (background refresh)
+      const fetchStart = performance.now();
+      const [freshUser, freshUsers, freshProjects, freshChannels] = await Promise.all([
+        loadCurrentUser(),
+        loadUsers(),
+        loadProjects(),
+        loadChannels(),
+      ]);
 
-      // Render channel lists
-      renderChannels();
+      console.log(`[Messages] Parallel API fetch completed in ${(performance.now() - fetchStart).toFixed(0)}ms`);
 
-      // Load mentions badge count (async, don't await)
+      // PHASE 3: Update UI only if data changed (avoid unnecessary re-renders)
+      const dataChanged = !cachedUser || !cachedUsers || !cachedProjects ||
+                          JSON.stringify(state.projects) !== JSON.stringify(cachedProjects) ||
+                          JSON.stringify(state.channels) !== JSON.stringify(cachedChannels);
+
+      if (dataChanged) {
+        renderChannels();
+        if (!cachedUser) {
+          // First load (no cache) - setup everything
+          setupEventListeners();
+          initSectionCollapsedStates();
+          hidePageLoading();
+        }
+      }
+
+      // Load mentions badge (non-blocking)
       loadMentionsBadge();
-
-      // Setup event listeners
-      setupEventListeners();
 
       // Initialize Supabase Realtime
       initSupabaseRealtime();
 
-      // Apply saved collapsed states for main sections
-      initSectionCollapsedStates();
-
-      // Hide loading overlay after all data is loaded
-      hidePageLoading();
-      console.log("[Messages] Initialized successfully");
+      console.log(`[Messages] Total init time: ${(performance.now() - startTime).toFixed(0)}ms`);
     } catch (err) {
       console.error("[Messages] Init error:", err);
       showToast("Failed to initialize messages", "error");
@@ -206,7 +278,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // DATA LOADING
+  // DATA LOADING - With caching for instant subsequent loads
   // ─────────────────────────────────────────────────────────────────────────
   async function loadCurrentUser() {
     try {
@@ -214,11 +286,15 @@
       if (!res.ok) throw new Error("Failed to load user");
       const data = await res.json();
       state.currentUser = data.user || data;
+      // Save to cache for instant loading next time
+      saveToCache(CACHE_KEYS.CURRENT_USER, state.currentUser);
       console.log("[Messages] Current user:", state.currentUser.user_name);
+      return state.currentUser;
     } catch (err) {
       console.error("[Messages] Failed to load current user:", err);
       // Fallback for development
       state.currentUser = { user_id: "dev-uuid", user_name: "Dev User", email: "dev@ngm.com" };
+      return state.currentUser;
     }
   }
 
@@ -228,10 +304,14 @@
       if (!res.ok) throw new Error("Failed to load users");
       const data = await res.json();
       state.users = data.users || data || [];
+      // Save to cache
+      saveToCache(CACHE_KEYS.USERS, state.users);
       console.log("[Messages] Loaded", state.users.length, "users");
+      return state.users;
     } catch (err) {
       console.error("[Messages] Failed to load users:", err);
       state.users = [];
+      return state.users;
     }
   }
 
@@ -241,13 +321,16 @@
       if (!res.ok) throw new Error("Failed to load projects");
       const data = await res.json();
       // API returns { data: [...] } or { projects: [...] } or array directly
-      // Ensure we always get an array
       const projects = data.data || data.projects || data;
       state.projects = Array.isArray(projects) ? projects : [];
+      // Save to cache
+      saveToCache(CACHE_KEYS.PROJECTS, state.projects);
       console.log("[Messages] Loaded", state.projects.length, "projects");
+      return state.projects;
     } catch (err) {
       console.error("[Messages] Failed to load projects:", err);
       state.projects = [];
+      return state.projects;
     }
   }
 
@@ -255,17 +338,20 @@
     try {
       const res = await authFetch(`${API_BASE}/messages/channels`);
       if (!res.ok) {
-        // API might not exist yet, use empty array
         console.warn("[Messages] Channels API not available, using defaults");
         state.channels = [];
-        return;
+        return state.channels;
       }
       const data = await res.json();
       state.channels = data.channels || data || [];
+      // Save to cache
+      saveToCache(CACHE_KEYS.CHANNELS, state.channels);
       console.log("[Messages] Loaded", state.channels.length, "custom channels");
+      return state.channels;
     } catch (err) {
       console.warn("[Messages] Failed to load channels:", err);
       state.channels = [];
+      return state.channels;
     }
   }
 

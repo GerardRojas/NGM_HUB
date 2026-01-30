@@ -7797,8 +7797,11 @@
     // Render rows
     const rows = displayExpenses.map(exp => renderQBORow(exp)).join('');
 
-    // Calculate total
-    const total = displayExpenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
+    // Calculate total (use signed_amount for correct sign handling)
+    const total = displayExpenses.reduce((sum, exp) => {
+      const amt = exp.signed_amount !== undefined ? exp.signed_amount : (exp.amount || 0);
+      return sum + parseFloat(amt);
+    }, 0);
     const totalRow = `
       <tr class="table-total-row">
         <td colspan="${getVisibleColumnCount() - 1}" style="text-align: right; font-weight: 600;">Total:</td>
@@ -7812,23 +7815,27 @@
   }
 
   function renderQBORow(exp) {
-    const expenseId = exp.id;
+    const expenseId = exp.id || exp.global_line_uid;
     const txnDate = exp.txn_date ? new Date(exp.txn_date).toLocaleDateString() : '';
-    const amount = exp.amount ? formatCurrency(exp.amount) : '0.00';
+    const amount = exp.signed_amount !== undefined ? exp.signed_amount : (exp.amount || 0);
+    const formattedAmount = formatCurrency(Math.abs(amount));
 
     // QBO data is read-only, show reconciliation status badge
     const isReconciled = exp.reconciliation_status === 'matched' || exp.reconciliation_status === 'reviewed';
     const statusClass = isReconciled ? 'reconcile-status-badge--linked' : 'reconcile-status-badge--pending';
     const statusText = isReconciled ? 'Linked' : 'Pending';
 
+    // Map to table columns: DATE | BILL # | DESCRIPTION | ACCOUNT | TYPE | VENDOR | PAYMENT | AMOUNT | AUTH
     return `
       <tr data-expense-id="${expenseId}" data-source="qbo">
         <td>${txnDate}</td>
-        <td>${exp.description || exp.memo || ''}</td>
+        <td>${exp.txn_type || ''}</td>
+        <td>${exp.line_description || exp.description || ''}</td>
         <td>${exp.account_name || ''}</td>
+        <td>${exp.account_type || ''}</td>
         <td>${exp.vendor_name || ''}</td>
         <td>${exp.payment_type || ''}</td>
-        <td style="text-align: right;">$${amount}</td>
+        <td style="text-align: right;">${formattedAmount}</td>
         <td>
           <span class="reconcile-status-badge ${statusClass}">${statusText}</span>
         </td>

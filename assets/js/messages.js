@@ -721,11 +721,16 @@
 
     let html = "";
     customChannels.forEach((channel) => {
+      const channelColor = getCustomChannelColor(channel.id || channel.name);
+      const initials = getChannelInitials(channel.name);
+
       html += `
         <button type="button" class="msg-channel-item msg-custom-item"
                 data-channel-id="${channel.id}"
                 data-channel-type="${CHANNEL_TYPES.CUSTOM}">
-          <span class="msg-channel-dot" style="border-color: #f59e0b;"></span>
+          <span class="msg-dm-avatar" style="color: ${channelColor}; border-color: ${channelColor}">
+            ${initials}
+          </span>
           <span class="msg-channel-name">${escapeHtml(channel.name)}</span>
           ${channel.unread_count ? `<span class="msg-unread-badge">${channel.unread_count}</span>` : ""}
         </button>
@@ -733,6 +738,22 @@
     });
 
     DOM.customChannels.innerHTML = html;
+  }
+
+  // Get color for custom channel based on name/id
+  function getCustomChannelColor(channelIdentifier) {
+    const hue = stableHueFromString(channelIdentifier);
+    return `hsl(${hue} 65% 50%)`;
+  }
+
+  // Get initials from channel name (first 2 letters of first 2 words, or first 2 letters)
+  function getChannelInitials(name) {
+    if (!name) return "?";
+    const words = name.trim().split(/\s+/);
+    if (words.length >= 2) {
+      return (words[0][0] + words[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
   }
 
   // ─────────────────────────────────────────────────────────────────────────

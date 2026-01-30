@@ -1586,11 +1586,11 @@
     if (tabName === 'duplicates') {
       highlightCurrentCluster();
     } else {
-      // Remove duplicate highlights
-      document.querySelectorAll('.expense-row-duplicate-warning, .expense-row-duplicate-current').forEach(row => {
-        row.classList.remove('expense-row-duplicate-warning', 'expense-row-duplicate-current');
+      // Remove duplicate highlights (including health check selection)
+      document.querySelectorAll('.expense-row-duplicate-warning, .expense-row-duplicate-current, .expense-row-health-check-selected').forEach(row => {
+        row.classList.remove('expense-row-duplicate-warning', 'expense-row-duplicate-current', 'expense-row-health-check-selected');
       });
-      // Navigate to current missing info expense
+      // Navigate to current missing info expense (will add its own highlight)
       scrollToMissingExpense();
     }
   }
@@ -1704,9 +1704,14 @@
   window.prevMissingInfo = prevMissingInfo;
 
   /**
-   * Scroll to current missing info expense in table
+   * Scroll to current missing info expense in table and highlight it
    */
   function scrollToMissingExpense() {
+    // Remove highlight from all rows first
+    document.querySelectorAll('.expense-row-health-check-selected').forEach(row => {
+      row.classList.remove('expense-row-health-check-selected');
+    });
+
     if (missingInfoExpenses.length === 0) return;
     const exp = missingInfoExpenses[currentMissingInfoIndex];
     if (!exp) return;
@@ -1714,6 +1719,7 @@
     const expId = exp.expense_id || exp.id;
     const row = document.querySelector(`tr[data-id="${expId}"]`);
     if (row) {
+      row.classList.add('expense-row-health-check-selected');
       row.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
   }
@@ -1961,9 +1967,9 @@
     if (panel) {
       panel.style.display = 'none';
     }
-    // Remove all highlights
-    document.querySelectorAll('.expense-row-duplicate-warning, .expense-row-duplicate-current').forEach(row => {
-      row.classList.remove('expense-row-duplicate-warning', 'expense-row-duplicate-current');
+    // Remove all highlights (including health check selection)
+    document.querySelectorAll('.expense-row-duplicate-warning, .expense-row-duplicate-current, .expense-row-health-check-selected').forEach(row => {
+      row.classList.remove('expense-row-duplicate-warning', 'expense-row-duplicate-current', 'expense-row-health-check-selected');
     });
   }
 
@@ -2023,16 +2029,16 @@
    * Highlights only the current cluster being reviewed
    */
   function highlightCurrentCluster() {
-    // Remove all highlights first
-    document.querySelectorAll('.expense-row-duplicate-warning, .expense-row-duplicate-current, .expense-row-duplicate-exact, .expense-row-duplicate-strong, .expense-row-duplicate-likely').forEach(row => {
-      row.classList.remove('expense-row-duplicate-warning', 'expense-row-duplicate-current', 'expense-row-duplicate-exact', 'expense-row-duplicate-strong', 'expense-row-duplicate-likely');
+    // Remove all highlights first (including health check selection)
+    document.querySelectorAll('.expense-row-duplicate-warning, .expense-row-duplicate-current, .expense-row-duplicate-exact, .expense-row-duplicate-strong, .expense-row-duplicate-likely, .expense-row-health-check-selected').forEach(row => {
+      row.classList.remove('expense-row-duplicate-warning', 'expense-row-duplicate-current', 'expense-row-duplicate-exact', 'expense-row-duplicate-strong', 'expense-row-duplicate-likely', 'expense-row-health-check-selected');
     });
 
     const cluster = duplicateClusters[currentClusterIndex];
     if (!cluster) return;
 
     // Highlight only expenses in current cluster
-    cluster.expenses.forEach(exp => {
+    cluster.expenses.forEach((exp, index) => {
       const expId = exp.expense_id || exp.id;
       const row = document.querySelector(`tr[data-id="${expId}"]`);
       if (row) {
@@ -2047,8 +2053,9 @@
           row.classList.add('expense-row-duplicate-likely');
         }
 
-        // Scroll first expense into view
-        if (exp === cluster.expenses[0]) {
+        // First expense gets the prominent health check selection highlight
+        if (index === 0) {
+          row.classList.add('expense-row-health-check-selected');
           row.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
       }
@@ -7735,6 +7742,8 @@
       showEmptyState('Select a project to view QBO expenses...');
       return;
     }
+
+    const apiBase = getApiBase();
 
     try {
       showEmptyState('Loading QBO expenses...');

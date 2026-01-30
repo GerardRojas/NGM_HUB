@@ -121,7 +121,7 @@
 
 .ngm-select:focus {
   outline: none;
-  border-color: #4ade80;
+  border-color: #3ecf8e;
 }
 
 .toolbar-right {
@@ -451,7 +451,7 @@
 }
 
 .progress-fill.status-on_track {
-  background: #4ade80;
+  background: #3ecf8e;
 }
 
 .progress-fill.status-warning {
@@ -490,8 +490,8 @@
 }
 
 .status-badge.status-on_track {
-  background: rgba(74, 222, 128, 0.12);
-  color: #4ade80;
+  background: rgba(62, 207, 142, 0.12);
+  color: #3ecf8e;
 }
 
 .status-badge.status-warning {
@@ -515,8 +515,8 @@
 }
 
 .status-badge.status-acknowledged {
-  background: rgba(74, 222, 128, 0.12);
-  color: #4ade80;
+  background: rgba(62, 207, 142, 0.12);
+  color: #3ecf8e;
 }
 
 .status-badge.status-pending {
@@ -663,7 +663,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: #4ade80;
+  background: #3ecf8e;
   border: none;
   border-radius: 6px;
   color: #0a0a0a;
@@ -674,7 +674,7 @@
 }
 
 .btn-acknowledge:hover {
-  background: #22c55e;
+  background: #2db87a;
 }
 
 /* ==========================================
@@ -882,7 +882,7 @@
   align-items: center;
   gap: 6px;
   padding: 9px 18px;
-  background: #4ade80;
+  background: #3ecf8e;
   border: none;
   border-radius: 6px;
   color: #0a0a0a;
@@ -893,7 +893,7 @@
 }
 
 .btn-modal-primary:hover {
-  background: #22c55e;
+  background: #2db87a;
 }
 
 .btn-modal-primary:disabled {
@@ -1001,7 +1001,7 @@
 
 .form-input:focus {
   outline: none;
-  border-color: #4ade80;
+  border-color: #3ecf8e;
 }
 
 .form-textarea {

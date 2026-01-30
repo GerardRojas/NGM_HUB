@@ -25,6 +25,25 @@ WHERE NOT EXISTS (
 );
 
 -- ─────────────────────────────────────────────────────────────────────────────
+-- ADD ARTURITO SETTINGS MODULE TO ALL ROLES
+-- ─────────────────────────────────────────────────────────────────────────────
+
+INSERT INTO role_permissions (rol_id, module_key, module_name, module_url, can_view, can_edit, can_delete)
+SELECT
+    r.rol_id,
+    'arturito_settings' AS module_key,
+    'Arturito Settings' AS module_name,
+    'arturito-settings.html' AS module_url,
+    TRUE AS can_view,
+    TRUE AS can_edit,
+    TRUE AS can_delete
+FROM rols r
+WHERE NOT EXISTS (
+    SELECT 1 FROM role_permissions rp
+    WHERE rp.rol_id = r.rol_id AND rp.module_key = 'arturito_settings'
+);
+
+-- ─────────────────────────────────────────────────────────────────────────────
 -- ADD MESSAGES MODULE TO ALL ROLES
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -56,5 +75,5 @@ SELECT
     rp.can_delete
 FROM role_permissions rp
 JOIN rols r ON r.rol_id = rp.rol_id
-WHERE rp.module_key IN ('arturito', 'messages')
+WHERE rp.module_key IN ('arturito', 'arturito_settings', 'messages')
 ORDER BY r.rol_name, rp.module_key;

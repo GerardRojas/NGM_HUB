@@ -13,6 +13,11 @@
   let selectedProjectId = null;
   let allAlerts = [];
   let currentAuthAlert = null; // Alert being authorized
+  let currentAckAlert = null; // Alert being acknowledged
+  let pendingAlerts = [];
+  let alertHistory = [];
+  let budgetData = [];
+  let currentTab = 'overview';
 
   // ================================
   // DOM ELEMENTS
@@ -31,23 +36,55 @@
     els.pendingAlerts = document.getElementById('pendingAlerts');
     els.authorizedAlerts = document.getElementById('authorizedAlerts');
 
+    // Budget overview (may not exist in simpler layouts)
+    els.totalBudget = document.getElementById('totalBudget');
+    els.totalActuals = document.getElementById('totalActuals');
+    els.totalRemaining = document.getElementById('totalRemaining');
+    els.totalPercentage = document.getElementById('totalPercentage');
+    els.overviewEmptyState = document.getElementById('overviewEmptyState');
+    els.budgetOverviewTable = document.getElementById('budgetOverviewTable');
+    els.budgetOverviewBody = document.getElementById('budgetOverviewBody');
+
+    // Tabs (may not exist in simpler layouts)
+    els.tabOverview = document.getElementById('tabOverview');
+    els.tabAlerts = document.getElementById('tabAlerts');
+    els.tabHistory = document.getElementById('tabHistory');
+    els.tabAlertsBadge = document.getElementById('tabAlertsBadge');
+
     // Alerts log table
     els.alertsEmptyState = document.getElementById('alertsEmptyState');
     els.alertsLogTable = document.getElementById('alertsLogTable');
     els.alertsLogBody = document.getElementById('alertsLogBody');
+    els.alertsList = document.getElementById('alertsList');
 
-    // Authorize Modal
+    // History table
+    els.historyEmptyState = document.getElementById('historyEmptyState');
+    els.historyTable = document.getElementById('historyTable');
+    els.historyTableBody = document.getElementById('historyTableBody');
+
+    // Authorize Modal (auth prefix in HTML)
     els.authorizeModal = document.getElementById('authorizeModal');
+    els.acknowledgeModal = document.getElementById('authorizeModal'); // alias
     els.btnCloseAuthModal = document.getElementById('btnCloseAuthModal');
+    els.btnCloseAckModal = document.getElementById('btnCloseAuthModal'); // alias
     els.btnCancelAuth = document.getElementById('btnCancelAuth');
+    els.btnCancelAck = document.getElementById('btnCancelAuth'); // alias
     els.btnConfirmAuth = document.getElementById('btnConfirmAuth');
+    els.btnConfirmAck = document.getElementById('btnConfirmAuth'); // alias
     els.authAlertType = document.getElementById('authAlertType');
+    els.ackAlertType = document.getElementById('authAlertType'); // alias
     els.authAlertAccount = document.getElementById('authAlertAccount');
+    els.ackAlertAccount = document.getElementById('authAlertAccount'); // alias
     els.authAlertDate = document.getElementById('authAlertDate');
     els.authBudgetAmount = document.getElementById('authBudgetAmount');
+    els.ackBudgetAmount = document.getElementById('authBudgetAmount'); // alias
     els.authActualAmount = document.getElementById('authActualAmount');
+    els.ackActualAmount = document.getElementById('authActualAmount'); // alias
     els.authVarianceAmount = document.getElementById('authVarianceAmount');
+    els.ackOverAmount = document.getElementById('authVarianceAmount'); // alias
     els.authAlertNote = document.getElementById('authAlertNote');
+    els.ackAlertNote = document.getElementById('authAlertNote'); // alias
+    els.ackAlertMessage = document.getElementById('authAlertMessage'); // may not exist
 
     // View Note Modal
     els.viewNoteModal = document.getElementById('viewNoteModal');
@@ -159,6 +196,20 @@
       const budgetsRes = await apiGet(`/budgets?project=${projectId}`);
       const budgets = budgetsRes.data || [];
 
+      // Check if project has no budget loaded
+      if (budgets.length === 0) {
+        console.log('[BUDGET_MONITOR] Project has no budget loaded yet');
+        budgetData = [];
+        renderBudgetOverview();
+        updateSummaryCards();
+
+        // Show informational alert (not an error)
+        if (window.Toast) {
+          Toast.info('No Budget', 'This project does not have a budget loaded yet. Please upload a budget to start monitoring.');
+        }
+        return;
+      }
+
       // Load expenses (actuals) for project - authorized only
       const expensesRes = await apiGet(`/expenses/?project=${projectId}`);
       const expenses = (expensesRes.data || []).filter(e => e.auth_status === true);
@@ -219,7 +270,7 @@
     } catch (err) {
       console.error('[BUDGET_MONITOR] Error loading budget overview:', err);
       if (window.Toast) {
-        Toast.error('Error', 'Failed to load budget data');
+        Toast.error('Error', 'Failed to load budget data. Please try again.');
       }
     }
   }
@@ -278,48 +329,55 @@
     const totalRemaining = totalBudget - totalActuals;
     const totalPercentage = totalBudget > 0 ? (totalActuals / totalBudget * 100) : 0;
 
-    els.totalBudget.textContent = formatCurrency(totalBudget);
-    els.totalActuals.textContent = formatCurrency(totalActuals);
-    els.totalRemaining.textContent = formatCurrency(totalRemaining);
-    els.totalPercentage.textContent = totalPercentage.toFixed(1) + '%';
+    // Only update if elements exist
+    if (els.totalBudget) els.totalBudget.textContent = formatCurrency(totalBudget);
+    if (els.totalActuals) els.totalActuals.textContent = formatCurrency(totalActuals);
+    if (els.totalRemaining) els.totalRemaining.textContent = formatCurrency(totalRemaining);
+    if (els.totalPercentage) {
+      els.totalPercentage.textContent = totalPercentage.toFixed(1) + '%';
 
-    // Update colors based on percentage
-    if (totalPercentage >= 100) {
-      els.totalPercentage.classList.add('value-danger');
-      els.totalPercentage.classList.remove('value-warning', 'value-success');
-    } else if (totalPercentage >= 80) {
-      els.totalPercentage.classList.add('value-warning');
-      els.totalPercentage.classList.remove('value-danger', 'value-success');
-    } else {
-      els.totalPercentage.classList.add('value-success');
-      els.totalPercentage.classList.remove('value-danger', 'value-warning');
+      // Update colors based on percentage
+      if (totalPercentage >= 100) {
+        els.totalPercentage.classList.add('value-danger');
+        els.totalPercentage.classList.remove('value-warning', 'value-success');
+      } else if (totalPercentage >= 80) {
+        els.totalPercentage.classList.add('value-warning');
+        els.totalPercentage.classList.remove('value-danger', 'value-success');
+      } else {
+        els.totalPercentage.classList.add('value-success');
+        els.totalPercentage.classList.remove('value-danger', 'value-warning');
+      }
     }
   }
 
   function updateAlertBadges() {
     const count = pendingAlerts.length;
-    els.pendingAlertsCount.textContent = count;
-    els.tabAlertsBadge.textContent = count;
+    if (els.pendingAlertsCount) els.pendingAlertsCount.textContent = count;
+    if (els.tabAlertsBadge) els.tabAlertsBadge.textContent = count;
 
     if (count > 0) {
-      els.pendingAlertsBadge.classList.add('has-alerts');
-      els.tabAlertsBadge.classList.add('has-alerts');
+      if (els.pendingAlertsBadge) els.pendingAlertsBadge.classList.add('has-alerts');
+      if (els.tabAlertsBadge) els.tabAlertsBadge.classList.add('has-alerts');
     } else {
-      els.pendingAlertsBadge.classList.remove('has-alerts');
-      els.tabAlertsBadge.classList.remove('has-alerts');
+      if (els.pendingAlertsBadge) els.pendingAlertsBadge.classList.remove('has-alerts');
+      if (els.tabAlertsBadge) els.tabAlertsBadge.classList.remove('has-alerts');
     }
   }
 
   function renderBudgetOverview() {
+    // Skip if elements don't exist
+    if (!els.overviewEmptyState && !els.budgetOverviewTable) return;
+
     if (budgetData.length === 0) {
-      els.overviewEmptyState.style.display = 'flex';
-      els.budgetOverviewTable.style.display = 'none';
+      if (els.overviewEmptyState) els.overviewEmptyState.style.display = 'flex';
+      if (els.budgetOverviewTable) els.budgetOverviewTable.style.display = 'none';
       return;
     }
 
-    els.overviewEmptyState.style.display = 'none';
-    els.budgetOverviewTable.style.display = 'table';
+    if (els.overviewEmptyState) els.overviewEmptyState.style.display = 'none';
+    if (els.budgetOverviewTable) els.budgetOverviewTable.style.display = 'table';
 
+    if (!els.budgetOverviewBody) return;
     els.budgetOverviewBody.innerHTML = budgetData.map(row => {
       const statusBadge = getStatusBadge(row.status);
       const progressBar = getProgressBar(row.percentage, row.status);
@@ -340,15 +398,19 @@
   }
 
   function renderPendingAlerts() {
+    // Skip if elements don't exist
+    if (!els.alertsEmptyState && !els.alertsList) return;
+
     if (pendingAlerts.length === 0) {
-      els.alertsEmptyState.style.display = 'flex';
-      els.alertsList.style.display = 'none';
+      if (els.alertsEmptyState) els.alertsEmptyState.style.display = 'flex';
+      if (els.alertsList) els.alertsList.style.display = 'none';
       return;
     }
 
-    els.alertsEmptyState.style.display = 'none';
-    els.alertsList.style.display = 'flex';
+    if (els.alertsEmptyState) els.alertsEmptyState.style.display = 'none';
+    if (els.alertsList) els.alertsList.style.display = 'flex';
 
+    if (!els.alertsList) return;
     els.alertsList.innerHTML = pendingAlerts.map(alert => {
       const typeLabel = alert.alert_type === 'overspend' ? 'Over Budget' : 'No Budget';
       const typeClass = alert.alert_type === 'overspend' ? 'badge-overspend' : 'badge-no-budget';
@@ -397,15 +459,19 @@
   }
 
   function renderAlertHistory() {
+    // Skip if elements don't exist
+    if (!els.historyEmptyState && !els.historyTable) return;
+
     if (alertHistory.length === 0) {
-      els.historyEmptyState.style.display = 'flex';
-      els.historyTable.style.display = 'none';
+      if (els.historyEmptyState) els.historyEmptyState.style.display = 'flex';
+      if (els.historyTable) els.historyTable.style.display = 'none';
       return;
     }
 
-    els.historyEmptyState.style.display = 'none';
-    els.historyTable.style.display = 'table';
+    if (els.historyEmptyState) els.historyEmptyState.style.display = 'none';
+    if (els.historyTable) els.historyTable.style.display = 'table';
 
+    if (!els.historyTableBody) return;
     els.historyTableBody.innerHTML = alertHistory.map(alert => {
       const typeLabel = alert.alert_type === 'overspend' ? 'Over Budget'
         : alert.alert_type === 'no_budget' ? 'No Budget'
@@ -451,49 +517,53 @@
 
     currentAckAlert = alert;
 
-    // Populate modal
+    // Populate modal (with null checks)
     const typeLabel = alert.alert_type === 'overspend' ? 'Over Budget' : 'No Budget';
-    els.ackAlertType.textContent = typeLabel;
-    els.ackAlertType.className = `ack-alert-type type-${alert.alert_type}`;
+    if (els.ackAlertType) {
+      els.ackAlertType.textContent = typeLabel;
+      els.ackAlertType.className = `ack-alert-type type-${alert.alert_type}`;
+    }
 
-    els.ackAlertAccount.textContent = alert.account_name || 'Unknown Account';
-    els.ackAlertMessage.textContent = alert.message;
+    if (els.ackAlertAccount) els.ackAlertAccount.textContent = alert.account_name || 'Unknown Account';
+    if (els.ackAlertMessage) els.ackAlertMessage.textContent = alert.message;
 
-    els.ackBudgetAmount.textContent = formatCurrency(alert.budget_amount || 0);
-    els.ackActualAmount.textContent = formatCurrency(alert.actual_amount || 0);
+    if (els.ackBudgetAmount) els.ackBudgetAmount.textContent = formatCurrency(alert.budget_amount || 0);
+    if (els.ackActualAmount) els.ackActualAmount.textContent = formatCurrency(alert.actual_amount || 0);
 
     const overAmount = alert.alert_type === 'overspend'
       ? (alert.actual_amount - alert.budget_amount)
       : alert.actual_amount;
-    els.ackOverAmount.textContent = formatCurrency(overAmount);
+    if (els.ackOverAmount) els.ackOverAmount.textContent = formatCurrency(overAmount);
 
-    els.ackAlertNote.value = '';
+    if (els.ackAlertNote) els.ackAlertNote.value = '';
 
     // Show modal
-    els.acknowledgeModal.classList.remove('hidden');
+    if (els.acknowledgeModal) els.acknowledgeModal.classList.remove('hidden');
   }
 
   function closeAcknowledgeModal() {
-    els.acknowledgeModal.classList.add('hidden');
+    if (els.acknowledgeModal) els.acknowledgeModal.classList.add('hidden');
     currentAckAlert = null;
-    els.ackAlertNote.value = '';
+    if (els.ackAlertNote) els.ackAlertNote.value = '';
   }
 
   async function confirmAcknowledge() {
     if (!currentAckAlert) return;
 
-    const note = els.ackAlertNote.value.trim();
+    const note = els.ackAlertNote ? els.ackAlertNote.value.trim() : '';
     if (!note) {
       if (window.Toast) {
         Toast.warning('Note Required', 'Please provide a justification note');
       }
-      els.ackAlertNote.focus();
+      if (els.ackAlertNote) els.ackAlertNote.focus();
       return;
     }
 
     try {
-      els.btnConfirmAck.disabled = true;
-      els.btnConfirmAck.textContent = 'Saving...';
+      if (els.btnConfirmAck) {
+        els.btnConfirmAck.disabled = true;
+        els.btnConfirmAck.textContent = 'Saving...';
+      }
 
       await apiPut(`/budget-alerts/acknowledge/${currentAckAlert.id}`, {
         note: note,
@@ -516,8 +586,10 @@
         Toast.error('Error', err.message || 'Failed to acknowledge alert');
       }
     } finally {
-      els.btnConfirmAck.disabled = false;
-      els.btnConfirmAck.textContent = 'Acknowledge Alert';
+      if (els.btnConfirmAck) {
+        els.btnConfirmAck.disabled = false;
+        els.btnConfirmAck.textContent = 'Acknowledge Alert';
+      }
     }
   }
 
@@ -535,17 +607,17 @@
       : alert.alert_type === 'no_budget' ? 'No Budget'
       : alert.alert_type;
 
-    els.viewNoteAccount.textContent = alert.account_name || '—';
-    els.viewNoteType.textContent = typeLabel;
-    els.viewNoteAckBy.textContent = alert.acknowledged_by_user?.user_name || '—';
-    els.viewNoteAckAt.textContent = alert.acknowledged_at ? formatDateTime(alert.acknowledged_at) : '—';
-    els.viewNoteText.textContent = alert.acknowledgment_note || 'No note provided';
+    if (els.viewNoteAccount) els.viewNoteAccount.textContent = alert.account_name || '—';
+    if (els.viewNoteType) els.viewNoteType.textContent = typeLabel;
+    if (els.viewNoteAckBy) els.viewNoteAckBy.textContent = alert.acknowledged_by_user?.user_name || '—';
+    if (els.viewNoteAckAt) els.viewNoteAckAt.textContent = alert.acknowledged_at ? formatDateTime(alert.acknowledged_at) : '—';
+    if (els.viewNoteText) els.viewNoteText.textContent = alert.acknowledgment_note || 'No note provided';
 
-    els.viewNoteModal.classList.remove('hidden');
+    if (els.viewNoteModal) els.viewNoteModal.classList.remove('hidden');
   }
 
   function closeViewNoteModal() {
-    els.viewNoteModal.classList.add('hidden');
+    if (els.viewNoteModal) els.viewNoteModal.classList.add('hidden');
   }
 
   // ================================
@@ -668,10 +740,10 @@
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        if (!els.acknowledgeModal.classList.contains('hidden')) {
+        if (els.acknowledgeModal && !els.acknowledgeModal.classList.contains('hidden')) {
           closeAcknowledgeModal();
         }
-        if (!els.viewNoteModal.classList.contains('hidden')) {
+        if (els.viewNoteModal && !els.viewNoteModal.classList.contains('hidden')) {
           closeViewNoteModal();
         }
       }

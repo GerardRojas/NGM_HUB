@@ -3135,6 +3135,27 @@ select.edit-input option {
   border-left: 3px solid #6b7280 !important;
 }
 
+/* Health Check - Currently selected expense highlight */
+.expense-row-health-check-selected {
+  position: relative;
+  background: rgba(147, 197, 253, 0.08) !important;
+  box-shadow: inset 0 0 0 2px rgba(147, 197, 253, 0.4), 0 0 12px rgba(147, 197, 253, 0.15);
+  animation: healthCheckPulse 2s ease-in-out infinite;
+}
+
+.expense-row-health-check-selected td:first-child {
+  border-left: 3px solid #93c5fd !important;
+}
+
+@keyframes healthCheckPulse {
+  0%, 100% {
+    box-shadow: inset 0 0 0 2px rgba(147, 197, 253, 0.4), 0 0 12px rgba(147, 197, 253, 0.15);
+  }
+  50% {
+    box-shadow: inset 0 0 0 2px rgba(147, 197, 253, 0.6), 0 0 20px rgba(147, 197, 253, 0.25);
+  }
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .duplicate-review-panel {

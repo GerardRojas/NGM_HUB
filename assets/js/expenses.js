@@ -2394,7 +2394,7 @@
     const hasReceipt = !!receiptUrl;
     const receiptIcon = hasReceipt
       ? `<span class="receipt-icon-btn receipt-icon-btn--has-receipt" title="Click to view/edit receipt">📎<span class="receipt-badge"></span></span>`
-      : `<span class="receipt-icon-btn" title="No receipt attached">📎</span>`;
+      : `<span class="receipt-icon-btn" title="No receipt attached">📎<span class="receipt-badge receipt-badge--missing"></span></span>`;
 
     // Authorization badge
     const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
@@ -2436,7 +2436,7 @@
     const hasReceipt = !!receiptUrl;
     const receiptIcon = hasReceipt
       ? `<span class="receipt-icon-btn receipt-icon-btn--has-receipt" title="Has receipt attached">📎<span class="receipt-badge"></span></span>`
-      : `<span class="receipt-icon-btn" title="No receipt attached">📎</span>`;
+      : `<span class="receipt-icon-btn" title="No receipt attached">📎<span class="receipt-badge receipt-badge--missing"></span></span>`;
 
     // Authorization badge (not editable in bulk edit mode)
     const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
@@ -7163,7 +7163,7 @@
     const hasReceipt = !!receiptUrl;
     const receiptIcon = hasReceipt
       ? `<span class="receipt-icon-btn receipt-icon-btn--has-receipt" title="Click to view/edit receipt">📎<span class="receipt-badge"></span></span>`
-      : `<span class="receipt-icon-btn" title="No receipt attached">📎</span>`;
+      : `<span class="receipt-icon-btn" title="No receipt attached">📎<span class="receipt-badge receipt-badge--missing"></span></span>`;
 
     const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
     const authBadgeClass = isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending';

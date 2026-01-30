@@ -709,6 +709,87 @@
         }
       });
     });
+
+    // Setup mobile keyboard detection
+    setupMobileKeyboardDetection();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // MOBILE KEYBOARD DETECTION
+  // ─────────────────────────────────────────────────────────────────────────
+  function setupMobileKeyboardDetection() {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (!isMobile) return;
+
+    const pageElement = document.querySelector('.page-arturito');
+    const mainArea = document.querySelector('.main-area');
+    const messagesContainer = DOM.messagesContainer;
+
+    let initialViewportHeight = window.visualViewport?.height || window.innerHeight;
+    let keyboardOpen = false;
+
+    // Use Visual Viewport API if available
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportResize);
+    } else {
+      // Fallback for older browsers
+      DOM.chatInput?.addEventListener('focus', () => {
+        setTimeout(() => {
+          if (!keyboardOpen) handleKeyboardOpen();
+        }, 300);
+      });
+
+      DOM.chatInput?.addEventListener('blur', () => {
+        setTimeout(() => {
+          if (keyboardOpen) handleKeyboardClose();
+        }, 100);
+      });
+    }
+
+    function handleViewportResize() {
+      const currentHeight = window.visualViewport.height;
+      const heightDiff = initialViewportHeight - currentHeight;
+
+      if (heightDiff > 150 && !keyboardOpen) {
+        handleKeyboardOpen();
+        // Adjust main area height
+        if (mainArea) {
+          mainArea.style.height = `${currentHeight}px`;
+        }
+      } else if (heightDiff < 100 && keyboardOpen) {
+        handleKeyboardClose();
+        if (mainArea) {
+          mainArea.style.height = '';
+        }
+      }
+    }
+
+    function handleKeyboardOpen() {
+      keyboardOpen = true;
+      pageElement?.classList.add('keyboard-open');
+      document.body.classList.add('keyboard-open');
+
+      // Scroll to bottom
+      setTimeout(() => {
+        if (messagesContainer) {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+      }, 100);
+
+      console.log('[Arturito] Keyboard opened');
+    }
+
+    function handleKeyboardClose() {
+      keyboardOpen = false;
+      pageElement?.classList.remove('keyboard-open');
+      document.body.classList.remove('keyboard-open');
+
+      if (mainArea) {
+        mainArea.style.height = '';
+      }
+
+      console.log('[Arturito] Keyboard closed');
+    }
   }
 
   function handleInputChange() {

@@ -8276,12 +8276,14 @@
       return;
     }
 
+    const apiBase = getApiBase();
+
     try {
       showEmptyState('Loading reconciliation data...');
 
       const [manualRes, qboRes] = await Promise.all([
         apiJson(`${apiBase}/expenses?project=${selectedProjectId}`),
-        apiJson(`${apiBase}/expenses/qbo?project=${selectedProjectId}`)
+        apiJson(`${apiBase}/qbo/expenses?project=${selectedProjectId}&is_cogs=true`)
       ]);
 
       // Parse responses
@@ -8315,6 +8317,7 @@
   }
 
   async function loadExistingReconciliations() {
+    const apiBase = getApiBase();
     try {
       const url = `${apiBase}/expenses/reconciliations?project=${selectedProjectId}`;
       const result = await apiJson(url);
@@ -8819,6 +8822,7 @@
       return;
     }
 
+    const apiBase = getApiBase();
     const btnSave = document.getElementById('btnSaveReconciliation');
     const originalText = btnSave?.textContent;
 

@@ -562,6 +562,7 @@
     left: 0;
     width: 100%;
     height: calc(100vh - 60px);
+    height: calc(100dvh - 60px); /* Dynamic viewport height - adjusts with keyboard */
     max-height: none;
     border-radius: 16px 16px 0 0;
     transform: translateY(100%);
@@ -572,9 +573,10 @@
     transform: translateY(0);
   }
 
-  /* When keyboard is open, reduce panel height */
+  /* When keyboard is open, panel height is set dynamically via JS */
   .arturito-widget-panel.keyboard-open {
-    height: calc(100vh - 60px);
+    /* Height is controlled by JS using visualViewport */
+    transition: height 0.15s ease;
   }
 
   .arturito-widget-btn {
@@ -587,11 +589,33 @@
   /* Raise input area from bottom edge */
   .arturito-widget-input-area {
     padding: 12px 16px 28px;
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    background: #1a1a1f;
+    z-index: 10;
   }
 
   /* When keyboard is open, less bottom padding needed */
   .keyboard-open .arturito-widget-input-area {
     padding-bottom: 12px;
+  }
+
+  /* Ensure messages area takes remaining space */
+  .arturito-widget-panel.keyboard-open .arturito-widget-messages {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+/* Support for small viewport height (excludes keyboard) */
+@supports (height: 100svh) {
+  @media (max-width: 480px) {
+    .arturito-widget-panel.keyboard-open {
+      height: calc(100svh - 60px);
+    }
   }
 }
 

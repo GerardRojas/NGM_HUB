@@ -300,8 +300,12 @@
 
             // On mobile, adjust the entire layout
             if (window.innerWidth <= 768) {
-              // Fix the chat card to viewport height
+              // Fix the chat card to viewport height and position
               if (chatCard) {
+                chatCard.style.position = 'fixed';
+                chatCard.style.top = viewportTop + 'px';
+                chatCard.style.left = '0';
+                chatCard.style.right = '0';
                 chatCard.style.height = viewportHeight + 'px';
                 chatCard.style.maxHeight = viewportHeight + 'px';
               }
@@ -335,6 +339,10 @@
             // Reset styles on mobile
             if (window.innerWidth <= 768) {
               if (chatCard) {
+                chatCard.style.position = '';
+                chatCard.style.top = '';
+                chatCard.style.left = '';
+                chatCard.style.right = '';
                 chatCard.style.height = '';
                 chatCard.style.maxHeight = '';
               }

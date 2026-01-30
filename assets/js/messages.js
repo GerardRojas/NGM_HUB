@@ -2647,6 +2647,128 @@
         openSearchModal();
       }
     });
+
+    // Mobile keyboard detection using Visual Viewport API
+    setupMobileKeyboardDetection();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // MOBILE KEYBOARD DETECTION
+  // ─────────────────────────────────────────────────────────────────────────
+  function setupMobileKeyboardDetection() {
+    // Only run on mobile devices
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (!isMobile) return;
+
+    const pageElement = document.querySelector('.page-messages');
+    const chatArea = document.querySelector('.msg-chat-area');
+    const inputArea = document.querySelector('.msg-input-area');
+    const messagesContainer = DOM.messagesList?.parentElement;
+
+    let initialViewportHeight = window.visualViewport?.height || window.innerHeight;
+    let keyboardOpen = false;
+
+    // Use Visual Viewport API if available (better for iOS)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportResize);
+      window.visualViewport.addEventListener('scroll', handleViewportScroll);
+    } else {
+      // Fallback for older browsers
+      window.addEventListener('resize', handleWindowResize);
+    }
+
+    // Also detect via focus/blur on input
+    DOM.messageInput?.addEventListener('focus', () => {
+      setTimeout(() => {
+        if (!keyboardOpen) {
+          handleKeyboardOpen();
+        }
+      }, 300);
+    });
+
+    DOM.messageInput?.addEventListener('blur', () => {
+      setTimeout(() => {
+        if (keyboardOpen) {
+          handleKeyboardClose();
+        }
+      }, 100);
+    });
+
+    function handleViewportResize() {
+      const currentHeight = window.visualViewport.height;
+      const heightDiff = initialViewportHeight - currentHeight;
+
+      // Keyboard is likely open if viewport height decreased significantly (> 150px)
+      if (heightDiff > 150 && !keyboardOpen) {
+        handleKeyboardOpen();
+        // Adjust chat area height
+        if (chatArea) {
+          chatArea.style.height = `${currentHeight}px`;
+        }
+      } else if (heightDiff < 100 && keyboardOpen) {
+        handleKeyboardClose();
+        // Reset chat area height
+        if (chatArea) {
+          chatArea.style.height = '';
+        }
+      }
+
+      // Keep input visible above keyboard
+      if (keyboardOpen && inputArea) {
+        inputArea.style.bottom = '0';
+        inputArea.style.position = 'sticky';
+      }
+    }
+
+    function handleViewportScroll() {
+      // Keep content in view when viewport scrolls
+      if (keyboardOpen && window.visualViewport) {
+        const offsetTop = window.visualViewport.offsetTop;
+        if (chatArea) {
+          chatArea.style.transform = `translateY(${offsetTop}px)`;
+        }
+      }
+    }
+
+    function handleWindowResize() {
+      const currentHeight = window.innerHeight;
+      const heightDiff = initialViewportHeight - currentHeight;
+
+      if (heightDiff > 150 && !keyboardOpen) {
+        handleKeyboardOpen();
+      } else if (heightDiff < 100 && keyboardOpen) {
+        handleKeyboardClose();
+      }
+    }
+
+    function handleKeyboardOpen() {
+      keyboardOpen = true;
+      pageElement?.classList.add('keyboard-open');
+      document.body.classList.add('keyboard-open');
+
+      // Scroll to bottom to show latest messages
+      setTimeout(() => {
+        if (messagesContainer) {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+      }, 100);
+
+      console.log('[Messages] Keyboard opened');
+    }
+
+    function handleKeyboardClose() {
+      keyboardOpen = false;
+      pageElement?.classList.remove('keyboard-open');
+      document.body.classList.remove('keyboard-open');
+
+      // Reset any transform
+      if (chatArea) {
+        chatArea.style.transform = '';
+        chatArea.style.height = '';
+      }
+
+      console.log('[Messages] Keyboard closed');
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────

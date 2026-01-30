@@ -476,7 +476,7 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .arturito-input-area {
-  padding: 16px 24px 20px;
+  padding: 16px 24px 32px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   background: #0f0f0f;
 }
@@ -684,8 +684,8 @@
   }
 
   .arturito-input-area {
-    padding: 10px 12px 20px;
-    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    padding: 10px 12px 32px;
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
   }
 
   .arturito-message-content {
@@ -708,11 +708,11 @@
   }
 
   .arturito-input-area {
-    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    padding-bottom: calc(36px + env(safe-area-inset-bottom));
   }
 
   .page-arturito.keyboard-open .arturito-input-area {
-    padding-bottom: 12px;
+    padding-bottom: 16px;
   }
 }
 
@@ -787,8 +787,10 @@
     top: 0;
     left: 0;
     right: 0;
+    bottom: 0;
     overflow: hidden;
-    height: auto;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height - adjusts with keyboard */
   }
 
   .page-arturito.keyboard-open .arturito-main {
@@ -814,9 +816,10 @@
   }
 
   .page-arturito.keyboard-open .arturito-input-area {
-    padding-bottom: 12px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
     flex-shrink: 0;
-    position: relative;
+    position: sticky;
+    bottom: 0;
     z-index: 100;
     background: #0f0f0f;
   }
@@ -831,6 +834,26 @@
     overflow: hidden;
     position: fixed;
     width: 100%;
-    height: 100%;
+    height: 100dvh;
+  }
+
+  /* Ensure html/body don't cause extra scrolling */
+  html.keyboard-open,
+  body.keyboard-open {
+    height: 100dvh;
+    overflow: hidden;
+  }
+}
+
+/* Support for small viewport height (excludes keyboard) */
+@supports (height: 100svh) {
+  @media (max-width: 768px) {
+    .page-arturito.keyboard-open .main-area {
+      height: 100svh;
+    }
+
+    .page-arturito.keyboard-open {
+      height: 100svh;
+    }
   }
 }

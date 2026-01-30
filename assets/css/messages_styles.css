@@ -3023,16 +3023,19 @@
    ========================================== */
 
 @media (max-width: 768px) {
-  /* When keyboard is open, adjust layout */
+  /* When keyboard is open, adjust layout using visual viewport */
   .page-messages.keyboard-open .msg-chat-area {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
+    bottom: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    height: auto;
+    /* Use visual viewport height when keyboard is open */
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height - adjusts with keyboard */
   }
 
   .page-messages.keyboard-open .msg-chat-header {
@@ -3047,14 +3050,19 @@
     max-height: none;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    /* Ensure messages take available space */
+    height: 100%;
   }
 
   .page-messages.keyboard-open .msg-input-area {
     flex-shrink: 0;
-    position: relative;
-    padding-bottom: 12px;
+    position: sticky;
+    bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
     z-index: 100;
     background: #1a1a1a;
+    /* Ensure input stays at bottom of visual viewport */
+    margin-top: auto;
   }
 
   .page-messages.keyboard-open .msg-input-row {
@@ -3077,7 +3085,55 @@
     overflow: hidden;
     position: fixed;
     width: 100%;
-    height: 100%;
+    height: 100dvh; /* Use dynamic viewport height */
+  }
+
+  /* Ensure html/body don't cause extra scrolling */
+  html.keyboard-open,
+  body.keyboard-open {
+    height: 100dvh;
+    overflow: hidden;
+  }
+}
+
+/* ==========================================
+   Visual Viewport Keyboard Adjustments (iOS/Android)
+   ========================================== */
+
+/* Support for browsers with Visual Viewport API */
+@supports (height: 100svh) {
+  @media (max-width: 768px) {
+    .page-messages.keyboard-open .msg-chat-area {
+      height: 100svh; /* Small viewport height - excludes keyboard */
+    }
+
+    .page-messages.keyboard-open {
+      height: 100svh;
+    }
+  }
+}
+
+/* Fallback for interactive-widget viewport behavior */
+@media (max-width: 768px) {
+  /* When input is focused, use flexible height */
+  .msg-input:focus ~ .msg-messages-container,
+  .msg-input-area:focus-within ~ .msg-messages-container {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  /* Ensure input never goes off screen */
+  .page-messages.mobile-chat-open .msg-input-area {
+    position: sticky;
+    bottom: 0;
+    flex-shrink: 0;
+    background: #1a1a1a;
+    z-index: 50;
+  }
+
+  /* iOS-specific: Use env() for safe areas */
+  .page-messages.keyboard-open .msg-input-area {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 }
 

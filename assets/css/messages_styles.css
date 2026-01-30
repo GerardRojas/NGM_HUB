@@ -1763,7 +1763,7 @@
 
   .msg-input-area {
     padding: 12px 16px 16px;
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    padding-bottom: calc(28px + env(safe-area-inset-bottom));
   }
 
   /* Hide desktop sidebar on mobile when not open */
@@ -2797,7 +2797,7 @@
   /* Input area */
   .msg-input-area {
     padding: 8px 12px;
-    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
     background: #141414;
   }
 
@@ -3058,7 +3058,7 @@
     flex-shrink: 0;
     position: sticky;
     bottom: 0;
-    padding-bottom: env(safe-area-inset-bottom, 8px);
+    padding-bottom: env(safe-area-inset-bottom, 0);
     z-index: 100;
     background: #1a1a1a;
     /* Ensure input stays at bottom of visual viewport */
@@ -3133,7 +3133,7 @@
 
   /* iOS-specific: Use env() for safe areas */
   .page-messages.keyboard-open .msg-input-area {
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
   }
 }
 

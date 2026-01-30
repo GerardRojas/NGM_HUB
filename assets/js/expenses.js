@@ -2166,6 +2166,15 @@
     }
   }
 
+  function hideEmptyState() {
+    if (els.expensesEmptyState) {
+      els.expensesEmptyState.style.display = 'none';
+    }
+    if (els.expensesTable) {
+      els.expensesTable.style.display = '';
+    }
+  }
+
   /**
    * PERFORMANCE OPTIMIZED: Apply filters with single-pass field resolution
    * Pre-computes all display values once per expense to avoid redundant lookups

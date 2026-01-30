@@ -253,6 +253,57 @@
   };
 
   // ================================
+  // CACHE SYSTEM (For instant page loads)
+  // ================================
+
+  const CACHE_KEYS = {
+    PIPELINE_DATA: "ngm_cache_pipeline_data",
+  };
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  /**
+   * Saves data to localStorage cache with timestamp
+   */
+  function saveToCache(key, data) {
+    try {
+      const cacheItem = { data: data, timestamp: Date.now() };
+      localStorage.setItem(key, JSON.stringify(cacheItem));
+    } catch (e) {
+      console.warn("[PIPELINE] Cache save failed:", e);
+    }
+  }
+
+  /**
+   * Loads data from localStorage cache
+   * Returns data even if expired (for instant display while fetching fresh data)
+   */
+  function loadFromCache(key) {
+    try {
+      const cached = localStorage.getItem(key);
+      if (!cached) return null;
+      const cacheItem = JSON.parse(cached);
+      return cacheItem.data;
+    } catch (e) {
+      console.warn("[PIPELINE] Cache load failed:", e);
+      return null;
+    }
+  }
+
+  /**
+   * Checks if cache is still fresh (within TTL)
+   */
+  function isCacheFresh(key) {
+    try {
+      const cached = localStorage.getItem(key);
+      if (!cached) return false;
+      const cacheItem = JSON.parse(cached);
+      return Date.now() - cacheItem.timestamp < CACHE_TTL;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ================================
   // STATUS CONFIGURATION
   // ================================
 
@@ -579,26 +630,50 @@
   window.fetchPipeline = fetchPipeline;
 
   async function fetchPipeline() {
+    const startTime = performance.now();
+
     try {
       // Fallback if API_BASE is not defined yet
       const apiBase = window.API_BASE || "https://ngm-fastapi.onrender.com";
 
       console.log("[PIPELINE] fetchPipeline called");
-      console.log("[PIPELINE] API_BASE:", window.API_BASE);
-      console.log("[PIPELINE] Using apiBase:", apiBase);
+
+      // =============================================
+      // PHASE 1: Load from cache INSTANTLY
+      // =============================================
+      const cachedData = loadFromCache(CACHE_KEYS.PIPELINE_DATA);
+      let renderedFromCache = false;
+
+      if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
+        console.log("[PIPELINE] Loading from cache instantly");
+        rawGroups = cachedData;
+        populateFilters(rawGroups);
+        renderGroups();
+        hidePageLoading();
+        renderedFromCache = true;
+
+        const cacheTime = performance.now() - startTime;
+        console.log(`[PIPELINE] Rendered from cache in ${cacheTime.toFixed(0)}ms`);
+
+        // If cache is still fresh, skip API call
+        if (isCacheFresh(CACHE_KEYS.PIPELINE_DATA)) {
+          console.log("[PIPELINE] Cache is fresh, skipping API call");
+          return;
+        }
+      }
+
+      // =============================================
+      // PHASE 2: Fetch fresh data from API
+      // =============================================
+      console.log("[PIPELINE] Fetching fresh data from API...");
 
       const url = `${apiBase}/pipeline/grouped`;
-      console.log("[PIPELINE] Fetching from:", url);
-
       const res = await fetch(url, {
         credentials: "include",
         headers: {
           "Accept": "application/json"
         }
       });
-
-      console.log("[PIPELINE] Response status:", res.status, res.statusText);
-      console.log("[PIPELINE] Response headers:", Object.fromEntries(res.headers.entries()));
 
       if (!res.ok) {
         const errorText = await res.text().catch(() => "Could not read error body");
@@ -607,47 +682,65 @@
       }
 
       const data = await res.json();
-
-      console.log("[PIPELINE] raw response:", data);
+      let parsedGroups;
 
       if (Array.isArray(data)) {
-        rawGroups = data;
+        parsedGroups = data;
       } else if (Array.isArray(data.groups)) {
-        rawGroups = data.groups;
+        parsedGroups = data.groups;
       } else if (data.groups && typeof data.groups === "object") {
         // FastAPI grouped by status
-        rawGroups = Object.entries(data.groups).map(([status, tasks]) => ({
+        parsedGroups = Object.entries(data.groups).map(([status, tasks]) => ({
           status_name: status,
           tasks: Array.isArray(tasks) ? tasks : [],
         }));
       } else if (typeof data === "object") {
         // Ultra defensive fallback
-        rawGroups = Object.entries(data).map(([status, tasks]) => ({
+        parsedGroups = Object.entries(data).map(([status, tasks]) => ({
           status_name: status,
           tasks: Array.isArray(tasks) ? tasks : [],
         }));
       } else {
-        rawGroups = [];
+        parsedGroups = [];
       }
 
-      console.log("[PIPELINE] parsed groups:", rawGroups);
+      // =============================================
+      // PHASE 3: Save to cache and update UI if needed
+      // =============================================
+      saveToCache(CACHE_KEYS.PIPELINE_DATA, parsedGroups);
 
-      populateFilters(rawGroups);
-      renderGroups();
-      hidePageLoading();
+      // Only re-render if data has changed or we didn't render from cache
+      const dataChanged = JSON.stringify(parsedGroups) !== JSON.stringify(rawGroups);
+
+      if (!renderedFromCache || dataChanged) {
+        rawGroups = parsedGroups;
+        populateFilters(rawGroups);
+        renderGroups();
+        hidePageLoading();
+
+        if (dataChanged && renderedFromCache) {
+          console.log("[PIPELINE] Fresh data differs from cache, UI updated");
+        }
+      } else {
+        console.log("[PIPELINE] Fresh data matches cache, no re-render needed");
+      }
+
+      const totalTime = performance.now() - startTime;
+      console.log(`[PIPELINE] Total load time: ${totalTime.toFixed(0)}ms`);
+
     } catch (err) {
       console.error("[PIPELINE] fetch error:", err);
-      console.error("[PIPELINE] Error name:", err.name);
-      console.error("[PIPELINE] Error message:", err.message);
-      console.error("[PIPELINE] Error stack:", err.stack);
 
       // Check if it's a network error (CORS, connection refused, etc.)
       if (err instanceof TypeError && err.message.includes("Failed to fetch")) {
         console.error("[PIPELINE] Network error - possible causes: CORS, server down, or connection refused");
       }
 
-      if (groupsWrapper) {
-        groupsWrapper.innerHTML = `<p class='panel-text'>Error loading pipeline data: ${err.message}</p>`;
+      // If we didn't render from cache, show error
+      if (!rawGroups || rawGroups.length === 0) {
+        if (groupsWrapper) {
+          groupsWrapper.innerHTML = `<p class='panel-text'>Error loading pipeline data: ${err.message}</p>`;
+        }
       }
       hidePageLoading();
     }

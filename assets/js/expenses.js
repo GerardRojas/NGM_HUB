@@ -228,6 +228,7 @@
     els.btnEditExpenses = document.getElementById('btnEditExpenses');
     els.btnBillView = document.getElementById('btnBillView');
     els.expensesTable = document.getElementById('expensesTable');
+    els.expensesTableHead = document.querySelector('#expensesTable thead');
     els.expensesTableBody = document.getElementById('expensesTableBody');
     els.expensesEmptyState = document.getElementById('expensesEmptyState');
     els.editModeFooter = document.getElementById('editModeFooter');
@@ -7708,6 +7709,8 @@
   // ================================
   // QBO DATA SOURCE SWITCHING
   // ================================
+  let originalTableHeaders = null; // Store original headers for restoration
+
   async function switchDataSource(source) {
     if (source === currentDataSource) return; // Already on this source
 
@@ -7731,6 +7734,11 @@
       btnAdd?.removeAttribute('disabled');
       btnEdit?.removeAttribute('disabled');
       btnReconcile?.removeAttribute('disabled');
+
+      // Restore original table headers
+      if (originalTableHeaders && els.expensesTableHead) {
+        els.expensesTableHead.innerHTML = originalTableHeaders;
+      }
     } else {
       btnManual?.classList.remove('active');
       btnQBO?.classList.add('active');
@@ -7740,6 +7748,11 @@
       btnAdd?.setAttribute('disabled', 'true');
       btnEdit?.setAttribute('disabled', 'true');
       btnReconcile?.removeAttribute('disabled'); // Can still reconcile from QBO view
+
+      // Store original table headers before changing to QBO
+      if (!originalTableHeaders && els.expensesTableHead) {
+        originalTableHeaders = els.expensesTableHead.innerHTML;
+      }
     }
 
     // Reload data for selected project
@@ -7794,6 +7807,24 @@
     // Apply filters (reuse existing filter logic)
     const displayExpenses = applyFiltersToQBO(qboExpenses);
 
+    // Set QBO-specific headers
+    const qboHeaders = `
+      <tr>
+        <th>DATE</th>
+        <th>TXN ID</th>
+        <th>LINE #</th>
+        <th>DESCRIPTION</th>
+        <th>ACCOUNT</th>
+        <th>TYPE</th>
+        <th>VENDOR</th>
+        <th>PAYMENT</th>
+        <th style="text-align: right;">AMOUNT</th>
+      </tr>
+    `;
+    if (els.expensesTableHead) {
+      els.expensesTableHead.innerHTML = qboHeaders;
+    }
+
     // Render rows
     const rows = displayExpenses.map(exp => renderQBORow(exp)).join('');
 
@@ -7804,41 +7835,36 @@
     }, 0);
     const totalRow = `
       <tr class="table-total-row">
-        <td colspan="${getVisibleColumnCount() - 1}" style="text-align: right; font-weight: 600;">Total:</td>
+        <td colspan="8" style="text-align: right; font-weight: 600;">Total:</td>
         <td style="font-weight: 700; color: #22c55e;">${formatCurrency(total)}</td>
-        <td></td>
       </tr>
     `;
 
     els.expensesTableBody.innerHTML = rows + totalRow;
-    applyColumnVisibility(); // Apply column hiding
   }
 
   function renderQBORow(exp) {
-    const expenseId = exp.id || exp.global_line_uid;
+    const globalUid = exp.global_line_uid || '';
     const txnDate = exp.txn_date ? new Date(exp.txn_date).toLocaleDateString() : '';
     const amount = exp.signed_amount !== undefined ? exp.signed_amount : (exp.amount || 0);
     const formattedAmount = formatCurrency(Math.abs(amount));
+    const amountClass = amount < 0 ? 'color: #ef4444;' : '';
 
-    // QBO data is read-only, show reconciliation status badge
-    const isReconciled = exp.reconciliation_status === 'matched' || exp.reconciliation_status === 'reviewed';
-    const statusClass = isReconciled ? 'reconcile-status-badge--linked' : 'reconcile-status-badge--pending';
-    const statusText = isReconciled ? 'Linked' : 'Pending';
+    // Unique line identifier: TxnId-LineId (e.g., "12345-1")
+    const lineRef = `${exp.txn_id || ''}-${exp.line_id || '1'}`;
 
-    // Map to table columns: DATE | BILL # | DESCRIPTION | ACCOUNT | TYPE | VENDOR | PAYMENT | AMOUNT | AUTH
+    // QBO columns: DATE | TXN ID | LINE # | DESCRIPTION | ACCOUNT | TYPE | VENDOR | PAYMENT | AMOUNT
     return `
-      <tr data-expense-id="${expenseId}" data-source="qbo">
+      <tr data-expense-id="${globalUid}" data-source="qbo">
         <td>${txnDate}</td>
-        <td>${exp.txn_type || ''}</td>
-        <td>${exp.line_description || exp.description || ''}</td>
+        <td><span class="qbo-txn-id">${exp.txn_id || ''}</span></td>
+        <td><span class="qbo-line-ref">${lineRef}</span></td>
+        <td>${exp.line_description || ''}</td>
         <td>${exp.account_name || ''}</td>
-        <td>${exp.account_type || ''}</td>
+        <td><span class="qbo-txn-type">${exp.txn_type || ''}</span></td>
         <td>${exp.vendor_name || ''}</td>
         <td>${exp.payment_type || ''}</td>
-        <td style="text-align: right;">${formattedAmount}</td>
-        <td>
-          <span class="reconcile-status-badge ${statusClass}">${statusText}</span>
-        </td>
+        <td style="text-align: right; ${amountClass}">${formattedAmount}</td>
       </tr>
     `;
   }

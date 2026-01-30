@@ -7669,6 +7669,11 @@
       await syncQBOExpenses();
     });
 
+    // QBO Mapping Button
+    document.getElementById('btnQBOMapping')?.addEventListener('click', () => {
+      openQBOMappingModal();
+    });
+
     // Reconcile Button
     document.getElementById('btnReconcile')?.addEventListener('click', () => {
       openReconciliationModal();
@@ -7703,6 +7708,7 @@
     const btnManual = document.getElementById('btnSourceManual');
     const btnQBO = document.getElementById('btnSourceQBO');
     const btnSyncQBO = document.getElementById('btnSyncQBO');
+    const btnQBOMapping = document.getElementById('btnQBOMapping');
     const btnAdd = document.getElementById('btnAddExpense');
     const btnEdit = document.getElementById('btnEditExpenses');
     const btnReconcile = document.getElementById('btnReconcile');
@@ -7712,6 +7718,7 @@
       btnQBO?.classList.remove('active');
       btnSyncQBO?.classList.add('hidden');
       btnSyncQBO?.setAttribute('disabled', 'true');
+      btnQBOMapping?.classList.add('hidden');
       btnAdd?.removeAttribute('disabled');
       btnEdit?.removeAttribute('disabled');
       btnReconcile?.removeAttribute('disabled');
@@ -7720,6 +7727,7 @@
       btnQBO?.classList.add('active');
       btnSyncQBO?.classList.remove('hidden');
       btnSyncQBO?.removeAttribute('disabled');
+      btnQBOMapping?.classList.remove('hidden');
       btnAdd?.setAttribute('disabled', 'true');
       btnEdit?.setAttribute('disabled', 'true');
       btnReconcile?.removeAttribute('disabled'); // Can still reconcile from QBO view
@@ -7937,6 +7945,197 @@
         btnSyncQBO.disabled = false;
         btnSyncQBO.innerHTML = originalText;
       }
+    }
+  }
+
+  // ================================
+  // QBO PROJECT MAPPING MODAL
+  // ================================
+  let qboMappings = [];
+  let ngmProjectsList = [];
+
+  async function openQBOMappingModal() {
+    const apiBase = getApiBase();
+
+    try {
+      // Show loading
+      const modal = document.getElementById('qboMappingModal');
+      if (!modal) {
+        createQBOMappingModal();
+      }
+
+      document.getElementById('qboMappingModal').classList.remove('hidden');
+      document.getElementById('qboMappingContent').innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #9ca3af;">
+          <div class="spinner" style="margin: 0 auto 16px;"></div>
+          Loading QBO customers...
+        </div>
+      `;
+
+      // Fetch QBO mappings and NGM projects in parallel
+      const [mappingsRes, projectsRes] = await Promise.all([
+        apiJson(`${apiBase}/qbo/mapping`),
+        apiJson(`${apiBase}/projects`)
+      ]);
+
+      qboMappings = mappingsRes?.data || [];
+      ngmProjectsList = projectsRes?.data || projectsRes || [];
+
+      console.log('[QBO Mapping] Loaded mappings:', qboMappings.length);
+      console.log('[QBO Mapping] Loaded NGM projects:', ngmProjectsList.length);
+
+      renderQBOMappingList();
+
+    } catch (err) {
+      console.error('[QBO Mapping] Error:', err);
+      document.getElementById('qboMappingContent').innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #ef4444;">
+          Error loading data: ${err.message}
+        </div>
+      `;
+    }
+  }
+
+  function createQBOMappingModal() {
+    const modalHtml = `
+      <div id="qboMappingModal" class="modal-overlay hidden">
+        <div class="qbo-mapping-modal">
+          <div class="qbo-mapping-header">
+            <h3>QBO Project Mapping</h3>
+            <p class="qbo-mapping-subtitle">Match QuickBooks customers to NGM projects</p>
+            <button class="qbo-mapping-close" onclick="document.getElementById('qboMappingModal').classList.add('hidden')">&times;</button>
+          </div>
+          <div id="qboMappingContent" class="qbo-mapping-content">
+            <!-- Content loaded dynamically -->
+          </div>
+          <div class="qbo-mapping-footer">
+            <button class="btn-secondary" onclick="document.getElementById('qboMappingModal').classList.add('hidden')">Close</button>
+            <button class="btn-primary" id="btnSaveQBOMappings" onclick="saveQBOMappings()">Save Mappings</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+
+  function renderQBOMappingList() {
+    if (qboMappings.length === 0) {
+      document.getElementById('qboMappingContent').innerHTML = `
+        <div style="text-align: center; padding: 40px; color: #9ca3af;">
+          <p>No QBO customers found.</p>
+          <p style="font-size: 13px; margin-top: 8px;">Run "Sync QBO" first to import customers from QuickBooks.</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Sort: unmapped first, then by name
+    const sorted = [...qboMappings].sort((a, b) => {
+      if (!a.ngm_project_id && b.ngm_project_id) return -1;
+      if (a.ngm_project_id && !b.ngm_project_id) return 1;
+      return (a.qbo_customer_name || '').localeCompare(b.qbo_customer_name || '');
+    });
+
+    const rows = sorted.map(mapping => {
+      const isMapped = !!mapping.ngm_project_id;
+      const statusClass = isMapped ? 'mapping-status--mapped' : 'mapping-status--unmapped';
+      const statusText = isMapped ? 'Mapped' : 'Unmapped';
+
+      // Build project dropdown options
+      const options = ngmProjectsList.map(proj => {
+        const selected = mapping.ngm_project_id === proj.id ? 'selected' : '';
+        return `<option value="${proj.id}" ${selected}>${proj.name}</option>`;
+      }).join('');
+
+      return `
+        <div class="qbo-mapping-row" data-qbo-id="${mapping.qbo_customer_id}">
+          <div class="qbo-mapping-info">
+            <span class="qbo-mapping-name">${mapping.qbo_customer_name || 'Unknown'}</span>
+            <span class="qbo-mapping-id">${mapping.qbo_customer_id}</span>
+          </div>
+          <div class="qbo-mapping-arrow">→</div>
+          <div class="qbo-mapping-select">
+            <select class="qbo-project-select" data-qbo-id="${mapping.qbo_customer_id}">
+              <option value="">-- Select NGM Project --</option>
+              ${options}
+            </select>
+          </div>
+          <div class="qbo-mapping-status ${statusClass}">${statusText}</div>
+        </div>
+      `;
+    }).join('');
+
+    const unmappedCount = sorted.filter(m => !m.ngm_project_id).length;
+    const header = `
+      <div class="qbo-mapping-summary">
+        <span>${qboMappings.length} QBO customers</span>
+        <span class="qbo-mapping-unmapped-count">${unmappedCount} unmapped</span>
+      </div>
+    `;
+
+    document.getElementById('qboMappingContent').innerHTML = header + `<div class="qbo-mapping-list">${rows}</div>`;
+  }
+
+  async function saveQBOMappings() {
+    const apiBase = getApiBase();
+    const btn = document.getElementById('btnSaveQBOMappings');
+    const originalText = btn.innerHTML;
+
+    try {
+      btn.disabled = true;
+      btn.innerHTML = 'Saving...';
+
+      // Get all selects and their values
+      const selects = document.querySelectorAll('.qbo-project-select');
+      const updates = [];
+
+      selects.forEach(select => {
+        const qboId = select.dataset.qboId;
+        const ngmProjectId = select.value || null;
+
+        // Find original mapping
+        const original = qboMappings.find(m => m.qbo_customer_id === qboId);
+
+        // Only update if changed
+        if (original && original.ngm_project_id !== ngmProjectId) {
+          updates.push({ qbo_customer_id: qboId, ngm_project_id: ngmProjectId });
+        }
+      });
+
+      if (updates.length === 0) {
+        Toast.info('No Changes', 'No mappings were changed.');
+        return;
+      }
+
+      console.log('[QBO Mapping] Saving updates:', updates);
+
+      // Save each mapping
+      let saved = 0;
+      for (const update of updates) {
+        await apiJson(`${apiBase}/qbo/mapping/${update.qbo_customer_id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ngm_project_id: update.ngm_project_id })
+        });
+        saved++;
+      }
+
+      Toast.success('Mappings Saved', `Updated ${saved} mapping(s).`);
+
+      // Refresh the list
+      await openQBOMappingModal();
+
+      // Reload QBO expenses if a project is selected
+      if (selectedProjectId && currentDataSource === 'qbo') {
+        await loadQBOExpenses(selectedProjectId);
+      }
+
+    } catch (err) {
+      console.error('[QBO Mapping] Save error:', err);
+      Toast.error('Save Failed', err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
     }
   }
 

@@ -101,6 +101,108 @@
   let selectedExpenseIds = new Set(); // Set of expense IDs to delete
 
   // ================================
+  // PERFORMANCE: Lookup Maps (O(1) access)
+  // ================================
+  // Pre-computed maps for instant lookups instead of O(n) .find() calls
+  let lookupMaps = {
+    txnTypes: new Map(),      // TnxType_id -> { TnxType_id, TnxType_name }
+    projects: new Map(),      // project_id -> { project_id, project_name }
+    vendors: new Map(),       // id -> { id, vendor_name }
+    paymentMethods: new Map(), // id -> { id, payment_method_name }
+    accounts: new Map(),      // account_id -> { account_id, Name }
+  };
+
+  // Search debounce timer
+  let searchDebounceTimer = null;
+  const SEARCH_DEBOUNCE_MS = 250;
+
+  // ================================
+  // UTILITY: Debounce Function
+  // ================================
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+
+  // ================================
+  // PERFORMANCE: Build Lookup Maps
+  // ================================
+  function buildLookupMaps() {
+    console.log('[EXPENSES] Building lookup maps for O(1) access...');
+
+    // Clear existing maps
+    lookupMaps.txnTypes.clear();
+    lookupMaps.projects.clear();
+    lookupMaps.vendors.clear();
+    lookupMaps.paymentMethods.clear();
+    lookupMaps.accounts.clear();
+
+    // Build txn_types map
+    metaData.txn_types.forEach(t => {
+      lookupMaps.txnTypes.set(t.TnxType_id, t);
+    });
+
+    // Build projects map
+    metaData.projects.forEach(p => {
+      const id = p.project_id || p.id;
+      lookupMaps.projects.set(id, p);
+    });
+
+    // Build vendors map
+    metaData.vendors.forEach(v => {
+      lookupMaps.vendors.set(v.id, v);
+    });
+
+    // Build payment_methods map
+    metaData.payment_methods.forEach(p => {
+      lookupMaps.paymentMethods.set(p.id, p);
+    });
+
+    // Build accounts map
+    metaData.accounts.forEach(a => {
+      lookupMaps.accounts.set(a.account_id, a);
+    });
+
+    console.log('[EXPENSES] Lookup maps built:', {
+      txnTypes: lookupMaps.txnTypes.size,
+      projects: lookupMaps.projects.size,
+      vendors: lookupMaps.vendors.size,
+      paymentMethods: lookupMaps.paymentMethods.size,
+      accounts: lookupMaps.accounts.size,
+    });
+  }
+
+  // ================================
+  // PERFORMANCE: Fast Lookup (O(1))
+  // ================================
+  function lookupMeta(category, id) {
+    if (!id) return null;
+    const strId = String(id);
+
+    switch (category) {
+      case 'txn_types':
+        return lookupMaps.txnTypes.get(strId) || lookupMaps.txnTypes.get(id);
+      case 'projects':
+        return lookupMaps.projects.get(strId) || lookupMaps.projects.get(id);
+      case 'vendors':
+        return lookupMaps.vendors.get(strId) || lookupMaps.vendors.get(id);
+      case 'payment_methods':
+        return lookupMaps.paymentMethods.get(strId) || lookupMaps.paymentMethods.get(id);
+      case 'accounts':
+        return lookupMaps.accounts.get(strId) || lookupMaps.accounts.get(id);
+      default:
+        return null;
+    }
+  }
+
+  // ================================
   // DOM ELEMENTS
   // ================================
   const els = {};
@@ -353,14 +455,24 @@
   // ================================
   // CURRENCY FORMATTING HELPERS
   // ================================
+  // Single currency formatter instance (reused for performance)
+  const currencyFormatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+
+  /**
+   * Format a number as USD currency string
+   * @param {number|string} value - The value to format
+   * @returns {string} Formatted currency string (e.g., "$1,234.56") or empty string
+   */
   function formatCurrency(value) {
     if (value === null || value === undefined || value === '') return '';
     const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.-]/g, '')) : value;
     if (isNaN(num)) return '';
-    return num.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
+    return currencyFormatter.format(num);
   }
 
   function parseCurrency(formattedValue) {
@@ -408,6 +520,9 @@
 
       // Load bills metadata separately (from bills table)
       await loadBillsMetadata();
+
+      // PERFORMANCE: Build lookup maps for O(1) access
+      buildLookupMaps();
 
       // Populate project filter dropdown
       populateProjectFilter();
@@ -828,81 +943,125 @@
     }
   }
 
+  /**
+   * PERFORMANCE OPTIMIZED: Apply filters with single-pass field resolution
+   * Pre-computes all display values once per expense to avoid redundant lookups
+   */
   function applyFilters() {
-    filteredExpenses = expenses.filter(exp => {
-      // Global search filter (searches across all fields)
-      if (globalSearchTerm) {
-        const searchLower = globalSearchTerm.toLowerCase();
-        const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '';
-        const billId = exp.bill_id || '';
-        const description = exp.LineDescription || '';
-        const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || '';
-        const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '';
-        const payment = exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '';
-        const account = exp.account_name || findMetaName('accounts', exp.account_id, 'account_id', 'Name') || '';
-        const amount = exp.Amount ? String(exp.Amount) : '';
+    // Check if any filters are active (for early exit optimization)
+    const hasSearch = !!globalSearchTerm;
+    const hasDateFilter = columnFilters.date.length > 0;
+    const hasBillFilter = columnFilters.bill_id.length > 0;
+    const hasTypeFilter = columnFilters.type.length > 0;
+    const hasVendorFilter = columnFilters.vendor.length > 0;
+    const hasPaymentFilter = columnFilters.payment.length > 0;
+    const hasAccountFilter = columnFilters.account.length > 0;
+    const hasDescFilter = columnFilters.description.length > 0;
+    const hasAuthFilter = columnFilters.auth.length > 0;
 
+    const searchLower = hasSearch ? globalSearchTerm.toLowerCase() : '';
+
+    filteredExpenses = expenses.filter(exp => {
+      // PERFORMANCE: Compute display values ONCE per expense (lazy, only if needed)
+      let date, billId, description, type, vendor, payment, account, amount, authValue;
+
+      // Date - computed once
+      const getDate = () => {
+        if (date === undefined) {
+          date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
+        }
+        return date;
+      };
+
+      // Bill ID - computed once
+      const getBillId = () => {
+        if (billId === undefined) {
+          billId = exp.bill_id || '—';
+        }
+        return billId;
+      };
+
+      // Description - computed once
+      const getDescription = () => {
+        if (description === undefined) {
+          description = exp.LineDescription || '—';
+        }
+        return description;
+      };
+
+      // Type - computed once with O(1) lookup
+      const getType = () => {
+        if (type === undefined) {
+          type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || '—';
+        }
+        return type;
+      };
+
+      // Vendor - computed once with O(1) lookup
+      const getVendor = () => {
+        if (vendor === undefined) {
+          vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
+        }
+        return vendor;
+      };
+
+      // Payment - computed once with O(1) lookup
+      const getPayment = () => {
+        if (payment === undefined) {
+          payment = exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '—';
+        }
+        return payment;
+      };
+
+      // Account - computed once with O(1) lookup
+      const getAccount = () => {
+        if (account === undefined) {
+          account = exp.account_name || findMetaName('accounts', exp.account_id, 'account_id', 'Name') || '—';
+        }
+        return account;
+      };
+
+      // Amount - computed once
+      const getAmount = () => {
+        if (amount === undefined) {
+          amount = exp.Amount ? String(exp.Amount) : '';
+        }
+        return amount;
+      };
+
+      // Auth - computed once
+      const getAuth = () => {
+        if (authValue === undefined) {
+          const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
+          authValue = isAuthorized ? 'Authorized' : 'Pending';
+        }
+        return authValue;
+      };
+
+      // Global search filter
+      if (hasSearch) {
         const matchesSearch =
-          date.toLowerCase().includes(searchLower) ||
-          billId.toLowerCase().includes(searchLower) ||
-          description.toLowerCase().includes(searchLower) ||
-          type.toLowerCase().includes(searchLower) ||
-          vendor.toLowerCase().includes(searchLower) ||
-          payment.toLowerCase().includes(searchLower) ||
-          account.toLowerCase().includes(searchLower) ||
-          amount.includes(searchLower);
+          getDate().toLowerCase().includes(searchLower) ||
+          getBillId().toLowerCase().includes(searchLower) ||
+          getDescription().toLowerCase().includes(searchLower) ||
+          getType().toLowerCase().includes(searchLower) ||
+          getVendor().toLowerCase().includes(searchLower) ||
+          getPayment().toLowerCase().includes(searchLower) ||
+          getAccount().toLowerCase().includes(searchLower) ||
+          getAmount().includes(searchLower);
 
         if (!matchesSearch) return false;
       }
 
-      // Date filter
-      if (columnFilters.date.length > 0) {
-        const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
-        if (!columnFilters.date.includes(date)) return false;
-      }
-
-      // Bill ID filter
-      if (columnFilters.bill_id.length > 0) {
-        const billId = exp.bill_id || '—';
-        if (!columnFilters.bill_id.includes(billId)) return false;
-      }
-
-      // Type filter
-      if (columnFilters.type.length > 0) {
-        const type = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || '—';
-        if (!columnFilters.type.includes(type)) return false;
-      }
-
-      // Vendor filter
-      if (columnFilters.vendor.length > 0) {
-        const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
-        if (!columnFilters.vendor.includes(vendor)) return false;
-      }
-
-      // Payment filter
-      if (columnFilters.payment.length > 0) {
-        const payment = exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '—';
-        if (!columnFilters.payment.includes(payment)) return false;
-      }
-
-      // Account filter
-      if (columnFilters.account.length > 0) {
-        const account = exp.account_name || findMetaName('accounts', exp.account_id, 'account_id', 'Name') || '—';
-        if (!columnFilters.account.includes(account)) return false;
-      }
-
-      // Description filter
-      if (columnFilters.description.length > 0) {
-        const desc = exp.LineDescription || '—';
-        if (!columnFilters.description.includes(desc)) return false;
-      }
-
-      // Authorization filter
-      if (columnFilters.auth.length > 0) {
-        const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
-        const authValue = isAuthorized ? 'Authorized' : 'Pending';
-        if (!columnFilters.auth.includes(authValue)) return false;
-      }
+      // Column filters - only compute values if filter is active
+      if (hasDateFilter && !columnFilters.date.includes(getDate())) return false;
+      if (hasBillFilter && !columnFilters.bill_id.includes(getBillId())) return false;
+      if (hasTypeFilter && !columnFilters.type.includes(getType())) return false;
+      if (hasVendorFilter && !columnFilters.vendor.includes(getVendor())) return false;
+      if (hasPaymentFilter && !columnFilters.payment.includes(getPayment())) return false;
+      if (hasAccountFilter && !columnFilters.account.includes(getAccount())) return false;
+      if (hasDescFilter && !columnFilters.description.includes(getDescription())) return false;
+      if (hasAuthFilter && !columnFilters.auth.includes(getAuth())) return false;
 
       return true;
     });
@@ -931,43 +1090,61 @@
 
     const displayExpenses = filteredExpenses.length > 0 || Object.values(columnFilters).some(f => f) ? filteredExpenses : expenses;
 
-    const rows = displayExpenses.map((exp, index) => {
-      if (isEditMode) {
-        return renderEditableRow(exp, index);
-      } else {
-        return renderReadOnlyRow(exp, index);
-      }
-    }).join('');
+    // PERFORMANCE: Use requestAnimationFrame for large datasets to avoid blocking UI
+    const BATCH_SIZE = 100;
+    const isLargeDataset = displayExpenses.length > BATCH_SIZE;
 
-    // Calculate total
-    const total = displayExpenses.reduce((sum, exp) => {
-      const amount = parseFloat(exp.Amount) || 0;
-      return sum + amount;
-    }, 0);
+    if (isLargeDataset) {
+      // Show loading indicator for large datasets
+      els.expensesTableBody.innerHTML = `
+        <tr class="loading-row">
+          <td colspan="12" style="text-align: center; padding: 24px; color: #6b7280;">
+            Rendering ${displayExpenses.length} expenses...
+          </td>
+        </tr>
+      `;
+    }
 
-    // Calculate colspan: checkbox (hidden) + 7 base columns (Date, Bill#, Desc, Account, Type, Vendor, Payment)
-    const totalColspan = 8;
+    // Use requestAnimationFrame to defer heavy rendering
+    requestAnimationFrame(() => {
+      const rows = displayExpenses.map((exp, index) => {
+        if (isEditMode) {
+          return renderEditableRow(exp, index);
+        } else {
+          return renderReadOnlyRow(exp, index);
+        }
+      }).join('');
 
-    // Add total row with currency formatting
-    // Columns: Checkbox (hidden), Date, Bill#, Desc, Account, Type, Vendor, Payment, Amount, Receipt, Auth, Actions
-    const totalRow = `
-      <tr class="total-row">
-        <td class="col-checkbox" style="display: none;"></td>
-        <td colspan="${totalColspan - 1}" class="total-label">Total</td>
-        <td class="col-amount total-amount">${formatCurrency(total)}</td>
-        <td class="col-receipt"></td>
-        <td class="col-auth"></td>
-        <td class="col-actions"></td>
-      </tr>
-    `;
+      // Calculate total
+      const total = displayExpenses.reduce((sum, exp) => {
+        const amount = parseFloat(exp.Amount) || 0;
+        return sum + amount;
+      }, 0);
 
-    els.expensesTableBody.innerHTML = rows + totalRow;
+      // Calculate colspan: checkbox (hidden) + 7 base columns (Date, Bill#, Desc, Account, Type, Vendor, Payment)
+      const totalColspan = 8;
 
-    // Apply column visibility after rendering
-    applyColumnVisibility();
+      // Add total row with currency formatting
+      // Columns: Checkbox (hidden), Date, Bill#, Desc, Account, Type, Vendor, Payment, Amount, Receipt, Auth, Actions
+      const totalRow = `
+        <tr class="total-row">
+          <td class="col-checkbox" style="display: none;"></td>
+          <td colspan="${totalColspan - 1}" class="total-label">Total</td>
+          <td class="col-amount total-amount">${formatCurrency(total)}</td>
+          <td class="col-receipt"></td>
+          <td class="col-auth"></td>
+          <td class="col-actions"></td>
+        </tr>
+      `;
 
-    // Apply saved column widths to new rows
-    loadColumnWidths();
+      els.expensesTableBody.innerHTML = rows + totalRow;
+
+      // Apply column visibility after rendering
+      applyColumnVisibility();
+
+      // Apply saved column widths to new rows
+      loadColumnWidths();
+    });
   }
 
   function renderReadOnlyRow(exp, index) {
@@ -1152,19 +1329,24 @@
     `;
   }
 
+  /**
+   * PERFORMANCE OPTIMIZED: Find metadata name using O(1) lookup maps
+   * Falls back to O(n) search only if map lookup fails
+   */
   function findMetaName(category, value, valueKey, textKey) {
     if (!value) return null;
-    const item = metaData[category]?.find(i => String(i[valueKey]) === String(value));
-    return item ? item[textKey] : null;
-  }
 
-  function formatCurrency(amount) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
+    // Try O(1) lookup first
+    const item = lookupMeta(category, value);
+    if (item) {
+      return item[textKey] || null;
+    }
+
+    // Fallback to O(n) search for edge cases
+    const arr = metaData[category];
+    if (!arr) return null;
+    const found = arr.find(i => String(i[valueKey]) === String(value));
+    return found ? found[textKey] : null;
   }
 
   // ================================
@@ -4645,11 +4827,21 @@
       els.btnBillView.disabled = !selectedProjectId || expenses.length === 0;
     });
 
-    // Global search input
+    // Global search input - DEBOUNCED for performance
     els.searchInput?.addEventListener('input', (e) => {
-      globalSearchTerm = e.target.value.trim();
-      console.log('[EXPENSES] Global search:', globalSearchTerm);
-      renderExpensesTable();
+      const searchValue = e.target.value.trim();
+
+      // Clear existing debounce timer
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+      }
+
+      // Debounce the search to avoid excessive re-renders
+      searchDebounceTimer = setTimeout(() => {
+        globalSearchTerm = searchValue;
+        console.log('[EXPENSES] Global search (debounced):', globalSearchTerm);
+        renderExpensesTable();
+      }, SEARCH_DEBOUNCE_MS);
     });
 
     // Add Expense button
@@ -6282,7 +6474,7 @@
     const totalRow = `
       <tr class="table-total-row">
         <td colspan="${getVisibleColumnCount() - 1}" style="text-align: right; font-weight: 600;">Total:</td>
-        <td style="font-weight: 700; color: #22c55e;">$${formatCurrency(total)}</td>
+        <td style="font-weight: 700; color: #22c55e;">${formatCurrency(total)}</td>
         <td></td>
       </tr>
     `;
@@ -6605,7 +6797,7 @@
           <td>${exp.txn_date ? new Date(exp.txn_date).toLocaleDateString() : ''}</td>
           <td>${exp.description || exp.memo || ''}</td>
           <td>${exp.vendor_name || ''}</td>
-          <td style="text-align: right; font-weight: 600;">$${formatCurrency(exp.amount)}</td>
+          <td style="text-align: right; font-weight: 600;">${formatCurrency(exp.amount)}</td>
           <td>${statusBadge}</td>
           <td>${actionButton}</td>
         </tr>
@@ -6679,7 +6871,7 @@
           <td>${exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : ''}</td>
           <td>${exp.LineDescription || exp.description || ''}</td>
           <td>${exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || ''}</td>
-          <td style="text-align: right;">$${formatCurrency(exp.Amount || exp.amount)}</td>
+          <td style="text-align: right;">${formatCurrency(exp.Amount || exp.amount)}</td>
           <td>${statusBadge}</td>
         </tr>
       `;
@@ -6843,9 +7035,9 @@
 
     // Update panel elements
     document.getElementById('activeQBODescription').textContent = qbo.description || qbo.memo || 'QBO Invoice';
-    document.getElementById('activeQBOTotal').textContent = `$${formatCurrency(qboTotal)}`;
-    document.getElementById('activeMatchedAmount').textContent = `$${formatCurrency(matchedAmount)}`;
-    document.getElementById('activeRemainingAmount').textContent = `$${formatCurrency(Math.abs(remainingAmount))}`;
+    document.getElementById('activeQBOTotal').textContent = formatCurrency(qboTotal);
+    document.getElementById('activeMatchedAmount').textContent = formatCurrency(matchedAmount);
+    document.getElementById('activeRemainingAmount').textContent = formatCurrency(Math.abs(remainingAmount));
 
     // Update remaining amount box styling
     const remainingBox = document.querySelector('.reconcile-amount-remaining');
@@ -6867,7 +7059,7 @@
         listEl.innerHTML = selectedExpenses.map(exp => `
           <div class="selected-expense-chip" data-expense-id="${exp.id}">
             <span class="chip-description">${exp.description.substring(0, 30)}${exp.description.length > 30 ? '...' : ''}</span>
-            <span class="chip-amount">$${formatCurrency(exp.amount)}</span>
+            <span class="chip-amount">${formatCurrency(exp.amount)}</span>
             <button class="chip-remove" data-expense-id="${exp.id}" title="Remove">&times;</button>
           </div>
         `).join('');
@@ -6941,17 +7133,17 @@
     const qbo = reconciliationData.qboExpenses.find(e => e.id === qboId);
 
     let details = `QBO Invoice: ${qbo?.description || qbo?.memo || 'Invoice'}\n`;
-    details += `Total: $${formatCurrency(qbo?.amount || 0)}\n\n`;
+    details += `Total: ${formatCurrency(qbo?.amount || 0)}\n\n`;
     details += `Matched Manual Expenses (${match.manual_expense_ids.length}):\n`;
 
     match.manual_expense_ids.forEach(id => {
       const exp = reconciliationData.manualExpenses.find(e => (e.expense_id || e.id) === id);
       if (exp) {
-        details += `  - ${exp.LineDescription || exp.description || 'No description'}: $${formatCurrency(exp.Amount || exp.amount)}\n`;
+        details += `  - ${exp.LineDescription || exp.description || 'No description'}: ${formatCurrency(exp.Amount || exp.amount)}\n`;
       }
     });
 
-    details += `\nMatched Amount: $${formatCurrency(match.matched_amount)}`;
+    details += `\nMatched Amount: ${formatCurrency(match.matched_amount)}`;
 
     if (window.Toast) {
       Toast.info('Match Details', `QBO Invoice matched with ${match.manual_expense_ids.length} expense(s)`, { details });

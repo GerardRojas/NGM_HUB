@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#8b5cf6" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Arturito" />
+  <meta name="format-detection" content="telephone=no" />
   <title>Arturito</title>
   <link rel="icon" type="image/png" href="assets/img/arturito_icon.png" />
   <link rel="manifest" href="manifest-arturito.json" />
@@ -166,13 +167,18 @@
           </div>
 
           <!-- Input area -->
-          <div class="arturito-input-area">
+          <div class="arturito-input-area" id="inputArea">
             <div class="arturito-input-container">
               <textarea
                 id="chatInput"
                 class="arturito-input"
                 placeholder="Message Arturito..."
                 rows="1"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="sentences"
+                spellcheck="false"
+                data-form-type="other"
               ></textarea>
               <button type="button" class="arturito-btn-send" id="btnSend" title="Send" disabled>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -231,7 +237,8 @@
       var chatInput = document.getElementById('chatInput');
       var messagesContainer = document.getElementById('arturitoMessages');
       var mainArea = document.querySelector('.page-arturito .main-area');
-      var inputArea = document.querySelector('.arturito-input-area');
+      var inputArea = document.getElementById('inputArea');
+      var chatCard = document.querySelector('.arturito-chat-card');
 
       if (!chatInput) return;
 
@@ -242,6 +249,7 @@
 
         function handleViewportResize() {
           var viewportHeight = window.visualViewport.height;
+          var viewportTop = window.visualViewport.offsetTop;
           var heightDiff = initialHeight - viewportHeight;
 
           // Keyboard is likely visible if height decreased significantly
@@ -249,30 +257,58 @@
             if (!keyboardVisible) {
               keyboardVisible = true;
               document.body.classList.add('keyboard-open');
+              document.documentElement.classList.add('keyboard-open');
             }
 
-            // Adjust main area height to match visual viewport
-            if (mainArea) {
-              mainArea.style.height = viewportHeight + 'px';
-            }
-
-            // Scroll input into view and messages to bottom
-            setTimeout(function() {
-              if (inputArea) {
-                inputArea.scrollIntoView({ block: 'end', behavior: 'smooth' });
+            // On mobile, adjust the entire layout
+            if (window.innerWidth <= 768) {
+              // Fix the chat card to viewport height
+              if (chatCard) {
+                chatCard.style.height = viewportHeight + 'px';
+                chatCard.style.maxHeight = viewportHeight + 'px';
               }
+
+              // Ensure messages container can scroll properly
+              if (messagesContainer) {
+                messagesContainer.style.flex = '1';
+                messagesContainer.style.minHeight = '0';
+                messagesContainer.style.overflowY = 'auto';
+              }
+
+              // Keep input area at bottom
+              if (inputArea) {
+                inputArea.style.position = 'relative';
+                inputArea.style.zIndex = '100';
+              }
+            }
+
+            // Scroll to bottom after keyboard is open
+            requestAnimationFrame(function() {
               if (messagesContainer) {
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
               }
-            }, 50);
+            });
 
           } else if (keyboardVisible) {
             keyboardVisible = false;
             document.body.classList.remove('keyboard-open');
+            document.documentElement.classList.remove('keyboard-open');
 
-            // Reset main area height
-            if (mainArea) {
-              mainArea.style.height = '';
+            // Reset styles on mobile
+            if (window.innerWidth <= 768) {
+              if (chatCard) {
+                chatCard.style.height = '';
+                chatCard.style.maxHeight = '';
+              }
+              if (messagesContainer) {
+                messagesContainer.style.flex = '';
+                messagesContainer.style.minHeight = '';
+                messagesContainer.style.overflowY = '';
+              }
+              if (inputArea) {
+                inputArea.style.position = '';
+                inputArea.style.zIndex = '';
+              }
             }
           }
         }
@@ -284,28 +320,45 @@
         window.addEventListener('orientationchange', function() {
           setTimeout(function() {
             initialHeight = window.visualViewport.height;
+            keyboardVisible = false;
+            document.body.classList.remove('keyboard-open');
+            document.documentElement.classList.remove('keyboard-open');
+
+            // Reset all styles
+            if (chatCard) {
+              chatCard.style.height = '';
+              chatCard.style.maxHeight = '';
+            }
           }, 500);
         });
       }
 
-      // Focus handler for input
-      chatInput.addEventListener('focus', function() {
-        // Small delay to let keyboard animate in
+      // Focus handler - scroll to bottom when focusing input
+      chatInput.addEventListener('focus', function(e) {
+        // Prevent default scroll behavior
+        e.preventDefault();
+
+        // Let the keyboard animate in first
         setTimeout(function() {
           if (messagesContainer) {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
           }
-          // Scroll input into view
-          if (inputArea) {
-            inputArea.scrollIntoView({ block: 'end', behavior: 'smooth' });
-          }
-        }, 350);
+        }, 300);
+      }, { passive: false });
+
+      // Blur handler - ensure input stays visible
+      chatInput.addEventListener('blur', function() {
+        setTimeout(function() {
+          window.scrollTo(0, 0);
+        }, 100);
       });
 
-      // Prevent body scroll when input is focused
-      chatInput.addEventListener('touchmove', function(e) {
-        e.stopPropagation();
-      }, { passive: true });
+      // Prevent body scroll when touching messages area
+      if (messagesContainer) {
+        messagesContainer.addEventListener('touchmove', function(e) {
+          e.stopPropagation();
+        }, { passive: true });
+      }
     }
   </script>
 

@@ -7,12 +7,19 @@ document.addEventListener("DOMContentLoaded", () => {
   // ========================================
   // AUTO-REDIRECT IF ALREADY LOGGED IN
   // ========================================
+  // NOTE: This is a backup check. The inline script in login.html should
+  // handle most redirects, but this catches edge cases (e.g., direct navigation)
   const existingToken = localStorage.getItem("ngmToken");
-  if (existingToken) {
+  const existingUser = localStorage.getItem("ngmUser");
+
+  if (existingToken && existingUser) {
     // Check if token is still valid (not expired)
     try {
       const payload = JSON.parse(atob(existingToken.split(".")[1]));
       const isExpired = payload.exp && payload.exp * 1000 < Date.now();
+
+      // Also verify user data is valid JSON
+      JSON.parse(existingUser);
 
       if (!isExpired) {
         // Token is valid - redirect directly to target page
@@ -25,15 +32,19 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         // Token expired - clean it up
         console.log("[Login] Session expired, please log in again");
-        localStorage.removeItem("ngmToken");
-        localStorage.removeItem("ngmUser");
+        clearAuthData();
       }
     } catch (e) {
-      // Invalid token format - clean it up
-      console.warn("[Login] Invalid token format:", e);
-      localStorage.removeItem("ngmToken");
-      localStorage.removeItem("ngmUser");
+      // Invalid token or user data format - clean it up
+      console.warn("[Login] Invalid auth data format:", e);
+      clearAuthData();
     }
+  }
+
+  function clearAuthData() {
+    localStorage.removeItem("ngmToken");
+    localStorage.removeItem("ngmUser");
+    localStorage.removeItem("sidebar_permissions");
   }
 
   const form = document.getElementById("loginForm");
@@ -99,12 +110,17 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies for session handling
         body: JSON.stringify({ username, password }),
       });
 
       if (!res.ok) {
         if (res.status === 401) {
           showMessage("Invalid username or password.", "error");
+        } else if (res.status === 429) {
+          showMessage("Too many login attempts. Please try again later.", "error");
+        } else if (res.status >= 500) {
+          showMessage("Server error. Please try again later.", "error");
         } else {
           showMessage("Login failed. Please try again later.", "error");
         }
@@ -113,22 +129,35 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const data = await res.json();
 
-      localStorage.setItem("ngmToken", data.access_token);
-
-      // Guarda usuario en localStorage para que el dashboard lo lea
-      try {
-        localStorage.setItem("ngmUser", JSON.stringify(data.user));
-      } catch (e) {
-        console.warn("Unable to write user to localStorage:", e);
+      // Validate response data
+      if (!data.access_token || !data.user) {
+        console.error("[Login] Invalid response from server:", data);
+        showMessage("Login failed: Invalid server response.", "error");
+        return;
       }
 
-      // Opcional: pequeño mensaje antes de redirigir
+      // Store authentication data
+      try {
+        localStorage.setItem("ngmToken", data.access_token);
+        localStorage.setItem("ngmUser", JSON.stringify(data.user));
+
+        // Log successful login
+        console.log("[Login] Authentication successful for user:", data.user.user_name);
+      } catch (e) {
+        console.error("[Login] Failed to save auth data to localStorage:", e);
+        showMessage("Login error: Unable to save session. Check browser settings.", "error");
+        return;
+      }
+
+      // Show success message
       showMessage("Login successful. Redirecting...", "info");
 
-      // Redirigir a dashboard o a donde venía el usuario
-      const redirectTo = sessionStorage.getItem("loginRedirect") || "dashboard.html";
-      sessionStorage.removeItem("loginRedirect");
-      window.location.href = redirectTo;
+      // Small delay to show success message, then redirect
+      setTimeout(() => {
+        const redirectTo = sessionStorage.getItem("loginRedirect") || "dashboard.html";
+        sessionStorage.removeItem("loginRedirect");
+        window.location.replace(redirectTo); // Use replace to avoid back button issues
+      }, 300);
     } catch (err) {
       console.error("Error in login:", err);
       showMessage("Network error. Check your connection or contact support.", "error");

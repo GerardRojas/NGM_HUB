@@ -741,13 +741,18 @@
     });
     clickedElement?.classList.add("active");
 
-    // Build channel identifier
-    const channel = {
-      type: channelType,
-      id: channelId,
-      projectId: projectId,
-      name: channelName,
-    };
+    // Find the full channel object from state.channels (includes members and all data)
+    let channel = state.channels.find((c) => c.id === channelId && c.type === channelType);
+
+    // If not found in state.channels, create a minimal channel object as fallback
+    if (!channel) {
+      channel = {
+        type: channelType,
+        id: channelId,
+        projectId: projectId,
+        name: channelName,
+      };
+    }
 
     state.currentChannel = channel;
 

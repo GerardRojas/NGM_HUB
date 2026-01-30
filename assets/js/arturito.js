@@ -508,11 +508,20 @@
 
   async function loadCurrentUser() {
     try {
+      // First try to get user from localStorage (set by login.js)
+      const userStr = localStorage.getItem('ngmUser');
+      if (userStr) {
+        state.currentUser = JSON.parse(userStr);
+        console.log("[Arturito] Current user from localStorage:", state.currentUser.user_name);
+        return;
+      }
+
+      // Fallback to API call if not in localStorage
       const res = await fetch(`${API_BASE}/auth/me`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to load user");
       const data = await res.json();
       state.currentUser = data.user || data;
-      console.log("[Arturito] Current user:", state.currentUser.user_name);
+      console.log("[Arturito] Current user from API:", state.currentUser.user_name);
     } catch (err) {
       console.warn("[Arturito] Failed to load current user:", err);
       state.currentUser = { user_id: "dev-uuid", user_name: "Usuario", email: "dev@ngm.com" };

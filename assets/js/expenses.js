@@ -69,6 +69,12 @@
   // Bill View State
   let isBillViewMode = false;
 
+  // Duplicate Detection State (Enhanced System)
+  let duplicateClusters = [];        // Array of duplicate clusters (groups of similar expenses)
+  let currentClusterIndex = 0;       // Currently viewing cluster index
+  let dismissedDuplicates = new Set(); // Set of "expense_id1:expense_id2" pairs dismissed as not duplicates
+  let duplicateBillWarnings = new Map(); // Map of expense_id -> duplicate info (legacy compatibility)
+
   // QBO Integration State
   let currentDataSource = 'manual';  // 'manual' or 'qbo'
   let qboExpenses = [];              // QBO expenses for current project
@@ -701,7 +707,7 @@
       console.log('[EXPENSES] First expense:', expenses[0]);
 
       // Detect duplicate bill numbers with different vendors
-      detectDuplicateBillNumbers();
+      await detectDuplicateBillNumbers();
 
       if (expenses.length === 0) {
         showEmptyState(projectId === 'all' ? 'No expenses found' : 'No expenses found for this project');
@@ -717,13 +723,141 @@
   }
 
   // ================================
-  // DUPLICATE BILL DETECTION (Improved)
+  // DUPLICATE BILL DETECTION (Enhanced System)
   // ================================
-  // Stores expense_id -> { type, details, relatedExpenses } for confirmed/likely duplicates
-  let duplicateBillWarnings = new Map();
+
+  /**
+   * Normalizes a bill ID for comparison
+   * Removes special characters, converts to uppercase, trims whitespace
+   * @param {string} billId - Raw bill ID
+   * @returns {string|null} - Normalized bill ID or null
+   */
+  function normalizeBillId(billId) {
+    if (!billId) return null;
+    return billId
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, ''); // Remove all non-alphanumeric chars
+  }
+
+  /**
+   * Calculates a dynamic threshold for duplicate detection based on amount
+   * Larger amounts have tighter tolerance, smaller amounts more lenient
+   * @param {number} amount - Transaction amount
+   * @returns {number} - Percentage threshold (0-5)
+   */
+  function getDuplicateThreshold(amount) {
+    if (amount >= 10000) return 0.5;  // 0.5% for large amounts ($10k+)
+    if (amount >= 1000) return 1;     // 1% for medium amounts ($1k-$10k)
+    if (amount >= 100) return 2;      // 2% for small amounts ($100-$1k)
+    return 5;                          // 5% for very small amounts (<$100)
+  }
+
+  /**
+   * Generates a unique pair key for dismissal tracking
+   * @param {string} id1 - First expense ID
+   * @param {string} id2 - Second expense ID
+   * @returns {string} - Sorted pair key
+   */
+  function getDuplicatePairKey(id1, id2) {
+    return [id1, id2].sort().join(':');
+  }
+
+  /**
+   * Checks if a pair has been dismissed as "not duplicate"
+   * @param {string} id1 - First expense ID
+   * @param {string} id2 - Second expense ID
+   * @returns {boolean} - True if dismissed
+   */
+  function isPairDismissed(id1, id2) {
+    return dismissedDuplicates.has(getDuplicatePairKey(id1, id2));
+  }
+
+  /**
+   * Loads dismissed duplicate pairs from backend API
+   */
+  async function loadDismissedDuplicates() {
+    try {
+      if (!currentUser || !currentUser.user_id) {
+        console.warn('[DUPLICATES] No user logged in, cannot load dismissed duplicates');
+        dismissedDuplicates = new Set();
+        return;
+      }
+
+      const response = await fetch(`${API_BASE}/expenses/dismissed-duplicates?user_id=${currentUser.user_id}`, {
+        credentials: 'include',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      const dismissals = result.data || [];
+
+      // Build Set of pair keys from API data
+      dismissedDuplicates = new Set();
+      dismissals.forEach(d => {
+        const pairKey = getDuplicatePairKey(d.expense_id_1, d.expense_id_2);
+        dismissedDuplicates.add(pairKey);
+      });
+
+      console.log(`[DUPLICATES] Loaded ${dismissedDuplicates.size} dismissed pairs from backend`);
+    } catch (e) {
+      console.warn('[DUPLICATES] Error loading dismissed duplicates:', e);
+      dismissedDuplicates = new Set();
+    }
+  }
+
+  /**
+   * Saves a dismissed duplicate pair to backend API
+   * @param {string} expenseId1 - First expense ID
+   * @param {string} expenseId2 - Second expense ID
+   * @returns {Promise<boolean>} - Success status
+   */
+  async function saveDismissedDuplicatePair(expenseId1, expenseId2) {
+    try {
+      if (!currentUser || !currentUser.user_id) {
+        console.warn('[DUPLICATES] No user logged in, cannot save dismissal');
+        return false;
+      }
+
+      const response = await fetch(`${API_BASE}/expenses/dismissed-duplicates`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({
+          user_id: currentUser.user_id,
+          expense_id_1: expenseId1,
+          expense_id_2: expenseId2,
+          reason: 'not_duplicate'
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.detail || `HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log(`[DUPLICATES] Saved dismissal to backend:`, result);
+      return true;
+    } catch (e) {
+      console.error('[DUPLICATES] Error saving dismissal:', e);
+      if (window.Toast) {
+        Toast.error('Error', 'Failed to save dismissal');
+      }
+      return false;
+    }
+  }
 
   /**
    * Detects expenses that are almost certainly duplicates.
+   * ENHANCED VERSION with normalization, clustering, and smart thresholds
    *
    * Criteria for "almost certain" duplicate:
    * 1. EXACT: Same vendor + same bill_id + same amount + same date
@@ -734,116 +868,219 @@
    * - Same bill_id but different vendors (could be coincidence - different vendors can have same invoice #)
    * - Same vendor + same bill_id but different amounts (could be intentional line items)
    */
-  function detectDuplicateBillNumbers() {
+  async function detectDuplicateBillNumbers() {
+    console.log('[DUPLICATES] Starting enhanced duplicate detection...');
+
     duplicateBillWarnings.clear();
+    duplicateClusters = [];
 
     // Skip if no expenses
-    if (!expenses || expenses.length < 2) return;
-
-    // Build lookup structures
-    const duplicates = [];
-
-    // Compare each expense with others
-    for (let i = 0; i < expenses.length; i++) {
-      const exp1 = expenses[i];
-      const exp1Id = exp1.expense_id || exp1.id;
-      const exp1VendorId = exp1.vendor_id;
-      const exp1BillId = exp1.bill_id?.trim();
-      const exp1Amount = parseFloat(exp1.Amount) || 0;
-      const exp1Date = exp1.TxnDate?.split('T')[0]; // Normalize date
-
-      // Skip if no vendor (can't determine duplicate without vendor)
-      if (!exp1VendorId) continue;
-
-      for (let j = i + 1; j < expenses.length; j++) {
-        const exp2 = expenses[j];
-        const exp2Id = exp2.expense_id || exp2.id;
-        const exp2VendorId = exp2.vendor_id;
-        const exp2BillId = exp2.bill_id?.trim();
-        const exp2Amount = parseFloat(exp2.Amount) || 0;
-        const exp2Date = exp2.TxnDate?.split('T')[0];
-
-        // Must have same vendor
-        if (exp1VendorId !== exp2VendorId) continue;
-
-        // Check for different duplicate scenarios
-        const sameBillId = exp1BillId && exp2BillId && exp1BillId === exp2BillId;
-        const sameAmount = exp1Amount > 0 && exp2Amount > 0 && Math.abs(exp1Amount - exp2Amount) < 0.01;
-        const sameDate = exp1Date && exp2Date && exp1Date === exp2Date;
-
-        let duplicateType = null;
-        let confidence = null;
-
-        // Scenario 1: EXACT duplicate - same vendor, bill, amount, date
-        if (sameBillId && sameAmount && sameDate) {
-          duplicateType = 'exact';
-          confidence = 'very_high';
-        }
-        // Scenario 2: STRONG duplicate - same vendor, bill, amount (different dates)
-        else if (sameBillId && sameAmount && !sameDate) {
-          duplicateType = 'strong';
-          confidence = 'high';
-        }
-        // Scenario 3: LIKELY duplicate - same vendor, amount, date (no bill_id match needed)
-        else if (sameAmount && sameDate && exp1Amount >= 50) {
-          // Only flag if amount is significant ($50+) to avoid false positives on small amounts
-          duplicateType = 'likely';
-          confidence = 'medium_high';
-        }
-
-        if (duplicateType) {
-          const vendorName = exp1.vendor_name || findMetaName('vendors', exp1VendorId, 'id', 'vendor_name') || 'Unknown';
-
-          duplicates.push({
-            type: duplicateType,
-            confidence,
-            expense1Id: exp1Id,
-            expense2Id: exp2Id,
-            vendorId: exp1VendorId,
-            vendorName,
-            billId: exp1BillId || exp2BillId || null,
-            amount: exp1Amount,
-            date1: exp1Date,
-            date2: exp2Date
-          });
-
-          // Mark both expenses in the warnings map
-          if (!duplicateBillWarnings.has(exp1Id)) {
-            duplicateBillWarnings.set(exp1Id, { type: duplicateType, confidence, relatedTo: exp2Id, vendorName, billId: exp1BillId || exp2BillId, amount: exp1Amount });
-          }
-          if (!duplicateBillWarnings.has(exp2Id)) {
-            duplicateBillWarnings.set(exp2Id, { type: duplicateType, confidence, relatedTo: exp1Id, vendorName, billId: exp1BillId || exp2BillId, amount: exp1Amount });
-          }
-
-          console.warn(`[EXPENSES] Duplicate detected (${duplicateType}): Vendor "${vendorName}", Amount $${exp1Amount.toFixed(2)}${exp1BillId ? `, Bill #${exp1BillId}` : ''}`);
-        }
-      }
+    if (!expenses || expenses.length < 2) {
+      console.log('[DUPLICATES] Not enough expenses to check');
+      return;
     }
 
-    // Show toast if duplicates found
-    if (duplicates.length > 0) {
-      const exactCount = duplicates.filter(d => d.type === 'exact').length;
-      const strongCount = duplicates.filter(d => d.type === 'strong').length;
-      const likelyCount = duplicates.filter(d => d.type === 'likely').length;
+    // Load dismissed pairs from backend
+    await loadDismissedDuplicates();
 
-      let message = '';
-      if (exactCount > 0) message += `${exactCount} exact duplicate${exactCount > 1 ? 's' : ''}`;
-      if (strongCount > 0) message += `${message ? ', ' : ''}${strongCount} strong match${strongCount > 1 ? 'es' : ''}`;
-      if (likelyCount > 0) message += `${message ? ', ' : ''}${likelyCount} likely duplicate${likelyCount > 1 ? 's' : ''}`;
+    // OPTIMIZATION: Group expenses by vendor first (reduces comparisons from O(n²) to O(n))
+    const byVendor = new Map();
+    expenses.forEach(exp => {
+      const vendorId = exp.vendor_id;
+      if (!vendorId) return; // Skip expenses without vendor
 
-      // Build details
-      const details = duplicates.slice(0, 5).map(d => {
-        const typeLabel = d.type === 'exact' ? '🔴 EXACT' : d.type === 'strong' ? '🟠 STRONG' : '🟡 LIKELY';
-        return `${typeLabel}: ${d.vendorName} - $${d.amount.toFixed(2)}${d.billId ? ` (Bill #${d.billId})` : ''}`;
-      }).join('\n');
-
-      if (window.Toast) {
-        Toast.warning(
-          'Possible Duplicate Bills Detected',
-          `Found ${message}. Review highlighted rows.`,
-          { details, duration: 10000 }
-        );
+      if (!byVendor.has(vendorId)) {
+        byVendor.set(vendorId, []);
       }
+      byVendor.get(vendorId).push(exp);
+    });
+
+    console.log(`[DUPLICATES] Grouped ${expenses.length} expenses into ${byVendor.size} vendor groups`);
+
+    const duplicatePairs = [];
+
+    // Only compare expenses from SAME vendor
+    byVendor.forEach((vendorExpenses, vendorId) => {
+      if (vendorExpenses.length < 2) return; // Skip if vendor has only 1 expense
+
+      for (let i = 0; i < vendorExpenses.length; i++) {
+        const exp1 = vendorExpenses[i];
+        const exp1Id = exp1.expense_id || exp1.id;
+        const exp1BillId = normalizeBillId(exp1.bill_id);
+        const exp1Amount = parseFloat(exp1.Amount) || 0;
+        const exp1Date = exp1.TxnDate?.split('T')[0];
+
+        for (let j = i + 1; j < vendorExpenses.length; j++) {
+          const exp2 = vendorExpenses[j];
+          const exp2Id = exp2.expense_id || exp2.id;
+          const exp2BillId = normalizeBillId(exp2.bill_id);
+          const exp2Amount = parseFloat(exp2.Amount) || 0;
+          const exp2Date = exp2.TxnDate?.split('T')[0];
+
+          // Skip if this pair was already dismissed
+          if (isPairDismissed(exp1Id, exp2Id)) {
+            console.log(`[DUPLICATES] Skipping dismissed pair: ${exp1Id} <-> ${exp2Id}`);
+            continue;
+          }
+
+          // IMPROVED: Use normalized Bill IDs
+          const sameBillId = exp1BillId && exp2BillId && exp1BillId === exp2BillId;
+
+          // IMPROVED: Use dynamic threshold based on amount
+          const threshold = getDuplicateThreshold(exp1Amount);
+          const amountDiff = Math.abs(exp1Amount - exp2Amount);
+          const avgAmount = (exp1Amount + exp2Amount) / 2;
+          const diffPercent = avgAmount > 0 ? (amountDiff / avgAmount) * 100 : 0;
+          const sameAmount = exp1Amount > 0 && exp2Amount > 0 && diffPercent <= threshold;
+
+          const sameDate = exp1Date && exp2Date && exp1Date === exp2Date;
+
+          let duplicateType = null;
+          let confidence = null;
+          let score = 0;
+
+          // Scenario 1: EXACT duplicate - same vendor, bill, amount, date
+          if (sameBillId && sameAmount && sameDate) {
+            duplicateType = 'exact';
+            confidence = 'very_high';
+            score = 100;
+          }
+          // Scenario 2: STRONG duplicate - same vendor, bill, amount (different dates)
+          else if (sameBillId && sameAmount) {
+            duplicateType = 'strong';
+            confidence = 'high';
+            score = 85;
+          }
+          // Scenario 3: LIKELY duplicate - same vendor, amount, date (no bill_id required)
+          else if (sameAmount && sameDate && exp1Amount >= 50) {
+            duplicateType = 'likely';
+            confidence = 'medium_high';
+            score = 70;
+          }
+
+          if (duplicateType) {
+            const vendorName = exp1.vendor_name || findMetaName('vendors', vendorId, 'id', 'vendor_name') || 'Unknown';
+
+            duplicatePairs.push({
+              type: duplicateType,
+              confidence,
+              score,
+              expense1Id: exp1Id,
+              expense2Id: exp2Id,
+              expense1: exp1,
+              expense2: exp2,
+              vendorId,
+              vendorName,
+              billId: exp1.bill_id || exp2.bill_id || null,
+              amount: exp1Amount,
+              date1: exp1Date,
+              date2: exp2Date
+            });
+
+            console.log(`[DUPLICATES] ${duplicateType.toUpperCase()}: ${vendorName} - $${exp1Amount.toFixed(2)} (${exp1Date} vs ${exp2Date})`);
+          }
+        }
+      }
+    });
+
+    console.log(`[DUPLICATES] Found ${duplicatePairs.length} duplicate pairs`);
+
+    if (duplicatePairs.length === 0) {
+      console.log('[DUPLICATES] No duplicates found');
+      return;
+    }
+
+    // BUILD CLUSTERS: Group related duplicates together
+    // If expense A duplicates B, and B duplicates C, they form a cluster [A, B, C]
+    const expenseToCluster = new Map();
+    let clusterIdCounter = 0;
+
+    duplicatePairs.forEach(pair => {
+      const { expense1Id, expense2Id } = pair;
+
+      let cluster1 = expenseToCluster.get(expense1Id);
+      let cluster2 = expenseToCluster.get(expense2Id);
+
+      if (!cluster1 && !cluster2) {
+        // Neither expense in a cluster yet - create new cluster
+        const newClusterId = clusterIdCounter++;
+        expenseToCluster.set(expense1Id, newClusterId);
+        expenseToCluster.set(expense2Id, newClusterId);
+      } else if (cluster1 && !cluster2) {
+        // exp1 already in a cluster, add exp2 to it
+        expenseToCluster.set(expense2Id, cluster1);
+      } else if (!cluster1 && cluster2) {
+        // exp2 already in a cluster, add exp1 to it
+        expenseToCluster.set(expense1Id, cluster2);
+      } else if (cluster1 !== cluster2) {
+        // Both in different clusters - merge clusters
+        const mergeFrom = cluster2;
+        const mergeTo = cluster1;
+        expenseToCluster.forEach((clusterId, expId) => {
+          if (clusterId === mergeFrom) {
+            expenseToCluster.set(expId, mergeTo);
+          }
+        });
+      }
+    });
+
+    // Group expenses by cluster ID
+    const clusterMap = new Map();
+    expenseToCluster.forEach((clusterId, expenseId) => {
+      if (!clusterMap.has(clusterId)) {
+        clusterMap.set(clusterId, []);
+      }
+      const expense = expenses.find(e => (e.expense_id || e.id) === expenseId);
+      if (expense) {
+        clusterMap.set(clusterId, [...clusterMap.get(clusterId), expense]);
+      }
+    });
+
+    // Convert clusters to array format
+    duplicateClusters = Array.from(clusterMap.values()).map(expenseList => {
+      // Get the first pair's metadata for this cluster
+      const firstExpId = expenseList[0].expense_id || expenseList[0].id;
+      const pairWithThis = duplicatePairs.find(p =>
+        p.expense1Id === firstExpId || p.expense2Id === firstExpId
+      );
+
+      return {
+        expenses: expenseList,
+        type: pairWithThis?.type || 'likely',
+        confidence: pairWithThis?.confidence || 'medium',
+        vendorName: pairWithThis?.vendorName || 'Unknown',
+        amount: pairWithThis?.amount || 0,
+        billId: pairWithThis?.billId
+      };
+    });
+
+    // Sort clusters by severity (exact first, then strong, then likely)
+    const typePriority = { exact: 3, strong: 2, likely: 1 };
+    duplicateClusters.sort((a, b) => {
+      return (typePriority[b.type] || 0) - (typePriority[a.type] || 0);
+    });
+
+    console.log(`[DUPLICATES] Created ${duplicateClusters.length} clusters`);
+
+    // Populate legacy duplicateBillWarnings map for backwards compatibility
+    duplicateClusters.forEach(cluster => {
+      cluster.expenses.forEach(exp => {
+        const expId = exp.expense_id || exp.id;
+        duplicateBillWarnings.set(expId, {
+          type: cluster.type,
+          confidence: cluster.confidence,
+          vendorName: cluster.vendorName,
+          billId: cluster.billId,
+          amount: cluster.amount,
+          clusterSize: cluster.expenses.length
+        });
+      });
+    });
+
+    // Show enhanced notification
+    if (duplicateClusters.length > 0) {
+      currentClusterIndex = 0; // Reset to first cluster
+      showDuplicateReviewPanel(); // Show the new UI panel
     }
   }
 
@@ -904,8 +1141,315 @@
     return null;
   }
 
+  // ================================
+  // DUPLICATE REVIEW UI
+  // ================================
+
+  /**
+   * Shows the duplicate review panel with navigation
+   */
+  function showDuplicateReviewPanel() {
+    if (duplicateClusters.length === 0) {
+      console.log('[DUPLICATES] No clusters to show');
+      return;
+    }
+
+    // Create panel if it doesn't exist
+    let panel = document.getElementById('duplicateReviewPanel');
+    if (!panel) {
+      panel = createDuplicateReviewPanel();
+    }
+
+    panel.style.display = 'block';
+    updateDuplicateReviewPanel();
+    highlightCurrentCluster();
+  }
+
+  /**
+   * Creates the duplicate review panel DOM element
+   */
+  function createDuplicateReviewPanel() {
+    const panel = document.createElement('div');
+    panel.id = 'duplicateReviewPanel';
+    panel.className = 'duplicate-review-panel';
+    panel.innerHTML = `
+      <div class="duplicate-panel-header">
+        <h3 class="duplicate-panel-title">🔍 Review Duplicates</h3>
+        <button type="button" class="duplicate-panel-close" onclick="hideDuplicateReviewPanel()">×</button>
+      </div>
+      <div class="duplicate-panel-body">
+        <div class="duplicate-panel-counter">
+          <span id="duplicateCurrentCluster">1</span> of <span id="duplicateTotalClusters">0</span>
+        </div>
+        <div class="duplicate-panel-info" id="duplicatePanelInfo">
+          <!-- Cluster info populated here -->
+        </div>
+        <div class="duplicate-panel-expenses" id="duplicatePanelExpenses">
+          <!-- Expense cards populated here -->
+        </div>
+      </div>
+      <div class="duplicate-panel-actions">
+        <button type="button" class="btn-duplicate-nav" id="btnPrevCluster" onclick="prevDuplicateCluster()">
+          ← Previous
+        </button>
+        <button type="button" class="btn-duplicate-dismiss" onclick="dismissCurrentCluster()">
+          Not a Duplicate
+        </button>
+        <button type="button" class="btn-duplicate-nav" id="btnNextCluster" onclick="nextDuplicateCluster()">
+          Next →
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(panel);
+    return panel;
+  }
+
+  /**
+   * Updates the duplicate review panel with current cluster data
+   */
+  function updateDuplicateReviewPanel() {
+    const cluster = duplicateClusters[currentClusterIndex];
+    if (!cluster) return;
+
+    // Update counter
+    document.getElementById('duplicateCurrentCluster').textContent = currentClusterIndex + 1;
+    document.getElementById('duplicateTotalClusters').textContent = duplicateClusters.length;
+
+    // Update cluster info
+    const typeLabel = cluster.type === 'exact' ? '🔴 EXACT MATCH' :
+                      cluster.type === 'strong' ? '🟠 STRONG MATCH' : '🟡 LIKELY DUPLICATE';
+    const infoEl = document.getElementById('duplicatePanelInfo');
+    infoEl.innerHTML = `
+      <div class="duplicate-type-badge">${typeLabel}</div>
+      <div class="duplicate-details">
+        <strong>${cluster.vendorName}</strong> • $${cluster.amount.toFixed(2)}${cluster.billId ? ` • Bill #${cluster.billId}` : ''}
+      </div>
+      <div class="duplicate-cluster-size">${cluster.expenses.length} similar expenses found</div>
+    `;
+
+    // Update expenses list
+    const expensesEl = document.getElementById('duplicatePanelExpenses');
+    expensesEl.innerHTML = cluster.expenses.map((exp, idx) => {
+      const expId = exp.expense_id || exp.id;
+      const amount = parseFloat(exp.Amount) || 0;
+      const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : 'No date';
+      const desc = exp.LineDescription || 'No description';
+      const billId = exp.bill_id || 'No bill #';
+
+      return `
+        <div class="duplicate-expense-card" data-expense-id="${expId}">
+          <div class="duplicate-expense-header">
+            <span class="duplicate-expense-number">#${idx + 1}</span>
+            <span class="duplicate-expense-date">${date}</span>
+          </div>
+          <div class="duplicate-expense-body">
+            <div class="duplicate-expense-amount">$${amount.toFixed(2)}</div>
+            <div class="duplicate-expense-bill">Bill: ${billId}</div>
+            <div class="duplicate-expense-desc">${desc}</div>
+          </div>
+          <div class="duplicate-expense-actions">
+            <button type="button" class="btn-delete-expense-mini" onclick="deleteExpenseFromPanel('${expId}')">
+              Delete
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Update navigation buttons
+    document.getElementById('btnPrevCluster').disabled = (currentClusterIndex === 0);
+    document.getElementById('btnNextCluster').disabled = (currentClusterIndex >= duplicateClusters.length - 1);
+  }
+
+  /**
+   * Navigate to next duplicate cluster
+   */
+  function nextDuplicateCluster() {
+    if (currentClusterIndex < duplicateClusters.length - 1) {
+      currentClusterIndex++;
+      updateDuplicateReviewPanel();
+      highlightCurrentCluster();
+    }
+  }
+
+  /**
+   * Navigate to previous duplicate cluster
+   */
+  function prevDuplicateCluster() {
+    if (currentClusterIndex > 0) {
+      currentClusterIndex--;
+      updateDuplicateReviewPanel();
+      highlightCurrentCluster();
+    }
+  }
+
+  /**
+   * Dismiss current cluster as "not a duplicate"
+   */
+  async function dismissCurrentCluster() {
+    const cluster = duplicateClusters[currentClusterIndex];
+    if (!cluster) return;
+
+    // Add all pairs in this cluster to dismissed set AND save to backend
+    const expenseIds = cluster.expenses.map(e => e.expense_id || e.id);
+    const savePromises = [];
+
+    for (let i = 0; i < expenseIds.length; i++) {
+      for (let j = i + 1; j < expenseIds.length; j++) {
+        const pairKey = getDuplicatePairKey(expenseIds[i], expenseIds[j]);
+        dismissedDuplicates.add(pairKey);
+        console.log(`[DUPLICATES] Dismissing pair: ${pairKey}`);
+
+        // Save to backend (async)
+        savePromises.push(saveDismissedDuplicatePair(expenseIds[i], expenseIds[j]));
+      }
+    }
+
+    // Wait for all saves to complete
+    try {
+      const results = await Promise.all(savePromises);
+      const successCount = results.filter(r => r === true).length;
+      console.log(`[DUPLICATES] Saved ${successCount}/${savePromises.length} dismissals to backend`);
+
+      if (successCount < savePromises.length) {
+        if (window.Toast) {
+          Toast.warning('Partial Success', `${successCount}/${savePromises.length} dismissals saved`);
+        }
+      }
+    } catch (e) {
+      console.error('[DUPLICATES] Error saving dismissals:', e);
+      if (window.Toast) {
+        Toast.error('Error', 'Failed to save some dismissals');
+      }
+      return; // Don't remove cluster if save failed
+    }
+
+    // Remove this cluster from the list
+    duplicateClusters.splice(currentClusterIndex, 1);
+
+    // Show toast
+    if (window.Toast) {
+      Toast.success('Dismissed', 'This cluster marked as not duplicate');
+    }
+
+    // If no more clusters, hide panel
+    if (duplicateClusters.length === 0) {
+      hideDuplicateReviewPanel();
+      if (window.Toast) {
+        Toast.success('All Done', 'No more duplicates to review!');
+      }
+      return;
+    }
+
+    // If we're at the end, go back one
+    if (currentClusterIndex >= duplicateClusters.length) {
+      currentClusterIndex = duplicateClusters.length - 1;
+    }
+
+    updateDuplicateReviewPanel();
+    highlightCurrentCluster();
+  }
+
+  /**
+   * Hide the duplicate review panel
+   */
+  function hideDuplicateReviewPanel() {
+    const panel = document.getElementById('duplicateReviewPanel');
+    if (panel) {
+      panel.style.display = 'none';
+    }
+    // Remove all highlights
+    document.querySelectorAll('.expense-row-duplicate-warning, .expense-row-duplicate-current').forEach(row => {
+      row.classList.remove('expense-row-duplicate-warning', 'expense-row-duplicate-current');
+    });
+  }
+
+  /**
+   * Delete an expense from the review panel
+   */
+  async function deleteExpenseFromPanel(expenseId) {
+    if (!confirm('Delete this expense? This cannot be undone.')) return;
+
+    try {
+      await deleteExpense(expenseId);
+
+      // Remove from current cluster
+      const cluster = duplicateClusters[currentClusterIndex];
+      if (cluster) {
+        cluster.expenses = cluster.expenses.filter(e => (e.expense_id || e.id) !== expenseId);
+
+        // If cluster now has less than 2 expenses, remove it
+        if (cluster.expenses.length < 2) {
+          duplicateClusters.splice(currentClusterIndex, 1);
+
+          if (duplicateClusters.length === 0) {
+            hideDuplicateReviewPanel();
+            if (window.Toast) {
+              Toast.success('All Done', 'No more duplicates to review!');
+            }
+            return;
+          }
+
+          if (currentClusterIndex >= duplicateClusters.length) {
+            currentClusterIndex = duplicateClusters.length - 1;
+          }
+        }
+
+        updateDuplicateReviewPanel();
+        highlightCurrentCluster();
+      }
+    } catch (err) {
+      console.error('[DUPLICATES] Error deleting expense:', err);
+    }
+  }
+
+  /**
+   * Highlights only the current cluster being reviewed
+   */
+  function highlightCurrentCluster() {
+    // Remove all highlights first
+    document.querySelectorAll('.expense-row-duplicate-warning, .expense-row-duplicate-current, .expense-row-duplicate-exact, .expense-row-duplicate-strong, .expense-row-duplicate-likely').forEach(row => {
+      row.classList.remove('expense-row-duplicate-warning', 'expense-row-duplicate-current', 'expense-row-duplicate-exact', 'expense-row-duplicate-strong', 'expense-row-duplicate-likely');
+    });
+
+    const cluster = duplicateClusters[currentClusterIndex];
+    if (!cluster) return;
+
+    // Highlight only expenses in current cluster
+    cluster.expenses.forEach(exp => {
+      const expId = exp.expense_id || exp.id;
+      const row = document.querySelector(`tr[data-id="${expId}"]`);
+      if (row) {
+        row.classList.add('expense-row-duplicate-warning', 'expense-row-duplicate-current');
+
+        // Add type-specific class
+        if (cluster.type === 'exact') {
+          row.classList.add('expense-row-duplicate-exact');
+        } else if (cluster.type === 'strong') {
+          row.classList.add('expense-row-duplicate-strong');
+        } else if (cluster.type === 'likely') {
+          row.classList.add('expense-row-duplicate-likely');
+        }
+
+        // Scroll first expense into view
+        if (exp === cluster.expenses[0]) {
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    });
+  }
+
+  // Make functions globally accessible
+  window.nextDuplicateCluster = nextDuplicateCluster;
+  window.prevDuplicateCluster = prevDuplicateCluster;
+  window.dismissCurrentCluster = dismissCurrentCluster;
+  window.hideDuplicateReviewPanel = hideDuplicateReviewPanel;
+  window.deleteExpenseFromPanel = deleteExpenseFromPanel;
+
   /**
    * Highlights rows in the table that have duplicate warnings
+   * LEGACY: Now only used as fallback when panel is hidden
    */
   function highlightDuplicateBills() {
     // Remove existing highlights
@@ -8142,11 +8686,11 @@
       },
 
       // Health check: Detect almost-certain duplicate bills
-      healthCheckDuplicateBills: () => {
+      healthCheckDuplicateBills: async () => {
         console.log('[EXPENSES COPILOT] healthCheckDuplicateBills');
 
         // Run the detection
-        detectDuplicateBillNumbers();
+        await detectDuplicateBillNumbers();
 
         // Build detailed report from the new map structure (keyed by expense_id)
         const issues = [];
@@ -8211,11 +8755,11 @@
       },
 
       // Filter to show only duplicate expenses
-      filterByDuplicates: () => {
+      filterByDuplicates: async () => {
         console.log('[EXPENSES COPILOT] filterByDuplicates');
 
         // First, run duplicate detection to populate duplicateBillWarnings
-        detectDuplicateBillNumbers();
+        await detectDuplicateBillNumbers();
 
         // Get all expense IDs that are marked as duplicates
         const duplicateIds = new Set();

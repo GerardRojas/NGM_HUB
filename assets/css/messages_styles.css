@@ -267,7 +267,7 @@
 .msg-channel-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   padding: 10px 12px;
   margin: 2px 0;
   cursor: pointer;
@@ -297,13 +297,13 @@
 }
 
 .msg-channel-avatar {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   flex-shrink: 0;
   color: white;
@@ -323,13 +323,13 @@
 
 /* Direct Message Avatar */
 .msg-dm-avatar {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   flex-shrink: 0;
   color: white;
@@ -350,8 +350,8 @@
 
 /* Sub-channel dot (replaces #) */
 .msg-channel-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
   opacity: 0.7;
@@ -364,11 +364,11 @@
 
 /* Project sub-channels indentation */
 .msg-project-channels {
-  padding-left: 16px;
+  padding-left: 36px;
 }
 
 .msg-project-channels .msg-channel-item {
-  padding: 8px 12px;
+  padding: 8px 12px 8px 8px;
   gap: 10px;
 }
 
@@ -1915,6 +1915,47 @@
     flex: 1;
     min-height: 0;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  @media (max-width: 768px) {
+    /* Prevent iOS from showing form navigation toolbar */
+    .msg-input {
+      -webkit-appearance: none;
+      appearance: none;
+      background-clip: padding-box;
+      -webkit-background-clip: padding-box;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    .page-messages .msg-chat-area {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    /* Ensure input area stays visible above keyboard */
+    .msg-input-area {
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    /* Force GPU acceleration for smoother scrolling */
+    .msg-input-row {
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    /* Prevent input from being hidden by keyboard toolbar */
+    .msg-input:focus {
+      position: relative;
+      z-index: 1000;
+    }
   }
 }
 
@@ -2609,11 +2650,11 @@
 
   /* Sub-channels more indentation on mobile */
   .msg-project-channels {
-    padding-left: 24px;
+    padding-left: 44px;
   }
 
   .msg-project-channels .msg-channel-item {
-    padding: 12px 16px;
+    padding: 12px 16px 12px 12px;
   }
 
   .msg-channel-preview {
@@ -2921,6 +2962,30 @@
 }
 
 /* ==========================================
+   Global Mobile Keyboard State
+   ========================================== */
+
+/* Prevent body scroll when keyboard is open on mobile */
+@media (max-width: 768px) {
+  body.keyboard-open,
+  html.keyboard-open {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  body.keyboard-open .app-layout,
+  html.keyboard-open .app-layout {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+/* ==========================================
    iOS Keyboard Open State
    ========================================== */
 
@@ -2934,10 +2999,13 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    height: auto;
   }
 
   .page-messages.keyboard-open .msg-chat-header {
     flex-shrink: 0;
+    position: relative;
+    z-index: 10;
   }
 
   .page-messages.keyboard-open .msg-messages-container {
@@ -2952,7 +3020,13 @@
     flex-shrink: 0;
     position: relative;
     padding-bottom: 12px;
-    z-index: 10;
+    z-index: 100;
+    background: #1a1a1a;
+  }
+
+  .page-messages.keyboard-open .msg-input-row {
+    position: relative;
+    z-index: 101;
   }
 
   /* Hide bottom nav when keyboard is open */
@@ -2963,6 +3037,14 @@
   /* Hide FAB when keyboard is open */
   .page-messages.keyboard-open .msg-fab-new-chat {
     display: none !important;
+  }
+
+  /* Hide any overflow that might cause the weird input display */
+  .page-messages.keyboard-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
   }
 }
 

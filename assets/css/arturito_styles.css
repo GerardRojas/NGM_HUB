@@ -4,12 +4,36 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   Global Mobile Keyboard State
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Prevent body scroll when keyboard is open on mobile */
+@media (max-width: 768px) {
+  body.keyboard-open,
+  html.keyboard-open {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    touch-action: none;
+  }
+
+  body.keyboard-open .app-layout,
+  html.keyboard-open .app-layout {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    Full Layout - Solid dark background (same as login)
    ───────────────────────────────────────────────────────────────────────────── */
 
 .page-arturito .main-area {
-  /* Solid dark background - consistent with login */
-  background: #1a1a1a;
+  /* Background same as other pages */
+  background: #0d0d0d;
   min-height: 100vh;
   overflow: auto;
 }
@@ -20,7 +44,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: transparent; /* Let parent background show through */
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -30,21 +54,19 @@
 .arturito-chat-card {
   /* Desktop: fixed width card */
   width: 100%;
-  max-width: 700px;
-  height: calc(100vh - 180px);
-  max-height: 800px;
-  min-height: 500px;
+  max-width: 1000px;
+  height: 700px;
   display: flex;
   flex-direction: column;
   position: relative;
 
-  /* Card styling for desktop */
-  background: rgba(20, 20, 25, 0.95);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  /* Card styling for desktop - solid background like login */
+  background: #1a1a1a;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -216,7 +238,7 @@
 
 .arturito-message {
   display: flex;
-  gap: 12px;
+  gap: 16px;
   animation: messageIn 0.2s ease;
 }
 
@@ -236,13 +258,13 @@
 }
 
 .arturito-message-avatar {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   flex-shrink: 0;
   color: white;
@@ -381,17 +403,17 @@
 .arturito-typing {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   padding: 8px 0;
 }
 
 .arturito-typing-avatar {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, #3ecf8e, #10b981);
   color: white;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -532,7 +554,7 @@
 /* Mobile - Full screen like native app */
 @media (max-width: 768px) {
   .page-arturito .main-area {
-    background: #1a1a1a;
+    background: #0d0d0d; /* Same as other pages */
     overflow: hidden;
     position: fixed;
     top: 0;
@@ -567,12 +589,15 @@
     box-shadow: none;
     background: #1a1a1a;
     backdrop-filter: none;
+    position: relative;
   }
 
   .arturito-card-header {
     padding: 12px 16px;
     background: #0f0f0f;
     flex-shrink: 0; /* Don't shrink header */
+    position: relative;
+    z-index: 10;
   }
 
   .arturito-messages {
@@ -580,6 +605,8 @@
     flex: 1;
     min-height: 0; /* Allow shrinking */
     overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 
   .arturito-input-area {
@@ -587,6 +614,8 @@
     background: #0f0f0f;
     padding-bottom: calc(24px + env(safe-area-inset-bottom));
     flex-shrink: 0; /* Don't shrink input area */
+    position: relative;
+    z-index: 100;
   }
 
   .arturito-welcome-title {
@@ -614,6 +643,14 @@
   /* Make input 16px to prevent iOS zoom */
   .arturito-input {
     font-size: 16px !important;
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /* Prevent input from being hidden by keyboard toolbar */
+  .arturito-input:focus {
+    position: relative;
+    z-index: 1000;
   }
 }
 
@@ -670,6 +707,11 @@
     .page-arturito .main-area {
       height: 100%;
       height: -webkit-fill-available;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
     }
 
     .arturito-main {
@@ -680,6 +722,8 @@
     .arturito-chat-card {
       height: 100%;
       height: -webkit-fill-available;
+      position: relative;
+      overflow: hidden;
     }
 
     /* Ensure input area stays visible above keyboard */
@@ -687,6 +731,8 @@
       position: relative;
       transform: translateZ(0);
       -webkit-transform: translateZ(0);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
     }
 
     /* Messages container should shrink when keyboard appears */
@@ -694,6 +740,23 @@
       flex: 1;
       min-height: 0;
       -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+
+    /* Prevent iOS from showing form navigation toolbar */
+    .arturito-input {
+      -webkit-appearance: none;
+      appearance: none;
+      background-clip: padding-box;
+      -webkit-background-clip: padding-box;
+    }
+
+    /* Force GPU acceleration for smoother scrolling */
+    .arturito-input-container {
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
     }
   }
 }
@@ -706,10 +769,21 @@
     left: 0;
     right: 0;
     overflow: hidden;
+    height: auto;
+  }
+
+  .page-arturito.keyboard-open .arturito-main {
+    height: 100%;
   }
 
   .page-arturito.keyboard-open .arturito-chat-card {
     height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .page-arturito.keyboard-open .arturito-card-header {
+    flex-shrink: 0;
   }
 
   .page-arturito.keyboard-open .arturito-messages {
@@ -717,12 +791,27 @@
     min-height: 0;
     max-height: none;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .page-arturito.keyboard-open .arturito-input-area {
     padding-bottom: 12px;
     flex-shrink: 0;
     position: relative;
-    z-index: 10;
+    z-index: 100;
+    background: #0f0f0f;
+  }
+
+  .page-arturito.keyboard-open .arturito-input-container {
+    position: relative;
+    z-index: 101;
+  }
+
+  /* Hide any overflow that might cause the weird input display */
+  .page-arturito.keyboard-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
   }
 }

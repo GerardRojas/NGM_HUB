@@ -193,7 +193,7 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .arturito-widget-messages::-webkit-scrollbar {
@@ -240,7 +240,7 @@
 /* Message bubble */
 .arturito-widget-msg {
   display: flex;
-  gap: 10px;
+  gap: 14px;
   animation: widgetMsgIn 0.2s ease;
 }
 
@@ -260,13 +260,13 @@
 }
 
 .arturito-widget-msg-avatar {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   flex-shrink: 0;
   color: white;

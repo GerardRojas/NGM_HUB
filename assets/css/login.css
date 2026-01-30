@@ -16,8 +16,8 @@
     left: 0;
     right: 0;
     bottom: 0;
-    /* Premium gradient background */
-    background: radial-gradient(ellipse at top, #1e2a23 0%, #1a1a1a 50%, #0f0f0f 100%);
+    /* Premium gradient background - gray to black */
+    background: radial-gradient(ellipse at top, #2a2a2a 0%, #1a1a1a 50%, #0a0a0a 100%);
 }
 
 /* Panel principal */

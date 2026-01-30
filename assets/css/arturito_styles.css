@@ -53,9 +53,11 @@
 
 .arturito-chat-card {
   /* Desktop: fixed width card */
-  width: 100%;
-  max-width: 1000px;
+  width: 1000px;
+  max-width: calc(100vw - 48px); /* Allow responsive on smaller screens */
   height: 700px;
+  min-height: 700px;
+  max-height: 700px;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -68,6 +70,16 @@
   border-radius: 16px;
   box-shadow: none;
   overflow: hidden;
+}
+
+/* Desktop - enforce fixed size */
+@media (min-width: 901px) {
+  .arturito-chat-card {
+    width: 1000px !important;
+    height: 700px !important;
+    min-height: 700px !important;
+    max-height: 700px !important;
+  }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -160,7 +172,9 @@
 
 .arturito-messages {
   flex: 1;
+  min-height: 0; /* Critical for flex + overflow to work */
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 24px;
   display: flex;
   flex-direction: column;
@@ -239,6 +253,7 @@
 .arturito-message {
   display: flex;
   gap: 16px;
+  align-items: flex-start; /* Center avatar with bubble */
   animation: messageIn 0.2s ease;
 }
 
@@ -298,35 +313,39 @@
   align-items: flex-end;
 }
 
-/* Message header with name and time */
+/* Message header with name and time - HIDDEN (we moved time below bubble) */
 .arturito-message-header {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 4px;
+  display: none; /* Hide the entire header */
 }
 
 .arturito-message-name {
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.85);
+  display: none; /* Hide name */
 }
 
 .arturito-message-time {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.3);
   font-weight: 400;
+  margin-top: 4px; /* Space between bubble and time */
+  display: block;
+  padding: 0 2px; /* Small padding for spacing */
 }
 
-/* User messages - align header to right */
-.arturito-message--user .arturito-message-header {
-  justify-content: flex-end;
+/* User messages - align time to right */
+.arturito-message--user .arturito-message-time {
+  text-align: right;
+}
+
+/* Bot messages - align time to left */
+.arturito-message--bot .arturito-message-time {
+  text-align: left;
 }
 
 .arturito-message-bubble {
   font-size: 14px;
   line-height: 1.6;
   color: #d1d5db;
+  margin-bottom: 0; /* Time will be added below via separate element */
 }
 
 .arturito-message--user .arturito-message-bubble {

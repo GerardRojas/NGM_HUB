@@ -1078,9 +1078,13 @@
     });
 
     // Show enhanced notification
+    console.log(`[DUPLICATES] Detection complete: ${duplicateClusters.length} clusters found`);
     if (duplicateClusters.length > 0) {
+      console.log('[DUPLICATES] Showing review panel...');
       currentClusterIndex = 0; // Reset to first cluster
       showDuplicateReviewPanel(); // Show the new UI panel
+    } else {
+      console.log('[DUPLICATES] No duplicates found in current expenses');
     }
   }
 

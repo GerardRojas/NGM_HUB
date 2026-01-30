@@ -768,11 +768,8 @@
       <div class="arturito-message ${roleClass} ${errorClass}">
         ${avatarHtml}
         <div class="arturito-message-content">
-          <div class="arturito-message-header">
-            <span class="arturito-message-name">${escapeHtml(userName)}</span>
-            <span class="arturito-message-time">${time}</span>
-          </div>
           <div class="arturito-message-bubble">${formattedContent}</div>
+          <span class="arturito-message-time">${time}</span>
         </div>
       </div>
     `;

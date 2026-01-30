@@ -57,6 +57,7 @@
                     <a href="team.html" class="nav-item" data-module="team">Team Management</a>
                     <a href="messages.html" class="nav-item" data-module="messages">Messages</a>
                     <a href="arturito.html" class="nav-item" data-module="arturito">Arturito</a>
+                    <a href="arturito-settings.html" class="nav-item" data-module="arturito_settings">Arturito Settings</a>
                 </nav>
             </div>
         </aside>
@@ -118,7 +119,6 @@
                             <div class="toolbar-right">
                                 <!-- Pending Alerts Badge -->
                                 <div class="pending-alerts-badge" id="pendingAlertsBadge">
-                                    <span class="pending-alerts-icon">⚠️</span>
                                     <span class="pending-alerts-count" id="pendingAlertsCount">0</span>
                                     <span class="pending-alerts-label">Pending Acknowledgments</span>
                                 </div>
@@ -128,28 +128,24 @@
                         <!-- Summary Cards -->
                         <div class="budget-summary-cards" id="budgetSummaryCards">
                             <div class="summary-card card-budget">
-                                <div class="summary-card-icon">💰</div>
                                 <div class="summary-card-content">
                                     <span class="summary-card-label">Total Budget</span>
                                     <span class="summary-card-value" id="totalBudget">$0.00</span>
                                 </div>
                             </div>
                             <div class="summary-card card-actuals">
-                                <div class="summary-card-icon">📊</div>
                                 <div class="summary-card-content">
                                     <span class="summary-card-label">Total Actuals</span>
                                     <span class="summary-card-value" id="totalActuals">$0.00</span>
                                 </div>
                             </div>
                             <div class="summary-card card-remaining">
-                                <div class="summary-card-icon">📈</div>
                                 <div class="summary-card-content">
                                     <span class="summary-card-label">Remaining</span>
                                     <span class="summary-card-value" id="totalRemaining">$0.00</span>
                                 </div>
                             </div>
                             <div class="summary-card card-percentage">
-                                <div class="summary-card-icon">📉</div>
                                 <div class="summary-card-content">
                                     <span class="summary-card-label">Used</span>
                                     <span class="summary-card-value" id="totalPercentage">0%</span>
@@ -201,7 +197,7 @@
                         <div class="tab-content" id="tabContentAlerts">
                             <div class="alerts-container">
                                 <div id="alertsEmptyState" class="empty-state">
-                                    <div class="empty-state-icon">✅</div>
+                                    <img src="assets/img/white_icon.png" class="empty-state-logo" alt="">
                                     <span class="empty-state-text">No pending alerts to acknowledge</span>
                                     <span class="empty-state-hint">All budget alerts have been reviewed</span>
                                 </div>
@@ -295,7 +291,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn-modal-secondary" id="btnCancelAck">Cancel</button>
                 <button type="button" class="btn-modal-primary" id="btnConfirmAck">
-                    <span style="font-size: 14px;">✓</span> Acknowledge Alert
+                    Acknowledge Alert
                 </button>
             </div>
         </div>

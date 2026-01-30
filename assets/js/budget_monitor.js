@@ -148,15 +148,16 @@
   // ================================
   async function loadProjects() {
     try {
-      const data = await apiGet('/projects/');
-      const projects = data.data || data || [];
+      // Use the same metadata endpoint as expenses module
+      const data = await apiGet('/expenses/meta');
+      const projects = data.projects || [];
 
       els.projectFilter.innerHTML = '<option value="">Select project...</option>';
 
       projects.forEach(p => {
         const opt = document.createElement('option');
-        opt.value = p.project_id;
-        opt.textContent = p.project_name || p.project_id;
+        opt.value = p.project_id || p.id;
+        opt.textContent = p.project_name || p.name || 'Unnamed Project';
         els.projectFilter.appendChild(opt);
       });
 
@@ -411,7 +412,7 @@
 
           <div class="alert-card-actions">
             <button type="button" class="btn-acknowledge" onclick="window.BudgetMonitor.openAcknowledgeModal('${alert.id}')">
-              <span>✓</span> Acknowledge
+              Acknowledge
             </button>
           </div>
         </div>
@@ -540,7 +541,7 @@
       }
     } finally {
       els.btnConfirmAck.disabled = false;
-      els.btnConfirmAck.innerHTML = '<span style="font-size: 14px;">✓</span> Acknowledge Alert';
+      els.btnConfirmAck.textContent = 'Acknowledge Alert';
     }
   }
 

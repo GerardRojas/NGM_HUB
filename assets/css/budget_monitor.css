@@ -52,26 +52,27 @@
 }
 
 .btn-refresh {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #252530;
+  background: #1e1e24;
   border: 1px solid #27272f;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #9ca3af;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .btn-refresh:hover {
-  background: #2d2d3a;
+  background: #252530;
   color: #e5e7eb;
+  border-color: #323238;
 }
 
 .refresh-icon {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 /* ==========================================
@@ -133,26 +134,22 @@
 .pending-alerts-badge {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  background: #252530;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #1e1e24;
   border: 1px solid #27272f;
-  border-radius: 8px;
+  border-radius: 6px;
   transition: all 0.2s ease;
 }
 
 .pending-alerts-badge.has-alerts {
-  background: rgba(251, 146, 60, 0.15);
-  border-color: rgba(251, 146, 60, 0.3);
-}
-
-.pending-alerts-icon {
-  font-size: 18px;
+  background: rgba(251, 146, 60, 0.1);
+  border-color: rgba(251, 146, 60, 0.25);
 }
 
 .pending-alerts-count {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 600;
   color: #9ca3af;
 }
 
@@ -161,7 +158,8 @@
 }
 
 .pending-alerts-label {
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   color: #6b7280;
 }
 
@@ -172,40 +170,42 @@
 .budget-summary-cards {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
 .summary-card {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px;
   background: #1e1e24;
   border: 1px solid #27272f;
-  border-radius: 12px;
+  border-radius: 8px;
+  transition: border-color 0.2s ease;
 }
 
-.summary-card-icon {
-  font-size: 28px;
+.summary-card:hover {
+  border-color: #323238;
 }
 
 .summary-card-content {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .summary-card-label {
   font-size: 12px;
+  font-weight: 500;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .summary-card-value {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 600;
   color: #e5e7eb;
 }
 
@@ -227,11 +227,11 @@
 
 .budget-tabs {
   display: flex;
-  gap: 4px;
+  gap: 2px;
   margin-bottom: 20px;
-  padding: 4px;
+  padding: 3px;
   background: #1e1e24;
-  border-radius: 10px;
+  border-radius: 8px;
   width: fit-content;
 }
 
@@ -239,19 +239,19 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
+  padding: 8px 16px;
   background: transparent;
   border: none;
   border-radius: 6px;
   color: #6b7280;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .budget-tab:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   color: #9ca3af;
 }
 
@@ -264,18 +264,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   background: #27272f;
-  border-radius: 10px;
+  border-radius: 9px;
   font-size: 11px;
   font-weight: 600;
   color: #6b7280;
 }
 
 .tab-badge.has-alerts {
-  background: rgba(251, 146, 60, 0.2);
+  background: rgba(251, 146, 60, 0.15);
   color: #fb923c;
 }
 
@@ -300,23 +300,18 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 48px 20px;
   color: #6b7280;
 }
 
 .empty-state-logo {
-  width: 64px;
-  opacity: 0.3;
-  margin-bottom: 16px;
-}
-
-.empty-state-icon {
-  font-size: 48px;
+  width: 48px;
+  opacity: 0.2;
   margin-bottom: 16px;
 }
 
 .empty-state-text {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   color: #9ca3af;
 }
@@ -324,7 +319,7 @@
 .empty-state-hint {
   font-size: 13px;
   color: #6b7280;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 /* ==========================================
@@ -334,7 +329,7 @@
 .budget-overview-table-container {
   background: #1e1e24;
   border: 1px solid #27272f;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -345,14 +340,14 @@
 
 .budget-table th,
 .budget-table td {
-  padding: 14px 16px;
+  padding: 12px 16px;
   text-align: left;
   border-bottom: 1px solid #27272f;
 }
 
 .budget-table th {
-  background: #252530;
-  font-size: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 11px;
   font-weight: 600;
   color: #9ca3af;
   text-transform: uppercase;
@@ -360,7 +355,7 @@
 }
 
 .budget-table td {
-  font-size: 14px;
+  font-size: 13px;
   color: #e5e7eb;
 }
 
@@ -369,7 +364,7 @@
 }
 
 .budget-table tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.015);
 }
 
 .budget-row.status-overspend {
@@ -400,93 +395,94 @@
 .progress-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .progress-bar {
   flex: 1;
-  height: 8px;
+  height: 6px;
   background: #27272f;
-  border-radius: 4px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  border-radius: 4px;
+  border-radius: 3px;
   transition: width 0.3s ease;
 }
 
 .progress-fill.status-on_track {
-  background: linear-gradient(90deg, #4ade80, #22c55e);
+  background: #4ade80;
 }
 
 .progress-fill.status-warning {
-  background: linear-gradient(90deg, #facc15, #eab308);
+  background: #eab308;
 }
 
 .progress-fill.status-critical {
-  background: linear-gradient(90deg, #fb923c, #f97316);
+  background: #fb923c;
 }
 
 .progress-fill.status-overspend {
-  background: linear-gradient(90deg, #f87171, #ef4444);
+  background: #ef4444;
 }
 
 .progress-fill.status-no_budget {
-  background: linear-gradient(90deg, #60a5fa, #3b82f6);
+  background: #3b82f6;
 }
 
 .progress-label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   color: #9ca3af;
-  min-width: 50px;
+  min-width: 45px;
   text-align: right;
 }
 
 /* Status Badge */
 .status-badge {
   display: inline-block;
-  padding: 4px 10px;
+  padding: 4px 8px;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
 .status-badge.status-on_track {
-  background: rgba(74, 222, 128, 0.15);
+  background: rgba(74, 222, 128, 0.12);
   color: #4ade80;
 }
 
 .status-badge.status-warning {
-  background: rgba(234, 179, 8, 0.15);
+  background: rgba(234, 179, 8, 0.12);
   color: #eab308;
 }
 
 .status-badge.status-critical {
-  background: rgba(251, 146, 60, 0.15);
+  background: rgba(251, 146, 60, 0.12);
   color: #fb923c;
 }
 
 .status-badge.status-overspend {
-  background: rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.12);
   color: #ef4444;
 }
 
 .status-badge.status-no_budget {
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(59, 130, 246, 0.12);
   color: #3b82f6;
 }
 
 .status-badge.status-acknowledged {
-  background: rgba(74, 222, 128, 0.15);
+  background: rgba(74, 222, 128, 0.12);
   color: #4ade80;
 }
 
 .status-badge.status-pending {
-  background: rgba(251, 146, 60, 0.15);
+  background: rgba(251, 146, 60, 0.12);
   color: #fb923c;
 }
 
@@ -507,24 +503,29 @@
 .alert-card {
   background: #1e1e24;
   border: 1px solid #27272f;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
+  transition: border-color 0.15s ease;
+}
+
+.alert-card:hover {
+  border-color: #323238;
 }
 
 .alert-card.alert-overspend {
-  border-left: 4px solid #ef4444;
+  border-left: 3px solid #ef4444;
 }
 
 .alert-card.alert-no_budget {
-  border-left: 4px solid #3b82f6;
+  border-left: 3px solid #3b82f6;
 }
 
 .alert-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
-  background: #252530;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid #27272f;
 }
 
@@ -622,21 +623,20 @@
 .btn-acknowledge {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+  gap: 6px;
+  padding: 8px 16px;
+  background: #4ade80;
   border: none;
   border-radius: 6px;
-  color: #000;
-  font-size: 14px;
+  color: #0a0a0a;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .btn-acknowledge:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
+  background: #22c55e;
 }
 
 /* ==========================================
@@ -652,7 +652,7 @@
   border-collapse: collapse;
   background: #1e1e24;
   border: 1px solid #27272f;
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -664,8 +664,8 @@
 }
 
 .history-table th {
-  background: #252530;
-  font-size: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 11px;
   font-weight: 600;
   color: #9ca3af;
   text-transform: uppercase;
@@ -679,6 +679,10 @@
 
 .history-table tr:last-child td {
   border-bottom: none;
+}
+
+.history-table tr:hover {
+  background: rgba(255, 255, 255, 0.015);
 }
 
 .type-badge {
@@ -712,18 +716,20 @@
 
 .btn-view-note {
   padding: 6px 12px;
-  background: #252530;
+  background: #1e1e24;
   border: 1px solid #27272f;
-  border-radius: 4px;
+  border-radius: 6px;
   color: #9ca3af;
   font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .btn-view-note:hover {
-  background: #2d2d3a;
+  background: #252530;
   color: #e5e7eb;
+  border-color: #323238;
 }
 
 /* ==========================================
@@ -751,12 +757,13 @@
 .modal {
   background: #1a1a1f;
   border: 1px solid #27272f;
-  border-radius: 16px;
+  border-radius: 12px;
   width: 100%;
   max-height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .modal-acknowledge {
@@ -815,47 +822,45 @@
 }
 
 .btn-modal-secondary {
-  padding: 10px 20px;
-  background: #252530;
+  padding: 9px 18px;
+  background: #1e1e24;
   border: 1px solid #27272f;
   border-radius: 6px;
   color: #9ca3af;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .btn-modal-secondary:hover {
-  background: #2d2d3a;
+  background: #252530;
   color: #e5e7eb;
+  border-color: #323238;
 }
 
 .btn-modal-primary {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+  gap: 6px;
+  padding: 9px 18px;
+  background: #4ade80;
   border: none;
   border-radius: 6px;
-  color: #000;
-  font-size: 14px;
+  color: #0a0a0a;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .btn-modal-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
+  background: #22c55e;
 }
 
 .btn-modal-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
 /* Acknowledge Alert Details */

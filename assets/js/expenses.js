@@ -1222,12 +1222,30 @@
       });
     });
 
-    // Show enhanced notification
+    // Show notification but DON'T auto-open panel
     console.log(`[DUPLICATES] Detection complete: ${duplicateClusters.length} clusters found`);
     if (duplicateClusters.length > 0) {
-      console.log('[DUPLICATES] Showing review panel...');
+      console.log('[DUPLICATES] Duplicates detected - showing notification');
       currentClusterIndex = 0; // Reset to first cluster
-      showDuplicateReviewPanel(); // Show the new UI panel
+
+      // Update button badge to show count
+      updateDuplicatesButtonBadge();
+
+      // Show notification with summary
+      const exactCount = duplicateClusters.filter(c => c.type === 'exact').length;
+      const strongCount = duplicateClusters.filter(c => c.type === 'strong').length;
+      const likelyCount = duplicateClusters.filter(c => c.type === 'likely').length;
+
+      let summaryMsg = `Found ${duplicateClusters.length} potential duplicate${duplicateClusters.length > 1 ? 's' : ''}`;
+      if (exactCount > 0) summaryMsg += ` (${exactCount} exact)`;
+      if (strongCount > 0) summaryMsg += ` (${strongCount} strong)`;
+      if (likelyCount > 0) summaryMsg += ` (${likelyCount} likely)`;
+
+      if (window.Toast) {
+        Toast.warning('Duplicates Detected', `${summaryMsg}. Click "Health Check" to review.`);
+      }
+
+      // DO NOT auto-open panel - user must click button to open
     } else {
       console.log('[DUPLICATES] No duplicates found in current expenses');
     }
@@ -1309,7 +1327,7 @@
       panel = createDuplicateReviewPanel();
     }
 
-    panel.style.display = 'block';
+    panel.style.display = 'flex'; // Use flex to show properly
     updateDuplicateReviewPanel();
     highlightCurrentCluster();
   }
@@ -1323,7 +1341,7 @@
     panel.className = 'duplicate-review-panel';
     panel.innerHTML = `
       <div class="duplicate-panel-header">
-        <h3 class="duplicate-panel-title">🔍 Review Duplicates</h3>
+        <h3 class="duplicate-panel-title">Review Duplicates</h3>
         <button type="button" class="duplicate-panel-close" onclick="hideDuplicateReviewPanel()">×</button>
       </div>
       <div class="duplicate-panel-body">
@@ -1528,7 +1546,7 @@
     if (duplicateClusters.length === 0) {
       hideDuplicateReviewPanel();
       if (window.Toast) {
-        Toast.success('All Done', 'No more duplicates to review!');
+        Toast.success('Health Check Complete', 'All duplicates reviewed! Your expenses are clean. ✓');
       }
       return;
     }

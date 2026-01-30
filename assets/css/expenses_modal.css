@@ -1465,6 +1465,77 @@ input[type="number"].form-input {
   color: #e5e7eb;
 }
 
+/* Model Selector */
+.scan-model-selector {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.scan-model-option {
+  flex: 1;
+  cursor: pointer;
+}
+
+.scan-model-option input[type="radio"] {
+  display: none;
+}
+
+.scan-model-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.scan-model-option:hover .scan-model-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.scan-model-option input[type="radio"]:checked + .scan-model-card {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.scan-model-icon {
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.scan-model-option input[type="radio"]:checked + .scan-model-card .scan-model-icon {
+  color: #a78bfa;
+}
+
+.scan-model-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.scan-model-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #e5e7eb);
+}
+
+.scan-model-desc {
+  font-size: 11px;
+  color: var(--text-secondary, #9ca3af);
+}
+
 .scan-receipt-upload-zone {
   margin: 20px 0;
 }

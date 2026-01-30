@@ -958,10 +958,15 @@
     const hasAccountFilter = columnFilters.account.length > 0;
     const hasDescFilter = columnFilters.description.length > 0;
     const hasAuthFilter = columnFilters.auth.length > 0;
+    const hasDuplicateFilter = window._duplicateFilterActive && window._duplicateIds;
 
     const searchLower = hasSearch ? globalSearchTerm.toLowerCase() : '';
 
     filteredExpenses = expenses.filter(exp => {
+      // Duplicate filter - check first as it's most restrictive
+      if (hasDuplicateFilter && !window._duplicateIds.has(exp.expense_id)) {
+        return false;
+      }
       // PERFORMANCE: Compute display values ONCE per expense (lazy, only if needed)
       let date, billId, description, type, vendor, payment, account, amount, authValue;
 
@@ -3783,6 +3788,10 @@
       // Create FormData
       const formData = new FormData();
       formData.append('file', file);
+
+      // Get selected model (fast or heavy)
+      const selectedModel = document.querySelector('input[name="scanModel"]:checked')?.value || 'fast';
+      formData.append('model', selectedModel);
 
       // Call backend to parse receipt
       // BACKEND NOTE: The OpenAI prompt should extract and return the following fields for each expense:
@@ -8199,6 +8208,58 @@
       // Get health check summary (for Arturito to read results)
       getHealthCheckSummary: () => {
         return window._lastHealthCheckResult || { total_issues: 0, issues: [] };
+      },
+
+      // Filter to show only duplicate expenses
+      filterByDuplicates: () => {
+        console.log('[EXPENSES COPILOT] filterByDuplicates');
+
+        // First, run duplicate detection to populate duplicateBillWarnings
+        detectDuplicateBillNumbers();
+
+        // Get all expense IDs that are marked as duplicates
+        const duplicateIds = new Set();
+        duplicateBillWarnings.forEach((warning, expenseId) => {
+          duplicateIds.add(expenseId);
+          if (warning.relatedTo) {
+            duplicateIds.add(warning.relatedTo);
+          }
+        });
+
+        if (duplicateIds.size === 0) {
+          if (typeof Toast !== 'undefined') {
+            Toast.info('Sin duplicados', 'No se encontraron gastos duplicados para filtrar');
+          }
+          return { filtered: 0, total: allExpenses.length };
+        }
+
+        // Apply filter by setting a special duplicate filter
+        window._duplicateFilterActive = true;
+        window._duplicateIds = duplicateIds;
+
+        // Re-render table with filter
+        renderExpensesTable();
+
+        // Highlight the duplicates
+        highlightDuplicateBills();
+
+        if (typeof Toast !== 'undefined') {
+          Toast.success('Filtrado', `Mostrando ${duplicateIds.size} gastos duplicados`);
+        }
+
+        return { filtered: duplicateIds.size, total: allExpenses.length };
+      },
+
+      // Clear duplicate filter
+      clearDuplicateFilter: () => {
+        console.log('[EXPENSES COPILOT] clearDuplicateFilter');
+        window._duplicateFilterActive = false;
+        window._duplicateIds = null;
+        renderExpensesTable();
+
+        if (typeof Toast !== 'undefined') {
+          Toast.info('Filtro limpiado', 'Mostrando todos los gastos');
+        }
       },
     });
 

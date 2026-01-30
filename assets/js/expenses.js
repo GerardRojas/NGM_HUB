@@ -315,6 +315,9 @@
     els.columnManagerModal = document.getElementById('columnManagerModal');
     els.btnCloseColumnManager = document.getElementById('btnCloseColumnManager');
     els.btnCloseColumnManagerFooter = document.getElementById('btnCloseColumnManagerFooter');
+
+    // Duplicate detection button
+    els.btnDetectDuplicates = document.getElementById('btnDetectDuplicates');
     els.btnResetColumns = document.getElementById('btnResetColumns');
     els.columnCheckboxes = document.getElementById('columnCheckboxes');
 
@@ -754,6 +757,59 @@
   }
 
   /**
+   * Calculates Levenshtein distance between two strings (fuzzy matching)
+   * @param {string} str1 - First string
+   * @param {string} str2 - Second string
+   * @returns {number} - Edit distance
+   */
+  function levenshteinDistance(str1, str2) {
+    const s1 = (str1 || '').toLowerCase().trim();
+    const s2 = (str2 || '').toLowerCase().trim();
+
+    if (!s1 || !s2) return 999; // High distance if either is empty
+    if (s1 === s2) return 0;
+
+    const len1 = s1.length;
+    const len2 = s2.length;
+    const matrix = Array(len2 + 1).fill(null).map(() => Array(len1 + 1).fill(0));
+
+    for (let i = 0; i <= len1; i++) matrix[0][i] = i;
+    for (let j = 0; j <= len2; j++) matrix[j][0] = j;
+
+    for (let j = 1; j <= len2; j++) {
+      for (let i = 1; i <= len1; i++) {
+        const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,     // deletion
+          matrix[j - 1][i] + 1,     // insertion
+          matrix[j - 1][i - 1] + cost // substitution
+        );
+      }
+    }
+
+    return matrix[len2][len1];
+  }
+
+  /**
+   * Calculates similarity score between two strings (0-1)
+   * @param {string} str1 - First string
+   * @param {string} str2 - Second string
+   * @returns {number} - Similarity score (0 = no match, 1 = perfect match)
+   */
+  function calculateStringSimilarity(str1, str2) {
+    const s1 = (str1 || '').toLowerCase().trim();
+    const s2 = (str2 || '').toLowerCase().trim();
+
+    if (!s1 || !s2) return 0;
+    if (s1 === s2) return 1;
+
+    const distance = levenshteinDistance(s1, s2);
+    const maxLen = Math.max(s1.length, s2.length);
+
+    return 1 - (distance / maxLen);
+  }
+
+  /**
    * Generates a unique pair key for dismissal tracking
    * @param {string} id1 - First expense ID
    * @param {string} id2 - Second expense ID
@@ -923,40 +979,126 @@
             continue;
           }
 
-          // IMPROVED: Use normalized Bill IDs
+          // ========================================
+          // NEW SCORING MATRIX SYSTEM
+          // ========================================
+
+          // Extract all comparable fields
+          const exp1PaymentType = exp1.PaymentType || '';
+          const exp2PaymentType = exp2.PaymentType || '';
+          const exp1Account = exp1.Account || '';
+          const exp2Account = exp2.Account || '';
+          const exp1Description = exp1.LineDescription || '';
+          const exp2Description = exp2.LineDescription || '';
+
+          // Field comparisons
           const sameBillId = exp1BillId && exp2BillId && exp1BillId === exp2BillId;
 
-          // IMPROVED: Use dynamic threshold based on amount
+          // Amount comparison with dynamic threshold
           const threshold = getDuplicateThreshold(exp1Amount);
           const amountDiff = Math.abs(exp1Amount - exp2Amount);
           const avgAmount = (exp1Amount + exp2Amount) / 2;
           const diffPercent = avgAmount > 0 ? (amountDiff / avgAmount) * 100 : 0;
           const sameAmount = exp1Amount > 0 && exp2Amount > 0 && diffPercent <= threshold;
 
+          // Date comparison
           const sameDate = exp1Date && exp2Date && exp1Date === exp2Date;
 
+          // Date difference in days
+          let dateDiffDays = 999;
+          if (exp1Date && exp2Date) {
+            const d1 = new Date(exp1Date);
+            const d2 = new Date(exp2Date);
+            dateDiffDays = Math.abs((d2 - d1) / (1000 * 60 * 60 * 24));
+          }
+
+          const samePaymentType = exp1PaymentType && exp2PaymentType &&
+                                   exp1PaymentType.toLowerCase() === exp2PaymentType.toLowerCase();
+
+          const sameAccount = exp1Account && exp2Account && exp1Account === exp2Account;
+
+          // Fuzzy match for description
+          const descriptionSimilarity = calculateStringSimilarity(exp1Description, exp2Description);
+
+          // ========================================
+          // SCORING ALGORITHM (0-100 points)
+          // ========================================
+
+          let score = 0;
+          const matchReasons = [];
+
+          // Base requirement: Same vendor + Same amount (MANDATORY)
+          if (!sameAmount) continue; // Skip if amounts don't match
+
+          score += 40; // Base score for same vendor + amount
+          matchReasons.push('Same vendor & amount');
+
+          // Core field bonuses
+          if (sameDate) {
+            score += 25;
+            matchReasons.push('Same date');
+          } else if (dateDiffDays <= 7) {
+            score += 15;
+            matchReasons.push(`Date diff: ${dateDiffDays} days`);
+          } else if (dateDiffDays <= 30) {
+            score += 5;
+            matchReasons.push(`Date diff: ${dateDiffDays} days`);
+          }
+
+          if (sameBillId) {
+            score += 15;
+            matchReasons.push('Same bill ID');
+          }
+
+          if (samePaymentType) {
+            score += 10;
+            matchReasons.push('Same payment type');
+          }
+
+          if (sameAccount) {
+            score += 5;
+            matchReasons.push('Same account');
+          }
+
+          if (descriptionSimilarity >= 0.9) {
+            score += 10;
+            matchReasons.push(`Description match: ${Math.round(descriptionSimilarity * 100)}%`);
+          } else if (descriptionSimilarity >= 0.7) {
+            score += Math.round(descriptionSimilarity * 10);
+            matchReasons.push(`Description match: ${Math.round(descriptionSimilarity * 100)}%`);
+          }
+
+          // Penalties
+          if (dateDiffDays > 30) {
+            score -= 15;
+            matchReasons.push('⚠ Date diff >30 days');
+          }
+
+          if (exp1Account && exp2Account && !sameAccount) {
+            score -= 10;
+            matchReasons.push('⚠ Different account');
+          }
+
+          if (exp1PaymentType && exp2PaymentType && !samePaymentType) {
+            score -= 10;
+            matchReasons.push('⚠ Different payment type');
+          }
+
+          // Classify based on score
           let duplicateType = null;
           let confidence = null;
-          let score = 0;
 
-          // Scenario 1: EXACT duplicate - same vendor, bill, amount, date
-          if (sameBillId && sameAmount && sameDate) {
+          if (score >= 95) {
             duplicateType = 'exact';
             confidence = 'very_high';
-            score = 100;
-          }
-          // Scenario 2: STRONG duplicate - same vendor, bill, amount (different dates)
-          else if (sameBillId && sameAmount) {
+          } else if (score >= 75) {
             duplicateType = 'strong';
             confidence = 'high';
-            score = 85;
-          }
-          // Scenario 3: LIKELY duplicate - same vendor, amount, date (no bill_id required)
-          else if (sameAmount && sameDate && exp1Amount >= 50) {
+          } else if (score >= 50) {
             duplicateType = 'likely';
-            confidence = 'medium_high';
-            score = 70;
+            confidence = 'medium';
           }
+          // Below 50 = not reported as duplicate
 
           if (duplicateType) {
             const vendorName = exp1.vendor_name || findMetaName('vendors', vendorId, 'id', 'vendor_name') || 'Unknown';
@@ -965,6 +1107,7 @@
               type: duplicateType,
               confidence,
               score,
+              matchReasons,
               expense1Id: exp1Id,
               expense2Id: exp2Id,
               expense1: exp1,
@@ -977,7 +1120,7 @@
               date2: exp2Date
             });
 
-            console.log(`[DUPLICATES] ${duplicateType.toUpperCase()}: ${vendorName} - $${exp1Amount.toFixed(2)} (${exp1Date} vs ${exp2Date})`);
+            console.log(`[DUPLICATES] ${duplicateType.toUpperCase()} (${score}pts): ${vendorName} - $${exp1Amount.toFixed(2)} | ${matchReasons.join(', ')}`);
           }
         }
       }
@@ -1048,6 +1191,8 @@
         expenses: expenseList,
         type: pairWithThis?.type || 'likely',
         confidence: pairWithThis?.confidence || 'medium',
+        score: pairWithThis?.score || 0,
+        matchReasons: pairWithThis?.matchReasons || [],
         vendorName: pairWithThis?.vendorName || 'Unknown',
         amount: pairWithThis?.amount || 0,
         billId: pairWithThis?.billId
@@ -1223,12 +1368,37 @@
     // Update cluster info
     const typeLabel = cluster.type === 'exact' ? '🔴 EXACT MATCH' :
                       cluster.type === 'strong' ? '🟠 STRONG MATCH' : '🟡 LIKELY DUPLICATE';
+
+    // Get match score and reasons (from first pair in cluster metadata)
+    const scoreDisplay = cluster.score ? `${cluster.score}%` : '';
+    const reasonsDisplay = cluster.matchReasons && cluster.matchReasons.length > 0
+      ? cluster.matchReasons.join(' • ')
+      : '';
+
     const infoEl = document.getElementById('duplicatePanelInfo');
     infoEl.innerHTML = `
-      <div class="duplicate-type-badge">${typeLabel}</div>
+      <div class="duplicate-type-badge">
+        ${typeLabel}
+        ${scoreDisplay ? `<span style="margin-left: 8px; font-weight: 600; color: #e5e7eb;">${scoreDisplay}</span>` : ''}
+      </div>
       <div class="duplicate-details">
         <strong>${cluster.vendorName}</strong> • $${cluster.amount.toFixed(2)}${cluster.billId ? ` • Bill #${cluster.billId}` : ''}
       </div>
+      ${reasonsDisplay ? `
+        <div class="duplicate-match-reasons" style="
+          margin-top: 8px;
+          padding: 8px 12px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 6px;
+          font-size: 12px;
+          color: #9ca3af;
+          line-height: 1.5;
+        ">
+          <strong style="color: #d1d5db;">Match Reasons:</strong><br/>
+          ${reasonsDisplay}
+        </div>
+      ` : ''}
       <div class="duplicate-cluster-size">${cluster.expenses.length} similar expenses found</div>
     `;
 
@@ -1240,6 +1410,9 @@
       const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : 'No date';
       const desc = exp.LineDescription || 'No description';
       const billId = exp.bill_id || 'No bill #';
+      const paymentType = exp.PaymentType || 'N/A';
+      const account = exp.Account || 'N/A';
+      const projectName = exp.project_name || 'Unknown project';
 
       return `
         <div class="duplicate-expense-card" data-expense-id="${expId}">
@@ -1251,6 +1424,17 @@
             <div class="duplicate-expense-amount">$${amount.toFixed(2)}</div>
             <div class="duplicate-expense-bill">Bill: ${billId}</div>
             <div class="duplicate-expense-desc">${desc}</div>
+            <div class="duplicate-expense-meta" style="
+              display: flex;
+              gap: 12px;
+              margin-top: 8px;
+              font-size: 11px;
+              color: #9ca3af;
+            ">
+              <span>💳 ${paymentType}</span>
+              <span>📊 ${account}</span>
+              <span>🏗️ ${projectName}</span>
+            </div>
           </div>
           <div class="duplicate-expense-actions">
             <button type="button" class="btn-delete-expense-mini" onclick="deleteExpenseFromPanel('${expId}')">
@@ -1332,6 +1516,9 @@
     // Remove this cluster from the list
     duplicateClusters.splice(currentClusterIndex, 1);
 
+    // Update button badge
+    updateDuplicatesButtonBadge();
+
     // Show toast
     if (window.Toast) {
       Toast.success('Dismissed', 'This cluster marked as not duplicate');
@@ -1386,6 +1573,7 @@
         // If cluster now has less than 2 expenses, remove it
         if (cluster.expenses.length < 2) {
           duplicateClusters.splice(currentClusterIndex, 1);
+          updateDuplicatesButtonBadge(); // Update button badge
 
           if (duplicateClusters.length === 0) {
             hideDuplicateReviewPanel();
@@ -1444,12 +1632,44 @@
     });
   }
 
+  /**
+   * Updates the "Health Check" button with a badge showing the count
+   */
+  function updateDuplicatesButtonBadge() {
+    const btn = document.getElementById('btnDetectDuplicates');
+    if (!btn) return;
+
+    const count = duplicateClusters.length;
+
+    if (count > 0) {
+      // Show badge with count
+      btn.innerHTML = `Health Check <span style="
+        display: inline-block;
+        background: #ef4444;
+        color: white;
+        border-radius: 10px;
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 6px;
+      ">${count}</span>`;
+      btn.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+    } else {
+      // Reset to default
+      btn.innerHTML = 'Health Check';
+      btn.style.borderColor = '';
+    }
+  }
+
   // Make functions globally accessible
   window.nextDuplicateCluster = nextDuplicateCluster;
   window.prevDuplicateCluster = prevDuplicateCluster;
   window.dismissCurrentCluster = dismissCurrentCluster;
   window.hideDuplicateReviewPanel = hideDuplicateReviewPanel;
   window.deleteExpenseFromPanel = deleteExpenseFromPanel;
+  window.detectDuplicateBillNumbers = detectDuplicateBillNumbers;
+  window.showDuplicateReviewPanel = showDuplicateReviewPanel;
+  window.updateDuplicatesButtonBadge = updateDuplicatesButtonBadge;
 
   /**
    * Highlights rows in the table that have duplicate warnings
@@ -1922,6 +2142,7 @@
       els.btnEditExpenses.disabled = true;
       els.btnAddExpense.disabled = true;
       els.btnBillView.disabled = true;
+      els.btnDetectDuplicates.disabled = true;
       els.projectFilter.disabled = true;
       if (els.editModeFooter) els.editModeFooter.classList.remove('hidden');
       // Add edit mode class to table for wider columns
@@ -1945,6 +2166,7 @@
       els.btnEditExpenses.disabled = expenses.length === 0;
       els.btnAddExpense.disabled = !selectedProjectId;
       els.btnBillView.disabled = expenses.length === 0;
+      els.btnDetectDuplicates.disabled = expenses.length < 2; // Need at least 2 expenses to compare
       els.projectFilter.disabled = false;
       if (els.editModeFooter) els.editModeFooter.classList.add('hidden');
       // Remove edit mode class from table
@@ -5382,6 +5604,7 @@
       // Edit mode disabled for "all" projects view
       els.btnEditExpenses.disabled = !selectedProjectId || expenses.length === 0 || isAllProjects;
       els.btnBillView.disabled = !selectedProjectId || expenses.length === 0;
+      els.btnDetectDuplicates.disabled = !selectedProjectId || expenses.length < 2; // Need at least 2 expenses
     });
 
     // Global search input - DEBOUNCED for performance
@@ -5687,6 +5910,45 @@
     // Column Manager button
     els.btnColumnManager?.addEventListener('click', () => {
       openColumnManager();
+    });
+
+    // Detect Duplicates button
+    els.btnDetectDuplicates?.addEventListener('click', async () => {
+      const btn = els.btnDetectDuplicates;
+
+      // If there are already clusters detected, just reopen the panel
+      if (duplicateClusters.length > 0) {
+        showDuplicateReviewPanel();
+        return;
+      }
+
+      // Otherwise, run detection
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span style="font-size: 14px;">⏳</span> Scanning...';
+
+      try {
+        await detectDuplicateBillNumbers();
+
+        // If duplicates found, panel is already shown and button gets badge
+        if (duplicateClusters.length > 0) {
+          updateDuplicatesButtonBadge();
+        } else {
+          // No duplicates
+          if (window.Toast) {
+            Toast.success('No Duplicates', 'No duplicate expenses detected!');
+          }
+        }
+      } catch (error) {
+        console.error('[DUPLICATES] Error detecting duplicates:', error);
+        if (window.Toast) {
+          Toast.error('Error', 'Failed to scan for duplicates');
+        }
+      } finally {
+        // Restore button
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
     });
 
     // Column Manager modal close buttons

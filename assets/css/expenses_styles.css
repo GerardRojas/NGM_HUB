@@ -195,6 +195,51 @@
   font-weight: 500;
 }
 
+/* Toolbar select - explicit styles to override any conflicts */
+.expenses-toolbar .ngm-select {
+  min-width: 280px;
+  padding: 10px 36px 10px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #2a2a2a;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.5) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 8px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.expenses-toolbar .ngm-select:hover {
+  border-color: #3a3a3a;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.expenses-toolbar .ngm-select:focus {
+  border-color: #3ecf8e;
+  background-color: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+}
+
+.expenses-toolbar .ngm-select option {
+  background: #1a1a1a;
+  color: rgba(255, 255, 255, 0.92);
+  padding: 10px;
+}
+
 /* Toolbar buttons */
 .btn-toolbar {
   display: inline-flex;

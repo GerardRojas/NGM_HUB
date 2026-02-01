@@ -933,7 +933,7 @@
 
         // Check user role access
         function checkAccess() {
-            const userStr = localStorage.getItem('ngm_user');
+            const userStr = localStorage.getItem('ngmUser');
             if (!userStr) {
                 window.location.href = 'login.html';
                 return false;

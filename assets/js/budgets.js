@@ -12,6 +12,10 @@
   let selectedProjectName = '';
   let currentCSVFile = null;
   let parsedCSVData = null;
+  let qboConnected = false;
+  let qboRealmId = null;
+  let qboBudgetPreview = [];
+  let pendingMappingChanges = {};
 
   // DOM Elements
   const els = {
@@ -22,6 +26,7 @@
     budgetsTableBody: null,
     globalSearch: null,
     btnImportCSV: null,
+    btnImportQBO: null,
     importModal: null,
     csvFileInput: null,
     btnSelectFile: null,
@@ -33,7 +38,16 @@
     btnCloseImportModal: null,
     btnCancelImport: null,
     btnConfirmImport: null,
-    pageLoadingOverlay: null
+    pageLoadingOverlay: null,
+    // Mapping modal elements
+    btnQBOMapping: null,
+    qboMappingModal: null,
+    btnCloseMappingModal: null,
+    btnCancelMapping: null,
+    btnSaveMappings: null,
+    btnAutoMatch: null,
+    mappingStats: null,
+    mappingTableBody: null
   };
 
   // ================================
@@ -114,6 +128,7 @@
     els.budgetsTableBody = document.getElementById('budgetsTableBody');
     els.globalSearch = document.getElementById('globalSearch');
     els.btnImportCSV = document.getElementById('btnImportCSV');
+    els.btnImportQBO = document.getElementById('btnImportQBO');
     els.importModal = document.getElementById('importCSVModal');
     els.csvFileInput = document.getElementById('csvFileInput');
     els.btnSelectFile = document.getElementById('btnSelectFile');
@@ -125,6 +140,15 @@
     els.btnCloseImportModal = document.getElementById('btnCloseImportModal');
     els.btnCancelImport = document.getElementById('btnCancelImport');
     els.btnConfirmImport = document.getElementById('btnConfirmImport');
+    // Mapping modal
+    els.btnQBOMapping = document.getElementById('btnQBOMapping');
+    els.qboMappingModal = document.getElementById('qboMappingModal');
+    els.btnCloseMappingModal = document.getElementById('btnCloseMappingModal');
+    els.btnCancelMapping = document.getElementById('btnCancelMapping');
+    els.btnSaveMappings = document.getElementById('btnSaveMappings');
+    els.btnAutoMatch = document.getElementById('btnAutoMatch');
+    els.mappingStats = document.getElementById('mappingStats');
+    els.mappingTableBody = document.getElementById('mappingTableBody');
   }
 
   // ================================
@@ -598,6 +622,377 @@
   }
 
   // ================================
+  // QBO INTEGRATION
+  // ================================
+
+  /**
+   * Check if QuickBooks is connected and get realm_id
+   */
+  async function checkQBOConnection() {
+    const apiBase = getApiBase();
+    try {
+      const status = await apiJson(`${apiBase}/qbo/status`);
+      console.log('[BUDGETS] QBO status:', status);
+
+      if (status.connected && status.connections && status.connections.length > 0) {
+        // Use the first active connection
+        const activeConnection = status.connections.find(c => c.access_token_valid || c.refresh_token_valid);
+        if (activeConnection) {
+          qboConnected = true;
+          qboRealmId = activeConnection.realm_id;
+          console.log('[BUDGETS] QBO connected, realm_id:', qboRealmId);
+          return true;
+        }
+      }
+
+      qboConnected = false;
+      qboRealmId = null;
+      return false;
+    } catch (err) {
+      console.error('[BUDGETS] Error checking QBO connection:', err);
+      qboConnected = false;
+      qboRealmId = null;
+      return false;
+    }
+  }
+
+  /**
+   * Update QBO button states based on connection status
+   */
+  function updateQBOButtonState() {
+    // Import button - requires only connection (uses mappings)
+    if (els.btnImportQBO) {
+      els.btnImportQBO.disabled = !qboConnected;
+
+      if (!qboConnected) {
+        els.btnImportQBO.title = 'Connect to QuickBooks in Settings first';
+      } else {
+        els.btnImportQBO.title = 'Import mapped budgets from QuickBooks';
+      }
+    }
+
+    // Mapping button - only requires connection
+    if (els.btnQBOMapping) {
+      els.btnQBOMapping.disabled = !qboConnected;
+
+      if (!qboConnected) {
+        els.btnQBOMapping.title = 'Connect to QuickBooks in Settings first';
+      } else {
+        els.btnQBOMapping.title = 'Map QBO budgets to NGM projects';
+      }
+    }
+  }
+
+  /**
+   * Import budgets from QuickBooks using established mappings.
+   * QBO divides budgets into 12 months - the backend sums them.
+   */
+  async function importFromQBO() {
+    if (!qboConnected || !qboRealmId) {
+      if (window.Toast) {
+        Toast.warning('Not Connected', 'Please connect to QuickBooks in Settings first.');
+      }
+      return;
+    }
+
+    const btn = els.btnImportQBO;
+    const originalContent = btn.innerHTML;
+
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Syncing...';
+
+      const apiBase = getApiBase();
+
+      // Use sync-mapped endpoint which imports based on mappings
+      const url = `${apiBase}/qbo/budgets/sync-mapped/${qboRealmId}`;
+
+      console.log('[BUDGETS] Syncing mapped QBO budgets:', url);
+
+      const result = await apiJson(url, { method: 'POST' });
+
+      console.log('[BUDGETS] QBO sync result:', result);
+
+      if (result.total_imported > 0) {
+        if (window.Toast) {
+          Toast.success(
+            'Import Complete',
+            `Imported ${result.total_imported} budget lines to ${result.projects_updated} projects.`
+          );
+        }
+
+        // Reload budgets table if a project is selected
+        if (selectedProjectId) {
+          await loadBudgetsByProject(selectedProjectId);
+        }
+      } else {
+        if (window.Toast) {
+          Toast.warning(
+            'No Mapped Budgets',
+            'No mapped budgets to import. Use "QBO Mapping" to map budgets to projects first.'
+          );
+        }
+      }
+
+    } catch (err) {
+      console.error('[BUDGETS] QBO import error:', err);
+      if (window.Toast) {
+        Toast.error('Import Failed', 'Error importing from QuickBooks.', { details: err.message });
+      }
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalContent;
+      updateQBOButtonState();
+    }
+  }
+
+  // ================================
+  // QBO BUDGET MAPPING
+  // ================================
+
+  /**
+   * Open the QBO budget mapping modal
+   */
+  async function openMappingModal() {
+    if (!qboConnected || !qboRealmId) {
+      if (window.Toast) {
+        Toast.warning('Not Connected', 'Please connect to QuickBooks in Settings first.');
+      }
+      return;
+    }
+
+    // Reset state
+    pendingMappingChanges = {};
+    qboBudgetPreview = [];
+
+    // Show modal
+    els.qboMappingModal.classList.remove('hidden');
+
+    // Load preview data
+    await loadBudgetPreview();
+  }
+
+  /**
+   * Close the mapping modal
+   */
+  function closeMappingModal() {
+    els.qboMappingModal.classList.add('hidden');
+    pendingMappingChanges = {};
+  }
+
+  /**
+   * Load budget preview from QBO
+   */
+  async function loadBudgetPreview() {
+    const apiBase = getApiBase();
+
+    try {
+      els.mappingStats.textContent = 'Loading budgets from QuickBooks...';
+      els.mappingTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 24px; color: #9ca3af;">Loading...</td></tr>';
+
+      const result = await apiJson(`${apiBase}/qbo/budgets/preview/${qboRealmId}`);
+      console.log('[BUDGETS] Preview result:', result);
+
+      qboBudgetPreview = result.data || [];
+
+      // Update stats
+      els.mappingStats.innerHTML = `
+        <span style="color: #22c55e;">${result.mapped_count || 0} mapped</span> ·
+        <span style="color: #f59e0b;">${result.unmapped_count || 0} unmapped</span> ·
+        ${result.count || 0} total
+      `;
+
+      // Render table
+      renderMappingTable();
+
+    } catch (err) {
+      console.error('[BUDGETS] Error loading preview:', err);
+      els.mappingStats.textContent = 'Error loading budgets';
+      els.mappingTableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 24px; color: #ef4444;">Error: ${err.message}</td></tr>`;
+    }
+  }
+
+  /**
+   * Render the mapping table
+   */
+  function renderMappingTable() {
+    if (!qboBudgetPreview.length) {
+      els.mappingTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 24px; color: #9ca3af;">No budgets found in QuickBooks</td></tr>';
+      return;
+    }
+
+    const rows = qboBudgetPreview.map(budget => {
+      const statusClass = budget.is_mapped ? 'status-badge-success' : 'status-badge-warning';
+      const statusText = budget.is_mapped ? 'Mapped' : 'Unmapped';
+
+      // Get current selection (from pending changes or original)
+      const currentProjectId = pendingMappingChanges[budget.qbo_budget_id] !== undefined
+        ? pendingMappingChanges[budget.qbo_budget_id]
+        : (budget.ngm_project_id || '');
+
+      // Build project options
+      const projectOptions = projects.map(p => {
+        const projectId = p.project_id || p.id;
+        const projectName = p.project_name || p.name || 'Unnamed';
+        const selected = projectId === currentProjectId ? 'selected' : '';
+        return `<option value="${projectId}" ${selected}>${projectName}</option>`;
+      }).join('');
+
+      return `
+        <tr data-qbo-budget-id="${budget.qbo_budget_id}">
+          <td>
+            <div style="font-weight: 500;">${budget.qbo_budget_name || 'Unnamed'}</div>
+            ${budget.auto_matched ? '<span style="font-size: 11px; color: #a78bfa;">✨ auto-matched</span>' : ''}
+          </td>
+          <td>${budget.qbo_fiscal_year || '—'}</td>
+          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+          <td>
+            <select class="ngm-select mapping-select" data-qbo-budget-id="${budget.qbo_budget_id}" data-budget-name="${budget.qbo_budget_name || ''}" data-fiscal-year="${budget.qbo_fiscal_year || ''}">
+              <option value="">— Select Project —</option>
+              ${projectOptions}
+            </select>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    els.mappingTableBody.innerHTML = rows;
+
+    // Add change listeners to selects
+    els.mappingTableBody.querySelectorAll('.mapping-select').forEach(select => {
+      select.addEventListener('change', handleMappingChange);
+    });
+  }
+
+  /**
+   * Handle mapping dropdown change
+   */
+  function handleMappingChange(e) {
+    const select = e.target;
+    const qboBudgetId = select.dataset.qboBudgetId;
+    const newProjectId = select.value;
+
+    // Track change
+    pendingMappingChanges[qboBudgetId] = newProjectId || null;
+
+    console.log('[BUDGETS] Mapping change:', qboBudgetId, '→', newProjectId);
+  }
+
+  /**
+   * Save all pending mapping changes
+   */
+  async function saveMappings() {
+    const changes = Object.entries(pendingMappingChanges);
+
+    if (changes.length === 0) {
+      if (window.Toast) {
+        Toast.info('No Changes', 'No mapping changes to save.');
+      }
+      closeMappingModal();
+      return;
+    }
+
+    const btn = els.btnSaveMappings;
+    const originalText = btn.textContent;
+
+    try {
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
+
+      const apiBase = getApiBase();
+      let savedCount = 0;
+      let errorCount = 0;
+
+      for (const [qboBudgetId, ngmProjectId] of changes) {
+        try {
+          // Find budget info
+          const budget = qboBudgetPreview.find(b => b.qbo_budget_id === qboBudgetId);
+
+          if (ngmProjectId) {
+            // Create or update mapping
+            await apiJson(`${apiBase}/qbo/budgets/mapping`, {
+              method: 'POST',
+              body: JSON.stringify({
+                qbo_budget_id: qboBudgetId,
+                qbo_budget_name: budget?.qbo_budget_name || '',
+                qbo_fiscal_year: budget?.qbo_fiscal_year || null,
+                ngm_project_id: ngmProjectId
+              })
+            });
+          } else {
+            // Clear mapping (set to null via update)
+            await apiJson(`${apiBase}/qbo/budgets/mapping/${qboBudgetId}`, {
+              method: 'PUT',
+              body: JSON.stringify({ ngm_project_id: null })
+            });
+          }
+          savedCount++;
+        } catch (err) {
+          console.error(`[BUDGETS] Error saving mapping for ${qboBudgetId}:`, err);
+          errorCount++;
+        }
+      }
+
+      if (window.Toast) {
+        if (errorCount > 0) {
+          Toast.warning('Partial Save', `Saved ${savedCount} mappings, ${errorCount} failed.`);
+        } else {
+          Toast.success('Mappings Saved', `Successfully saved ${savedCount} mappings.`);
+        }
+      }
+
+      closeMappingModal();
+
+    } catch (err) {
+      console.error('[BUDGETS] Error saving mappings:', err);
+      if (window.Toast) {
+        Toast.error('Save Failed', 'Error saving mappings.', { details: err.message });
+      }
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+
+  /**
+   * Auto-match budgets to projects by name
+   */
+  async function autoMatchBudgets() {
+    if (!qboConnected || !qboRealmId) return;
+
+    const btn = els.btnAutoMatch;
+    const originalText = btn.innerHTML;
+
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Matching...';
+
+      const apiBase = getApiBase();
+      const result = await apiJson(`${apiBase}/qbo/budgets/mapping/auto-match?realm_id=${qboRealmId}`, {
+        method: 'POST'
+      });
+
+      console.log('[BUDGETS] Auto-match result:', result);
+
+      if (window.Toast) {
+        Toast.success('Auto-Match Complete', `Matched ${result.matched || 0} budgets to projects.`);
+      }
+
+      // Reload preview
+      await loadBudgetPreview();
+
+    } catch (err) {
+      console.error('[BUDGETS] Auto-match error:', err);
+      if (window.Toast) {
+        Toast.error('Auto-Match Failed', err.message);
+      }
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+
+  // ================================
   // EVENT LISTENERS
   // ================================
   function setupEventListeners() {
@@ -611,14 +1006,11 @@
 
       console.log('[BUDGETS] Project selected:', selectedProjectId, selectedProjectName);
 
-      // Enable/disable import button based on project selection
+      // Enable/disable import buttons based on project selection
       if (els.btnImportCSV) {
-        if (selectedProjectId) {
-          els.btnImportCSV.disabled = false;
-        } else {
-          els.btnImportCSV.disabled = true;
-        }
+        els.btnImportCSV.disabled = !selectedProjectId;
       }
+      updateQBOButtonState();
 
       if (selectedProjectId) {
         await loadBudgetsByProject(selectedProjectId);
@@ -632,6 +1024,33 @@
     els.btnImportCSV?.addEventListener('click', () => {
       openImportModal();
     });
+
+    // Import from QBO button
+    els.btnImportQBO?.addEventListener('click', () => {
+      importFromQBO();
+    });
+
+    // QBO Mapping button
+    els.btnQBOMapping?.addEventListener('click', () => {
+      openMappingModal();
+    });
+
+    // Mapping modal - close buttons
+    els.btnCloseMappingModal?.addEventListener('click', closeMappingModal);
+    els.btnCancelMapping?.addEventListener('click', closeMappingModal);
+
+    // Mapping modal - backdrop close
+    els.qboMappingModal?.addEventListener('click', (e) => {
+      if (e.target === els.qboMappingModal) {
+        closeMappingModal();
+      }
+    });
+
+    // Mapping modal - save button
+    els.btnSaveMappings?.addEventListener('click', saveMappings);
+
+    // Mapping modal - auto-match button
+    els.btnAutoMatch?.addEventListener('click', autoMatchBudgets);
 
     // Import CSV button from empty state
     document.getElementById('btnImportFromEmpty')?.addEventListener('click', () => {
@@ -686,10 +1105,20 @@
       await window.initTopbarPills();
     }
 
-    // Disable import button initially (no project selected)
+    // Disable import buttons initially (no project selected)
     if (els.btnImportCSV) {
       els.btnImportCSV.disabled = true;
     }
+    if (els.btnImportQBO) {
+      els.btnImportQBO.disabled = true;
+    }
+    if (els.btnQBOMapping) {
+      els.btnQBOMapping.disabled = true;
+    }
+
+    // Check QBO connection status
+    await checkQBOConnection();
+    updateQBOButtonState();
 
     // Load projects
     await loadProjects();

@@ -98,6 +98,12 @@
                                 </div>
                             </div>
                             <div class="toolbar-right">
+                                <button type="button" class="btn-toolbar btn-toolbar-qbo" id="btnQBOMapping" disabled title="Connect to QuickBooks in Settings first">
+                                    🔗 QBO Mapping
+                                </button>
+                                <button type="button" class="btn-toolbar btn-toolbar-qbo" id="btnImportQBO" disabled title="Connect to QuickBooks in Settings first">
+                                    🔄 Import from QBO
+                                </button>
                                 <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnImportCSV">
                                     📂 Import from CSV
                                 </button>
@@ -205,6 +211,59 @@
                 <button type="button" class="btn-modal-secondary" id="btnCancelImport">Cancel</button>
                 <button type="button" class="btn-modal-primary" id="btnConfirmImport" disabled>
                     Import Budget
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QBO Budget Mapping Modal -->
+    <div id="qboMappingModal" class="modal-backdrop hidden">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <div class="modal-title">QuickBooks Budget Mapping</div>
+                <button type="button" class="modal-close-btn" id="btnCloseMappingModal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Instructions -->
+                <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                    <p style="font-size: 13px; color: #c4b5fd; margin: 0;">
+                        Map QuickBooks budgets to NGM Hub projects. Only mapped budgets will be imported when you use "Import from QBO".
+                    </p>
+                </div>
+
+                <!-- Auto-match button -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div id="mappingStats" style="font-size: 13px; color: #9ca3af;">
+                        Loading budgets...
+                    </div>
+                    <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnAutoMatch">
+                        ✨ Auto-Match by Name
+                    </button>
+                </div>
+
+                <!-- Mapping table -->
+                <div class="mapping-table-container" style="max-height: 400px; overflow-y: auto;">
+                    <table class="expenses-table" id="mappingTable">
+                        <thead>
+                            <tr>
+                                <th>QBO Budget</th>
+                                <th>Year</th>
+                                <th>Status</th>
+                                <th>NGM Project</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mappingTableBody">
+                            <!-- Rows rendered by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCancelMapping">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="btnSaveMappings">
+                    Save Mappings
                 </button>
             </div>
         </div>

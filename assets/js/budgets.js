@@ -289,7 +289,7 @@
     const totalRow = `
       <tr class="table-total-row">
         <td colspan="3" style="text-align: right; font-weight: 600;">Total Budget:</td>
-        <td style="font-weight: 700; color: #22c55e;">$${formatCurrency(total)}</td>
+        <td style="text-align: right; font-weight: 700; color: #22c55e;">$${formatCurrency(total)}</td>
         <td colspan="4"></td>
       </tr>
     `;

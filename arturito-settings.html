@@ -636,9 +636,29 @@
                 font-size: 12px;
             }
         }
+
+      /* Loading overlay styles */
+      body.page-loading { overflow: hidden; }
+      .page-loading-overlay {
+        position: fixed; inset: 0; background: #0d0d0d;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 9999; gap: 16px;
+      }
+      .page-loading-overlay.hidden { display: none; }
+      .page-loading .app-layout { visibility: hidden; }
+      .loading-logo { width: 160px; height: 160px; object-fit: contain; animation: pulse 1.5s ease-in-out infinite; }
+      .loading-text { color: rgba(255,255,255,0.5); font-size: 13px; font-family: system-ui, sans-serif; letter-spacing: 0.05em; }
+      @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
     </style>
+    <script src="assets/js/page-loading.js" defer></script>
 </head>
-<body class="page-settings">
+<body class="page-settings page-loading">
+    <!-- Page Loading Overlay -->
+    <div class="page-loading-overlay" id="pageLoadingOverlay">
+        <img src="assets/img/white_icon.png" class="loading-logo" alt="Loading...">
+        <span class="loading-text">Loading...</span>
+    </div>
+
     <!-- Access Denied Overlay (hidden by default, shown if not CEO/COO) -->
     <div class="access-denied-overlay" id="accessDeniedOverlay" style="display: none;">
         <div class="access-denied-icon">🔒</div>

@@ -9519,6 +9519,11 @@
 
     // Register Arturito copilot handlers
     registerCopilotHandlers();
+
+    // Hide loading overlay
+    if (typeof hidePageLoading === 'function') {
+      hidePageLoading();
+    }
   }
 
   // ================================

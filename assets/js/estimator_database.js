@@ -32,8 +32,40 @@ const state = {
         wastePercent: 0,     // Waste percentage for materials
         activeFilters: new Set(['material', 'labor', 'inline']), // Active type filters
         selectedPickerMaterial: null // Currently selected material in picker
-    }
+    },
+
+    // Image Upload State
+    materialImageFile: null,      // File object for material image
+    materialImageBlobUrl: null,   // Temporary blob URL for preview
+    materialImageUrl: null,       // Existing URL from database
+    conceptImageFile: null,       // File object for concept image
+    conceptImageBlobUrl: null,    // Temporary blob URL for preview
+    conceptImageUrl: null         // Existing URL from database
 };
+
+// Image upload configuration
+const IMAGE_UPLOAD_CONFIG = {
+    allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+    maxSize: 5 * 1024 * 1024, // 5MB
+    bucketName: 'estimator-images'
+};
+
+// Column visibility configuration
+const COLUMN_CONFIG = [
+    { key: 'image', label: 'Image', defaultVisible: true },
+    { key: 'code', label: 'Code', defaultVisible: true },
+    { key: 'name', label: 'Name', defaultVisible: true },
+    { key: 'category', label: 'Category', defaultVisible: true },
+    { key: 'brand', label: 'Brand', defaultVisible: false },
+    { key: 'vendor', label: 'Vendor', defaultVisible: false },
+    { key: 'unit', label: 'Unit', defaultVisible: true },
+    { key: 'unitcost', label: 'Unit Cost', defaultVisible: true },
+    { key: 'tax', label: 'Tax %', defaultVisible: false },
+    { key: 'costwithtax', label: 'Cost w/ Tax', defaultVisible: false }
+];
+
+const COLUMN_VISIBILITY_KEY = 'estimatorDatabaseColumnVisibility';
+let columnVisibility = {};
 
 // ========================================
 // DOM Elements
@@ -83,7 +115,8 @@ const DOM = {
     materialSupplier: document.getElementById('materialSupplier'),
     materialDescription: document.getElementById('materialDescription'),
     materialImage: document.getElementById('materialImage'),
-    materialImagePreview: document.getElementById('materialImagePreview'),
+    materialImageInput: document.getElementById('materialImageInput'),
+    materialImageContainer: document.getElementById('materialImageContainer'),
     btnCloseMaterialModal: document.getElementById('btnCloseMaterialModal'),
     btnCancelMaterial: document.getElementById('btnCancelMaterial'),
     btnSaveMaterial: document.getElementById('btnSaveMaterial'),
@@ -97,36 +130,28 @@ const DOM = {
     conceptUnit: document.getElementById('conceptUnit'),
     conceptDescription: document.getElementById('conceptDescription'),
     conceptImage: document.getElementById('conceptImage'),
-    conceptImagePreview: document.getElementById('conceptImagePreview'),
+    conceptImageInput: document.getElementById('conceptImageInput'),
+    conceptImageContainer: document.getElementById('conceptImageContainer'),
     btnCloseConceptModal: document.getElementById('btnCloseConceptModal'),
     btnCancelConcept: document.getElementById('btnCancelConcept'),
     btnSaveConcept: document.getElementById('btnSaveConcept'),
 
     // Builder toolbar
     btnAddFromDB: document.getElementById('btnAddFromDB'),
-    btnAddLabor: document.getElementById('btnAddLabor'),
     btnAddInline: document.getElementById('btnAddInline'),
+    btnAddPercent: document.getElementById('btnAddPercent'),
     btnClearAllItems: document.getElementById('btnClearAllItems'),
-
-    // Builder filters
-    filterMaterial: document.getElementById('filterMaterial'),
-    filterLabor: document.getElementById('filterLabor'),
-    filterInline: document.getElementById('filterInline'),
 
     // Builder table
     builderTableContainer: document.getElementById('builderTableContainer'),
     builderTableBody: document.getElementById('builderTableBody'),
     builderEmpty: document.getElementById('builderEmpty'),
 
-    // Builder fields
-    conceptWastePercent: document.getElementById('conceptWastePercent'),
-
-    // Builder summary
+    // Builder summary (in header)
+    summaryTotal: document.getElementById('summaryTotal'),
     summaryMaterials: document.getElementById('summaryMaterials'),
     summaryLabor: document.getElementById('summaryLabor'),
-    summaryInline: document.getElementById('summaryInline'),
-    summaryWaste: document.getElementById('summaryWaste'),
-    summaryTotal: document.getElementById('summaryTotal'),
+    summaryExternal: document.getElementById('summaryExternal'),
 
     // Material Picker Modal
     materialPickerModal: document.getElementById('materialPickerModal'),
@@ -145,11 +170,35 @@ const DOM = {
     btnCloseInlineItem: document.getElementById('btnCloseInlineItem'),
     btnCancelInlineItem: document.getElementById('btnCancelInlineItem'),
     btnConfirmInlineItem: document.getElementById('btnConfirmInlineItem'),
+    inlineTypeSelector: document.getElementById('inlineTypeSelector'),
     inlineItemType: document.getElementById('inlineItemType'),
+    inlineItemId: document.getElementById('inlineItemId'),
+    inlineItemIdError: document.getElementById('inlineItemIdError'),
     inlineItemDesc: document.getElementById('inlineItemDesc'),
     inlineItemUnit: document.getElementById('inlineItemUnit'),
     inlineItemQty: document.getElementById('inlineItemQty'),
-    inlineItemCost: document.getElementById('inlineItemCost')
+    inlineItemCost: document.getElementById('inlineItemCost'),
+
+    // Percentage Item Modal
+    percentItemModal: document.getElementById('percentItemModal'),
+    btnClosePercentItem: document.getElementById('btnClosePercentItem'),
+    btnCancelPercentItem: document.getElementById('btnCancelPercentItem'),
+    btnConfirmPercentItem: document.getElementById('btnConfirmPercentItem'),
+    percentAppliesTo: document.getElementById('percentAppliesTo'),
+    percentAppliesType: document.getElementById('percentAppliesType'),
+    percentItemId: document.getElementById('percentItemId'),
+    percentItemIdError: document.getElementById('percentItemIdError'),
+    percentItemDesc: document.getElementById('percentItemDesc'),
+    percentItemValue: document.getElementById('percentItemValue'),
+
+    // Column Manager Modal
+    columnManagerModal: document.getElementById('columnManagerModal'),
+    btnColumnManager: document.getElementById('btnColumnManager'),
+    btnCloseColumnManager: document.getElementById('btnCloseColumnManager'),
+    btnCloseColumnManagerFooter: document.getElementById('btnCloseColumnManagerFooter'),
+    btnResetColumns: document.getElementById('btnResetColumns'),
+    columnCheckboxes: document.getElementById('columnCheckboxes'),
+    materialsTable: document.getElementById('materialsTable')
 };
 
 // ========================================
@@ -325,14 +374,24 @@ function renderMaterialsTable() {
         const imageCell = imageUrl
             ? `<img src="${escapeHtml(imageUrl)}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" /><span style="display: none; width: 40px; height: 40px; background: #27272a; border-radius: 4px; align-items: center; justify-content: center; color: #6b7280; font-size: 10px;">Err</span>`
             : `<span style="display: flex; width: 40px; height: 40px; background: #27272a; border-radius: 4px; align-items: center; justify-content: center; color: #6b7280; font-size: 10px;">-</span>`;
+
+        // Calculate cost with tax
+        const unitCost = parseFloat(mat.price_numeric || mat.Price || 0);
+        const taxPercent = parseFloat(mat.tax_percent || 0);
+        const costWithTax = unitCost * (1 + taxPercent / 100);
+
         tr.innerHTML = `
-            <td>${imageCell}</td>
-            <td><code style="font-size: 12px; color: #9ca3af;">${escapeHtml(mat.ID || '')}</code></td>
-            <td>${escapeHtml(mat.short_description || mat['Short Description'] || '-')}</td>
-            <td>${escapeHtml(mat.category_name || '-')}</td>
-            <td>${escapeHtml(mat.unit_name || mat.Unit || '-')}</td>
-            <td>${formatCurrency(mat.price_numeric || mat.Price || 0)}</td>
-            <td>
+            <td class="col-image">${imageCell}</td>
+            <td class="col-code"><code style="font-size: 12px; color: #9ca3af;">${escapeHtml(mat.ID || '')}</code></td>
+            <td class="col-name">${escapeHtml(mat.short_description || mat['Short Description'] || '-')}</td>
+            <td class="col-category">${escapeHtml(mat.category_name || '-')}</td>
+            <td class="col-brand">${escapeHtml(mat.brand || mat.Brand || '-')}</td>
+            <td class="col-vendor">${escapeHtml(mat.vendor_name || '-')}</td>
+            <td class="col-unit">${escapeHtml(mat.unit_name || mat.Unit || '-')}</td>
+            <td class="col-unitcost">${formatCurrency(unitCost)}</td>
+            <td class="col-tax">${taxPercent > 0 ? taxPercent.toFixed(1) + '%' : '-'}</td>
+            <td class="col-costwithtax">${taxPercent > 0 ? formatCurrency(costWithTax) : '-'}</td>
+            <td class="col-actions">
                 <button class="btn-action" onclick="editMaterial('${escapeHtml(mat.ID)}')">Edit</button>
                 <button class="btn-action btn-action-danger" onclick="confirmDeleteMaterial('${escapeHtml(mat.ID)}')">Del</button>
             </td>
@@ -341,6 +400,7 @@ function renderMaterialsTable() {
     });
 
     showContent();
+    applyColumnVisibility();
 }
 
 function renderConceptsTable() {
@@ -445,7 +505,15 @@ async function loadData() {
                 state.filters.category_id
             );
             state.materials = result.data || [];
-            state.pagination = { ...state.pagination, ...result.pagination };
+            // Map API snake_case to JS camelCase
+            const apiPagination = result.pagination || {};
+            state.pagination = {
+                ...state.pagination,
+                page: apiPagination.page || state.pagination.page,
+                pageSize: apiPagination.page_size || state.pagination.pageSize,
+                total: apiPagination.total || 0,
+                totalPages: apiPagination.total_pages || 0
+            };
             renderMaterialsTable();
         } else {
             const result = await API.fetchConcepts(
@@ -454,7 +522,15 @@ async function loadData() {
                 state.filters.category_id
             );
             state.concepts = result.data || [];
-            state.pagination = { ...state.pagination, ...result.pagination };
+            // Map API snake_case to JS camelCase
+            const apiPagination = result.pagination || {};
+            state.pagination = {
+                ...state.pagination,
+                page: apiPagination.page || state.pagination.page,
+                pageSize: apiPagination.page_size || state.pagination.pageSize,
+                total: apiPagination.total || 0,
+                totalPages: apiPagination.total_pages || 0
+            };
             renderConceptsTable();
         }
 
@@ -507,6 +583,11 @@ function switchTab(tab) {
 function openMaterialModal(material = null) {
     state.editingId = material ? material.ID : null;
 
+    // Reset image state
+    state.materialImageFile = null;
+    state.materialImageBlobUrl = null;
+    state.materialImageUrl = material?.image || material?.Image || null;
+
     DOM.materialModalTitle.textContent = material ? 'Edit Material' : 'Add Material';
     DOM.materialCode.value = material?.ID || '';
     DOM.materialCode.disabled = !!material; // Can't change ID when editing
@@ -517,25 +598,124 @@ function openMaterialModal(material = null) {
     DOM.materialSupplier.value = material?.Vendor || '';
     DOM.materialDescription.value = material?.full_description || material?.['Full Description'] || '';
 
-    // Image field
-    const imageUrl = material?.image || material?.Image || '';
-    DOM.materialImage.value = imageUrl;
-    updateImagePreview(imageUrl);
+    // Image field - set hidden input value
+    DOM.materialImage.value = state.materialImageUrl || '';
+
+    // Render image upload UI
+    renderMaterialImageUI();
 
     DOM.materialModal.classList.remove('hidden');
 }
 
-function updateImagePreview(url) {
-    if (url && url.trim()) {
-        DOM.materialImagePreview.innerHTML = `<img src="${escapeHtml(url)}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\\'color: #ef4444; font-size: 10px;\\'>Invalid</span>'" />`;
+function renderMaterialImageUI() {
+    const container = DOM.materialImageContainer;
+    if (!container) return;
+
+    // If we have an existing URL or a selected file, show preview
+    const previewUrl = state.materialImageBlobUrl || state.materialImageUrl;
+
+    if (previewUrl) {
+        container.innerHTML = `
+            <div class="image-preview-container">
+                <div class="image-preview-thumb">
+                    <img src="${escapeHtml(previewUrl)}" alt="Preview" onerror="this.parentElement.innerHTML='<span style=\\'color:#ef4444;font-size:10px;\\'>Error</span>'" />
+                </div>
+                <div class="image-preview-info">
+                    <div class="image-preview-name">${state.materialImageFile ? escapeHtml(state.materialImageFile.name) : 'Current image'}</div>
+                    <div class="image-preview-status">${state.materialImageFile ? 'Ready to upload' : 'Saved'}</div>
+                    <div class="image-preview-actions">
+                        <button type="button" class="image-btn image-btn--replace" id="btnReplaceMaterialImage">Replace</button>
+                        <button type="button" class="image-btn image-btn--delete" id="btnDeleteMaterialImage">Delete</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Bind events
+        document.getElementById('btnReplaceMaterialImage')?.addEventListener('click', () => {
+            DOM.materialImageInput.click();
+        });
+
+        document.getElementById('btnDeleteMaterialImage')?.addEventListener('click', () => {
+            state.materialImageFile = null;
+            if (state.materialImageBlobUrl) {
+                URL.revokeObjectURL(state.materialImageBlobUrl);
+                state.materialImageBlobUrl = null;
+            }
+            state.materialImageUrl = null;
+            DOM.materialImage.value = '';
+            renderMaterialImageUI();
+        });
     } else {
-        DOM.materialImagePreview.innerHTML = '<span style="color: #6b7280; font-size: 10px;">No img</span>';
+        // Show drop zone
+        container.innerHTML = `
+            <div class="image-drop-zone" id="materialImageDropZone">
+                <div class="image-drop-icon">+</div>
+                <div class="image-drop-text">
+                    <span class="image-drop-primary">Click or drop image</span>
+                    <span class="image-drop-secondary">JPG, PNG, GIF, WebP (max 5MB)</span>
+                </div>
+            </div>
+        `;
+
+        // Bind drop zone events
+        const dropZone = document.getElementById('materialImageDropZone');
+        if (dropZone) {
+            dropZone.addEventListener('click', () => DOM.materialImageInput.click());
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('image-drop-zone--active');
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('image-drop-zone--active');
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('image-drop-zone--active');
+                const file = e.dataTransfer.files[0];
+                if (file) handleMaterialImageSelect(file);
+            });
+        }
     }
+}
+
+function handleMaterialImageSelect(file) {
+    // Validate file type
+    if (!IMAGE_UPLOAD_CONFIG.allowedTypes.includes(file.type)) {
+        showToast('Invalid file type. Only JPG, PNG, GIF, WebP allowed.', 'error');
+        return;
+    }
+
+    // Validate file size
+    if (file.size > IMAGE_UPLOAD_CONFIG.maxSize) {
+        showToast('File too large. Maximum size is 5MB.', 'error');
+        return;
+    }
+
+    // Revoke previous blob URL if exists
+    if (state.materialImageBlobUrl) {
+        URL.revokeObjectURL(state.materialImageBlobUrl);
+    }
+
+    // Store file and create preview URL
+    state.materialImageFile = file;
+    state.materialImageBlobUrl = URL.createObjectURL(file);
+
+    // Re-render UI
+    renderMaterialImageUI();
 }
 
 function closeMaterialModal() {
     DOM.materialModal.classList.add('hidden');
     state.editingId = null;
+
+    // Clean up image state
+    if (state.materialImageBlobUrl) {
+        URL.revokeObjectURL(state.materialImageBlobUrl);
+        state.materialImageBlobUrl = null;
+    }
+    state.materialImageFile = null;
+    state.materialImageUrl = null;
 }
 
 async function saveMaterial() {
@@ -546,7 +726,7 @@ async function saveMaterial() {
         category_id: DOM.materialCategory.value || null,
         unit_id: DOM.materialUnit.value || null,
         price_numeric: parseFloat(DOM.materialUnitCost.value) || 0,
-        image: DOM.materialImage.value.trim() || null
+        image: state.materialImageUrl || null
     };
 
     if (!data.ID || !data.short_description) {
@@ -555,6 +735,13 @@ async function saveMaterial() {
     }
 
     try {
+        // Upload image if a new file was selected
+        if (state.materialImageFile) {
+            showToast('Uploading image...', 'info');
+            const imageUrl = await uploadImageToSupabase(state.materialImageFile, 'materials', data.ID);
+            data.image = imageUrl;
+        }
+
         if (state.editingId) {
             await API.updateMaterial(state.editingId, data);
             showToast('Material updated successfully', 'success');
@@ -568,6 +755,45 @@ async function saveMaterial() {
     } catch (error) {
         showToast(error.message, 'error');
     }
+}
+
+// Upload image to Supabase Storage
+async function uploadImageToSupabase(file, folder, itemId) {
+    const { createClient } = window.supabase || {};
+    if (!createClient) {
+        throw new Error('Supabase client not loaded.');
+    }
+
+    const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const extension = file.name.split('.').pop();
+    const filename = `${itemId}_${timestamp}.${extension}`;
+    const filepath = `${folder}/${filename}`;
+
+    console.log('[IMAGE] Uploading:', { filename, filepath, size: file.size });
+
+    // Upload file
+    const { data, error } = await supabase.storage
+        .from(IMAGE_UPLOAD_CONFIG.bucketName)
+        .upload(filepath, file, {
+            cacheControl: '3600',
+            upsert: true
+        });
+
+    if (error) {
+        console.error('[IMAGE] Upload error:', error);
+        throw new Error(`Upload failed: ${error.message}`);
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+        .from(IMAGE_UPLOAD_CONFIG.bucketName)
+        .getPublicUrl(filepath);
+
+    console.log('[IMAGE] Upload successful:', urlData.publicUrl);
+    return urlData.publicUrl;
 }
 
 window.editMaterial = function(id) {
@@ -595,6 +821,11 @@ window.confirmDeleteMaterial = async function(id) {
 function openConceptModal(concept = null) {
     state.editingId = concept ? concept.id : null;
 
+    // Reset image state
+    state.conceptImageFile = null;
+    state.conceptImageBlobUrl = null;
+    state.conceptImageUrl = concept?.image || null;
+
     DOM.conceptModalTitle.textContent = concept ? 'Edit Concept' : 'New Concept';
     DOM.conceptCode.value = concept?.code || '';
     DOM.conceptName.value = concept?.short_description || '';
@@ -602,10 +833,11 @@ function openConceptModal(concept = null) {
     DOM.conceptUnit.value = concept?.unit_id || '';
     DOM.conceptDescription.value = concept?.full_description || '';
 
-    // Concept image
-    const conceptImageUrl = concept?.image || '';
-    DOM.conceptImage.value = conceptImageUrl;
-    updateConceptImagePreview(conceptImageUrl);
+    // Concept image - set hidden input value
+    DOM.conceptImage.value = state.conceptImageUrl || '';
+
+    // Render image upload UI
+    renderConceptImageUI();
 
     // Initialize builder state
     state.builder.items = [];
@@ -664,14 +896,109 @@ function closeConceptModal() {
     DOM.conceptModal.classList.add('hidden');
     state.editingId = null;
     state.builder.items = [];
+
+    // Clean up image state
+    if (state.conceptImageBlobUrl) {
+        URL.revokeObjectURL(state.conceptImageBlobUrl);
+        state.conceptImageBlobUrl = null;
+    }
+    state.conceptImageFile = null;
+    state.conceptImageUrl = null;
 }
 
-function updateConceptImagePreview(url) {
-    if (url && url.trim()) {
-        DOM.conceptImagePreview.innerHTML = `<img src="${escapeHtml(url)}" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.parentElement.innerHTML='<span style=\\'color: #ef4444; font-size: 10px;\\'>Invalid URL</span>'" />`;
+function renderConceptImageUI() {
+    const container = DOM.conceptImageContainer;
+    if (!container) return;
+
+    // If we have an existing URL or a selected file, show preview
+    const previewUrl = state.conceptImageBlobUrl || state.conceptImageUrl;
+
+    if (previewUrl) {
+        container.innerHTML = `
+            <div style="width: 100px; height: 100px; border-radius: 8px; overflow: hidden; background: #27272a; position: relative;">
+                <img src="${escapeHtml(previewUrl)}" style="width: 100%; height: 100%; object-fit: cover;" alt="Preview" onerror="this.style.display='none'" />
+                <div style="position: absolute; bottom: 4px; right: 4px; display: flex; gap: 2px;">
+                    <button type="button" id="btnReplaceConceptImage" style="width: 24px; height: 24px; border-radius: 4px; background: rgba(59,130,246,0.8); border: none; color: white; font-size: 11px; cursor: pointer;" title="Replace">R</button>
+                    <button type="button" id="btnDeleteConceptImage" style="width: 24px; height: 24px; border-radius: 4px; background: rgba(248,113,113,0.8); border: none; color: white; font-size: 11px; cursor: pointer;" title="Delete">X</button>
+                </div>
+            </div>
+            <div style="font-size: 10px; color: #9ca3af; margin-top: 4px; text-align: center;">
+                ${state.conceptImageFile ? 'Ready' : 'Saved'}
+            </div>
+        `;
+
+        // Bind events
+        document.getElementById('btnReplaceConceptImage')?.addEventListener('click', () => {
+            DOM.conceptImageInput.click();
+        });
+
+        document.getElementById('btnDeleteConceptImage')?.addEventListener('click', () => {
+            state.conceptImageFile = null;
+            if (state.conceptImageBlobUrl) {
+                URL.revokeObjectURL(state.conceptImageBlobUrl);
+                state.conceptImageBlobUrl = null;
+            }
+            state.conceptImageUrl = null;
+            DOM.conceptImage.value = '';
+            renderConceptImageUI();
+        });
     } else {
-        DOM.conceptImagePreview.innerHTML = '<span style="color: #6b7280; font-size: 11px; text-align: center;">Click to<br>add image</span>';
+        // Show drop zone (compact)
+        container.innerHTML = `
+            <div id="conceptImageDropZone" style="width: 100px; height: 100px; border: 2px dashed rgba(148,163,184,0.3); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; background: rgba(255,255,255,0.02);">
+                <div style="font-size: 24px; opacity: 0.5;">+</div>
+                <div style="font-size: 10px; color: #9ca3af; text-align: center;">Click or<br>drop image</div>
+            </div>
+        `;
+
+        // Bind drop zone events
+        const dropZone = document.getElementById('conceptImageDropZone');
+        if (dropZone) {
+            dropZone.addEventListener('click', () => DOM.conceptImageInput.click());
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#3ecf8e';
+                dropZone.style.background = 'rgba(62,207,142,0.1)';
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.style.borderColor = 'rgba(148,163,184,0.3)';
+                dropZone.style.background = 'rgba(255,255,255,0.02)';
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = 'rgba(148,163,184,0.3)';
+                dropZone.style.background = 'rgba(255,255,255,0.02)';
+                const file = e.dataTransfer.files[0];
+                if (file) handleConceptImageSelect(file);
+            });
+        }
     }
+}
+
+function handleConceptImageSelect(file) {
+    // Validate file type
+    if (!IMAGE_UPLOAD_CONFIG.allowedTypes.includes(file.type)) {
+        showToast('Invalid file type. Only JPG, PNG, GIF, WebP allowed.', 'error');
+        return;
+    }
+
+    // Validate file size
+    if (file.size > IMAGE_UPLOAD_CONFIG.maxSize) {
+        showToast('File too large. Maximum size is 5MB.', 'error');
+        return;
+    }
+
+    // Revoke previous blob URL if exists
+    if (state.conceptImageBlobUrl) {
+        URL.revokeObjectURL(state.conceptImageBlobUrl);
+    }
+
+    // Store file and create preview URL
+    state.conceptImageFile = file;
+    state.conceptImageBlobUrl = URL.createObjectURL(file);
+
+    // Re-render UI
+    renderConceptImageUI();
 }
 
 function generateItemId() {
@@ -684,11 +1011,8 @@ function generateItemId() {
 function renderBuilderTable() {
     const tbody = DOM.builderTableBody;
     const empty = DOM.builderEmpty;
-    const activeFilters = state.builder.activeFilters;
 
-    const visibleItems = state.builder.items.filter(item => activeFilters.has(item.type));
-
-    if (visibleItems.length === 0) {
+    if (state.builder.items.length === 0) {
         tbody.innerHTML = '';
         empty.style.display = 'block';
         return;
@@ -697,36 +1021,63 @@ function renderBuilderTable() {
     empty.style.display = 'none';
     tbody.innerHTML = '';
 
-    visibleItems.forEach(item => {
-        const total = (item.qty || 0) * (item.unitCost || 0);
+    state.builder.items.forEach(item => {
         const tr = document.createElement('tr');
         tr.dataset.itemId = item.id;
 
-        const typeClass = `type-${item.type}`;
-        const typeLabel = item.type === 'material' ? 'Mat' : item.type === 'labor' ? 'Lab' : 'Inline';
+        // Determine type class and label
+        let typeClass, typeLabel;
+        if (item.isPercent) {
+            typeClass = 'type-percent';
+            typeLabel = item.unit; // (%)mat, (%)lab, (%)tot
+        } else {
+            typeClass = `type-${item.type}`;
+            typeLabel = item.type === 'material' ? 'MAT' : item.type === 'labor' ? 'LAB' : 'EXT';
+        }
 
-        // Image cell
-        const imageUrl = item.image || '';
-        const imageCell = imageUrl
-            ? `<img src="${escapeHtml(imageUrl)}" class="builder-item-img" onerror="this.outerHTML='<div class=\\'builder-item-img-placeholder\\'>-</div>'" />`
-            : `<div class="builder-item-img-placeholder">${item.type === 'material' ? '-' : item.type === 'labor' ? 'L' : 'I'}</div>`;
+        // Calculate total - for percent items, calculate based on base
+        let total;
+        if (item.isPercent) {
+            const baseAmount = calculatePercentBase(item.appliesTo);
+            total = baseAmount * (item.percentValue / 100);
+        } else {
+            total = (item.qty || 0) * (item.unitCost || 0);
+        }
 
-        tr.innerHTML = `
-            <td>${imageCell}</td>
-            <td><span class="type-badge ${typeClass}">${typeLabel}</span></td>
-            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.description)}">${escapeHtml(item.description)}</td>
-            <td>${escapeHtml(item.unit)}</td>
-            <td>
-                <input type="number" class="builder-input item-qty" value="${item.qty}" min="0" step="0.001" data-item-id="${item.id}" />
-            </td>
-            <td>
-                <input type="number" class="builder-input item-cost" value="${item.unitCost.toFixed(2)}" min="0" step="0.01" data-item-id="${item.id}" />
-            </td>
-            <td style="color: #3ecf8e; font-weight: 500;">${formatCurrency(total)}</td>
-            <td>
-                <button class="btn-action btn-action-danger" onclick="removeBuilderItem('${item.id}')" title="Remove">X</button>
-            </td>
-        `;
+        // Build row HTML
+        if (item.isPercent) {
+            tr.innerHTML = `
+                <td><span class="item-id">${escapeHtml(item.code || item.id)}</span></td>
+                <td><span class="type-badge ${typeClass}">${typeLabel}</span></td>
+                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.description)}">${escapeHtml(item.description)}</td>
+                <td>${escapeHtml(item.unit)}</td>
+                <td>
+                    <input type="number" class="builder-input item-percent-value" value="${item.percentValue}" min="0" max="100" step="0.1" data-item-id="${item.id}" style="width: 70px;" />%
+                </td>
+                <td style="color: #6b7280;">-</td>
+                <td style="color: #22c55e; font-weight: 500;">${formatCurrency(total)}</td>
+                <td>
+                    <button class="btn-action btn-action-danger" onclick="removeBuilderItem('${item.id}')" title="Remove">X</button>
+                </td>
+            `;
+        } else {
+            tr.innerHTML = `
+                <td><span class="item-id">${escapeHtml(item.code || item.id)}</span></td>
+                <td><span class="type-badge ${typeClass}">${typeLabel}</span></td>
+                <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.description)}">${escapeHtml(item.description)}</td>
+                <td>${escapeHtml(item.unit)}</td>
+                <td>
+                    <input type="number" class="builder-input item-qty" value="${item.qty}" min="0" step="0.001" data-item-id="${item.id}" />
+                </td>
+                <td>
+                    <input type="number" class="builder-input item-cost" value="${item.unitCost.toFixed(2)}" min="0" step="0.01" data-item-id="${item.id}" />
+                </td>
+                <td style="color: #3ecf8e; font-weight: 500;">${formatCurrency(total)}</td>
+                <td>
+                    <button class="btn-action btn-action-danger" onclick="removeBuilderItem('${item.id}')" title="Remove">X</button>
+                </td>
+            `;
+        }
 
         tbody.appendChild(tr);
     });
@@ -738,6 +1089,30 @@ function renderBuilderTable() {
     tbody.querySelectorAll('.item-cost').forEach(input => {
         input.addEventListener('change', onBuilderItemChange);
     });
+    tbody.querySelectorAll('.item-percent-value').forEach(input => {
+        input.addEventListener('change', onBuilderPercentChange);
+    });
+}
+
+function calculatePercentBase(appliesTo) {
+    let base = 0;
+    state.builder.items.forEach(item => {
+        if (item.isPercent) return; // Don't include other percent items
+        const itemTotal = (item.qty || 0) * (item.unitCost || 0);
+        if (appliesTo === 'material' && item.type === 'material') base += itemTotal;
+        else if (appliesTo === 'labor' && item.type === 'labor') base += itemTotal;
+        else if (appliesTo === 'total') base += itemTotal;
+    });
+    return base;
+}
+
+function onBuilderPercentChange(e) {
+    const itemId = e.target.dataset.itemId;
+    const item = state.builder.items.find(i => i.id === itemId);
+    if (!item) return;
+    item.percentValue = parseFloat(e.target.value) || 0;
+    renderBuilderTable();
+    updateBuilderSummary();
 }
 
 function onBuilderItemChange(e) {
@@ -767,31 +1142,33 @@ window.removeBuilderItem = function(itemId) {
 function updateBuilderSummary() {
     let materialTotal = 0;
     let laborTotal = 0;
-    let inlineTotal = 0;
+    let externalTotal = 0;
 
+    // First pass: calculate base totals (non-percent items)
     state.builder.items.forEach(item => {
+        if (item.isPercent) return;
         const total = (item.qty || 0) * (item.unitCost || 0);
         if (item.type === 'material') materialTotal += total;
         else if (item.type === 'labor') laborTotal += total;
-        else inlineTotal += total;
+        else if (item.type === 'external') externalTotal += total;
     });
 
-    const wastePercent = parseFloat(DOM.conceptWastePercent.value) || 0;
-    const wasteAmount = materialTotal * (wastePercent / 100);
+    // Second pass: calculate percent items and add to appropriate category
+    state.builder.items.forEach(item => {
+        if (!item.isPercent) return;
+        const baseAmount = calculatePercentBase(item.appliesTo);
+        const percentTotal = baseAmount * (item.percentValue / 100);
+        // Percent items typically add to material cost (like waste)
+        materialTotal += percentTotal;
+    });
 
-    const grandTotal = materialTotal + laborTotal + inlineTotal + wasteAmount;
+    const grandTotal = materialTotal + laborTotal + externalTotal;
 
-    // Update summary display
-    DOM.summaryMaterials.textContent = formatCurrency(materialTotal);
-    DOM.summaryLabor.textContent = formatCurrency(laborTotal);
-    DOM.summaryInline.textContent = formatCurrency(inlineTotal);
-    DOM.summaryWaste.textContent = formatCurrency(wasteAmount);
-    DOM.summaryTotal.textContent = formatCurrency(grandTotal);
-
-    // Update filter button labels
-    DOM.filterMaterial.textContent = `Mat ${formatCurrency(materialTotal)}`;
-    DOM.filterLabor.textContent = `Lab ${formatCurrency(laborTotal)}`;
-    DOM.filterInline.textContent = `Inline ${formatCurrency(inlineTotal)}`;
+    // Update summary header display
+    if (DOM.summaryMaterials) DOM.summaryMaterials.textContent = formatCurrency(materialTotal).replace('$', '');
+    if (DOM.summaryLabor) DOM.summaryLabor.textContent = formatCurrency(laborTotal).replace('$', '');
+    if (DOM.summaryExternal) DOM.summaryExternal.textContent = formatCurrency(externalTotal).replace('$', '');
+    if (DOM.summaryTotal) DOM.summaryTotal.textContent = formatCurrency(grandTotal).replace('$', '');
 }
 
 // ========================================
@@ -910,8 +1287,17 @@ function confirmMaterialPicker() {
 
     const qty = parseFloat(DOM.pickerQuantity.value) || 1;
 
+    const materialCode = mat.code || mat.ID || generateItemId();
+
+    // Check if this code already exists
+    if (isItemIdDuplicate(materialCode)) {
+        showToast('Material with this code already exists in the concept', 'error');
+        return;
+    }
+
     state.builder.items.push({
         id: generateItemId(),
+        code: materialCode,
         type: 'material',
         materialId: mat.ID,
         description: mat.short_description || mat.ID,
@@ -919,7 +1305,8 @@ function confirmMaterialPicker() {
         qty: qty,
         unitCost: parseFloat(mat.price_numeric) || 0,
         image: mat.image || mat.Image || '',
-        origin: 'db'
+        origin: 'db',
+        isPercent: false
     });
 
     closeMaterialPicker();
@@ -929,15 +1316,25 @@ function confirmMaterialPicker() {
 }
 
 // ========================================
-// Inline/Labor Item Modal
+// New Item Modal (with type selector)
 // ========================================
-function openInlineItemModal(type = 'inline') {
-    DOM.inlineItemModalTitle.textContent = type === 'labor' ? 'Add Labor' : 'Add Inline Item';
-    DOM.inlineItemType.value = type;
+function openInlineItemModal() {
+    DOM.inlineItemModalTitle.textContent = 'Add New Item';
+    DOM.inlineItemType.value = 'material';
+    if (DOM.inlineItemId) DOM.inlineItemId.value = '';
     DOM.inlineItemDesc.value = '';
-    DOM.inlineItemUnit.value = type === 'labor' ? 'HR' : 'EA';
+    DOM.inlineItemUnit.value = 'EA';
     DOM.inlineItemQty.value = 1;
     DOM.inlineItemCost.value = 0;
+    if (DOM.inlineItemIdError) DOM.inlineItemIdError.style.display = 'none';
+
+    // Reset type selector
+    if (DOM.inlineTypeSelector) {
+        DOM.inlineTypeSelector.querySelectorAll('.type-selector-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.type === 'material') btn.classList.add('active');
+        });
+    }
 
     DOM.inlineItemModal.classList.remove('hidden');
 }
@@ -946,10 +1343,30 @@ function closeInlineItemModal() {
     DOM.inlineItemModal.classList.add('hidden');
 }
 
+function isItemIdDuplicate(id, excludeItemId = null) {
+    return state.builder.items.some(item =>
+        item.code === id && item.id !== excludeItemId
+    );
+}
+
 function confirmInlineItem() {
+    const itemId = DOM.inlineItemId ? DOM.inlineItemId.value.trim() : '';
     const desc = DOM.inlineItemDesc.value.trim();
+
+    if (!itemId) {
+        showToast('ID is required', 'error');
+        return;
+    }
+
     if (!desc) {
         showToast('Description is required', 'error');
+        return;
+    }
+
+    // Check for duplicate ID
+    if (isItemIdDuplicate(itemId)) {
+        if (DOM.inlineItemIdError) DOM.inlineItemIdError.style.display = 'block';
+        showToast('ID already exists', 'error');
         return;
     }
 
@@ -960,19 +1377,96 @@ function confirmInlineItem() {
 
     state.builder.items.push({
         id: generateItemId(),
+        code: itemId,
         type: type,
         description: desc,
         unit: unit,
         qty: qty,
         unitCost: unitCost,
-        image: '', // Inline/labor items don't have images
-        origin: 'custom'
+        image: '',
+        origin: 'custom',
+        isPercent: false
     });
 
     closeInlineItemModal();
     renderBuilderTable();
     updateBuilderSummary();
-    showToast(`${type === 'labor' ? 'Labor' : 'Inline item'} added`, 'success');
+
+    const typeLabel = type === 'material' ? 'Material' : type === 'labor' ? 'Labor' : 'External';
+    showToast(`${typeLabel} item added`, 'success');
+}
+
+// ========================================
+// Percentage Item Modal
+// ========================================
+function openPercentItemModal() {
+    if (DOM.percentItemId) DOM.percentItemId.value = '';
+    if (DOM.percentItemDesc) DOM.percentItemDesc.value = '';
+    if (DOM.percentItemValue) DOM.percentItemValue.value = 5;
+    if (DOM.percentAppliesType) DOM.percentAppliesType.value = 'material';
+    if (DOM.percentItemIdError) DOM.percentItemIdError.style.display = 'none';
+
+    // Reset applies-to selector
+    if (DOM.percentAppliesTo) {
+        DOM.percentAppliesTo.querySelectorAll('.percent-applies-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.applies === 'material') btn.classList.add('active');
+        });
+    }
+
+    if (DOM.percentItemModal) DOM.percentItemModal.classList.remove('hidden');
+}
+
+function closePercentItemModal() {
+    if (DOM.percentItemModal) DOM.percentItemModal.classList.add('hidden');
+}
+
+function confirmPercentItem() {
+    const itemId = DOM.percentItemId ? DOM.percentItemId.value.trim() : '';
+    const desc = DOM.percentItemDesc ? DOM.percentItemDesc.value.trim() : '';
+
+    if (!itemId) {
+        showToast('ID is required', 'error');
+        return;
+    }
+
+    if (!desc) {
+        showToast('Description is required', 'error');
+        return;
+    }
+
+    // Check for duplicate ID
+    if (isItemIdDuplicate(itemId)) {
+        if (DOM.percentItemIdError) DOM.percentItemIdError.style.display = 'block';
+        showToast('ID already exists', 'error');
+        return;
+    }
+
+    const appliesTo = DOM.percentAppliesType ? DOM.percentAppliesType.value : 'material';
+    const percentValue = DOM.percentItemValue ? parseFloat(DOM.percentItemValue.value) || 0 : 0;
+
+    // Determine unit label based on appliesTo
+    const unitLabel = appliesTo === 'material' ? '(%)mat' : appliesTo === 'labor' ? '(%)lab' : '(%)tot';
+
+    state.builder.items.push({
+        id: generateItemId(),
+        code: itemId,
+        type: 'material', // Percent items typically affect material cost
+        description: desc,
+        unit: unitLabel,
+        qty: 1,
+        unitCost: 0,
+        image: '',
+        origin: 'custom',
+        isPercent: true,
+        appliesTo: appliesTo,
+        percentValue: percentValue
+    });
+
+    closePercentItemModal();
+    renderBuilderTable();
+    updateBuilderSummary();
+    showToast('Percentage item added', 'success');
 }
 
 // ========================================
@@ -1031,7 +1525,7 @@ async function saveConcept() {
         full_description: DOM.conceptDescription.value.trim(),
         category_id: DOM.conceptCategory.value || null,
         unit_id: DOM.conceptUnit.value || null,
-        image: DOM.conceptImage.value.trim() || null,
+        image: state.conceptImageUrl || null,
         base_cost: grandTotal,
         waste_percent: wastePercent,
         calculated_cost: grandTotal,
@@ -1048,6 +1542,13 @@ async function saveConcept() {
     };
 
     try {
+        // Upload image if a new file was selected
+        if (state.conceptImageFile) {
+            showToast('Uploading image...', 'info');
+            const imageUrl = await uploadImageToSupabase(state.conceptImageFile, 'concepts', code);
+            data.image = imageUrl;
+        }
+
         if (state.editingId) {
             await API.updateConcept(state.editingId, data);
 
@@ -1139,6 +1640,117 @@ function showToast(message, type = 'info') {
 }
 
 // ========================================
+// Column Visibility Management
+// ========================================
+function initColumnVisibility() {
+    // Load saved preferences
+    const saved = localStorage.getItem(COLUMN_VISIBILITY_KEY);
+    if (saved) {
+        try {
+            columnVisibility = JSON.parse(saved);
+        } catch (e) {
+            console.error('[COLUMN MANAGER] Error parsing saved visibility:', e);
+            columnVisibility = {};
+        }
+    }
+
+    // Set default visibility for columns not in saved state
+    COLUMN_CONFIG.forEach(col => {
+        if (columnVisibility[col.key] === undefined) {
+            columnVisibility[col.key] = col.defaultVisible;
+        }
+    });
+
+    // Apply initial column visibility
+    applyColumnVisibility();
+}
+
+function openColumnManager() {
+    populateColumnCheckboxes();
+    DOM.columnManagerModal.classList.remove('hidden');
+}
+
+function closeColumnManager() {
+    DOM.columnManagerModal.classList.add('hidden');
+}
+
+function populateColumnCheckboxes() {
+    if (!DOM.columnCheckboxes) return;
+
+    const checkboxesHtml = COLUMN_CONFIG.map(col => {
+        const isVisible = columnVisibility[col.key];
+        return `
+            <label class="column-checkbox-item">
+                <input type="checkbox" data-column-key="${col.key}" ${isVisible ? 'checked' : ''} />
+                <span class="column-checkbox-label">${col.label}</span>
+            </label>
+        `;
+    }).join('');
+
+    DOM.columnCheckboxes.innerHTML = checkboxesHtml;
+
+    // Add change event listeners
+    DOM.columnCheckboxes.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', (e) => {
+            const columnKey = e.target.dataset.columnKey;
+            columnVisibility[columnKey] = e.target.checked;
+            saveColumnVisibility();
+            applyColumnVisibility();
+        });
+    });
+}
+
+function applyColumnVisibility() {
+    const table = DOM.materialsTable;
+    if (!table) return;
+
+    // Column keys that can be toggled
+    const toggleableColumns = ['image', 'code', 'name', 'category', 'brand', 'vendor', 'unit', 'unitcost', 'tax', 'costwithtax'];
+
+    // Apply visibility using class selectors
+    toggleableColumns.forEach(key => {
+        const isVisible = columnVisibility[key] !== false; // Default to visible
+        const className = `col-${key}`;
+
+        // Apply to header
+        const headerCells = table.querySelectorAll(`thead .${className}`);
+        headerCells.forEach(cell => {
+            cell.classList.toggle('col-hidden', !isVisible);
+        });
+
+        // Apply to body cells
+        const bodyCells = table.querySelectorAll(`tbody .${className}`);
+        bodyCells.forEach(cell => {
+            cell.classList.toggle('col-hidden', !isVisible);
+        });
+    });
+
+    console.log('[COLUMN MANAGER] Visibility applied:', columnVisibility);
+}
+
+function saveColumnVisibility() {
+    try {
+        localStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(columnVisibility));
+        console.log('[COLUMN MANAGER] Visibility saved:', columnVisibility);
+    } catch (e) {
+        console.error('[COLUMN MANAGER] Error saving visibility:', e);
+    }
+}
+
+function resetColumnVisibility() {
+    // Reset to defaults
+    COLUMN_CONFIG.forEach(col => {
+        columnVisibility[col.key] = col.defaultVisible;
+    });
+
+    saveColumnVisibility();
+    applyColumnVisibility();
+    populateColumnCheckboxes();
+
+    console.log('[COLUMN MANAGER] Reset to defaults');
+}
+
+// ========================================
 // Event Listeners
 // ========================================
 function setupEventListeners() {
@@ -1223,8 +1835,8 @@ function setupEventListeners() {
 
     // Builder toolbar buttons
     DOM.btnAddFromDB.addEventListener('click', openMaterialPicker);
-    DOM.btnAddLabor.addEventListener('click', () => openInlineItemModal('labor'));
-    DOM.btnAddInline.addEventListener('click', () => openInlineItemModal('inline'));
+    DOM.btnAddInline.addEventListener('click', openInlineItemModal);
+    if (DOM.btnAddPercent) DOM.btnAddPercent.addEventListener('click', openPercentItemModal);
     DOM.btnClearAllItems.addEventListener('click', () => {
         if (state.builder.items.length === 0) return;
         if (!confirm('Clear all items?')) return;
@@ -1233,18 +1845,37 @@ function setupEventListeners() {
         updateBuilderSummary();
     });
 
-    // Builder type filters
-    DOM.filterMaterial.addEventListener('click', () => toggleTypeFilter('material'));
-    DOM.filterLabor.addEventListener('click', () => toggleTypeFilter('labor'));
-    DOM.filterInline.addEventListener('click', () => toggleTypeFilter('inline'));
+    // Inline Item Modal - Type selector
+    if (DOM.inlineTypeSelector) {
+        DOM.inlineTypeSelector.querySelectorAll('.type-selector-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                DOM.inlineTypeSelector.querySelectorAll('.type-selector-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                DOM.inlineItemType.value = btn.dataset.type;
+            });
+        });
+    }
 
-    // Waste percent change
-    DOM.conceptWastePercent.addEventListener('input', updateBuilderSummary);
+    // Percentage Item Modal - Applies-to selector
+    if (DOM.percentAppliesTo) {
+        DOM.percentAppliesTo.querySelectorAll('.percent-applies-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                DOM.percentAppliesTo.querySelectorAll('.percent-applies-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                DOM.percentAppliesType.value = btn.dataset.applies;
+            });
+        });
+    }
 
-    // Concept image preview
-    DOM.conceptImage.addEventListener('input', (e) => {
-        updateConceptImagePreview(e.target.value);
-    });
+    // Percentage Item Modal
+    if (DOM.btnClosePercentItem) DOM.btnClosePercentItem.addEventListener('click', closePercentItemModal);
+    if (DOM.btnCancelPercentItem) DOM.btnCancelPercentItem.addEventListener('click', closePercentItemModal);
+    if (DOM.btnConfirmPercentItem) DOM.btnConfirmPercentItem.addEventListener('click', confirmPercentItem);
+    if (DOM.percentItemModal) {
+        DOM.percentItemModal.addEventListener('click', (e) => {
+            if (e.target === DOM.percentItemModal) closePercentItemModal();
+        });
+    }
 
     // Material Picker Modal
     DOM.btnCloseMaterialPicker.addEventListener('click', closeMaterialPicker);
@@ -1269,10 +1900,44 @@ function setupEventListeners() {
         if (e.target === DOM.inlineItemModal) closeInlineItemModal();
     });
 
-    // Image URL live preview
-    DOM.materialImage.addEventListener('input', (e) => {
-        updateImagePreview(e.target.value);
+    // Material image file input
+    DOM.materialImageInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            handleMaterialImageSelect(file);
+        }
+        // Reset input so same file can be selected again
+        e.target.value = '';
     });
+
+    // Concept image file input
+    DOM.conceptImageInput?.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            handleConceptImageSelect(file);
+        }
+        // Reset input so same file can be selected again
+        e.target.value = '';
+    });
+
+    // Column Manager Modal
+    if (DOM.btnColumnManager) {
+        DOM.btnColumnManager.addEventListener('click', openColumnManager);
+    }
+    if (DOM.btnCloseColumnManager) {
+        DOM.btnCloseColumnManager.addEventListener('click', closeColumnManager);
+    }
+    if (DOM.btnCloseColumnManagerFooter) {
+        DOM.btnCloseColumnManagerFooter.addEventListener('click', closeColumnManager);
+    }
+    if (DOM.btnResetColumns) {
+        DOM.btnResetColumns.addEventListener('click', resetColumnVisibility);
+    }
+    if (DOM.columnManagerModal) {
+        DOM.columnManagerModal.addEventListener('click', (e) => {
+            if (e.target === DOM.columnManagerModal) closeColumnManager();
+        });
+    }
 }
 
 // ========================================
@@ -1280,6 +1945,9 @@ function setupEventListeners() {
 // ========================================
 async function init() {
     setupEventListeners();
+
+    // Initialize column visibility
+    initColumnVisibility();
 
     // Load lookups first, then data
     await loadLookups();

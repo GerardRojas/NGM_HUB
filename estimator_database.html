@@ -116,41 +116,53 @@
             cursor: not-allowed;
         }
 
-        /* Form fields */
+        /* Form fields - Improved readability */
         .modal-form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            gap: 20px;
+        }
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
         .form-field-full {
             grid-column: 1 / -1;
         }
         .form-label {
             display: block;
-            font-size: 12px;
-            color: #9ca3af;
-            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 0;
         }
         .form-input,
         .form-select,
         .form-textarea {
             width: 100%;
-            padding: 10px 12px;
-            background: #18181b;
-            border: 1px solid #3f3f46;
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid #2a2a2a;
             border-radius: 6px;
-            color: #e5e7eb;
-            font-size: 13px;
+            color: rgba(255, 255, 255, 0.92);
+            font-size: 14px;
+            transition: border-color 0.15s ease, background 0.15s ease;
+        }
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: rgba(255, 255, 255, 0.35);
         }
         .form-input:focus,
         .form-select:focus,
         .form-textarea:focus {
             outline: none;
             border-color: #3ecf8e;
+            background: rgba(255, 255, 255, 0.06);
         }
         .form-textarea {
             resize: vertical;
-            min-height: 60px;
+            min-height: 80px;
         }
 
         /* Concept materials list */
@@ -206,34 +218,35 @@
 
         /* Concept Builder Styles */
         .modal-xl {
-            max-width: 1100px;
+            max-width: 1200px;
             width: 95%;
         }
         .builder-toolbar {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 12px;
-            background: #18181b;
-            border: 1px solid #27272f;
+            gap: 10px;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid #1f1f1f;
             border-radius: 8px;
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
         .builder-toolbar-left {
             display: flex;
-            gap: 8px;
+            gap: 10px;
         }
         .builder-toolbar-right {
             display: flex;
-            gap: 8px;
+            gap: 10px;
             margin-left: auto;
         }
         .btn-builder {
-            padding: 6px 12px;
-            background: #27272a;
-            border: 1px solid #3f3f46;
-            color: #e5e7eb;
-            font-size: 12px;
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid #2a2a2a;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            font-weight: 500;
             border-radius: 6px;
             cursor: pointer;
             display: flex;
@@ -242,29 +255,31 @@
             transition: all 0.15s ease;
         }
         .btn-builder:hover {
-            background: #3f3f46;
-            border-color: #52525b;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #3a3a3a;
         }
         .btn-builder-primary {
             background: #3ecf8e;
             border-color: #3ecf8e;
             color: #000;
+            font-weight: 600;
         }
         .btn-builder-primary:hover {
             background: #34b87a;
         }
         .type-filter {
-            padding: 6px 12px;
+            padding: 8px 14px;
             background: transparent;
-            border: 1px solid #3f3f46;
-            color: #9ca3af;
-            font-size: 12px;
+            border: 1px solid #2a2a2a;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            font-weight: 500;
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.15s ease;
         }
         .type-filter:hover {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255,255,255,0.04);
         }
         .type-filter.active {
             background: rgba(62, 207, 142, 0.15);
@@ -272,95 +287,218 @@
             color: #3ecf8e;
         }
         .builder-table-container {
-            background: #18181b;
-            border: 1px solid #27272f;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid #1f1f1f;
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 16px;
-            max-height: 320px;
+            max-height: 350px;
             overflow-y: auto;
         }
         .builder-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
+            font-size: 14px;
         }
         .builder-table thead {
             position: sticky;
             top: 0;
-            background: #1f1f23;
+            background: #111111;
             z-index: 1;
         }
         .builder-table th {
-            padding: 10px 12px;
+            padding: 12px 14px;
             text-align: left;
-            font-weight: 500;
-            color: #9ca3af;
-            border-bottom: 1px solid #27272f;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.5);
+            border-bottom: 1px solid #1f1f1f;
         }
         .builder-table td {
-            padding: 8px 12px;
-            border-bottom: 1px solid #27272f;
-            color: #e5e7eb;
+            padding: 10px 14px;
+            border-bottom: 1px solid #1f1f1f;
+            color: rgba(255, 255, 255, 0.9);
         }
         .builder-table tr:hover {
-            background: rgba(255,255,255,0.02);
+            background: rgba(255,255,255,0.03);
         }
         .builder-table .type-badge {
-            padding: 2px 8px;
+            padding: 4px 10px;
             border-radius: 4px;
             font-size: 11px;
-            font-weight: 500;
+            font-weight: 600;
+            white-space: nowrap;
         }
         .type-material { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
         .type-labor { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
-        .type-inline { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
-        .builder-input {
-            padding: 4px 8px;
-            background: #27272a;
-            border: 1px solid #3f3f46;
-            border-radius: 4px;
-            color: #e5e7eb;
+        .type-external { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+        .type-percent { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+
+        /* Category Summary Header - Opus style */
+        .category-summary-header {
+            display: flex;
+            align-items: stretch;
+            gap: 2px;
+            background: #0a0a0a;
+            border: 1px solid #1f1f1f;
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+        }
+        .category-summary-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 16px;
+            min-width: 100px;
+            border-radius: 6px;
+            cursor: default;
+            transition: background 0.15s ease;
+        }
+        .category-summary-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .category-summary-item.active {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .category-summary-item--total {
+            background: rgba(62, 207, 142, 0.1);
+            border: 1px solid rgba(62, 207, 142, 0.2);
+        }
+        .category-summary-item--total:hover {
+            background: rgba(62, 207, 142, 0.15);
+        }
+        .category-summary-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        .category-summary-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 2px;
+        }
+        .category-summary-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .category-summary-item--total .category-summary-value {
+            color: #3ecf8e;
+            font-size: 16px;
+        }
+        .category-summary-item--material .category-summary-icon { color: #60a5fa; }
+        .category-summary-item--labor .category-summary-icon { color: #fbbf24; }
+        .category-summary-item--external .category-summary-icon { color: #a855f7; }
+
+        /* Builder table ID column */
+        .builder-table .item-id {
+            font-family: 'Roboto Mono', monospace;
             font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .builder-table .item-id-input {
+            width: 90px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 12px;
+        }
+        .builder-table .item-id-error {
+            color: #ef4444;
+            border-color: #ef4444 !important;
+        }
+        .builder-input {
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
             width: 80px;
+            transition: border-color 0.15s ease;
         }
         .builder-input:focus {
             outline: none;
             border-color: #3ecf8e;
+            background: rgba(255, 255, 255, 0.06);
         }
-        .builder-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
-            padding: 16px;
-            background: #18181b;
-            border: 1px solid #27272f;
-            border-radius: 8px;
+        /* Inline Item Modal - Type selector */
+        .type-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
         }
-        .summary-item {
-            text-align: center;
+        .type-selector-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
         }
-        .summary-label {
-            font-size: 11px;
-            color: #6b7280;
-            margin-bottom: 4px;
+        .type-selector-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: #3a3a3a;
         }
-        .summary-value {
-            font-size: 16px;
-            font-weight: 600;
-            color: #e5e7eb;
+        .type-selector-btn.active {
+            border-width: 2px;
         }
-        .summary-value.total {
-            color: #3ecf8e;
+        .type-selector-btn.active[data-type="material"] {
+            border-color: #60a5fa;
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+        }
+        .type-selector-btn.active[data-type="labor"] {
+            border-color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+            color: #fbbf24;
+        }
+        .type-selector-btn.active[data-type="external"] {
+            border-color: #a855f7;
+            background: rgba(168, 85, 247, 0.1);
+            color: #a855f7;
+        }
+        .type-selector-icon {
             font-size: 20px;
         }
-        .waste-field {
+
+        /* Percentage Modal */
+        .percent-applies-to {
             display: flex;
-            align-items: center;
             gap: 8px;
         }
-        .waste-field input {
-            width: 60px;
+        .percent-applies-btn {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .percent-applies-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .percent-applies-btn.active {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
         }
         .builder-empty {
             padding: 40px;
@@ -387,68 +525,76 @@
             font-size: 10px;
         }
 
-        /* Material Picker Modal */
+        /* Material Picker Modal - Improved size and readability */
         .picker-layout {
             display: grid;
-            grid-template-columns: 1fr 280px;
-            gap: 16px;
-            min-height: 400px;
+            grid-template-columns: 1fr 300px;
+            gap: 24px;
+            min-height: 480px;
         }
         .picker-search {
-            margin-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .picker-search .form-input {
+            padding: 12px 16px;
+            font-size: 14px;
         }
         .picker-table-container {
-            background: #18181b;
-            border: 1px solid #27272f;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid #1f1f1f;
             border-radius: 8px;
             overflow: hidden;
-            max-height: 380px;
+            max-height: 450px;
             overflow-y: auto;
         }
         .picker-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
+            font-size: 14px;
         }
         .picker-table thead {
             position: sticky;
             top: 0;
-            background: #1f1f23;
+            background: #111111;
+            z-index: 1;
         }
         .picker-table th {
-            padding: 10px 12px;
+            padding: 12px 14px;
             text-align: left;
-            font-weight: 500;
-            color: #9ca3af;
-            border-bottom: 1px solid #27272f;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255, 255, 255, 0.5);
+            border-bottom: 1px solid #1f1f1f;
         }
         .picker-table td {
-            padding: 8px 12px;
-            border-bottom: 1px solid #27272f;
-            color: #e5e7eb;
+            padding: 12px 14px;
+            border-bottom: 1px solid #1f1f1f;
+            color: rgba(255, 255, 255, 0.9);
             cursor: pointer;
         }
         .picker-table tr:hover {
-            background: rgba(62, 207, 142, 0.1);
+            background: rgba(62, 207, 142, 0.08);
         }
         .picker-table tr.selected {
-            background: rgba(62, 207, 142, 0.2);
+            background: rgba(62, 207, 142, 0.15);
         }
         .picker-preview {
-            background: #18181b;
-            border: 1px solid #27272f;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid #1f1f1f;
             border-radius: 8px;
-            padding: 16px;
+            padding: 20px;
         }
         .picker-preview-image {
             width: 100%;
-            height: 160px;
-            background: #27272a;
+            height: 180px;
+            background: #1a1a1a;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
             overflow: hidden;
         }
         .picker-preview-image img {
@@ -457,21 +603,342 @@
             object-fit: contain;
         }
         .picker-preview-info {
-            font-size: 13px;
-        }
-        .picker-preview-info h4 {
-            margin: 0 0 8px 0;
-            color: #e5e7eb;
             font-size: 14px;
         }
+        .picker-preview-info h4 {
+            margin: 0 0 12px 0;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 16px;
+            font-weight: 600;
+        }
         .picker-preview-info p {
-            margin: 4px 0;
-            color: #9ca3af;
+            margin: 8px 0;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.5;
         }
         .picker-preview-info .price {
             color: #3ecf8e;
             font-weight: 600;
+            font-size: 20px;
+            margin-top: 12px;
+        }
+
+        /* Modal Size Variants */
+        .modal-lg {
+            max-width: 900px;
+            width: 95%;
+        }
+
+        /* Modal Structure - Improved readability */
+        .modal {
+            background: #111111;
+            border: 1px solid #1f1f1f;
+            box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 16px 20px;
+            background: #111111;
+            border-bottom: 1px solid #1f1f1f;
+        }
+
+        .modal-title {
             font-size: 16px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.95);
+            margin: 0;
+        }
+
+        .modal-close-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px 8px;
+            line-height: 1;
+            transition: color 0.15s ease;
+        }
+
+        .modal-close-btn:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            max-height: 70vh;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 16px 20px;
+            background: #111111;
+            border-top: 1px solid #1f1f1f;
+        }
+
+        /* Modal Button Styles - Modern NGM style */
+        .btn-modal-secondary,
+        .btn-modal-primary {
+            appearance: none;
+            border-radius: 6px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .btn-modal-secondary {
+            background: transparent;
+            border: 1px solid #2a2a2a;
+            color: #ededed;
+        }
+
+        .btn-modal-secondary:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: #3a3a3a;
+        }
+
+        .btn-modal-primary {
+            background: #3ecf8e;
+            border: 1px solid #3ecf8e;
+            color: #000;
+            font-weight: 600;
+        }
+
+        .btn-modal-primary:hover {
+            background: #34b87d;
+            border-color: #34b87d;
+        }
+
+        .btn-modal-primary:disabled,
+        .btn-modal-secondary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Image Upload Drop Zone */
+        .image-upload-container {
+            width: 100%;
+        }
+
+        .image-drop-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 24px 16px;
+            border: 2px dashed rgba(148, 163, 184, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .image-drop-zone:hover {
+            border-color: rgba(62, 207, 142, 0.5);
+            background: rgba(62, 207, 142, 0.05);
+        }
+
+        .image-drop-zone--active {
+            border-color: #3ecf8e;
+            background: rgba(62, 207, 142, 0.1);
+        }
+
+        .image-drop-icon {
+            font-size: 28px;
+            opacity: 0.6;
+        }
+
+        .image-drop-text {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .image-drop-primary {
+            font-size: 12px;
+            font-weight: 500;
+            color: #e5e7eb;
+        }
+
+        .image-drop-secondary {
+            font-size: 10px;
+            color: #9ca3af;
+        }
+
+        /* Image Preview */
+        .image-preview-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .image-preview-thumb {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #27272a;
+            flex-shrink: 0;
+        }
+
+        .image-preview-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-preview-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .image-preview-name {
+            font-size: 12px;
+            font-weight: 500;
+            color: #e5e7eb;
+            word-break: break-all;
+        }
+
+        .image-preview-status {
+            font-size: 11px;
+            color: #3ecf8e;
+        }
+
+        .image-preview-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .image-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .image-btn--replace {
+            background: transparent;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #60a5fa;
+        }
+
+        .image-btn--replace:hover {
+            border-color: rgba(59, 130, 246, 0.5);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .image-btn--delete {
+            background: transparent;
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            color: #f87171;
+        }
+
+        .image-btn--delete:hover {
+            border-color: rgba(248, 113, 113, 0.5);
+            background: rgba(248, 113, 113, 0.1);
+        }
+
+        /* Column Manager Modal */
+        .modal-column-manager {
+            width: min(500px, 95%);
+            max-width: 500px;
+        }
+
+        .modal-hint {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 20px;
+        }
+
+        .column-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .column-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .column-checkbox-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(62, 207, 142, 0.4);
+        }
+
+        .column-checkbox-item input[type="checkbox"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            min-width: 18px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(148, 163, 184, 0.4);
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+            position: relative;
+        }
+
+        .column-checkbox-item input[type="checkbox"]:hover {
+            border-color: rgba(62, 207, 142, 0.6);
+            background: rgba(62, 207, 142, 0.1);
+        }
+
+        .column-checkbox-item input[type="checkbox"]:checked {
+            background: #3ecf8e;
+            border-color: #3ecf8e;
+        }
+
+        .column-checkbox-item input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #0f2a1e;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .column-checkbox-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.88);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        @media (max-width: 480px) {
+            .column-checkboxes {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Hidden columns */
+        .col-hidden {
+            display: none !important;
         }
     </style>
 
@@ -481,6 +948,8 @@
     <script src="assets/js/permissions.js" defer></script>
     <script src="assets/js/pills.js" defer></script>
     <script src="assets/js/sidebar.js" defer></script>
+    <!-- Supabase for image uploads -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="assets/js/estimator_database.js" defer></script>
     <script src="assets/js/arturito_widget.js" defer></script>
 </head>
@@ -535,6 +1004,9 @@
                                 </div>
                             </div>
                             <div class="toolbar-right">
+                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnColumnManager">
+                                    Columns
+                                </button>
                                 <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnImport">
                                     Import CSV
                                 </button>
@@ -592,13 +1064,17 @@
                                 <table class="expenses-table" id="materialsTable">
                                     <thead>
                                         <tr>
-                                            <th style="width: 60px;">Image</th>
-                                            <th style="width: 100px;">Code</th>
-                                            <th>Name</th>
-                                            <th>Category</th>
-                                            <th style="width: 80px;">Unit</th>
-                                            <th style="width: 120px;">Unit Cost</th>
-                                            <th style="width: 80px;">Actions</th>
+                                            <th class="col-image" style="width: 60px;">Image</th>
+                                            <th class="col-code" style="width: 100px;">Code</th>
+                                            <th class="col-name">Name</th>
+                                            <th class="col-category">Category</th>
+                                            <th class="col-brand">Brand</th>
+                                            <th class="col-vendor">Vendor</th>
+                                            <th class="col-unit" style="width: 80px;">Unit</th>
+                                            <th class="col-unitcost" style="width: 110px;">Unit Cost</th>
+                                            <th class="col-tax" style="width: 70px;">Tax %</th>
+                                            <th class="col-costwithtax" style="width: 110px;">w/ Tax</th>
+                                            <th class="col-actions" style="width: 80px;">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody id="materialsTableBody">
@@ -703,12 +1179,11 @@
                     </div>
 
                     <div class="form-field form-field-full">
-                        <label class="form-label" for="materialImage">Image URL</label>
-                        <div style="display: flex; gap: 8px; align-items: flex-start;">
-                            <input type="url" id="materialImage" class="form-input" placeholder="https://..." style="flex: 1;" />
-                            <div id="materialImagePreview" style="width: 48px; height: 48px; background: #27272a; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                                <span style="color: #6b7280; font-size: 10px;">No img</span>
-                            </div>
+                        <label class="form-label">Image</label>
+                        <input type="file" id="materialImageInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;" />
+                        <input type="hidden" id="materialImage" />
+                        <div id="materialImageContainer" class="image-upload-container">
+                            <!-- Drop zone or preview rendered by JS -->
                         </div>
                     </div>
 
@@ -738,12 +1213,13 @@
                 <!-- Basic Info Row -->
                 <div style="display: flex; gap: 16px; margin-bottom: 16px;">
                     <!-- Concept Image -->
-                    <div style="flex-shrink: 0;">
-                        <label class="form-label">Concept Image</label>
-                        <div id="conceptImagePreview" style="width: 100px; height: 100px; background: #27272a; border: 1px solid #3f3f46; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;" onclick="document.getElementById('conceptImageInput').click()">
-                            <span style="color: #6b7280; font-size: 11px; text-align: center;">Click to<br>add image</span>
+                    <div style="flex-shrink: 0; width: 120px;">
+                        <label class="form-label">Image</label>
+                        <input type="file" id="conceptImageInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;" />
+                        <input type="hidden" id="conceptImage" />
+                        <div id="conceptImageContainer" class="image-upload-container">
+                            <!-- Drop zone or preview rendered by JS -->
                         </div>
-                        <input type="text" id="conceptImage" class="form-input" placeholder="Image URL..." style="margin-top: 8px; width: 100px; font-size: 11px;" />
                     </div>
                     <!-- Form Fields -->
                     <div class="modal-form-grid" style="flex: 1;">
@@ -775,28 +1251,46 @@
                     <textarea id="conceptDescription" class="form-textarea" rows="2" placeholder="Concept description..."></textarea>
                 </div>
 
+                <!-- Category Summary Header - Opus style -->
+                <div class="category-summary-header">
+                    <div class="category-summary-item category-summary-item--total">
+                        <span class="category-summary-icon">$</span>
+                        <span class="category-summary-label">Total</span>
+                        <span class="category-summary-value" id="summaryTotal">0.00</span>
+                    </div>
+                    <div class="category-summary-item category-summary-item--material">
+                        <span class="category-summary-icon">M</span>
+                        <span class="category-summary-label">Material</span>
+                        <span class="category-summary-value" id="summaryMaterials">0.00</span>
+                    </div>
+                    <div class="category-summary-item category-summary-item--labor">
+                        <span class="category-summary-icon">L</span>
+                        <span class="category-summary-label">Labor</span>
+                        <span class="category-summary-value" id="summaryLabor">0.00</span>
+                    </div>
+                    <div class="category-summary-item category-summary-item--external">
+                        <span class="category-summary-icon">E</span>
+                        <span class="category-summary-label">External</span>
+                        <span class="category-summary-value" id="summaryExternal">0.00</span>
+                    </div>
+                </div>
+
                 <!-- Builder Toolbar -->
                 <div class="builder-toolbar">
                     <div class="builder-toolbar-left">
                         <button type="button" class="btn-builder btn-builder-primary" id="btnAddFromDB">
-                            + Material DB
-                        </button>
-                        <button type="button" class="btn-builder" id="btnAddLabor">
-                            + Labor
+                            + From Database
                         </button>
                         <button type="button" class="btn-builder" id="btnAddInline">
-                            + Inline Item
+                            + New Item
+                        </button>
+                        <button type="button" class="btn-builder" id="btnAddPercent">
+                            + Percentage
                         </button>
                     </div>
                     <div class="builder-toolbar-right">
-                        <button type="button" class="type-filter active" data-type="material" id="filterMaterial">
-                            Mat $0.00
-                        </button>
-                        <button type="button" class="type-filter active" data-type="labor" id="filterLabor">
-                            Lab $0.00
-                        </button>
-                        <button type="button" class="type-filter active" data-type="inline" id="filterInline">
-                            Inline $0.00
+                        <button type="button" class="btn-builder" id="btnClearAllItems">
+                            Clear All
                         </button>
                     </div>
                 </div>
@@ -806,14 +1300,14 @@
                     <table class="builder-table" id="builderTable">
                         <thead>
                             <tr>
-                                <th style="width: 50px;">Img</th>
-                                <th style="width: 70px;">Type</th>
+                                <th style="width: 100px;">ID</th>
+                                <th style="width: 90px;">Type</th>
                                 <th>Description</th>
-                                <th style="width: 60px;">Unit</th>
-                                <th style="width: 70px;">Qty</th>
-                                <th style="width: 90px;">Unit Cost</th>
-                                <th style="width: 90px;">Total</th>
-                                <th style="width: 40px;"></th>
+                                <th style="width: 80px;">Unit</th>
+                                <th style="width: 90px;">Qty</th>
+                                <th style="width: 110px;">Unit Cost</th>
+                                <th style="width: 110px;">Total</th>
+                                <th style="width: 50px;"></th>
                             </tr>
                         </thead>
                         <tbody id="builderTableBody">
@@ -821,43 +1315,7 @@
                         </tbody>
                     </table>
                     <div class="builder-empty" id="builderEmpty">
-                        No items added yet. Click "+ Material DB", "+ Labor", or "+ Inline Item" to add items.
-                    </div>
-                </div>
-
-                <!-- Waste Percentage -->
-                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
-                    <div class="waste-field">
-                        <label class="form-label" style="margin: 0;">Waste %</label>
-                        <input type="number" id="conceptWastePercent" class="builder-input" value="0" min="0" max="100" step="0.5" />
-                        <span style="color: #6b7280; font-size: 12px;">% on materials</span>
-                    </div>
-                    <button type="button" class="btn-builder" id="btnClearAllItems" style="margin-left: auto;">
-                        Clear All
-                    </button>
-                </div>
-
-                <!-- Summary -->
-                <div class="builder-summary">
-                    <div class="summary-item">
-                        <div class="summary-label">Materials</div>
-                        <div class="summary-value" id="summaryMaterials">$0.00</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">Labor</div>
-                        <div class="summary-value" id="summaryLabor">$0.00</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">Inline Items</div>
-                        <div class="summary-value" id="summaryInline">$0.00</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">Waste</div>
-                        <div class="summary-value" id="summaryWaste">$0.00</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-label">Total Cost</div>
-                        <div class="summary-value total" id="summaryTotal">$0.00</div>
+                        No items added yet. Click "+ From Database", "+ New Item", or "+ Percentage" to add items.
                     </div>
                 </div>
             </div>
@@ -924,36 +1382,58 @@
         </div>
     </div>
 
-    <!-- Inline Item Modal -->
+    <!-- New Item Modal (with type selector) -->
     <div id="inlineItemModal" class="modal-backdrop hidden">
         <div class="modal">
             <div class="modal-header">
-                <div class="modal-title" id="inlineItemModalTitle">Add Inline Item</div>
+                <div class="modal-title" id="inlineItemModalTitle">Add New Item</div>
                 <button type="button" class="modal-close-btn" id="btnCloseInlineItem">&times;</button>
             </div>
 
             <div class="modal-body">
-                <div class="form-field">
-                    <label class="form-label" for="inlineItemType">Type</label>
-                    <select id="inlineItemType" class="form-select">
-                        <option value="inline">Inline Item</option>
-                        <option value="labor">Labor</option>
-                    </select>
+                <!-- Type Selector -->
+                <div class="form-field" style="margin-bottom: 20px;">
+                    <label class="form-label">Type *</label>
+                    <div class="type-selector" id="inlineTypeSelector">
+                        <button type="button" class="type-selector-btn active" data-type="material">
+                            <span class="type-selector-icon">M</span>
+                            <span>Material</span>
+                        </button>
+                        <button type="button" class="type-selector-btn" data-type="labor">
+                            <span class="type-selector-icon">L</span>
+                            <span>Labor</span>
+                        </button>
+                        <button type="button" class="type-selector-btn" data-type="external">
+                            <span class="type-selector-icon">E</span>
+                            <span>External</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="inlineItemType" value="material" />
                 </div>
-                <div class="form-field">
-                    <label class="form-label" for="inlineItemDesc">Description *</label>
-                    <input type="text" id="inlineItemDesc" class="form-input" placeholder="Item description" required />
+
+                <div class="modal-form-grid">
+                    <div class="form-field">
+                        <label class="form-label" for="inlineItemId">ID *</label>
+                        <input type="text" id="inlineItemId" class="form-input" placeholder="e.g., MAT-001" required />
+                        <span id="inlineItemIdError" style="color: #ef4444; font-size: 11px; display: none;">ID already exists</span>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" for="inlineItemDesc">Description *</label>
+                        <input type="text" id="inlineItemDesc" class="form-input" placeholder="Item description" required />
+                    </div>
                 </div>
+
                 <div class="modal-form-grid">
                     <div class="form-field">
                         <label class="form-label" for="inlineItemUnit">Unit</label>
                         <select id="inlineItemUnit" class="form-select">
-                            <option value="EA">EA</option>
-                            <option value="HR">HR</option>
-                            <option value="DAY">DAY</option>
-                            <option value="LF">LF</option>
-                            <option value="SF">SF</option>
-                            <option value="LS">LS</option>
+                            <option value="EA">EA - Each</option>
+                            <option value="HR">HR - Hour</option>
+                            <option value="DAY">DAY - Day</option>
+                            <option value="LF">LF - Linear Feet</option>
+                            <option value="SF">SF - Square Feet</option>
+                            <option value="LS">LS - Lump Sum</option>
+                            <option value="JOR">JOR - Jornada</option>
                         </select>
                     </div>
                     <div class="form-field">
@@ -961,6 +1441,7 @@
                         <input type="number" id="inlineItemQty" class="form-input" value="1" min="0" step="0.001" />
                     </div>
                 </div>
+
                 <div class="form-field">
                     <label class="form-label" for="inlineItemCost">Unit Cost</label>
                     <input type="number" id="inlineItemCost" class="form-input" value="0" min="0" step="0.01" />
@@ -970,6 +1451,73 @@
             <div class="modal-footer">
                 <button type="button" class="btn-modal-secondary" id="btnCancelInlineItem">Cancel</button>
                 <button type="button" class="btn-modal-primary" id="btnConfirmInlineItem">Add Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Percentage Item Modal -->
+    <div id="percentItemModal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Add Percentage Item</div>
+                <button type="button" class="modal-close-btn" id="btnClosePercentItem">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="modal-form-grid">
+                    <div class="form-field">
+                        <label class="form-label" for="percentItemId">ID *</label>
+                        <input type="text" id="percentItemId" class="form-input" placeholder="e.g., WASTE-01" required />
+                        <span id="percentItemIdError" style="color: #ef4444; font-size: 11px; display: none;">ID already exists</span>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" for="percentItemDesc">Description *</label>
+                        <input type="text" id="percentItemDesc" class="form-input" placeholder="e.g., Material Waste" required />
+                    </div>
+                </div>
+
+                <div class="form-field" style="margin-bottom: 20px;">
+                    <label class="form-label">Applies to *</label>
+                    <div class="percent-applies-to" id="percentAppliesTo">
+                        <button type="button" class="percent-applies-btn active" data-applies="material">(%)mat</button>
+                        <button type="button" class="percent-applies-btn" data-applies="labor">(%)lab</button>
+                        <button type="button" class="percent-applies-btn" data-applies="total">(%)tot</button>
+                    </div>
+                    <input type="hidden" id="percentAppliesType" value="material" />
+                </div>
+
+                <div class="form-field">
+                    <label class="form-label" for="percentItemValue">Percentage (%)</label>
+                    <input type="number" id="percentItemValue" class="form-input" value="5" min="0" max="100" step="0.1" />
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCancelPercentItem">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="btnConfirmPercentItem">Add Percentage</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Column Manager Modal -->
+    <div id="columnManagerModal" class="modal-backdrop hidden">
+        <div class="modal modal-column-manager">
+            <div class="modal-header">
+                <div class="modal-title">Manage Columns</div>
+                <button type="button" class="modal-close-btn" id="btnCloseColumnManager">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <p class="modal-hint">Toggle column visibility. Your preferences are saved automatically.</p>
+
+                <div class="column-checkboxes" id="columnCheckboxes">
+                    <!-- Checkboxes populated by JS -->
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnResetColumns">Reset to Default</button>
+                <button type="button" class="btn-modal-primary" id="btnCloseColumnManagerFooter">Done</button>
             </div>
         </div>
     </div>

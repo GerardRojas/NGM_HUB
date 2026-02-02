@@ -180,6 +180,15 @@
                     </div>
 
                     <div class="toolbar-right">
+                        <!-- Add Module button (visible on tree view) -->
+                        <button type="button" class="btn-add-module" id="btnAddModule" title="Add new module">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            <span class="btn-label">Add Module</span>
+                        </button>
+
                         <!-- Add Process button (visible on detail view) -->
                         <button type="button" class="btn-add-process hidden" id="btnAddProcess" title="Add new draft process">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -277,9 +286,20 @@
                         <p class="empty-subtitle">Add @process annotations to your code to see them here</p>
                     </div>
 
-                    <!-- Minimap -->
+                    <!-- Minimap - Collapsible -->
                     <div class="canvas-minimap" id="canvasMinimap">
-                        <div class="minimap-viewport" id="minimapViewport"></div>
+                        <div class="minimap-header">
+                            <span class="minimap-title">Position Map</span>
+                            <button type="button" class="minimap-toggle" id="btnToggleMinimap" title="Toggle minimap">
+                                <svg class="minimap-toggle-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="minimap-body" id="minimapBody">
+                            <canvas id="minimapCanvas" width="160" height="100"></canvas>
+                            <div class="minimap-viewport" id="minimapViewport"></div>
+                        </div>
                     </div>
 
                     <!-- Legend -->
@@ -384,6 +404,95 @@
                 <button type="button" class="btn-modal btn-modal-primary" id="btnSaveProcess">Save Draft</button>
             </div>
         </div>
+    </div>
+
+    <!-- Add/Edit Module Modal -->
+    <div class="modal-backdrop hidden" id="moduleModal">
+        <div class="modal modal-md">
+            <div class="modal-header">
+                <h3 class="modal-title" id="moduleModalTitle">Add Module</h3>
+                <button type="button" class="modal-close" id="btnCloseModuleModal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="moduleForm">
+                    <input type="hidden" id="moduleEditId" value="">
+                    <div class="form-group">
+                        <label for="moduleName">Module Name *</label>
+                        <input type="text" id="moduleName" class="form-input" placeholder="e.g., Customer Portal" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="moduleDescription">Description</label>
+                        <textarea id="moduleDescription" class="form-textarea" rows="2" placeholder="Brief description of this module..."></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="moduleIcon">Icon</label>
+                            <select id="moduleIcon" class="form-select">
+                                <option value="box">Box (Default)</option>
+                                <option value="briefcase">Briefcase</option>
+                                <option value="chart">Chart</option>
+                                <option value="users">Users</option>
+                                <option value="settings">Settings</option>
+                                <option value="database">Database</option>
+                                <option value="message">Message</option>
+                                <option value="receipt">Receipt</option>
+                                <option value="dollar">Dollar</option>
+                                <option value="book">Book</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="moduleColor">Color</label>
+                            <select id="moduleColor" class="form-select">
+                                <option value="#6b7280">Gray (Draft)</option>
+                                <option value="#3ecf8e">Green</option>
+                                <option value="#60a5fa">Blue</option>
+                                <option value="#a78bfa">Purple</option>
+                                <option value="#f59e0b">Orange</option>
+                                <option value="#ef4444">Red</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-checkbox-label">
+                            <input type="checkbox" id="moduleIsImplemented">
+                            <span class="checkmark"></span>
+                            Module has real processes implemented
+                        </label>
+                        <span class="form-hint">Check this if the module connects to actual website functionality</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-modal btn-modal-danger hidden" id="btnDeleteModule">Delete</button>
+                <div class="modal-footer-right">
+                    <button type="button" class="btn-modal btn-modal-secondary" id="btnCancelModule">Cancel</button>
+                    <button type="button" class="btn-modal btn-modal-primary" id="btnSaveModule">Save Module</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module Context Menu -->
+    <div class="context-menu hidden" id="moduleContextMenu">
+        <button type="button" class="context-menu-item" data-action="edit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Edit Module
+        </button>
+        <button type="button" class="context-menu-item text-danger" data-action="delete">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            Delete Module
+        </button>
     </div>
 
     <script src="assets/js/process_manager.js" defer></script>

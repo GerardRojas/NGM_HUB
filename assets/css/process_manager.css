@@ -539,20 +539,90 @@
 }
 
 /* ================================
-   Minimap
+   Minimap - Collapsible
    ================================ */
 .canvas-minimap {
     position: absolute;
     bottom: 20px;
     right: 20px;
     width: 180px;
-    height: 120px;
     background: #111111;
     border: 1px solid #1f1f1f;
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
-    opacity: 0.9;
     z-index: 10;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.canvas-minimap.collapsed {
+    width: 140px;
+}
+
+.canvas-minimap.collapsed .minimap-body {
+    height: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.canvas-minimap.collapsed .minimap-toggle-icon {
+    transform: rotate(180deg);
+}
+
+.minimap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: #0d0d0d;
+    border-bottom: 1px solid #1f1f1f;
+    cursor: pointer;
+}
+
+.minimap-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+}
+
+.minimap-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s ease;
+}
+
+.minimap-toggle:hover {
+    color: #e5e7eb;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.minimap-toggle-icon {
+    transition: transform 0.25s ease;
+}
+
+.minimap-body {
+    position: relative;
+    height: 100px;
+    padding: 8px;
+    transition: height 0.25s ease, opacity 0.25s ease;
+    overflow: hidden;
+}
+
+#minimapCanvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    background: #0a0a0a;
 }
 
 .minimap-viewport {
@@ -561,6 +631,7 @@
     background: rgba(62, 207, 142, 0.1);
     border-radius: 2px;
     pointer-events: none;
+    transition: all 0.1s ease;
 }
 
 /* ================================
@@ -1795,15 +1866,21 @@
     padding: 20px 24px;
     min-width: 220px;
     max-width: 280px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    cursor: grab;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
     user-select: none;
 }
 
 .tree-node:hover {
     border-color: #3ecf8e;
-    transform: translateY(-2px);
     box-shadow: 0 8px 32px rgba(62, 207, 142, 0.15);
+}
+
+.tree-node.dragging {
+    cursor: grabbing;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    border-color: #3ecf8e;
+    z-index: 100;
 }
 
 .tree-node.central {
@@ -1929,19 +2006,24 @@
 }
 
 /* ================================
-   Animated Connection Lines
+   Animated Connection Lines - Orthogonal
    ================================ */
 .connection-path {
     fill: none;
     stroke: #3f3f46;
     stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
     transition: stroke 0.2s;
 }
 
+.connection-path.orthogonal {
+    stroke-width: 2;
+}
+
 .connection-path.animated {
-    stroke: #3ecf8e;
     stroke-dasharray: 8 4;
-    animation: dashFlow 1s linear infinite;
+    animation: dashFlow 1.2s linear infinite;
 }
 
 .connection-path.draft {
@@ -1967,6 +2049,20 @@
 /* Connection hover effect */
 .connection-path:hover {
     stroke-width: 3;
+}
+
+/* Connection endpoints (dots) */
+.connection-dot {
+    fill: currentColor;
+    transition: r 0.15s ease;
+}
+
+.connection-dot.start {
+    fill: #3ecf8e;
+}
+
+.connection-dot.end {
+    fill: currentColor;
 }
 
 /* ================================
@@ -2718,4 +2814,220 @@
         font-size: 9px;
         padding: 2px 6px;
     }
+}
+
+/* ================================
+   Add Module Button
+   ================================ */
+.btn-add-module {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: #111111;
+    border: 1px solid #3ecf8e;
+    border-radius: 6px;
+    color: #3ecf8e;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-add-module:hover {
+    background: rgba(62, 207, 142, 0.1);
+}
+
+.btn-add-module .btn-label {
+    font-weight: 500;
+}
+
+/* Hide on detail view */
+.detail-active .btn-add-module {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .btn-add-module .btn-label {
+        display: none;
+    }
+}
+
+/* ================================
+   Module Modal Additions
+   ================================ */
+.modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-footer-right {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-modal-danger {
+    background: transparent;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+}
+
+.btn-modal-danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Form Checkbox */
+.form-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #e5e7eb;
+    cursor: pointer;
+    margin-bottom: 4px;
+}
+
+.form-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #3ecf8e;
+    cursor: pointer;
+}
+
+/* ================================
+   Context Menu
+   ================================ */
+.context-menu {
+    position: fixed;
+    min-width: 160px;
+    background: #111111;
+    border: 1px solid #1f1f1f;
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+.context-menu.hidden {
+    display: none;
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #e5e7eb;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.context-menu-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.context-menu-item.text-danger {
+    color: #ef4444;
+}
+
+.context-menu-item.text-danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.context-menu-item svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+/* ================================
+   Tree Node - Custom Module Indicator
+   ================================ */
+.tree-node.custom-module {
+    border-style: dashed;
+}
+
+.tree-node.custom-module.is-draft {
+    border-color: #6b7280;
+}
+
+.tree-node.custom-module.is-draft .tree-node-icon {
+    background: rgba(107, 114, 128, 0.2);
+    border-color: #4b5563;
+}
+
+.tree-node.custom-module.is-implemented {
+    border-color: #3ecf8e;
+}
+
+/* Custom module badge */
+.tree-node-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 2px 6px;
+    background: rgba(107, 114, 128, 0.3);
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
+}
+
+.tree-node.custom-module.is-implemented .tree-node-badge {
+    background: rgba(62, 207, 142, 0.2);
+    color: #3ecf8e;
+}
+
+/* ================================
+   Connection Colors by Status
+   ================================ */
+/* Draft module connections - gray dashed */
+.connection-path.module-draft {
+    stroke: #6b7280 !important;
+    stroke-dasharray: 8 4;
+    animation: none !important;
+}
+
+.connection-dot.module-draft {
+    fill: #6b7280 !important;
+}
+
+/* Implemented module connections - green animated */
+.connection-path.module-implemented {
+    stroke: #3ecf8e !important;
+    animation: flowDash 1s linear infinite;
+}
+
+.connection-dot.module-implemented {
+    fill: #3ecf8e !important;
+}
+
+/* ================================
+   Edit Indicator on Hover
+   ================================ */
+.tree-node.custom-module::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'%3E%3C/path%3E%3Cpath d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'%3E%3C/path%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.tree-node.custom-module:hover::after {
+    opacity: 0.6;
 }

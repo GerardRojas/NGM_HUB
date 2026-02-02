@@ -420,7 +420,131 @@
         // Dragged node
         draggedNode: null,
         dragOffset: { x: 0, y: 0 },
+
+        // Node positions for persistence
+        nodePositions: {},
+
+        // Custom modules (user-created)
+        customModules: [],
+
+        // Currently editing module
+        editingModuleId: null,
     };
+
+    // ================================
+    // Position Persistence
+    // ================================
+    const POSITIONS_KEY = 'ngm_process_manager_positions';
+    const CUSTOM_MODULES_KEY = 'ngm_process_manager_custom_modules';
+
+    function loadNodePositions() {
+        try {
+            const saved = localStorage.getItem(POSITIONS_KEY);
+            if (saved) {
+                state.nodePositions = JSON.parse(saved);
+            }
+        } catch (e) {
+            console.warn('[PROCESS-MANAGER] Error loading positions:', e);
+            state.nodePositions = {};
+        }
+    }
+
+    function saveNodePositions() {
+        try {
+            localStorage.setItem(POSITIONS_KEY, JSON.stringify(state.nodePositions));
+        } catch (e) {
+            console.warn('[PROCESS-MANAGER] Error saving positions:', e);
+        }
+    }
+
+    // ================================
+    // Custom Modules Storage
+    // ================================
+    function loadCustomModules() {
+        try {
+            const saved = localStorage.getItem(CUSTOM_MODULES_KEY);
+            if (saved) {
+                state.customModules = JSON.parse(saved);
+            } else {
+                state.customModules = [];
+            }
+        } catch (e) {
+            console.warn('[PROCESS-MANAGER] Error loading custom modules:', e);
+            state.customModules = [];
+        }
+    }
+
+    function saveCustomModules() {
+        try {
+            localStorage.setItem(CUSTOM_MODULES_KEY, JSON.stringify(state.customModules));
+        } catch (e) {
+            console.warn('[PROCESS-MANAGER] Error saving custom modules:', e);
+        }
+    }
+
+    function addCustomModule(moduleData) {
+        const id = 'custom_' + Date.now();
+        const module = {
+            id: id,
+            name: moduleData.name,
+            description: moduleData.description || '',
+            icon: moduleData.icon || 'box',
+            color: moduleData.color || '#6b7280',
+            isImplemented: moduleData.isImplemented || false,
+            isCustom: true,
+            processIds: [],
+            createdAt: new Date().toISOString()
+        };
+        state.customModules.push(module);
+        saveCustomModules();
+        return module;
+    }
+
+    function updateCustomModule(id, moduleData) {
+        const index = state.customModules.findIndex(m => m.id === id);
+        if (index !== -1) {
+            state.customModules[index] = {
+                ...state.customModules[index],
+                ...moduleData,
+                updatedAt: new Date().toISOString()
+            };
+            saveCustomModules();
+            return state.customModules[index];
+        }
+        return null;
+    }
+
+    function deleteCustomModule(id) {
+        const index = state.customModules.findIndex(m => m.id === id);
+        if (index !== -1) {
+            state.customModules.splice(index, 1);
+            // Also remove saved position
+            const key = `${state.groupBy}_${id}`;
+            delete state.nodePositions[key];
+            saveCustomModules();
+            saveNodePositions();
+            return true;
+        }
+        return false;
+    }
+
+    function getCustomModule(id) {
+        return state.customModules.find(m => m.id === id);
+    }
+
+    function getNodePosition(nodeId, defaultX, defaultY) {
+        const key = `${state.groupBy}_${nodeId}`;
+        if (state.nodePositions[key]) {
+            return state.nodePositions[key];
+        }
+        return { x: defaultX, y: defaultY };
+    }
+
+    function setNodePosition(nodeId, x, y) {
+        const key = `${state.groupBy}_${nodeId}`;
+        state.nodePositions[key] = { x, y };
+        saveNodePositions();
+    }
 
     // ================================
     // DOM References
@@ -446,8 +570,17 @@
             btnAddProcess: document.getElementById('btnAddProcess'),
             countImplemented: document.getElementById('countImplemented'),
             countDrafts: document.getElementById('countDrafts'),
+            // Minimap elements
+            canvasMinimap: document.getElementById('canvasMinimap'),
+            minimapCanvas: document.getElementById('minimapCanvas'),
+            minimapBody: document.getElementById('minimapBody'),
             minimapViewport: document.getElementById('minimapViewport'),
+            btnToggleMinimap: document.getElementById('btnToggleMinimap'),
             processModal: document.getElementById('processModal'),
+            // Module modal elements
+            moduleModal: document.getElementById('moduleModal'),
+            btnAddModule: document.getElementById('btnAddModule'),
+            moduleContextMenu: document.getElementById('moduleContextMenu'),
         };
     }
 
@@ -457,6 +590,8 @@
     async function init() {
         cacheElements();
         loadCurrentUser();
+        loadNodePositions();
+        loadCustomModules();
         setupEventListeners();
         await loadProcesses();
         renderTreeView();
@@ -560,6 +695,32 @@
 
         // Modal events
         setupModalListeners();
+        setupModuleModalListeners();
+
+        // Add Module button
+        if (elements.btnAddModule) {
+            elements.btnAddModule.addEventListener('click', openAddModuleModal);
+        }
+
+        // Context menu (close on click outside)
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.context-menu') && !e.target.closest('.tree-node.custom-module')) {
+                hideContextMenu();
+            }
+        });
+
+        // Minimap toggle
+        if (elements.btnToggleMinimap) {
+            elements.btnToggleMinimap.addEventListener('click', toggleMinimap);
+        }
+        // Also toggle when clicking the header
+        const minimapHeader = document.querySelector('.minimap-header');
+        if (minimapHeader) {
+            minimapHeader.addEventListener('click', toggleMinimap);
+        }
+
+        // Load minimap collapsed state
+        loadMinimapState();
     }
 
     function setupModalListeners() {
@@ -577,6 +738,157 @@
         modal.addEventListener('click', (e) => {
             if (e.target === modal) closeModal();
         });
+    }
+
+    function setupModuleModalListeners() {
+        const modal = elements.moduleModal;
+        if (!modal) return;
+
+        const btnClose = document.getElementById('btnCloseModuleModal');
+        const btnCancel = document.getElementById('btnCancelModule');
+        const btnSave = document.getElementById('btnSaveModule');
+        const btnDelete = document.getElementById('btnDeleteModule');
+
+        if (btnClose) btnClose.addEventListener('click', closeModuleModal);
+        if (btnCancel) btnCancel.addEventListener('click', closeModuleModal);
+        if (btnSave) btnSave.addEventListener('click', saveModule);
+        if (btnDelete) btnDelete.addEventListener('click', confirmDeleteModule);
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModuleModal();
+        });
+
+        // Context menu actions
+        if (elements.moduleContextMenu) {
+            elements.moduleContextMenu.addEventListener('click', (e) => {
+                const item = e.target.closest('.context-menu-item');
+                if (!item) return;
+
+                const action = item.dataset.action;
+                const moduleId = elements.moduleContextMenu.dataset.moduleId;
+
+                if (action === 'edit' && moduleId) {
+                    openEditModuleModal(moduleId);
+                } else if (action === 'delete' && moduleId) {
+                    confirmDeleteModuleById(moduleId);
+                }
+                hideContextMenu();
+            });
+        }
+    }
+
+    // ================================
+    // Module Modal Functions
+    // ================================
+    function openAddModuleModal() {
+        if (!elements.moduleModal) return;
+
+        state.editingModuleId = null;
+        document.getElementById('moduleModalTitle').textContent = 'Add Module';
+        document.getElementById('moduleForm').reset();
+        document.getElementById('moduleEditId').value = '';
+        document.getElementById('btnDeleteModule').classList.add('hidden');
+
+        elements.moduleModal.classList.remove('hidden');
+    }
+
+    function openEditModuleModal(moduleId) {
+        if (!elements.moduleModal) return;
+
+        const module = getCustomModule(moduleId);
+        if (!module) return;
+
+        state.editingModuleId = moduleId;
+        document.getElementById('moduleModalTitle').textContent = 'Edit Module';
+        document.getElementById('moduleEditId').value = moduleId;
+        document.getElementById('moduleName').value = module.name;
+        document.getElementById('moduleDescription').value = module.description || '';
+        document.getElementById('moduleIcon').value = module.icon || 'box';
+        document.getElementById('moduleColor').value = module.color || '#6b7280';
+        document.getElementById('moduleIsImplemented').checked = module.isImplemented || false;
+        document.getElementById('btnDeleteModule').classList.remove('hidden');
+
+        elements.moduleModal.classList.remove('hidden');
+    }
+
+    function closeModuleModal() {
+        if (elements.moduleModal) {
+            elements.moduleModal.classList.add('hidden');
+            state.editingModuleId = null;
+        }
+    }
+
+    function saveModule() {
+        const form = document.getElementById('moduleForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        const moduleData = {
+            name: document.getElementById('moduleName').value.trim(),
+            description: document.getElementById('moduleDescription').value.trim(),
+            icon: document.getElementById('moduleIcon').value,
+            color: document.getElementById('moduleColor').value,
+            isImplemented: document.getElementById('moduleIsImplemented').checked
+        };
+
+        if (!moduleData.name) {
+            showToast('Module name is required', 'error');
+            return;
+        }
+
+        const editId = document.getElementById('moduleEditId').value;
+
+        if (editId) {
+            // Update existing module
+            updateCustomModule(editId, moduleData);
+            showToast('Module updated', 'success');
+        } else {
+            // Add new module
+            addCustomModule(moduleData);
+            showToast('Module added', 'success');
+        }
+
+        closeModuleModal();
+        renderTreeView();
+    }
+
+    function confirmDeleteModule() {
+        const editId = document.getElementById('moduleEditId').value;
+        if (editId) {
+            confirmDeleteModuleById(editId);
+        }
+    }
+
+    function confirmDeleteModuleById(moduleId) {
+        const module = getCustomModule(moduleId);
+        if (!module) return;
+
+        if (confirm(`Are you sure you want to delete "${module.name}"?`)) {
+            deleteCustomModule(moduleId);
+            closeModuleModal();
+            showToast('Module deleted', 'success');
+            renderTreeView();
+        }
+    }
+
+    function showContextMenu(e, moduleId) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!elements.moduleContextMenu) return;
+
+        elements.moduleContextMenu.dataset.moduleId = moduleId;
+        elements.moduleContextMenu.style.left = `${e.clientX}px`;
+        elements.moduleContextMenu.style.top = `${e.clientY}px`;
+        elements.moduleContextMenu.classList.remove('hidden');
+    }
+
+    function hideContextMenu() {
+        if (elements.moduleContextMenu) {
+            elements.moduleContextMenu.classList.add('hidden');
+        }
     }
 
     // ================================
@@ -868,10 +1180,13 @@
         const groups = state.groupBy === 'deliverable' ? DELIVERABLES : DEPARTMENTS;
         const groupArray = Object.values(groups);
 
-        // Calculate positions - radial layout from center
-        const centerX = 600;
-        const centerY = 400;
-        const radius = 300;
+        // Default positions - grid layout
+        const defaultCenterX = 600;
+        const defaultCenterY = 400;
+        const defaultRadius = 320;
+
+        // Hub position (can be dragged too)
+        const hubPos = getNodePosition('hub', defaultCenterX - 130, defaultCenterY - 80);
 
         // Render central hub
         const hubNode = createTreeNode({
@@ -881,14 +1196,26 @@
             icon: 'hub',
             color: '#3ecf8e',
             isCentral: true
-        }, centerX - 130, centerY - 80);
+        }, hubPos.x, hubPos.y);
+
+        // Add drag functionality to hub
+        makeDraggable(hubNode, 'hub');
         elements.treeViewContainer.appendChild(hubNode);
+
+        // Store node positions for connection drawing
+        const nodeRects = {
+            hub: { x: hubPos.x, y: hubPos.y, width: 260, height: 160 }
+        };
 
         // Render group nodes around the hub
         groupArray.forEach((group, index) => {
+            // Default position in radial layout
             const angle = (index / groupArray.length) * Math.PI * 2 - Math.PI / 2;
-            const x = centerX + Math.cos(angle) * radius - 110;
-            const y = centerY + Math.sin(angle) * radius - 70;
+            const defaultX = defaultCenterX + Math.cos(angle) * defaultRadius - 110;
+            const defaultY = defaultCenterY + Math.sin(angle) * defaultRadius - 70;
+
+            // Get saved position or use default
+            const pos = getNodePosition(group.id, defaultX, defaultY);
 
             // Count processes in this group
             let processCount = 0;
@@ -909,25 +1236,387 @@
                 ...group,
                 processCount,
                 draftCount
-            }, x, y);
+            }, pos.x, pos.y);
+
+            // Store for connections
+            nodeRects[group.id] = { x: pos.x, y: pos.y, width: 220, height: 140 };
+
+            // Add drag functionality
+            makeDraggable(node, group.id, () => {
+                // Redraw connections after drag
+                redrawConnections(nodeRects);
+            });
 
             node.addEventListener('click', () => {
-                navigateToDetail(group.id, state.groupBy);
+                // Only navigate if not dragging
+                if (!node.classList.contains('was-dragged')) {
+                    navigateToDetail(group.id, state.groupBy);
+                }
+                node.classList.remove('was-dragged');
             });
 
             elements.treeViewContainer.appendChild(node);
+        });
 
-            // Draw connection from hub to this node
-            const connection = createAnimatedConnection(
-                centerX, centerY,
-                x + 110, y + 70,
-                group.color
+        // Render custom modules
+        state.customModules.forEach((module, index) => {
+            // Position custom modules in a different area (to the right)
+            const customStartX = 1050;
+            const customStartY = 150;
+            const customSpacing = 180;
+
+            const defaultX = customStartX;
+            const defaultY = customStartY + index * customSpacing;
+
+            const pos = getNodePosition(module.id, defaultX, defaultY);
+
+            const customNode = createCustomModuleNode(module, pos.x, pos.y);
+
+            // Store for connections
+            nodeRects[module.id] = {
+                x: pos.x,
+                y: pos.y,
+                width: 220,
+                height: 140,
+                isCustom: true,
+                isImplemented: module.isImplemented
+            };
+
+            // Add drag functionality
+            makeDraggable(customNode, module.id, () => {
+                redrawConnections(nodeRects);
+            });
+
+            // Right-click context menu for custom modules
+            customNode.addEventListener('contextmenu', (e) => {
+                showContextMenu(e, module.id);
+            });
+
+            // Double-click to edit
+            customNode.addEventListener('dblclick', () => {
+                openEditModuleModal(module.id);
+            });
+
+            elements.treeViewContainer.appendChild(customNode);
+        });
+
+        // Draw orthogonal connections
+        redrawConnections(nodeRects);
+    }
+
+    function createCustomModuleNode(module, x, y) {
+        const node = document.createElement('div');
+        const statusClass = module.isImplemented ? 'is-implemented' : 'is-draft';
+        node.className = `tree-node custom-module ${statusClass}`;
+        node.style.left = `${x}px`;
+        node.style.top = `${y}px`;
+        node.dataset.id = module.id;
+
+        const iconSvg = getIconSvg(module.icon, module.color);
+        const statusLabel = module.isImplemented ? 'LIVE' : 'DRAFT';
+
+        node.innerHTML = `
+            <div class="tree-node-badge">${statusLabel}</div>
+            <div class="tree-node-icon" style="background: ${module.color}20; border-color: ${module.color};">
+                ${iconSvg}
+            </div>
+            <div class="tree-node-title">${escapeHtml(module.name)}</div>
+            <div class="tree-node-subtitle">${escapeHtml(module.description || 'Custom module')}</div>
+            <div class="tree-node-stats">
+                <span class="tree-node-stat" style="color: ${module.isImplemented ? '#3ecf8e' : '#6b7280'};">
+                    <span class="stat-dot" style="background: ${module.isImplemented ? '#3ecf8e' : '#6b7280'};"></span>
+                    ${module.isImplemented ? 'Implemented' : 'Draft'}
+                </span>
+            </div>
+        `;
+
+        return node;
+    }
+
+    function redrawConnections(nodeRects) {
+        clearConnections();
+
+        const groups = state.groupBy === 'deliverable' ? DELIVERABLES : DEPARTMENTS;
+        const groupArray = Object.values(groups);
+        const hubRect = nodeRects.hub;
+        const hubCenterX = hubRect.x + hubRect.width / 2;
+        const hubCenterY = hubRect.y + hubRect.height / 2;
+
+        // Draw connections for built-in groups (always green/implemented)
+        groupArray.forEach((group) => {
+            const rect = nodeRects[group.id];
+            if (!rect) return;
+
+            const nodeCenterX = rect.x + rect.width / 2;
+            const nodeCenterY = rect.y + rect.height / 2;
+
+            // Determine connection points (from edge of hub to edge of node)
+            const points = calculateOrthogonalPath(
+                hubRect, rect, hubCenterX, hubCenterY, nodeCenterX, nodeCenterY
             );
+
+            const connection = createOrthogonalConnection(points, group.color, false);
             elements.connectionsLayer.appendChild(connection);
         });
 
-        // Add external services on the side
-        renderExternalServicesOverview();
+        // Draw connections for custom modules (gray for drafts, green for implemented)
+        state.customModules.forEach((module) => {
+            const rect = nodeRects[module.id];
+            if (!rect) return;
+
+            const nodeCenterX = rect.x + rect.width / 2;
+            const nodeCenterY = rect.y + rect.height / 2;
+
+            const points = calculateOrthogonalPath(
+                hubRect, rect, hubCenterX, hubCenterY, nodeCenterX, nodeCenterY
+            );
+
+            // Use gray for drafts, green for implemented
+            const connectionColor = module.isImplemented ? '#3ecf8e' : '#6b7280';
+            const isDraft = !module.isImplemented;
+            const connection = createOrthogonalConnection(points, connectionColor, isDraft);
+            elements.connectionsLayer.appendChild(connection);
+        });
+
+        // Update minimap after redrawing connections
+        updateMinimap();
+    }
+
+    function calculateOrthogonalPath(hubRect, nodeRect, hubCX, hubCY, nodeCX, nodeCY) {
+        // Calculate best edge points for orthogonal connection
+        const dx = nodeCX - hubCX;
+        const dy = nodeCY - hubCY;
+
+        let fromX, fromY, toX, toY;
+
+        // Determine which side of hub to exit from
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // Horizontal dominant
+            if (dx > 0) {
+                // Node is to the right
+                fromX = hubRect.x + hubRect.width;
+                fromY = hubCY;
+                toX = nodeRect.x;
+                toY = nodeCY;
+            } else {
+                // Node is to the left
+                fromX = hubRect.x;
+                fromY = hubCY;
+                toX = nodeRect.x + nodeRect.width;
+                toY = nodeCY;
+            }
+        } else {
+            // Vertical dominant
+            if (dy > 0) {
+                // Node is below
+                fromX = hubCX;
+                fromY = hubRect.y + hubRect.height;
+                toX = nodeCX;
+                toY = nodeRect.y;
+            } else {
+                // Node is above
+                fromX = hubCX;
+                fromY = hubRect.y;
+                toX = nodeCX;
+                toY = nodeRect.y + nodeRect.height;
+            }
+        }
+
+        // Calculate midpoint for orthogonal routing
+        const midX = (fromX + toX) / 2;
+        const midY = (fromY + toY) / 2;
+
+        // Return path points for L-shaped or Z-shaped connection
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // Horizontal route with vertical segment in middle
+            return [
+                { x: fromX, y: fromY },
+                { x: midX, y: fromY },
+                { x: midX, y: toY },
+                { x: toX, y: toY }
+            ];
+        } else {
+            // Vertical route with horizontal segment in middle
+            return [
+                { x: fromX, y: fromY },
+                { x: fromX, y: midY },
+                { x: toX, y: midY },
+                { x: toX, y: toY }
+            ];
+        }
+    }
+
+    function createOrthogonalConnection(points, color = '#3ecf8e', isDraft = false) {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+
+        // Build SVG path with rounded corners
+        let d = `M ${points[0].x} ${points[0].y}`;
+        const cornerRadius = 12;
+
+        for (let i = 1; i < points.length; i++) {
+            const prev = points[i - 1];
+            const curr = points[i];
+            const next = points[i + 1];
+
+            if (next && i < points.length - 1) {
+                // Calculate corner
+                const dx1 = curr.x - prev.x;
+                const dy1 = curr.y - prev.y;
+                const dx2 = next.x - curr.x;
+                const dy2 = next.y - curr.y;
+
+                // Normalize and apply radius
+                const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+                const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+
+                if (len1 > 0 && len2 > 0) {
+                    const r = Math.min(cornerRadius, len1 / 2, len2 / 2);
+
+                    const startX = curr.x - (dx1 / len1) * r;
+                    const startY = curr.y - (dy1 / len1) * r;
+                    const endX = curr.x + (dx2 / len2) * r;
+                    const endY = curr.y + (dy2 / len2) * r;
+
+                    d += ` L ${startX} ${startY}`;
+                    d += ` Q ${curr.x} ${curr.y} ${endX} ${endY}`;
+                } else {
+                    d += ` L ${curr.x} ${curr.y}`;
+                }
+            } else {
+                d += ` L ${curr.x} ${curr.y}`;
+            }
+        }
+
+        path.setAttribute('d', d);
+
+        // Apply different styles for draft vs implemented modules
+        const statusClass = isDraft ? 'module-draft' : 'module-implemented';
+        path.setAttribute('class', `connection-path orthogonal ${statusClass}${isDraft ? '' : ' animated'}`);
+        path.setAttribute('stroke', color);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke-width', '2');
+
+        if (isDraft) {
+            path.setAttribute('stroke-dasharray', '8 4');
+        }
+
+        g.appendChild(path);
+
+        // Add endpoint dots
+        const startDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        startDot.setAttribute('cx', points[0].x);
+        startDot.setAttribute('cy', points[0].y);
+        startDot.setAttribute('r', '4');
+        startDot.setAttribute('fill', '#3ecf8e');
+        startDot.setAttribute('class', `connection-dot start ${statusClass}`);
+        g.appendChild(startDot);
+
+        const endDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        endDot.setAttribute('cx', points[points.length - 1].x);
+        endDot.setAttribute('cy', points[points.length - 1].y);
+        endDot.setAttribute('r', '4');
+        endDot.setAttribute('fill', color);
+        endDot.setAttribute('class', `connection-dot end ${statusClass}`);
+        g.appendChild(endDot);
+
+        return g;
+    }
+
+    function makeDraggable(node, nodeId, onDragEnd) {
+        let isDragging = false;
+        let startX, startY;
+        let initialX, initialY;
+        let hasMoved = false;
+
+        node.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            e.preventDefault();
+
+            isDragging = true;
+            hasMoved = false;
+            startX = e.clientX;
+            startY = e.clientY;
+            initialX = parseInt(node.style.left) || 0;
+            initialY = parseInt(node.style.top) || 0;
+
+            node.style.cursor = 'grabbing';
+            node.style.zIndex = '100';
+            node.classList.add('dragging');
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const dx = (e.clientX - startX) / state.canvas.scale;
+            const dy = (e.clientY - startY) / state.canvas.scale;
+
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                hasMoved = true;
+            }
+
+            const newX = initialX + dx;
+            const newY = initialY + dy;
+
+            node.style.left = `${newX}px`;
+            node.style.top = `${newY}px`;
+
+            // Update nodeRects and redraw connections in real-time
+            if (onDragEnd) {
+                const groups = state.groupBy === 'deliverable' ? DELIVERABLES : DEPARTMENTS;
+                const groupArray = Object.values(groups);
+
+                const nodeRects = { hub: getHubRect() };
+                groupArray.forEach(g => {
+                    const el = elements.treeViewContainer.querySelector(`[data-id="${g.id}"]`);
+                    if (el) {
+                        nodeRects[g.id] = {
+                            x: parseInt(el.style.left) || 0,
+                            y: parseInt(el.style.top) || 0,
+                            width: 220,
+                            height: 140
+                        };
+                    }
+                });
+                // Update hub rect if dragging hub
+                if (nodeId === 'hub') {
+                    nodeRects.hub = { x: newX, y: newY, width: 260, height: 160 };
+                }
+                redrawConnections(nodeRects);
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+
+            isDragging = false;
+            node.style.cursor = 'grab';
+            node.style.zIndex = '';
+            node.classList.remove('dragging');
+
+            if (hasMoved) {
+                node.classList.add('was-dragged');
+                // Save position
+                const newX = parseInt(node.style.left) || 0;
+                const newY = parseInt(node.style.top) || 0;
+                setNodePosition(nodeId, newX, newY);
+
+                if (onDragEnd) onDragEnd();
+            }
+        });
+    }
+
+    function getHubRect() {
+        const hubNode = elements.treeViewContainer.querySelector('[data-id="hub"]');
+        if (hubNode) {
+            return {
+                x: parseInt(hubNode.style.left) || 0,
+                y: parseInt(hubNode.style.top) || 0,
+                width: 260,
+                height: 160
+            };
+        }
+        return { x: 470, y: 320, width: 260, height: 160 };
     }
 
     function createTreeNode(data, x, y) {
@@ -1814,8 +2503,127 @@
         applyCanvasTransform();
     }
 
+    // ================================
+    // Minimap
+    // ================================
+    const MINIMAP_STATE_KEY = 'ngm_process_minimap_collapsed';
+
+    function toggleMinimap(e) {
+        if (e) e.stopPropagation();
+        if (!elements.canvasMinimap) return;
+
+        elements.canvasMinimap.classList.toggle('collapsed');
+        saveMinimapState();
+    }
+
+    function loadMinimapState() {
+        try {
+            const collapsed = localStorage.getItem(MINIMAP_STATE_KEY) === 'true';
+            if (collapsed && elements.canvasMinimap) {
+                elements.canvasMinimap.classList.add('collapsed');
+            }
+        } catch (e) {
+            // Ignore localStorage errors
+        }
+    }
+
+    function saveMinimapState() {
+        try {
+            const collapsed = elements.canvasMinimap?.classList.contains('collapsed');
+            localStorage.setItem(MINIMAP_STATE_KEY, collapsed ? 'true' : 'false');
+        } catch (e) {
+            // Ignore localStorage errors
+        }
+    }
+
     function updateMinimap() {
-        // Minimap update logic
+        if (!elements.minimapCanvas || !elements.canvasContainer) return;
+
+        const canvas = elements.minimapCanvas;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Canvas dimensions
+        const canvasSize = 5000;
+        const minimapWidth = canvas.width;
+        const minimapHeight = canvas.height;
+        const scaleX = minimapWidth / canvasSize;
+        const scaleY = minimapHeight / canvasSize;
+
+        // Draw background grid pattern
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, minimapWidth, minimapHeight);
+
+        // Draw nodes
+        const groups = state.groupBy === 'deliverable' ? DELIVERABLES : DEPARTMENTS;
+        const groupArray = Object.values(groups);
+
+        // Draw hub
+        const hubPos = getNodePosition('hub', 470, 320);
+        ctx.beginPath();
+        ctx.arc(
+            (hubPos.x + 130) * scaleX,
+            (hubPos.y + 80) * scaleY,
+            6,
+            0,
+            Math.PI * 2
+        );
+        ctx.fillStyle = '#3ecf8e';
+        ctx.fill();
+
+        // Draw group nodes
+        groupArray.forEach((group, index) => {
+            const angle = (index / groupArray.length) * Math.PI * 2 - Math.PI / 2;
+            const defaultX = 600 + Math.cos(angle) * 320 - 110;
+            const defaultY = 400 + Math.sin(angle) * 320 - 70;
+            const pos = getNodePosition(group.id, defaultX, defaultY);
+
+            ctx.beginPath();
+            ctx.arc(
+                (pos.x + 110) * scaleX,
+                (pos.y + 70) * scaleY,
+                4,
+                0,
+                Math.PI * 2
+            );
+            ctx.fillStyle = group.color || '#60a5fa';
+            ctx.fill();
+        });
+
+        // Draw connections (simplified lines)
+        ctx.strokeStyle = 'rgba(62, 207, 142, 0.3)';
+        ctx.lineWidth = 1;
+        groupArray.forEach((group, index) => {
+            const angle = (index / groupArray.length) * Math.PI * 2 - Math.PI / 2;
+            const defaultX = 600 + Math.cos(angle) * 320 - 110;
+            const defaultY = 400 + Math.sin(angle) * 320 - 70;
+            const pos = getNodePosition(group.id, defaultX, defaultY);
+
+            ctx.beginPath();
+            ctx.moveTo((hubPos.x + 130) * scaleX, (hubPos.y + 80) * scaleY);
+            ctx.lineTo((pos.x + 110) * scaleX, (pos.y + 70) * scaleY);
+            ctx.stroke();
+        });
+
+        // Update viewport indicator
+        if (elements.minimapViewport) {
+            const containerRect = elements.canvasContainer.getBoundingClientRect();
+            const viewWidth = containerRect.width / state.canvas.scale;
+            const viewHeight = containerRect.height / state.canvas.scale;
+            const viewX = -state.canvas.offsetX / state.canvas.scale;
+            const viewY = -state.canvas.offsetY / state.canvas.scale;
+
+            // Padding offset for the minimap body
+            const padding = 8;
+
+            elements.minimapViewport.style.left = `${padding + viewX * scaleX}px`;
+            elements.minimapViewport.style.top = `${padding + viewY * scaleY}px`;
+            elements.minimapViewport.style.width = `${Math.max(10, viewWidth * scaleX)}px`;
+            elements.minimapViewport.style.height = `${Math.max(10, viewHeight * scaleY)}px`;
+        }
     }
 
     // ================================

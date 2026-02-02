@@ -299,29 +299,18 @@
       return false;
     }
 
-    // If no project/estimate ID, prompt to create new
-    if (!currentProjectId || !currentEstimateId) {
+    // If no estimate ID and no project name, prompt to create new
+    if (!currentEstimateId && (!currentEstimateData.project_name || currentEstimateData.project_name === 'New Project')) {
       return await createNewEstimate();
     }
 
     els.statusEl.textContent = 'Saving estimate...';
 
     try {
-      const basePath = `${currentProjectId}/${currentEstimateId}`;
-
-      // 1. Update estimate metadata
-      currentEstimateData.updated_at = new Date().toISOString();
-      currentEstimateData.project_id = currentProjectId;
-      currentEstimateData.estimate_id = currentEstimateId;
-
-      // 2. Prepare the .ngm file content
-      const ngmContent = JSON.stringify(currentEstimateData, null, 2);
-      const ngmBlob = new Blob([ngmContent], { type: 'application/json' });
-
-      // 3. Extract IDs used in this estimate for snapshots
+      // 1. Extract IDs used in this estimate for snapshots
       const { conceptIds, materialIds } = extractUsedIds();
 
-      // 4. Fetch and create snapshots
+      // 2. Fetch and create snapshots
       els.statusEl.textContent = 'Creating snapshots...';
 
       const [materialsResult, conceptsResult, conceptMaterialsResult] = await Promise.all([
@@ -330,55 +319,39 @@
         conceptIds.length > 0 ? fetchConceptMaterials(conceptIds) : { data: [], error: null }
       ]);
 
-      // 5. Convert to CSV
-      const materialsCSV = arrayToCSV(materialsResult.data || []);
-      const conceptsCSV = arrayToCSV(conceptsResult.data || []);
-      const conceptMaterialsCSV = arrayToCSV(conceptMaterialsResult.data || []);
+      // 3. Prepare request payload for backend API
+      const requestPayload = {
+        estimate_id: currentEstimateId,
+        project_name: currentEstimateData.project_name || 'Untitled',
+        project: currentEstimateData.project || {},
+        categories: currentEstimateData.categories || [],
+        overhead: currentEstimateData.overhead || { percentage: 0, amount: 0 },
+        materials_snapshot: materialsResult.data || [],
+        concepts_snapshot: conceptsResult.data || [],
+        concept_materials_snapshot: conceptMaterialsResult.data || [],
+        created_from_template: currentEstimateData.created_from_template || null
+      };
 
-      // 6. Upload all files
-      els.statusEl.textContent = 'Uploading files...';
+      els.statusEl.textContent = 'Uploading...';
 
-      const uploads = [
-        uploadToStorage(BUCKETS.ESTIMATES, `${basePath}/estimate.ngm`, ngmBlob),
-      ];
+      // 4. Call backend API to save estimate
+      const response = await fetch(`${API_BASE}/estimator/estimates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(requestPayload)
+      });
 
-      // Only upload CSV if there's data
-      if (materialsCSV) {
-        uploads.push(uploadToStorage(
-          BUCKETS.ESTIMATES,
-          `${basePath}/materials_snapshot.csv`,
-          new Blob([materialsCSV], { type: 'text/csv' }),
-          { contentType: 'text/csv' }
-        ));
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP ${response.status}`);
       }
 
-      if (conceptsCSV) {
-        uploads.push(uploadToStorage(
-          BUCKETS.ESTIMATES,
-          `${basePath}/concepts_snapshot.csv`,
-          new Blob([conceptsCSV], { type: 'text/csv' }),
-          { contentType: 'text/csv' }
-        ));
-      }
+      const result = await response.json();
 
-      if (conceptMaterialsCSV) {
-        uploads.push(uploadToStorage(
-          BUCKETS.ESTIMATES,
-          `${basePath}/concept_materials_snapshot.csv`,
-          new Blob([conceptMaterialsCSV], { type: 'text/csv' }),
-          { contentType: 'text/csv' }
-        ));
-      }
-
-      const results = await Promise.all(uploads);
-      const errors = results.filter(r => r.error);
-
-      if (errors.length > 0) {
-        console.error('[ESTIMATOR] Some files failed to upload:', errors);
-        showFeedback('Some files failed to save', 'warning');
-        els.statusEl.textContent = 'Partial save';
-        return false;
-      }
+      // Update local state with returned ID
+      currentEstimateId = result.estimate_id || currentEstimateId;
+      currentEstimateData.estimate_id = currentEstimateId;
 
       isDirty = false;
       showFeedback('Estimate saved with snapshots', 'success');
@@ -391,7 +364,7 @@
 
     } catch (err) {
       console.error('[ESTIMATOR] Save error:', err);
-      showFeedback('Error saving estimate', 'error');
+      showFeedback('Error saving estimate: ' + err.message, 'error');
       els.statusEl.textContent = 'Save failed';
       return false;
     }
@@ -401,28 +374,22 @@
    * Create a new estimate - opens project info modal to collect data
    */
   async function createNewEstimate() {
-    // Generate IDs
-    const timestamp = Date.now();
+    // ID will be generated by the backend based on project name
+    // For now, set a tentative ID that will be updated after first save
     const projectName = currentEstimateData?.project_name || 'New Project';
-    const projectSlug = projectName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-    // Set tentative IDs (will be confirmed after modal)
-    currentProjectId = `${projectSlug}-${timestamp}`;
-    currentEstimateId = `estimate-${timestamp}`;
-
-    // Update estimate data with IDs
+    // Update estimate data
     if (!currentEstimateData) {
       currentEstimateData = {
-        project_name: 'New Project',
+        project_name: projectName,
         project: {},
         categories: [],
         created_at: new Date().toISOString()
       };
     }
 
-    currentEstimateData.project_id = currentProjectId;
-    currentEstimateData.estimate_id = currentEstimateId;
     currentEstimateData.created_at = new Date().toISOString();
+    currentEstimateId = null; // Will be set by backend
 
     // Open project info modal in edit mode
     showFeedback('Fill project info and save to create new estimate', 'info');
@@ -439,29 +406,40 @@
    * Load list of estimates for sidebar
    */
   async function loadEstimatesList() {
-    const { data, error } = await listStorageFiles(BUCKETS.ESTIMATES);
+    try {
+      // Use backend API to list estimates
+      const response = await fetch(`${API_BASE}/estimator/estimates`, {
+        method: 'GET',
+        credentials: 'include'
+      });
 
-    if (error || !data) {
-      console.warn('[ESTIMATOR] Could not load estimates list');
+      if (!response.ok) {
+        console.warn('[ESTIMATOR] Could not load estimates list');
+        updateEstimatesListUI([]);
+        return [];
+      }
+
+      const result = await response.json();
+      const estimates = result.estimates || [];
+
+      // Update sidebar
+      updateEstimatesListUI(estimates);
+
+      return estimates;
+    } catch (err) {
+      console.warn('[ESTIMATOR] Error loading estimates list:', err);
+      updateEstimatesListUI([]);
       return [];
     }
-
-    // Filter for folders (projects)
-    const projects = data.filter(item => item.id && !item.name.includes('.'));
-
-    // Update sidebar
-    updateEstimatesListUI(projects);
-
-    return projects;
   }
 
   /**
    * Update estimates list in sidebar UI
    */
-  function updateEstimatesListUI(projects) {
+  function updateEstimatesListUI(estimates) {
     if (!els.filesList) return;
 
-    if (!projects || projects.length === 0) {
+    if (!estimates || estimates.length === 0) {
       els.filesList.innerHTML = `
         <li class="estimator-file" style="color: #6b7280; font-style: italic;">
           No saved estimates
@@ -470,66 +448,69 @@
       return;
     }
 
-    els.filesList.innerHTML = projects.map(proj => `
-      <li class="estimator-file${proj.name === currentProjectId ? ' estimator-file--active' : ''}"
-          data-project-id="${proj.name}"
-          title="Click to load">
-        ${proj.name}
-      </li>
-    `).join('');
+    els.filesList.innerHTML = estimates.map(est => {
+      const displayName = (est.name || est.id)
+        .replace(/-\d{13}$/, '') // Remove timestamp
+        .replace(/-/g, ' ')     // Replace dashes with spaces
+        .replace(/\b\w/g, l => l.toUpperCase()); // Title case
+
+      return `
+        <li class="estimator-file${est.id === currentEstimateId ? ' estimator-file--active' : ''}"
+            data-estimate-id="${est.id || est.name}"
+            title="Click to load: ${displayName}">
+          ${displayName}
+        </li>
+      `;
+    }).join('');
 
     // Add click handlers
-    els.filesList.querySelectorAll('.estimator-file[data-project-id]').forEach(li => {
+    els.filesList.querySelectorAll('.estimator-file[data-estimate-id]').forEach(li => {
       li.addEventListener('click', async () => {
-        const projectId = li.dataset.projectId;
-        // Assume estimate ID is in a subfolder - list project contents
-        const { data } = await listStorageFiles(BUCKETS.ESTIMATES, projectId);
-        if (data && data.length > 0) {
-          // Find estimate folder (not a file)
-          const estimateFolder = data.find(f => !f.name.includes('.'));
-          if (estimateFolder) {
-            await loadEstimate(projectId, estimateFolder.name);
-          } else {
-            // Try loading from project root
-            await loadEstimate(projectId, 'main');
-          }
+        const estimateId = li.dataset.estimateId;
+        if (isDirty) {
+          const confirm = window.confirm('You have unsaved changes. Load estimate anyway?');
+          if (!confirm) return;
         }
+        await loadEstimate(estimateId);
       });
     });
   }
 
   /**
-   * Load estimate from storage
-   * @param {string} projectId
+   * Load estimate from storage via backend API
    * @param {string} estimateId
    */
-  async function loadEstimate(projectId, estimateId) {
-    const path = `${projectId}/${estimateId}/estimate.ngm`;
-
+  async function loadEstimate(estimateId) {
     els.statusEl.textContent = 'Loading estimate...';
 
-    const { data, error } = await downloadFromStorage(BUCKETS.ESTIMATES, path);
-
-    if (error) {
-      showFeedback('Error loading estimate', 'error');
-      els.statusEl.textContent = 'Load failed';
-      return false;
-    }
-
     try {
-      const text = await data.text();
-      currentEstimateData = JSON.parse(text);
-      currentProjectId = projectId;
+      // Use backend API to load estimate
+      const response = await fetch(`${API_BASE}/estimator/estimates/${encodeURIComponent(estimateId)}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP ${response.status}`);
+      }
+
+      currentEstimateData = await response.json();
       currentEstimateId = estimateId;
+      currentProjectId = currentEstimateData.project_id || null;
       isDirty = false;
 
       renderEstimate();
       showFeedback('Estimate loaded', 'success');
 
+      // Update sidebar to show active estimate
+      updateEstimatesListUI(await loadEstimatesList());
+
       return true;
     } catch (err) {
-      console.error('[ESTIMATOR] Parse error:', err);
-      showFeedback('Error parsing estimate file', 'error');
+      console.error('[ESTIMATOR] Load error:', err);
+      showFeedback('Error loading estimate: ' + err.message, 'error');
+      els.statusEl.textContent = 'Load failed';
       return false;
     }
   }
@@ -650,44 +631,17 @@
       return false;
     }
 
-    // Generate template ID from name
-    const templateId = templateName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '') + '-' + Date.now();
-
     els.statusEl.textContent = 'Saving template...';
 
     try {
       // Clear quantities from data (templates don't have quantities)
       const cleanedData = clearQuantitiesFromData(currentEstimateData);
 
-      // Create template metadata
-      const templateData = {
-        ...cleanedData,
-        template_meta: {
-          id: templateId,
-          name: templateName,
-          description: description,
-          created_at: new Date().toISOString(),
-          created_from: currentEstimateId || 'new',
-          version: '1.0'
-        },
-        // Clear project-specific data
-        project_id: null,
-        estimate_id: null
-      };
-
       // Clear project info but keep structure
-      if (templateData.project) {
-        templateData.project['Project Name'] = templateName;
-        templateData.project['Address'] = '';
-        templateData.project['Date'] = '';
-      }
-      templateData.project_name = templateName;
-
-      const ngmContent = JSON.stringify(templateData, null, 2);
-      const ngmBlob = new Blob([ngmContent], { type: 'application/json' });
+      const projectData = { ...(cleanedData.project || {}) };
+      projectData['Project Name'] = templateName;
+      projectData['Address'] = '';
+      projectData['Date'] = '';
 
       // Fetch FULL database snapshots (not just used IDs)
       els.statusEl.textContent = 'Creating full DB snapshots...';
@@ -698,56 +652,34 @@
         fetchAllConceptMaterials()
       ]);
 
-      // Convert to CSV
-      const materialsCSV = arrayToCSV(materialsResult.data || []);
-      const conceptsCSV = arrayToCSV(conceptsResult.data || []);
-      const conceptMaterialsCSV = arrayToCSV(conceptMaterialsResult.data || []);
+      // Prepare request payload for backend API
+      const requestPayload = {
+        template_name: templateName,
+        description: description || '',
+        project: projectData,
+        categories: cleanedData.categories || [],
+        overhead: cleanedData.overhead || { percentage: 0, amount: 0 },
+        materials_snapshot: materialsResult.data || [],
+        concepts_snapshot: conceptsResult.data || [],
+        concept_materials_snapshot: conceptMaterialsResult.data || []
+      };
 
-      // Upload all files
-      els.statusEl.textContent = 'Uploading template files...';
+      els.statusEl.textContent = 'Uploading template...';
 
-      const basePath = templateId;
-      const uploads = [
-        uploadToStorage(BUCKETS.TEMPLATES, `${basePath}/template.ngm`, ngmBlob),
-      ];
+      // Call backend API to save template
+      const response = await fetch(`${API_BASE}/estimator/templates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(requestPayload)
+      });
 
-      // Upload full DB snapshots
-      if (materialsCSV) {
-        uploads.push(uploadToStorage(
-          BUCKETS.TEMPLATES,
-          `${basePath}/materials_snapshot.csv`,
-          new Blob([materialsCSV], { type: 'text/csv' }),
-          { contentType: 'text/csv' }
-        ));
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP ${response.status}`);
       }
 
-      if (conceptsCSV) {
-        uploads.push(uploadToStorage(
-          BUCKETS.TEMPLATES,
-          `${basePath}/concepts_snapshot.csv`,
-          new Blob([conceptsCSV], { type: 'text/csv' }),
-          { contentType: 'text/csv' }
-        ));
-      }
-
-      if (conceptMaterialsCSV) {
-        uploads.push(uploadToStorage(
-          BUCKETS.TEMPLATES,
-          `${basePath}/concept_materials_snapshot.csv`,
-          new Blob([conceptMaterialsCSV], { type: 'text/csv' }),
-          { contentType: 'text/csv' }
-        ));
-      }
-
-      const results = await Promise.all(uploads);
-      const errors = results.filter(r => r.error);
-
-      if (errors.length > 0) {
-        console.error('[ESTIMATOR] Some template files failed to upload:', errors);
-        showFeedback('Some template files failed to save', 'warning');
-        els.statusEl.textContent = 'Partial template save';
-        return false;
-      }
+      const result = await response.json();
 
       showFeedback(`Template "${templateName}" saved with full DB snapshots`, 'success');
       els.statusEl.textContent = 'Template saved';
@@ -759,7 +691,7 @@
 
     } catch (err) {
       console.error('[ESTIMATOR] Template save error:', err);
-      showFeedback('Error saving template', 'error');
+      showFeedback('Error saving template: ' + err.message, 'error');
       els.statusEl.textContent = 'Template save failed';
       return false;
     }
@@ -770,21 +702,21 @@
    * @param {string} templateId
    */
   async function loadTemplate(templateId) {
-    const path = `${templateId}/template.ngm`;
-
     els.statusEl.textContent = 'Loading template...';
 
-    const { data, error } = await downloadFromStorage(BUCKETS.TEMPLATES, path);
-
-    if (error) {
-      showFeedback('Error loading template', 'error');
-      els.statusEl.textContent = 'Template load failed';
-      return false;
-    }
-
     try {
-      const text = await data.text();
-      const templateData = JSON.parse(text);
+      // Use backend API to load template
+      const response = await fetch(`${API_BASE}/estimator/templates/${encodeURIComponent(templateId)}`, {
+        method: 'GET',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP ${response.status}`);
+      }
+
+      const templateData = await response.json();
 
       // Create new estimate from template
       currentEstimateData = {
@@ -803,8 +735,9 @@
 
       return true;
     } catch (err) {
-      console.error('[ESTIMATOR] Template parse error:', err);
-      showFeedback('Error parsing template file', 'error');
+      console.error('[ESTIMATOR] Template load error:', err);
+      showFeedback('Error loading template: ' + err.message, 'error');
+      els.statusEl.textContent = 'Template load failed';
       return false;
     }
   }
@@ -813,23 +746,33 @@
    * Load list of available templates and update sidebar UI
    */
   async function loadTemplatesList() {
-    const { data, error } = await listStorageFiles(BUCKETS.TEMPLATES);
+    try {
+      // Use backend API to list templates
+      const response = await fetch(`${API_BASE}/estimator/templates`, {
+        method: 'GET',
+        credentials: 'include'
+      });
 
-    if (error || !data) {
-      console.warn('[ESTIMATOR] Could not load templates list');
+      if (!response.ok) {
+        console.warn('[ESTIMATOR] Could not load templates list');
+        updateTemplatesListUI([]);
+        return [];
+      }
+
+      const result = await response.json();
+      const templates = result.templates || [];
+
+      console.log('[ESTIMATOR] Templates:', templates);
+
+      // Update sidebar
+      updateTemplatesListUI(templates);
+
+      return templates;
+    } catch (err) {
+      console.warn('[ESTIMATOR] Error loading templates list:', err);
       updateTemplatesListUI([]);
       return [];
     }
-
-    // Filter for folders (templates)
-    const templates = data.filter(item => item.id && !item.name.includes('.'));
-
-    console.log('[ESTIMATOR] Templates:', templates);
-
-    // Update sidebar
-    updateTemplatesListUI(templates);
-
-    return templates;
   }
 
   /**
@@ -1820,62 +1763,74 @@
       </div>
     `;
 
-    // Fetch templates from storage
-    const { data, error } = await listStorageFiles(BUCKETS.TEMPLATES);
+    try {
+      // Fetch templates from backend API
+      const response = await fetch(`${API_BASE}/estimator/templates`, {
+        method: 'GET',
+        credentials: 'include'
+      });
 
-    if (error || !data) {
+      if (!response.ok) {
+        listEl.innerHTML = `
+          <div class="template-picker-empty">
+            Could not load templates. You can still create a blank estimate.
+          </div>
+        `;
+        return;
+      }
+
+      const result = await response.json();
+      const templates = result.templates || [];
+
+      if (templates.length === 0) {
+        listEl.innerHTML = `
+          <div class="template-picker-empty">
+            No templates available yet. Create one by saving an estimate as a template.
+          </div>
+        `;
+        return;
+      }
+
+      // Render templates
+      listEl.innerHTML = templates.map(tpl => {
+        // Extract readable name from template ID (remove timestamp)
+        const displayName = (tpl.name || tpl.id)
+          .replace(/-\d{13}$/, '') // Remove timestamp
+          .replace(/-/g, ' ')     // Replace dashes with spaces
+          .replace(/\b\w/g, l => l.toUpperCase()); // Title case
+
+        return `
+          <div class="template-picker-item" data-template-id="${tpl.id || tpl.name}">
+            <div class="template-picker-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+              </svg>
+            </div>
+            <div class="template-picker-item-content">
+              <div class="template-picker-item-name">${displayName}</div>
+              <div class="template-picker-item-meta">Template</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Add click handlers to template items
+      listEl.querySelectorAll('.template-picker-item[data-template-id]').forEach(item => {
+        item.addEventListener('click', async () => {
+          const templateId = item.dataset.templateId;
+          closeTemplatePickerModal();
+          await loadTemplate(templateId);
+        });
+      });
+    } catch (err) {
+      console.warn('[ESTIMATOR] Error loading templates for picker:', err);
       listEl.innerHTML = `
         <div class="template-picker-empty">
           Could not load templates. You can still create a blank estimate.
         </div>
       `;
-      return;
     }
-
-    // Filter for folders (templates)
-    const templates = data.filter(item => item.id && !item.name.includes('.'));
-
-    if (templates.length === 0) {
-      listEl.innerHTML = `
-        <div class="template-picker-empty">
-          No templates available yet. Create one by saving an estimate as a template.
-        </div>
-      `;
-      return;
-    }
-
-    // Render templates
-    listEl.innerHTML = templates.map(tpl => {
-      // Extract readable name from template ID (remove timestamp)
-      const displayName = tpl.name
-        .replace(/-\d{13}$/, '') // Remove timestamp
-        .replace(/-/g, ' ')     // Replace dashes with spaces
-        .replace(/\b\w/g, l => l.toUpperCase()); // Title case
-
-      return `
-        <div class="template-picker-item" data-template-id="${tpl.name}">
-          <div class="template-picker-item-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-            </svg>
-          </div>
-          <div class="template-picker-item-content">
-            <div class="template-picker-item-name">${displayName}</div>
-            <div class="template-picker-item-meta">Template</div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    // Add click handlers to template items
-    listEl.querySelectorAll('.template-picker-item[data-template-id]').forEach(item => {
-      item.addEventListener('click', async () => {
-        const templateId = item.dataset.templateId;
-        closeTemplatePickerModal();
-        await loadTemplate(templateId);
-      });
-    });
   }
 
   // ================================

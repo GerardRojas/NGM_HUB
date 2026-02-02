@@ -89,12 +89,13 @@
      */
     renderPerson(personOrName) {
       // Handle both string (legacy) and object (new) format
-      let name, avatarColor, photo;
+      let name, avatarColor, photo, oderId;
 
       if (personOrName && typeof personOrName === "object") {
         name = personOrName.name || personOrName.username || "";
         avatarColor = personOrName.avatar_color;
         photo = personOrName.photo || personOrName.user_photo;
+        oderId = personOrName.user_id || personOrName.id || null;
       } else {
         name = String(personOrName || "");
       }
@@ -103,23 +104,26 @@
       const safeName = Utils.escapeHtml(raw || "-");
       const initial = Utils.escapeHtml(Utils.getInitial(raw || "-"));
 
-      // Use avatar_color if available (official user color), otherwise generate from name
+      // Use avatar_color if available (official user color), otherwise generate from user_id or name
+      // This matches the logic in Team Management for consistency
       let hue;
       if (avatarColor !== undefined && avatarColor !== null && !isNaN(Number(avatarColor))) {
         hue = Math.max(0, Math.min(360, Number(avatarColor)));
       } else {
-        const key = raw ? raw.toLowerCase() : "__unknown__";
-        hue = Utils.hashStringToHue(key);
+        // Fallback: prefer user_id for stable colors, then name
+        const key = oderId || (raw ? raw.toLowerCase() : "__unknown__");
+        hue = Utils.hashStringToHue(String(key));
       }
 
-      const bg = raw ? `hsl(${hue} 55% 35%)` : "#334155";
-      const ring = raw ? `hsl(${hue} 65% 55%)` : "rgba(148, 163, 184, 0.6)";
+      // Single color for ring style (transparent center, colored border)
+      // Matches Team Management: hsl(hue 70% 45%)
+      const color = raw ? `hsl(${hue} 70% 45%)` : "#666";
 
       // If photo is available, use it
       if (photo && raw) {
         return `
           <span class="pm-person" title="${safeName}">
-            <span class="pm-avatar pm-avatar-img" style="--av-ring:${ring};">
+            <span class="pm-avatar pm-avatar-img" style="border-color:${color};">
               <img src="${Utils.escapeHtml(photo)}" alt="${safeName}" />
             </span>
             <span class="pm-person-name">${safeName}</span>
@@ -129,7 +133,7 @@
 
       return `
         <span class="pm-person" title="${safeName}">
-          <span class="pm-avatar" style="--av-bg:${bg}; --av-ring:${ring};">${initial}</span>
+          <span class="pm-avatar" style="color:${color}; border-color:${color};">${initial}</span>
           <span class="pm-person-name">${safeName}</span>
         </span>
       `;
@@ -157,28 +161,32 @@
         const name = person.name || person.username || "";
         const avatarColor = person.avatar_color;
         const photo = person.photo || person.user_photo;
+        const oderId = person.user_id || person.id || null;
         const initial = Utils.getInitial(name || "-");
 
+        // Use avatar_color if available, otherwise generate from user_id or name
+        // This matches the logic in Team Management for consistency
         let hue;
         if (avatarColor !== undefined && avatarColor !== null && !isNaN(Number(avatarColor))) {
           hue = Math.max(0, Math.min(360, Number(avatarColor)));
         } else {
-          hue = Utils.hashStringToHue((name || "").toLowerCase());
+          const key = oderId || (name ? name.toLowerCase() : "__unknown__");
+          hue = Utils.hashStringToHue(String(key));
         }
 
-        const ring = name ? `hsl(${hue} 65% 55%)` : "rgba(148, 163, 184, 0.6)";
-        const bg = name ? `hsl(${hue} 55% 35%)` : "#334155";
+        // Ring style colors matching Team Management
+        const color = name ? `hsl(${hue} 70% 45%)` : "rgba(148, 163, 184, 0.6)";
         const zIndex = displayPeople.length - index;
 
         if (photo && name) {
           html += `
-            <span class="pm-avatar pm-avatar-img pm-avatar-stacked" style="--av-ring:${ring}; z-index:${zIndex};" title="${Utils.escapeHtml(name)}">
+            <span class="pm-avatar pm-avatar-img pm-avatar-stacked" style="--av-ring:${color}; z-index:${zIndex};" title="${Utils.escapeHtml(name)}">
               <img src="${Utils.escapeHtml(photo)}" alt="${Utils.escapeHtml(name)}" />
             </span>
           `;
         } else {
           html += `
-            <span class="pm-avatar pm-avatar-stacked" style="--av-bg:${bg}; --av-ring:${ring}; z-index:${zIndex};" title="${Utils.escapeHtml(name)}">
+            <span class="pm-avatar pm-avatar-stacked" style="color:${color}; border-color:${color}; z-index:${zIndex};" title="${Utils.escapeHtml(name)}">
               ${Utils.escapeHtml(initial)}
             </span>
           `;

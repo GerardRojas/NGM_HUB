@@ -637,6 +637,29 @@
     color: var(--accent);       /* bolita verde tipo "status" */
 }
 
+/* Auto-save status states */
+.estimator-page #estimator-status.status-saved::before {
+    color: #3ecf8e; /* Green - saved */
+}
+
+.estimator-page #estimator-status.status-saving::before {
+    color: #f59e0b; /* Amber - saving */
+    animation: pulse 1s ease-in-out infinite;
+}
+
+.estimator-page #estimator-status.status-pending::before {
+    color: #f59e0b; /* Amber - pending */
+}
+
+.estimator-page #estimator-status.status-error::before {
+    color: #ef4444; /* Red - error */
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
 /* Más espacio vertical para el título del proyecto */
 .estimator-page .estimator-header-bar {
     padding: 16px 0 18px;   /* ↑ aquí das respiro arriba y abajo */

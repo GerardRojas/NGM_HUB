@@ -17,12 +17,26 @@
     MATERIALS_IMAGES: 'materials_images'
   };
 
+  // Auto-save configuration
+  const AUTOSAVE = {
+    DEBOUNCE_MS: 1500,           // Wait 1.5s after last change before saving locally
+    BACKEND_SYNC_MS: 60000,     // Sync to backend every 60 seconds
+    LOCAL_STORAGE_KEY: 'ngm_estimator_draft',
+    ENABLED: true
+  };
+
   // State
   let supabaseClient = null;
   let currentEstimateData = null;
   let currentEstimateId = null;
   let currentProjectId = null;
   let isDirty = false; // Track unsaved changes
+
+  // Auto-save state
+  let autoSaveTimer = null;
+  let backendSyncTimer = null;
+  let lastSavedHash = null;
+  let saveStatus = 'saved'; // 'saved', 'saving', 'pending', 'error'
 
   // UI State
   const groupState = {};  // Category collapse state
@@ -57,8 +71,16 @@
     setupViewSliders();
     setupSearchFilter();
 
-    // Load initial data
-    loadEstimatorFromNgm();
+    // Setup auto-save
+    setupAutoSave();
+
+    // Try to restore from local storage first
+    const restored = restoreFromLocalStorage();
+
+    // If nothing restored, load initial data
+    if (!restored) {
+      loadEstimatorFromNgm();
+    }
 
     // Load sidebar lists
     loadEstimatesList();
@@ -74,6 +96,228 @@
     } else {
       console.warn('[ESTIMATOR] Supabase not available - storage features disabled');
     }
+  }
+
+  // ================================
+  // AUTO-SAVE SYSTEM
+  // ================================
+
+  function setupAutoSave() {
+    if (!AUTOSAVE.ENABLED) return;
+
+    // Save to localStorage before page unload
+    window.addEventListener('beforeunload', () => {
+      if (isDirty && currentEstimateData) {
+        saveToLocalStorage();
+      }
+    });
+
+    // Sync to backend periodically
+    backendSyncTimer = setInterval(() => {
+      if (isDirty && currentEstimateData) {
+        syncToBackend();
+      }
+    }, AUTOSAVE.BACKEND_SYNC_MS);
+
+    // Listen for visibility change - sync when user leaves tab
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && isDirty && currentEstimateData) {
+        saveToLocalStorage();
+        syncToBackend();
+      }
+    });
+
+    console.log('[ESTIMATOR] Auto-save enabled');
+  }
+
+  /**
+   * Mark data as changed and trigger auto-save
+   */
+  function markDirty() {
+    isDirty = true;
+    updateSaveStatus('pending');
+
+    // Debounced save to localStorage
+    if (autoSaveTimer) {
+      clearTimeout(autoSaveTimer);
+    }
+
+    autoSaveTimer = setTimeout(() => {
+      saveToLocalStorage();
+    }, AUTOSAVE.DEBOUNCE_MS);
+  }
+
+  /**
+   * Save current estimate to localStorage
+   */
+  function saveToLocalStorage() {
+    if (!currentEstimateData || !AUTOSAVE.ENABLED) return;
+
+    try {
+      const draft = {
+        data: currentEstimateData,
+        estimateId: currentEstimateId,
+        projectId: currentProjectId,
+        savedAt: new Date().toISOString(),
+        hash: generateDataHash(currentEstimateData)
+      };
+
+      localStorage.setItem(AUTOSAVE.LOCAL_STORAGE_KEY, JSON.stringify(draft));
+      lastSavedHash = draft.hash;
+      updateSaveStatus('saved');
+
+      console.log('[ESTIMATOR] Auto-saved to localStorage');
+    } catch (err) {
+      console.error('[ESTIMATOR] localStorage save error:', err);
+      updateSaveStatus('error');
+    }
+  }
+
+  /**
+   * Restore estimate from localStorage if available
+   */
+  function restoreFromLocalStorage() {
+    if (!AUTOSAVE.ENABLED) return false;
+
+    try {
+      const saved = localStorage.getItem(AUTOSAVE.LOCAL_STORAGE_KEY);
+      if (!saved) return false;
+
+      const draft = JSON.parse(saved);
+
+      // Check if draft is recent (less than 24 hours old)
+      const savedAt = new Date(draft.savedAt);
+      const now = new Date();
+      const hoursSinceSave = (now - savedAt) / (1000 * 60 * 60);
+
+      if (hoursSinceSave > 24) {
+        console.log('[ESTIMATOR] Draft too old, discarding');
+        localStorage.removeItem(AUTOSAVE.LOCAL_STORAGE_KEY);
+        return false;
+      }
+
+      // Restore the data
+      currentEstimateData = draft.data;
+      currentEstimateId = draft.estimateId;
+      currentProjectId = draft.projectId;
+      lastSavedHash = draft.hash;
+      isDirty = false;
+
+      renderEstimate();
+      updateSaveStatus('saved');
+
+      const timeAgo = formatTimeAgo(savedAt);
+      showFeedback(`Restored draft from ${timeAgo}`, 'info');
+      console.log('[ESTIMATOR] Restored from localStorage');
+
+      return true;
+    } catch (err) {
+      console.error('[ESTIMATOR] localStorage restore error:', err);
+      return false;
+    }
+  }
+
+  /**
+   * Sync current estimate to backend (less frequent)
+   */
+  async function syncToBackend() {
+    if (!currentEstimateData || !isDirty) return;
+
+    // Don't sync if no project name set
+    if (!currentEstimateData.project_name || currentEstimateData.project_name === 'New Project') {
+      return;
+    }
+
+    updateSaveStatus('saving');
+
+    try {
+      // Use lighter payload for auto-sync (no snapshots)
+      const requestPayload = {
+        estimate_id: currentEstimateId || null,
+        project_name: currentEstimateData.project_name,
+        project: currentEstimateData.project || {},
+        categories: currentEstimateData.categories || [],
+        overhead: currentEstimateData.overhead || { percentage: 0, amount: 0 },
+        created_from_template: currentEstimateData.created_from_template || null
+        // Note: No snapshots for auto-sync to keep it fast
+      };
+
+      const response = await fetch(`${API_BASE}/estimator/estimates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(requestPayload)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        currentEstimateId = result.estimate_id || currentEstimateId;
+        currentEstimateData.estimate_id = currentEstimateId;
+        isDirty = false;
+        updateSaveStatus('saved');
+        console.log('[ESTIMATOR] Synced to backend');
+      } else {
+        updateSaveStatus('error');
+      }
+    } catch (err) {
+      console.error('[ESTIMATOR] Backend sync error:', err);
+      updateSaveStatus('error');
+    }
+  }
+
+  /**
+   * Update save status indicator
+   */
+  function updateSaveStatus(status) {
+    saveStatus = status;
+
+    const statusEl = els.statusEl;
+    if (!statusEl) return;
+
+    const statusMap = {
+      'saved': { text: 'All changes saved', class: 'status-saved' },
+      'saving': { text: 'Saving...', class: 'status-saving' },
+      'pending': { text: 'Unsaved changes', class: 'status-pending' },
+      'error': { text: 'Save error', class: 'status-error' }
+    };
+
+    const info = statusMap[status] || statusMap.saved;
+    statusEl.textContent = info.text;
+    statusEl.className = `table-lock-label ${info.class}`;
+  }
+
+  /**
+   * Generate a simple hash for data comparison
+   */
+  function generateDataHash(data) {
+    const str = JSON.stringify(data);
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return hash.toString(36);
+  }
+
+  /**
+   * Format time ago string
+   */
+  function formatTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+
+    if (seconds < 60) return 'just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours ago`;
+    return `${Math.floor(seconds / 86400)} days ago`;
+  }
+
+  /**
+   * Clear the local storage draft
+   */
+  function clearLocalDraft() {
+    localStorage.removeItem(AUTOSAVE.LOCAL_STORAGE_KEY);
+    console.log('[ESTIMATOR] Local draft cleared');
   }
 
   function cacheElements() {
@@ -132,13 +376,7 @@
     // Project info button
     document.getElementById('project-info-btn')?.addEventListener('click', openProjectModal);
 
-    // Warn before leaving with unsaved changes
-    window.addEventListener('beforeunload', (e) => {
-      if (isDirty) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    });
+    // Note: beforeunload is handled by auto-save system to persist changes
   }
 
   // ================================
@@ -728,9 +966,9 @@
 
       currentEstimateId = null; // Will be assigned on first save
       currentProjectId = null;
-      isDirty = true;
 
       renderEstimate();
+      markDirty(); // Trigger auto-save
       showFeedback('Template loaded - save to create new estimate', 'info');
 
       return true;
@@ -1084,13 +1322,6 @@
       currency: 'USD',
       maximumFractionDigits: 0
     }).format(n);
-  }
-
-  function markDirty() {
-    isDirty = true;
-    if (els.statusEl) {
-      els.statusEl.textContent = 'Unsaved changes';
-    }
   }
 
   // ================================
@@ -1579,9 +1810,9 @@
 
     currentProjectId = null;
     currentEstimateId = null;
-    isDirty = true;
 
     renderEstimate();
+    markDirty(); // Trigger auto-save
     showFeedback('New estimate created - fill project info and save', 'info');
 
     // Open project modal in edit mode

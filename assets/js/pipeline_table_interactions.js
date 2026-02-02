@@ -130,6 +130,17 @@
       restoreCellContent(td, colKey, originalValue);
     }
 
+    // Remove editing classes from cell and parents (for dropdown overflow)
+    td.classList.remove("pm-cell-editing", "pm-cell-editing--text", "pm-cell-editing--picker");
+    const tr = td.closest("tr");
+    const tbody = td.closest("tbody");
+    const table = td.closest("table");
+    const groupBody = td.closest(".pm-group-body");
+    if (tr) tr.classList.remove("pm-has-editing");
+    if (tbody) tbody.classList.remove("pm-has-editing");
+    if (table) table.classList.remove("pm-has-editing");
+    if (groupBody) groupBody.classList.remove("pm-has-editing");
+
     activeEditor = null;
   }
 
@@ -264,6 +275,7 @@
   // ================================
   // RENDERIZAR PERSONA (AVATAR + NOMBRE)
   // Ring style: transparent background, colored border (like Team Management)
+  // Color formula matches Team Management: hsl(hue 70% 45%)
   // ================================
   function renderPersonHtml(name) {
     const raw = String(name || "").trim();
@@ -271,7 +283,7 @@
     const initial = (raw || "-")[0]?.toUpperCase() || "?";
 
     const hue = hashStringToHue(raw.toLowerCase());
-    const color = raw && raw !== "-" ? `hsl(${hue} 60% 55%)` : "#666";
+    const color = raw && raw !== "-" ? `hsl(${hue} 70% 45%)` : "#666";
 
     return `
       <span class="pm-person" title="${safeName}">
@@ -282,6 +294,7 @@
   }
 
   // Render multiple people as stacked avatars (inline version)
+  // Color formula matches Team Management: hsl(hue 70% 45%)
   function renderMultiplePeopleHtml(namesStr) {
     if (!namesStr || namesStr === "-") {
       return `<span class="pm-person-empty">-</span>`;
@@ -303,7 +316,7 @@
     displayNames.forEach((name, index) => {
       const initial = (name || "?")[0]?.toUpperCase() || "?";
       const hue = hashStringToHue(name.toLowerCase());
-      const color = `hsl(${hue} 60% 55%)`;
+      const color = `hsl(${hue} 70% 45%)`;
       const zIndex = displayNames.length - index;
 
       html += `
@@ -814,8 +827,21 @@
       }
     }
 
-    // Marcar celda como editando
+    // Marcar celda como editando (different styles for text vs picker)
+    // Text fields get blue edit background, pickers behave like buttons
+    const isPickerType = editorType === "person-dropdown" || editorType === "catalog-dropdown";
     td.classList.add("pm-cell-editing");
+    td.classList.add(isPickerType ? "pm-cell-editing--picker" : "pm-cell-editing--text");
+
+    // Add parent classes for dropdown overflow (fallback for :has())
+    const tr = td.closest("tr");
+    const tbody = td.closest("tbody");
+    const table = td.closest("table");
+    const groupBody = td.closest(".pm-group-body");
+    if (tr) tr.classList.add("pm-has-editing");
+    if (tbody) tbody.classList.add("pm-has-editing");
+    if (table) table.classList.add("pm-has-editing");
+    if (groupBody) groupBody.classList.add("pm-has-editing");
   }
 
   // ================================

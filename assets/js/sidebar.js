@@ -43,6 +43,7 @@
 
     // Costs & Estimates
     "estimator": { label: "Estimator Suite", href: "estimator.html", order: 1, category: "costs" },
+    "estimator_database": { label: "Estimator Database", href: "estimator_database.html", order: 2, category: "costs" },
 
     // Admin
     "team": { label: "Team Management", href: "team.html", order: 1, category: "admin" },

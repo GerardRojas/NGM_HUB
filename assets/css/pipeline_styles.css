@@ -920,6 +920,37 @@
   text-overflow: ellipsis;
 }
 
+/* CRITICAL: Allow dropdowns to overflow when editing cells */
+.pm-group .table td.pm-cell-editing {
+  overflow: visible !important;
+  position: relative;
+  z-index: 100;
+}
+
+/* Ensure parent elements allow dropdown overflow (modern browsers with :has) */
+.pm-group .table:has(.pm-cell-editing),
+.pm-group .table.pm-has-editing {
+  overflow: visible !important;
+}
+
+.pm-group .table tbody:has(.pm-cell-editing),
+.pm-group .table tbody.pm-has-editing {
+  overflow: visible !important;
+}
+
+.pm-group .table tr:has(.pm-cell-editing),
+.pm-group .table tr.pm-has-editing {
+  overflow: visible !important;
+  position: relative;
+  z-index: 10;
+}
+
+/* Group body overflow for dropdowns */
+.pm-group-body:has(.pm-cell-editing),
+.pm-group-body.pm-has-editing {
+  overflow: visible !important;
+}
+
 /* Avatar inicial + nombre (Owner/Collaborator) */
 
 .pm-person {
@@ -1064,6 +1095,19 @@
 .pm-group .table td[data-col]:hover {
   cursor: pointer;
   background: rgba(255, 255, 255, 0.03);
+}
+
+/* Button-like click feedback for picker columns */
+.pm-group .table td[data-col="owner"]:active,
+.pm-group .table td[data-col="collaborator"]:active,
+.pm-group .table td[data-col="manager"]:active,
+.pm-group .table td[data-col="project"]:active,
+.pm-group .table td[data-col="company"]:active,
+.pm-group .table td[data-col="department"]:active,
+.pm-group .table td[data-col="type"]:active,
+.pm-group .table td[data-col="priority"]:active {
+  background: rgba(255, 255, 255, 0.06);
+  transform: scale(0.99);
 }
 
 /* =========================================================
@@ -1446,10 +1490,15 @@ textarea.pm-inline-editor {
   background: rgba(59, 130, 246, 0.2);
 }
 
-/* Cell editing state */
-.pm-cell-editing {
+/* Cell editing state - only for TEXT input cells */
+.pm-cell-editing--text {
   background: rgba(59, 130, 246, 0.08) !important;
   padding: 4px !important;
+}
+
+/* Picker cells (person, catalog) - button-like behavior, no persistent state */
+.pm-cell-editing--picker {
+  background: transparent !important;
 }
 
 /* Cell saving state */
@@ -1515,19 +1564,23 @@ textarea.pm-inline-editor {
   }
 }
 
-/* Remove default hover when editing */
-.pm-cell-editing:hover {
+/* Remove default hover when editing text */
+.pm-cell-editing--text:hover {
   background: rgba(59, 130, 246, 0.08) !important;
-  cursor: default;
+  cursor: text;
 }
 
-/* Read-only columns cursor */
+/* Picker cells keep normal interaction */
+.pm-cell-editing--picker:hover {
+  background: transparent !important;
+  cursor: pointer;
+}
+
+/* Read-only columns cursor (links has special click behavior, finished is display-only) */
 .pm-group .table td[data-col="links"]:hover,
-.pm-group .table td[data-col="finished"]:hover,
-.pm-group .table td[data-col="est"]:hover,
-.pm-group .table td[data-col="priority"]:hover {
-  cursor: default;
-  background: transparent;
+.pm-group .table td[data-col="finished"]:hover {
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 /* ==========================================

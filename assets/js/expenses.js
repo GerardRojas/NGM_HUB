@@ -231,6 +231,7 @@
     els.expensesTableHead = document.querySelector('#expensesTable thead');
     els.expensesTableBody = document.getElementById('expensesTableBody');
     els.expensesEmptyState = document.getElementById('expensesEmptyState');
+    els.expensesSkeletonTable = document.getElementById('expensesSkeletonTable');
     els.editModeFooter = document.getElementById('editModeFooter');
     els.btnCancelEdit = document.getElementById('btnCancelEdit');
     els.btnSaveChanges = document.getElementById('btnSaveChanges');
@@ -2182,6 +2183,10 @@
   // RENDER EXPENSES TABLE
   // ================================
   function showEmptyState(message) {
+    // Hide skeleton table
+    if (els.expensesSkeletonTable) {
+      els.expensesSkeletonTable.style.display = 'none';
+    }
     if (els.expensesEmptyState) {
       els.expensesEmptyState.querySelector('.expenses-empty-text').textContent = message;
       els.expensesEmptyState.style.display = 'flex';
@@ -2192,6 +2197,10 @@
   }
 
   function hideEmptyState() {
+    // Hide skeleton table
+    if (els.expensesSkeletonTable) {
+      els.expensesSkeletonTable.style.display = 'none';
+    }
     if (els.expensesEmptyState) {
       els.expensesEmptyState.style.display = 'none';
     }
@@ -2340,7 +2349,8 @@
     // Apply filters
     applyFilters();
 
-    // Hide empty state, show table
+    // Hide skeleton and empty state, show table
+    if (els.expensesSkeletonTable) els.expensesSkeletonTable.style.display = 'none';
     if (els.expensesEmptyState) els.expensesEmptyState.style.display = 'none';
     if (els.expensesTable) els.expensesTable.style.display = 'table';
 

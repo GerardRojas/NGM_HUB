@@ -28,7 +28,7 @@
     // Coordination
     "operation_manager": { label: "Operation Manager", href: "operation-manager.html", order: 1, category: "coordination" },
     "pipeline": { label: "Pipeline Manager", href: "pipeline.html", order: 2, category: "coordination" },
-    "process_manager": { label: "Process Manager", href: "process_manager.html", order: 3, category: "coordination" },
+    "process_manager": { label: "Process Manager", href: "process_manager.html", order: 7, category: "admin" },
 
     // Bookkeeping
     "expenses": { label: "Expenses Engine", href: "expenses.html", order: 1, category: "bookkeeping" },

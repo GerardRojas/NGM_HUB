@@ -104,6 +104,26 @@
 
                         <!-- Vendors Table -->
                         <div class="expenses-table-container">
+                            <!-- Skeleton table (shown while loading) -->
+                            <table class="skeleton-table" id="vendorsSkeletonTable">
+                                <thead>
+                                    <tr>
+                                        <th>Vendor Name</th>
+                                        <th style="width: 80px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                </tbody>
+                            </table>
+
                             <div id="vendorsEmptyState" class="expenses-empty-state" style="display: none;">
                                 <span class="expenses-empty-icon">🏢</span>
                                 <span class="expenses-empty-text">No vendors found</span>

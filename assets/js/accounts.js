@@ -18,6 +18,7 @@
     table: document.getElementById('accountsTable'),
     tbody: document.getElementById('accountsTableBody'),
     emptyState: document.getElementById('accountsEmptyState'),
+    skeletonTable: document.getElementById('accountsSkeletonTable'),
     btnEditAccounts: document.getElementById('btnEditAccounts'),
     btnAddAccount: document.getElementById('btnAddAccount'),
     btnCancelEdit: document.getElementById('btnCancelEdit'),
@@ -78,6 +79,7 @@
       return;
     }
 
+    if (els.skeletonTable) els.skeletonTable.style.display = 'none';
     els.emptyState.style.display = 'none';
     els.table.style.display = 'table';
     els.tbody.innerHTML = '';
@@ -129,6 +131,7 @@
   }
 
   function showEmptyState() {
+    if (els.skeletonTable) els.skeletonTable.style.display = 'none';
     els.emptyState.style.display = 'flex';
     els.table.style.display = 'none';
   }

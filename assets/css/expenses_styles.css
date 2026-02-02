@@ -395,6 +395,113 @@
 }
 
 /* ==========================================
+   Skeleton Table (Placeholder before data loads)
+   ========================================== */
+
+.skeleton-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.skeleton-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--ngm-bg-card, #18181b);
+}
+
+.skeleton-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.45);
+  border-bottom: 1px solid var(--border-soft, #27272f);
+  white-space: nowrap;
+}
+
+.skeleton-table tbody tr {
+  border-bottom: 1px solid var(--border-soft, #27272f);
+}
+
+.skeleton-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.skeleton-table td {
+  padding: 12px 16px;
+}
+
+/* Skeleton cell placeholder */
+.skeleton-cell {
+  height: 14px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+/* Different widths for variety */
+.skeleton-cell--short {
+  width: 60px;
+}
+
+.skeleton-cell--medium {
+  width: 100px;
+}
+
+.skeleton-cell--long {
+  width: 180px;
+  max-width: 100%;
+}
+
+.skeleton-cell--full {
+  width: 100%;
+}
+
+.skeleton-cell--amount {
+  width: 80px;
+  margin-left: auto;
+}
+
+/* Skeleton icon placeholder */
+.skeleton-icon {
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Hide skeleton when table is visible */
+.skeleton-table.hidden {
+  display: none;
+}
+
+/* ==========================================
    NGM Logo Loading Animation System
    ========================================== */
 

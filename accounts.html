@@ -116,6 +116,28 @@
 
                         <!-- Accounts Table -->
                         <div class="expenses-table-container">
+                            <!-- Skeleton table (shown while loading) -->
+                            <table class="skeleton-table" id="accountsSkeletonTable">
+                                <thead>
+                                    <tr>
+                                        <th>Account #</th>
+                                        <th>Account Name</th>
+                                        <th>Category</th>
+                                        <th style="width: 80px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                </tbody>
+                            </table>
+
                             <div id="accountsEmptyState" class="expenses-empty-state" style="display: none;">
                                 <span class="expenses-empty-icon">🏢</span>
                                 <span class="expenses-empty-text">No accounts found</span>

@@ -18,6 +18,7 @@
     table: document.getElementById('vendorsTable'),
     tbody: document.getElementById('vendorsTableBody'),
     emptyState: document.getElementById('vendorsEmptyState'),
+    skeletonTable: document.getElementById('vendorsSkeletonTable'),
     btnEditVendors: document.getElementById('btnEditVendors'),
     btnAddVendor: document.getElementById('btnAddVendor'),
     btnCancelEdit: document.getElementById('btnCancelEdit'),
@@ -78,6 +79,7 @@
       return;
     }
 
+    if (els.skeletonTable) els.skeletonTable.style.display = 'none';
     els.emptyState.style.display = 'none';
     els.table.style.display = 'table';
     els.tbody.innerHTML = '';
@@ -121,6 +123,7 @@
   }
 
   function showEmptyState() {
+    if (els.skeletonTable) els.skeletonTable.style.display = 'none';
     els.emptyState.style.display = 'flex';
     els.table.style.display = 'none';
   }

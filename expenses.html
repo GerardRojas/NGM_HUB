@@ -210,9 +210,39 @@
 
                         <!-- Expenses Table -->
                         <div class="expenses-table-container">
-                            <div id="expensesEmptyState" class="expenses-empty-state">
+                            <!-- Skeleton table (shown before data loads) -->
+                            <table class="skeleton-table" id="expensesSkeletonTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 90px;">Date</th>
+                                        <th style="width: 80px;">Bill #</th>
+                                        <th>Description</th>
+                                        <th>Account</th>
+                                        <th style="width: 90px;">Type</th>
+                                        <th>Vendor</th>
+                                        <th style="width: 90px;">Payment</th>
+                                        <th style="width: 100px; text-align: right;">Amount</th>
+                                        <th style="width: 40px;"></th>
+                                        <th style="width: 50px;"></th>
+                                        <th style="width: 50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--amount"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--amount"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--amount"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--amount"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--amount"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--amount"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--amount"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                    <tr><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--medium"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--amount"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                </tbody>
+                            </table>
+
+                            <!-- Empty state (shown when no data after selection) -->
+                            <div id="expensesEmptyState" class="expenses-empty-state" style="display: none;">
                                 <img src="assets/img/white_icon.png" class="expenses-empty-logo" alt="">
-                                <span class="expenses-empty-text">Select a project to view expenses</span>
+                                <span class="expenses-empty-text">No expenses found</span>
                             </div>
 
                             <table class="expenses-table" id="expensesTable" style="display: none;">

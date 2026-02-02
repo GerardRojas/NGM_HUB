@@ -5,7 +5,9 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nFix Arturito mobile input positioning and cursor color\n\n- Reduce padding when keyboard open for closer input to keyboard\n- Set caret-color to green \\(#3ecf8e\\) to match theme\n- Add overflow:hidden to prevent elements showing outside input area\n- Disable iOS tap highlight for cleaner appearance\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git push)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git clone:*)",
+      "Bash(node --check:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"

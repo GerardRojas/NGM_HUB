@@ -10,14 +10,22 @@ let currentUser = null;
 // PAGE LOADING
 // ─────────────────────────────────────────────────────────────────────────
 
+const PAGE_LOAD_START = Date.now();
+const MIN_LOADING_TIME = 800; // Minimum loading screen time in ms
+
 function hidePageLoading() {
-  const overlay = document.getElementById("pageLoadingOverlay");
-  if (overlay) {
-    overlay.classList.add("hidden");
-  }
-  document.body.classList.remove("page-loading");
-  // Now that loading is complete, mark as auth-ready to show content
-  document.body.classList.add("auth-ready");
+  const elapsed = Date.now() - PAGE_LOAD_START;
+  const remaining = Math.max(0, MIN_LOADING_TIME - elapsed);
+
+  setTimeout(() => {
+    const overlay = document.getElementById("pageLoadingOverlay");
+    if (overlay) {
+      overlay.classList.add("hidden");
+    }
+    document.body.classList.remove("page-loading");
+    // Now that loading is complete, mark as auth-ready to show content
+    document.body.classList.add("auth-ready");
+  }, remaining);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

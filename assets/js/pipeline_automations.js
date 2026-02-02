@@ -14,18 +14,40 @@
     {
       id: 'pending_expenses_auth',
       name: 'Pending Expenses to Authorize',
-      description: 'Creates a task when a project has expenses pending authorization',
+      description: 'Creates tasks for projects with unauthorized expenses. Assigned to Bookkeeping department with Accounting Manager as reviewer.',
       taskTemplate: 'Gastos pendientes por autorizar en {project}',
-      icon: '💰',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+      iconColor: '#f59e0b',
       enabled: false,
       statusKey: 'pending_expenses_auth'
+    },
+    {
+      id: 'pending_expenses_categorize',
+      name: 'Pending Expenses to Categorize',
+      description: 'Creates tasks for projects with uncategorized expenses. Assigned to Bookkeeping department.',
+      taskTemplate: 'Gastos pendientes por categorizar en {project}',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+      iconColor: '#3b82f6',
+      enabled: false,
+      statusKey: 'pending_expenses_categorize'
+    },
+    {
+      id: 'pending_health_check',
+      name: 'Pending Health Check',
+      description: 'Creates health check tasks for active projects with low budget or no recent reviews.',
+      taskTemplate: 'Health Check requerido para {project}',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+      iconColor: '#10b981',
+      enabled: false,
+      statusKey: 'pending_health_check'
     },
     {
       id: 'pending_invoices',
       name: 'Pending Invoices',
       description: 'Creates a task when there are invoices pending to be sent',
       taskTemplate: 'Facturas pendientes por enviar en {project}',
-      icon: '📄',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+      iconColor: '#6366f1',
       enabled: false,
       statusKey: 'pending_invoices',
       comingSoon: true
@@ -35,7 +57,8 @@
       name: 'Overdue Task Alerts',
       description: 'Creates alert tasks for overdue items in a project',
       taskTemplate: 'Tareas vencidas en {project}',
-      icon: '⏰',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+      iconColor: '#ef4444',
       enabled: false,
       statusKey: 'overdue_tasks',
       comingSoon: true
@@ -160,9 +183,11 @@
         ? '<span class="pm-automation-badge pm-automation-badge--soon">Coming Soon</span>'
         : '';
 
+      const iconStyle = automation.iconColor ? `style="color: ${automation.iconColor}"` : '';
+
       return `
         <div class="pm-automation-item ${isComingSoon ? 'pm-automation-item--disabled' : ''}" data-automation-id="${automation.id}">
-          <div class="pm-automation-icon">${automation.icon}</div>
+          <div class="pm-automation-icon" ${iconStyle}>${automation.icon}</div>
           <div class="pm-automation-info">
             <div class="pm-automation-name">
               ${automation.name}

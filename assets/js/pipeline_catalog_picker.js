@@ -1,0 +1,524 @@
+// assets/js/pipeline_catalog_picker.js
+// Catalog Picker component - Monday.com style dropdown for selecting catalog items
+(function() {
+  'use strict';
+
+  // ================================
+  // CONFIGURATION
+  // ================================
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  // ================================
+  // STATE - Caches for each catalog type
+  // ================================
+  const catalogCache = {
+    projects: { data: null, timestamp: 0 },
+    companies: { data: null, timestamp: 0 },
+    departments: { data: null, timestamp: 0 },
+    types: { data: null, timestamp: 0 },
+    priorities: { data: null, timestamp: 0 }
+  };
+
+  let activeDropdown = null;
+
+  // ================================
+  // UTILITIES
+  // ================================
+  function escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function getInitial(name) {
+    const s = String(name || '').trim();
+    if (!s) return '?';
+    return s[0].toUpperCase();
+  }
+
+  // Generate stable hue from string
+  function stableHueFromString(str) {
+    const s = String(str || '');
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    }
+    return h % 360;
+  }
+
+  // ================================
+  // API
+  // ================================
+  function getAuthHeaders() {
+    const token = localStorage.getItem("ngmToken");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  // Catalog type configurations
+  const CATALOG_CONFIG = {
+    project: {
+      endpoint: '/projects',
+      idKey: 'project_id',
+      nameKey: 'project_name',
+      searchFields: ['project_name', 'project_code'],
+      icon: '📁',
+      placeholder: 'Search projects...'
+    },
+    company: {
+      endpoint: '/pipeline/companies',
+      idKey: 'id',
+      nameKey: 'name',
+      searchFields: ['name'],
+      icon: '🏢',
+      placeholder: 'Search companies...'
+    },
+    department: {
+      endpoint: '/pipeline/task-departments',
+      idKey: 'department_id',
+      nameKey: 'department_name',
+      searchFields: ['department_name'],
+      icon: '🏷️',
+      placeholder: 'Search departments...'
+    },
+    type: {
+      endpoint: '/pipeline/task-types',
+      idKey: 'type_id',
+      nameKey: 'type_name',
+      searchFields: ['type_name'],
+      icon: '📋',
+      placeholder: 'Search types...'
+    },
+    priority: {
+      endpoint: '/pipeline/task-priorities',
+      idKey: 'priority_id',
+      nameKey: 'priority',
+      searchFields: ['priority'],
+      icon: '🎯',
+      placeholder: 'Search priorities...'
+    }
+  };
+
+  async function fetchCatalog(catalogType) {
+    const config = CATALOG_CONFIG[catalogType];
+    if (!config) {
+      console.error('[CatalogPicker] Unknown catalog type:', catalogType);
+      return [];
+    }
+
+    const cacheKey = catalogType + 's'; // projects, companies, etc.
+    const cache = catalogCache[cacheKey];
+    const now = Date.now();
+
+    // Return cached data if still valid
+    if (cache && cache.data && (now - cache.timestamp) < CACHE_TTL) {
+      return cache.data;
+    }
+
+    try {
+      const apiBase = window.API_BASE || '';
+      const res = await fetch(`${apiBase}${config.endpoint}`, {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          ...getAuthHeaders()
+        }
+      });
+
+      if (!res.ok) throw new Error(`Failed to load ${catalogType}: ${res.status}`);
+
+      const data = await res.json();
+      let items = Array.isArray(data) ? data : (data.data || data[cacheKey] || []);
+
+      // Normalize items
+      items = items.map(item => ({
+        id: item[config.idKey] || item.id,
+        name: item[config.nameKey] || item.name || 'Unknown',
+        code: item.code || item.project_code || null,
+        color: item.color || `hsl(${stableHueFromString(item[config.nameKey] || item.name)} 60% 50%)`,
+        raw: item // Keep original data
+      }));
+
+      // Update cache
+      catalogCache[cacheKey] = { data: items, timestamp: now };
+
+      return items;
+    } catch (err) {
+      console.error(`[CatalogPicker] Error fetching ${catalogType}:`, err);
+      return cache?.data || [];
+    }
+  }
+
+  // ================================
+  // RENDER HELPERS
+  // ================================
+  function renderIcon(item, catalogType) {
+    const config = CATALOG_CONFIG[catalogType];
+    const initial = escapeHtml(getInitial(item.name));
+    const color = item.color || '#888';
+
+    return `
+      <div class="pm-catalog-icon" style="color: ${color}; border-color: ${color};">
+        ${initial}
+      </div>
+    `;
+  }
+
+  function renderChip(item, catalogType, removable = true) {
+    const removeBtn = removable
+      ? `<button type="button" class="pm-catalog-chip-remove" data-item-id="${item.id}" title="Remove">×</button>`
+      : '';
+
+    return `
+      <span class="pm-catalog-chip" data-item-id="${item.id}">
+        ${renderIcon(item, catalogType)}
+        <span class="pm-catalog-chip-name">${escapeHtml(item.name)}</span>
+        ${removeBtn}
+      </span>
+    `;
+  }
+
+  function renderItem(item, catalogType, isSelected = false) {
+    const color = item.color || '#888';
+    const initial = escapeHtml(getInitial(item.name));
+
+    return `
+      <div class="pm-catalog-item ${isSelected ? 'is-selected' : ''}" data-item-id="${item.id}">
+        <div class="pm-catalog-item-icon" style="color: ${color}; border-color: ${color};">
+          ${initial}
+        </div>
+        <div class="pm-catalog-item-info">
+          <div class="pm-catalog-item-name">${escapeHtml(item.name)}</div>
+          ${item.code ? `<div class="pm-catalog-item-code">${escapeHtml(item.code)}</div>` : ''}
+        </div>
+        <div class="pm-catalog-item-check">✓</div>
+      </div>
+    `;
+  }
+
+  // ================================
+  // CATALOG PICKER CLASS
+  // ================================
+  class CatalogPicker {
+    constructor(container, options = {}) {
+      this.container = typeof container === 'string'
+        ? document.querySelector(container)
+        : container;
+
+      if (!this.container) {
+        console.error('[CatalogPicker] Container not found');
+        return;
+      }
+
+      // Options
+      this.catalogType = options.catalogType || 'project';
+      this.placeholder = options.placeholder || CATALOG_CONFIG[this.catalogType]?.placeholder || 'Select...';
+      this.onChange = options.onChange || null;
+      this.allowClear = options.allowClear !== false;
+
+      // State
+      this.selectedItem = null;
+      this.isOpen = false;
+      this.searchQuery = '';
+      this.items = [];
+
+      // Build UI
+      this.render();
+      this.bindEvents();
+    }
+
+    render() {
+      const config = CATALOG_CONFIG[this.catalogType] || {};
+
+      this.container.innerHTML = `
+        <div class="pm-catalog-picker">
+          <div class="pm-catalog-trigger" tabindex="0">
+            <div class="pm-catalog-selected">
+              <span class="pm-catalog-trigger-placeholder">${escapeHtml(this.placeholder)}</span>
+            </div>
+            <span class="pm-catalog-trigger-arrow">▾</span>
+          </div>
+          <div class="pm-catalog-dropdown">
+            <div class="pm-catalog-search-wrap">
+              <div class="pm-catalog-search">
+                <span class="pm-catalog-search-icon">⌕</span>
+                <input type="text" placeholder="${escapeHtml(config.placeholder || 'Search...')}" />
+              </div>
+            </div>
+            <div class="pm-catalog-list">
+              <div class="pm-catalog-loading">Loading...</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Cache elements
+      this.trigger = this.container.querySelector('.pm-catalog-trigger');
+      this.selectedContainer = this.container.querySelector('.pm-catalog-selected');
+      this.dropdown = this.container.querySelector('.pm-catalog-dropdown');
+      this.searchInput = this.container.querySelector('.pm-catalog-search input');
+      this.list = this.container.querySelector('.pm-catalog-list');
+    }
+
+    bindEvents() {
+      // Toggle dropdown
+      this.trigger.addEventListener('click', (e) => {
+        if (e.target.closest('.pm-catalog-chip-remove')) return;
+        this.toggle();
+      });
+
+      // Keyboard nav on trigger
+      this.trigger.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.toggle();
+        } else if (e.key === 'Escape' && this.isOpen) {
+          this.close();
+        }
+      });
+
+      // Search input
+      this.searchInput.addEventListener('input', (e) => {
+        this.searchQuery = e.target.value.toLowerCase();
+        this.renderList();
+      });
+
+      // Prevent dropdown close when clicking inside
+      this.dropdown.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+
+      // Select item from list
+      this.list.addEventListener('click', (e) => {
+        const itemEl = e.target.closest('.pm-catalog-item');
+        if (itemEl) {
+          const itemId = itemEl.dataset.itemId;
+          this.selectItem(itemId);
+        }
+      });
+
+      // Remove chip (clear selection)
+      this.selectedContainer.addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('.pm-catalog-chip-remove');
+        if (removeBtn) {
+          e.stopPropagation();
+          this.clear();
+        }
+      });
+
+      // Close on outside click
+      document.addEventListener('click', (e) => {
+        if (this.isOpen && !this.container.contains(e.target)) {
+          this.close();
+        }
+      });
+
+      // Close on Escape
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && this.isOpen) {
+          this.close();
+        }
+      });
+    }
+
+    async toggle() {
+      if (this.isOpen) {
+        this.close();
+      } else {
+        await this.open();
+      }
+    }
+
+    async open() {
+      // Close any other open dropdown
+      if (activeDropdown && activeDropdown !== this) {
+        activeDropdown.close();
+      }
+
+      this.isOpen = true;
+      activeDropdown = this;
+      this.trigger.classList.add('is-open');
+      this.dropdown.classList.add('is-open');
+
+      // Load items if not cached
+      await this.loadItems();
+
+      // Focus search
+      setTimeout(() => this.searchInput.focus(), 50);
+    }
+
+    close() {
+      this.isOpen = false;
+      if (activeDropdown === this) activeDropdown = null;
+      this.trigger.classList.remove('is-open');
+      this.dropdown.classList.remove('is-open');
+      this.searchQuery = '';
+      this.searchInput.value = '';
+    }
+
+    async loadItems() {
+      this.list.innerHTML = '<div class="pm-catalog-loading">Loading...</div>';
+
+      const items = await fetchCatalog(this.catalogType);
+
+      if (!items.length) {
+        this.list.innerHTML = '<div class="pm-catalog-empty">No items found</div>';
+        return;
+      }
+
+      this.items = items;
+      this.renderList();
+    }
+
+    renderList() {
+      if (!this.items) return;
+
+      const config = CATALOG_CONFIG[this.catalogType] || {};
+      const searchFields = config.searchFields || ['name'];
+      const query = this.searchQuery.toLowerCase();
+
+      const filtered = query
+        ? this.items.filter(item =>
+            searchFields.some(field => {
+              const value = item.raw?.[field] || item[field] || '';
+              return String(value).toLowerCase().includes(query);
+            })
+          )
+        : this.items;
+
+      if (!filtered.length) {
+        this.list.innerHTML = '<div class="pm-catalog-empty">No matching items</div>';
+        return;
+      }
+
+      const selectedId = this.selectedItem?.id;
+
+      this.list.innerHTML = filtered.map(item =>
+        renderItem(item, this.catalogType, item.id === selectedId)
+      ).join('');
+    }
+
+    selectItem(itemId) {
+      const item = this.items.find(i => String(i.id) === String(itemId));
+
+      if (item) {
+        // If clicking the same item, deselect (toggle behavior)
+        if (this.selectedItem?.id === item.id) {
+          this.selectedItem = null;
+        } else {
+          this.selectedItem = item;
+        }
+      }
+
+      this.renderSelected();
+      this.renderList();
+      this.emitChange();
+      this.close();
+    }
+
+    renderSelected() {
+      if (!this.selectedItem) {
+        this.selectedContainer.innerHTML = `
+          <span class="pm-catalog-trigger-placeholder">${escapeHtml(this.placeholder)}</span>
+        `;
+        return;
+      }
+
+      this.selectedContainer.innerHTML = renderChip(this.selectedItem, this.catalogType, this.allowClear);
+    }
+
+    emitChange() {
+      if (this.onChange) {
+        this.onChange(this.selectedItem, this);
+      }
+    }
+
+    // Public API
+    getValue() {
+      return this.selectedItem;
+    }
+
+    getValueId() {
+      return this.selectedItem?.id || null;
+    }
+
+    getValueName() {
+      return this.selectedItem?.name || null;
+    }
+
+    setValue(item) {
+      this.selectedItem = item || null;
+      this.renderSelected();
+    }
+
+    setValueById(id) {
+      if (!id) {
+        this.selectedItem = null;
+        this.renderSelected();
+        return;
+      }
+
+      // If items are loaded, find and set
+      if (this.items.length) {
+        const item = this.items.find(i => String(i.id) === String(id));
+        this.selectedItem = item || null;
+        this.renderSelected();
+      } else {
+        // Store ID and set when items load
+        this._pendingId = id;
+      }
+    }
+
+    setValueByName(name) {
+      if (!name || name === '-') {
+        this.selectedItem = null;
+        this.renderSelected();
+        return;
+      }
+
+      // If items are loaded, find and set
+      if (this.items.length) {
+        const item = this.items.find(i =>
+          String(i.name).toLowerCase() === String(name).toLowerCase()
+        );
+        this.selectedItem = item || null;
+        this.renderSelected();
+      } else {
+        // Store name and set when items load
+        this._pendingName = name;
+      }
+    }
+
+    clear() {
+      this.selectedItem = null;
+      this.renderSelected();
+      this.renderList();
+      this.emitChange();
+    }
+
+    destroy() {
+      this.container.innerHTML = '';
+    }
+  }
+
+  // ================================
+  // FACTORY FUNCTION
+  // ================================
+  function createCatalogPicker(container, options) {
+    return new CatalogPicker(container, options);
+  }
+
+  // ================================
+  // EXPOSE TO GLOBAL
+  // ================================
+  window.CatalogPicker = CatalogPicker;
+  window.createCatalogPicker = createCatalogPicker;
+  window.PM_CatalogPicker = {
+    create: createCatalogPicker,
+    fetchCatalog,
+    CATALOG_CONFIG
+  };
+
+})();

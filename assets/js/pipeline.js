@@ -136,6 +136,64 @@
     },
 
     /**
+     * Renders multiple people as stacked avatars with overflow count
+     * @param {Array} people - Array of user objects [{name, avatar_color, photo}]
+     * @param {number} maxDisplay - Maximum avatars to display before showing +N
+     */
+    renderMultiplePeople(people, maxDisplay = 3) {
+      if (!Array.isArray(people) || people.length === 0) {
+        return `<span class="pm-person-empty">-</span>`;
+      }
+
+      const displayPeople = people.slice(0, maxDisplay);
+      const overflow = people.length - maxDisplay;
+
+      // Build all names for tooltip
+      const allNames = people.map(p => p.name || p.username || "Unknown").join(", ");
+
+      let html = `<span class="pm-people-stack" title="${Utils.escapeHtml(allNames)}">`;
+
+      displayPeople.forEach((person, index) => {
+        const name = person.name || person.username || "";
+        const avatarColor = person.avatar_color;
+        const photo = person.photo || person.user_photo;
+        const initial = Utils.getInitial(name || "-");
+
+        let hue;
+        if (avatarColor !== undefined && avatarColor !== null && !isNaN(Number(avatarColor))) {
+          hue = Math.max(0, Math.min(360, Number(avatarColor)));
+        } else {
+          hue = Utils.hashStringToHue((name || "").toLowerCase());
+        }
+
+        const ring = name ? `hsl(${hue} 65% 55%)` : "rgba(148, 163, 184, 0.6)";
+        const bg = name ? `hsl(${hue} 55% 35%)` : "#334155";
+        const zIndex = displayPeople.length - index;
+
+        if (photo && name) {
+          html += `
+            <span class="pm-avatar pm-avatar-img pm-avatar-stacked" style="--av-ring:${ring}; z-index:${zIndex};" title="${Utils.escapeHtml(name)}">
+              <img src="${Utils.escapeHtml(photo)}" alt="${Utils.escapeHtml(name)}" />
+            </span>
+          `;
+        } else {
+          html += `
+            <span class="pm-avatar pm-avatar-stacked" style="--av-bg:${bg}; --av-ring:${ring}; z-index:${zIndex};" title="${Utils.escapeHtml(name)}">
+              ${Utils.escapeHtml(initial)}
+            </span>
+          `;
+        }
+      });
+
+      if (overflow > 0) {
+        html += `<span class="pm-avatar pm-avatar-overflow" title="${overflow} more">+${overflow}</span>`;
+      }
+
+      html += `</span>`;
+      return html;
+    },
+
+    /**
      * Gets the cell value for a specific column key
      */
     getCellValue(task, key) {
@@ -165,24 +223,31 @@
         }
 
         case "collaborator": {
-          // Pass full user object to use avatar_color and photo
+          // Render multiple collaborators as stacked avatars
           if (Array.isArray(t.collaborators) && t.collaborators.length > 0) {
-            const collab = t.collaborators[0];
-            if (collab && (collab.name || collab.id)) {
-              return this.renderPerson(collab);
+            // Filter out empty entries
+            const validCollabs = t.collaborators.filter(c => c && (c.name || c.id));
+            if (validCollabs.length > 0) {
+              return this.renderMultiplePeople(validCollabs, 3);
             }
           }
-          return this.renderPerson("-");
+          return `<span class="pm-person-empty">-</span>`;
         }
 
         case "manager": {
-          // Pass full user object to use avatar_color and photo
+          // Render multiple managers as stacked avatars
+          // First check new managers array, then fallback to single manager
+          if (Array.isArray(t.managers) && t.managers.length > 0) {
+            const validManagers = t.managers.filter(m => m && (m.name || m.id));
+            if (validManagers.length > 0) {
+              return this.renderMultiplePeople(validManagers, 3);
+            }
+          }
+          // Fallback to single manager object
           if (t.manager && (t.manager.name || t.manager.id)) {
             return this.renderPerson(t.manager);
           }
-          // Fallback to name string
-          const name = t.manager_name || "";
-          return this.renderPerson(name || "-");
+          return `<span class="pm-person-empty">-</span>`;
         }
 
         case "company":
@@ -228,22 +293,35 @@
           );
 
         case "due":
-          return Utils.escapeHtml(Utils.formatMaybeDate(t.due_date || t.deadline || t.due));
+          return Utils.escapeHtml(Utils.formatMaybeDate(t.due_date || t.due));
+
+        case "deadline":
+          return Utils.escapeHtml(Utils.formatMaybeDate(t.deadline));
 
         case "links": {
           const docsLink = t.docs_link || null;
           const resultLink = t.result_link || null;
 
-          if (!docsLink && !resultLink) return "-";
+          // Show add button when no links
+          if (!docsLink && !resultLink) {
+            return `<span class="pm-links-add-btn" title="Add links">+</span>`;
+          }
 
+          // Show links with icons
           const parts = [];
           if (docsLink) {
-            parts.push(`<a href="${Utils.escapeHtml(docsLink)}" target="_blank" rel="noopener noreferrer">Docs</a>`);
+            parts.push(`<a href="${Utils.escapeHtml(docsLink)}" target="_blank" rel="noopener noreferrer" title="Open documentation" onclick="event.stopPropagation()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+              Docs
+            </a>`);
           }
           if (resultLink) {
-            parts.push(`<a href="${Utils.escapeHtml(resultLink)}" target="_blank" rel="noopener noreferrer">Result</a>`);
+            parts.push(`<a href="${Utils.escapeHtml(resultLink)}" target="_blank" rel="noopener noreferrer" title="Open result" onclick="event.stopPropagation()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              Result
+            </a>`);
           }
-          return parts.join(" · ");
+          return `<span class="pm-links-display">${parts.join("")}</span>`;
         }
 
         default:
@@ -382,9 +460,9 @@
       e.preventDefault();
       openModal();
 
-      // Populate columns checkboxes dynamically
-      const visibleMap = loadVisibleCols(COLUMNS);
-      buildColumnsModal(COLUMNS, visibleMap);
+      // Populate columns checkboxes dynamically (only visible columns)
+      const visibleMap = loadVisibleCols(VISIBLE_COLUMNS);
+      buildColumnsModal(VISIBLE_COLUMNS, visibleMap);
 
       // Sync groups checkboxes from persistence
       syncGroupsCheckboxesInModal(loadVisibleGroups());
@@ -406,7 +484,7 @@
     btnApply?.addEventListener("click", (e) => {
       e.preventDefault();
 
-      const newMap = readColumnsModalState(COLUMNS);
+      const newMap = readColumnsModalState(VISIBLE_COLUMNS);
       saveVisibleCols(newMap);
       applyVisibleColsToTables(newMap);
 
@@ -456,6 +534,7 @@
   const PM_GROUPS_STORAGE_KEY = "pm_visible_groups_v1";
 
   // Column definitions
+  // Columns with hidden: true are used for backend calculations only
   const COLUMNS = [
     { key: "task", label: "Task" },
     { key: "project", label: "Project" },
@@ -465,15 +544,19 @@
     { key: "company", label: "Company" },
     { key: "department", label: "Department" },
     { key: "type", label: "Type" },
-    { key: "time_start", label: "Time Start" },
-    { key: "time_finish", label: "Time Finish" },
+    { key: "time_start", label: "Time Start", hidden: true },  // Backend only
+    { key: "time_finish", label: "Time Finish", hidden: true }, // Backend only
     { key: "start", label: "Start" },
     { key: "est", label: "Est (h)" },
     { key: "priority", label: "Priority" },
     { key: "finished", label: "Finished" },
     { key: "due", label: "Due" },
+    { key: "deadline", label: "Deadline" },
     { key: "links", label: "Links" },
   ];
+
+  // Visible columns for UI rendering (excludes hidden columns)
+  const VISIBLE_COLUMNS = COLUMNS.filter(c => !c.hidden);
 
   // ================================
   // Column Layout (shared by all tables)
@@ -482,7 +565,7 @@
   function buildColGroup() {
     return `
       <colgroup>
-        ${COLUMNS.map(col => `<col data-col="${col.key}">`).join("")}
+        ${VISIBLE_COLUMNS.map(col => `<col data-col="${col.key}">`).join("")}
       </colgroup>
     `;
   }
@@ -543,19 +626,19 @@
     return map;
   }
 
-  function getDefaultVisibleCols(COLUMNS) {
+  function getDefaultVisibleCols(cols) {
     const map = {};
-    COLUMNS.forEach(c => (map[c.key] = true));
+    cols.forEach(c => (map[c.key] = true));
     return map;
   }
 
-  function loadVisibleCols(COLUMNS) {
+  function loadVisibleCols(cols) {
     try {
       const raw = localStorage.getItem(PM_COLS_STORAGE_KEY);
-      if (!raw) return getDefaultVisibleCols(COLUMNS);
+      if (!raw) return getDefaultVisibleCols(cols);
 
       const parsed = JSON.parse(raw);
-      const merged = getDefaultVisibleCols(COLUMNS);
+      const merged = getDefaultVisibleCols(cols);
 
       Object.keys(parsed || {}).forEach(k => {
         if (k in merged) merged[k] = !!parsed[k];
@@ -564,7 +647,7 @@
       return merged;
     } catch (e) {
       console.warn("[PIPELINE] loadVisibleCols failed:", e);
-      return getDefaultVisibleCols(COLUMNS);
+      return getDefaultVisibleCols(cols);
     }
   }
 
@@ -591,11 +674,11 @@
     window.refreshPipelineTables?.();
   }
 
-  function buildColumnsModal(COLUMNS, visibleMap) {
+  function buildColumnsModal(cols, visibleMap) {
     const list = document.getElementById("pm-columns-list");
     if (!list) return;
 
-    list.innerHTML = COLUMNS.map(c => `
+    list.innerHTML = cols.map(c => `
       <label class="pm-checkbox">
         <input type="checkbox" data-col="${c.key}" ${visibleMap[c.key] ? "checked" : ""} />
         <span>${c.label}</span>
@@ -603,10 +686,10 @@
     `).join("");
   }
 
-  function readColumnsModalState(COLUMNS) {
+  function readColumnsModalState(cols) {
     const list = document.getElementById("pm-columns-list");
     const map = {};
-    COLUMNS.forEach(c => (map[c.key] = true));
+    cols.forEach(c => (map[c.key] = true));
 
     if (!list) return map;
 
@@ -930,7 +1013,7 @@
     reconcileGroups(sortedGroups);
 
     // Apply column visibility
-    applyVisibleColsToTables(loadVisibleCols(COLUMNS));
+    applyVisibleColsToTables(loadVisibleCols(VISIBLE_COLUMNS));
   }
 
   /**
@@ -1128,8 +1211,8 @@
    * Updates an existing task row with new data
    */
   function updateTaskRow(tr, task) {
-    // Update each cell
-    COLUMNS.forEach((col, colIndex) => {
+    // Update each visible cell
+    VISIBLE_COLUMNS.forEach((col, colIndex) => {
       const td = tr.children[colIndex];
       if (!td) return;
 
@@ -1140,7 +1223,7 @@
       }
     });
 
-    // Update dataset
+    // Update dataset (includes hidden column data)
     storeTaskDataInRow(tr, task);
   }
 
@@ -1276,13 +1359,13 @@
   }
 
   /**
-   * Creates table header
+   * Creates table header (only visible columns)
    */
   function createTableHeader() {
     const thead = document.createElement("thead");
     thead.innerHTML = `
       <tr>
-        ${COLUMNS.map(c => `<th data-col="${Utils.escapeHtml(c.key)}">${Utils.escapeHtml(c.label)}</th>`).join("")}
+        ${VISIBLE_COLUMNS.map(c => `<th data-col="${Utils.escapeHtml(c.key)}">${Utils.escapeHtml(c.label)}</th>`).join("")}
       </tr>
     `;
     return thead;
@@ -1312,7 +1395,7 @@
     const emptyRow = document.createElement("tr");
     emptyRow.className = "pm-empty-row";
     emptyRow.innerHTML = `
-      <td colspan="${COLUMNS.length}" class="pm-empty-cell">
+      <td colspan="${VISIBLE_COLUMNS.length}" class="pm-empty-cell">
         <div>No tasks in this group for the current filters.</div>
       </td>
     `;
@@ -1320,24 +1403,79 @@
   }
 
   /**
-   * Creates a single task row
+   * Creates a single task row (only visible columns)
    */
   function createTaskRow(task) {
     const tr = document.createElement("tr");
     tr.className = "pm-row";
     tr.dataset.taskId = task.id || task.task_id || "";
 
-    // Render cells
-    tr.innerHTML = COLUMNS.map(col => {
+    // Check if task is automated
+    const isAutomated = task.is_automated ||
+      (task.task_notes && task.task_notes.includes('[AUTOMATED]')) ||
+      (task.automation_type && task.automation_type !== '');
+
+    if (isAutomated) {
+      tr.classList.add('pm-row--automated');
+      tr.dataset.automationType = task.automation_type || 'automated';
+    }
+
+    // Check if task is a cluster parent (has subtasks)
+    const isClusterParent = task.is_cluster_parent || false;
+    const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+
+    if (isClusterParent || hasSubtasks) {
+      tr.classList.add('pm-row--cluster-parent');
+      tr.dataset.clusterExpanded = 'false';
+    }
+
+    // Check if task is a subtask
+    const isSubtask = task.parent_task_id || task.is_subtask || false;
+    if (isSubtask) {
+      tr.classList.add('pm-row--subtask');
+      tr.dataset.parentTaskId = task.parent_task_id || '';
+    }
+
+    // Render only visible columns
+    tr.innerHTML = VISIBLE_COLUMNS.map((col, colIndex) => {
       const html = Renderers.getCellValue(task, col.key);
+
+      // Add automation indicator to first column
+      let automationIndicator = '';
+      if (colIndex === 0 && isAutomated) {
+        automationIndicator = `<span class="pm-auto-indicator" title="Tarea Automatizada">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+        </span>`;
+      }
+
+      // Add cluster expand toggle to first column
+      let clusterToggle = '';
+      if (colIndex === 0 && (isClusterParent || hasSubtasks)) {
+        const subtaskCount = task.subtasks ? task.subtasks.length : 0;
+        clusterToggle = `<button type="button" class="pm-cluster-toggle" data-task-id="${task.task_id || task.id}">
+          <svg class="pm-cluster-arrow" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+          ${subtaskCount > 0 ? `<span class="pm-cluster-count">${subtaskCount}</span>` : ''}
+        </button>`;
+      }
+
+      // Add subtask indentation to first column
+      let subtaskIndent = '';
+      if (colIndex === 0 && isSubtask) {
+        subtaskIndent = '<span class="pm-subtask-indent"></span>';
+      }
+
       return `
         <td data-col="${Utils.escapeHtml(col.key)}">
-          <div>${html}</div>
+          <div>${colIndex === 0 ? clusterToggle + subtaskIndent + automationIndicator : ''}${html}</div>
         </td>
       `;
     }).join("");
 
-    // Store task data in dataset for future use (modal editing, etc.)
+    // Store task data in dataset for future use (includes hidden column data)
     storeTaskDataInRow(tr, task);
 
     return tr;
@@ -1393,6 +1531,17 @@
 
     // Store deadline
     if (t.deadline) tr.dataset.deadline = String(t.deadline);
+
+    // Store automation data
+    if (t.is_automated) tr.dataset.isAutomated = 'true';
+    if (t.automation_type) tr.dataset.automationType = String(t.automation_type);
+    if (t.automation_metadata) {
+      try {
+        tr.dataset.automationMetadata = JSON.stringify(t.automation_metadata);
+      } catch (e) {
+        // Ignore JSON errors
+      }
+    }
   }
 
   /**
@@ -1406,6 +1555,43 @@
       header.classList.toggle("pm-group-header--collapsed", isCollapsed);
     });
   }
+
+  /**
+   * Sets up cluster (subtask) toggle functionality
+   * Delegated event listener for cluster toggle buttons
+   */
+  function setupClusterToggles() {
+    document.addEventListener('click', (e) => {
+      const toggleBtn = e.target.closest('.pm-cluster-toggle');
+      if (!toggleBtn) return;
+
+      e.stopPropagation();
+
+      const parentRow = toggleBtn.closest('.pm-row--cluster-parent');
+      if (!parentRow) return;
+
+      const taskId = toggleBtn.dataset.taskId || parentRow.dataset.taskId;
+      const isExpanded = parentRow.dataset.clusterExpanded === 'true';
+
+      // Toggle expansion state
+      parentRow.dataset.clusterExpanded = isExpanded ? 'false' : 'true';
+
+      // Find all subtasks that belong to this parent
+      const subtaskRows = document.querySelectorAll(`.pm-row--subtask[data-parent-task-id="${taskId}"]`);
+      subtaskRows.forEach(row => {
+        if (isExpanded) {
+          row.classList.add('pm-subtask-hidden');
+        } else {
+          row.classList.remove('pm-subtask-hidden');
+        }
+      });
+
+      console.log(`[PIPELINE] Cluster ${taskId} ${isExpanded ? 'collapsed' : 'expanded'}`);
+    });
+  }
+
+  // Initialize cluster toggles
+  setupClusterToggles();
 
   // ================================
   // UI Event Listeners

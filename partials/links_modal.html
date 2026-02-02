@@ -1,0 +1,106 @@
+<div id="linksModal" class="modal-backdrop hidden">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <div class="modal-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+        Task Links
+      </div>
+      <button type="button" class="modal-btn header-action" id="btnCloseLinksModal">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <form id="linksForm" class="pm-links-form">
+        <!-- Documentation Link -->
+        <div class="pm-links-field">
+          <label class="pm-links-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            Documentation Link
+          </label>
+          <div class="pm-links-input-wrap">
+            <input
+              type="url"
+              id="lm_docs_link"
+              class="pm-links-input"
+              placeholder="https://docs.google.com/..."
+            />
+            <button type="button" class="pm-links-btn-open" id="btnOpenDocsLink" title="Open in new tab">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </button>
+            <button type="button" class="pm-links-btn-clear" id="btnClearDocsLink" title="Clear link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <p class="pm-links-hint">Link to Google Docs, Notion, Figma, or any documentation</p>
+        </div>
+
+        <!-- Result Link -->
+        <div class="pm-links-field">
+          <label class="pm-links-label">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            Result / Deliverable Link
+          </label>
+          <div class="pm-links-input-wrap">
+            <input
+              type="url"
+              id="lm_result_link"
+              class="pm-links-input"
+              placeholder="https://drive.google.com/..."
+            />
+            <button type="button" class="pm-links-btn-open" id="btnOpenResultLink" title="Open in new tab">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </button>
+            <button type="button" class="pm-links-btn-clear" id="btnClearResultLink" title="Clear link">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <p class="pm-links-hint">Link to the final result, deliverable, or output</p>
+        </div>
+
+        <!-- File Upload Section (Future) -->
+        <div class="pm-links-upload-section">
+          <div class="pm-links-upload-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span>Attachments</span>
+            <span class="pm-links-upload-badge">Coming Soon</span>
+          </div>
+          <p class="pm-links-upload-hint">File upload functionality will be available soon</p>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary" id="btnCancelLinks">Cancel</button>
+      <button type="button" class="btn-primary" id="btnSaveLinks">Save Links</button>
+    </div>
+  </div>
+</div>

@@ -6,8 +6,8 @@
     <meta name="theme-color" content="#1a1a1a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="My Work" />
-    <title>NGM Hub — My Work</title>
+    <meta name="apple-mobile-web-app-title" content="Operation Manager" />
+    <title>NGM Hub - Operation Manager</title>
     <link rel="icon" type="image/png" href="assets/img/greenblack_icon.png" />
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="assets/img/greenblack_icon.png" />
@@ -61,7 +61,7 @@
     </style>
 
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <link rel="stylesheet" href="assets/css/my-work.css" />
+    <link rel="stylesheet" href="assets/css/operation-manager.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
 
     <script src="assets/js/config.js"></script>
@@ -71,7 +71,7 @@
     <script src="assets/js/pills.js" defer></script>
     <script src="assets/js/sidebar.js" defer></script>
 </head>
-<body class="page-my-work page-loading">
+<body class="page-operation-manager page-loading">
     <!-- Page Loading Overlay -->
     <div class="page-loading-overlay" id="pageLoadingOverlay">
         <img src="assets/img/white_icon.png" class="loading-logo loading-logo-xl" alt="Loading...">
@@ -101,26 +101,26 @@
                         <div class="ngm-brand-icon-small"><img src="assets/img/white_icon.png" alt="NGM"></div>
                         <div class="ngm-brand-text">
                             <span class="ngm-brand-org">Next Generation Management</span>
-                            <span class="ngm-brand-context">NGM Hub · My Work</span>
+                            <span class="ngm-brand-context">NGM Hub - Operation Manager</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="ngm-topbar-right">
                     <div class="ngm-meta">
-                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
-                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · —</span>
+                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment - -</span>
+                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server - -</span>
                     </div>
-                    <span id="user-pill" class="user-pill">User · —</span>
+                    <span id="user-pill" class="user-pill">User - -</span>
                 </div>
             </header>
 
             <!-- Main content: Visual Pipeline Canvas -->
-            <main class="main-content my-work-main">
+            <main class="main-content operation-manager-main">
                 <!-- Canvas toolbar -->
                 <div class="canvas-toolbar">
                     <div class="toolbar-left">
-                        <h2 class="canvas-title">My Work</h2>
+                        <h2 class="canvas-title">Operation Manager</h2>
                         <span class="canvas-subtitle">Visual Task Pipeline</span>
                     </div>
                     <div class="toolbar-center">
@@ -282,7 +282,7 @@
         </div>
     </div>
 
-    <script src="assets/js/my-work.js" defer></script>
+    <script src="assets/js/operation-manager.js" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             if (window.initTopbarPills) window.initTopbarPills();

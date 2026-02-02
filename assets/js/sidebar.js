@@ -1,34 +1,92 @@
 // assets/js/sidebar.js
 // Sistema unificado de sidebar basado en permisos de la base de datos
 (function () {
-  const navEl = document.getElementById("sidebar-nav");
-  if (!navEl) return;
+  // Buscar el contenedor del sidebar
+  const sidebarEl = document.getElementById("sidebar") || document.querySelector(".sidebar");
+  if (!sidebarEl) return;
 
-  // Limpiar contenido HTML estático inmediatamente para evitar flash de links no autorizados
-  navEl.innerHTML = '<span class="nav-loading" style="color:rgba(255,255,255,0.4);font-size:12px;padding:8px 12px;">Loading...</span>';
+  // Definición de categorías con orden y labels
+  // "general" es especial: no muestra header, aparece primero
+  const CATEGORIES = {
+    general: { label: null, order: 0 },  // Sin header, items generales
+    coordination: { label: "Coordination", order: 1 },
+    bookkeeping: { label: "Bookkeeping", order: 2 },
+    architecture: { label: "Architecture", order: 3 },
+    costs: { label: "Costs & Estimates", order: 4 },
+    admin: { label: "Admin", order: 5 },
+  };
 
   // Mapeo de module_key (de role_permissions) a configuración de UI
+  // Cada módulo incluye su categoría para agrupamiento
   const MODULE_CONFIG = {
-    "dashboard": { label: "Dashboard", href: "dashboard.html", order: 1 },
-    "my_work": { label: "My Work", href: "my-work.html", order: 2 },
-    "expenses": { label: "Expenses Engine", href: "expenses.html", order: 3 },
-    "budget_monitor": { label: "Budget Monitor", href: "budget_monitor.html", order: 4 },
-    "pipeline": { label: "Pipeline Manager", href: "pipeline.html", order: 5 },
-    "projects": { label: "Projects", href: "projects.html", order: 6 },
-    "vendors": { label: "Vendors", href: "vendors.html", order: 7 },
-    "accounts": { label: "Accounts", href: "accounts.html", order: 8 },
-    "estimator": { label: "Estimator Suite", href: "estimator.html", order: 9 },
-    "team": { label: "Team Management", href: "team.html", order: 10 },
-    "messages": { label: "Messages", href: "messages.html", order: 11 },
-    "arturito": { label: "Arturito", href: "arturito.html", order: 12 },
-    "arturito_settings": { label: "Arturito Settings", href: "arturito-settings.html", order: 13 },
-    "god_view": { label: "God View", href: "god-view.html", order: 14 },
-    "reporting": { label: "Reporting", href: "reporting.html", order: 15 },
-    "budgets": { label: "Budgets", href: "budgets.html", order: 16 },
-    "roles": { label: "Roles Management", href: "roles.html", order: 17 },
-    "settings": { label: "Settings", href: "settings.html", order: 18 },
-    "audit": { label: "Audit Logs", href: "audit.html", order: 19 },
+    // General (sin categoría visible)
+    "dashboard": { label: "Dashboard", href: "dashboard.html", order: 1, category: "general" },
+    "my_work": { label: "My Work", href: "my-work.html", order: 2, category: "general" },
+    "messages": { label: "Messages", href: "messages.html", order: 3, category: "general" },
+    "arturito": { label: "Arturito", href: "arturito.html", order: 4, category: "general" },
+
+    // Coordination
+    "operation_manager": { label: "Operation Manager", href: "operation-manager.html", order: 1, category: "coordination" },
+    "pipeline": { label: "Pipeline Manager", href: "pipeline.html", order: 2, category: "coordination" },
+    "process_manager": { label: "Process Manager", href: "process_manager.html", order: 3, category: "coordination" },
+
+    // Bookkeeping
+    "expenses": { label: "Expenses Engine", href: "expenses.html", order: 1, category: "bookkeeping" },
+    "budget_monitor": { label: "Budget Monitor", href: "budget_monitor.html", order: 2, category: "bookkeeping" },
+    "budgets": { label: "Budgets", href: "budgets.html", order: 3, category: "bookkeeping" },
+    "accounts": { label: "Accounts", href: "accounts.html", order: 4, category: "bookkeeping" },
+    "vendors": { label: "Vendors", href: "vendors.html", order: 5, category: "bookkeeping" },
+    "reporting": { label: "Reporting", href: "reporting.html", order: 6, category: "bookkeeping" },
+
+    // Architecture
+    "projects": { label: "Projects", href: "projects.html", order: 1, category: "architecture" },
+
+    // Costs & Estimates
+    "estimator": { label: "Estimator Suite", href: "estimator.html", order: 1, category: "costs" },
+
+    // Admin
+    "team": { label: "Team Management", href: "team.html", order: 1, category: "admin" },
+    "roles": { label: "Roles Management", href: "roles.html", order: 2, category: "admin" },
+    "god_view": { label: "God View", href: "god-view.html", order: 3, category: "admin" },
+    "arturito_settings": { label: "Arturito Settings", href: "arturito-settings.html", order: 4, category: "admin" },
+    "settings": { label: "Settings", href: "settings.html", order: 5, category: "admin" },
+    "audit": { label: "Audit Logs", href: "audit.html", order: 6, category: "admin" },
   };
+
+  // Generar el HTML completo del sidebar
+  function generateSidebarHTML() {
+    return `
+      <!-- Mobile header with close button -->
+      <div class="sidebar-mobile-header">
+        <span class="sidebar-mobile-title">NGM Hub</span>
+        <button type="button" class="sidebar-close-btn" id="btnCloseSidebar" title="Close menu">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="sidebar-logo">
+        <img src="assets/img/logo.png" alt="NGM HUB Logo" class="sidebar-logo-img" />
+      </div>
+      <div class="sidebar-title-block">
+        <p class="sidebar-title">NGM HUB</p>
+      </div>
+
+      <div class="sidebar-nav-card">
+        <nav class="sidebar-nav" id="sidebar-nav">
+          <span class="nav-loading" style="color:rgba(255,255,255,0.4);font-size:12px;padding:8px 12px;">Loading...</span>
+        </nav>
+      </div>
+    `;
+  }
+
+  // Inicializar el HTML del sidebar
+  sidebarEl.innerHTML = generateSidebarHTML();
+
+  // Ahora obtener la referencia al nav
+  const navEl = document.getElementById("sidebar-nav");
 
   // Cache para evitar llamadas repetidas
   const CACHE_KEY = "sidebar_permissions";
@@ -119,16 +177,52 @@
       .map(p => ({
         ...MODULE_CONFIG[p.module_key],
         module_key: p.module_key
-      }))
-      .sort((a, b) => a.order - b.order);
+      }));
 
-    // Generar HTML
-    navEl.innerHTML = allowedModules
-      .map(m => {
+    // Agrupar módulos por categoría
+    const groupedModules = {};
+    allowedModules.forEach(m => {
+      const cat = m.category || "other";
+      if (!groupedModules[cat]) {
+        groupedModules[cat] = [];
+      }
+      groupedModules[cat].push(m);
+    });
+
+    // Ordenar módulos dentro de cada categoría
+    Object.keys(groupedModules).forEach(cat => {
+      groupedModules[cat].sort((a, b) => a.order - b.order);
+    });
+
+    // Ordenar categorías según CATEGORIES.order
+    const sortedCategories = Object.keys(groupedModules)
+      .filter(cat => CATEGORIES[cat]) // Solo categorías definidas
+      .sort((a, b) => CATEGORIES[a].order - CATEGORIES[b].order);
+
+    // Generar HTML con grupos
+    let html = "";
+    sortedCategories.forEach((cat, idx) => {
+      const modules = groupedModules[cat];
+      const categoryConfig = CATEGORIES[cat];
+
+      // Agregar separador antes de cada grupo (excepto el primero)
+      if (idx > 0) {
+        html += `<div class="nav-group-separator"></div>`;
+      }
+
+      // Header de la categoría (solo si tiene label)
+      if (categoryConfig.label) {
+        html += `<div class="nav-group-header">${categoryConfig.label}</div>`;
+      }
+
+      // Links de los módulos
+      modules.forEach(m => {
         const active = m.href === current ? " nav-item-active" : "";
-        return `<a href="${m.href}" class="nav-item${active}" data-module="${m.module_key}">${m.label}</a>`;
-      })
-      .join("");
+        html += `<a href="${m.href}" class="nav-item${active}" data-module="${m.module_key}">${m.label}</a>`;
+      });
+    });
+
+    navEl.innerHTML = html;
   }
 
   async function initSidebar() {
@@ -228,7 +322,6 @@
     const sidebar = document.getElementById('sidebar') || document.querySelector('.sidebar');
     const overlay = document.getElementById('sidebarOverlay') || document.querySelector('.sidebar-overlay');
     const openBtn = document.getElementById('btnMobileMenu') || document.querySelector('.mobile-menu-btn');
-    const closeBtn = document.getElementById('btnCloseSidebar') || document.querySelector('.sidebar-close-btn');
 
     if (!sidebar) return;
 
@@ -249,24 +342,21 @@
       openBtn.addEventListener('click', openSidebar);
     }
 
-    // Close button click
-    if (closeBtn) {
-      closeBtn.addEventListener('click', closeSidebar);
-    }
+    // Close button click - use event delegation since button is dynamically generated
+    sidebar.addEventListener('click', (e) => {
+      if (e.target.closest('.sidebar-close-btn')) {
+        closeSidebar();
+      }
+      // Close sidebar when clicking a nav link (mobile)
+      if (e.target.closest('.nav-item') && window.innerWidth <= 768) {
+        closeSidebar();
+      }
+    });
 
     // Overlay click closes sidebar
     if (overlay) {
       overlay.addEventListener('click', closeSidebar);
     }
-
-    // Close sidebar when clicking a nav link (mobile)
-    sidebar.querySelectorAll('.nav-item').forEach(link => {
-      link.addEventListener('click', () => {
-        if (window.innerWidth <= 768) {
-          closeSidebar();
-        }
-      });
-    });
 
     // Close sidebar on escape key
     document.addEventListener('keydown', (e) => {

@@ -8,13 +8,12 @@
     padding: 0; /* padding lo controlan pm-toolbar-grid / pm-groups-wrapper */
 }
 
-/* Centrar toolbar y grupos dentro del viewport.
+/* Toolbar y grupos alineados a la izquierda.
    Ambos responden al slider de ancho (pm-panel-width). */
 .pm-toolbar-grid,
 .pm-groups-wrapper {
     width: 100%;
-    max-width: 100%; /* remueve la restricción de 1200px */
-    margin-inline: auto;
+    max-width: 100%;
 
     /* 🎯 CONTROLA EL PADDING LATERAL DEL ÁREA ÚTIL */
     padding-left: var(--pm-area-padding, 24px);
@@ -263,7 +262,7 @@
    ========================================== */
 .pm-group {
     position: relative;
-    margin: 22px auto 32px auto;
+    margin: 22px 0 32px 0;
 
     border-radius: var(--radius-md);
     background: #111111;
@@ -940,13 +939,14 @@
   border-radius: 999px;
   display: grid;
   place-items: center;
-  font-weight: 700;
-  font-size: 12px;
+  font-weight: 600;
+  font-size: 11px;
   line-height: 1;
 
-  background: var(--av-bg, #334155);
-  border: 1px solid var(--av-ring, rgba(148, 163, 184, 0.6));
-  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+  /* Ring style: transparent center, colored border (like Team Management) */
+  background: transparent;
+  border: 2px solid currentColor;
+  color: #888;
 }
 
 /* Avatar with image */
@@ -974,6 +974,48 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Empty person placeholder */
+.pm-person-empty {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+}
+
+/* Stacked avatars for multiple people */
+.pm-people-stack {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+}
+
+.pm-avatar-stacked {
+  width: 26px;
+  height: 26px;
+  font-size: 10px;
+  margin-left: -8px;
+  border: 2px solid #111;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.pm-avatar-stacked:first-child {
+  margin-left: 0;
+}
+
+.pm-avatar-overflow {
+  width: 26px;
+  height: 26px;
+  font-size: 9px;
+  font-weight: 600;
+  margin-left: -8px;
+  background: #2a2a2a;
+  border: 2px solid #111;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
 }
 
 
@@ -1492,6 +1534,30 @@ textarea.pm-inline-editor {
    PEOPLE PICKER — Monday.com style dropdown
    ========================================== */
 
+/* Inline people picker in table cells */
+.pm-inline-people-picker {
+  width: 100%;
+  min-width: 180px;
+}
+
+.pm-inline-people-picker .pm-people-picker {
+  width: 100%;
+}
+
+.pm-inline-people-picker .pm-people-trigger {
+  min-height: 32px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(62, 207, 142, 0.5);
+  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+}
+
+.pm-inline-people-picker .pm-people-dropdown {
+  min-width: 260px;
+  left: auto;
+  right: auto;
+}
+
 /* Trigger button (shows selected users or placeholder) */
 .pm-people-picker {
   position: relative;
@@ -1811,6 +1877,300 @@ textarea.pm-inline-editor {
 
 /* Loading state */
 .pm-people-loading {
+  padding: 24px 12px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+}
+
+/* ==========================================
+   CATALOG PICKER — Monday.com style dropdown
+   ========================================== */
+
+/* Inline catalog picker in table cells */
+.pm-inline-catalog-picker {
+  width: 100%;
+  min-width: 140px;
+}
+
+.pm-inline-catalog-picker .pm-catalog-picker {
+  width: 100%;
+}
+
+.pm-inline-catalog-picker .pm-catalog-trigger {
+  min-height: 32px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(62, 207, 142, 0.5);
+  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+}
+
+.pm-inline-catalog-picker .pm-catalog-dropdown {
+  min-width: 220px;
+  left: auto;
+  right: auto;
+}
+
+/* Main picker container */
+.pm-catalog-picker {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+/* Trigger button */
+.pm-catalog-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 12px;
+  background: #161616;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pm-catalog-trigger:hover {
+  border-color: #3a3a3a;
+  background: #1a1a1a;
+}
+
+.pm-catalog-trigger:focus-within,
+.pm-catalog-trigger.is-open {
+  border-color: #3ecf8e;
+  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+}
+
+.pm-catalog-trigger-placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+}
+
+.pm-catalog-trigger-arrow {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 10px;
+  transition: transform 0.15s ease;
+}
+
+.pm-catalog-trigger.is-open .pm-catalog-trigger-arrow {
+  transform: rotate(180deg);
+}
+
+/* Selected container */
+.pm-catalog-selected {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Chip (selected item display) */
+.pm-catalog-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  transition: background 0.15s ease;
+  max-width: 100%;
+}
+
+.pm-catalog-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pm-catalog-chip-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-catalog-chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.pm-catalog-chip-remove:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+/* Icon in chip (ring style) */
+.pm-catalog-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 2px solid currentColor;
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Dropdown panel */
+.pm-catalog-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  min-width: 240px;
+  max-height: 280px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pm-catalog-dropdown.is-open {
+  display: flex;
+}
+
+/* Search input in dropdown */
+.pm-catalog-search-wrap {
+  padding: 10px 12px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.pm-catalog-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #161616;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+}
+
+.pm-catalog-search-icon {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 14px;
+}
+
+.pm-catalog-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+}
+
+.pm-catalog-search input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* Items list */
+.pm-catalog-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+/* Single item */
+.pm-catalog-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.pm-catalog-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pm-catalog-item.is-selected {
+  background: rgba(62, 207, 142, 0.1);
+}
+
+.pm-catalog-item-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 2px solid currentColor;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.pm-catalog-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pm-catalog-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-catalog-item-code {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-catalog-item-check {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3ecf8e;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.pm-catalog-item.is-selected .pm-catalog-item-check {
+  opacity: 1;
+}
+
+/* Empty state */
+.pm-catalog-empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+}
+
+/* Loading state */
+.pm-catalog-loading {
   padding: 24px 12px;
   text-align: center;
   color: rgba(255, 255, 255, 0.4);
@@ -2220,4 +2580,404 @@ textarea.pm-inline-editor {
 
 .pm-automation-item--disabled .pm-toggle-slider {
   cursor: not-allowed;
+}
+
+/* ==========================================
+   LINKS MODAL — Task links management
+   ========================================== */
+
+#linksModal .modal--sm {
+  width: 480px;
+  max-width: 95vw;
+}
+
+.pm-links-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pm-links-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pm-links-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pm-links-label svg {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pm-links-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pm-links-input {
+  flex: 1;
+  padding: 10px 12px;
+  background: #161616;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.pm-links-input:focus {
+  border-color: #3ecf8e;
+  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+}
+
+.pm-links-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.pm-links-btn-open,
+.pm-links-btn-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.pm-links-btn-open:hover:not(:disabled) {
+  background: rgba(62, 207, 142, 0.15);
+  border-color: #3ecf8e;
+  color: #3ecf8e;
+}
+
+.pm-links-btn-clear:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.pm-links-btn-open:disabled,
+.pm-links-btn-clear:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pm-links-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0;
+}
+
+/* Upload Section (Coming Soon) */
+.pm-links-upload-section {
+  margin-top: 8px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed #2a2a2a;
+  border-radius: 8px;
+}
+
+.pm-links-upload-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pm-links-upload-header svg {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.pm-links-upload-badge {
+  padding: 2px 8px;
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pm-links-upload-hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* Links cell in table - clickable style */
+td[data-col="links"] {
+  cursor: pointer;
+}
+
+td[data-col="links"]:hover {
+  background: rgba(62, 207, 142, 0.05);
+}
+
+.pm-links-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pm-links-display a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(62, 207, 142, 0.1);
+  border-radius: 4px;
+  color: #3ecf8e;
+  font-size: 11px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.pm-links-display a:hover {
+  background: rgba(62, 207, 142, 0.2);
+}
+
+.pm-links-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pm-links-add-btn:hover {
+  background: rgba(62, 207, 142, 0.1);
+  border-color: #3ecf8e;
+  color: #3ecf8e;
+}
+
+/* ==========================================
+   AUTOMATED TASK ROWS
+   ========================================== */
+
+/* Automated task row - subtle purple left border */
+.pm-row--automated {
+  position: relative;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.04) 0%, transparent 20%);
+}
+
+.pm-row--automated::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #6366f1, #8b5cf6);
+  border-radius: 0 2px 2px 0;
+}
+
+.pm-row--automated:hover {
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.08) 0%, rgba(255, 255, 255, 0.04) 20%);
+}
+
+/* Automation indicator icon in first column */
+.pm-auto-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-right: 6px;
+  background: rgba(99, 102, 241, 0.15);
+  border-radius: 4px;
+  color: #818cf8;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.pm-auto-indicator svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Automated row task description styling */
+.pm-row--automated td[data-col="task"] .pm-task-desc {
+  color: #c4b5fd;
+}
+
+/* ==========================================
+   CLUSTER / SUBTASK ROWS (Monday-style)
+   ========================================== */
+
+/* Cluster parent row - has expand toggle */
+.pm-row--cluster-parent {
+  position: relative;
+}
+
+.pm-row--cluster-parent td[data-col="task"] > div {
+  display: flex;
+  align-items: center;
+}
+
+/* Cluster expand/collapse toggle button */
+.pm-cluster-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  background: rgba(62, 207, 142, 0.1);
+  border: 1px solid rgba(62, 207, 142, 0.3);
+  border-radius: 4px;
+  color: #3ecf8e;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.pm-cluster-toggle:hover {
+  background: rgba(62, 207, 142, 0.2);
+  border-color: #3ecf8e;
+}
+
+.pm-cluster-arrow {
+  transition: transform 0.2s ease;
+}
+
+.pm-row--cluster-parent[data-cluster-expanded="true"] .pm-cluster-arrow {
+  transform: rotate(90deg);
+}
+
+/* Subtask count badge */
+.pm-cluster-count {
+  font-size: 9px;
+  font-weight: 600;
+  margin-left: 2px;
+  padding: 0 4px;
+  background: rgba(62, 207, 142, 0.2);
+  border-radius: 8px;
+  color: #3ecf8e;
+}
+
+/* Subtask row - indented with connection line */
+.pm-row--subtask {
+  position: relative;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.pm-row--subtask::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(107, 114, 128, 0.3);
+}
+
+.pm-row--subtask:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Subtask indent spacer */
+.pm-subtask-indent {
+  display: inline-flex;
+  align-items: center;
+  width: 28px;
+  height: 20px;
+  margin-right: 4px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pm-subtask-indent::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 12px;
+  height: 1px;
+  background: rgba(107, 114, 128, 0.4);
+}
+
+.pm-subtask-indent::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  width: 1px;
+  height: 50%;
+  background: rgba(107, 114, 128, 0.4);
+}
+
+/* Last subtask in group - no vertical line extending down */
+.pm-row--subtask:last-of-type .pm-subtask-indent::after {
+  height: 50%;
+}
+
+/* Hidden subtask rows (collapsed cluster) */
+.pm-row--subtask.pm-subtask-hidden {
+  display: none;
+}
+
+/* Subtask task description - slightly smaller/muted */
+.pm-row--subtask td[data-col="task"] .pm-task-desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Combined: Automated subtask */
+.pm-row--subtask.pm-row--automated {
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.03) 0%, rgba(255, 255, 255, 0.01) 20%);
+}
+
+.pm-row--subtask.pm-row--automated::before {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.5), rgba(139, 92, 246, 0.5));
+}
+
+/* ==========================================
+   AUTOMATION TYPE BADGES IN ROWS
+   ========================================== */
+
+.pm-row--automated[data-automation-type="pending_expenses_auth"] {
+  --auto-color: #f59e0b;
+}
+
+.pm-row--automated[data-automation-type="pending_expenses_categorize"] {
+  --auto-color: #3b82f6;
+}
+
+.pm-row--automated[data-automation-type="pending_health_check"] {
+  --auto-color: #10b981;
+}
+
+.pm-row--automated[data-automation-type]::before {
+  background: var(--auto-color, #6366f1);
+}
+
+.pm-row--automated[data-automation-type] .pm-auto-indicator {
+  background: rgba(var(--auto-color-rgb, 99, 102, 241), 0.15);
+  color: var(--auto-color, #818cf8);
 }

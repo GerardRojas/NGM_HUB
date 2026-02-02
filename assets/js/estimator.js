@@ -51,6 +51,7 @@
     setupProjectInfoModal();
     setupColumnsModal();
     setupSaveAsTemplateModal();
+    setupTemplatePickerModal();
 
     // Setup view controls
     setupViewSliders();
@@ -115,6 +116,7 @@
     els.projectModal = document.getElementById('project-modal');
     els.columnsModal = document.getElementById('columns-modal');
     els.saveAsTemplateModal = document.getElementById('save-as-template-modal');
+    els.templatePickerModal = document.getElementById('template-picker-modal');
   }
 
   function setupEventListeners() {
@@ -537,11 +539,107 @@
   // ================================
 
   /**
+   * Clear quantities from all items in categories (for template saving)
+   * Templates keep structure but reset quantities to 0
+   */
+  function clearQuantitiesFromData(data) {
+    if (!data || !Array.isArray(data.categories)) return data;
+
+    const cleanedData = JSON.parse(JSON.stringify(data)); // Deep clone
+
+    cleanedData.categories.forEach(category => {
+      if (Array.isArray(category.subcategories)) {
+        category.subcategories.forEach(subcategory => {
+          if (Array.isArray(subcategory.items)) {
+            subcategory.items.forEach(item => {
+              // Clear quantity fields
+              item.qty = 0;
+              item.quantity = 0;
+              // Clear calculated totals
+              item.total = 0;
+              item.total_cost = 0;
+              item.subtotal = 0;
+            });
+            // Reset subcategory totals
+            subcategory.total = 0;
+            subcategory.total_cost = 0;
+          }
+        });
+        // Reset category totals
+        category.total = 0;
+        category.total_cost = 0;
+      }
+    });
+
+    // Reset overall totals
+    cleanedData.subtotal = 0;
+    cleanedData.total = 0;
+    cleanedData.grand_total = 0;
+
+    return cleanedData;
+  }
+
+  /**
+   * Fetch ALL materials from database (for full snapshot)
+   */
+  async function fetchAllMaterials() {
+    if (!supabaseClient) return { data: [], error: 'No Supabase client' };
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('materials')
+        .select('*')
+        .order('material_name');
+
+      return { data: data || [], error };
+    } catch (err) {
+      return { data: [], error: err.message };
+    }
+  }
+
+  /**
+   * Fetch ALL concepts from database (for full snapshot)
+   */
+  async function fetchAllConcepts() {
+    if (!supabaseClient) return { data: [], error: 'No Supabase client' };
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('concepts')
+        .select('*')
+        .eq('is_active', true)
+        .order('code');
+
+      return { data: data || [], error };
+    } catch (err) {
+      return { data: [], error: err.message };
+    }
+  }
+
+  /**
+   * Fetch ALL concept_materials from database (for full snapshot)
+   */
+  async function fetchAllConceptMaterials() {
+    if (!supabaseClient) return { data: [], error: 'No Supabase client' };
+
+    try {
+      const { data, error } = await supabaseClient
+        .from('concept_materials')
+        .select('*')
+        .order('concept_id, sort_order');
+
+      return { data: data || [], error };
+    } catch (err) {
+      return { data: [], error: err.message };
+    }
+  }
+
+  /**
    * Save current estimate as a template with snapshots:
-   * - {templateId}/template.ngm (JSON file)
-   * - {templateId}/materials_snapshot.csv
-   * - {templateId}/concepts_snapshot.csv
-   * - {templateId}/concept_materials_snapshot.csv
+   * - {templateId}/template.ngm (JSON file with quantities cleared)
+   * - {templateId}/materials_snapshot.csv (FULL materials DB)
+   * - {templateId}/concepts_snapshot.csv (FULL concepts DB)
+   * - {templateId}/concept_materials_snapshot.csv (FULL concept_materials)
    *
    * @param {string} templateName - Name for the template
    * @param {string} description - Template description
@@ -561,9 +659,12 @@
     els.statusEl.textContent = 'Saving template...';
 
     try {
+      // Clear quantities from data (templates don't have quantities)
+      const cleanedData = clearQuantitiesFromData(currentEstimateData);
+
       // Create template metadata
       const templateData = {
-        ...currentEstimateData,
+        ...cleanedData,
         template_meta: {
           id: templateId,
           name: templateName,
@@ -588,16 +689,13 @@
       const ngmContent = JSON.stringify(templateData, null, 2);
       const ngmBlob = new Blob([ngmContent], { type: 'application/json' });
 
-      // Extract IDs used in this template for snapshots
-      const { conceptIds, materialIds } = extractUsedIds();
-
-      // Fetch and create snapshots
-      els.statusEl.textContent = 'Creating template snapshots...';
+      // Fetch FULL database snapshots (not just used IDs)
+      els.statusEl.textContent = 'Creating full DB snapshots...';
 
       const [materialsResult, conceptsResult, conceptMaterialsResult] = await Promise.all([
-        materialIds.length > 0 ? fetchMaterials(materialIds) : { data: [], error: null },
-        conceptIds.length > 0 ? fetchConcepts(conceptIds) : { data: [], error: null },
-        conceptIds.length > 0 ? fetchConceptMaterials(conceptIds) : { data: [], error: null }
+        fetchAllMaterials(),
+        fetchAllConcepts(),
+        fetchAllConceptMaterials()
       ]);
 
       // Convert to CSV
@@ -613,7 +711,7 @@
         uploadToStorage(BUCKETS.TEMPLATES, `${basePath}/template.ngm`, ngmBlob),
       ];
 
-      // Only upload CSV if there's data
+      // Upload full DB snapshots
       if (materialsCSV) {
         uploads.push(uploadToStorage(
           BUCKETS.TEMPLATES,
@@ -651,7 +749,7 @@
         return false;
       }
 
-      showFeedback(`Template "${templateName}" saved with snapshots`, 'success');
+      showFeedback(`Template "${templateName}" saved with full DB snapshots`, 'success');
       els.statusEl.textContent = 'Template saved';
 
       // Refresh templates list
@@ -1355,7 +1453,8 @@
       const confirm = window.confirm('You have unsaved changes. Create new estimate anyway?');
       if (!confirm) return;
     }
-    createBlankEstimate();
+    // Open template picker modal instead of creating blank immediately
+    openTemplatePickerModal();
   }
 
   function handleAddConcept() {
@@ -1643,6 +1742,140 @@
 
   function closeSaveAsTemplateModal() {
     els.saveAsTemplateModal?.classList.add('hidden');
+  }
+
+  // ================================
+  // TEMPLATE PICKER MODAL
+  // ================================
+
+  function setupTemplatePickerModal() {
+    const modal = els.templatePickerModal;
+    if (!modal) return;
+
+    const closeBtn = document.getElementById('template-picker-close');
+    const cancelBtn = document.getElementById('template-picker-cancel');
+    const blankOption = document.getElementById('template-option-blank');
+
+    // Close button
+    closeBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeTemplatePickerModal();
+    });
+
+    // Cancel button
+    cancelBtn?.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeTemplatePickerModal();
+    });
+
+    // Blank estimate option
+    blankOption?.addEventListener('click', () => {
+      closeTemplatePickerModal();
+      createBlankEstimate();
+    });
+
+    // Click backdrop to close
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeTemplatePickerModal();
+    });
+
+    // Escape to close
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeTemplatePickerModal();
+      }
+    });
+  }
+
+  async function openTemplatePickerModal() {
+    if (!els.templatePickerModal) {
+      // Fallback to blank estimate if modal not found
+      createBlankEstimate();
+      return;
+    }
+
+    // Show modal
+    els.templatePickerModal.classList.remove('hidden');
+
+    // Load templates list into the picker
+    await loadTemplatesForPicker();
+  }
+
+  function closeTemplatePickerModal() {
+    els.templatePickerModal?.classList.add('hidden');
+  }
+
+  /**
+   * Load templates specifically for the picker modal
+   */
+  async function loadTemplatesForPicker() {
+    const listEl = document.getElementById('template-picker-list');
+    if (!listEl) return;
+
+    // Show loading state
+    listEl.innerHTML = `
+      <div class="template-picker-loading">
+        <span class="spinner"></span>
+        Loading templates...
+      </div>
+    `;
+
+    // Fetch templates from storage
+    const { data, error } = await listStorageFiles(BUCKETS.TEMPLATES);
+
+    if (error || !data) {
+      listEl.innerHTML = `
+        <div class="template-picker-empty">
+          Could not load templates. You can still create a blank estimate.
+        </div>
+      `;
+      return;
+    }
+
+    // Filter for folders (templates)
+    const templates = data.filter(item => item.id && !item.name.includes('.'));
+
+    if (templates.length === 0) {
+      listEl.innerHTML = `
+        <div class="template-picker-empty">
+          No templates available yet. Create one by saving an estimate as a template.
+        </div>
+      `;
+      return;
+    }
+
+    // Render templates
+    listEl.innerHTML = templates.map(tpl => {
+      // Extract readable name from template ID (remove timestamp)
+      const displayName = tpl.name
+        .replace(/-\d{13}$/, '') // Remove timestamp
+        .replace(/-/g, ' ')     // Replace dashes with spaces
+        .replace(/\b\w/g, l => l.toUpperCase()); // Title case
+
+      return `
+        <div class="template-picker-item" data-template-id="${tpl.name}">
+          <div class="template-picker-item-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+          </div>
+          <div class="template-picker-item-content">
+            <div class="template-picker-item-name">${displayName}</div>
+            <div class="template-picker-item-meta">Template</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Add click handlers to template items
+    listEl.querySelectorAll('.template-picker-item[data-template-id]').forEach(item => {
+      item.addEventListener('click', async () => {
+        const templateId = item.dataset.templateId;
+        closeTemplatePickerModal();
+        await loadTemplate(templateId);
+      });
+    });
   }
 
   // ================================

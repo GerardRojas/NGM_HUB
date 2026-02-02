@@ -19,7 +19,8 @@
   const PERSON_COLS = ["owner", "collaborator", "manager"];
 
   // Columnas de fecha (date picker)
-  const DATE_COLS = ["due", "start", "deadline", "time_start", "time_finish"];
+  // Note: time_start and time_finish are hidden (backend only calculations)
+  const DATE_COLS = ["due", "start", "deadline"];
 
   // Columnas con dropdown de catálogos
   const CATALOG_COLS = ["project", "company", "department", "type", "priority"];
@@ -133,7 +134,18 @@
   }
 
   function getEditorValue(element, type) {
-    if (type === "person-dropdown" || type === "catalog-dropdown") {
+    if (type === "person-dropdown") {
+      // People picker uses _getValue function
+      if (typeof element._getValue === "function") {
+        return element._getValue();
+      }
+      return element.value || null;
+    }
+    if (type === "catalog-dropdown") {
+      // Catalog picker uses _getValue function
+      if (typeof element._getValue === "function") {
+        return element._getValue();
+      }
       return element.value || null;
     }
     if (type === "number") {
@@ -218,8 +230,14 @@
     const div = td.querySelector("div") || td;
 
     if (PERSON_COLS.includes(colKey)) {
-      // Renderizar persona con avatar
-      div.innerHTML = renderPersonHtml(value || "-");
+      // Check if multi-person column (collaborator, manager)
+      if (MULTI_PERSON_COLS.includes(colKey) && value && value.includes(",")) {
+        // Render multiple people
+        div.innerHTML = renderMultiplePeopleHtml(value);
+      } else {
+        // Render single person
+        div.innerHTML = renderPersonHtml(value || "-");
+      }
     } else if (NUMBER_COLS.includes(colKey)) {
       // Formatear como horas
       if (value !== null && value !== undefined && value !== "" && value !== "-") {
@@ -245,6 +263,7 @@
 
   // ================================
   // RENDERIZAR PERSONA (AVATAR + NOMBRE)
+  // Ring style: transparent background, colored border (like Team Management)
   // ================================
   function renderPersonHtml(name) {
     const raw = String(name || "").trim();
@@ -252,15 +271,54 @@
     const initial = (raw || "-")[0]?.toUpperCase() || "?";
 
     const hue = hashStringToHue(raw.toLowerCase());
-    const bg = raw && raw !== "-" ? `hsl(${hue} 55% 35%)` : "#334155";
-    const ring = raw && raw !== "-" ? `hsl(${hue} 65% 55%)` : "rgba(148, 163, 184, 0.6)";
+    const color = raw && raw !== "-" ? `hsl(${hue} 60% 55%)` : "#666";
 
     return `
       <span class="pm-person" title="${safeName}">
-        <span class="pm-avatar" style="--av-bg:${bg}; --av-ring:${ring};">${escapeHtml(initial)}</span>
+        <span class="pm-avatar" style="color: ${color}; border-color: ${color};">${escapeHtml(initial)}</span>
         <span class="pm-person-name">${safeName}</span>
       </span>
     `;
+  }
+
+  // Render multiple people as stacked avatars (inline version)
+  function renderMultiplePeopleHtml(namesStr) {
+    if (!namesStr || namesStr === "-") {
+      return `<span class="pm-person-empty">-</span>`;
+    }
+
+    // Parse comma-separated names
+    const names = namesStr.split(",").map(n => n.trim()).filter(n => n);
+
+    if (names.length === 0) {
+      return `<span class="pm-person-empty">-</span>`;
+    }
+
+    const maxDisplay = 3;
+    const displayNames = names.slice(0, maxDisplay);
+    const overflow = names.length - maxDisplay;
+
+    let html = `<span class="pm-people-stack" title="${escapeHtml(namesStr)}">`;
+
+    displayNames.forEach((name, index) => {
+      const initial = (name || "?")[0]?.toUpperCase() || "?";
+      const hue = hashStringToHue(name.toLowerCase());
+      const color = `hsl(${hue} 60% 55%)`;
+      const zIndex = displayNames.length - index;
+
+      html += `
+        <span class="pm-avatar pm-avatar-stacked" style="color: ${color}; border-color: ${color}; z-index: ${zIndex};" title="${escapeHtml(name)}">
+          ${escapeHtml(initial)}
+        </span>
+      `;
+    });
+
+    if (overflow > 0) {
+      html += `<span class="pm-avatar pm-avatar-overflow" title="${overflow} more">+${overflow}</span>`;
+    }
+
+    html += `</span>`;
+    return html;
   }
 
   function escapeHtml(s) {
@@ -378,8 +436,108 @@
     return element;
   }
 
-  // Dropdown de personas
-  async function createPersonDropdown(td, colKey, currentValue) {
+  // Columns that support multiple people selection
+  const MULTI_PERSON_COLS = ["collaborator", "manager"];
+
+  // Dropdown de personas - Monday.com style using PeoplePicker
+  async function createPersonDropdown(td, colKey, currentValue, taskId) {
+    // Crear contenedor para el PeoplePicker
+    const container = document.createElement("div");
+    container.className = "pm-inline-people-picker";
+
+    // Check if this column supports multiple people
+    const isMultiple = MULTI_PERSON_COLS.includes(colKey);
+
+    // Variable para almacenar el valor seleccionado
+    let selectedValue = null;
+    let selectedUsers = [];
+
+    // Verificar que PeoplePicker esté disponible
+    if (typeof window.PeoplePicker !== "function") {
+      console.warn("[PIPELINE] PeoplePicker not loaded, using fallback");
+      return createPersonDropdownFallback(td, colKey, currentValue);
+    }
+
+    // Crear instancia del PeoplePicker
+    const picker = new window.PeoplePicker(container, {
+      multiple: isMultiple,
+      placeholder: isMultiple ? "Add people..." : "Select person...",
+      onChange: (users) => {
+        selectedUsers = users || [];
+
+        if (isMultiple) {
+          // For multi-select: send array of IDs using plural field name
+          const userIds = selectedUsers.map(u => u.id);
+          const userNames = selectedUsers.map(u => u.name).join(", ");
+          selectedValue = userNames || null;
+
+          // Use plural field name for backend (collaborators, managers)
+          const pluralField = colKey + "s"; // collaborator -> collaborators, manager -> managers
+
+          if (activeEditor && activeEditor.td === td) {
+            saveFieldToBackend(taskId, pluralField, userIds, td);
+            activeEditor.originalValue = userNames;
+            updateCellDisplay(td, colKey, userNames);
+            // Don't close immediately for multi-select - user clicks away to close
+          }
+        } else {
+          // For single select: existing behavior
+          const user = users[0] || null;
+          const userId = user ? user.id : null;
+          const userName = user ? user.name : null;
+          selectedValue = userName;
+
+          if (activeEditor && activeEditor.td === td) {
+            saveFieldToBackend(taskId, colKey, userId, td);
+            activeEditor.originalValue = userName;
+            updateCellDisplay(td, colKey, userName);
+            closeActiveEditor(false);
+          }
+        }
+      }
+    });
+
+    // Pre-seleccionar usuarios actuales
+    if (currentValue && currentValue !== "-") {
+      setTimeout(async () => {
+        const users = await window.PM_PeoplePicker?.fetchUsers?.() || [];
+
+        if (isMultiple && currentValue.includes(",")) {
+          // Parse comma-separated names for multi-select
+          const names = currentValue.split(",").map(n => n.trim());
+          const matchedUsers = users.filter(u => names.includes(u.name));
+          if (matchedUsers.length > 0 && picker.setValue) {
+            picker.setValue(matchedUsers);
+          }
+        } else {
+          // Single user
+          const currentUser = users.find(u => u.name === currentValue);
+          if (currentUser && picker.setValue) {
+            picker.setValue([currentUser]);
+          }
+        }
+
+        if (picker.open) {
+          picker.open();
+        }
+      }, 50);
+    } else {
+      setTimeout(() => {
+        if (picker.open) {
+          picker.open();
+        }
+      }, 50);
+    }
+
+    // Guardar referencia al picker para poder cerrarlo
+    container._picker = picker;
+    container._getValue = () => selectedValue;
+
+    return container;
+  }
+
+  // Fallback si PeoplePicker no está disponible
+  async function createPersonDropdownFallback(td, colKey, currentValue) {
     const users = await loadUsers();
 
     const element = document.createElement("select");
@@ -423,8 +581,75 @@
     return element;
   }
 
-  // Dropdown de catálogos (project, company, department, type, priority)
-  function createCatalogDropdown(td, colKey, currentValue) {
+  // Dropdown de catálogos - Monday.com style using CatalogPicker
+  async function createCatalogDropdown(td, colKey, currentValue, taskId) {
+    // Crear contenedor para el CatalogPicker
+    const container = document.createElement("div");
+    container.className = "pm-inline-catalog-picker";
+
+    // Variable para almacenar el valor seleccionado
+    let selectedValue = null;
+
+    // Verificar que CatalogPicker esté disponible
+    if (typeof window.CatalogPicker !== "function") {
+      console.warn("[PIPELINE] CatalogPicker not loaded, using fallback");
+      return createCatalogDropdownFallback(td, colKey, currentValue);
+    }
+
+    // Crear instancia del CatalogPicker
+    const picker = new window.CatalogPicker(container, {
+      catalogType: colKey,
+      placeholder: `Select ${colKey}...`,
+      onChange: (item) => {
+        // Store both ID (for backend) and name (for display)
+        const valueId = item ? item.id : null;
+        const valueName = item ? item.name : null;
+        selectedValue = valueName; // For display
+
+        // Guardar inmediatamente al seleccionar (send ID to backend)
+        if (activeEditor && activeEditor.td === td) {
+          saveFieldToBackend(taskId, colKey, valueId, td);
+          // Update originalValue with the name for display restoration
+          activeEditor.originalValue = valueName;
+          // Update cell display with the name
+          updateCellDisplay(td, colKey, valueName);
+          closeActiveEditor(false); // false porque ya guardamos
+        }
+      }
+    });
+
+    // Pre-seleccionar el valor actual si existe
+    if (currentValue && currentValue !== "-") {
+      setTimeout(async () => {
+        // Esperar a que el picker cargue los items
+        const items = await window.PM_CatalogPicker?.fetchCatalog?.(colKey) || [];
+        const currentItem = items.find(i => i.name === currentValue);
+        if (currentItem && picker.setValue) {
+          picker.setValue(currentItem);
+        }
+        // Abrir el dropdown automáticamente
+        if (picker.open) {
+          picker.open();
+        }
+      }, 50);
+    } else {
+      // Abrir el dropdown automáticamente
+      setTimeout(() => {
+        if (picker.open) {
+          picker.open();
+        }
+      }, 50);
+    }
+
+    // Guardar referencia al picker para poder cerrarlo
+    container._picker = picker;
+    container._getValue = () => selectedValue;
+
+    return container;
+  }
+
+  // Fallback si CatalogPicker no está disponible
+  function createCatalogDropdownFallback(td, colKey, currentValue) {
     const element = document.createElement("select");
     element.className = "pm-inline-editor pm-inline-editor--select";
 
@@ -541,10 +766,10 @@
 
     // Crear editor según tipo de columna
     if (PERSON_COLS.includes(colKey)) {
-      editor = await createPersonDropdown(td, colKey, currentValue);
+      editor = await createPersonDropdown(td, colKey, currentValue, taskId);
       editorType = "person-dropdown";
     } else if (CATALOG_COLS.includes(colKey)) {
-      editor = createCatalogDropdown(td, colKey, currentValue);
+      editor = await createCatalogDropdown(td, colKey, currentValue, taskId);
       editorType = "catalog-dropdown";
     } else if (NUMBER_COLS.includes(colKey)) {
       editor = createNumberEditor(td, colKey, currentValue);
@@ -581,10 +806,12 @@
       td.appendChild(editor);
     }
 
-    // Focus
-    editor.focus();
-    if (editor.select && editorType === "text") {
-      editor.select();
+    // Focus (only for input/select/textarea, not for picker containers)
+    if (editorType !== "person-dropdown" && editorType !== "catalog-dropdown" && editor.focus) {
+      editor.focus();
+      if (editor.select && editorType === "text") {
+        editor.select();
+      }
     }
 
     // Marcar celda como editando
@@ -598,8 +825,14 @@
     const td = e.target.closest("td[data-col]");
     if (!td) return;
 
-    // No activar si el click fue en el editor mismo
-    if (e.target.closest(".pm-inline-editor")) return;
+    // No activar si el click fue en el editor mismo o en los pickers
+    if (e.target.closest(".pm-inline-editor") ||
+        e.target.closest(".pm-inline-people-picker") ||
+        e.target.closest(".pm-people-dropdown") ||
+        e.target.closest(".pm-people-picker") ||
+        e.target.closest(".pm-inline-catalog-picker") ||
+        e.target.closest(".pm-catalog-dropdown") ||
+        e.target.closest(".pm-catalog-picker")) return;
 
     const tr = td.closest("tr[data-task-id], tr.pm-row");
     const taskId = tr?.dataset?.taskId || null;
@@ -607,12 +840,33 @@
 
     if (!taskId || !colKey) return;
 
+    // Special handling for links column - open modal
+    if (colKey === "links") {
+      // Don't open modal if clicking on a link
+      if (e.target.closest("a")) return;
+
+      // Get current link values from row dataset
+      const docsLink = tr?.dataset?.docsLink || '';
+      const resultLink = tr?.dataset?.resultLink || '';
+
+      // Open links modal
+      if (window.PM_LinksModal?.open) {
+        window.PM_LinksModal.open(taskId, docsLink, resultLink);
+      }
+      return;
+    }
+
     handleCellClick(td, tr, colKey, taskId);
   });
 
   // Cerrar editor al hacer click fuera
   document.addEventListener("click", (e) => {
     if (!activeEditor) return;
+    // Don't close if clicking on picker dropdowns (they live outside wrapper)
+    if (e.target.closest(".pm-people-dropdown") ||
+        e.target.closest(".pm-people-picker") ||
+        e.target.closest(".pm-catalog-dropdown") ||
+        e.target.closest(".pm-catalog-picker")) return;
     if (!wrapper.contains(e.target)) {
       closeActiveEditor(true);
     }

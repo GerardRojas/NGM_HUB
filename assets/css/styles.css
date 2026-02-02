@@ -208,6 +208,27 @@ button {
     color: #3ecf8e;
 }
 
+/* Category group headers */
+.nav-group-header {
+    font-size: 10px;
+    font-weight: 600;
+    color: #555555;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 8px 12px 4px;
+    margin-top: 4px;
+}
+
+.nav-group-header:first-child {
+    margin-top: 0;
+}
+
+.nav-group-separator {
+    height: 1px;
+    background: #1f1f1f;
+    margin: 8px 8px;
+}
+
 /* Footer de la sidebar (versión, entorno, etc.) */
 
 .sidebar-footer {

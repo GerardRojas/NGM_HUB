@@ -422,6 +422,58 @@
     </div>
 
     <!-- =========================================================
+         MODAL: TEMPLATE PICKER (New Estimate)
+    ========================================================== -->
+    <div id="template-picker-modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Create New Estimate</div>
+                    <button type="button" class="modal-btn header-action" id="template-picker-close">
+                        ×
+                    </button>
+                </div>
+
+                <div class="template-picker-body">
+                    <!-- Option: Blank Estimate -->
+                    <div class="template-option template-option--blank" id="template-option-blank">
+                        <div class="template-option-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="12" y1="8" x2="12" y2="16"></line>
+                                <line x1="8" y1="12" x2="16" y2="12"></line>
+                            </svg>
+                        </div>
+                        <div class="template-option-content">
+                            <div class="template-option-title">Blank Estimate</div>
+                            <div class="template-option-desc">Start from scratch with an empty estimate</div>
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="template-picker-divider">
+                        <span>or choose a template</span>
+                    </div>
+
+                    <!-- Templates List -->
+                    <div class="template-picker-list" id="template-picker-list">
+                        <div class="template-picker-loading">
+                            <span class="spinner"></span>
+                            Loading templates...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="modal-btn cancel" id="template-picker-cancel">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================
          SCRIPTS
     ========================================================== -->
     <script src="assets/js/pills.js" defer></script>

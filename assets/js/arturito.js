@@ -15,6 +15,8 @@
   const API_BASE = window.API_BASE || "http://127.0.0.1:8000";
   const STORAGE_KEY = "arturito_conversation";
   const SESSION_ID = `web_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const PAGE_LOAD_START = Date.now();
+  const MIN_LOADING_TIME = 800;
 
   // ─────────────────────────────────────────────────────────────────────────
   // MODULE KNOWLEDGE BASE
@@ -723,13 +725,16 @@
     updateContextStats();
     renderMessages();
 
-    // Remove loading state
-    document.body.classList.remove("page-loading");
-    document.body.classList.add("auth-ready");
-    const overlay = document.getElementById("pageLoadingOverlay");
-    if (overlay) overlay.style.display = "none";
-
-    console.log("[Arturito] Ready!");
+    // Remove loading state (with minimum display time)
+    const elapsed = Date.now() - PAGE_LOAD_START;
+    const remaining = Math.max(0, MIN_LOADING_TIME - elapsed);
+    setTimeout(() => {
+      document.body.classList.remove("page-loading");
+      document.body.classList.add("auth-ready");
+      const overlay = document.getElementById("pageLoadingOverlay");
+      if (overlay) overlay.style.display = "none";
+      console.log("[Arturito] Ready!");
+    }, remaining);
   }
 
   // ─────────────────────────────────────────────────────────────────────────

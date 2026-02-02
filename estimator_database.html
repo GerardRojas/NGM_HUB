@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1a1a1a" />
+    <title>NGM HUB — Estimator Database</title>
+    <link rel="icon" type="image/png" href="assets/img/greenblack_icon.png" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="assets/img/greenblack_icon.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/expenses_styles.css" />
+    <link rel="stylesheet" href="assets/css/toast.css" />
+    <link rel="stylesheet" href="assets/css/arturito_widget.css" />
+
+    <style>
+        /* Tab Buttons */
+        .database-tabs {
+            display: flex;
+            gap: 4px;
+            background: #18181b;
+            padding: 4px;
+            border-radius: 8px;
+        }
+        .tab-btn {
+            padding: 8px 20px;
+            background: transparent;
+            border: none;
+            color: #9ca3af;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .tab-btn:hover {
+            color: #e5e7eb;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .tab-btn-active {
+            background: #27272a;
+            color: #fff;
+        }
+
+        /* Toolbar adjustments */
+        .btn-toolbar-primary {
+            background: #3ecf8e;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .btn-toolbar-primary:hover {
+            background: #34b87a;
+        }
+        .btn-toolbar-ghost {
+            background: transparent;
+            color: #9ca3af;
+            border: 1px solid transparent;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .btn-toolbar-ghost:hover {
+            color: #e5e7eb;
+            border-color: #3f3f46;
+        }
+
+        /* Pagination */
+        .expenses-pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-top: 1px solid #27272f;
+            background: #18181b;
+            border-radius: 0 0 8px 8px;
+        }
+        .pagination-info {
+            font-size: 13px;
+            color: #9ca3af;
+        }
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .pagination-pages {
+            font-size: 13px;
+            color: #e5e7eb;
+        }
+        .btn-pagination {
+            padding: 6px 12px;
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            color: #e5e7eb;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-pagination:hover:not(:disabled) {
+            background: #3f3f46;
+        }
+        .btn-pagination:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Form fields */
+        .modal-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .form-field-full {
+            grid-column: 1 / -1;
+        }
+        .form-label {
+            display: block;
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 6px;
+        }
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            background: #18181b;
+            border: 1px solid #3f3f46;
+            border-radius: 6px;
+            color: #e5e7eb;
+            font-size: 13px;
+        }
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #3ecf8e;
+        }
+        .form-textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        /* Concept materials list */
+        .concept-materials-list {
+            background: #18181b;
+            border: 1px solid #27272f;
+            border-radius: 6px;
+            padding: 12px;
+            min-height: 80px;
+            margin-bottom: 8px;
+        }
+        .concept-materials-empty {
+            color: #6b7280;
+            font-size: 13px;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+        .btn-add-material {
+            background: transparent;
+            border: 1px dashed #3f3f46;
+            color: #9ca3af;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .btn-add-material:hover {
+            border-color: #3ecf8e;
+            color: #3ecf8e;
+        }
+
+        /* Action buttons in table */
+        .btn-action {
+            padding: 4px 8px;
+            background: transparent;
+            border: 1px solid #3f3f46;
+            color: #9ca3af;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-right: 4px;
+        }
+        .btn-action:hover {
+            background: #27272a;
+            color: #e5e7eb;
+        }
+        .btn-action-danger:hover {
+            border-color: #ef4444;
+            color: #ef4444;
+        }
+
+        /* Concept Builder Styles */
+        .modal-xl {
+            max-width: 1100px;
+            width: 95%;
+        }
+        .builder-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            background: #18181b;
+            border: 1px solid #27272f;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .builder-toolbar-left {
+            display: flex;
+            gap: 8px;
+        }
+        .builder-toolbar-right {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .btn-builder {
+            padding: 6px 12px;
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            color: #e5e7eb;
+            font-size: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.15s ease;
+        }
+        .btn-builder:hover {
+            background: #3f3f46;
+            border-color: #52525b;
+        }
+        .btn-builder-primary {
+            background: #3ecf8e;
+            border-color: #3ecf8e;
+            color: #000;
+        }
+        .btn-builder-primary:hover {
+            background: #34b87a;
+        }
+        .type-filter {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid #3f3f46;
+            color: #9ca3af;
+            font-size: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .type-filter:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .type-filter.active {
+            background: rgba(62, 207, 142, 0.15);
+            border-color: #3ecf8e;
+            color: #3ecf8e;
+        }
+        .builder-table-container {
+            background: #18181b;
+            border: 1px solid #27272f;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .builder-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .builder-table thead {
+            position: sticky;
+            top: 0;
+            background: #1f1f23;
+            z-index: 1;
+        }
+        .builder-table th {
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 500;
+            color: #9ca3af;
+            border-bottom: 1px solid #27272f;
+        }
+        .builder-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #27272f;
+            color: #e5e7eb;
+        }
+        .builder-table tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+        .builder-table .type-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .type-material { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .type-labor { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .type-inline { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+        .builder-input {
+            padding: 4px 8px;
+            background: #27272a;
+            border: 1px solid #3f3f46;
+            border-radius: 4px;
+            color: #e5e7eb;
+            font-size: 12px;
+            width: 80px;
+        }
+        .builder-input:focus {
+            outline: none;
+            border-color: #3ecf8e;
+        }
+        .builder-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            padding: 16px;
+            background: #18181b;
+            border: 1px solid #27272f;
+            border-radius: 8px;
+        }
+        .summary-item {
+            text-align: center;
+        }
+        .summary-label {
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+        .summary-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+        .summary-value.total {
+            color: #3ecf8e;
+            font-size: 20px;
+        }
+        .waste-field {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .waste-field input {
+            width: 60px;
+        }
+        .builder-empty {
+            padding: 40px;
+            text-align: center;
+            color: #6b7280;
+            font-style: italic;
+        }
+        .builder-item-img {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            object-fit: cover;
+            background: #27272a;
+        }
+        .builder-item-img-placeholder {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            background: #27272a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            font-size: 10px;
+        }
+
+        /* Material Picker Modal */
+        .picker-layout {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 16px;
+            min-height: 400px;
+        }
+        .picker-search {
+            margin-bottom: 12px;
+        }
+        .picker-table-container {
+            background: #18181b;
+            border: 1px solid #27272f;
+            border-radius: 8px;
+            overflow: hidden;
+            max-height: 380px;
+            overflow-y: auto;
+        }
+        .picker-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .picker-table thead {
+            position: sticky;
+            top: 0;
+            background: #1f1f23;
+        }
+        .picker-table th {
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 500;
+            color: #9ca3af;
+            border-bottom: 1px solid #27272f;
+        }
+        .picker-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #27272f;
+            color: #e5e7eb;
+            cursor: pointer;
+        }
+        .picker-table tr:hover {
+            background: rgba(62, 207, 142, 0.1);
+        }
+        .picker-table tr.selected {
+            background: rgba(62, 207, 142, 0.2);
+        }
+        .picker-preview {
+            background: #18181b;
+            border: 1px solid #27272f;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .picker-preview-image {
+            width: 100%;
+            height: 160px;
+            background: #27272a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .picker-preview-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .picker-preview-info {
+            font-size: 13px;
+        }
+        .picker-preview-info h4 {
+            margin: 0 0 8px 0;
+            color: #e5e7eb;
+            font-size: 14px;
+        }
+        .picker-preview-info p {
+            margin: 4px 0;
+            color: #9ca3af;
+        }
+        .picker-preview-info .price {
+            color: #3ecf8e;
+            font-weight: 600;
+            font-size: 16px;
+        }
+    </style>
+
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/auth-guard.js"></script>
+    <script src="assets/js/toast.js" defer></script>
+    <script src="assets/js/permissions.js" defer></script>
+    <script src="assets/js/pills.js" defer></script>
+    <script src="assets/js/sidebar.js" defer></script>
+    <script src="assets/js/estimator_database.js" defer></script>
+    <script src="assets/js/arturito_widget.js" defer></script>
+</head>
+<body class="page-estimator-database page-loading">
+    <!-- Page Loading Overlay -->
+    <div class="page-loading-overlay" id="pageLoadingOverlay">
+        <img src="assets/img/white_icon.png" class="loading-logo loading-logo-xl" alt="Loading...">
+        <span class="loading-text">Loading...</span>
+    </div>
+
+    <div class="app-layout">
+        <!-- Sidebar (content generated by sidebar.js) -->
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <div class="main-area">
+            <header class="ngm-topbar">
+                <div class="ngm-bar-left">
+                    <div class="ngm-brand">
+                        <div class="ngm-brand-icon-small"><img src="assets/img/white_icon.png" alt="NGM"></div>
+                        <div class="ngm-brand-text">
+                            <span class="ngm-brand-org">Next Generation Management</span>
+                            <span class="ngm-brand-context">NGM Hub · Estimator Database</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ngm-topbar-right">
+                    <div class="ngm-meta">
+                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
+                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · —</span>
+                    </div>
+                    <form class="ngm-search" role="search" onsubmit="return false;">
+                        <span class="ngm-global-search-icon">S</span>
+                        <input type="search" id="globalSearch" class="ngm-search-input" placeholder="Search materials, concepts..." />
+                    </form>
+                    <span id="user-pill" class="user-pill">User · —</span>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="workspace">
+                    <section class="data-section">
+                        <!-- Tabs for Materials / Concepts -->
+                        <div class="expenses-toolbar">
+                            <div class="toolbar-left">
+                                <div class="database-tabs">
+                                    <button type="button" class="tab-btn tab-btn-active" id="tabMaterials" data-tab="materials">
+                                        Materials
+                                    </button>
+                                    <button type="button" class="tab-btn" id="tabConcepts" data-tab="concepts">
+                                        Concepts
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="toolbar-right">
+                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnImport">
+                                    Import CSV
+                                </button>
+                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnExport">
+                                    Export
+                                </button>
+                                <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnAddNew">
+                                    + Add New
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Filters Row -->
+                        <div class="expenses-toolbar" style="border-top: 1px solid #27272f; padding-top: 12px;">
+                            <div class="toolbar-left" style="gap: 16px;">
+                                <div class="toolbar-field">
+                                    <label class="toolbar-label" for="filterCategory">Category</label>
+                                    <select id="filterCategory" class="ngm-select">
+                                        <option value="">All Categories</option>
+                                    </select>
+                                </div>
+                                <div class="toolbar-field">
+                                    <label class="toolbar-label" for="filterUnit">Unit</label>
+                                    <select id="filterUnit" class="ngm-select">
+                                        <option value="">All Units</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="toolbar-right">
+                                <button type="button" class="btn-toolbar btn-toolbar-ghost" id="btnClearFilters">
+                                    Clear Filters
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Table Container -->
+                        <div class="expenses-table-container">
+                            <!-- Loading State -->
+                            <div id="databaseLoadingState" class="expenses-loading-state">
+                                <img src="assets/img/white_icon.png" class="loading-logo loading-logo-lg" alt="Loading">
+                                <span class="loading-text">Loading database...</span>
+                            </div>
+
+                            <!-- Empty State -->
+                            <div id="databaseEmptyState" class="expenses-loading-state" style="display: none;">
+                                <img src="assets/img/white_icon.png" class="loading-logo loading-logo-lg" style="opacity: 0.3;" alt="Empty">
+                                <span class="loading-text" id="emptyStateMessage">No materials found</span>
+                                <button type="button" id="btnAddFromEmpty" class="btn-toolbar btn-toolbar-primary" style="margin-top: 16px;">
+                                    + Add First Material
+                                </button>
+                            </div>
+
+                            <!-- Materials Table -->
+                            <div id="materialsContent" style="display: none;">
+                                <table class="expenses-table" id="materialsTable">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 60px;">Image</th>
+                                            <th style="width: 100px;">Code</th>
+                                            <th>Name</th>
+                                            <th>Category</th>
+                                            <th style="width: 80px;">Unit</th>
+                                            <th style="width: 120px;">Unit Cost</th>
+                                            <th style="width: 80px;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="materialsTableBody">
+                                        <!-- Rows rendered by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Concepts Table -->
+                            <div id="conceptsContent" style="display: none;">
+                                <table class="expenses-table" id="conceptsTable">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 100px;">Code</th>
+                                            <th>Name</th>
+                                            <th>Category</th>
+                                            <th>Subcategory</th>
+                                            <th style="width: 80px;">Unit</th>
+                                            <th style="width: 120px;">Base Cost</th>
+                                            <th style="width: 100px;">Materials</th>
+                                            <th style="width: 80px;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="conceptsTableBody">
+                                        <!-- Rows rendered by JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="expenses-pagination" id="paginationContainer" style="display: none;">
+                            <div class="pagination-info">
+                                <span id="paginationInfo">Showing 1-25 of 100</span>
+                            </div>
+                            <div class="pagination-controls">
+                                <button type="button" class="btn-pagination" id="btnPrevPage" disabled>Prev</button>
+                                <span id="paginationPages" class="pagination-pages">1 / 4</span>
+                                <button type="button" class="btn-pagination" id="btnNextPage">Next</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add/Edit Material Modal -->
+    <div id="materialModal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="materialModalTitle">Add Material</div>
+                <button type="button" class="modal-close-btn" id="btnCloseMaterialModal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <form id="materialForm" class="modal-form-grid">
+                    <div class="form-field">
+                        <label class="form-label" for="materialCode">Code *</label>
+                        <input type="text" id="materialCode" class="form-input" placeholder="e.g., MAT-001" required />
+                    </div>
+
+                    <div class="form-field">
+                        <label class="form-label" for="materialName">Name *</label>
+                        <input type="text" id="materialName" class="form-input" placeholder="Material name" required />
+                    </div>
+
+                    <div class="form-field">
+                        <label class="form-label" for="materialCategory">Category *</label>
+                        <select id="materialCategory" class="form-select" required>
+                            <option value="">Select category...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label class="form-label" for="materialUnit">Unit *</label>
+                        <select id="materialUnit" class="form-select" required>
+                            <option value="">Select unit...</option>
+                            <option value="EA">EA - Each</option>
+                            <option value="LF">LF - Linear Feet</option>
+                            <option value="SF">SF - Square Feet</option>
+                            <option value="CF">CF - Cubic Feet</option>
+                            <option value="CY">CY - Cubic Yards</option>
+                            <option value="GAL">GAL - Gallons</option>
+                            <option value="LB">LB - Pounds</option>
+                            <option value="TON">TON - Tons</option>
+                            <option value="BAG">BAG - Bags</option>
+                            <option value="BOX">BOX - Boxes</option>
+                            <option value="ROLL">ROLL - Rolls</option>
+                            <option value="SHEET">SHEET - Sheets</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label class="form-label" for="materialUnitCost">Unit Cost *</label>
+                        <input type="number" id="materialUnitCost" class="form-input" placeholder="0.00" step="0.01" min="0" required />
+                    </div>
+
+                    <div class="form-field">
+                        <label class="form-label" for="materialSupplier">Supplier</label>
+                        <input type="text" id="materialSupplier" class="form-input" placeholder="Supplier name" />
+                    </div>
+
+                    <div class="form-field form-field-full">
+                        <label class="form-label" for="materialImage">Image URL</label>
+                        <div style="display: flex; gap: 8px; align-items: flex-start;">
+                            <input type="url" id="materialImage" class="form-input" placeholder="https://..." style="flex: 1;" />
+                            <div id="materialImagePreview" style="width: 48px; height: 48px; background: #27272a; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                                <span style="color: #6b7280; font-size: 10px;">No img</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-field form-field-full">
+                        <label class="form-label" for="materialDescription">Description</label>
+                        <textarea id="materialDescription" class="form-textarea" rows="3" placeholder="Additional details..."></textarea>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCancelMaterial">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="btnSaveMaterial">Save Material</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Concept Builder Modal -->
+    <div id="conceptModal" class="modal-backdrop hidden">
+        <div class="modal modal-xl">
+            <div class="modal-header">
+                <div class="modal-title" id="conceptModalTitle">Concept Builder</div>
+                <button type="button" class="modal-close-btn" id="btnCloseConceptModal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Basic Info Row -->
+                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+                    <!-- Concept Image -->
+                    <div style="flex-shrink: 0;">
+                        <label class="form-label">Concept Image</label>
+                        <div id="conceptImagePreview" style="width: 100px; height: 100px; background: #27272a; border: 1px solid #3f3f46; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;" onclick="document.getElementById('conceptImageInput').click()">
+                            <span style="color: #6b7280; font-size: 11px; text-align: center;">Click to<br>add image</span>
+                        </div>
+                        <input type="text" id="conceptImage" class="form-input" placeholder="Image URL..." style="margin-top: 8px; width: 100px; font-size: 11px;" />
+                    </div>
+                    <!-- Form Fields -->
+                    <div class="modal-form-grid" style="flex: 1;">
+                        <div class="form-field">
+                            <label class="form-label" for="conceptCode">Code *</label>
+                            <input type="text" id="conceptCode" class="form-input" placeholder="e.g., CON-001" required />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="conceptName">Name *</label>
+                            <input type="text" id="conceptName" class="form-input" placeholder="Concept name" required />
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="conceptCategory">Category</label>
+                            <select id="conceptCategory" class="form-select">
+                                <option value="">Select category...</option>
+                            </select>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-label" for="conceptUnit">Unit *</label>
+                            <select id="conceptUnit" class="form-select" required>
+                                <option value="">Select unit...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-field" style="margin-bottom: 16px;">
+                    <label class="form-label" for="conceptDescription">Description</label>
+                    <textarea id="conceptDescription" class="form-textarea" rows="2" placeholder="Concept description..."></textarea>
+                </div>
+
+                <!-- Builder Toolbar -->
+                <div class="builder-toolbar">
+                    <div class="builder-toolbar-left">
+                        <button type="button" class="btn-builder btn-builder-primary" id="btnAddFromDB">
+                            + Material DB
+                        </button>
+                        <button type="button" class="btn-builder" id="btnAddLabor">
+                            + Labor
+                        </button>
+                        <button type="button" class="btn-builder" id="btnAddInline">
+                            + Inline Item
+                        </button>
+                    </div>
+                    <div class="builder-toolbar-right">
+                        <button type="button" class="type-filter active" data-type="material" id="filterMaterial">
+                            Mat $0.00
+                        </button>
+                        <button type="button" class="type-filter active" data-type="labor" id="filterLabor">
+                            Lab $0.00
+                        </button>
+                        <button type="button" class="type-filter active" data-type="inline" id="filterInline">
+                            Inline $0.00
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Items Table -->
+                <div class="builder-table-container" id="builderTableContainer">
+                    <table class="builder-table" id="builderTable">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">Img</th>
+                                <th style="width: 70px;">Type</th>
+                                <th>Description</th>
+                                <th style="width: 60px;">Unit</th>
+                                <th style="width: 70px;">Qty</th>
+                                <th style="width: 90px;">Unit Cost</th>
+                                <th style="width: 90px;">Total</th>
+                                <th style="width: 40px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="builderTableBody">
+                            <!-- Items rendered by JS -->
+                        </tbody>
+                    </table>
+                    <div class="builder-empty" id="builderEmpty">
+                        No items added yet. Click "+ Material DB", "+ Labor", or "+ Inline Item" to add items.
+                    </div>
+                </div>
+
+                <!-- Waste Percentage -->
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                    <div class="waste-field">
+                        <label class="form-label" style="margin: 0;">Waste %</label>
+                        <input type="number" id="conceptWastePercent" class="builder-input" value="0" min="0" max="100" step="0.5" />
+                        <span style="color: #6b7280; font-size: 12px;">% on materials</span>
+                    </div>
+                    <button type="button" class="btn-builder" id="btnClearAllItems" style="margin-left: auto;">
+                        Clear All
+                    </button>
+                </div>
+
+                <!-- Summary -->
+                <div class="builder-summary">
+                    <div class="summary-item">
+                        <div class="summary-label">Materials</div>
+                        <div class="summary-value" id="summaryMaterials">$0.00</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Labor</div>
+                        <div class="summary-value" id="summaryLabor">$0.00</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Inline Items</div>
+                        <div class="summary-value" id="summaryInline">$0.00</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Waste</div>
+                        <div class="summary-value" id="summaryWaste">$0.00</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">Total Cost</div>
+                        <div class="summary-value total" id="summaryTotal">$0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCancelConcept">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="btnSaveConcept">Save Concept</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Material Picker Modal -->
+    <div id="materialPickerModal" class="modal-backdrop hidden">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <div class="modal-title">Select Material from Database</div>
+                <button type="button" class="modal-close-btn" id="btnCloseMaterialPicker">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="picker-search">
+                    <input type="text" id="pickerSearch" class="form-input" placeholder="Search materials..." />
+                </div>
+
+                <div class="picker-layout">
+                    <div class="picker-table-container">
+                        <table class="picker-table" id="pickerTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 100px;">Code</th>
+                                    <th>Description</th>
+                                    <th style="width: 60px;">Unit</th>
+                                    <th style="width: 100px;">Unit Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pickerTableBody">
+                                <!-- Materials rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="picker-preview">
+                        <div class="picker-preview-image" id="pickerPreviewImage">
+                            <span style="color: #6b7280;">No selection</span>
+                        </div>
+                        <div class="picker-preview-info" id="pickerPreviewInfo">
+                            <h4>Select a material</h4>
+                            <p>Click on a material in the table to see details</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quantity Input -->
+                <div style="margin-top: 16px; display: flex; align-items: center; gap: 16px;">
+                    <label class="form-label" style="margin: 0;">Quantity:</label>
+                    <input type="number" id="pickerQuantity" class="form-input" value="1" min="0.001" step="0.001" style="width: 120px;" />
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCancelMaterialPicker">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="btnConfirmMaterialPicker">Add Material</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inline Item Modal -->
+    <div id="inlineItemModal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title" id="inlineItemModalTitle">Add Inline Item</div>
+                <button type="button" class="modal-close-btn" id="btnCloseInlineItem">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-field">
+                    <label class="form-label" for="inlineItemType">Type</label>
+                    <select id="inlineItemType" class="form-select">
+                        <option value="inline">Inline Item</option>
+                        <option value="labor">Labor</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label class="form-label" for="inlineItemDesc">Description *</label>
+                    <input type="text" id="inlineItemDesc" class="form-input" placeholder="Item description" required />
+                </div>
+                <div class="modal-form-grid">
+                    <div class="form-field">
+                        <label class="form-label" for="inlineItemUnit">Unit</label>
+                        <select id="inlineItemUnit" class="form-select">
+                            <option value="EA">EA</option>
+                            <option value="HR">HR</option>
+                            <option value="DAY">DAY</option>
+                            <option value="LF">LF</option>
+                            <option value="SF">SF</option>
+                            <option value="LS">LS</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label class="form-label" for="inlineItemQty">Quantity</label>
+                        <input type="number" id="inlineItemQty" class="form-input" value="1" min="0" step="0.001" />
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label class="form-label" for="inlineItemCost">Unit Cost</label>
+                    <input type="number" id="inlineItemCost" class="form-input" value="0" min="0" step="0.01" />
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCancelInlineItem">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="btnConfirmInlineItem">Add Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Push Notifications -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
+    <script src="assets/js/firebase-init.js"></script>
+</body>
+</html>

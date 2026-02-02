@@ -6124,6 +6124,13 @@
       const isAllProjects = selectedProjectId === 'all';
       els.btnAddExpense.disabled = !selectedProjectId || isAllProjects;
 
+      // Reset health check state when changing projects
+      duplicateClusters = [];
+      duplicateBillWarnings.clear();
+      missingInfoExpenses = [];
+      currentClusterIndex = 0;
+      currentMissingInfoIndex = 0;
+
       // Load expenses for selected project
       await loadExpensesByProject(selectedProjectId);
 
@@ -6132,6 +6139,9 @@
       els.btnEditExpenses.disabled = !selectedProjectId || expenses.length === 0 || isAllProjects;
       els.btnBillView.disabled = !selectedProjectId || expenses.length === 0;
       els.btnDetectDuplicates.disabled = !selectedProjectId || expenses.length < 2; // Need at least 2 expenses
+
+      // Update health check badge (resets to no issues for new project)
+      updateDuplicatesButtonBadge();
     });
 
     // Global search input - DEBOUNCED for performance

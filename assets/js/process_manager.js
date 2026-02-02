@@ -388,6 +388,292 @@
     };
 
     // ================================
+    // Process Flowcharts
+    // ================================
+    // Detailed flowcharts for specific processes
+    const PROCESS_FLOWCHARTS = {
+        expenses_track: {
+            id: 'expenses_track',
+            name: 'Expenses Track',
+            module: 'expenses_engine',
+            description: 'Complete flow from expense receipt to manager authorization',
+            links: {
+                before: { module: 'communications', process: 'task_notifications', label: 'Proceso Notificaciones' },
+                after: { module: 'bookkeeping', process: 'qbo_reconciliation', label: 'Reconciliacion QBO' }
+            },
+            nodes: [
+                // Entry link from Notifications
+                {
+                    id: 'link_notifications',
+                    type: 'link',
+                    size: 'medium',
+                    name: 'Proceso Notificaciones',
+                    description: 'Tarea automatica: Gastos pendientes de ingresar',
+                    link_to: { module: 'communications', process: 'task_notifications' },
+                    direction: 'incoming',
+                    position: { x: 100, y: 50 },
+                    connects_to: ['recepcion_gasto']
+                },
+                // Step 1: Reception
+                {
+                    id: 'recepcion_gasto',
+                    type: 'decision',
+                    size: 'large',
+                    name: 'Recepcion del Gasto',
+                    description: 'Entrada de gastos al sistema desde multiples fuentes',
+                    position: { x: 100, y: 180 },
+                    options: [
+                        { id: 'pdf_direct', label: 'PDF Directo', connects_to: 'seleccion_proyecto' },
+                        { id: 'imagen_foto', label: 'Imagen/Foto', connects_to: 'seleccion_proyecto' },
+                        { id: 'canal_receipts', label: 'Canal Receipts', connects_to: 'bandeja_pendientes' }
+                    ]
+                },
+                // Bandeja pendientes (sub-step)
+                {
+                    id: 'bandeja_pendientes',
+                    type: 'step',
+                    size: 'medium',
+                    name: 'Bandeja Pendientes',
+                    description: 'Receipts subidos al canal se almacenan aqui',
+                    is_implemented: true,
+                    position: { x: 420, y: 180 },
+                    connects_to: ['seleccion_proyecto']
+                },
+                // Step 2: Project Selection
+                {
+                    id: 'seleccion_proyecto',
+                    type: 'step',
+                    size: 'large',
+                    name: 'Seleccion de Proyecto',
+                    description: 'Seleccionar proyecto desde pagina Expenses Engine',
+                    is_implemented: true,
+                    position: { x: 100, y: 340 },
+                    connects_to: ['confirmacion_pm']
+                },
+                // Step 3: PM Confirmation
+                {
+                    id: 'confirmacion_pm',
+                    type: 'step',
+                    size: 'medium',
+                    name: 'Confirmacion PM',
+                    description: 'Project Manager confirma pertenencia y especifica Stage de Obra',
+                    is_implemented: true,
+                    position: { x: 100, y: 480 },
+                    subservices: [
+                        { id: 'confirm_project', label: 'Confirmar Proyecto', active: true },
+                        { id: 'set_stage', label: 'Especificar Stage', active: true }
+                    ],
+                    connects_to: ['modal_new_expense']
+                },
+                // Step 4: Modal New Expense (Decision)
+                {
+                    id: 'modal_new_expense',
+                    type: 'decision',
+                    size: 'large',
+                    name: 'Modal New Expense',
+                    description: 'Cargar gasto en el sistema',
+                    position: { x: 100, y: 620 },
+                    options: [
+                        { id: 'manual', label: 'Manual (inputs)', connects_to: 'quick_check' },
+                        { id: 'scan_receipt', label: 'Scan Receipt', connects_to: 'algo_iris' },
+                        { id: 'from_pending', label: 'Desde Bandeja', connects_to: 'quick_check' }
+                    ]
+                },
+                // Algorithm: IRIS - Receipt Scanner
+                {
+                    id: 'algo_iris',
+                    type: 'algorithm',
+                    size: 'large',
+                    name: 'Receipt Scanner',
+                    codename: 'IRIS',
+                    version: '2.1',
+                    description: 'Extraccion inteligente de datos de facturas usando vision AI',
+                    color: '#8b5cf6',
+                    glowColor: '#a78bfa',
+                    position: { x: 420, y: 580 },
+                    modes: [
+                        { id: 'fast', name: 'Fast', model: 'GPT-4o-mini', description: 'Rapido, facturas simples' },
+                        { id: 'heavy', name: 'Heavy', model: 'GPT-4o', description: 'Precision, facturas complejas' }
+                    ],
+                    tech: ['OpenAI Vision', 'OCR'],
+                    inputs: ['image', 'pdf'],
+                    outputs: ['vendor', 'amount', 'date', 'items'],
+                    connects_to: ['quick_check']
+                },
+                // Step 5: Quick Check
+                {
+                    id: 'quick_check',
+                    type: 'step',
+                    size: 'medium',
+                    name: 'Quick Check - Bookkeeper',
+                    description: 'Revision visual de datos, Price Check alerts, completar campos',
+                    is_implemented: true,
+                    position: { x: 100, y: 780 },
+                    subservices: [
+                        { id: 'visual_review', label: 'Revision Visual', active: true },
+                        { id: 'price_check', label: 'Price Check Alert', active: true },
+                        { id: 'complete_fields', label: 'Completar Campos', active: true }
+                    ],
+                    connects_to: ['categorizacion']
+                },
+                // Step 6: Categorization (Decision)
+                {
+                    id: 'categorizacion',
+                    type: 'decision',
+                    size: 'medium',
+                    name: 'Categorizacion',
+                    description: 'Asignar categoria contable al gasto',
+                    position: { x: 100, y: 920 },
+                    options: [
+                        { id: 'manual_cat', label: 'Manual', connects_to: 'hito_eval_bk' },
+                        { id: 'auto_cat', label: 'Auto-categorize', connects_to: 'algo_atlas' }
+                    ]
+                },
+                // Algorithm: ATLAS - Auto Categorizer
+                {
+                    id: 'algo_atlas',
+                    type: 'algorithm',
+                    size: 'large',
+                    name: 'Expense Categorizer',
+                    codename: 'ATLAS',
+                    version: '1.3',
+                    description: 'Categorizacion automatica de gastos usando contexto historico y NLP',
+                    color: '#06b6d4',
+                    glowColor: '#22d3ee',
+                    position: { x: 380, y: 880 },
+                    modes: [
+                        { id: 'standard', name: 'Standard', model: 'GPT-4o-mini', description: 'Gastos comunes' },
+                        { id: 'deep', name: 'Deep Analysis', model: 'GPT-4o', description: 'Gastos ambiguos' }
+                    ],
+                    tech: ['OpenAI', 'Context Analysis'],
+                    inputs: ['expense_data', 'vendor', 'amount'],
+                    outputs: ['category', 'confidence', 'suggestions'],
+                    connects_to: ['review_confidence']
+                },
+                // Review confidence (sub-step)
+                {
+                    id: 'review_confidence',
+                    type: 'step',
+                    size: 'small',
+                    name: 'Revisar Confianza',
+                    description: 'Revisar categorias con < 70% confianza',
+                    is_implemented: true,
+                    position: { x: 380, y: 1020 },
+                    connects_to: ['hito_eval_bk']
+                },
+                // Milestone: Bookkeeper Evaluation
+                {
+                    id: 'hito_eval_bk',
+                    type: 'milestone',
+                    size: 'small',
+                    name: 'Eval Bookkeeper',
+                    description: 'Punto de evaluacion - Penalizacion si falla categorizacion',
+                    evaluation_scope: 'bookkeeper',
+                    position: { x: 100, y: 1040 },
+                    connects_to: ['guardar_lista']
+                },
+                // Step 7: Save to List
+                {
+                    id: 'guardar_lista',
+                    type: 'step',
+                    size: 'large',
+                    name: 'Guardar - Aparece en Lista',
+                    description: 'Gasto guardado desde modal, visible en lista de expenses',
+                    is_implemented: true,
+                    position: { x: 100, y: 1140 },
+                    connects_to: ['health_check']
+                },
+                // Step 8: Health Check
+                {
+                    id: 'health_check',
+                    type: 'step',
+                    size: 'medium',
+                    name: 'Health Check',
+                    description: 'Ejecutar funcion de Health Check para scoring',
+                    is_implemented: true,
+                    position: { x: 100, y: 1280 },
+                    subservices: [
+                        { id: 'check_duplicates', label: 'Duplicados', active: true },
+                        { id: 'check_bill', label: 'Sin Bill', active: true },
+                        { id: 'check_vendor', label: 'Sin Vendor', active: true },
+                        { id: 'dismiss_review', label: 'Revisar/Dismiss', active: true }
+                    ],
+                    connects_to: ['hito_health_passed']
+                },
+                // Milestone: Health Check Passed
+                {
+                    id: 'hito_health_passed',
+                    type: 'milestone',
+                    size: 'small',
+                    name: 'Health Check Passed',
+                    description: 'Todos los puntos de health check en verde',
+                    position: { x: 100, y: 1400 },
+                    connects_to: ['fin_tarea_bk']
+                },
+                // Step 9: End Bookkeeper Task
+                {
+                    id: 'fin_tarea_bk',
+                    type: 'step',
+                    size: 'medium',
+                    name: 'Fin Tarea Bookkeeper',
+                    description: 'Dashboard -> Send to Review',
+                    is_implemented: true,
+                    position: { x: 100, y: 1500 },
+                    connects_to: ['autorizacion_manager']
+                },
+                // Step 10: Manager Authorization
+                {
+                    id: 'autorizacion_manager',
+                    type: 'step',
+                    size: 'medium',
+                    name: 'Autorizacion Manager',
+                    description: 'Manager aprueba gastos registrados (ya recibio notificacion)',
+                    is_implemented: true,
+                    position: { x: 100, y: 1620 },
+                    connects_to: ['hito_autorizado']
+                },
+                // Final Milestone
+                {
+                    id: 'hito_autorizado',
+                    type: 'milestone',
+                    size: 'small',
+                    name: 'Gastos Autorizados',
+                    description: 'Proceso completado',
+                    position: { x: 100, y: 1740 },
+                    connects_to: ['link_qbo']
+                },
+                // Exit link to QBO
+                {
+                    id: 'link_qbo',
+                    type: 'link',
+                    size: 'medium',
+                    name: 'Reconciliacion QBO',
+                    description: 'Continua hacia proceso de reconciliacion QuickBooks',
+                    link_to: { module: 'bookkeeping', process: 'qbo_reconciliation' },
+                    direction: 'outgoing',
+                    position: { x: 100, y: 1860 },
+                    connects_to: []
+                },
+                // Draft example: Auto stage detection
+                {
+                    id: 'draft_auto_stage',
+                    type: 'draft',
+                    size: 'medium',
+                    name: 'Auto-deteccion Stage',
+                    description: 'IA detecta stage de obra basado en historial',
+                    is_implemented: false,
+                    planned_feature: 'Usar historial de gastos similares para sugerir stage automaticamente',
+                    position: { x: 420, y: 480 },
+                    connects_to: ['modal_new_expense']
+                }
+            ]
+        }
+    };
+
+    // Storage key for flowchart positions
+    const FLOW_POSITIONS_KEY = 'ngm_process_flowchart_positions';
+
+    // ================================
     // State
     // ================================
     const state = {
@@ -427,8 +713,16 @@
         // Custom modules (user-created)
         customModules: [],
 
+        // Departments from Supabase
+        departments: [],
+
         // Currently editing module
         editingModuleId: null,
+
+        // Flowchart state
+        currentProcessId: null,      // Process being viewed in flowchart
+        flowNodePositions: {},       // Positions of flowchart nodes
+        selectedFlowNode: null,      // Currently selected node in flowchart
     };
 
     // ================================
@@ -482,6 +776,44 @@
         }
     }
 
+    // ================================
+    // Departments from Supabase
+    // ================================
+    async function loadDepartments() {
+        try {
+            const res = await fetch(`${API_BASE}/departments`);
+            if (res.ok) {
+                const data = await res.json();
+                state.departments = data.departments || data || [];
+                console.log('[PROCESS-MANAGER] Loaded', state.departments.length, 'departments');
+                populateDepartmentDropdown();
+            }
+        } catch (err) {
+            console.warn('[PROCESS-MANAGER] Error loading departments:', err);
+            // Fallback to static departments
+            state.departments = [
+                { department_id: 'bookkeeping', department_name: 'Bookkeeping' },
+                { department_id: 'coordination', department_name: 'Coordination' },
+                { department_id: 'finance', department_name: 'Finance' },
+                { department_id: 'operations', department_name: 'Operations' }
+            ];
+            populateDepartmentDropdown();
+        }
+    }
+
+    function populateDepartmentDropdown() {
+        const select = document.getElementById('moduleDepartment');
+        if (!select) return;
+
+        select.innerHTML = '<option value="">-- Select Department --</option>';
+        state.departments.forEach(dept => {
+            const option = document.createElement('option');
+            option.value = dept.department_id;
+            option.textContent = dept.department_name;
+            select.appendChild(option);
+        });
+    }
+
     function addCustomModule(moduleData) {
         const id = 'custom_' + Date.now();
         const module = {
@@ -490,14 +822,30 @@
             description: moduleData.description || '',
             icon: moduleData.icon || 'box',
             color: moduleData.color || '#6b7280',
+            departmentId: moduleData.departmentId || null,
             isImplemented: moduleData.isImplemented || false,
             isCustom: true,
+            connectedToHub: true, // Can be disconnected via context menu
             processIds: [],
             createdAt: new Date().toISOString()
         };
         state.customModules.push(module);
         saveCustomModules();
         return module;
+    }
+
+    function toggleModuleConnection(moduleId) {
+        const module = getCustomModule(moduleId);
+        if (!module) return;
+
+        // Toggle connection - default to true if undefined (for backwards compatibility)
+        module.connectedToHub = module.connectedToHub === undefined ? false : !module.connectedToHub;
+        saveCustomModules();
+
+        // Redraw
+        renderTreeView();
+
+        showToast(module.connectedToHub ? 'Connected to Hub' : 'Disconnected from Hub', 'success');
     }
 
     function updateCustomModule(id, moduleData) {
@@ -565,7 +913,6 @@
             panelActions: document.getElementById('panelActions'),
             processBreadcrumb: document.getElementById('processBreadcrumb'),
             viewSwitch: document.getElementById('viewSwitch'),
-            modeToggle: document.getElementById('modeToggle'),
             btnBack: document.getElementById('btnBack'),
             btnAddProcess: document.getElementById('btnAddProcess'),
             countImplemented: document.getElementById('countImplemented'),
@@ -581,6 +928,10 @@
             moduleModal: document.getElementById('moduleModal'),
             btnAddModule: document.getElementById('btnAddModule'),
             moduleContextMenu: document.getElementById('moduleContextMenu'),
+            // Process navigator elements
+            processNavigator: document.getElementById('processNavigator'),
+            processNavigatorList: document.getElementById('processNavigatorList'),
+            processSearchInput: document.getElementById('processSearchInput'),
         };
     }
 
@@ -592,11 +943,15 @@
         loadCurrentUser();
         loadNodePositions();
         loadCustomModules();
+        loadFlowPositions();
+        loadDraftStates();
         setupEventListeners();
         initConnectionDragging();
         await loadProcesses();
+        await loadDepartments();
         renderTreeView();
         updateStats();
+        setupProcessNavigator();
         centerCanvas();
 
         // Hide loading overlay
@@ -637,25 +992,6 @@
                     elements.viewSwitch.querySelectorAll('.switch-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     renderTreeView();
-                }
-            });
-        }
-
-        // Mode toggle (View / Draft)
-        if (elements.modeToggle) {
-            elements.modeToggle.addEventListener('click', (e) => {
-                const btn = e.target.closest('.mode-btn');
-                if (!btn) return;
-
-                const mode = btn.dataset.mode;
-                if (mode && mode !== state.mode) {
-                    state.mode = mode;
-                    elements.modeToggle.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    // Re-render to update drag capabilities
-                    if (state.currentLevel === 'detail') {
-                        renderDetailView();
-                    }
                 }
             });
         }
@@ -772,6 +1108,8 @@
                     openEditModuleModal(moduleId);
                 } else if (action === 'delete' && moduleId) {
                     confirmDeleteModuleById(moduleId);
+                } else if (action === 'toggle-connection' && moduleId) {
+                    toggleModuleConnection(moduleId);
                 }
                 hideContextMenu();
             });
@@ -805,8 +1143,7 @@
         document.getElementById('moduleName').value = module.name;
         document.getElementById('moduleDescription').value = module.description || '';
         document.getElementById('moduleIcon').value = module.icon || 'box';
-        document.getElementById('moduleColor').value = module.color || '#6b7280';
-        document.getElementById('moduleIsImplemented').checked = module.isImplemented || false;
+        document.getElementById('moduleDepartment').value = module.departmentId || '';
         document.getElementById('btnDeleteModule').classList.remove('hidden');
 
         elements.moduleModal.classList.remove('hidden');
@@ -826,12 +1163,13 @@
             return;
         }
 
+        const editId = document.getElementById('moduleEditId').value;
+
         const moduleData = {
             name: document.getElementById('moduleName').value.trim(),
             description: document.getElementById('moduleDescription').value.trim(),
             icon: document.getElementById('moduleIcon').value,
-            color: document.getElementById('moduleColor').value,
-            isImplemented: document.getElementById('moduleIsImplemented').checked
+            departmentId: document.getElementById('moduleDepartment').value || null
         };
 
         if (!moduleData.name) {
@@ -839,14 +1177,14 @@
             return;
         }
 
-        const editId = document.getElementById('moduleEditId').value;
-
         if (editId) {
-            // Update existing module
+            // Update existing module (preserve color and isImplemented)
             updateCustomModule(editId, moduleData);
             showToast('Module updated', 'success');
         } else {
-            // Add new module
+            // Add new module with default values
+            moduleData.color = '#6b7280';
+            moduleData.isImplemented = false;
             addCustomModule(moduleData);
             showToast('Module added', 'success');
         }
@@ -879,6 +1217,14 @@
         e.stopPropagation();
 
         if (!elements.moduleContextMenu) return;
+
+        // Update toggle label based on current connection state
+        const module = getCustomModule(moduleId);
+        const toggleLabel = document.getElementById('toggleConnectionLabel');
+        if (toggleLabel && module) {
+            const isConnected = module.connectedToHub !== false; // Default to true
+            toggleLabel.textContent = isConnected ? 'Disconnect from Hub' : 'Connect to Hub';
+        }
 
         elements.moduleContextMenu.dataset.moduleId = moduleId;
         elements.moduleContextMenu.style.left = `${e.clientX}px`;
@@ -1098,9 +1444,7 @@
         elements.treeViewContainer.classList.add('hidden');
         elements.detailViewContainer.classList.remove('hidden');
         elements.viewSwitch.style.display = 'none';
-        elements.modeToggle.classList.remove('hidden');
-        elements.btnAddProcess.classList.remove(isDetailedModule ? '' : 'hidden');
-        if (isDetailedModule) elements.btnAddProcess.classList.add('hidden');
+        elements.btnAddProcess.classList.toggle('hidden', isDetailedModule);
         document.body.classList.add('detail-active');
 
         // Render appropriate view
@@ -1113,10 +1457,34 @@
     }
 
     function navigateBack() {
+        // If in flowchart, go back to detail view
+        if (state.currentLevel === 'flowchart') {
+            state.currentLevel = 'detail';
+            state.currentProcessId = null;
+            state.selectedFlowNode = null;
+
+            updateBreadcrumb();
+            elements.btnBack.classList.remove('hidden');
+
+            // Re-render detail view
+            if (state.selectedGroupId) {
+                const group = PROCESS_GROUPS.find(g => g.id === state.selectedGroupId);
+                if (group && group.isDetailedModule) {
+                    renderExpensesEngineDetail();
+                } else {
+                    renderDetailView();
+                }
+            }
+            centerCanvas();
+            return;
+        }
+
+        // Otherwise go back to tree
         state.currentLevel = 'tree';
         state.selectedGroupId = null;
         state.selectedGroup = null;
         state.filteredProcesses = [];
+        state.currentProcessId = null;
 
         // Update UI
         updateBreadcrumb();
@@ -1124,7 +1492,6 @@
         elements.detailViewContainer.classList.add('hidden');
         elements.treeViewContainer.classList.remove('hidden');
         elements.viewSwitch.style.display = 'flex';
-        elements.modeToggle.classList.add('hidden');
         elements.btnAddProcess.classList.add('hidden');
         document.body.classList.remove('detail-active');
 
@@ -1148,14 +1515,47 @@
                     Overview
                 </span>
             `;
-        } else {
+        } else if (state.currentLevel === 'flowchart') {
             const group = state.selectedGroup;
+            const flowchart = PROCESS_FLOWCHARTS[state.currentProcessId];
             elements.processBreadcrumb.innerHTML = `
-                <span class="breadcrumb-item" data-level="tree">
+                <span class="breadcrumb-item clickable" data-level="tree">
                     ${iconOverview}
                     Overview
                 </span>
-                <span class="breadcrumb-separator">›</span>
+                <span class="breadcrumb-separator">></span>
+                <span class="breadcrumb-item clickable" data-level="detail">
+                    ${group?.name || 'Module'}
+                </span>
+                <span class="breadcrumb-separator">></span>
+                <span class="breadcrumb-item active" data-level="flowchart">
+                    ${flowchart?.name || 'Process'}
+                </span>
+            `;
+
+            // Click handlers
+            const overviewItem = elements.processBreadcrumb.querySelector('[data-level="tree"]');
+            const detailItem = elements.processBreadcrumb.querySelector('[data-level="detail"]');
+            if (overviewItem) {
+                overviewItem.style.cursor = 'pointer';
+                overviewItem.addEventListener('click', () => {
+                    state.currentLevel = 'flowchart'; // Will trigger back to detail then tree
+                    navigateBack();
+                    navigateBack();
+                });
+            }
+            if (detailItem) {
+                detailItem.style.cursor = 'pointer';
+                detailItem.addEventListener('click', navigateBack);
+            }
+        } else {
+            const group = state.selectedGroup;
+            elements.processBreadcrumb.innerHTML = `
+                <span class="breadcrumb-item clickable" data-level="tree">
+                    ${iconOverview}
+                    Overview
+                </span>
+                <span class="breadcrumb-separator">></span>
                 <span class="breadcrumb-item active" data-level="detail">
                     ${group?.name || 'Detail'}
                 </span>
@@ -1164,6 +1564,7 @@
             // Click handler to go back
             const overviewItem = elements.processBreadcrumb.querySelector('[data-level="tree"]');
             if (overviewItem) {
+                overviewItem.style.cursor = 'pointer';
                 overviewItem.addEventListener('click', navigateBack);
             }
         }
@@ -1177,6 +1578,11 @@
 
         elements.treeViewContainer.innerHTML = '';
         clearConnections();
+
+        // Hide empty state message
+        if (elements.canvasEmpty) {
+            elements.canvasEmpty.style.display = 'none';
+        }
 
         const groups = state.groupBy === 'deliverable' ? DELIVERABLES : DEPARTMENTS;
         const groupArray = Object.values(groups);
@@ -1316,6 +1722,13 @@
         const iconSvg = getIconSvg(module.icon, module.color);
         const statusLabel = module.isImplemented ? 'LIVE' : 'DRAFT';
 
+        // Get department name if assigned
+        let departmentName = '';
+        if (module.departmentId) {
+            const dept = state.departments.find(d => d.department_id === module.departmentId);
+            departmentName = dept ? dept.department_name : '';
+        }
+
         node.innerHTML = `
             <!-- Connection Ports (discreet, shown on hover) -->
             <div class="connection-port port-top" data-port="top" data-node="${module.id}"></div>
@@ -1334,6 +1747,17 @@
                     <span class="stat-dot" style="background: ${module.isImplemented ? '#3ecf8e' : '#6b7280'};"></span>
                     ${module.isImplemented ? 'Implemented' : 'Draft'}
                 </span>
+                ${departmentName ? `
+                <span class="tree-node-stat" style="color: #9ca3af;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    ${escapeHtml(departmentName)}
+                </span>
+                ` : ''}
             </div>
         `;
 
@@ -1352,7 +1776,7 @@
         const hubCenterX = hubRect.x + hubRect.width / 2;
         const hubCenterY = hubRect.y + hubRect.height / 2;
 
-        // Draw connections for built-in groups (always green/implemented)
+        // Draw connections for built-in groups
         groupArray.forEach((group) => {
             const rect = actualRects[group.id];
             if (!rect) return;
@@ -1365,12 +1789,24 @@
                 hubRect, rect, hubCenterX, hubCenterY, nodeCenterX, nodeCenterY
             );
 
-            const connection = createOrthogonalConnection(points, group.color, false, `hub-${group.id}`);
+            // Check if module has real processes linked
+            // isDetailedModule = has function-level detail (like expenses_engine)
+            // processIds with at least one non-draft process = implemented
+            const hasImplementedProcesses = group.isDetailedModule ||
+                (group.processIds && group.processIds.some(pid => !pid.startsWith('DRAFT_')));
+
+            const connectionColor = hasImplementedProcesses ? '#3ecf8e' : '#6b7280';
+            const isDraft = !hasImplementedProcesses;
+
+            const connection = createOrthogonalConnection(points, connectionColor, isDraft, `hub-${group.id}`);
             elements.connectionsLayer.appendChild(connection);
         });
 
         // Draw connections for custom modules (gray for drafts, green for implemented)
         state.customModules.forEach((module) => {
+            // Skip if module is not connected to hub
+            if (module.connectedToHub === false) return;
+
             const rect = actualRects[module.id];
             if (!rect) return;
 
@@ -1827,13 +2263,66 @@
         clearConnections();
         elements.canvasEmpty.style.display = 'none';
 
+        // Add flowchart entry card at the top
+        const flowchartCard = document.createElement('div');
+        flowchartCard.className = 'flowchart-entry-card';
+        flowchartCard.style.cssText = `
+            position: absolute;
+            left: 80px;
+            top: 20px;
+            width: 320px;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 1px solid #60a5fa;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        `;
+        flowchartCard.innerHTML = `
+            <div style="width: 48px; height: 48px; background: rgba(96, 165, 250, 0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+            </div>
+            <div style="flex: 1;">
+                <div style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin-bottom: 4px;">Expenses Track</div>
+                <div style="font-size: 12px; color: #9ca3af;">Ver flujo completo del proceso</div>
+            </div>
+            <div style="color: #60a5fa;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+            </div>
+        `;
+        flowchartCard.addEventListener('mouseenter', () => {
+            flowchartCard.style.borderColor = '#93c5fd';
+            flowchartCard.style.transform = 'translateY(-2px)';
+            flowchartCard.style.boxShadow = '0 8px 24px rgba(96, 165, 250, 0.15)';
+        });
+        flowchartCard.addEventListener('mouseleave', () => {
+            flowchartCard.style.borderColor = '#60a5fa';
+            flowchartCard.style.transform = 'translateY(0)';
+            flowchartCard.style.boxShadow = 'none';
+        });
+        flowchartCard.addEventListener('click', () => {
+            navigateToFlowchart('expenses_track');
+        });
+        elements.detailViewContainer.appendChild(flowchartCard);
+
         const phases = EXPENSES_ENGINE.phases;
         const phaseWidth = 280;
         const phaseGap = 40;
         const cardHeight = 140;
         const cardGap = 20;
         const startX = 80;
-        const startY = 100;
+        const startY = 140; // Adjusted for flowchart entry card
         const phaseHeaderHeight = 60;
 
         // Track card positions for connections
@@ -2569,9 +3058,13 @@
 
     function loadMinimapState() {
         try {
-            const collapsed = localStorage.getItem(MINIMAP_STATE_KEY) === 'true';
-            if (collapsed && elements.canvasMinimap) {
+            // Only collapse if explicitly set to 'true', otherwise keep expanded (default)
+            const savedState = localStorage.getItem(MINIMAP_STATE_KEY);
+            if (savedState === 'true' && elements.canvasMinimap) {
                 elements.canvasMinimap.classList.add('collapsed');
+            } else if (elements.canvasMinimap) {
+                // Ensure it's expanded by default
+                elements.canvasMinimap.classList.remove('collapsed');
             }
         } catch (e) {
             // Ignore localStorage errors
@@ -2724,6 +3217,778 @@
     }
 
     // ================================
+    // Process Navigator
+    // ================================
+    function renderProcessNavigator(searchTerm = '') {
+        if (!elements.processNavigatorList) return;
+
+        const filteredProcesses = searchTerm
+            ? state.processes.filter(p =>
+                p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (p.description && p.description.toLowerCase().includes(searchTerm.toLowerCase()))
+            )
+            : state.processes;
+
+        // Group processes by category
+        const grouped = {};
+        filteredProcesses.forEach(process => {
+            const category = process.category || 'uncategorized';
+            if (!grouped[category]) {
+                grouped[category] = [];
+            }
+            grouped[category].push(process);
+        });
+
+        // Category display names
+        const categoryNames = {
+            bookkeeping: 'Bookkeeping',
+            expenses: 'Expenses',
+            projects: 'Projects',
+            pipeline: 'Pipeline',
+            team: 'Team',
+            uncategorized: 'Other'
+        };
+
+        if (Object.keys(grouped).length === 0) {
+            elements.processNavigatorList.innerHTML = `
+                <div class="process-nav-empty">
+                    ${searchTerm ? 'No processes match your search' : 'No processes documented yet'}
+                </div>
+            `;
+            return;
+        }
+
+        let html = '';
+        Object.keys(grouped).sort().forEach(category => {
+            const processes = grouped[category];
+            const implementedCount = processes.filter(p => p.is_implemented).length;
+
+            html += `
+                <div class="process-nav-category" data-category="${category}">
+                    <div class="process-nav-category-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                        <span>${categoryNames[category] || category}</span>
+                        <span class="process-nav-category-count">${implementedCount}/${processes.length}</span>
+                    </div>
+                    <div class="process-nav-category-items">
+            `;
+
+            processes.forEach(process => {
+                const statusClass = process.is_implemented ? 'implemented' : 'draft';
+                const triggerLabel = process.trigger || '';
+
+                html += `
+                    <div class="process-nav-item" data-process-id="${process.id}">
+                        <div class="process-nav-item-status ${statusClass}"></div>
+                        <div class="process-nav-item-info">
+                            <div class="process-nav-item-name">${escapeHtml(process.name)}</div>
+                            <div class="process-nav-item-id">${escapeHtml(process.id)}</div>
+                        </div>
+                        ${triggerLabel ? `<div class="process-nav-item-trigger">${escapeHtml(triggerLabel)}</div>` : ''}
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+
+        elements.processNavigatorList.innerHTML = html;
+
+        // Add click handlers
+        elements.processNavigatorList.querySelectorAll('.process-nav-category-header').forEach(header => {
+            header.addEventListener('click', () => {
+                header.parentElement.classList.toggle('collapsed');
+            });
+        });
+
+        elements.processNavigatorList.querySelectorAll('.process-nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const processId = item.dataset.processId;
+                selectProcessInNavigator(processId);
+            });
+        });
+    }
+
+    function selectProcessInNavigator(processId) {
+        const process = state.processes.find(p => p.id === processId);
+        if (!process) return;
+
+        // Remove active class from all items
+        elements.processNavigatorList.querySelectorAll('.process-nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+
+        // Add active class to selected item
+        const selectedItem = elements.processNavigatorList.querySelector(`[data-process-id="${processId}"]`);
+        if (selectedItem) {
+            selectedItem.classList.add('active');
+        }
+
+        // Navigate to the process detail if we're in detail view, or show panel if in tree view
+        if (state.currentLevel === 'tree') {
+            // Find which group this process belongs to and navigate there
+            const group = PROCESS_GROUPS.find(g =>
+                g.deliverables?.some(d => d.processIds?.includes(processId)) ||
+                process.category === g.id
+            );
+            if (group) {
+                navigateToDetail(group.id);
+                // After navigation, select the process
+                setTimeout(() => {
+                    const processNode = elements.detailViewContainer.querySelector(`[data-id="${processId}"]`);
+                    if (processNode) {
+                        processNode.click();
+                    }
+                }, 100);
+            }
+        } else {
+            // Already in detail view, just select the process
+            const processNode = elements.detailViewContainer.querySelector(`[data-id="${processId}"]`);
+            if (processNode) {
+                processNode.click();
+            }
+        }
+    }
+
+    function setupProcessNavigator() {
+        if (!elements.processSearchInput) return;
+
+        elements.processSearchInput.addEventListener('input', (e) => {
+            renderProcessNavigator(e.target.value);
+        });
+
+        // Initial render
+        renderProcessNavigator();
+    }
+
+    // ================================
+    // Process Flowchart Rendering
+    // ================================
+    function loadFlowPositions() {
+        try {
+            const saved = localStorage.getItem(FLOW_POSITIONS_KEY);
+            if (saved) {
+                state.flowNodePositions = JSON.parse(saved);
+            }
+        } catch (e) {
+            console.warn('[PROCESS-MANAGER] Error loading flow positions:', e);
+            state.flowNodePositions = {};
+        }
+    }
+
+    function saveFlowPositions() {
+        try {
+            localStorage.setItem(FLOW_POSITIONS_KEY, JSON.stringify(state.flowNodePositions));
+        } catch (e) {
+            console.warn('[PROCESS-MANAGER] Error saving flow positions:', e);
+        }
+    }
+
+    function getFlowNodePosition(processId, nodeId, defaultX, defaultY) {
+        const key = `${processId}_${nodeId}`;
+        if (state.flowNodePositions[key]) {
+            return state.flowNodePositions[key];
+        }
+        return { x: defaultX, y: defaultY };
+    }
+
+    function setFlowNodePosition(processId, nodeId, x, y) {
+        const key = `${processId}_${nodeId}`;
+        state.flowNodePositions[key] = { x, y };
+        saveFlowPositions();
+    }
+
+    function navigateToFlowchart(processId) {
+        const flowchart = PROCESS_FLOWCHARTS[processId];
+        if (!flowchart) {
+            console.warn('[PROCESS-MANAGER] Flowchart not found:', processId);
+            return;
+        }
+
+        state.currentProcessId = processId;
+        state.currentLevel = 'flowchart';
+
+        // Update breadcrumb
+        updateBreadcrumb();
+
+        // Show back button, hide other controls
+        elements.btnBack.classList.remove('hidden');
+        elements.treeViewContainer.classList.add('hidden');
+        elements.detailViewContainer.classList.remove('hidden');
+        elements.viewSwitch.style.display = 'none';
+        elements.btnAddProcess.classList.add('hidden');
+
+        // Render the flowchart
+        renderFlowchart(flowchart);
+    }
+
+    function renderFlowchart(flowchart) {
+        if (!elements.detailViewContainer) return;
+
+        elements.detailViewContainer.innerHTML = '';
+        clearConnections();
+        elements.canvasEmpty.style.display = 'none';
+
+        const nodeRects = {};
+
+        // Render all nodes
+        flowchart.nodes.forEach(node => {
+            const pos = getFlowNodePosition(flowchart.id, node.id, node.position.x, node.position.y);
+            const nodeEl = createFlowNode(node, pos.x, pos.y, flowchart.id);
+
+            nodeRects[node.id] = {
+                x: pos.x,
+                y: pos.y,
+                width: getNodeWidth(node.size),
+                height: getNodeHeight(node),
+                type: node.type
+            };
+
+            elements.detailViewContainer.appendChild(nodeEl);
+
+            // Make draggable
+            makeFlowNodeDraggable(nodeEl, flowchart.id, node.id, () => {
+                redrawFlowConnections(flowchart, nodeRects);
+            });
+        });
+
+        // Draw connections
+        redrawFlowConnections(flowchart, nodeRects);
+
+        // Center on the flowchart
+        centerCanvas();
+    }
+
+    function getNodeWidth(size) {
+        switch (size) {
+            case 'large': return 280;
+            case 'medium': return 220;
+            case 'small': return 160;
+            default: return 220;
+        }
+    }
+
+    function getNodeHeight(node) {
+        let baseHeight;
+        switch (node.size) {
+            case 'large': baseHeight = 120; break;
+            case 'medium': baseHeight = 90; break;
+            case 'small': baseHeight = 60; break;
+            default: baseHeight = 90;
+        }
+
+        // Add height for options
+        if (node.options && node.options.length > 0) {
+            baseHeight += 40 + (node.options.length * 32);
+        }
+
+        // Add height for subservices
+        if (node.subservices && node.subservices.length > 0) {
+            baseHeight += 40;
+        }
+
+        // Add height for draft switch
+        if (node.type === 'draft') {
+            baseHeight += 40;
+        }
+
+        // Add height for algorithm elements (codename, modes, tech)
+        if (node.type === 'algorithm') {
+            baseHeight += 20; // Codename line
+            if (node.modes && node.modes.length > 0) {
+                baseHeight += 50; // Modes section
+            }
+            if (node.tech && node.tech.length > 0) {
+                baseHeight += 30; // Tech stack
+            }
+        }
+
+        return baseHeight;
+    }
+
+    function createFlowNode(node, x, y, processId) {
+        const el = document.createElement('div');
+        el.className = `flow-node type-${node.type} size-${node.size}`;
+        if (node.type === 'draft' && node.is_implemented) {
+            el.classList.add('is-implemented');
+        }
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+        el.dataset.nodeId = node.id;
+        el.dataset.processId = processId;
+
+        // Connection ports
+        const portsHtml = `
+            <div class="flow-port port-top" data-port="top"></div>
+            <div class="flow-port port-bottom" data-port="bottom"></div>
+            <div class="flow-port port-left" data-port="left"></div>
+            <div class="flow-port port-right" data-port="right"></div>
+        `;
+
+        // Icon based on type
+        const iconHtml = getFlowNodeIcon(node);
+
+        // Badge
+        const badgeHtml = getFlowNodeBadge(node);
+
+        // Options for decision nodes
+        let optionsHtml = '';
+        if (node.options && node.options.length > 0) {
+            optionsHtml = `
+                <div class="flow-node-options">
+                    ${node.options.map(opt => `
+                        <div class="flow-node-option" data-option-id="${opt.id}" data-connects-to="${opt.connects_to || ''}">
+                            <div class="flow-node-option-marker"></div>
+                            <span>${escapeHtml(opt.label)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Subservices
+        let subservicesHtml = '';
+        if (node.subservices && node.subservices.length > 0) {
+            subservicesHtml = `
+                <div class="flow-node-subservices">
+                    ${node.subservices.map(ss => `
+                        <div class="flow-subservice ${ss.active ? 'active' : ''}" data-subservice-id="${ss.id}">
+                            <div class="flow-subservice-dot"></div>
+                            <span>${escapeHtml(ss.label)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Draft switch
+        let switchHtml = '';
+        if (node.type === 'draft') {
+            const isLive = node.is_implemented;
+            switchHtml = `
+                <div class="flow-node-switch">
+                    <span class="flow-node-switch-label">Status:</span>
+                    <div class="flow-node-switch-toggle ${isLive ? 'active' : ''}" data-node-id="${node.id}"></div>
+                    <span class="flow-node-switch-status ${isLive ? 'live' : 'draft'}">${isLive ? 'Live' : 'Draft'}</span>
+                </div>
+            `;
+        }
+
+        // Link arrow for link nodes
+        let linkArrowHtml = '';
+        if (node.type === 'link') {
+            linkArrowHtml = `
+                <div class="flow-link-arrow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        ${node.direction === 'incoming'
+                            ? '<polyline points="7 13 12 18 17 13"></polyline><polyline points="7 6 12 11 17 6"></polyline>'
+                            : '<polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline>'
+                        }
+                    </svg>
+                </div>
+            `;
+        }
+
+        // Algorithm modes
+        let algorithmModesHtml = '';
+        if (node.type === 'algorithm' && node.modes && node.modes.length > 0) {
+            algorithmModesHtml = `
+                <div class="algorithm-modes">
+                    ${node.modes.map((mode, idx) => `
+                        <div class="algorithm-mode ${idx === 0 ? 'active' : ''}" data-mode-id="${mode.id}" title="${escapeHtml(mode.description || '')}">
+                            <span class="algorithm-mode-indicator"></span>
+                            <span>${escapeHtml(mode.name)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        // Algorithm tech stack
+        let algorithmTechHtml = '';
+        if (node.type === 'algorithm' && node.tech && node.tech.length > 0) {
+            algorithmTechHtml = `
+                <div class="algorithm-tech">
+                    ${node.tech.map(t => `<span class="algorithm-tech-item">${escapeHtml(t)}</span>`).join('')}
+                </div>
+            `;
+        }
+
+        // Build the node content based on type
+        if (node.type === 'milestone') {
+            el.innerHTML = `
+                ${portsHtml}
+                <div class="flow-node-header">
+                    ${iconHtml}
+                    <div class="flow-node-title">${escapeHtml(node.name)}</div>
+                </div>
+            `;
+        } else if (node.type === 'algorithm') {
+            // Set custom colors via CSS variables
+            if (node.color) {
+                el.style.setProperty('--algo-color', node.color);
+            }
+            if (node.glowColor) {
+                el.style.setProperty('--algo-glow', node.glowColor);
+            }
+
+            el.innerHTML = `
+                ${portsHtml}
+                <div class="flow-node-header">
+                    ${iconHtml}
+                    <div class="flow-node-badge">${node.codename || 'ALGO'}</div>
+                    <span class="algorithm-version">v${node.version || '1.0'}</span>
+                </div>
+                <div class="algorithm-codename">
+                    <span class="algorithm-name">${escapeHtml(node.codename || node.name)}<span class="trademark">TM</span></span>
+                </div>
+                <div class="flow-node-title">${escapeHtml(node.name)}</div>
+                <div class="flow-node-description">${escapeHtml(node.description || '')}</div>
+                ${algorithmModesHtml}
+                ${algorithmTechHtml}
+            `;
+        } else {
+            el.innerHTML = `
+                ${portsHtml}
+                <div class="flow-node-header">
+                    ${iconHtml}
+                    ${badgeHtml}
+                    ${linkArrowHtml}
+                </div>
+                <div class="flow-node-title">${escapeHtml(node.name)}</div>
+                <div class="flow-node-description">${escapeHtml(node.description || '')}</div>
+                ${subservicesHtml}
+                ${optionsHtml}
+                ${switchHtml}
+            `;
+        }
+
+        // Add click handler for link nodes
+        if (node.type === 'link' && node.link_to) {
+            el.addEventListener('dblclick', () => {
+                if (PROCESS_FLOWCHARTS[node.link_to.process]) {
+                    navigateToFlowchart(node.link_to.process);
+                } else {
+                    showToast(`Proceso "${node.link_to.process}" no disponible aun`, 'info');
+                }
+            });
+        }
+
+        // Add click handler for draft switch
+        if (node.type === 'draft') {
+            const toggle = el.querySelector('.flow-node-switch-toggle');
+            if (toggle) {
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleDraftStatus(processId, node.id, toggle);
+                });
+            }
+        }
+
+        // Add click to select
+        el.addEventListener('click', (e) => {
+            if (e.target.closest('.flow-node-switch-toggle') || e.target.closest('.flow-node-option')) {
+                return;
+            }
+            selectFlowNode(el, node);
+        });
+
+        return el;
+    }
+
+    function getFlowNodeIcon(node) {
+        let iconSvg = '';
+        switch (node.type) {
+            case 'step':
+                iconSvg = '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline>';
+                break;
+            case 'draft':
+                iconSvg = '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>';
+                break;
+            case 'link':
+                iconSvg = '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>';
+                break;
+            case 'milestone':
+                iconSvg = '<path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path>';
+                break;
+            case 'decision':
+                iconSvg = '<circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line>';
+                break;
+            case 'algorithm':
+                // CPU/chip icon for algorithms
+                iconSvg = '<rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line>';
+                break;
+            default:
+                iconSvg = '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>';
+        }
+        return `<div class="flow-node-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${iconSvg}</svg></div>`;
+    }
+
+    function getFlowNodeBadge(node) {
+        let label = '';
+        switch (node.type) {
+            case 'step': label = 'STEP'; break;
+            case 'draft': label = node.is_implemented ? 'LIVE' : 'DRAFT'; break;
+            case 'link': label = node.direction === 'incoming' ? 'FROM' : 'TO'; break;
+            case 'decision': label = 'DECISION'; break;
+            default: label = node.type.toUpperCase();
+        }
+        return `<div class="flow-node-badge">${label}</div>`;
+    }
+
+    function selectFlowNode(el, node) {
+        // Deselect previous
+        document.querySelectorAll('.flow-node.selected').forEach(n => n.classList.remove('selected'));
+
+        // Select this one
+        el.classList.add('selected');
+        state.selectedFlowNode = node;
+
+        // Could show a panel with details here
+    }
+
+    function toggleDraftStatus(processId, nodeId, toggleEl) {
+        const flowchart = PROCESS_FLOWCHARTS[processId];
+        if (!flowchart) return;
+
+        const node = flowchart.nodes.find(n => n.id === nodeId);
+        if (!node || node.type !== 'draft') return;
+
+        // Toggle the status
+        node.is_implemented = !node.is_implemented;
+
+        // Update UI
+        const nodeEl = toggleEl.closest('.flow-node');
+        const statusEl = nodeEl.querySelector('.flow-node-switch-status');
+
+        if (node.is_implemented) {
+            toggleEl.classList.add('active');
+            nodeEl.classList.add('is-implemented');
+            statusEl.textContent = 'Live';
+            statusEl.classList.remove('draft');
+            statusEl.classList.add('live');
+
+            // Update badge
+            const badge = nodeEl.querySelector('.flow-node-badge');
+            if (badge) badge.textContent = 'LIVE';
+        } else {
+            toggleEl.classList.remove('active');
+            nodeEl.classList.remove('is-implemented');
+            statusEl.textContent = 'Draft';
+            statusEl.classList.remove('live');
+            statusEl.classList.add('draft');
+
+            // Update badge
+            const badge = nodeEl.querySelector('.flow-node-badge');
+            if (badge) badge.textContent = 'DRAFT';
+        }
+
+        // Save to localStorage (we'd need a separate storage for flowchart node states)
+        saveDraftStates();
+
+        showToast(node.is_implemented ? 'Marked as Live' : 'Marked as Draft', 'success');
+    }
+
+    function saveDraftStates() {
+        // Save draft states to localStorage
+        const states = {};
+        Object.keys(PROCESS_FLOWCHARTS).forEach(processId => {
+            const flowchart = PROCESS_FLOWCHARTS[processId];
+            flowchart.nodes.forEach(node => {
+                if (node.type === 'draft') {
+                    states[`${processId}_${node.id}`] = node.is_implemented;
+                }
+            });
+        });
+        try {
+            localStorage.setItem('ngm_flowchart_draft_states', JSON.stringify(states));
+        } catch (e) {
+            console.warn('[PROCESS-MANAGER] Error saving draft states:', e);
+        }
+    }
+
+    function loadDraftStates() {
+        try {
+            const saved = localStorage.getItem('ngm_flowchart_draft_states');
+            if (saved) {
+                const states = JSON.parse(saved);
+                Object.keys(states).forEach(key => {
+                    const [processId, nodeId] = key.split('_');
+                    const flowchart = PROCESS_FLOWCHARTS[processId];
+                    if (flowchart) {
+                        const node = flowchart.nodes.find(n => n.id === nodeId);
+                        if (node && node.type === 'draft') {
+                            node.is_implemented = states[key];
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            console.warn('[PROCESS-MANAGER] Error loading draft states:', e);
+        }
+    }
+
+    function makeFlowNodeDraggable(nodeEl, processId, nodeId, onDrag) {
+        let isDragging = false;
+        let startX, startY;
+        let nodeStartX, nodeStartY;
+
+        nodeEl.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.flow-node-switch-toggle') ||
+                e.target.closest('.flow-node-option') ||
+                e.target.closest('.flow-subservice')) {
+                return;
+            }
+
+            isDragging = true;
+            nodeEl.classList.add('dragging');
+
+            startX = e.clientX / state.canvas.scale;
+            startY = e.clientY / state.canvas.scale;
+            nodeStartX = parseInt(nodeEl.style.left);
+            nodeStartY = parseInt(nodeEl.style.top);
+
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const dx = (e.clientX / state.canvas.scale) - startX;
+            const dy = (e.clientY / state.canvas.scale) - startY;
+
+            const newX = nodeStartX + dx;
+            const newY = nodeStartY + dy;
+
+            nodeEl.style.left = `${newX}px`;
+            nodeEl.style.top = `${newY}px`;
+
+            if (onDrag) onDrag();
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+
+            isDragging = false;
+            nodeEl.classList.remove('dragging');
+
+            // Save position
+            const newX = parseInt(nodeEl.style.left);
+            const newY = parseInt(nodeEl.style.top);
+            setFlowNodePosition(processId, nodeId, newX, newY);
+        });
+    }
+
+    function redrawFlowConnections(flowchart, nodeRects) {
+        // Clear existing connections
+        const existingConnections = elements.connectionsLayer.querySelectorAll('.flow-connection');
+        existingConnections.forEach(c => c.remove());
+
+        // Update nodeRects with current positions
+        flowchart.nodes.forEach(node => {
+            const nodeEl = elements.detailViewContainer.querySelector(`[data-node-id="${node.id}"]`);
+            if (nodeEl) {
+                nodeRects[node.id] = {
+                    x: parseInt(nodeEl.style.left),
+                    y: parseInt(nodeEl.style.top),
+                    width: getNodeWidth(node.size),
+                    height: getNodeHeight(node),
+                    type: node.type
+                };
+            }
+        });
+
+        // Draw connections
+        flowchart.nodes.forEach(node => {
+            if (!node.connects_to) return;
+
+            const fromRect = nodeRects[node.id];
+            if (!fromRect) return;
+
+            // Handle array of connections
+            const connections = Array.isArray(node.connects_to) ? node.connects_to : [node.connects_to];
+
+            connections.forEach(targetId => {
+                const toRect = nodeRects[targetId];
+                if (!toRect) return;
+
+                drawFlowConnection(fromRect, toRect, node.type);
+            });
+
+            // Handle decision options
+            if (node.options) {
+                node.options.forEach(opt => {
+                    if (opt.connects_to) {
+                        const toRect = nodeRects[opt.connects_to];
+                        if (toRect) {
+                            drawFlowConnection(fromRect, toRect, 'decision');
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    function drawFlowConnection(fromRect, toRect, type) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        svg.classList.add('flow-connection');
+
+        // Calculate connection points
+        const fromCenterX = fromRect.x + fromRect.width / 2;
+        const fromBottom = fromRect.y + fromRect.height;
+        const toCenterX = toRect.x + toRect.width / 2;
+        const toTop = toRect.y;
+
+        // Simple vertical connection with curve
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.classList.add('flow-connection-line', `type-${type}`);
+
+        // Calculate path based on relative positions
+        let d;
+        if (Math.abs(fromCenterX - toCenterX) < 10 && fromBottom < toTop) {
+            // Straight vertical line
+            d = `M ${fromCenterX} ${fromBottom} L ${toCenterX} ${toTop}`;
+        } else {
+            // Curved path
+            const midY = (fromBottom + toTop) / 2;
+            d = `M ${fromCenterX} ${fromBottom}
+                 C ${fromCenterX} ${midY}, ${toCenterX} ${midY}, ${toCenterX} ${toTop}`;
+        }
+
+        path.setAttribute('d', d);
+
+        // Add arrow marker
+        const markerId = `flow-arrow-${type}-${Math.random().toString(36).substr(2, 9)}`;
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', markerId);
+        marker.setAttribute('markerWidth', '10');
+        marker.setAttribute('markerHeight', '7');
+        marker.setAttribute('refX', '9');
+        marker.setAttribute('refY', '3.5');
+        marker.setAttribute('orient', 'auto');
+
+        const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        polygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+        polygon.classList.add('flow-arrow-marker', `type-${type}`);
+
+        marker.appendChild(polygon);
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+
+        path.setAttribute('marker-end', `url(#${markerId})`);
+        svg.appendChild(path);
+
+        elements.connectionsLayer.appendChild(svg);
+    }
+
+    // ================================
     // Helpers
     // ================================
     function escapeHtml(text) {
@@ -2792,7 +4057,9 @@
     // ================================
     let connectionDragState = {
         isDragging: false,
+        isNewConnection: false,  // true when creating new connection from port
         sourceNodeId: null,
+        sourcePort: null,        // 'top', 'right', 'bottom', 'left'
         targetNodeId: null,
         startPoint: null,
         tempLine: null
@@ -2804,9 +4071,52 @@
             elements.connectionsLayer.addEventListener('mousedown', handleConnectionEndpointMouseDown);
         }
 
+        // Listen for mousedown on connection ports (for new connections)
+        if (elements.treeViewContainer) {
+            elements.treeViewContainer.addEventListener('mousedown', handlePortMouseDown);
+        }
+
         // Global mouse events for dragging
         document.addEventListener('mousemove', handleConnectionDragMove);
         document.addEventListener('mouseup', handleConnectionDragEnd);
+    }
+
+    function handlePortMouseDown(e) {
+        const port = e.target.closest('.connection-port');
+        if (!port) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const nodeId = port.getAttribute('data-node');
+        const portSide = port.getAttribute('data-port');
+        if (!nodeId || !portSide) return;
+
+        // Get the port's center position in canvas coordinates
+        const portRect = port.getBoundingClientRect();
+        const gridRect = elements.canvasGrid.getBoundingClientRect();
+
+        const portCenterX = (portRect.left + portRect.width / 2 - gridRect.left) / state.canvas.scale;
+        const portCenterY = (portRect.top + portRect.height / 2 - gridRect.top) / state.canvas.scale;
+
+        // Start drag mode for NEW connection
+        connectionDragState.isDragging = true;
+        connectionDragState.isNewConnection = true;
+        connectionDragState.sourceNodeId = nodeId;
+        connectionDragState.sourcePort = portSide;
+        connectionDragState.startPoint = {
+            x: portCenterX,
+            y: portCenterY
+        };
+
+        // Enter connecting mode
+        elements.canvasContainer.classList.add('connecting-mode');
+
+        // Highlight the source port
+        port.classList.add('connected');
+
+        // Create temporary line
+        createTempConnectionLine();
     }
 
     function handleConnectionEndpointMouseDown(e) {
@@ -2878,31 +4188,50 @@
         const portElement = port?.closest('.connection-port');
 
         if (portElement) {
-            const newTargetNodeId = portElement.getAttribute('data-node');
-            if (newTargetNodeId && newTargetNodeId !== connectionDragState.sourceNodeId) {
-                // Valid drop - connection would be updated here
-                // For now, just show feedback
-                console.log(`[CONNECTIONS] Would reconnect from ${connectionDragState.sourceNodeId} to ${newTargetNodeId}`);
+            const targetNodeId = portElement.getAttribute('data-node');
+
+            // Valid target: different node than source
+            if (targetNodeId && targetNodeId !== connectionDragState.sourceNodeId) {
+                if (connectionDragState.isNewConnection) {
+                    // Creating a NEW connection
+                    console.log(`[CONNECTIONS] New connection: ${connectionDragState.sourceNodeId} -> ${targetNodeId}`);
+                    // For now, just redraw connections to show visual feedback
+                    // In a real implementation, you would save this connection
+                } else {
+                    // Reconnecting existing connection
+                    console.log(`[CONNECTIONS] Reconnect: ${connectionDragState.sourceNodeId} -> ${targetNodeId}`);
+                }
             }
+            // If dropped on same node or invalid, silently ignore (no alert)
         }
+        // If not dropped on a port, silently cancel (no alert)
 
         // Clean up
         removeTempConnectionLine();
         clearPortHighlights();
         elements.canvasContainer.classList.remove('connecting-mode');
 
-        // Show original connection again
-        const connectionGroup = elements.connectionsLayer.querySelector(
-            `[data-connection-id="${connectionDragState.sourceNodeId}-${connectionDragState.targetNodeId}"]`
-        );
-        if (connectionGroup) {
-            connectionGroup.style.opacity = '';
+        // Clear source port highlight
+        document.querySelectorAll('.connection-port.connected').forEach(p => {
+            p.classList.remove('connected');
+        });
+
+        // Show original connection again (for existing connection drag)
+        if (!connectionDragState.isNewConnection) {
+            const connectionGroup = elements.connectionsLayer.querySelector(
+                `[data-connection-id="${connectionDragState.sourceNodeId}-${connectionDragState.targetNodeId}"]`
+            );
+            if (connectionGroup) {
+                connectionGroup.style.opacity = '';
+            }
         }
 
         // Reset state
         connectionDragState = {
             isDragging: false,
+            isNewConnection: false,
             sourceNodeId: null,
+            sourcePort: null,
             targetNodeId: null,
             startPoint: null,
             tempLine: null

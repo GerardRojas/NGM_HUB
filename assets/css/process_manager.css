@@ -1672,25 +1672,19 @@
     color: #9ca3af;
 }
 
-.legend-swatch {
-    width: 24px;
-    height: 16px;
-    border-radius: 3px;
+.legend-line {
+    width: 32px;
+    height: 3px;
+    border-radius: 2px;
 }
 
-.legend-swatch.implemented {
-    background: #111111;
-    border: 2px solid #3ecf8e;
+.legend-line.live {
+    background: #3ecf8e;
+    box-shadow: 0 0 6px rgba(62, 207, 142, 0.4);
 }
 
-.legend-swatch.draft {
-    background: rgba(99, 102, 241, 0.1);
-    border: 2px dashed #6366f1;
-}
-
-.legend-swatch.service {
-    background: rgba(245, 158, 11, 0.15);
-    border: 2px solid #f59e0b;
+.legend-line.draft {
+    background: #6b7280;
 }
 
 /* ================================
@@ -3214,4 +3208,977 @@
 
 .canvas-container.connecting-mode .tree-node:hover {
     box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.4);
+}
+
+/* ================================
+   Process Navigator Sidebar
+   ================================ */
+.process-navigator {
+    position: fixed;
+    top: 60px;
+    right: 0;
+    bottom: 0;
+    width: 320px;
+    background: #111111;
+    border-left: 1px solid #1f1f1f;
+    z-index: 100;
+    display: flex;
+    transform: translateX(calc(100% - 32px));
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.process-navigator:hover,
+.process-navigator.expanded {
+    transform: translateX(0);
+}
+
+.process-navigator-tab {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 80px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #6b7280;
+    transition: all 0.2s ease;
+}
+
+.process-navigator-tab:hover {
+    background: #222222;
+    color: #9ca3af;
+}
+
+.process-navigator:hover .process-navigator-tab,
+.process-navigator.expanded .process-navigator-tab {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.process-navigator-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-left: 32px;
+}
+
+.process-navigator:hover .process-navigator-content,
+.process-navigator.expanded .process-navigator-content {
+    padding-left: 0;
+}
+
+.process-navigator-header {
+    padding: 16px;
+    border-bottom: 1px solid #1f1f1f;
+    flex-shrink: 0;
+}
+
+.process-navigator-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e5e7eb;
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.process-navigator-search .form-input {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    background: #0d0d0d;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    color: #e5e7eb;
+}
+
+.process-navigator-search .form-input:focus {
+    border-color: #3ecf8e;
+    outline: none;
+}
+
+.process-navigator-search .form-input::placeholder {
+    color: #6b7280;
+}
+
+.process-navigator-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+/* Process category groups */
+.process-nav-category {
+    margin-bottom: 16px;
+}
+
+.process-nav-category-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+}
+
+.process-nav-category-header:hover {
+    background: #1a1a1a;
+}
+
+.process-nav-category-header svg {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.2s ease;
+}
+
+.process-nav-category.collapsed .process-nav-category-header svg {
+    transform: rotate(-90deg);
+}
+
+.process-nav-category-count {
+    margin-left: auto;
+    background: #1f1f1f;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    color: #9ca3af;
+}
+
+.process-nav-category-items {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-left: 8px;
+}
+
+.process-nav-category.collapsed .process-nav-category-items {
+    display: none;
+}
+
+/* Process items */
+.process-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.process-nav-item:hover {
+    background: #1a1a1a;
+    border-color: #2a2a2a;
+}
+
+.process-nav-item.active {
+    background: rgba(62, 207, 142, 0.1);
+    border-color: rgba(62, 207, 142, 0.3);
+}
+
+.process-nav-item-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.process-nav-item-status.implemented {
+    background: #3ecf8e;
+    box-shadow: 0 0 6px rgba(62, 207, 142, 0.4);
+}
+
+.process-nav-item-status.draft {
+    background: #6b7280;
+}
+
+.process-nav-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.process-nav-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #e5e7eb;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.process-nav-item-id {
+    font-size: 11px;
+    color: #6b7280;
+    font-family: 'SF Mono', Monaco, monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.process-nav-item-trigger {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #1f1f1f;
+    color: #9ca3af;
+    flex-shrink: 0;
+}
+
+/* Empty state */
+.process-nav-empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: #6b7280;
+    font-size: 13px;
+}
+
+/* Scrollbar styling */
+.process-navigator-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.process-navigator-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.process-navigator-list::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 3px;
+}
+
+.process-navigator-list::-webkit-scrollbar-thumb:hover {
+    background: #3a3a3a;
+}
+
+/* ================================
+   Process Flowchart Nodes
+   ================================ */
+
+/* Base node styles */
+.flow-node {
+    position: absolute;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    cursor: grab;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    user-select: none;
+}
+
+.flow-node:hover {
+    border-color: #3a3a3a;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.flow-node.dragging {
+    cursor: grabbing;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    z-index: 100;
+}
+
+.flow-node.selected {
+    border-color: #3ecf8e;
+    box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.2);
+}
+
+/* Node sizes */
+.flow-node.size-large {
+    width: 280px;
+    min-height: 120px;
+    padding: 16px;
+}
+
+.flow-node.size-medium {
+    width: 220px;
+    min-height: 90px;
+    padding: 14px;
+}
+
+.flow-node.size-small {
+    width: 160px;
+    min-height: 60px;
+    padding: 10px;
+}
+
+/* Node content layout */
+.flow-node-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.flow-node-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.flow-node.size-medium .flow-node-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+}
+
+.flow-node.size-small .flow-node-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+}
+
+.flow-node-icon svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 2;
+    fill: none;
+}
+
+.flow-node.size-small .flow-node-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.flow-node-badge {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.flow-node-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e5e7eb;
+    line-height: 1.3;
+    margin-bottom: 4px;
+}
+
+.flow-node.size-medium .flow-node-title {
+    font-size: 13px;
+}
+
+.flow-node.size-small .flow-node-title {
+    font-size: 12px;
+    margin-bottom: 0;
+}
+
+.flow-node-description {
+    font-size: 12px;
+    color: #9ca3af;
+    line-height: 1.4;
+}
+
+.flow-node.size-small .flow-node-description {
+    display: none;
+}
+
+/* Node type: step (default/implemented) */
+.flow-node.type-step {
+    border-color: #2a2a2a;
+}
+
+.flow-node.type-step .flow-node-icon {
+    background: rgba(62, 207, 142, 0.15);
+    color: #3ecf8e;
+}
+
+.flow-node.type-step .flow-node-badge {
+    background: rgba(62, 207, 142, 0.15);
+    color: #3ecf8e;
+}
+
+/* Node type: draft (pending implementation) */
+.flow-node.type-draft {
+    border-style: dashed;
+    border-color: #4b5563;
+    background: #161616;
+}
+
+.flow-node.type-draft .flow-node-icon {
+    background: rgba(107, 114, 128, 0.15);
+    color: #6b7280;
+}
+
+.flow-node.type-draft .flow-node-badge {
+    background: rgba(107, 114, 128, 0.2);
+    color: #9ca3af;
+}
+
+.flow-node.type-draft.is-implemented {
+    border-style: solid;
+    border-color: #3ecf8e;
+    background: #1a1a1a;
+}
+
+.flow-node.type-draft.is-implemented .flow-node-icon {
+    background: rgba(62, 207, 142, 0.15);
+    color: #3ecf8e;
+}
+
+.flow-node.type-draft.is-implemented .flow-node-badge {
+    background: rgba(62, 207, 142, 0.15);
+    color: #3ecf8e;
+}
+
+/* Node type: link (connection to another process) */
+.flow-node.type-link {
+    border-color: #60a5fa;
+    background: linear-gradient(135deg, #1a1a1a 0%, #1a1f2e 100%);
+}
+
+.flow-node.type-link .flow-node-icon {
+    background: rgba(96, 165, 250, 0.15);
+    color: #60a5fa;
+}
+
+.flow-node.type-link .flow-node-badge {
+    background: rgba(96, 165, 250, 0.15);
+    color: #60a5fa;
+}
+
+.flow-node.type-link:hover {
+    border-color: #93c5fd;
+}
+
+/* Node type: milestone (checkpoint/evaluation) */
+.flow-node.type-milestone {
+    border-radius: 50px;
+    text-align: center;
+    border-color: #f59e0b;
+}
+
+.flow-node.type-milestone.size-small {
+    width: auto;
+    min-width: 140px;
+    max-width: 200px;
+    min-height: auto;
+    padding: 8px 16px;
+}
+
+.flow-node.type-milestone .flow-node-header {
+    justify-content: center;
+    margin-bottom: 0;
+}
+
+.flow-node.type-milestone .flow-node-icon {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+}
+
+.flow-node.type-milestone .flow-node-icon svg {
+    width: 12px;
+    height: 12px;
+}
+
+.flow-node.type-milestone .flow-node-title {
+    font-size: 11px;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* Node type: decision (branching) */
+.flow-node.type-decision {
+    border-color: #a78bfa;
+    background: linear-gradient(135deg, #1a1a1a 0%, #1f1a2e 100%);
+}
+
+.flow-node.type-decision .flow-node-icon {
+    background: rgba(167, 139, 250, 0.15);
+    color: #a78bfa;
+}
+
+.flow-node.type-decision .flow-node-badge {
+    background: rgba(167, 139, 250, 0.15);
+    color: #a78bfa;
+}
+
+/* Node type: algorithm (proprietary IP) */
+.flow-node.type-algorithm {
+    border-width: 2px;
+    border-style: solid;
+    background: linear-gradient(135deg, #1a1a1a 0%, #1a1a2e 100%);
+    position: relative;
+    overflow: visible;
+}
+
+.flow-node.type-algorithm::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 16px;
+    opacity: 0.4;
+    z-index: -1;
+    transition: opacity 0.3s ease;
+}
+
+.flow-node.type-algorithm:hover::before {
+    opacity: 0.6;
+}
+
+.flow-node.type-algorithm .flow-node-icon {
+    border-radius: 10px;
+}
+
+.flow-node.type-algorithm .flow-node-badge {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+/* Algorithm trademark symbol */
+.algorithm-name {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 2px;
+}
+
+.algorithm-name .trademark {
+    font-size: 8px;
+    font-weight: 600;
+    vertical-align: super;
+    opacity: 0.8;
+    margin-left: 1px;
+}
+
+/* Algorithm codename styling */
+.algorithm-codename {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.9;
+    margin-bottom: 2px;
+}
+
+/* Algorithm version badge */
+.algorithm-version {
+    font-size: 9px;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    margin-left: 8px;
+}
+
+/* Algorithm modes */
+.algorithm-modes {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.algorithm-mode {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    font-size: 11px;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    flex: 1;
+    justify-content: center;
+}
+
+.algorithm-mode:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #e5e7eb;
+}
+
+.algorithm-mode.active {
+    border-color: currentColor;
+    color: inherit;
+}
+
+.algorithm-mode-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.5;
+}
+
+.algorithm-mode.active .algorithm-mode-indicator {
+    opacity: 1;
+    box-shadow: 0 0 6px currentColor;
+}
+
+/* Algorithm services/tech stack */
+.algorithm-tech {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 10px;
+    color: #6b7280;
+}
+
+.algorithm-tech-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+/* Glow color variations - set via inline style with CSS variable */
+.flow-node.type-algorithm {
+    --algo-color: #8b5cf6;
+    --algo-glow: #a78bfa;
+    border-color: var(--algo-color);
+}
+
+.flow-node.type-algorithm::before {
+    background: radial-gradient(ellipse at center, var(--algo-glow) 0%, transparent 70%);
+}
+
+.flow-node.type-algorithm .flow-node-icon {
+    background: color-mix(in srgb, var(--algo-color) 15%, transparent);
+    color: var(--algo-color);
+    border: 1px solid color-mix(in srgb, var(--algo-color) 30%, transparent);
+}
+
+.flow-node.type-algorithm .flow-node-badge {
+    background: color-mix(in srgb, var(--algo-color) 20%, transparent);
+    color: var(--algo-color);
+}
+
+.flow-node.type-algorithm .algorithm-codename {
+    color: var(--algo-color);
+}
+
+.flow-node.type-algorithm .algorithm-mode.active {
+    color: var(--algo-color);
+}
+
+/* Decision options list */
+.flow-node-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #2a2a2a;
+}
+
+.flow-node-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #9ca3af;
+    padding: 6px 8px;
+    background: #111111;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.flow-node-option:hover {
+    background: #1f1f1f;
+    color: #e5e7eb;
+}
+
+.flow-node-option-marker {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4b5563;
+    flex-shrink: 0;
+}
+
+.flow-node-option:hover .flow-node-option-marker {
+    background: #a78bfa;
+}
+
+/* Draft switch toggle */
+.flow-node-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #2a2a2a;
+}
+
+.flow-node-switch-label {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.flow-node-switch-toggle {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: #2a2a2a;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.flow-node-switch-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: #6b7280;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.flow-node-switch-toggle.active {
+    background: rgba(62, 207, 142, 0.3);
+}
+
+.flow-node-switch-toggle.active::after {
+    left: 18px;
+    background: #3ecf8e;
+}
+
+.flow-node-switch-status {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.flow-node-switch-status.draft {
+    color: #6b7280;
+}
+
+.flow-node-switch-status.live {
+    color: #3ecf8e;
+}
+
+/* Connection ports on nodes */
+.flow-node .flow-port {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #2a2a2a;
+    border: 2px solid #3a3a3a;
+    border-radius: 50%;
+    opacity: 0;
+    transition: all 0.2s ease;
+    cursor: crosshair;
+    z-index: 10;
+}
+
+.flow-node:hover .flow-port,
+.flow-node.selected .flow-port {
+    opacity: 1;
+}
+
+.flow-port:hover {
+    background: #3ecf8e;
+    border-color: #3ecf8e;
+    transform: scale(1.2);
+}
+
+.flow-port.port-top {
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.flow-port.port-bottom {
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.flow-port.port-left {
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.flow-port.port-right {
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.flow-node:hover .flow-port.port-top,
+.flow-node.selected .flow-port.port-top {
+    transform: translateX(-50%);
+}
+
+.flow-node:hover .flow-port.port-bottom,
+.flow-node.selected .flow-port.port-bottom {
+    transform: translateX(-50%);
+}
+
+.flow-node:hover .flow-port.port-left,
+.flow-node.selected .flow-port.port-left {
+    transform: translateY(-50%);
+}
+
+.flow-node:hover .flow-port.port-right,
+.flow-node.selected .flow-port.port-right {
+    transform: translateY(-50%);
+}
+
+/* Flowchart connections */
+.flow-connection {
+    pointer-events: none;
+}
+
+.flow-connection-line {
+    fill: none;
+    stroke: #3a3a3a;
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.flow-connection-line.type-step {
+    stroke: #3ecf8e;
+}
+
+.flow-connection-line.type-draft {
+    stroke: #6b7280;
+    stroke-dasharray: 6 4;
+}
+
+.flow-connection-line.type-link {
+    stroke: #60a5fa;
+    stroke-dasharray: 8 4;
+}
+
+.flow-connection-line.type-decision {
+    stroke: #a78bfa;
+}
+
+/* Flow connection arrow markers */
+.flow-arrow-marker {
+    fill: #3a3a3a;
+}
+
+.flow-arrow-marker.type-step {
+    fill: #3ecf8e;
+}
+
+.flow-arrow-marker.type-draft {
+    fill: #6b7280;
+}
+
+.flow-arrow-marker.type-link {
+    fill: #60a5fa;
+}
+
+/* Subservice cards (inside nodes) */
+.flow-node-subservices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.flow-subservice {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: #111111;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    font-size: 11px;
+    color: #9ca3af;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.flow-subservice:hover {
+    background: #1a1a1a;
+    border-color: #3a3a3a;
+    color: #e5e7eb;
+}
+
+.flow-subservice-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4b5563;
+}
+
+.flow-subservice.active .flow-subservice-dot {
+    background: #3ecf8e;
+}
+
+/* Link node specific */
+.flow-node.type-link .flow-link-arrow {
+    margin-left: auto;
+    color: #60a5fa;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.flow-node.type-link:hover .flow-link-arrow {
+    opacity: 1;
+}
+
+/* Empty flowchart state */
+.flow-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #6b7280;
+    text-align: center;
+    padding: 40px;
+}
+
+.flow-empty-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.flow-empty-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #9ca3af;
+    margin-bottom: 8px;
+}
+
+.flow-empty-description {
+    font-size: 13px;
+    max-width: 300px;
 }

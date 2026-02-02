@@ -160,23 +160,6 @@
                             </button>
                         </div>
 
-                        <!-- Mode toggle (View/Draft) - shown on detail view -->
-                        <div class="mode-toggle hidden" id="modeToggle">
-                            <button type="button" class="mode-btn active" data-mode="view" title="View Mode">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                </svg>
-                                View
-                            </button>
-                            <button type="button" class="mode-btn draft-mode" data-mode="draft" title="Draft Mode">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                </svg>
-                                Draft
-                            </button>
-                        </div>
                     </div>
 
                     <div class="toolbar-right">
@@ -307,16 +290,12 @@
                         <div class="legend-title">Legend</div>
                         <div class="legend-items">
                             <div class="legend-item">
-                                <div class="legend-swatch implemented"></div>
-                                <span>Implemented (from code)</span>
+                                <div class="legend-line live"></div>
+                                <span>Live</span>
                             </div>
                             <div class="legend-item">
-                                <div class="legend-swatch draft"></div>
-                                <span>Draft (proposed)</span>
-                            </div>
-                            <div class="legend-item">
-                                <div class="legend-swatch service"></div>
-                                <span>External Service</span>
+                                <div class="legend-line draft"></div>
+                                <span>Draft</span>
                             </div>
                         </div>
                     </div>
@@ -446,24 +425,11 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="moduleColor">Color</label>
-                            <select id="moduleColor" class="form-select">
-                                <option value="#6b7280">Gray (Draft)</option>
-                                <option value="#3ecf8e">Green</option>
-                                <option value="#60a5fa">Blue</option>
-                                <option value="#a78bfa">Purple</option>
-                                <option value="#f59e0b">Orange</option>
-                                <option value="#ef4444">Red</option>
+                            <label for="moduleDepartment">Department</label>
+                            <select id="moduleDepartment" class="form-select">
+                                <option value="">-- Select --</option>
                             </select>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-checkbox-label">
-                            <input type="checkbox" id="moduleIsImplemented">
-                            <span class="checkmark"></span>
-                            Module has real processes implemented
-                        </label>
-                        <span class="form-hint">Check this if the module connects to actual website functionality</span>
                     </div>
                 </form>
             </div>
@@ -477,6 +443,31 @@
         </div>
     </div>
 
+    <!-- Process Navigator Sidebar -->
+    <div class="process-navigator" id="processNavigator">
+        <div class="process-navigator-tab" id="processNavigatorTab">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
+        </div>
+        <div class="process-navigator-content">
+            <div class="process-navigator-header">
+                <h3>Processes</h3>
+                <div class="process-navigator-search">
+                    <input type="text" id="processSearchInput" placeholder="Search processes..." class="form-input">
+                </div>
+            </div>
+            <div class="process-navigator-list" id="processNavigatorList">
+                <!-- Processes will be rendered here -->
+            </div>
+        </div>
+    </div>
+
     <!-- Module Context Menu -->
     <div class="context-menu hidden" id="moduleContextMenu">
         <button type="button" class="context-menu-item" data-action="edit">
@@ -485,6 +476,14 @@
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
             </svg>
             Edit Module
+        </button>
+        <button type="button" class="context-menu-item" data-action="toggle-connection">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+            <span id="toggleConnectionLabel">Disconnect from Hub</span>
         </button>
         <button type="button" class="context-menu-item text-danger" data-action="delete">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

@@ -35,7 +35,7 @@
             name: 'Expense Tracking',
             description: 'Track, categorize, and reconcile business expenses',
             icon: 'receipt',
-            color: '#60a5fa',
+            color: '#3ecf8e',
             processIds: ['COGS_Authorization', 'Expense_Categorization', 'Receipt_Processing', 'QBO_Reconciliation', 'DRAFT_invoice_automation']
         },
         project_management: {
@@ -43,7 +43,7 @@
             name: 'Project Management',
             description: 'Coordinate projects, tasks, and team workflows',
             icon: 'briefcase',
-            color: '#60a5fa',
+            color: '#3ecf8e',
             processIds: ['Project_Health_Check']
         },
         communications: {
@@ -51,7 +51,7 @@
             name: 'Communications',
             description: 'Chat, notifications, and AI assistant',
             icon: 'message',
-            color: '#a78bfa',
+            color: '#3ecf8e',
             processIds: []  // Arturito processes would go here
         },
         reporting: {
@@ -59,7 +59,7 @@
             name: 'Reporting & Analytics',
             description: 'Budget monitoring and financial reports',
             icon: 'chart',
-            color: '#f59e0b',
+            color: '#3ecf8e',
             processIds: ['DRAFT_budget_alerts']
         }
     };
@@ -78,21 +78,21 @@
             name: 'Coordination',
             description: 'Project management and task coordination',
             icon: 'users',
-            color: '#60a5fa'
+            color: '#3ecf8e'
         },
         finance: {
             id: 'finance',
             name: 'Finance',
             description: 'Budget monitoring and financial planning',
             icon: 'dollar',
-            color: '#f59e0b'
+            color: '#3ecf8e'
         },
         operations: {
             id: 'operations',
             name: 'Operations',
             description: 'Day-to-day operational processes',
             icon: 'settings',
-            color: '#9ca3af'
+            color: '#3ecf8e'
         }
     };
 
@@ -593,6 +593,7 @@
         loadNodePositions();
         loadCustomModules();
         setupEventListeners();
+        initConnectionDragging();
         await loadProcesses();
         renderTreeView();
         updateStats();
@@ -1314,14 +1315,13 @@
 
         const iconSvg = getIconSvg(module.icon, module.color);
         const statusLabel = module.isImplemented ? 'LIVE' : 'DRAFT';
-        const portColor = module.isImplemented ? '#3ecf8e' : '#6b7280';
 
         node.innerHTML = `
-            <!-- Connection Ports -->
-            <div class="connection-port port-top" data-port="top" style="--port-color: ${portColor}"></div>
-            <div class="connection-port port-right" data-port="right" style="--port-color: ${portColor}"></div>
-            <div class="connection-port port-bottom" data-port="bottom" style="--port-color: ${portColor}"></div>
-            <div class="connection-port port-left" data-port="left" style="--port-color: ${portColor}"></div>
+            <!-- Connection Ports (discreet, shown on hover) -->
+            <div class="connection-port port-top" data-port="top" data-node="${module.id}"></div>
+            <div class="connection-port port-right" data-port="right" data-node="${module.id}"></div>
+            <div class="connection-port port-bottom" data-port="bottom" data-node="${module.id}"></div>
+            <div class="connection-port port-left" data-port="left" data-node="${module.id}"></div>
 
             <div class="tree-node-badge">${statusLabel}</div>
             <div class="tree-node-icon" style="background: ${module.color}20; border-color: ${module.color};">
@@ -1343,15 +1343,18 @@
     function redrawConnections(nodeRects) {
         clearConnections();
 
+        // Get actual node dimensions from DOM elements
+        const actualRects = getActualNodeRects(nodeRects);
+
         const groups = state.groupBy === 'deliverable' ? DELIVERABLES : DEPARTMENTS;
         const groupArray = Object.values(groups);
-        const hubRect = nodeRects.hub;
+        const hubRect = actualRects.hub;
         const hubCenterX = hubRect.x + hubRect.width / 2;
         const hubCenterY = hubRect.y + hubRect.height / 2;
 
         // Draw connections for built-in groups (always green/implemented)
         groupArray.forEach((group) => {
-            const rect = nodeRects[group.id];
+            const rect = actualRects[group.id];
             if (!rect) return;
 
             const nodeCenterX = rect.x + rect.width / 2;
@@ -1362,13 +1365,13 @@
                 hubRect, rect, hubCenterX, hubCenterY, nodeCenterX, nodeCenterY
             );
 
-            const connection = createOrthogonalConnection(points, group.color, false);
+            const connection = createOrthogonalConnection(points, group.color, false, `hub-${group.id}`);
             elements.connectionsLayer.appendChild(connection);
         });
 
         // Draw connections for custom modules (gray for drafts, green for implemented)
         state.customModules.forEach((module) => {
-            const rect = nodeRects[module.id];
+            const rect = actualRects[module.id];
             if (!rect) return;
 
             const nodeCenterX = rect.x + rect.width / 2;
@@ -1381,12 +1384,37 @@
             // Use gray for drafts, green for implemented
             const connectionColor = module.isImplemented ? '#3ecf8e' : '#6b7280';
             const isDraft = !module.isImplemented;
-            const connection = createOrthogonalConnection(points, connectionColor, isDraft);
+            const connection = createOrthogonalConnection(points, connectionColor, isDraft, `hub-${module.id}`);
             elements.connectionsLayer.appendChild(connection);
         });
 
         // Update minimap after redrawing connections
         updateMinimap();
+    }
+
+    // Get actual rendered dimensions of nodes from DOM
+    function getActualNodeRects(fallbackRects) {
+        const actualRects = {};
+
+        Object.keys(fallbackRects).forEach(nodeId => {
+            const nodeEl = elements.treeViewContainer.querySelector(`[data-id="${nodeId}"]`);
+            if (nodeEl) {
+                const x = parseInt(nodeEl.style.left) || fallbackRects[nodeId].x;
+                const y = parseInt(nodeEl.style.top) || fallbackRects[nodeId].y;
+                // Use actual rendered dimensions
+                const width = nodeEl.offsetWidth || fallbackRects[nodeId].width;
+                const height = nodeEl.offsetHeight || fallbackRects[nodeId].height;
+                actualRects[nodeId] = {
+                    x, y, width, height,
+                    isCustom: fallbackRects[nodeId].isCustom,
+                    isImplemented: fallbackRects[nodeId].isImplemented
+                };
+            } else {
+                actualRects[nodeId] = fallbackRects[nodeId];
+            }
+        });
+
+        return actualRects;
     }
 
     function calculateOrthogonalPath(hubRect, nodeRect, hubCX, hubCY, nodeCX, nodeCY) {
@@ -1453,8 +1481,13 @@
         }
     }
 
-    function createOrthogonalConnection(points, color = '#3ecf8e', isDraft = false) {
+    function createOrthogonalConnection(points, color = '#3ecf8e', isDraft = false, connectionId = null) {
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'connection-group');
+        if (connectionId) {
+            g.setAttribute('data-connection-id', connectionId);
+        }
+
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 
         // Build SVG path with rounded corners
@@ -1510,44 +1543,27 @@
 
         g.appendChild(path);
 
-        // Add endpoint dots (larger, more visible like 3ds Max style)
-        // Start dot (from hub)
-        const startDotOuter = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        startDotOuter.setAttribute('cx', points[0].x);
-        startDotOuter.setAttribute('cy', points[0].y);
-        startDotOuter.setAttribute('r', '8');
-        startDotOuter.setAttribute('fill', '#1a1a1a');
-        startDotOuter.setAttribute('stroke', '#3ecf8e');
-        startDotOuter.setAttribute('stroke-width', '2');
-        startDotOuter.setAttribute('class', `connection-port-dot start ${statusClass}`);
-        g.appendChild(startDotOuter);
+        // Small endpoint markers (discreet, match line color)
+        const endpointRadius = 4;
+        const endpointColor = isDraft ? '#6b7280' : color;
 
-        const startDotInner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        startDotInner.setAttribute('cx', points[0].x);
-        startDotInner.setAttribute('cy', points[0].y);
-        startDotInner.setAttribute('r', '3');
-        startDotInner.setAttribute('fill', '#3ecf8e');
-        startDotInner.setAttribute('class', `connection-port-inner start ${statusClass}`);
-        g.appendChild(startDotInner);
+        // Start endpoint (at hub)
+        const startEndpoint = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        startEndpoint.setAttribute('cx', points[0].x);
+        startEndpoint.setAttribute('cy', points[0].y);
+        startEndpoint.setAttribute('r', endpointRadius);
+        startEndpoint.setAttribute('fill', endpointColor);
+        startEndpoint.setAttribute('class', 'connection-endpoint-inner');
+        g.appendChild(startEndpoint);
 
-        // End dot (to module)
-        const endDotOuter = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        endDotOuter.setAttribute('cx', points[points.length - 1].x);
-        endDotOuter.setAttribute('cy', points[points.length - 1].y);
-        endDotOuter.setAttribute('r', '8');
-        endDotOuter.setAttribute('fill', '#1a1a1a');
-        endDotOuter.setAttribute('stroke', color);
-        endDotOuter.setAttribute('stroke-width', '2');
-        endDotOuter.setAttribute('class', `connection-port-dot end ${statusClass}`);
-        g.appendChild(endDotOuter);
-
-        const endDotInner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        endDotInner.setAttribute('cx', points[points.length - 1].x);
-        endDotInner.setAttribute('cy', points[points.length - 1].y);
-        endDotInner.setAttribute('r', '3');
-        endDotInner.setAttribute('fill', color);
-        endDotInner.setAttribute('class', `connection-port-inner end ${statusClass}`);
-        g.appendChild(endDotInner);
+        // End endpoint (at target node)
+        const endEndpoint = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        endEndpoint.setAttribute('cx', points[points.length - 1].x);
+        endEndpoint.setAttribute('cy', points[points.length - 1].y);
+        endEndpoint.setAttribute('r', endpointRadius);
+        endEndpoint.setAttribute('fill', endpointColor);
+        endEndpoint.setAttribute('class', 'connection-endpoint-inner');
+        g.appendChild(endEndpoint);
 
         return g;
     }
@@ -1656,14 +1672,13 @@
         node.dataset.id = data.id;
 
         const iconSvg = getIconSvg(data.icon, data.color);
-        const portColor = data.isCentral ? '#3ecf8e' : (data.color || '#3ecf8e');
 
         node.innerHTML = `
-            <!-- Connection Ports -->
-            <div class="connection-port port-top" data-port="top" style="--port-color: ${portColor}"></div>
-            <div class="connection-port port-right" data-port="right" style="--port-color: ${portColor}"></div>
-            <div class="connection-port port-bottom" data-port="bottom" style="--port-color: ${portColor}"></div>
-            <div class="connection-port port-left" data-port="left" style="--port-color: ${portColor}"></div>
+            <!-- Connection Ports (discreet, shown on hover) -->
+            <div class="connection-port port-top" data-port="top" data-node="${data.id}"></div>
+            <div class="connection-port port-right" data-port="right" data-node="${data.id}"></div>
+            <div class="connection-port port-bottom" data-port="bottom" data-node="${data.id}"></div>
+            <div class="connection-port port-left" data-port="left" data-node="${data.id}"></div>
 
             <div class="tree-node-icon${data.icon === 'hub' ? '' : (state.groupBy === 'department' ? ' department' : '')}">
                 ${iconSvg}
@@ -2625,7 +2640,7 @@
                 0,
                 Math.PI * 2
             );
-            ctx.fillStyle = group.color || '#60a5fa';
+            ctx.fillStyle = '#3ecf8e';
             ctx.fill();
         });
 
@@ -2770,6 +2785,175 @@
         } else {
             console.log(`[TOAST ${type.toUpperCase()}] ${message}`);
         }
+    }
+
+    // ================================
+    // Drag-to-Connect Functionality
+    // ================================
+    let connectionDragState = {
+        isDragging: false,
+        sourceNodeId: null,
+        targetNodeId: null,
+        startPoint: null,
+        tempLine: null
+    };
+
+    function initConnectionDragging() {
+        // Listen for mousedown on connection endpoints in SVG
+        if (elements.connectionsLayer) {
+            elements.connectionsLayer.addEventListener('mousedown', handleConnectionEndpointMouseDown);
+        }
+
+        // Global mouse events for dragging
+        document.addEventListener('mousemove', handleConnectionDragMove);
+        document.addEventListener('mouseup', handleConnectionDragEnd);
+    }
+
+    function handleConnectionEndpointMouseDown(e) {
+        const endpoint = e.target.closest('.connection-endpoint-inner');
+        if (!endpoint) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const connectionGroup = endpoint.closest('.connection-group');
+        if (!connectionGroup) return;
+
+        const connectionId = connectionGroup.getAttribute('data-connection-id');
+        if (!connectionId) return;
+
+        // Parse connection ID (format: "hub-nodeId")
+        const parts = connectionId.split('-');
+        if (parts.length < 2) return;
+
+        const sourceNodeId = parts[0];
+        const targetNodeId = parts.slice(1).join('-');
+
+        // Start drag mode
+        connectionDragState.isDragging = true;
+        connectionDragState.sourceNodeId = sourceNodeId;
+        connectionDragState.targetNodeId = targetNodeId;
+
+        // Get start position (the other endpoint)
+        const circles = connectionGroup.querySelectorAll('.connection-endpoint-inner');
+        const otherCircle = Array.from(circles).find(c => c !== endpoint);
+        if (otherCircle) {
+            connectionDragState.startPoint = {
+                x: parseFloat(otherCircle.getAttribute('cx')),
+                y: parseFloat(otherCircle.getAttribute('cy'))
+            };
+        }
+
+        // Enter connecting mode
+        elements.canvasContainer.classList.add('connecting-mode');
+
+        // Create temporary line
+        createTempConnectionLine();
+
+        // Hide the original connection
+        connectionGroup.style.opacity = '0.3';
+    }
+
+    function handleConnectionDragMove(e) {
+        if (!connectionDragState.isDragging) return;
+
+        const gridRect = elements.canvasGrid.getBoundingClientRect();
+
+        // Calculate mouse position relative to the grid
+        const mouseX = (e.clientX - gridRect.left) / state.canvas.scale;
+        const mouseY = (e.clientY - gridRect.top) / state.canvas.scale;
+
+        // Update temp line
+        updateTempConnectionLine(mouseX, mouseY);
+
+        // Check for port hover
+        checkPortHover(e.clientX, e.clientY);
+    }
+
+    function handleConnectionDragEnd(e) {
+        if (!connectionDragState.isDragging) return;
+
+        // Find if we dropped on a valid port
+        const port = document.elementFromPoint(e.clientX, e.clientY);
+        const portElement = port?.closest('.connection-port');
+
+        if (portElement) {
+            const newTargetNodeId = portElement.getAttribute('data-node');
+            if (newTargetNodeId && newTargetNodeId !== connectionDragState.sourceNodeId) {
+                // Valid drop - connection would be updated here
+                // For now, just show feedback
+                console.log(`[CONNECTIONS] Would reconnect from ${connectionDragState.sourceNodeId} to ${newTargetNodeId}`);
+            }
+        }
+
+        // Clean up
+        removeTempConnectionLine();
+        clearPortHighlights();
+        elements.canvasContainer.classList.remove('connecting-mode');
+
+        // Show original connection again
+        const connectionGroup = elements.connectionsLayer.querySelector(
+            `[data-connection-id="${connectionDragState.sourceNodeId}-${connectionDragState.targetNodeId}"]`
+        );
+        if (connectionGroup) {
+            connectionGroup.style.opacity = '';
+        }
+
+        // Reset state
+        connectionDragState = {
+            isDragging: false,
+            sourceNodeId: null,
+            targetNodeId: null,
+            startPoint: null,
+            tempLine: null
+        };
+    }
+
+    function createTempConnectionLine() {
+        if (!connectionDragState.startPoint) return;
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('class', 'connection-temp');
+        line.setAttribute('x1', connectionDragState.startPoint.x);
+        line.setAttribute('y1', connectionDragState.startPoint.y);
+        line.setAttribute('x2', connectionDragState.startPoint.x);
+        line.setAttribute('y2', connectionDragState.startPoint.y);
+
+        elements.connectionsLayer.appendChild(line);
+        connectionDragState.tempLine = line;
+    }
+
+    function updateTempConnectionLine(x, y) {
+        if (!connectionDragState.tempLine) return;
+
+        connectionDragState.tempLine.setAttribute('x2', x);
+        connectionDragState.tempLine.setAttribute('y2', y);
+    }
+
+    function removeTempConnectionLine() {
+        if (connectionDragState.tempLine) {
+            connectionDragState.tempLine.remove();
+            connectionDragState.tempLine = null;
+        }
+    }
+
+    function checkPortHover(clientX, clientY) {
+        // Clear previous highlights
+        clearPortHighlights();
+
+        // Find element under cursor
+        const element = document.elementFromPoint(clientX, clientY);
+        const port = element?.closest('.connection-port');
+
+        if (port) {
+            port.classList.add('drop-target');
+        }
+    }
+
+    function clearPortHighlights() {
+        document.querySelectorAll('.connection-port.drop-target').forEach(p => {
+            p.classList.remove('drop-target');
+        });
     }
 
     // ================================

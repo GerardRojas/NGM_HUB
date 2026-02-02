@@ -726,12 +726,70 @@
     };
 
     // ================================
-    // Position Persistence
+    // Supabase Persistence (Shared State)
     // ================================
+    // Local storage keys (fallback/cache when API unavailable)
     const POSITIONS_KEY = 'ngm_process_manager_positions';
     const CUSTOM_MODULES_KEY = 'ngm_process_manager_custom_modules';
 
-    function loadNodePositions() {
+    // Debounce timers for saving
+    const saveTimers = {};
+
+    // Generic function to load state from Supabase
+    async function loadStateFromSupabase(stateKey, defaultValue = {}) {
+        try {
+            const res = await fetch(`${API_BASE}/process-manager/state/${stateKey}`);
+            if (res.ok) {
+                const data = await res.json();
+                console.log(`[PROCESS-MANAGER] Loaded ${stateKey} from Supabase`);
+                return data.state_data || defaultValue;
+            }
+        } catch (e) {
+            console.warn(`[PROCESS-MANAGER] Error loading ${stateKey} from Supabase:`, e);
+        }
+        return null; // Return null to indicate fallback to localStorage
+    }
+
+    // Generic function to save state to Supabase (debounced)
+    function saveStateToSupabase(stateKey, data, delay = 1000) {
+        // Clear existing timer
+        if (saveTimers[stateKey]) {
+            clearTimeout(saveTimers[stateKey]);
+        }
+
+        // Debounce the save
+        saveTimers[stateKey] = setTimeout(async () => {
+            try {
+                const userId = state.currentUser?.id || null;
+                await fetch(`${API_BASE}/process-manager/state/${stateKey}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        state_data: data,
+                        updated_by: userId
+                    })
+                });
+                console.log(`[PROCESS-MANAGER] Saved ${stateKey} to Supabase`);
+            } catch (e) {
+                console.warn(`[PROCESS-MANAGER] Error saving ${stateKey} to Supabase:`, e);
+            }
+        }, delay);
+    }
+
+    // ================================
+    // Position Persistence
+    // ================================
+    async function loadNodePositions() {
+        // Try Supabase first
+        const supabaseData = await loadStateFromSupabase('node_positions', {});
+        if (supabaseData !== null) {
+            state.nodePositions = supabaseData;
+            // Update local cache
+            localStorage.setItem(POSITIONS_KEY, JSON.stringify(supabaseData));
+            return;
+        }
+
+        // Fallback to localStorage
         try {
             const saved = localStorage.getItem(POSITIONS_KEY);
             if (saved) {
@@ -744,21 +802,35 @@
     }
 
     function saveNodePositions() {
+        // Save to localStorage immediately (cache)
         try {
             localStorage.setItem(POSITIONS_KEY, JSON.stringify(state.nodePositions));
         } catch (e) {
-            console.warn('[PROCESS-MANAGER] Error saving positions:', e);
+            console.warn('[PROCESS-MANAGER] Error saving positions to localStorage:', e);
         }
+
+        // Save to Supabase (debounced)
+        saveStateToSupabase('node_positions', state.nodePositions);
     }
 
     // ================================
     // Custom Modules Storage
     // ================================
-    function loadCustomModules() {
+    async function loadCustomModules() {
+        // Try Supabase first
+        const supabaseData = await loadStateFromSupabase('custom_modules', []);
+        if (supabaseData !== null) {
+            state.customModules = normalizeModules(supabaseData);
+            // Update local cache
+            localStorage.setItem(CUSTOM_MODULES_KEY, JSON.stringify(state.customModules));
+            return;
+        }
+
+        // Fallback to localStorage
         try {
             const saved = localStorage.getItem(CUSTOM_MODULES_KEY);
             if (saved) {
-                state.customModules = JSON.parse(saved);
+                state.customModules = normalizeModules(JSON.parse(saved));
             } else {
                 state.customModules = [];
             }
@@ -768,9 +840,23 @@
         }
     }
 
+    // Ensure all modules have required properties (backwards compatibility)
+    function normalizeModules(modules) {
+        return modules.map(m => ({
+            ...m,
+            type: m.type || 'step',
+            size: m.size || 'medium',
+            connectedToHub: m.connectedToHub !== false,
+            isCustom: true
+        }));
+    }
+
     function saveCustomModules() {
         try {
+            // Save to localStorage as cache
             localStorage.setItem(CUSTOM_MODULES_KEY, JSON.stringify(state.customModules));
+            // Save to Supabase (debounced)
+            saveStateToSupabase('custom_modules', state.customModules);
         } catch (e) {
             console.warn('[PROCESS-MANAGER] Error saving custom modules:', e);
         }
@@ -823,6 +909,8 @@
             icon: moduleData.icon || 'box',
             color: moduleData.color || '#6b7280',
             departmentId: moduleData.departmentId || null,
+            type: moduleData.type || 'step',
+            size: moduleData.size || 'medium',
             isImplemented: moduleData.isImplemented || false,
             isCustom: true,
             connectedToHub: true, // Can be disconnected via context menu
@@ -941,10 +1029,13 @@
     async function init() {
         cacheElements();
         loadCurrentUser();
-        loadNodePositions();
-        loadCustomModules();
-        loadFlowPositions();
-        loadDraftStates();
+        // Load all persisted state from Supabase (with localStorage fallback)
+        await Promise.all([
+            loadNodePositions(),
+            loadCustomModules(),
+            loadFlowPositions(),
+            loadDraftStates()
+        ]);
         setupEventListeners();
         initConnectionDragging();
         await loadProcesses();
@@ -1085,11 +1176,22 @@
         const btnCancel = document.getElementById('btnCancelModule');
         const btnSave = document.getElementById('btnSaveModule');
         const btnDelete = document.getElementById('btnDeleteModule');
+        const typeSelect = document.getElementById('moduleType');
+        const sizeSelect = document.getElementById('moduleSize');
 
         if (btnClose) btnClose.addEventListener('click', closeModuleModal);
         if (btnCancel) btnCancel.addEventListener('click', closeModuleModal);
         if (btnSave) btnSave.addEventListener('click', saveModule);
         if (btnDelete) btnDelete.addEventListener('click', confirmDeleteModule);
+
+        // Auto-select small size for algorithm type
+        if (typeSelect && sizeSelect) {
+            typeSelect.addEventListener('change', (e) => {
+                if (e.target.value === 'algorithm') {
+                    sizeSelect.value = 'small';
+                }
+            });
+        }
 
         modal.addEventListener('click', (e) => {
             if (e.target === modal) closeModuleModal();
@@ -1126,6 +1228,8 @@
         document.getElementById('moduleModalTitle').textContent = 'Add Module';
         document.getElementById('moduleForm').reset();
         document.getElementById('moduleEditId').value = '';
+        document.getElementById('moduleType').value = 'step';
+        document.getElementById('moduleSize').value = 'medium';
         document.getElementById('btnDeleteModule').classList.add('hidden');
 
         elements.moduleModal.classList.remove('hidden');
@@ -1144,6 +1248,8 @@
         document.getElementById('moduleDescription').value = module.description || '';
         document.getElementById('moduleIcon').value = module.icon || 'box';
         document.getElementById('moduleDepartment').value = module.departmentId || '';
+        document.getElementById('moduleType').value = module.type || 'step';
+        document.getElementById('moduleSize').value = module.size || 'medium';
         document.getElementById('btnDeleteModule').classList.remove('hidden');
 
         elements.moduleModal.classList.remove('hidden');
@@ -1169,7 +1275,9 @@
             name: document.getElementById('moduleName').value.trim(),
             description: document.getElementById('moduleDescription').value.trim(),
             icon: document.getElementById('moduleIcon').value,
-            departmentId: document.getElementById('moduleDepartment').value || null
+            departmentId: document.getElementById('moduleDepartment').value || null,
+            type: document.getElementById('moduleType').value || 'step',
+            size: document.getElementById('moduleSize').value || 'medium'
         };
 
         if (!moduleData.name) {
@@ -1714,7 +1822,9 @@
     function createCustomModuleNode(module, x, y) {
         const node = document.createElement('div');
         const statusClass = module.isImplemented ? 'is-implemented' : 'is-draft';
-        node.className = `tree-node custom-module ${statusClass}`;
+        const typeClass = module.type ? `type-${module.type}` : 'type-step';
+        const sizeClass = module.size ? `size-${module.size}` : 'size-medium';
+        node.className = `tree-node custom-module ${statusClass} ${typeClass} ${sizeClass}`;
         node.style.left = `${x}px`;
         node.style.top = `${y}px`;
         node.dataset.id = module.id;
@@ -3370,7 +3480,17 @@
     // ================================
     // Process Flowchart Rendering
     // ================================
-    function loadFlowPositions() {
+    async function loadFlowPositions() {
+        // Try Supabase first
+        const supabaseData = await loadStateFromSupabase('flow_positions', {});
+        if (supabaseData !== null) {
+            state.flowNodePositions = supabaseData;
+            // Update local cache
+            localStorage.setItem(FLOW_POSITIONS_KEY, JSON.stringify(supabaseData));
+            return;
+        }
+
+        // Fallback to localStorage
         try {
             const saved = localStorage.getItem(FLOW_POSITIONS_KEY);
             if (saved) {
@@ -3384,7 +3504,10 @@
 
     function saveFlowPositions() {
         try {
+            // Save to localStorage as cache
             localStorage.setItem(FLOW_POSITIONS_KEY, JSON.stringify(state.flowNodePositions));
+            // Save to Supabase (debounced)
+            saveStateToSupabase('flow_positions', state.flowNodePositions);
         } catch (e) {
             console.warn('[PROCESS-MANAGER] Error saving flow positions:', e);
         }
@@ -3796,7 +3919,7 @@
     }
 
     function saveDraftStates() {
-        // Save draft states to localStorage
+        // Collect draft states
         const states = {};
         Object.keys(PROCESS_FLOWCHARTS).forEach(processId => {
             const flowchart = PROCESS_FLOWCHARTS[processId];
@@ -3807,31 +3930,48 @@
             });
         });
         try {
+            // Save to localStorage as cache
             localStorage.setItem('ngm_flowchart_draft_states', JSON.stringify(states));
+            // Save to Supabase (debounced)
+            saveStateToSupabase('draft_states', states);
         } catch (e) {
             console.warn('[PROCESS-MANAGER] Error saving draft states:', e);
         }
     }
 
-    function loadDraftStates() {
+    async function loadDraftStates() {
+        // Try Supabase first
+        const supabaseData = await loadStateFromSupabase('draft_states', {});
+        if (supabaseData !== null) {
+            applyDraftStates(supabaseData);
+            // Update local cache
+            localStorage.setItem('ngm_flowchart_draft_states', JSON.stringify(supabaseData));
+            return;
+        }
+
+        // Fallback to localStorage
         try {
             const saved = localStorage.getItem('ngm_flowchart_draft_states');
             if (saved) {
                 const states = JSON.parse(saved);
-                Object.keys(states).forEach(key => {
-                    const [processId, nodeId] = key.split('_');
-                    const flowchart = PROCESS_FLOWCHARTS[processId];
-                    if (flowchart) {
-                        const node = flowchart.nodes.find(n => n.id === nodeId);
-                        if (node && node.type === 'draft') {
-                            node.is_implemented = states[key];
-                        }
-                    }
-                });
+                applyDraftStates(states);
             }
         } catch (e) {
             console.warn('[PROCESS-MANAGER] Error loading draft states:', e);
         }
+    }
+
+    function applyDraftStates(states) {
+        Object.keys(states).forEach(key => {
+            const [processId, nodeId] = key.split('_');
+            const flowchart = PROCESS_FLOWCHARTS[processId];
+            if (flowchart) {
+                const node = flowchart.nodes.find(n => n.id === nodeId);
+                if (node && node.type === 'draft') {
+                    node.is_implemented = states[key];
+                }
+            }
+        });
     }
 
     function makeFlowNodeDraggable(nodeEl, processId, nodeId, onDrag) {

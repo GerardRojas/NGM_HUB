@@ -2982,6 +2982,148 @@
 }
 
 /* ================================
+   Tree Node Sizes
+   ================================ */
+.tree-node.custom-module.size-large {
+    min-width: 260px;
+    max-width: 300px;
+    padding: 20px;
+}
+
+.tree-node.custom-module.size-medium {
+    min-width: 200px;
+    max-width: 240px;
+    padding: 16px;
+}
+
+.tree-node.custom-module.size-small {
+    min-width: 140px;
+    max-width: 180px;
+    padding: 12px;
+}
+
+.tree-node.custom-module.size-small .tree-node-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px;
+}
+
+.tree-node.custom-module.size-small .tree-node-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.tree-node.custom-module.size-small .tree-node-title {
+    font-size: 13px;
+}
+
+.tree-node.custom-module.size-small .tree-node-subtitle {
+    font-size: 11px;
+    margin-bottom: 8px;
+}
+
+.tree-node.custom-module.size-small .tree-node-stats {
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tree-node.custom-module.size-small .tree-node-stat {
+    font-size: 10px;
+}
+
+/* ================================
+   Tree Node Types
+   ================================ */
+.tree-node.custom-module.type-link {
+    border-color: #60a5fa;
+}
+
+.tree-node.custom-module.type-link .tree-node-icon {
+    background: rgba(96, 165, 250, 0.15) !important;
+    border-color: #60a5fa !important;
+}
+
+.tree-node.custom-module.type-link .tree-node-icon svg {
+    color: #60a5fa;
+}
+
+.tree-node.custom-module.type-milestone {
+    border-color: #f59e0b;
+    border-radius: 24px;
+}
+
+.tree-node.custom-module.type-milestone .tree-node-icon {
+    background: rgba(245, 158, 11, 0.15) !important;
+    border-color: #f59e0b !important;
+}
+
+.tree-node.custom-module.type-milestone .tree-node-icon svg {
+    color: #f59e0b;
+}
+
+.tree-node.custom-module.type-decision {
+    border-color: #a78bfa;
+}
+
+.tree-node.custom-module.type-decision .tree-node-icon {
+    background: rgba(167, 139, 250, 0.15) !important;
+    border-color: #a78bfa !important;
+}
+
+.tree-node.custom-module.type-decision .tree-node-icon svg {
+    color: #a78bfa;
+}
+
+/* Algorithm type - special branding */
+.tree-node.custom-module.type-algorithm {
+    border-width: 2px;
+    border-style: solid;
+    border-color: var(--algo-color, #8b5cf6);
+    background: linear-gradient(135deg, #1a1a1a 0%, #1a1a2e 100%);
+    position: relative;
+    overflow: visible;
+}
+
+.tree-node.custom-module.type-algorithm::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background: radial-gradient(ellipse at center, var(--algo-glow, #a78bfa) 0%, transparent 70%);
+    opacity: 0.3;
+    z-index: -1;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.tree-node.custom-module.type-algorithm:hover::before {
+    opacity: 0.5;
+}
+
+.tree-node.custom-module.type-algorithm .tree-node-icon {
+    background: rgba(139, 92, 246, 0.15) !important;
+    border-color: #8b5cf6 !important;
+}
+
+.tree-node.custom-module.type-algorithm .tree-node-icon svg {
+    color: #8b5cf6;
+}
+
+.tree-node.custom-module.type-algorithm .tree-node-badge {
+    background: rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+}
+
+.tree-node.custom-module.type-algorithm .tree-node-title::after {
+    content: 'TM';
+    font-size: 8px;
+    font-weight: 600;
+    vertical-align: super;
+    margin-left: 2px;
+    color: #8b5cf6;
+}
+
+/* ================================
    Connection Colors by Status
    ================================ */
 /* Draft module connections - gray dashed */
@@ -3469,50 +3611,53 @@
    Process Flowchart Nodes
    ================================ */
 
-/* Base node styles */
+/* Base node styles - matching tree-node aesthetic */
 .flow-node {
     position: absolute;
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 12px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
+    border: 2px solid #1f1f1f;
+    border-radius: 10px;
     cursor: grab;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
     user-select: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .flow-node:hover {
-    border-color: #3a3a3a;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border-color: #3ecf8e;
+    box-shadow: 0 8px 32px rgba(62, 207, 142, 0.15);
+    transform: translateY(-1px);
 }
 
 .flow-node.dragging {
     cursor: grabbing;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    border-color: #3ecf8e;
     z-index: 100;
 }
 
 .flow-node.selected {
     border-color: #3ecf8e;
-    box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.2);
+    box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.2), 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 /* Node sizes */
 .flow-node.size-large {
     width: 280px;
     min-height: 120px;
-    padding: 16px;
+    padding: 18px 20px;
 }
 
 .flow-node.size-medium {
     width: 220px;
-    min-height: 90px;
-    padding: 14px;
+    min-height: 100px;
+    padding: 16px 18px;
 }
 
 .flow-node.size-small {
     width: 160px;
-    min-height: 60px;
-    padding: 10px;
+    min-height: 70px;
+    padding: 12px 14px;
 }
 
 /* Node content layout */
@@ -3521,37 +3666,43 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
 .flow-node-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    border: 1px solid transparent;
 }
 
 .flow-node.size-medium .flow-node-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+}
+
+.flow-node.size-small .flow-node-icon {
     width: 28px;
     height: 28px;
     border-radius: 6px;
 }
 
-.flow-node.size-small .flow-node-icon {
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-}
-
 .flow-node-icon svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     stroke: currentColor;
     stroke-width: 2;
     fill: none;
+}
+
+.flow-node.size-medium .flow-node-icon svg {
+    width: 18px;
+    height: 18px;
 }
 
 .flow-node.size-small .flow-node-icon svg {
@@ -3564,21 +3715,21 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 2px 6px;
-    border-radius: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
     flex-shrink: 0;
 }
 
 .flow-node-title {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     color: #e5e7eb;
     line-height: 1.3;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 }
 
 .flow-node.size-medium .flow-node-title {
-    font-size: 13px;
+    font-size: 14px;
 }
 
 .flow-node.size-small .flow-node-title {
@@ -3588,8 +3739,8 @@
 
 .flow-node-description {
     font-size: 12px;
-    color: #9ca3af;
-    line-height: 1.4;
+    color: #6b7280;
+    line-height: 1.5;
 }
 
 .flow-node.size-small .flow-node-description {

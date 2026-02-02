@@ -3031,3 +3031,148 @@
 .tree-node.custom-module:hover::after {
     opacity: 0.6;
 }
+
+/* ================================
+   Connection Ports (3ds Max Style)
+   ================================ */
+.connection-port {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #1a1a1a;
+    border: 2px solid var(--port-color, #3ecf8e);
+    border-radius: 50%;
+    z-index: 10;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.connection-port::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 4px;
+    background: var(--port-color, #3ecf8e);
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.connection-port:hover {
+    transform: scale(1.3);
+    box-shadow: 0 0 8px var(--port-color, #3ecf8e);
+}
+
+.connection-port:hover::after {
+    width: 6px;
+    height: 6px;
+}
+
+/* Port positions */
+.connection-port.port-top {
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.connection-port.port-right {
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.connection-port.port-bottom {
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.connection-port.port-left {
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Port hover transforms (preserve position) */
+.connection-port.port-top:hover {
+    transform: translateX(-50%) scale(1.3);
+}
+
+.connection-port.port-right:hover {
+    transform: translateY(-50%) scale(1.3);
+}
+
+.connection-port.port-bottom:hover {
+    transform: translateX(-50%) scale(1.3);
+}
+
+.connection-port.port-left:hover {
+    transform: translateY(-50%) scale(1.3);
+}
+
+/* Active port (when connected) */
+.connection-port.active {
+    background: var(--port-color, #3ecf8e);
+    box-shadow: 0 0 12px var(--port-color, #3ecf8e);
+}
+
+.connection-port.active::after {
+    background: #fff;
+}
+
+/* SVG Connection Port Dots */
+.connection-port-dot {
+    transition: all 0.2s ease;
+}
+
+.connection-port-dot:hover {
+    filter: drop-shadow(0 0 6px currentColor);
+}
+
+.connection-port-inner {
+    transition: all 0.2s ease;
+}
+
+/* ================================
+   Connection Line Animation Fix
+   ================================ */
+@keyframes flowDash {
+    from {
+        stroke-dashoffset: 24;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.connection-path.animated {
+    stroke-dasharray: 8 4;
+    animation: flowDash 0.8s linear infinite;
+}
+
+.connection-path.module-implemented {
+    stroke-dasharray: 8 4;
+    animation: flowDash 0.8s linear infinite !important;
+}
+
+.connection-path.module-draft {
+    stroke-dasharray: 6 4;
+    animation: none !important;
+    opacity: 0.7;
+}
+
+/* Glow effect on connection hover */
+.connection-path:hover {
+    filter: drop-shadow(0 0 4px currentColor);
+}
+
+/* Connection port dots for draft modules */
+.connection-port-dot.module-draft {
+    stroke: #6b7280 !important;
+}
+
+.connection-port-inner.module-draft {
+    fill: #6b7280 !important;
+}

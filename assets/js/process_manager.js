@@ -1314,8 +1314,15 @@
 
         const iconSvg = getIconSvg(module.icon, module.color);
         const statusLabel = module.isImplemented ? 'LIVE' : 'DRAFT';
+        const portColor = module.isImplemented ? '#3ecf8e' : '#6b7280';
 
         node.innerHTML = `
+            <!-- Connection Ports -->
+            <div class="connection-port port-top" data-port="top" style="--port-color: ${portColor}"></div>
+            <div class="connection-port port-right" data-port="right" style="--port-color: ${portColor}"></div>
+            <div class="connection-port port-bottom" data-port="bottom" style="--port-color: ${portColor}"></div>
+            <div class="connection-port port-left" data-port="left" style="--port-color: ${portColor}"></div>
+
             <div class="tree-node-badge">${statusLabel}</div>
             <div class="tree-node-icon" style="background: ${module.color}20; border-color: ${module.color};">
                 ${iconSvg}
@@ -1503,22 +1510,44 @@
 
         g.appendChild(path);
 
-        // Add endpoint dots
-        const startDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        startDot.setAttribute('cx', points[0].x);
-        startDot.setAttribute('cy', points[0].y);
-        startDot.setAttribute('r', '4');
-        startDot.setAttribute('fill', '#3ecf8e');
-        startDot.setAttribute('class', `connection-dot start ${statusClass}`);
-        g.appendChild(startDot);
+        // Add endpoint dots (larger, more visible like 3ds Max style)
+        // Start dot (from hub)
+        const startDotOuter = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        startDotOuter.setAttribute('cx', points[0].x);
+        startDotOuter.setAttribute('cy', points[0].y);
+        startDotOuter.setAttribute('r', '8');
+        startDotOuter.setAttribute('fill', '#1a1a1a');
+        startDotOuter.setAttribute('stroke', '#3ecf8e');
+        startDotOuter.setAttribute('stroke-width', '2');
+        startDotOuter.setAttribute('class', `connection-port-dot start ${statusClass}`);
+        g.appendChild(startDotOuter);
 
-        const endDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        endDot.setAttribute('cx', points[points.length - 1].x);
-        endDot.setAttribute('cy', points[points.length - 1].y);
-        endDot.setAttribute('r', '4');
-        endDot.setAttribute('fill', color);
-        endDot.setAttribute('class', `connection-dot end ${statusClass}`);
-        g.appendChild(endDot);
+        const startDotInner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        startDotInner.setAttribute('cx', points[0].x);
+        startDotInner.setAttribute('cy', points[0].y);
+        startDotInner.setAttribute('r', '3');
+        startDotInner.setAttribute('fill', '#3ecf8e');
+        startDotInner.setAttribute('class', `connection-port-inner start ${statusClass}`);
+        g.appendChild(startDotInner);
+
+        // End dot (to module)
+        const endDotOuter = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        endDotOuter.setAttribute('cx', points[points.length - 1].x);
+        endDotOuter.setAttribute('cy', points[points.length - 1].y);
+        endDotOuter.setAttribute('r', '8');
+        endDotOuter.setAttribute('fill', '#1a1a1a');
+        endDotOuter.setAttribute('stroke', color);
+        endDotOuter.setAttribute('stroke-width', '2');
+        endDotOuter.setAttribute('class', `connection-port-dot end ${statusClass}`);
+        g.appendChild(endDotOuter);
+
+        const endDotInner = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        endDotInner.setAttribute('cx', points[points.length - 1].x);
+        endDotInner.setAttribute('cy', points[points.length - 1].y);
+        endDotInner.setAttribute('r', '3');
+        endDotInner.setAttribute('fill', color);
+        endDotInner.setAttribute('class', `connection-port-inner end ${statusClass}`);
+        g.appendChild(endDotInner);
 
         return g;
     }
@@ -1627,8 +1656,15 @@
         node.dataset.id = data.id;
 
         const iconSvg = getIconSvg(data.icon, data.color);
+        const portColor = data.isCentral ? '#3ecf8e' : (data.color || '#3ecf8e');
 
         node.innerHTML = `
+            <!-- Connection Ports -->
+            <div class="connection-port port-top" data-port="top" style="--port-color: ${portColor}"></div>
+            <div class="connection-port port-right" data-port="right" style="--port-color: ${portColor}"></div>
+            <div class="connection-port port-bottom" data-port="bottom" style="--port-color: ${portColor}"></div>
+            <div class="connection-port port-left" data-port="left" style="--port-color: ${portColor}"></div>
+
             <div class="tree-node-icon${data.icon === 'hub' ? '' : (state.groupBy === 'department' ? ' department' : '')}">
                 ${iconSvg}
             </div>

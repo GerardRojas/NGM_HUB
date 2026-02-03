@@ -489,6 +489,42 @@
         </div>
     </div>
 
+    <!-- Module Notepad Modal (for Milestone/Decision types) -->
+    <div class="modal-backdrop hidden" id="notepadModal">
+        <div class="modal modal-md notepad-modal">
+            <div class="modal-header notepad-header">
+                <div class="notepad-header-info">
+                    <span class="notepad-type-badge" id="notepadTypeBadge">MILESTONE</span>
+                    <h3 class="modal-title" id="notepadModalTitle">Module Notes</h3>
+                </div>
+                <button type="button" class="modal-close" id="btnCloseNotepad">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body notepad-body">
+                <input type="hidden" id="notepadModuleId" value="">
+                <div class="notepad-description">
+                    <label>Description</label>
+                    <p id="notepadDescription">No description</p>
+                </div>
+                <div class="notepad-content">
+                    <label for="notepadNotes">Notes</label>
+                    <textarea id="notepadNotes" class="notepad-textarea" placeholder="Add notes, details, or expand on this milestone/decision..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="notepad-timestamp" id="notepadTimestamp"></div>
+                <div class="modal-footer-right">
+                    <button type="button" class="btn-modal btn-modal-secondary" id="btnCancelNotepad">Cancel</button>
+                    <button type="button" class="btn-modal btn-modal-primary" id="btnSaveNotepad">Save Notes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Process Navigator Sidebar -->
     <div class="process-navigator" id="processNavigator">
         <div class="process-navigator-tab" id="processNavigatorTab">

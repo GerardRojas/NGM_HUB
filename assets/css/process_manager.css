@@ -1198,6 +1198,114 @@ body.page-process-manager {
     border-top: 1px solid #1f1f1f;
 }
 
+.modal-footer-right {
+    display: flex;
+    gap: 12px;
+}
+
+/* Notepad Modal (Milestone/Decision) */
+.notepad-modal {
+    max-width: 550px;
+}
+
+.notepad-header {
+    background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
+}
+
+.notepad-header-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.notepad-type-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.notepad-type-badge.milestone {
+    background: rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.notepad-type-badge.decision {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.notepad-body {
+    padding: 20px;
+}
+
+.notepad-description {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #1f1f1f;
+}
+
+.notepad-description label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.notepad-description p {
+    margin: 0;
+    color: #e5e7eb;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.notepad-content label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.notepad-textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 16px;
+    background: #0a0a0a;
+    border: 1px solid #1f1f1f;
+    border-radius: 8px;
+    color: #e5e7eb;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.notepad-textarea:focus {
+    outline: none;
+    border-color: #3ecf8e;
+}
+
+.notepad-textarea::placeholder {
+    color: #4b5563;
+}
+
+.notepad-timestamp {
+    font-size: 11px;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+}
+
 /* Form Elements */
 .form-group {
     margin-bottom: 16px;
@@ -3412,7 +3520,7 @@ body.page-process-manager {
     border-radius: 50%;
     z-index: 200;
     transition: all 0.15s ease;
-    opacity: 0.25;
+    opacity: 0;  /* Hidden by default, shown on hover */
     pointer-events: none;
     cursor: crosshair;
 }

@@ -751,6 +751,7 @@
             dragStart: { x: 0, y: 0 },
             minScale: 0.25,
             maxScale: 2,
+            spacePressed: false,  // For Space + drag panning
         },
 
         // Dragged node
@@ -1360,6 +1361,7 @@
         // Modal events
         setupModalListeners();
         setupModuleModalListeners();
+        setupNotepadListeners();
         setupFlowNodeContextMenu();
 
         // Add Module button
@@ -1386,6 +1388,41 @@
 
         // Load minimap collapsed state
         loadMinimapState();
+
+        // Keyboard handlers for Space+drag panning and Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && !e.repeat) {
+                // Don't trigger if typing in an input
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                state.canvas.spacePressed = true;
+                if (elements.canvasContainer) {
+                    elements.canvasContainer.style.cursor = 'grab';
+                }
+            }
+            if (e.code === 'Escape') {
+                // Cancel connection mode
+                if (state.connectionMode.active) {
+                    endConnectionMode(null);
+                }
+                // Cancel selection
+                if (state.selectionBox.active) {
+                    state.selectionBox.active = false;
+                    if (elements.selectionBox) {
+                        elements.selectionBox.classList.remove('active');
+                    }
+                }
+                clearModuleSelection();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.code === 'Space') {
+                state.canvas.spacePressed = false;
+                if (elements.canvasContainer && !state.canvas.isDragging) {
+                    elements.canvasContainer.style.cursor = 'grab';
+                }
+            }
+        });
     }
 
     function setupModalListeners() {
@@ -1542,6 +1579,86 @@
         if (elements.moduleModal) {
             elements.moduleModal.classList.add('hidden');
             state.editingModuleId = null;
+        }
+    }
+
+    // ================================
+    // Module Notepad (Milestone/Decision)
+    // ================================
+    function openModuleNotepad(moduleId) {
+        const module = getCustomModule(moduleId);
+        if (!module) return;
+
+        const notepadModal = document.getElementById('notepadModal');
+        if (!notepadModal) return;
+
+        // Set module info
+        document.getElementById('notepadModuleId').value = moduleId;
+        document.getElementById('notepadModalTitle').textContent = module.name;
+        document.getElementById('notepadDescription').textContent = module.description || 'No description';
+        document.getElementById('notepadNotes').value = module.notes || '';
+
+        // Set type badge
+        const badge = document.getElementById('notepadTypeBadge');
+        if (badge) {
+            badge.textContent = module.type === 'milestone' ? 'MILESTONE' : 'DECISION';
+            badge.className = 'notepad-type-badge ' + module.type;
+        }
+
+        // Set timestamp if notes exist
+        const timestamp = document.getElementById('notepadTimestamp');
+        if (timestamp) {
+            if (module.notesUpdatedAt) {
+                const date = new Date(module.notesUpdatedAt);
+                timestamp.textContent = 'Last updated: ' + date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            } else {
+                timestamp.textContent = '';
+            }
+        }
+
+        notepadModal.classList.remove('hidden');
+    }
+
+    function closeModuleNotepad() {
+        const notepadModal = document.getElementById('notepadModal');
+        if (notepadModal) {
+            notepadModal.classList.add('hidden');
+        }
+    }
+
+    function saveModuleNotes() {
+        const moduleId = document.getElementById('notepadModuleId').value;
+        const notes = document.getElementById('notepadNotes').value.trim();
+
+        const module = getCustomModule(moduleId);
+        if (!module) return;
+
+        // Update module with notes
+        module.notes = notes;
+        module.notesUpdatedAt = new Date().toISOString();
+
+        // Save to Supabase
+        saveCustomModules();
+
+        showToast('Notes saved', 'success');
+        closeModuleNotepad();
+    }
+
+    function setupNotepadListeners() {
+        const btnClose = document.getElementById('btnCloseNotepad');
+        const btnCancel = document.getElementById('btnCancelNotepad');
+        const btnSave = document.getElementById('btnSaveNotepad');
+        const notepadModal = document.getElementById('notepadModal');
+
+        if (btnClose) btnClose.addEventListener('click', closeModuleNotepad);
+        if (btnCancel) btnCancel.addEventListener('click', closeModuleNotepad);
+        if (btnSave) btnSave.addEventListener('click', saveModuleNotes);
+
+        // Close on backdrop click
+        if (notepadModal) {
+            notepadModal.addEventListener('click', (e) => {
+                if (e.target === notepadModal) closeModuleNotepad();
+            });
         }
     }
 
@@ -1916,7 +2033,7 @@
         } else {
             renderDetailView();
         }
-        centerCanvas();
+        setTimeout(() => centerOnContent(), 50);
     }
 
     function navigateBack() {
@@ -1933,7 +2050,7 @@
             if (flowchart) {
                 renderFlowchart(flowchart);
             }
-            centerCanvas();
+            setTimeout(() => centerOnContent(), 50);
             return;
         }
 
@@ -1956,7 +2073,7 @@
                     renderDetailView();
                 }
             }
-            centerCanvas();
+            setTimeout(() => centerOnContent(), 50);
             return;
         }
 
@@ -1983,6 +2100,11 @@
         elements.btnAddProcess.classList.add('hidden');
         document.body.classList.remove('detail-active');
 
+        // Show connections layer (tree view connections)
+        if (elements.connectionsLayer) {
+            elements.connectionsLayer.style.display = '';
+        }
+
         closePanel();
         renderTreeView();
         centerCanvas();
@@ -2006,9 +2128,16 @@
         elements.btnAddProcess.classList.remove('hidden');
         document.body.classList.add('detail-active');
 
+        // Hide connections layer (tree view connections)
+        if (elements.connectionsLayer) {
+            elements.connectionsLayer.style.display = 'none';
+        }
+
         // Render module detail view (flowchart editor)
         renderModuleDetailView(module);
-        centerCanvas();
+
+        // Center on the detail content after a brief delay for rendering
+        setTimeout(() => centerOnContent(), 50);
     }
 
     function renderModuleDetailView(module) {
@@ -2266,7 +2395,7 @@
 
         // Render the sub-process view
         renderSubProcessView(node);
-        centerCanvas();
+        setTimeout(() => centerOnContent(), 50);
     }
 
     // ================================
@@ -2590,14 +2719,9 @@
                 showContextMenu(e, module.id);
             });
 
-            // Double-click to edit
+            // Double-click to navigate into module detail (or open notepad for milestone/decision)
             customNode.addEventListener('dblclick', (e) => {
                 e.stopPropagation();
-                openEditModuleModal(module.id);
-            });
-
-            // Single click to navigate into module detail (with drag protection)
-            customNode.addEventListener('click', (e) => {
                 // Don't navigate if we just finished dragging
                 if (customNode.classList.contains('was-dragged')) return;
                 // Don't navigate if clicking on a port
@@ -2605,7 +2729,25 @@
                 // Don't navigate if in connection mode
                 if (state.connectionMode.active) return;
 
-                navigateToModuleDetail(module.id);
+                // Milestone and Decision types open notepad instead of navigating
+                if (module.type === 'milestone' || module.type === 'decision') {
+                    openModuleNotepad(module.id);
+                } else {
+                    navigateToModuleDetail(module.id);
+                }
+            });
+
+            // Single click to select/toggle module
+            customNode.addEventListener('click', (e) => {
+                // Don't select if we just finished dragging
+                if (customNode.classList.contains('was-dragged')) return;
+                // Don't select if clicking on a port
+                if (e.target.closest('.connection-port')) return;
+                // Don't select if in connection mode
+                if (state.connectionMode.active) return;
+
+                // Toggle selection
+                toggleModuleSelection(module.id);
             });
 
             elements.treeViewContainer.appendChild(customNode);
@@ -3276,27 +3418,77 @@
         if (!state.connectionMode.active || !state.connectionMode.sourceRect) return;
 
         const sourceRect = state.connectionMode.sourceRect;
+
+        // Get mouse position in grid coordinates
+        // The canvas container position gives us the reference point
+        const containerRect = elements.canvasContainer.getBoundingClientRect();
+        const mouseX = (state.connectionMode.mouseX - containerRect.left - state.canvas.offsetX) / state.canvas.scale;
+        const mouseY = (state.connectionMode.mouseY - containerRect.top - state.canvas.offsetY) / state.canvas.scale;
+
+        // Create a virtual target rect at mouse position
+        const targetRect = {
+            x: mouseX - 10,
+            y: mouseY - 10,
+            width: 20,
+            height: 20
+        };
+
         const sourceCenterX = sourceRect.x + sourceRect.width / 2;
         const sourceCenterY = sourceRect.y + sourceRect.height / 2;
 
-        // Get mouse position relative to canvas grid
-        const gridRect = elements.canvasGrid.getBoundingClientRect();
-        const mouseX = (state.connectionMode.mouseX - gridRect.left) / state.canvas.scale + Math.abs(state.canvas.offsetX);
-        const mouseY = (state.connectionMode.mouseY - gridRect.top) / state.canvas.scale + Math.abs(state.canvas.offsetY);
+        // Calculate orthogonal path points
+        const points = calculateOrthogonalPath(
+            sourceRect, targetRect,
+            sourceCenterX, sourceCenterY,
+            mouseX, mouseY
+        );
 
-        // Create preview line
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('class', 'connection-preview');
-        line.setAttribute('x1', sourceCenterX);
-        line.setAttribute('y1', sourceCenterY);
-        line.setAttribute('x2', mouseX);
-        line.setAttribute('y2', mouseY);
-        line.setAttribute('stroke', '#3ecf8e');
-        line.setAttribute('stroke-width', '2');
-        line.setAttribute('stroke-dasharray', '8 4');
-        line.setAttribute('opacity', '0.7');
+        // Build SVG path
+        let d = `M ${points[0].x} ${points[0].y}`;
+        const cornerRadius = 12;
 
-        elements.connectionsLayer.appendChild(line);
+        for (let i = 1; i < points.length; i++) {
+            const prev = points[i - 1];
+            const curr = points[i];
+            const next = points[i + 1];
+
+            if (next && i < points.length - 1) {
+                const dx1 = curr.x - prev.x;
+                const dy1 = curr.y - prev.y;
+                const dx2 = next.x - curr.x;
+                const dy2 = next.y - curr.y;
+
+                const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+                const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+
+                if (len1 > 0 && len2 > 0) {
+                    const r = Math.min(cornerRadius, len1 / 2, len2 / 2);
+                    const startX = curr.x - (dx1 / len1) * r;
+                    const startY = curr.y - (dy1 / len1) * r;
+                    const endX = curr.x + (dx2 / len2) * r;
+                    const endY = curr.y + (dy2 / len2) * r;
+
+                    d += ` L ${startX} ${startY}`;
+                    d += ` Q ${curr.x} ${curr.y} ${endX} ${endY}`;
+                } else {
+                    d += ` L ${curr.x} ${curr.y}`;
+                }
+            } else {
+                d += ` L ${curr.x} ${curr.y}`;
+            }
+        }
+
+        // Create preview path
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('class', 'connection-preview');
+        path.setAttribute('d', d);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', '#3ecf8e');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('stroke-dasharray', '8 4');
+        path.setAttribute('opacity', '0.8');
+
+        elements.connectionsLayer.appendChild(path);
     }
 
     function endConnectionMode(targetId = null) {
@@ -3304,47 +3496,55 @@
 
         const sourceId = state.connectionMode.sourceId;
 
-        // Remove preview line
-        const preview = elements.connectionsLayer.querySelector('.connection-preview');
-        if (preview) preview.remove();
+        try {
+            // Remove preview line
+            const preview = elements.connectionsLayer.querySelector('.connection-preview');
+            if (preview) preview.remove();
 
-        // Remove classes
-        elements.canvasContainer.classList.remove('connecting-mode');
-        document.querySelectorAll('.tree-node').forEach(node => {
-            node.classList.remove('valid-drop-target');
-        });
+            // Remove classes
+            elements.canvasContainer.classList.remove('connecting-mode');
+            document.querySelectorAll('.tree-node').forEach(node => {
+                node.classList.remove('valid-drop-target');
+            });
 
-        // If we have a valid target, create the connection
-        if (targetId && targetId !== sourceId) {
-            console.log('[CONNECTION] Creating connection:', sourceId, '->', targetId);
+            // If we have a valid target, create the connection
+            if (targetId && targetId !== sourceId) {
+                console.log('[CONNECTION] Creating connection:', sourceId, '->', targetId);
+                console.log('[CONNECTION] Custom modules before:', state.customModules.length);
 
-            // For now, we connect modules to hub
-            // Future: store module-to-module connections
-            if (targetId === 'hub') {
-                // Connect module to hub
-                const module = getCustomModule(sourceId);
-                if (module) {
-                    module.connectedToHub = true;
-                    saveCustomModules();
-                    showToast('Connected to Hub', 'success');
+                // For now, we connect modules to hub
+                // Future: store module-to-module connections
+                if (targetId === 'hub') {
+                    // Connect module to hub
+                    const module = getCustomModule(sourceId);
+                    if (module) {
+                        module.connectedToHub = true;
+                        saveCustomModules();
+                        showToast('Connected to Hub', 'success');
+                    }
+                } else if (sourceId === 'hub') {
+                    // Connect hub to module
+                    const module = getCustomModule(targetId);
+                    if (module) {
+                        module.connectedToHub = true;
+                        saveCustomModules();
+                        showToast('Connected to Hub', 'success');
+                    }
+                } else {
+                    // Module to module connection - store in module data
+                    // Future enhancement: implement module-to-module connections
+                    showToast('Module-to-module connections coming soon', 'info');
                 }
-            } else if (sourceId === 'hub') {
-                // Connect hub to module
-                const module = getCustomModule(targetId);
-                if (module) {
-                    module.connectedToHub = true;
-                    saveCustomModules();
-                    showToast('Connected to Hub', 'success');
-                }
-            } else {
-                // Module to module connection - store in module data
-                // Future enhancement: implement module-to-module connections
-                showToast('Module-to-module connections coming soon', 'info');
+
+                console.log('[CONNECTION] Custom modules after:', state.customModules.length);
+
+                // Redraw connections
+                const nodeRects = buildCurrentNodeRects();
+                console.log('[CONNECTION] Node rects:', Object.keys(nodeRects));
+                redrawConnections(nodeRects);
             }
-
-            // Redraw connections
-            const nodeRects = buildCurrentNodeRects();
-            redrawConnections(nodeRects);
+        } catch (error) {
+            console.error('[CONNECTION] Error in endConnectionMode:', error);
         }
 
         // Reset state
@@ -4262,8 +4462,18 @@
         // Right mouse button = context menu (do nothing here)
         if (e.button === 2) return;
 
-        // Left click on empty space = start selection box
+        // Left click handling
         if (e.button === 0) {
+            // Space + left click = pan (same as middle mouse)
+            if (state.canvas.spacePressed) {
+                e.preventDefault();
+                state.canvas.isDragging = true;
+                state.canvas.dragStart = { x: e.clientX, y: e.clientY };
+                elements.canvasContainer.style.cursor = 'grabbing';
+                return;
+            }
+
+            // Normal left click on empty space = start selection box
             // Clear previous selection if not holding Ctrl/Shift
             if (!e.ctrlKey && !e.shiftKey) {
                 clearModuleSelection();
@@ -4486,6 +4696,15 @@
     }
 
     function centerCanvas() {
+        // Smart centering based on current view
+        if (state.currentLevel === 'tree') {
+            centerOnHub();
+        } else {
+            centerOnContent();
+        }
+    }
+
+    function centerOnHub() {
         if (!elements.canvasContainer || !elements.canvasGrid) return;
 
         // Get container dimensions
@@ -4493,41 +4712,71 @@
         const containerWidth = containerRect.width;
         const containerHeight = containerRect.height;
 
-        // Calculate center point based on modules or default starting area
-        let centerX, centerY;
+        const nodePositions = state.nodePositions || {};
 
-        // Check if we have modules to center on (with safety checks)
-        const modules = Array.isArray(state.modules) ? state.modules : [];
-        const customModules = Array.isArray(state.customModules) ? state.customModules : [];
-        const allModules = [...modules, ...customModules];
-        if (allModules.length > 0) {
-            // Calculate bounding box of all modules
-            let minX = Infinity, minY = Infinity;
-            let maxX = -Infinity, maxY = -Infinity;
+        // Get hub position
+        const defaultHubX = 600 - 160; // 440
+        const defaultHubY = 400 - 100; // 300
+        const hubPos = nodePositions['hub'] || { x: defaultHubX, y: defaultHubY };
 
-            allModules.forEach(m => {
-                const nodePositions = state.nodePositions || {};
-                const pos = nodePositions[m.id] || m.position || { x: 300, y: 300 };
-                const nodeWidth = 280;
-                const nodeHeight = 120;
-                minX = Math.min(minX, pos.x);
-                minY = Math.min(minY, pos.y);
-                maxX = Math.max(maxX, pos.x + nodeWidth);
-                maxY = Math.max(maxY, pos.y + nodeHeight);
-            });
-
-            // Center on the bounding box center
-            centerX = (minX + maxX) / 2;
-            centerY = (minY + maxY) / 2;
-        } else {
-            // Default starting area - top-left region where new modules are typically placed
-            centerX = 400;
-            centerY = 400;
-        }
+        // Calculate hub center
+        const hubWidth = 320;
+        const hubHeight = 200;
+        const centerX = hubPos.x + hubWidth / 2;
+        const centerY = hubPos.y + hubHeight / 2;
 
         state.canvas.scale = 0.85;
 
-        // Calculate offset to center the target point in the viewport
+        // Calculate offset to center the hub in the viewport
+        state.canvas.offsetX = (containerWidth / 2) - (centerX * state.canvas.scale);
+        state.canvas.offsetY = (containerHeight / 2) - (centerY * state.canvas.scale);
+
+        applyCanvasTransform();
+    }
+
+    function centerOnContent() {
+        if (!elements.canvasContainer || !elements.canvasGrid) return;
+
+        // Get container dimensions
+        const containerRect = elements.canvasContainer.getBoundingClientRect();
+        const containerWidth = containerRect.width;
+        const containerHeight = containerRect.height;
+
+        // Find all visible nodes in the current view
+        const visibleNodes = elements.detailViewContainer?.querySelectorAll('.process-card, .step-card, .module-detail-header, .flowchart-entry-card') || [];
+
+        if (visibleNodes.length === 0) {
+            // Default center for empty views
+            state.canvas.scale = 0.85;
+            state.canvas.offsetX = (containerWidth / 2) - (400 * state.canvas.scale);
+            state.canvas.offsetY = (containerHeight / 2) - (300 * state.canvas.scale);
+            applyCanvasTransform();
+            return;
+        }
+
+        // Calculate bounding box of all visible content
+        let minX = Infinity, minY = Infinity;
+        let maxX = -Infinity, maxY = -Infinity;
+
+        visibleNodes.forEach(node => {
+            const x = parseInt(node.style.left) || 0;
+            const y = parseInt(node.style.top) || 0;
+            const width = node.offsetWidth || 300;
+            const height = node.offsetHeight || 200;
+
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x + width);
+            maxY = Math.max(maxY, y + height);
+        });
+
+        // Calculate center of content
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        state.canvas.scale = 0.85;
+
+        // Calculate offset to center the content in the viewport
         state.canvas.offsetX = (containerWidth / 2) - (centerX * state.canvas.scale);
         state.canvas.offsetY = (containerHeight / 2) - (centerY * state.canvas.scale);
 
@@ -4592,56 +4841,14 @@
         ctx.fillStyle = '#0a0a0a';
         ctx.fillRect(0, 0, minimapWidth, minimapHeight);
 
-        // Draw nodes
-        const groups = state.groupBy === 'deliverable' ? DELIVERABLES : DEPARTMENTS;
-        const groupArray = Object.values(groups);
-
-        // Draw hub
-        const hubPos = getNodePosition('hub', 470, 320);
-        ctx.beginPath();
-        ctx.arc(
-            (hubPos.x + 130) * scaleX,
-            (hubPos.y + 80) * scaleY,
-            6,
-            0,
-            Math.PI * 2
-        );
-        ctx.fillStyle = '#3ecf8e';
-        ctx.fill();
-
-        // Draw group nodes
-        groupArray.forEach((group, index) => {
-            const angle = (index / groupArray.length) * Math.PI * 2 - Math.PI / 2;
-            const defaultX = 600 + Math.cos(angle) * 320 - 110;
-            const defaultY = 400 + Math.sin(angle) * 320 - 70;
-            const pos = getNodePosition(group.id, defaultX, defaultY);
-
-            ctx.beginPath();
-            ctx.arc(
-                (pos.x + 110) * scaleX,
-                (pos.y + 70) * scaleY,
-                4,
-                0,
-                Math.PI * 2
-            );
-            ctx.fillStyle = '#3ecf8e';
-            ctx.fill();
-        });
-
-        // Draw connections (simplified lines)
-        ctx.strokeStyle = 'rgba(62, 207, 142, 0.3)';
-        ctx.lineWidth = 1;
-        groupArray.forEach((group, index) => {
-            const angle = (index / groupArray.length) * Math.PI * 2 - Math.PI / 2;
-            const defaultX = 600 + Math.cos(angle) * 320 - 110;
-            const defaultY = 400 + Math.sin(angle) * 320 - 70;
-            const pos = getNodePosition(group.id, defaultX, defaultY);
-
-            ctx.beginPath();
-            ctx.moveTo((hubPos.x + 130) * scaleX, (hubPos.y + 80) * scaleY);
-            ctx.lineTo((pos.x + 110) * scaleX, (pos.y + 70) * scaleY);
-            ctx.stroke();
-        });
+        // Context-aware minimap based on current view
+        if (state.currentLevel === 'tree') {
+            // Tree view: show hub + custom modules
+            drawTreeMinimap(ctx, scaleX, scaleY);
+        } else {
+            // Detail/flowchart view: show current process nodes
+            drawDetailMinimap(ctx, scaleX, scaleY);
+        }
 
         // Update viewport indicator
         if (elements.minimapViewport) {
@@ -4659,6 +4866,85 @@
             elements.minimapViewport.style.width = `${Math.max(10, viewWidth * scaleX)}px`;
             elements.minimapViewport.style.height = `${Math.max(10, viewHeight * scaleY)}px`;
         }
+    }
+
+    function drawTreeMinimap(ctx, scaleX, scaleY) {
+        // Draw hub
+        const hubPos = getNodePosition('hub', 470, 320);
+        ctx.beginPath();
+        ctx.arc(
+            (hubPos.x + 160) * scaleX,
+            (hubPos.y + 100) * scaleY,
+            6,
+            0,
+            Math.PI * 2
+        );
+        ctx.fillStyle = '#3ecf8e';
+        ctx.fill();
+
+        // Draw custom modules
+        const nodePositions = state.nodePositions || {};
+        state.customModules.forEach((module, index) => {
+            const defaultAngle = (index / Math.max(state.customModules.length, 1)) * Math.PI * 2 - Math.PI / 2;
+            const defaultX = 600 + Math.cos(defaultAngle) * 320 - 110;
+            const defaultY = 400 + Math.sin(defaultAngle) * 320 - 70;
+            const pos = nodePositions[module.id] || { x: defaultX, y: defaultY };
+            const dims = getModuleDimensions(module.size);
+
+            // Draw node
+            ctx.beginPath();
+            ctx.arc(
+                (pos.x + dims.width / 2) * scaleX,
+                (pos.y + dims.height / 2) * scaleY,
+                4,
+                0,
+                Math.PI * 2
+            );
+            ctx.fillStyle = module.isImplemented ? '#3ecf8e' : '#6b7280';
+            ctx.fill();
+
+            // Draw connection to hub
+            ctx.strokeStyle = module.isImplemented ? 'rgba(62, 207, 142, 0.3)' : 'rgba(107, 114, 128, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo((hubPos.x + 160) * scaleX, (hubPos.y + 100) * scaleY);
+            ctx.lineTo((pos.x + dims.width / 2) * scaleX, (pos.y + dims.height / 2) * scaleY);
+            ctx.stroke();
+        });
+    }
+
+    function drawDetailMinimap(ctx, scaleX, scaleY) {
+        // Get visible nodes from the detail view container
+        const container = elements.detailViewContainer;
+        if (!container) return;
+
+        const nodes = container.querySelectorAll('.process-card, .step-card, .flow-node, .module-detail-header');
+
+        nodes.forEach(node => {
+            const x = parseInt(node.style.left) || 0;
+            const y = parseInt(node.style.top) || 0;
+            const width = node.offsetWidth || 200;
+            const height = node.offsetHeight || 100;
+
+            // Determine color based on node type
+            let color = '#3ecf8e';
+            if (node.classList.contains('is-draft') || node.classList.contains('draft')) {
+                color = '#6b7280';
+            } else if (node.classList.contains('decision')) {
+                color = '#f59e0b';
+            } else if (node.classList.contains('milestone')) {
+                color = '#8b5cf6';
+            }
+
+            // Draw rectangle for the node
+            ctx.fillStyle = color;
+            ctx.fillRect(
+                x * scaleX,
+                y * scaleY,
+                Math.max(4, width * scaleX),
+                Math.max(3, height * scaleY)
+            );
+        });
     }
 
 
@@ -5085,8 +5371,8 @@
         // Draw connections
         redrawFlowConnections(flowchart, nodeRects);
 
-        // Center on the flowchart
-        centerCanvas();
+        // Center on the flowchart content
+        setTimeout(() => centerOnContent(), 50);
     }
 
     function renderSubProcessView(parentNode) {
@@ -5159,7 +5445,7 @@
         // Draw connections between sub-process nodes
         redrawSubProcessConnections(subProcessNodes, nodeRects);
 
-        centerCanvas();
+        setTimeout(() => centerOnContent(), 50);
     }
 
     function getSubProcessNodePosition(processId, parentNodeId, nodeId, defaultX, defaultY) {

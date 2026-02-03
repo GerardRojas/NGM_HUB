@@ -936,28 +936,53 @@
     // Custom Modules Storage
     // ================================
     async function loadCustomModules() {
-        // Load from Supabase only (no localStorage fallback to avoid stale data)
+        // Load from Supabase only - single source of truth
         const result = await loadStateFromSupabase('custom_modules', []);
+        console.log('[PROCESS-MANAGER] Load custom_modules result:', result);
 
-        if (result.success) {
+        if (result.success && Array.isArray(result.data)) {
             state.customModules = normalizeModules(result.data);
-            // Update local cache only when successfully loaded from server
-            localStorage.setItem(CUSTOM_MODULES_KEY, JSON.stringify(state.customModules));
+            console.log('[PROCESS-MANAGER] Loaded', state.customModules.length, 'modules from Supabase');
         } else {
-            // Server error - use empty state and show error
+            // Server error - show error and disable editing
             state.customModules = [];
+            state.serverError = true;
             console.error('[PROCESS-MANAGER] Failed to load custom modules:', result.error);
 
             if (window.showToast) {
-                showToast(`Error loading custom modules: ${result.error}`, 'error');
+                showToast(`Server error: Unable to load modules. Changes will NOT be saved.`, 'error');
             }
+
+            // Show persistent error banner
+            showServerErrorBanner();
         }
+    }
+
+    function showServerErrorBanner() {
+        // Remove existing banner if any
+        const existing = document.getElementById('server-error-banner');
+        if (existing) existing.remove();
+
+        const banner = document.createElement('div');
+        banner.id = 'server-error-banner';
+        banner.className = 'server-error-banner';
+        banner.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>Server connection failed. Changes will not be saved. <button onclick="location.reload()">Retry</button></span>
+        `;
+        document.body.appendChild(banner);
     }
 
     // Ensure all modules have required properties (backwards compatibility)
     function normalizeModules(modules) {
-        return modules.map(m => ({
+        return modules.map((m, index) => ({
             ...m,
+            // Ensure id exists - use existing id, module_id, or generate one
+            id: m.id || m.module_id || `custom_legacy_${Date.now()}_${index}`,
             type: m.type || 'step',
             size: m.size || 'medium',
             connectedToHub: m.connectedToHub !== false,
@@ -967,12 +992,18 @@
 
     function saveCustomModules() {
         try {
-            // Save to localStorage as cache
+            console.log('[PROCESS-MANAGER] Saving', state.customModules.length, 'custom modules');
+            console.log('[PROCESS-MANAGER] Modules to save:', state.customModules);
+
+            // Save to localStorage as cache (immediate)
             localStorage.setItem(CUSTOM_MODULES_KEY, JSON.stringify(state.customModules));
+            console.log('[PROCESS-MANAGER] Saved to localStorage');
+
             // Save to Supabase (debounced)
             saveStateToSupabase('custom_modules', state.customModules);
+            console.log('[PROCESS-MANAGER] Queued save to Supabase');
         } catch (e) {
-            console.warn('[PROCESS-MANAGER] Error saving custom modules:', e);
+            console.error('[PROCESS-MANAGER] Error saving custom modules:', e);
         }
     }
 
@@ -2213,7 +2244,9 @@
 
         // Render custom modules
         console.log('[CONTEXT-MENU] Rendering', state.customModules.length, 'custom modules');
+        console.log('[CONTEXT-MENU] Module IDs:', state.customModules.map(m => m.id));
         state.customModules.forEach((module, index) => {
+            console.log('[CONTEXT-MENU] Rendering module:', { id: module.id, name: module.name, index });
             // Position custom modules in a different area (to the right)
             const customStartX = 1050;
             const customStartY = 150;
@@ -2243,7 +2276,11 @@
 
             // Right-click context menu for custom modules
             customNode.addEventListener('contextmenu', (e) => {
-                console.log('[CONTEXT-MENU] Right-click detected on custom module:', module.id);
+                console.log('[CONTEXT-MENU] Right-click detected on custom module:', module.id, 'name:', module.name);
+                console.log('[CONTEXT-MENU] Element clicked:', customNode);
+                console.log('[CONTEXT-MENU] Module object:', module);
+                e.preventDefault();
+                e.stopPropagation();
                 showContextMenu(e, module.id);
             });
 

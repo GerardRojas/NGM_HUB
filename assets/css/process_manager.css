@@ -160,6 +160,39 @@
     color: #e5e7eb;
 }
 
+/* Clickable stats for filtering */
+.stat-item {
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.15s ease, opacity 0.15s ease;
+    user-select: none;
+}
+
+.stat-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.stat-item.active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.stat-item.dimmed {
+    opacity: 0.5;
+}
+
+.stat-item.active .stat-count {
+    color: #fff;
+}
+
+.stat-item.stat-implemented.active .stat-dot {
+    box-shadow: 0 0 8px rgba(62, 207, 142, 0.5);
+}
+
+.stat-item.stat-draft.active .stat-dot {
+    box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+}
+
 .btn-zoom {
     display: flex;
     align-items: center;
@@ -207,6 +240,7 @@
     background-image:
         radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
     background-size: 20px 20px;
+    z-index: 1;
 }
 
 /* ================================
@@ -550,7 +584,7 @@
     border: 1px solid #1f1f1f;
     border-radius: 10px;
     overflow: hidden;
-    z-index: 10;
+    z-index: 100;
     transition: all 0.25s ease;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
@@ -1722,7 +1756,7 @@
     background: #111111;
     border: 1px solid #1f1f1f;
     border-radius: 8px;
-    z-index: 10;
+    z-index: 100;
 }
 
 .legend-title {
@@ -1956,7 +1990,8 @@
 .tree-node.central {
     background: linear-gradient(135deg, #0f1a14 0%, #0d0d0d 100%);
     border-color: #3ecf8e;
-    min-width: 260px;
+    min-width: 320px;
+    padding: 28px 32px;
 }
 
 .tree-node-icon {
@@ -3021,13 +3056,11 @@
    Tree Node - Custom Module Styles
    ================================ */
 .tree-node.custom-module {
-    /* Solid border for custom modules */
-    border-style: solid;
-    border-width: 2px;
+    /* Normal border like base tree-node */
+    border: 2px solid #1f1f1f;
 }
 
 .tree-node.custom-module.is-draft {
-    border-color: #6b7280;
     opacity: 0.85;
 }
 
@@ -3037,7 +3070,7 @@
 }
 
 .tree-node.custom-module.is-implemented {
-    border-color: #3ecf8e;
+    /* Keep normal border, status shown via badge and icon */
 }
 
 /* Custom module badge */
@@ -3060,27 +3093,57 @@
     color: #3ecf8e;
 }
 
+/* Filter state - hide modules based on active filter */
+.tree-view-container.filter-implemented .tree-node.custom-module.is-draft {
+    display: none;
+}
+
+.tree-view-container.filter-draft .tree-node.custom-module.is-implemented {
+    display: none;
+}
+
 /* ================================
-   Tree Node Sizes
+   Tree Node Sizes (Fixed dimensions)
    ================================ */
 .tree-node.custom-module.size-large {
-    min-width: 260px;
-    max-width: 300px;
+    width: 280px;
+    height: 180px;
     padding: 20px;
+    overflow: hidden;
 }
 
 .tree-node.custom-module.size-medium {
-    min-width: 200px;
-    max-width: 240px;
+    width: 220px;
+    height: 150px;
     padding: 16px;
+    overflow: hidden;
 }
 
 .tree-node.custom-module.size-small {
-    min-width: 140px;
-    max-width: 180px;
+    width: 160px;
+    height: 120px;
     padding: 12px;
+    overflow: hidden;
 }
 
+/* Text truncation for all custom modules */
+.tree-node.custom-module .tree-node-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.tree-node.custom-module .tree-node-subtitle {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Small size specific adjustments */
 .tree-node.custom-module.size-small .tree-node-icon {
     width: 32px;
     height: 32px;
@@ -3099,6 +3162,7 @@
 .tree-node.custom-module.size-small .tree-node-subtitle {
     font-size: 11px;
     margin-bottom: 8px;
+    -webkit-line-clamp: 1;
 }
 
 .tree-node.custom-module.size-small .tree-node-stats {
@@ -3426,11 +3490,26 @@
 }
 
 .canvas-container.connecting-mode .tree-node {
-    transition: box-shadow 0.2s ease;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .canvas-container.connecting-mode .tree-node:hover {
-    box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.4);
+    box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.5);
+    border-color: #3ecf8e;
+}
+
+.canvas-container.connecting-mode .tree-node.valid-drop-target {
+    border-color: rgba(62, 207, 142, 0.3);
+}
+
+.canvas-container.connecting-mode .tree-node.valid-drop-target:hover {
+    border-color: #3ecf8e;
+    box-shadow: 0 0 20px rgba(62, 207, 142, 0.4);
+}
+
+/* Connection preview line */
+.connection-preview {
+    pointer-events: none;
 }
 
 /* ================================
@@ -4620,4 +4699,474 @@
 
 .server-error-banner button:hover {
     background: rgba(255, 255, 255, 0.25);
+}
+
+/* ================================
+   Module Detail View
+   ================================ */
+.module-detail-header {
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+.module-detail-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid;
+    flex-shrink: 0;
+}
+
+.module-detail-icon svg {
+    width: 32px;
+    height: 32px;
+}
+
+.module-detail-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.module-detail-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 4px 0;
+}
+
+.module-detail-description {
+    font-size: 14px;
+    color: #9ca3af;
+    margin: 0 0 12px 0;
+}
+
+.module-detail-meta {
+    display: flex;
+    gap: 8px;
+}
+
+.module-status-badge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.module-status-badge.live {
+    background: rgba(62, 207, 142, 0.2);
+    color: #3ecf8e;
+}
+
+.module-status-badge.draft {
+    background: rgba(107, 114, 128, 0.2);
+    color: #9ca3af;
+}
+
+.module-type-badge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+    text-transform: capitalize;
+}
+
+.module-detail-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-module-edit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #1f1f1f;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    color: #e5e7eb;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-module-edit:hover {
+    background: #2a2a2a;
+    border-color: #3ecf8e;
+    color: #fff;
+}
+
+.btn-module-edit svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Module flowchart empty state */
+.module-flowchart-empty {
+    padding: 40px;
+}
+
+.empty-flowchart-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 16px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+}
+
+.empty-flowchart-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e5e7eb;
+    margin: 0 0 8px 0;
+}
+
+.empty-flowchart-subtitle {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 0 16px 0;
+}
+
+.empty-flowchart-hint {
+    font-size: 12px;
+    color: #4b5563;
+    font-style: italic;
+    margin: 0;
+}
+
+/* ================================
+   Linked Processes in Module Detail
+   ================================ */
+.module-process-count {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    background: rgba(107, 114, 128, 0.2);
+    color: #9ca3af;
+}
+
+.linked-processes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.linked-processes-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e5e7eb;
+    margin: 0;
+}
+
+.btn-add-process-link,
+.btn-link-first-process {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #1f1f1f;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    color: #e5e7eb;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-add-process-link:hover,
+.btn-link-first-process:hover {
+    background: #2a2a2a;
+    border-color: #3ecf8e;
+    color: #3ecf8e;
+}
+
+.linked-processes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.linked-process-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.linked-process-card:hover {
+    background: #1f1f1f;
+    border-color: #3a3a3a;
+}
+
+.linked-process-card.highlighted {
+    border-color: #3ecf8e;
+    box-shadow: 0 0 20px rgba(62, 207, 142, 0.3);
+}
+
+.linked-process-status {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.linked-process-card.implemented .linked-process-status {
+    background: #3ecf8e;
+}
+
+.linked-process-card.draft .linked-process-status {
+    background: #6b7280;
+}
+
+.linked-process-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.linked-process-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #e5e7eb;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.linked-process-id {
+    font-size: 11px;
+    color: #6b7280;
+    font-family: monospace;
+}
+
+.linked-process-trigger {
+    font-size: 10px;
+    color: #9ca3af;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+.linked-process-actions {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.linked-process-card:hover .linked-process-actions {
+    opacity: 1;
+}
+
+.btn-unlink-process {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-unlink-process:hover {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+}
+
+/* Empty processes state */
+.module-processes-empty {
+    text-align: center;
+    padding: 60px 40px;
+    background: #111111;
+    border: 1px dashed #2a2a2a;
+    border-radius: 16px;
+}
+
+.empty-processes-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 16px;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+}
+
+.empty-processes-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e5e7eb;
+    margin: 0 0 8px 0;
+}
+
+.empty-processes-subtitle {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0 0 20px 0;
+}
+
+/* ================================
+   Link Process Modal
+   ================================ */
+.link-process-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.link-process-modal-content {
+    width: 500px;
+    max-width: 90%;
+    max-height: 80vh;
+    background: #111111;
+    border: 1px solid #2a2a2a;
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.link-process-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.link-process-modal-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e5e7eb;
+    margin: 0;
+}
+
+.btn-close-modal {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    font-size: 24px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.btn-close-modal:hover {
+    background: #1f1f1f;
+    color: #e5e7eb;
+}
+
+.link-process-modal-search {
+    padding: 16px 24px;
+    border-bottom: 1px solid #1f1f1f;
+}
+
+.link-process-search-input {
+    width: 100%;
+    padding: 10px 14px;
+    background: #0d0d0d;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    color: #e5e7eb;
+    font-size: 14px;
+    outline: none;
+}
+
+.link-process-search-input:focus {
+    border-color: #3ecf8e;
+}
+
+.link-process-search-input::placeholder {
+    color: #6b7280;
+}
+
+.link-process-modal-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.link-process-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.link-process-option:hover {
+    background: #1a1a1a;
+}
+
+.link-process-option-status {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.link-process-option-status.implemented {
+    background: #3ecf8e;
+}
+
+.link-process-option-status.draft {
+    background: #6b7280;
+}
+
+.link-process-option-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.link-process-option-name {
+    font-size: 14px;
+    color: #e5e7eb;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.link-process-option-id {
+    font-size: 11px;
+    color: #6b7280;
+    font-family: monospace;
+}
+
+.link-process-option-category {
+    font-size: 11px;
+    color: #6b7280;
+    text-transform: capitalize;
 }

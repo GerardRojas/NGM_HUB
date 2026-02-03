@@ -769,6 +769,15 @@
         // Currently editing module
         editingModuleId: null,
 
+        // Connection mode state
+        connectionMode: {
+            active: false,
+            sourceId: null,
+            sourceRect: null,
+            mouseX: 0,
+            mouseY: 0
+        },
+
         // Flowchart state
         currentProcessId: null,      // Process being viewed in flowchart
         flowNodePositions: {},       // Positions of flowchart nodes
@@ -777,6 +786,9 @@
         // Third level navigation (sub-process)
         currentNodeId: null,         // Node being viewed in sub-process level
         navigationStack: [],         // Stack for back navigation: [{level, processId, nodeId}]
+
+        // Module filter state: null, 'implemented', or 'draft'
+        moduleFilter: null,
     };
 
     // ================================
@@ -791,12 +803,20 @@
 
     // Generic function to load state from Supabase
     async function loadStateFromSupabase(stateKey, defaultValue = {}) {
+        const url = `${API_BASE}/process-manager/state/${stateKey}`;
+        console.log(`[SUPABASE-LOAD] Fetching ${stateKey} from: ${url}`);
+
         try {
-            const res = await fetch(`${API_BASE}/process-manager/state/${stateKey}`);
+            const res = await fetch(url);
+            console.log(`[SUPABASE-LOAD] Response status: ${res.status}`);
 
             if (res.ok) {
                 const data = await res.json();
-                console.log(`[PROCESS-MANAGER] Loaded ${stateKey} from Supabase`);
+                console.log(`[SUPABASE-LOAD] Raw response for ${stateKey}:`, data);
+                console.log(`[SUPABASE-LOAD] state_data type: ${typeof data.state_data}, isArray: ${Array.isArray(data.state_data)}`);
+                if (Array.isArray(data.state_data)) {
+                    console.log(`[SUPABASE-LOAD] ${stateKey} contains ${data.state_data.length} items`);
+                }
                 return {
                     success: true,
                     data: data.state_data || defaultValue,
@@ -806,7 +826,7 @@
 
             if (res.status === 404) {
                 // No data saved yet (first time) - not an error
-                console.log(`[PROCESS-MANAGER] No ${stateKey} found in Supabase (first time)`);
+                console.log(`[SUPABASE-LOAD] No ${stateKey} found in Supabase (first time)`);
                 return {
                     success: true,
                     data: defaultValue,
@@ -816,6 +836,7 @@
 
             // Server error
             const error = await res.json().catch(() => ({ detail: 'Unknown error' }));
+            console.error(`[SUPABASE-LOAD] Server error for ${stateKey}:`, error);
             return {
                 success: false,
                 data: defaultValue,
@@ -824,7 +845,7 @@
 
         } catch (e) {
             // Network error or other exception
-            console.error(`[PROCESS-MANAGER] Error loading ${stateKey} from Supabase:`, e);
+            console.error(`[SUPABASE-LOAD] Network error loading ${stateKey}:`, e);
             return {
                 success: false,
                 data: defaultValue,
@@ -835,6 +856,9 @@
 
     // Generic function to save state to Supabase (debounced)
     function saveStateToSupabase(stateKey, data, delay = 1000) {
+        console.log(`[SUPABASE-SAVE] Queuing save for ${stateKey} (delay: ${delay}ms)`);
+        console.log(`[SUPABASE-SAVE] Data to save:`, JSON.stringify(data).substring(0, 500) + '...');
+
         // Clear existing timer
         if (saveTimers[stateKey]) {
             clearTimeout(saveTimers[stateKey]);
@@ -848,23 +872,33 @@
 
         // Debounce the save
         saveTimers[stateKey] = setTimeout(async () => {
+            const url = `${API_BASE}/process-manager/state/${stateKey}`;
+            console.log(`[SUPABASE-SAVE] Executing save to: ${url}`);
+
             try {
                 const userId = state.currentUser?.id || null;
-                const res = await fetch(`${API_BASE}/process-manager/state/${stateKey}`, {
+                const payload = {
+                    state_data: data,
+                    updated_by: userId
+                };
+                console.log(`[SUPABASE-SAVE] Payload:`, payload);
+
+                const res = await fetch(url, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        state_data: data,
-                        updated_by: userId
-                    })
+                    body: JSON.stringify(payload)
                 });
+
+                console.log(`[SUPABASE-SAVE] Response status: ${res.status}`);
 
                 if (!res.ok) {
                     const error = await res.json().catch(() => ({ detail: 'Unknown error' }));
+                    console.error(`[SUPABASE-SAVE] Error response:`, error);
                     throw new Error(error.detail || `HTTP ${res.status}`);
                 }
 
-                console.log(`[PROCESS-MANAGER] Saved ${stateKey} to Supabase`);
+                const result = await res.json();
+                console.log(`[SUPABASE-SAVE] Success! Saved ${stateKey} to Supabase`, result);
 
                 // Show synced state briefly
                 if (syncIndicator) {
@@ -1047,6 +1081,8 @@
     }
 
     function addCustomModule(moduleData) {
+        console.log('[MODULE-ADD] Creating new module with data:', moduleData);
+
         const id = 'custom_' + Date.now();
         const module = {
             id: id,
@@ -1059,11 +1095,21 @@
             size: moduleData.size || 'medium',
             isImplemented: moduleData.isImplemented || false,
             isCustom: true,
-            connectedToHub: true, // Can be disconnected via context menu
+            connectedToHub: moduleData.connectedToHub !== false, // Default true
+            linkedModuleId: moduleData.linkedModuleId || null, // Parent module if this is a sub-module
+            linkedProcesses: moduleData.linkedProcesses || [],
             processIds: [],
             createdAt: new Date().toISOString()
         };
+
+        console.log('[MODULE-ADD] Created module object:', module);
+        console.log('[MODULE-ADD] Current modules count:', state.customModules.length);
+
         state.customModules.push(module);
+
+        console.log('[MODULE-ADD] After push, modules count:', state.customModules.length);
+        console.log('[MODULE-ADD] Calling saveCustomModules...');
+
         saveCustomModules();
         return module;
     }
@@ -1151,6 +1197,9 @@
             btnAddProcess: document.getElementById('btnAddProcess'),
             countImplemented: document.getElementById('countImplemented'),
             countDrafts: document.getElementById('countDrafts'),
+            processStats: document.getElementById('processStats'),
+            statImplemented: document.querySelector('.stat-item.stat-implemented'),
+            statDraft: document.querySelector('.stat-item.stat-draft'),
             // Minimap elements
             canvasMinimap: document.getElementById('canvasMinimap'),
             minimapCanvas: document.getElementById('minimapCanvas'),
@@ -1264,6 +1313,14 @@
         if (btnZoomOut) btnZoomOut.addEventListener('click', () => zoom(-0.2));
         if (btnFitView) btnFitView.addEventListener('click', centerCanvas);
 
+        // Stats filter (Live/Draft toggle)
+        if (elements.statImplemented) {
+            elements.statImplemented.addEventListener('click', () => toggleModuleFilter('implemented'));
+        }
+        if (elements.statDraft) {
+            elements.statDraft.addEventListener('click', () => toggleModuleFilter('draft'));
+        }
+
         // Canvas panning
         if (elements.canvasContainer) {
             elements.canvasContainer.addEventListener('mousedown', handleCanvasMouseDown);
@@ -1375,6 +1432,10 @@
                     confirmDeleteModuleById(moduleId);
                 } else if (action === 'toggle-connection' && moduleId) {
                     toggleModuleConnection(moduleId);
+                } else if (action === 'start-connection' && moduleId) {
+                    startConnectionMode(moduleId);
+                } else if (action === 'create-linked-module' && moduleId) {
+                    openAddModuleModal(moduleId);
                 }
                 hideContextMenu();
             });
@@ -1384,13 +1445,22 @@
     // ================================
     // Module Modal Functions
     // ================================
-    function openAddModuleModal() {
+    function openAddModuleModal(linkedModuleId = null) {
         if (!elements.moduleModal) return;
 
         state.editingModuleId = null;
-        document.getElementById('moduleModalTitle').textContent = 'Add Module';
+
+        // Set title based on whether we're creating a linked module
+        const parentModule = linkedModuleId ? state.customModules.find(m => m.id === linkedModuleId) : null;
+        if (parentModule) {
+            document.getElementById('moduleModalTitle').textContent = `Add Sub-Module to "${parentModule.name}"`;
+        } else {
+            document.getElementById('moduleModalTitle').textContent = 'Add Module';
+        }
+
         document.getElementById('moduleForm').reset();
         document.getElementById('moduleEditId').value = '';
+        document.getElementById('moduleLinkedModuleId').value = linkedModuleId || '';
         document.getElementById('moduleType').value = 'step';
         document.getElementById('moduleSize').value = 'medium';
         document.getElementById('btnDeleteModule').classList.add('hidden');
@@ -1418,6 +1488,7 @@
         state.editingModuleId = moduleId;
         document.getElementById('moduleModalTitle').textContent = 'Edit Module';
         document.getElementById('moduleEditId').value = moduleId;
+        document.getElementById('moduleLinkedModuleId').value = '';  // Clear linked module field
         document.getElementById('moduleName').value = module.name;
         document.getElementById('moduleDescription').value = module.description || '';
         document.getElementById('moduleIcon').value = module.icon || 'box';
@@ -1455,6 +1526,7 @@
         }
 
         const editId = document.getElementById('moduleEditId').value;
+        const linkedModuleId = document.getElementById('moduleLinkedModuleId').value;
         const implementedCheckbox = document.getElementById('moduleImplemented');
 
         const moduleData = {
@@ -1479,8 +1551,13 @@
         } else {
             // Add new module with default color
             moduleData.color = moduleData.isImplemented ? '#3ecf8e' : '#6b7280';
+            // Include linkedModuleId if creating a sub-module
+            if (linkedModuleId) {
+                moduleData.linkedModuleId = linkedModuleId;
+                console.log('[MODULE-SAVE] Creating sub-module linked to:', linkedModuleId);
+            }
             addCustomModule(moduleData);
-            showToast('Module added', 'success');
+            showToast(linkedModuleId ? 'Sub-module added' : 'Module added', 'success');
         }
 
         closeModuleModal();
@@ -1864,6 +1941,7 @@
         state.currentLevel = 'tree';
         state.selectedGroupId = null;
         state.selectedGroup = null;
+        state.selectedModule = null;
         state.filteredProcesses = [];
         state.currentProcessId = null;
         state.currentNodeId = null;
@@ -1881,6 +1959,262 @@
         closePanel();
         renderTreeView();
         centerCanvas();
+    }
+
+    function navigateToModuleDetail(moduleId) {
+        const module = getCustomModule(moduleId);
+        if (!module) return;
+
+        state.currentLevel = 'detail';
+        state.selectedGroupId = moduleId;
+        state.selectedModule = module;
+
+        // Update UI
+        updateBreadcrumb();
+        updateURL();
+        elements.btnBack.classList.remove('hidden');
+        elements.treeViewContainer.classList.add('hidden');
+        elements.detailViewContainer.classList.remove('hidden');
+        elements.viewSwitch.style.display = 'none';
+        elements.btnAddProcess.classList.remove('hidden');
+        document.body.classList.add('detail-active');
+
+        // Render module detail view (flowchart editor)
+        renderModuleDetailView(module);
+        centerCanvas();
+    }
+
+    function renderModuleDetailView(module) {
+        if (!elements.detailViewContainer) return;
+
+        elements.detailViewContainer.innerHTML = '';
+
+        // Get linked processes
+        const linkedProcessIds = module.linkedProcesses || [];
+        const linkedProcesses = linkedProcessIds
+            .map(pid => state.processes.find(p => p.id === pid))
+            .filter(Boolean);
+
+        // Create module header card
+        const headerCard = document.createElement('div');
+        headerCard.className = 'module-detail-header';
+        headerCard.innerHTML = `
+            <div class="module-detail-icon" style="background: ${module.color || '#3ecf8e'}20; border-color: ${module.color || '#3ecf8e'};">
+                ${getIconSvg(module.icon || 'box', module.color || '#3ecf8e')}
+            </div>
+            <div class="module-detail-info">
+                <h2 class="module-detail-title">${escapeHtml(module.name)}</h2>
+                <p class="module-detail-description">${escapeHtml(module.description || 'No description')}</p>
+                <div class="module-detail-meta">
+                    <span class="module-status-badge ${module.isImplemented ? 'live' : 'draft'}">
+                        ${module.isImplemented ? 'LIVE' : 'DRAFT'}
+                    </span>
+                    <span class="module-type-badge">${module.type || 'step'}</span>
+                    <span class="module-process-count">${linkedProcesses.length} processes</span>
+                </div>
+            </div>
+            <div class="module-detail-actions">
+                <button type="button" class="btn-module-edit" onclick="window.processManager?.openEditModuleModal('${module.id}')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    Edit
+                </button>
+            </div>
+        `;
+        headerCard.style.cssText = `
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
+            border: 1px solid #2a2a2a;
+            border-radius: 16px;
+            padding: 24px 32px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            min-width: 500px;
+            max-width: 700px;
+            z-index: 10;
+        `;
+
+        elements.detailViewContainer.appendChild(headerCard);
+
+        // Create processes container
+        const processesContainer = document.createElement('div');
+        processesContainer.className = 'module-processes-container';
+        processesContainer.style.cssText = `
+            position: absolute;
+            top: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 900px;
+        `;
+
+        if (linkedProcesses.length > 0) {
+            // Show linked processes as cards
+            let processesHtml = `
+                <div class="linked-processes-header">
+                    <h3>Linked Processes</h3>
+                    <button type="button" class="btn-add-process-link" id="btnAddProcessLink">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Link Process
+                    </button>
+                </div>
+                <div class="linked-processes-grid">
+            `;
+
+            linkedProcesses.forEach(process => {
+                const statusClass = process.is_implemented ? 'implemented' : 'draft';
+                processesHtml += `
+                    <div class="linked-process-card ${statusClass}" data-process-id="${process.id}">
+                        <div class="linked-process-status"></div>
+                        <div class="linked-process-info">
+                            <div class="linked-process-name">${escapeHtml(process.name)}</div>
+                            <div class="linked-process-id">${escapeHtml(process.id)}</div>
+                            ${process.trigger ? `<div class="linked-process-trigger">${escapeHtml(process.trigger)}</div>` : ''}
+                        </div>
+                        <div class="linked-process-actions">
+                            <button type="button" class="btn-unlink-process" title="Unlink process"
+                                onclick="event.stopPropagation(); window.processManager?.unlinkProcessFromModule('${process.id}', '${module.id}')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            processesHtml += '</div>';
+            processesContainer.innerHTML = processesHtml;
+
+            // Add click handlers to process cards
+            setTimeout(() => {
+                processesContainer.querySelectorAll('.linked-process-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const processId = card.dataset.processId;
+                        // TODO: Navigate to process flowchart view
+                        showToast(`Opening process ${processId}...`, 'info');
+                    });
+                });
+
+                // Add process link button handler
+                const btnAddLink = processesContainer.querySelector('#btnAddProcessLink');
+                if (btnAddLink) {
+                    btnAddLink.addEventListener('click', () => showLinkProcessModal(module.id));
+                }
+            }, 0);
+        } else {
+            // Show empty state with option to link processes
+            processesContainer.innerHTML = `
+                <div class="module-processes-empty">
+                    <div class="empty-processes-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+                            <path d="M10 6.5h4M6.5 10v4M17.5 10v4M10 17.5h4"></path>
+                        </svg>
+                    </div>
+                    <h3 class="empty-processes-title">No Processes Linked</h3>
+                    <p class="empty-processes-subtitle">Link processes from the navigator to this module</p>
+                    <button type="button" class="btn-link-first-process" id="btnLinkFirstProcess">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Link a Process
+                    </button>
+                </div>
+            `;
+
+            setTimeout(() => {
+                const btn = processesContainer.querySelector('#btnLinkFirstProcess');
+                if (btn) {
+                    btn.addEventListener('click', () => showLinkProcessModal(module.id));
+                }
+            }, 0);
+        }
+
+        elements.detailViewContainer.appendChild(processesContainer);
+    }
+
+    function showLinkProcessModal(moduleId) {
+        const module = getCustomModule(moduleId);
+        if (!module) return;
+
+        const linkedIds = module.linkedProcesses || [];
+        const availableProcesses = state.processes.filter(p => !linkedIds.includes(p.id));
+
+        if (availableProcesses.length === 0) {
+            showToast('All processes are already linked to modules', 'info');
+            return;
+        }
+
+        // Create modal
+        const modal = document.createElement('div');
+        modal.className = 'link-process-modal';
+        modal.innerHTML = `
+            <div class="link-process-modal-content">
+                <div class="link-process-modal-header">
+                    <h3>Link Process to ${escapeHtml(module.name)}</h3>
+                    <button type="button" class="btn-close-modal">&times;</button>
+                </div>
+                <div class="link-process-modal-search">
+                    <input type="text" placeholder="Search processes..." class="link-process-search-input" />
+                </div>
+                <div class="link-process-modal-list">
+                    ${availableProcesses.map(p => `
+                        <div class="link-process-option" data-process-id="${p.id}">
+                            <div class="link-process-option-status ${p.is_implemented ? 'implemented' : 'draft'}"></div>
+                            <div class="link-process-option-info">
+                                <div class="link-process-option-name">${escapeHtml(p.name)}</div>
+                                <div class="link-process-option-id">${escapeHtml(p.id)}</div>
+                            </div>
+                            <div class="link-process-option-category">${escapeHtml(p.category || '')}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Event handlers
+        const closeBtn = modal.querySelector('.btn-close-modal');
+        const searchInput = modal.querySelector('.link-process-search-input');
+        const optionsList = modal.querySelector('.link-process-modal-list');
+
+        closeBtn.addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            optionsList.querySelectorAll('.link-process-option').forEach(opt => {
+                const name = opt.querySelector('.link-process-option-name').textContent.toLowerCase();
+                const id = opt.querySelector('.link-process-option-id').textContent.toLowerCase();
+                opt.style.display = (name.includes(term) || id.includes(term)) ? 'flex' : 'none';
+            });
+        });
+
+        optionsList.querySelectorAll('.link-process-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                const processId = opt.dataset.processId;
+                linkProcessToModule(processId, moduleId);
+                modal.remove();
+            });
+        });
     }
 
     function navigateToSubProcess(nodeId) {
@@ -2128,7 +2462,11 @@
                 flowchartItem.addEventListener('click', navigateBack);
             }
         } else {
+            // Detail view - could be old group or custom module
             const group = state.selectedGroup;
+            const module = state.selectedModule;
+            const name = module?.name || group?.name || 'Detail';
+
             elements.processBreadcrumb.innerHTML = `
                 <span class="breadcrumb-item clickable" data-level="tree">
                     ${iconOverview}
@@ -2136,7 +2474,7 @@
                 </span>
                 <span class="breadcrumb-separator">></span>
                 <span class="breadcrumb-item active" data-level="detail">
-                    ${group?.name || 'Detail'}
+                    ${escapeHtml(name)}
                 </span>
             `;
 
@@ -2158,9 +2496,9 @@
         elements.treeViewContainer.innerHTML = '';
         clearConnections();
 
-        // Show empty state if no custom modules
+        // Hide empty state in tree view - we always have the hub
         if (elements.canvasEmpty) {
-            elements.canvasEmpty.style.display = state.customModules.length === 0 ? 'flex' : 'none';
+            elements.canvasEmpty.style.display = 'none';
         }
 
         // Default positions - radial layout around hub
@@ -2168,8 +2506,8 @@
         const defaultCenterY = 400;
         const defaultRadius = 320;
 
-        // Hub position (can be dragged too)
-        const hubPos = getNodePosition('hub', defaultCenterX - 130, defaultCenterY - 80);
+        // Hub position (can be dragged too) - offset to center the larger hub
+        const hubPos = getNodePosition('hub', defaultCenterX - 160, defaultCenterY - 100);
 
         // Render central hub
         const hubNode = createTreeNode({
@@ -2187,7 +2525,7 @@
 
         // Store node positions for connection drawing
         const nodeRects = {
-            hub: { x: hubPos.x, y: hubPos.y, width: 260, height: 160 }
+            hub: { x: hubPos.x, y: hubPos.y, width: 320, height: 200 }
         };
 
         // Render custom modules around the hub (radial layout)
@@ -2202,12 +2540,13 @@
 
             const customNode = createCustomModuleNode(module, pos.x, pos.y);
 
-            // Store for connections
+            // Store for connections - use fixed dimensions based on size
+            const moduleDimensions = getModuleDimensions(module.size);
             nodeRects[module.id] = {
                 x: pos.x,
                 y: pos.y,
-                width: 220,
-                height: 140,
+                width: moduleDimensions.width,
+                height: moduleDimensions.height,
                 isCustom: true,
                 isImplemented: module.isImplemented
             };
@@ -2225,8 +2564,21 @@
             });
 
             // Double-click to edit
-            customNode.addEventListener('dblclick', () => {
+            customNode.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
                 openEditModuleModal(module.id);
+            });
+
+            // Single click to navigate into module detail (with drag protection)
+            customNode.addEventListener('click', (e) => {
+                // Don't navigate if we just finished dragging
+                if (customNode.classList.contains('was-dragged')) return;
+                // Don't navigate if clicking on a port
+                if (e.target.closest('.connection-port')) return;
+                // Don't navigate if in connection mode
+                if (state.connectionMode.active) return;
+
+                navigateToModuleDetail(module.id);
             });
 
             elements.treeViewContainer.appendChild(customNode);
@@ -2234,6 +2586,9 @@
 
         // Draw orthogonal connections
         redrawConnections(nodeRects);
+
+        // Update stats (live/draft counts)
+        updateStats();
     }
 
     function createCustomModuleNode(module, x, y) {
@@ -2297,39 +2652,13 @@
         // Get actual node dimensions from DOM elements
         const actualRects = getActualNodeRects(nodeRects);
 
-        const groups = state.groupBy === 'deliverable' ? DELIVERABLES : DEPARTMENTS;
-        const groupArray = Object.values(groups);
         const hubRect = actualRects.hub;
+        if (!hubRect) return;
+
         const hubCenterX = hubRect.x + hubRect.width / 2;
         const hubCenterY = hubRect.y + hubRect.height / 2;
 
-        // Draw connections for built-in groups
-        groupArray.forEach((group) => {
-            const rect = actualRects[group.id];
-            if (!rect) return;
-
-            const nodeCenterX = rect.x + rect.width / 2;
-            const nodeCenterY = rect.y + rect.height / 2;
-
-            // Determine connection points (from edge of hub to edge of node)
-            const points = calculateOrthogonalPath(
-                hubRect, rect, hubCenterX, hubCenterY, nodeCenterX, nodeCenterY
-            );
-
-            // Check if module has real processes linked
-            // isDetailedModule = has function-level detail (like expenses_engine)
-            // processIds with at least one non-draft process = implemented
-            const hasImplementedProcesses = group.isDetailedModule ||
-                (group.processIds && group.processIds.some(pid => !pid.startsWith('DRAFT_')));
-
-            const connectionColor = hasImplementedProcesses ? '#3ecf8e' : '#6b7280';
-            const isDraft = !hasImplementedProcesses;
-
-            const connection = createOrthogonalConnection(points, connectionColor, isDraft, `hub-${group.id}`);
-            elements.connectionsLayer.appendChild(connection);
-        });
-
-        // Draw connections for custom modules (gray for drafts, green for implemented)
+        // Draw connections for custom modules only
         state.customModules.forEach((module) => {
             // Skip if module is not connected to hub
             if (module.connectedToHub === false) return;
@@ -2350,6 +2679,11 @@
             const connection = createOrthogonalConnection(points, connectionColor, isDraft, `hub-${module.id}`);
             elements.connectionsLayer.appendChild(connection);
         });
+
+        // Draw connection preview line if in connection mode
+        if (state.connectionMode.active && state.connectionMode.sourceRect) {
+            drawConnectionPreview();
+        }
 
         // Update minimap after redrawing connections
         updateMinimap();
@@ -2538,6 +2872,8 @@
         let hasMoved = false;
 
         node.addEventListener('mousedown', (e) => {
+            // Don't start drag if in connection mode
+            if (state.connectionMode.active) return;
             if (e.button !== 0) return;
             e.preventDefault();
 
@@ -2570,28 +2906,15 @@
             node.style.top = `${newY}px`;
 
             // Update nodeRects and redraw connections in real-time
-            if (onDragEnd) {
-                const groups = state.groupBy === 'deliverable' ? DELIVERABLES : DEPARTMENTS;
-                const groupArray = Object.values(groups);
-
-                const nodeRects = { hub: getHubRect() };
-                groupArray.forEach(g => {
-                    const el = elements.treeViewContainer.querySelector(`[data-id="${g.id}"]`);
-                    if (el) {
-                        nodeRects[g.id] = {
-                            x: parseInt(el.style.left) || 0,
-                            y: parseInt(el.style.top) || 0,
-                            width: 220,
-                            height: 140
-                        };
-                    }
-                });
-                // Update hub rect if dragging hub
-                if (nodeId === 'hub') {
-                    nodeRects.hub = { x: newX, y: newY, width: 260, height: 160 };
-                }
-                redrawConnections(nodeRects);
+            const nodeRects = buildCurrentNodeRects();
+            // Update the dragged node's position
+            if (nodeId === 'hub') {
+                nodeRects.hub = { x: newX, y: newY, width: 320, height: 200 };
+            } else if (nodeRects[nodeId]) {
+                nodeRects[nodeId].x = newX;
+                nodeRects[nodeId].y = newY;
             }
+            redrawConnections(nodeRects);
         });
 
         document.addEventListener('mouseup', () => {
@@ -2619,17 +2942,169 @@
         });
     }
 
+    // Build nodeRects from current DOM state
+    function buildCurrentNodeRects() {
+        const nodeRects = { hub: getHubRect() };
+
+        // Add all custom modules with fixed dimensions based on size
+        state.customModules.forEach(module => {
+            const el = elements.treeViewContainer.querySelector(`[data-id="${module.id}"]`);
+            if (el) {
+                const dims = getModuleDimensions(module.size);
+                nodeRects[module.id] = {
+                    x: parseInt(el.style.left) || 0,
+                    y: parseInt(el.style.top) || 0,
+                    width: el.offsetWidth || dims.width,
+                    height: el.offsetHeight || dims.height,
+                    isCustom: true,
+                    isImplemented: module.isImplemented
+                };
+            }
+        });
+
+        return nodeRects;
+    }
+
+    // Get fixed dimensions based on module size setting
+    function getModuleDimensions(size) {
+        switch (size) {
+            case 'large':
+                return { width: 280, height: 180 };
+            case 'small':
+                return { width: 160, height: 120 };
+            case 'medium':
+            default:
+                return { width: 220, height: 150 };
+        }
+    }
+
     function getHubRect() {
         const hubNode = elements.treeViewContainer.querySelector('[data-id="hub"]');
         if (hubNode) {
             return {
                 x: parseInt(hubNode.style.left) || 0,
                 y: parseInt(hubNode.style.top) || 0,
-                width: 260,
-                height: 160
+                width: hubNode.offsetWidth || 320,
+                height: hubNode.offsetHeight || 200
             };
         }
-        return { x: 470, y: 320, width: 260, height: 160 };
+        return { x: 440, y: 300, width: 320, height: 200 };
+    }
+
+    // ================================
+    // Connection Mode Functions
+    // ================================
+    function startConnectionMode(sourceId) {
+        const sourceNode = elements.treeViewContainer.querySelector(`[data-id="${sourceId}"]`);
+        if (!sourceNode) return;
+
+        state.connectionMode.active = true;
+        state.connectionMode.sourceId = sourceId;
+        state.connectionMode.sourceRect = {
+            x: parseInt(sourceNode.style.left) || 0,
+            y: parseInt(sourceNode.style.top) || 0,
+            width: sourceNode.offsetWidth,
+            height: sourceNode.offsetHeight
+        };
+
+        // Add connecting class to canvas
+        elements.canvasContainer.classList.add('connecting-mode');
+
+        // Highlight valid drop targets
+        document.querySelectorAll('.tree-node').forEach(node => {
+            if (node.dataset.id !== sourceId) {
+                node.classList.add('valid-drop-target');
+            }
+        });
+
+        console.log('[CONNECTION] Started connection mode from:', sourceId);
+    }
+
+    function drawConnectionPreview() {
+        // Remove existing preview
+        const existingPreview = elements.connectionsLayer.querySelector('.connection-preview');
+        if (existingPreview) existingPreview.remove();
+
+        if (!state.connectionMode.active || !state.connectionMode.sourceRect) return;
+
+        const sourceRect = state.connectionMode.sourceRect;
+        const sourceCenterX = sourceRect.x + sourceRect.width / 2;
+        const sourceCenterY = sourceRect.y + sourceRect.height / 2;
+
+        // Get mouse position relative to canvas grid
+        const gridRect = elements.canvasGrid.getBoundingClientRect();
+        const mouseX = (state.connectionMode.mouseX - gridRect.left) / state.canvas.scale + Math.abs(state.canvas.offsetX);
+        const mouseY = (state.connectionMode.mouseY - gridRect.top) / state.canvas.scale + Math.abs(state.canvas.offsetY);
+
+        // Create preview line
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('class', 'connection-preview');
+        line.setAttribute('x1', sourceCenterX);
+        line.setAttribute('y1', sourceCenterY);
+        line.setAttribute('x2', mouseX);
+        line.setAttribute('y2', mouseY);
+        line.setAttribute('stroke', '#3ecf8e');
+        line.setAttribute('stroke-width', '2');
+        line.setAttribute('stroke-dasharray', '8 4');
+        line.setAttribute('opacity', '0.7');
+
+        elements.connectionsLayer.appendChild(line);
+    }
+
+    function endConnectionMode(targetId = null) {
+        if (!state.connectionMode.active) return;
+
+        const sourceId = state.connectionMode.sourceId;
+
+        // Remove preview line
+        const preview = elements.connectionsLayer.querySelector('.connection-preview');
+        if (preview) preview.remove();
+
+        // Remove classes
+        elements.canvasContainer.classList.remove('connecting-mode');
+        document.querySelectorAll('.tree-node').forEach(node => {
+            node.classList.remove('valid-drop-target');
+        });
+
+        // If we have a valid target, create the connection
+        if (targetId && targetId !== sourceId) {
+            console.log('[CONNECTION] Creating connection:', sourceId, '->', targetId);
+
+            // For now, we connect modules to hub
+            // Future: store module-to-module connections
+            if (targetId === 'hub') {
+                // Connect module to hub
+                const module = getCustomModule(sourceId);
+                if (module) {
+                    module.connectedToHub = true;
+                    saveCustomModules();
+                    showToast('Connected to Hub', 'success');
+                }
+            } else if (sourceId === 'hub') {
+                // Connect hub to module
+                const module = getCustomModule(targetId);
+                if (module) {
+                    module.connectedToHub = true;
+                    saveCustomModules();
+                    showToast('Connected to Hub', 'success');
+                }
+            } else {
+                // Module to module connection - store in module data
+                // Future enhancement: implement module-to-module connections
+                showToast('Module-to-module connections coming soon', 'info');
+            }
+
+            // Redraw connections
+            const nodeRects = buildCurrentNodeRects();
+            redrawConnections(nodeRects);
+        }
+
+        // Reset state
+        state.connectionMode.active = false;
+        state.connectionMode.sourceId = null;
+        state.connectionMode.sourceRect = null;
+
+        console.log('[CONNECTION] Ended connection mode');
     }
 
     function createTreeNode(data, x, y) {
@@ -3493,6 +3968,31 @@
     // Canvas Controls
     // ================================
     function handleCanvasMouseDown(e) {
+        // Check if clicking on a connection port to start connection
+        const port = e.target.closest('.connection-port');
+        if (port) {
+            e.preventDefault();
+            e.stopPropagation();
+            const nodeId = port.dataset.node;
+            if (nodeId) {
+                startConnectionMode(nodeId);
+            }
+            return;
+        }
+
+        // If in connection mode and clicking on empty space, cancel
+        if (state.connectionMode.active) {
+            const targetNode = e.target.closest('.tree-node');
+            if (targetNode) {
+                // Clicking on a node - complete connection
+                endConnectionMode(targetNode.dataset.id);
+            } else {
+                // Clicking on empty space - cancel
+                endConnectionMode(null);
+            }
+            return;
+        }
+
         if (e.target.closest('.tree-node, .service-node, .process-card, .step-card')) return;
         if (e.button !== 0) return;
 
@@ -3502,6 +4002,14 @@
     }
 
     function handleCanvasMouseMove(e) {
+        // Update connection preview if in connection mode
+        if (state.connectionMode.active) {
+            state.connectionMode.mouseX = e.clientX;
+            state.connectionMode.mouseY = e.clientY;
+            drawConnectionPreview();
+            return;
+        }
+
         if (!state.canvas.isDragging) return;
 
         const dx = e.clientX - state.canvas.dragStart.x;
@@ -3514,7 +4022,17 @@
         applyCanvasTransform();
     }
 
-    function handleCanvasMouseUp() {
+    function handleCanvasMouseUp(e) {
+        // If in connection mode, check if we're over a valid target
+        if (state.connectionMode.active) {
+            const targetNode = e.target.closest('.tree-node');
+            if (targetNode && targetNode.dataset.id !== state.connectionMode.sourceId) {
+                endConnectionMode(targetNode.dataset.id);
+            }
+            // Don't cancel here - let user click elsewhere to cancel
+            return;
+        }
+
         state.canvas.isDragging = false;
         elements.canvasContainer.style.cursor = 'default';
     }
@@ -3697,14 +4215,57 @@
 
 
     // ================================
-    // Stats
+    // Stats & Filter
     // ================================
     function updateStats() {
-        const implemented = state.processes.filter(p => p.is_implemented).length;
-        const drafts = state.processes.filter(p => !p.is_implemented).length;
+        // Count custom modules (the editable modules from Supabase)
+        const implemented = state.customModules.filter(m => m.isImplemented).length;
+        const drafts = state.customModules.filter(m => !m.isImplemented).length;
 
         if (elements.countImplemented) elements.countImplemented.textContent = implemented;
         if (elements.countDrafts) elements.countDrafts.textContent = drafts;
+
+        // Update filter visual state
+        updateFilterVisuals();
+    }
+
+    function toggleModuleFilter(filterType) {
+        // Toggle filter: if already active, clear it; otherwise set it
+        if (state.moduleFilter === filterType) {
+            state.moduleFilter = null;
+        } else {
+            state.moduleFilter = filterType;
+        }
+
+        // Apply filter class to container
+        applyModuleFilter();
+        updateFilterVisuals();
+    }
+
+    function applyModuleFilter() {
+        if (!elements.treeViewContainer) return;
+
+        // Remove existing filter classes
+        elements.treeViewContainer.classList.remove('filter-implemented', 'filter-draft');
+
+        // Add new filter class if active
+        if (state.moduleFilter === 'implemented') {
+            elements.treeViewContainer.classList.add('filter-implemented');
+        } else if (state.moduleFilter === 'draft') {
+            elements.treeViewContainer.classList.add('filter-draft');
+        }
+    }
+
+    function updateFilterVisuals() {
+        // Update stat item visuals based on active filter
+        if (elements.statImplemented) {
+            elements.statImplemented.classList.toggle('active', state.moduleFilter === 'implemented');
+            elements.statImplemented.classList.toggle('dimmed', state.moduleFilter === 'draft');
+        }
+        if (elements.statDraft) {
+            elements.statDraft.classList.toggle('active', state.moduleFilter === 'draft');
+            elements.statDraft.classList.toggle('dimmed', state.moduleFilter === 'implemented');
+        }
     }
 
     // ================================
@@ -3821,28 +4382,121 @@
             selectedItem.classList.add('active');
         }
 
-        // Navigate to the process detail if we're in detail view, or show panel if in tree view
-        if (state.currentLevel === 'tree') {
-            // Find which group this process belongs to and navigate there
-            const group = PROCESS_GROUPS.find(g =>
-                g.deliverables?.some(d => d.processIds?.includes(processId)) ||
-                process.category === g.id
-            );
-            if (group) {
-                navigateToDetail(group.id);
-                // After navigation, select the process
-                setTimeout(() => {
-                    const processNode = elements.detailViewContainer.querySelector(`[data-id="${processId}"]`);
-                    if (processNode) {
-                        processNode.click();
-                    }
-                }, 100);
-            }
+        // Find which custom module this process is linked to
+        const linkedModule = state.customModules.find(m =>
+            m.linkedProcesses && m.linkedProcesses.includes(processId)
+        );
+
+        if (linkedModule) {
+            // Navigate to the module that contains this process
+            navigateToModuleDetail(linkedModule.id);
+            // After navigation, highlight/select the process
+            setTimeout(() => {
+                highlightProcessInModule(processId);
+            }, 100);
         } else {
-            // Already in detail view, just select the process
-            const processNode = elements.detailViewContainer.querySelector(`[data-id="${processId}"]`);
-            if (processNode) {
-                processNode.click();
+            // Process not linked to any module - show info panel or offer to link
+            showProcessInfoPanel(process);
+        }
+    }
+
+    function highlightProcessInModule(processId) {
+        const processNode = elements.detailViewContainer.querySelector(`[data-process-id="${processId}"]`);
+        if (processNode) {
+            processNode.classList.add('highlighted');
+            processNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => processNode.classList.remove('highlighted'), 2000);
+        }
+    }
+
+    function showProcessInfoPanel(process) {
+        // Show a panel with process info and option to link to a module
+        const panelHtml = `
+            <div class="process-info-panel">
+                <div class="process-info-header">
+                    <h3>${escapeHtml(process.name)}</h3>
+                    <span class="process-status-badge ${process.is_implemented ? 'implemented' : 'draft'}">
+                        ${process.is_implemented ? 'IMPLEMENTED' : 'DRAFT'}
+                    </span>
+                </div>
+                <p class="process-info-id">${escapeHtml(process.id)}</p>
+                <p class="process-info-description">${escapeHtml(process.description || 'No description')}</p>
+                <div class="process-info-meta">
+                    <span>Category: ${escapeHtml(process.category || 'Uncategorized')}</span>
+                    ${process.trigger ? `<span>Trigger: ${escapeHtml(process.trigger)}</span>` : ''}
+                </div>
+                <div class="process-info-actions">
+                    <label class="process-link-label">Link to module:</label>
+                    <select class="process-link-select" id="processLinkSelect">
+                        <option value="">-- Select a module --</option>
+                        ${state.customModules.map(m => `
+                            <option value="${m.id}">${escapeHtml(m.name)}</option>
+                        `).join('')}
+                    </select>
+                    <button type="button" class="btn-link-process" onclick="window.processManager?.linkProcessToModule('${process.id}')">
+                        Link
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Show in a toast or panel
+        showToast(`Process "${process.name}" is not linked to any module. Use the dropdown to link it.`, 'info', 5000);
+
+        // If we have a process panel element, show detailed info there
+        if (elements.processPanel) {
+            elements.processPanel.innerHTML = panelHtml;
+            elements.processPanel.classList.remove('hidden');
+            state.isPanelOpen = true;
+        }
+    }
+
+    function linkProcessToModule(processId, moduleId = null) {
+        // If moduleId not provided, get from select
+        if (!moduleId) {
+            const select = document.getElementById('processLinkSelect');
+            moduleId = select?.value;
+        }
+
+        if (!moduleId) {
+            showToast('Please select a module', 'warning');
+            return;
+        }
+
+        const module = getCustomModule(moduleId);
+        if (!module) return;
+
+        // Initialize linkedProcesses if needed
+        if (!module.linkedProcesses) {
+            module.linkedProcesses = [];
+        }
+
+        // Add process if not already linked
+        if (!module.linkedProcesses.includes(processId)) {
+            module.linkedProcesses.push(processId);
+            saveCustomModules();
+            showToast(`Process linked to "${module.name}"`, 'success');
+
+            // Navigate to the module
+            navigateToModuleDetail(moduleId);
+        } else {
+            showToast('Process already linked to this module', 'info');
+        }
+    }
+
+    function unlinkProcessFromModule(processId, moduleId) {
+        const module = getCustomModule(moduleId);
+        if (!module || !module.linkedProcesses) return;
+
+        const index = module.linkedProcesses.indexOf(processId);
+        if (index > -1) {
+            module.linkedProcesses.splice(index, 1);
+            saveCustomModules();
+            showToast('Process unlinked', 'success');
+
+            // Refresh the current view
+            if (state.currentLevel === 'detail' && state.selectedGroupId === moduleId) {
+                renderModuleDetailView(module);
             }
         }
     }
@@ -5019,5 +5673,14 @@
     } else {
         init();
     }
+
+    // Expose public API for external access (e.g., onclick handlers)
+    window.processManager = {
+        openEditModuleModal,
+        navigateToTree,
+        navigateToModuleDetail,
+        linkProcessToModule,
+        unlinkProcessFromModule
+    };
 
 })();

@@ -1642,23 +1642,60 @@ select.edit-input option {
    ========================================== */
 
 .modal-bill-edit {
-  max-width: 500px;
+  max-width: 560px;
+}
+
+/* Bill Edit Modal - Improved Spacing */
+.modal-bill-edit .modal-body {
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.modal-bill-edit .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.modal-bill-edit .form-label {
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+.modal-bill-edit .form-input {
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+.modal-bill-edit .form-textarea {
+  padding: 14px 16px;
+  min-height: 90px;
+  resize: vertical;
+}
+
+.modal-bill-edit .form-hint {
+  margin-top: 10px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.5;
 }
 
 .bill-edit-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
+  padding: 20px 24px;
   background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
-  margin-bottom: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .bill-edit-number {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .bill-edit-label {
@@ -1670,55 +1707,57 @@ select.edit-input option {
 }
 
 .bill-edit-value {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.95);
 }
 
 .bill-edit-stats {
   display: flex;
-  gap: 20px;
+  gap: 28px;
 }
 
 .bill-edit-stat {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 2px;
+  gap: 4px;
 }
 
 .bill-edit-stat-label {
   font-size: 10px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.45);
   text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .bill-edit-stat-value {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
 }
 
 .bill-edit-stat-amount {
   color: #4ade80;
+  font-size: 16px;
 }
 
 /* Bill Status Options */
 .bill-status-options {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .bill-status-option {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 14px;
+  padding: 14px 18px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.15s ease;
   text-align: left;
@@ -1735,26 +1774,29 @@ select.edit-input option {
 }
 
 .bill-status-option .status-icon {
-  font-size: 18px;
-  width: 24px;
+  font-size: 20px;
+  width: 28px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .bill-status-option .status-name {
   font-size: 14px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
+  min-width: 70px;
 }
 
 .bill-status-option .status-desc {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.5);
   margin-left: auto;
+  text-align: right;
 }
 
 /* Bill Receipt Section */
 .bill-receipt-section {
-  min-height: 80px;
+  min-height: 100px;
 }
 
 .bill-receipt-upload {
@@ -1762,10 +1804,10 @@ select.edit-input option {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 32px 24px;
   background: rgba(255, 255, 255, 0.02);
   border: 2px dashed rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -1776,13 +1818,13 @@ select.edit-input option {
 }
 
 .bill-receipt-upload-icon {
-  font-size: 28px;
-  margin-bottom: 8px;
+  font-size: 32px;
+  margin-bottom: 12px;
   opacity: 0.6;
 }
 
 .bill-receipt-upload-text {
-  font-size: 13px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.6);
   text-align: center;
 }
@@ -1790,17 +1832,17 @@ select.edit-input option {
 .bill-receipt-upload-hint {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.4);
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .bill-receipt-preview {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 14px;
+  padding: 14px 18px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .bill-receipt-preview-icon {
@@ -1867,22 +1909,56 @@ select.edit-input option {
    BILL EDIT MODAL - BUTTONS & ENHANCEMENTS
    ========================================== */
 
+/* Modal header */
+#billEditModal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 32px;
+  background: #111111;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#billEditModal .modal-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: -0.01em;
+}
+
+#billEditModal .modal-close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+#billEditModal .modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.8);
+}
+
 /* Modal footer buttons */
 #billEditModal .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 24px;
+  gap: 14px;
+  padding: 20px 32px;
   background: #111111;
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 #billEditModal .btn-modal-secondary,
 #billEditModal .btn-modal-primary {
   appearance: none;
-  border-radius: 6px;
-  padding: 10px 20px;
-  font-size: 13px;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
@@ -2206,12 +2282,26 @@ select.edit-input option {
 .status-badge {
   display: inline-flex;
   align-items: center;
-  padding: 3px 10px;
+  justify-content: center;
+  padding: 5px 12px;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  line-height: 1;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Status column cell alignment */
+.col-status {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.col-status .status-badge {
+  margin: 0 auto;
 }
 
 .status-badge-success {

@@ -338,7 +338,7 @@
         <td>${formatDate(budget.start_date)}</td>
         <td>${formatDate(budget.end_date)}</td>
         <td style="text-align: center;">${budget.lines_count || 0}</td>
-        <td>
+        <td class="col-status">
           <span class="status-badge ${statusClass}">${statusText}</span>
         </td>
       </tr>
@@ -872,7 +872,7 @@
             ${budget.auto_matched ? '<span style="font-size: 11px; color: #a78bfa;">✨ auto-matched</span>' : ''}
           </td>
           <td>${budget.qbo_fiscal_year || '—'}</td>
-          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+          <td class="col-status"><span class="status-badge ${statusClass}">${statusText}</span></td>
           <td>
             <select class="ngm-select mapping-select" data-qbo-budget-id="${budget.qbo_budget_id}" data-budget-name="${budget.qbo_budget_name || ''}" data-fiscal-year="${budget.qbo_fiscal_year || ''}">
               <option value="">— Select Project —</option>

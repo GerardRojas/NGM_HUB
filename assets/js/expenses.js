@@ -2887,8 +2887,14 @@
 
     const apiBase = getApiBase();
 
+    // Build URL - include user_id if available (required for authorized expenses)
+    const userId = currentUser?.user_id || currentUser?.id;
+    const deleteUrl = userId
+      ? `${apiBase}/expenses/${expenseId}?user_id=${userId}`
+      : `${apiBase}/expenses/${expenseId}`;
+
     try {
-      await apiJson(`${apiBase}/expenses/${expenseId}`, {
+      await apiJson(deleteUrl, {
         method: 'DELETE'
       });
 
@@ -2936,13 +2942,19 @@
     const originalText = els.btnBulkDelete.innerHTML;
     els.btnBulkDelete.innerHTML = '<span style="font-size: 14px;">⏳</span> Deleting...';
 
+    // Build base URL - include user_id if available (required for authorized expenses)
+    const userId = currentUser?.user_id || currentUser?.id;
+
     try {
       // Use Promise.allSettled to handle individual failures without stopping others
-      const deletePromises = Array.from(selectedExpenseIds).map(expenseId =>
-        apiJson(`${apiBase}/expenses/${expenseId}`, { method: 'DELETE' })
+      const deletePromises = Array.from(selectedExpenseIds).map(expenseId => {
+        const deleteUrl = userId
+          ? `${apiBase}/expenses/${expenseId}?user_id=${userId}`
+          : `${apiBase}/expenses/${expenseId}`;
+        return apiJson(deleteUrl, { method: 'DELETE' })
           .then(() => ({ expenseId, success: true }))
-          .catch(err => ({ expenseId, success: false, error: err.message }))
-      );
+          .catch(err => ({ expenseId, success: false, error: err.message }));
+      });
 
       const results = await Promise.allSettled(deletePromises);
 
@@ -4458,7 +4470,9 @@
     if (canAuthorize && els.singleExpenseStatusContainer) {
       console.log('[EXPENSES] Showing status selector');
       els.singleExpenseStatusContainer.style.display = 'block';
-      els.singleExpenseAuthContainer.style.display = 'none'; // Hide old checkbox
+      if (els.singleExpenseAuthContainer) {
+        els.singleExpenseAuthContainer.style.display = 'none'; // Hide old checkbox
+      }
 
       // Set active status button
       const statusButtons = els.expenseStatusSelector.querySelectorAll('.expense-status-btn');
@@ -4488,9 +4502,15 @@
 
     } else {
       console.log('[EXPENSES] Hiding status selector - canAuthorize:', canAuthorize);
-      els.singleExpenseStatusContainer.style.display = 'none';
-      els.singleExpenseAuthContainer.style.display = 'none';
-      els.singleExpenseAuditContainer.classList.add('hidden');
+      if (els.singleExpenseStatusContainer) {
+        els.singleExpenseStatusContainer.style.display = 'none';
+      }
+      if (els.singleExpenseAuthContainer) {
+        els.singleExpenseAuthContainer.style.display = 'none';
+      }
+      if (els.singleExpenseAuditContainer) {
+        els.singleExpenseAuditContainer.classList.add('hidden');
+      }
     }
 
     // Show modal

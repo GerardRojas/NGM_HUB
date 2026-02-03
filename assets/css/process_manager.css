@@ -8,6 +8,40 @@ body.page-process-manager {
     height: 100vh;
 }
 
+/* Allow sidebar to scroll independently */
+.page-process-manager .sidebar {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #2a2a2a transparent;
+}
+
+/* Webkit scrollbar styling for sidebar */
+.page-process-manager .sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.page-process-manager .sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.page-process-manager .sidebar::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 3px;
+}
+
+.page-process-manager .sidebar::-webkit-scrollbar-thumb:hover {
+    background: #3a3a3a;
+}
+
+/* Ensure sidebar nav card can scroll if needed */
+.page-process-manager .sidebar-nav-card {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0; /* Important for flex children to scroll */
+}
+
 /* Override global main-content max-width for full canvas */
 .page-process-manager .main-content {
     max-width: none;
@@ -3313,21 +3347,21 @@ body.page-process-manager {
     width: 280px;
     height: 180px;
     padding: 20px;
-    overflow: hidden;
+    overflow: visible; /* Allow connection ports to extend outside */
 }
 
 .tree-node.custom-module.size-medium {
     width: 220px;
     height: 150px;
     padding: 16px;
-    overflow: hidden;
+    overflow: visible; /* Allow connection ports to extend outside */
 }
 
 .tree-node.custom-module.size-small {
     width: 160px;
     height: 120px;
     padding: 12px;
-    overflow: hidden;
+    overflow: visible; /* Allow connection ports to extend outside */
 }
 
 /* Text truncation for all custom modules */

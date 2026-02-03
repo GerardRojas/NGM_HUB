@@ -1338,16 +1338,23 @@
         // Check for URL parameters to navigate to specific view
         handleURLNavigation();
 
-        centerCanvas();
-
-        // Hide loading overlay
+        // Hide loading overlay only after centering is complete
         const elapsed = Date.now() - PAGE_LOAD_START;
         const remaining = Math.max(0, MIN_LOADING_TIME - elapsed);
+
+        // Use requestAnimationFrame to ensure layout is calculated before centering
+        // Then hide loading overlay after centering completes
         setTimeout(() => {
-            document.body.classList.remove('page-loading');
-            document.body.classList.add('auth-ready');
-            const overlay = document.getElementById('pageLoadingOverlay');
-            if (overlay) overlay.classList.add('hidden');
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    centerCanvas();
+                    // Now hide loading overlay after canvas is centered
+                    document.body.classList.remove('page-loading');
+                    document.body.classList.add('auth-ready');
+                    const overlay = document.getElementById('pageLoadingOverlay');
+                    if (overlay) overlay.classList.add('hidden');
+                });
+            });
         }, remaining);
     }
 
@@ -5462,19 +5469,18 @@
     function drawTreeMinimap(ctx, scaleX, scaleY) {
         // Draw hub
         const hubPos = getNodePosition('hub', 470, 320);
+        const hubCenterX = (hubPos.x + 160) * scaleX;
+        const hubCenterY = (hubPos.y + 100) * scaleY;
+
         ctx.beginPath();
-        ctx.arc(
-            (hubPos.x + 160) * scaleX,
-            (hubPos.y + 100) * scaleY,
-            6,
-            0,
-            Math.PI * 2
-        );
+        ctx.arc(hubCenterX, hubCenterY, 6, 0, Math.PI * 2);
         ctx.fillStyle = '#3ecf8e';
         ctx.fill();
 
-        // Draw custom modules
+        // Draw custom modules and store positions for connections
         const nodePositions = state.nodePositions || {};
+        const moduleCenters = {};
+
         state.customModules.forEach((module, index) => {
             const defaultAngle = (index / Math.max(state.customModules.length, 1)) * Math.PI * 2 - Math.PI / 2;
             const defaultX = 600 + Math.cos(defaultAngle) * 320 - 110;
@@ -5482,40 +5488,61 @@
             const pos = nodePositions[module.id] || { x: defaultX, y: defaultY };
             const dims = getModuleDimensions(module.size);
 
+            const centerX = (pos.x + dims.width / 2) * scaleX;
+            const centerY = (pos.y + dims.height / 2) * scaleY;
+            moduleCenters[module.id] = { x: centerX, y: centerY };
+
             // Draw node
             ctx.beginPath();
-            ctx.arc(
-                (pos.x + dims.width / 2) * scaleX,
-                (pos.y + dims.height / 2) * scaleY,
-                4,
-                0,
-                Math.PI * 2
-            );
+            ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
             ctx.fillStyle = module.isImplemented ? '#3ecf8e' : '#6b7280';
             ctx.fill();
 
-            // Draw connection to hub
-            ctx.strokeStyle = module.isImplemented ? 'rgba(62, 207, 142, 0.3)' : 'rgba(107, 114, 128, 0.3)';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo((hubPos.x + 160) * scaleX, (hubPos.y + 100) * scaleY);
-            ctx.lineTo((pos.x + dims.width / 2) * scaleX, (pos.y + dims.height / 2) * scaleY);
-            ctx.stroke();
+            // Draw connection to hub ONLY if connected
+            if (module.connectedToHub) {
+                ctx.strokeStyle = module.isImplemented ? 'rgba(62, 207, 142, 0.4)' : 'rgba(107, 114, 128, 0.4)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(hubCenterX, hubCenterY);
+                ctx.lineTo(centerX, centerY);
+                ctx.stroke();
+            }
+        });
+
+        // Draw module-to-module connections
+        state.moduleConnections.forEach(conn => {
+            const sourceCenter = moduleCenters[conn.sourceId];
+            const targetCenter = moduleCenters[conn.targetId];
+
+            if (sourceCenter && targetCenter) {
+                ctx.strokeStyle = 'rgba(99, 102, 241, 0.4)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(sourceCenter.x, sourceCenter.y);
+                ctx.lineTo(targetCenter.x, targetCenter.y);
+                ctx.stroke();
+            }
         });
     }
 
     function drawDetailMinimap(ctx, scaleX, scaleY) {
         // Get visible nodes from the detail view container
         const container = elements.detailViewContainer;
-        if (!container) return;
+        if (!container || container.classList.contains('hidden')) return;
 
-        const nodes = container.querySelectorAll('.process-card, .step-card, .flow-node, .module-detail-header');
+        const nodes = container.querySelectorAll('.process-card, .step-card, .flow-node, .module-detail-header, .flowchart-card, .flowchart-entry-card');
 
         nodes.forEach(node => {
+            // Skip hidden nodes
+            if (node.offsetParent === null || node.classList.contains('hidden')) return;
+
             const x = parseInt(node.style.left) || 0;
             const y = parseInt(node.style.top) || 0;
             const width = node.offsetWidth || 200;
             const height = node.offsetHeight || 100;
+
+            // Skip nodes with no position (not rendered yet)
+            if (x === 0 && y === 0 && !node.style.left) return;
 
             // Determine color based on node type
             let color = '#3ecf8e';
@@ -5525,6 +5552,8 @@
                 color = '#f59e0b';
             } else if (node.classList.contains('milestone')) {
                 color = '#8b5cf6';
+            } else if (node.classList.contains('flowchart-entry-card')) {
+                color = '#60a5fa';
             }
 
             // Draw rectangle for the node
@@ -6883,8 +6912,48 @@
                 if (connectionDragState.isNewConnection) {
                     // Creating a NEW connection
                     console.log(`[CONNECTIONS] New connection: ${connectionDragState.sourceNodeId} -> ${targetNodeId}`);
-                    // For now, just redraw connections to show visual feedback
-                    // In a real implementation, you would save this connection
+
+                    const sourceId = connectionDragState.sourceNodeId;
+                    let connectionCreated = false;
+
+                    // Handle different connection types
+                    if (targetNodeId === 'hub') {
+                        // Connect module to hub
+                        const module = getCustomModule(sourceId);
+                        if (module && !module.connectedToHub) {
+                            module.connectedToHub = true;
+                            saveCustomModules();
+                            showToast('Connected to Hub', 'success');
+                            connectionCreated = true;
+                        } else if (module && module.connectedToHub) {
+                            showToast('Already connected to Hub', 'info');
+                        }
+                    } else if (sourceId === 'hub') {
+                        // Connect hub to module
+                        const module = getCustomModule(targetNodeId);
+                        if (module && !module.connectedToHub) {
+                            module.connectedToHub = true;
+                            saveCustomModules();
+                            showToast('Connected to Hub', 'success');
+                            connectionCreated = true;
+                        } else if (module && module.connectedToHub) {
+                            showToast('Already connected to Hub', 'info');
+                        }
+                    } else {
+                        // Module to module connection
+                        if (addModuleConnection(sourceId, targetNodeId)) {
+                            showToast('Modules connected', 'success');
+                            connectionCreated = true;
+                        } else {
+                            showToast('Connection already exists', 'info');
+                        }
+                    }
+
+                    // Redraw connections if a new one was created
+                    if (connectionCreated) {
+                        const nodeRects = buildCurrentNodeRects();
+                        redrawConnections(nodeRects);
+                    }
                 } else {
                     // Reconnecting existing connection
                     console.log(`[CONNECTIONS] Reconnect: ${connectionDragState.sourceNodeId} -> ${targetNodeId}`);

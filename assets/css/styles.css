@@ -7,6 +7,11 @@ body:not(.auth-ready) {
     visibility: hidden;
 }
 
+/* IMPORTANT: Loading overlay must be visible even before auth is ready */
+body:not(.auth-ready) .page-loading-overlay {
+    visibility: visible;
+}
+
 /* Login page doesn't need to wait for auth */
 body.login-page,
 body.public-page {

@@ -560,10 +560,9 @@
       }
     }
 
-    // Filter by vendor
+    // Filter by vendor - only match when explicitly mentioning "vendor" or "proveedor"
     const vendorPatterns = [
       /(?:filtra|filter|muestra|show).*(?:vendor|proveedor|vendedor)\s+["']?(.+?)["']?$/i,
-      /(?:gastos?\s*(?:de|del|from))\s+["']?(.+?)["']?$/i,
     ];
 
     for (const pattern of vendorPatterns) {

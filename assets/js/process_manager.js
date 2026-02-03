@@ -936,13 +936,15 @@
     // Custom Modules Storage
     // ================================
     async function loadCustomModules() {
+        // Clear legacy localStorage cache (one-time migration cleanup)
+        localStorage.removeItem(CUSTOM_MODULES_KEY);
+
         // Load from Supabase only - single source of truth
         const result = await loadStateFromSupabase('custom_modules', []);
-        console.log('[PROCESS-MANAGER] Load custom_modules result:', result);
 
         if (result.success && Array.isArray(result.data)) {
             state.customModules = normalizeModules(result.data);
-            console.log('[PROCESS-MANAGER] Loaded', state.customModules.length, 'modules from Supabase');
+            console.log(`[PROCESS-MANAGER] Loaded ${state.customModules.length} modules from Supabase`);
         } else {
             // Server error - show error and disable editing
             state.customModules = [];
@@ -991,20 +993,19 @@
     }
 
     function saveCustomModules() {
-        try {
-            console.log('[PROCESS-MANAGER] Saving', state.customModules.length, 'custom modules');
-            console.log('[PROCESS-MANAGER] Modules to save:', state.customModules);
-
-            // Save to localStorage as cache (immediate)
-            localStorage.setItem(CUSTOM_MODULES_KEY, JSON.stringify(state.customModules));
-            console.log('[PROCESS-MANAGER] Saved to localStorage');
-
-            // Save to Supabase (debounced)
-            saveStateToSupabase('custom_modules', state.customModules);
-            console.log('[PROCESS-MANAGER] Queued save to Supabase');
-        } catch (e) {
-            console.error('[PROCESS-MANAGER] Error saving custom modules:', e);
+        // Check if server is available
+        if (state.serverError) {
+            console.warn('[PROCESS-MANAGER] Cannot save - server unavailable');
+            if (window.showToast) {
+                showToast('Cannot save: Server unavailable. Refresh to retry.', 'error');
+            }
+            return;
         }
+
+        console.log('[PROCESS-MANAGER] Saving', state.customModules.length, 'modules to Supabase');
+
+        // Save to Supabase only (single source of truth)
+        saveStateToSupabase('custom_modules', state.customModules);
     }
 
     // ================================
@@ -2243,10 +2244,7 @@
         });
 
         // Render custom modules
-        console.log('[CONTEXT-MENU] Rendering', state.customModules.length, 'custom modules');
-        console.log('[CONTEXT-MENU] Module IDs:', state.customModules.map(m => m.id));
         state.customModules.forEach((module, index) => {
-            console.log('[CONTEXT-MENU] Rendering module:', { id: module.id, name: module.name, index });
             // Position custom modules in a different area (to the right)
             const customStartX = 1050;
             const customStartY = 150;
@@ -2276,9 +2274,6 @@
 
             // Right-click context menu for custom modules
             customNode.addEventListener('contextmenu', (e) => {
-                console.log('[CONTEXT-MENU] Right-click detected on custom module:', module.id, 'name:', module.name);
-                console.log('[CONTEXT-MENU] Element clicked:', customNode);
-                console.log('[CONTEXT-MENU] Module object:', module);
                 e.preventDefault();
                 e.stopPropagation();
                 showContextMenu(e, module.id);

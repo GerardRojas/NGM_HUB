@@ -3018,14 +3018,17 @@
 }
 
 /* ================================
-   Tree Node - Custom Module Indicator
+   Tree Node - Custom Module Styles
    ================================ */
 .tree-node.custom-module {
-    border-style: dashed;
+    /* Solid border for custom modules */
+    border-style: solid;
+    border-width: 2px;
 }
 
 .tree-node.custom-module.is-draft {
     border-color: #6b7280;
+    opacity: 0.85;
 }
 
 .tree-node.custom-module.is-draft .tree-node-icon {

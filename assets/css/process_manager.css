@@ -2,11 +2,19 @@
    PROCESS MANAGER - Visual Process Flow Canvas
    ================================ */
 
+/* Prevent page-level scrolling - navigation is done via pan */
+body.page-process-manager {
+    overflow: hidden;
+    height: 100vh;
+}
+
 /* Override global main-content max-width for full canvas */
 .page-process-manager .main-content {
     max-width: none;
     padding: 0;
     width: 100%;
+    height: calc(100vh - 60px); /* Full height minus topbar */
+    overflow: hidden;
 }
 
 /* Main container */
@@ -233,13 +241,14 @@
    ================================ */
 .canvas-grid {
     position: absolute;
-    width: 5000px;
-    height: 5000px;
+    width: 8000px;
+    height: 8000px;
     transform-origin: 0 0;
     background-color: #0d0d0d;
+    /* Dot grid pattern - more visible dots, wider spacing */
     background-image:
-        radial-gradient(circle, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
-    background-size: 20px 20px;
+        radial-gradient(circle, rgba(255, 255, 255, 0.18) 1.2px, transparent 1.2px);
+    background-size: 32px 32px;
     z-index: 1;
 }
 
@@ -1954,6 +1963,7 @@
 }
 
 .detail-view-container.hidden {
+    display: none;
     opacity: 0;
     pointer-events: none;
     transform: scale(1.05);

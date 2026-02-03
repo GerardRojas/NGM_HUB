@@ -3,6 +3,130 @@
    Dark Theme - Dual Table Layout
    ========================================== */
 
+/* Hidden must always win */
+#reconcileModal.modal-backdrop.hidden {
+  display: none !important;
+}
+
+/* Backdrop */
+#reconcileModal.modal-backdrop {
+  background: rgba(0, 0, 0, 0.80);
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 3vh, 28px);
+  overflow-y: auto;
+}
+
+/* Modal Card - Supabase style */
+#reconcileModal .modal-reconcile {
+  background: #111111;
+  border: 1px solid #1f1f1f;
+  border-radius: 8px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+/* Modal Header - Supabase style */
+#reconcileModal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #111111;
+  border-bottom: 1px solid #1f1f1f;
+}
+
+#reconcileModal .modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #ededed;
+  margin: 0;
+}
+
+/* Close Button (X) - Styled */
+#reconcileModal .modal-close-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 6px;
+  color: #6b7280;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+#reconcileModal .modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e5e7eb;
+}
+
+/* Modal Body */
+#reconcileModal .modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+}
+
+/* Modal Footer - Supabase style */
+#reconcileModal .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  background: #111111;
+  border-top: 1px solid #1f1f1f;
+}
+
+/* Footer Buttons */
+#reconcileModal .btn-modal-secondary,
+#reconcileModal .btn-modal-primary {
+  appearance: none;
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+#reconcileModal .btn-modal-secondary {
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: #ededed;
+}
+
+#reconcileModal .btn-modal-secondary:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
+}
+
+#reconcileModal .btn-modal-primary {
+  background: #3ecf8e;
+  border: 1px solid #3ecf8e;
+  color: #000;
+  font-weight: 600;
+}
+
+#reconcileModal .btn-modal-primary:hover {
+  background: #34b87d;
+  border-color: #34b87d;
+}
+
+#reconcileModal .btn-modal-primary:disabled,
+#reconcileModal .btn-modal-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Modal sizing */
 .modal-reconcile {
   width: min(95vw, 1600px) !important;
@@ -12,14 +136,14 @@
   flex-direction: column;
 }
 
-/* Info Banner */
+/* Info Banner - Supabase gray style */
 .reconcile-info-banner {
   display: flex;
   align-items: start;
   gap: 12px;
   padding: 16px;
-  background: rgba(62, 207, 142, 0.08);
-  border: 1px solid rgba(62, 207, 142, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #1f1f1f;
   border-radius: 8px;
   margin-bottom: 20px;
 }
@@ -121,8 +245,8 @@
 
 /* Row selection states */
 .reconcile-table tbody tr.reconcile-row-selected {
-  background: rgba(59, 130, 246, 0.15);
-  border-left: 3px solid #3b82f6;
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 3px solid #888888;
 }
 
 .reconcile-table tbody tr.reconcile-row-linked {
@@ -254,9 +378,9 @@
    ========================================== */
 
 .active-reconcile-panel {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(99, 102, 241, 0.08) 100%);
-  border: 2px solid rgba(59, 130, 246, 0.4);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
   padding: 20px;
   margin-bottom: 20px;
   animation: panelSlideIn 0.3s ease-out;
@@ -295,7 +419,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #60a5fa;
+  color: #888888;
 }
 
 .active-reconcile-description {
@@ -309,20 +433,21 @@
 }
 
 .btn-cancel-reconcile-mode {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #f87171;
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: #9ca3af;
   padding: 6px 12px;
   border-radius: 6px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .btn-cancel-reconcile-mode:hover {
-  background: rgba(239, 68, 68, 0.25);
-  border-color: rgba(239, 68, 68, 0.6);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
+  color: #ededed;
 }
 
 /* Amount boxes */
@@ -463,58 +588,57 @@
 }
 
 .btn-confirm-match {
-  background: linear-gradient(135deg, #3ecf8e 0%, #22c55e 100%);
-  border: none;
-  color: #fff;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
+  background: #3ecf8e;
+  border: 1px solid #3ecf8e;
+  color: #000;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 8px rgba(62, 207, 142, 0.25);
 }
 
 .btn-confirm-match:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(62, 207, 142, 0.35);
+  background: #34b87d;
+  border-color: #34b87d;
 }
 
 .btn-confirm-match:disabled {
-  background: #4b5563;
-  color: #9ca3af;
+  background: #2a2a2a;
+  border-color: #2a2a2a;
+  color: #6b7280;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
 /* QBO Row in reconcile mode */
 .reconcile-table tbody tr.qbo-reconciling {
-  background: rgba(59, 130, 246, 0.15);
-  border-left: 3px solid #3b82f6;
+  background: rgba(255, 255, 255, 0.06);
+  border-left: 3px solid #888888;
 }
 
 /* Reconcile button in QBO table */
 .btn-start-reconcile {
-  background: rgba(59, 130, 246, 0.15);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #60a5fa;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #2a2a2a;
+  color: #ededed;
   padding: 5px 10px;
   border-radius: 5px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .btn-start-reconcile:hover {
-  background: rgba(59, 130, 246, 0.25);
-  border-color: rgba(59, 130, 246, 0.6);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #3a3a3a;
 }
 
 .btn-start-reconcile:disabled {
-  background: rgba(75, 85, 99, 0.3);
-  border-color: rgba(75, 85, 99, 0.4);
-  color: #6b7280;
+  background: rgba(255, 255, 255, 0.02);
+  border-color: #1f1f1f;
+  color: #4b5563;
   cursor: not-allowed;
 }
 
@@ -541,7 +665,7 @@
 }
 
 .reconcile-table tbody tr.manual-selectable:hover {
-  background: rgba(59, 130, 246, 0.08);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .reconcile-table tbody tr.manual-selected {

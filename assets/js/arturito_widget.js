@@ -64,9 +64,16 @@
       "Register new expenses with details (date, amount, vendor, category)",
       "Scan receipts using AI (OCR) to auto-extract data",
       "Auto-categorize expenses based on vendor and description",
-      "Filter and search expenses by status, date, project, or vendor",
-      "Check expense authorization status",
-      "View and manage receipts/attachments",
+      "**Filter by bill number:** 'factura 123', 'bill #456'",
+      "**Filter by vendor:** 'proveedor Home Depot', 'vendor Amazon'",
+      "**Filter by account:** 'cuenta materiales', 'account lumber'",
+      "**Filter by type:** 'tipo labor', 'type materials'",
+      "**Filter by payment:** 'pagados con cheque', 'payment card'",
+      "**Filter by status:** 'pendientes', 'autorizados', 'en revision'",
+      "**Search:** 'busca hotel', 'find restaurant'",
+      "**Clear filters:** 'quita filtros', 'show all'",
+      "**View summary:** 'resumen de gastos', 'cuantos gastos hay'",
+      "**View active filters:** 'que filtros hay', 'filtros activos'",
     ],
     projects: [
       "List and search projects",
@@ -502,8 +509,9 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // EXPENSES FILTER COMMAND HANDLER
+  // EXPENSES FILTER COMMAND HANDLER (Enhanced)
   // ─────────────────────────────────────────────────────────────────────────
+  // Supported filter fields: date, bill_id, type, vendor, payment, account, description, auth
 
   function handleExpensesFilterCommand(text) {
     console.log('[WIDGET] handleExpensesFilterCommand called with:', text);
@@ -516,16 +524,27 @@
     }
 
     const lower = text.toLowerCase().trim();
+    const original = text.trim();
     console.log('[WIDGET] Testing patterns against:', lower);
 
-    // Clear all filters commands - more flexible patterns
+    // Helper to get summary message
+    const getSummaryMsg = (filterName, filterValue) => {
+      const summary = window.ExpensesArturito.getSummary();
+      const count = summary.filteredExpenses;
+      return `✅ **Filtro aplicado: ${filterName}** "${filterValue}"\n\nMostrando ${count} gasto(s).\n\n💡 Para quitar el filtro: "quita filtros"`;
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 1. CLEAR FILTERS
+    // ═══════════════════════════════════════════════════════════════════════
     const clearAllPatterns = [
-      /(?:quita|elimina|limpia|borra|clear|remove|quit[ao]).*(?:filtros?|filters?)/i,
+      /(?:quita|elimina|limpia|borra|clear|remove|quit[ao]|reset).*(?:filtros?|filters?)/i,
       /(?:sin|no)\s*filtros?/i,
       /reset(?:ear?)?\s*(?:los?\s*)?filtros?/i,
-      /mostrar?\s*(?:todos?|todo)/i,
+      /mostrar?\s*(?:todos?|todo)(?:\s*los?\s*gastos?)?/i,
       /show\s*all/i,
       /(?:filtros?|filters?)\s*(?:off|fuera|no)/i,
+      /ver\s*todos?\s*(?:los?\s*)?(?:gastos?|expenses?)/i,
     ];
 
     for (const pattern of clearAllPatterns) {
@@ -538,68 +557,186 @@
       }
     }
 
-    // Filter by bill number
+    // ═══════════════════════════════════════════════════════════════════════
+    // 2. FILTER BY BILL NUMBER
+    // ═══════════════════════════════════════════════════════════════════════
     const billPatterns = [
-      /(?:filtra|filter|muestra|show|busca|search).*(?:bill|factura|recibo)\s*#?\s*(\d+)/i,
-      /(?:bill|factura|recibo)\s*#?\s*(\d+)/i,
+      /(?:filtra|filter|muestra|show|busca|search|dame|ver).*(?:bill|factura|recibo|invoice)\s*#?\s*(\d+)/i,
+      /(?:bill|factura|recibo|invoice)\s*(?:numero|number|num|no\.?|#)?\s*#?\s*(\d+)/i,
+      /(?:gastos?\s*(?:de|del|con)\s*(?:la\s*)?)?(?:bill|factura|recibo)\s*#?\s*(\d+)/i,
       /^#?\s*(\d{3,})\s*$/i, // Just a number (3+ digits) might be a bill number
     ];
 
     for (const pattern of billPatterns) {
-      const match = lower.match(pattern);
-      console.log('[WIDGET] Testing bill pattern:', pattern, 'Match:', match);
+      const match = text.match(pattern);
       if (match && match[1]) {
         const billNumber = match[1];
         console.log('[WIDGET] Bill number matched:', billNumber);
         window.ExpensesArturito.filterBy('bill_id', billNumber);
+        return { handled: true, message: getSummaryMsg('Bill #', billNumber) };
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 3. FILTER BY AUTHORIZATION STATUS
+    // ═══════════════════════════════════════════════════════════════════════
+    const authPatterns = [
+      // Pending
+      { pattern: /(?:filtra|muestra|show|ver|dame).*(?:pendientes?|pending|sin\s*autorizar|no\s*autorizad[oa]s?)/i, status: 'Pending', label: 'Pendientes' },
+      { pattern: /(?:gastos?|expenses?)\s*(?:pendientes?|pending|sin\s*autorizar)/i, status: 'Pending', label: 'Pendientes' },
+      { pattern: /^(?:pendientes?|pending)$/i, status: 'Pending', label: 'Pendientes' },
+      // Authorized
+      { pattern: /(?:filtra|muestra|show|ver|dame).*(?:autorizad[oa]s?|authorized|aprobad[oa]s?)/i, status: 'Authorized', label: 'Autorizados' },
+      { pattern: /(?:gastos?|expenses?)\s*(?:autorizad[oa]s?|authorized|aprobad[oa]s?)/i, status: 'Authorized', label: 'Autorizados' },
+      { pattern: /^(?:autorizad[oa]s?|authorized|aprobad[oa]s?)$/i, status: 'Authorized', label: 'Autorizados' },
+      // Review
+      { pattern: /(?:filtra|muestra|show|ver|dame).*(?:en\s*)?(?:revision|review|revisar)/i, status: 'Review', label: 'En Revision' },
+      { pattern: /(?:gastos?|expenses?)\s*(?:en\s*)?(?:revision|review|para\s*revisar)/i, status: 'Review', label: 'En Revision' },
+      { pattern: /^(?:en\s*)?(?:revision|review)$/i, status: 'Review', label: 'En Revision' },
+    ];
+
+    for (const { pattern, status, label } of authPatterns) {
+      if (pattern.test(lower)) {
+        console.log('[WIDGET] Auth status matched:', status);
+        window.ExpensesArturito.filterBy('auth', status);
         const summary = window.ExpensesArturito.getSummary();
         return {
           handled: true,
-          message: `✅ **Filtro aplicado: Bill #${billNumber}**\n\nMostrando ${summary.filteredExpenses} gasto(s) con este número de factura.\n\n💡 Para quitar el filtro, escribe: "quita filtros"`
+          message: `✅ **Filtro aplicado: Estado ${label}**\n\nMostrando ${summary.filteredExpenses} gasto(s) con este estado.\n\n💡 Para quitar el filtro: "quita filtros"`
         };
       }
     }
 
-    // Filter by vendor - only match when explicitly mentioning "vendor" or "proveedor"
+    // ═══════════════════════════════════════════════════════════════════════
+    // 4. FILTER BY ACCOUNT (cuenta)
+    // ═══════════════════════════════════════════════════════════════════════
+    const accountPatterns = [
+      /(?:filtra|filter|muestra|show|ver|dame).*(?:cuenta|account|cta)\s+["']?(.+?)["']?$/i,
+      /(?:gastos?\s*(?:de|del|con|en)\s*(?:la\s*)?)?(?:cuenta|account|cta)\s+["']?(.+?)["']?$/i,
+      /(?:cuenta|account|cta)\s*[:=]?\s*["']?(.+?)["']?$/i,
+    ];
+
+    for (const pattern of accountPatterns) {
+      const match = text.match(pattern);
+      if (match && match[1] && match[1].length > 1) {
+        const accountName = match[1].trim();
+        console.log('[WIDGET] Account matched:', accountName);
+        // Use GPT for smart account matching
+        return { useGPT: true, originalText: text, hint: 'filter_account' };
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 5. FILTER BY TYPE (tipo de gasto)
+    // ═══════════════════════════════════════════════════════════════════════
+    const typePatterns = [
+      /(?:filtra|filter|muestra|show|ver|dame).*(?:tipo|type|categoria|category)\s+["']?(.+?)["']?$/i,
+      /(?:gastos?\s*(?:de\s*)?)?(?:tipo|type)\s+["']?(.+?)["']?$/i,
+      /(?:tipo|type|categoria)\s*[:=]?\s*["']?(.+?)["']?$/i,
+    ];
+
+    for (const pattern of typePatterns) {
+      const match = text.match(pattern);
+      if (match && match[1] && match[1].length > 1) {
+        const typeName = match[1].trim();
+        console.log('[WIDGET] Type matched:', typeName);
+        window.ExpensesArturito.filterBy('type', typeName);
+        return { handled: true, message: getSummaryMsg('Tipo', typeName) };
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 6. FILTER BY PAYMENT METHOD (metodo de pago)
+    // ═══════════════════════════════════════════════════════════════════════
+    const paymentPatterns = [
+      /(?:filtra|filter|muestra|show|ver|dame).*(?:pago|payment|metodo\s*de\s*pago|payment\s*method)\s+["']?(.+?)["']?$/i,
+      /(?:pagad[oa]s?\s*(?:con|por)\s*)["']?(.+?)["']?$/i,
+      /(?:gastos?\s*(?:con|pagados?\s*(?:con|por))\s*)["']?(.+?)["']?$/i,
+      /(?:metodo|method|pago|payment)\s*[:=]?\s*["']?(.+?)["']?$/i,
+    ];
+
+    // Common payment method keywords
+    const paymentKeywords = {
+      'efectivo': 'Cash', 'cash': 'Cash', 'dinero': 'Cash',
+      'tarjeta': 'Card', 'card': 'Card', 'credit': 'Card', 'credito': 'Card', 'debito': 'Card',
+      'cheque': 'Check', 'check': 'Check',
+      'transferencia': 'Transfer', 'transfer': 'Transfer', 'wire': 'Transfer',
+      'zelle': 'Zelle', 'venmo': 'Venmo', 'paypal': 'PayPal'
+    };
+
+    for (const pattern of paymentPatterns) {
+      const match = text.match(pattern);
+      if (match && match[1] && match[1].length > 1) {
+        let paymentMethod = match[1].trim().toLowerCase();
+        // Try to normalize common keywords
+        paymentMethod = paymentKeywords[paymentMethod] || match[1].trim();
+        console.log('[WIDGET] Payment method matched:', paymentMethod);
+        window.ExpensesArturito.filterBy('payment', paymentMethod);
+        return { handled: true, message: getSummaryMsg('Pago', paymentMethod) };
+      }
+    }
+
+    // Direct payment keyword detection
+    for (const [keyword, value] of Object.entries(paymentKeywords)) {
+      const directPattern = new RegExp(`(?:pagad[oa]s?\\s*(?:con|en|por)\\s*|gastos?\\s*(?:con|en)\\s*)${keyword}`, 'i');
+      if (directPattern.test(lower)) {
+        console.log('[WIDGET] Direct payment keyword matched:', value);
+        window.ExpensesArturito.filterBy('payment', value);
+        return { handled: true, message: getSummaryMsg('Pago', value) };
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 7. FILTER BY VENDOR (proveedor)
+    // ═══════════════════════════════════════════════════════════════════════
     const vendorPatterns = [
-      /(?:filtra|filter|muestra|show).*(?:vendor|proveedor|vendedor)\s+["']?(.+?)["']?$/i,
+      /(?:filtra|filter|muestra|show|ver|dame).*(?:vendor|proveedor|vendedor|supplier)\s+["']?(.+?)["']?$/i,
+      /(?:gastos?\s*(?:de|del|con)\s*)(?:vendor|proveedor|vendedor)?\s*["']?([a-z0-9\s]+)["']?$/i,
+      /(?:vendor|proveedor|vendedor|supplier)\s*[:=]?\s*["']?(.+?)["']?$/i,
+      /(?:compras?\s*(?:a|de|en)\s*)["']?(.+?)["']?$/i,
     ];
 
     for (const pattern of vendorPatterns) {
-      const match = lower.match(pattern);
+      const match = text.match(pattern);
       if (match && match[1] && match[1].length > 2) {
         const vendorName = match[1].trim();
+        // Skip if it matches other filter keywords
+        const skipWords = ['cuenta', 'account', 'tipo', 'type', 'pago', 'payment', 'bill', 'factura'];
+        if (skipWords.some(w => vendorName.toLowerCase().includes(w))) continue;
+        console.log('[WIDGET] Vendor matched:', vendorName);
         window.ExpensesArturito.filterBy('vendor', vendorName);
-        const summary = window.ExpensesArturito.getSummary();
-        return {
-          handled: true,
-          message: `✅ **Filtro aplicado: Vendor "${vendorName}"**\n\nMostrando ${summary.filteredExpenses} gasto(s) de este proveedor.\n\n💡 Para quitar el filtro, escribe: "quita filtros"`
-        };
+        return { handled: true, message: getSummaryMsg('Vendor', vendorName) };
       }
     }
 
-    // Search command
+    // ═══════════════════════════════════════════════════════════════════════
+    // 8. SEARCH COMMAND
+    // ═══════════════════════════════════════════════════════════════════════
     const searchPatterns = [
-      /(?:busca|search|encuentra|find)\s+["']?(.+?)["']?$/i,
+      /(?:busca|search|encuentra|find|buscar)\s+["']?(.+?)["']?$/i,
+      /(?:donde\s*(?:esta|hay|dice))\s+["']?(.+?)["']?$/i,
     ];
 
     for (const pattern of searchPatterns) {
-      const match = lower.match(pattern);
+      const match = text.match(pattern);
       if (match && match[1] && match[1].length > 1) {
         const searchTerm = match[1].trim();
         window.ExpensesArturito.search(searchTerm);
         const summary = window.ExpensesArturito.getSummary();
         return {
           handled: true,
-          message: `🔍 **Búsqueda: "${searchTerm}"**\n\nEncontrados ${summary.filteredExpenses} gasto(s).\n\n💡 Para quitar el filtro, escribe: "quita filtros"`
+          message: `🔍 **Busqueda: "${searchTerm}"**\n\nEncontrados ${summary.filteredExpenses} gasto(s).\n\n💡 Para quitar el filtro: "quita filtros"`
         };
       }
     }
 
-    // Get summary command
+    // ═══════════════════════════════════════════════════════════════════════
+    // 9. GET SUMMARY COMMAND
+    // ═══════════════════════════════════════════════════════════════════════
     const summaryPatterns = [
-      /(?:resumen|summary|cuantos?|how\s*many).*(?:gastos?|expenses?)/i,
-      /^(?:total|dame el total)$/i,
+      /(?:resumen|summary|cuantos?|how\s*many|total\s*de?).*(?:gastos?|expenses?)/i,
+      /^(?:total|dame\s*(?:el\s*)?total|cuanto\s*hay)$/i,
+      /(?:gastos?|expenses?)\s*(?:hay|tengo|tiene)/i,
     ];
 
     for (const pattern of summaryPatterns) {
@@ -609,24 +746,68 @@
         const filterText = activeFilters.length > 0
           ? `\n\n📋 **Filtros activos:** ${activeFilters.join(', ')}`
           : '';
+        const amount = typeof summary.filteredAmount === 'number'
+          ? `$${summary.filteredAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+          : summary.totalAmount;
 
         return {
           handled: true,
-          message: `📊 **Resumen de gastos**\n\n• Total visible: ${summary.filteredExpenses} gastos\n• Total en tabla: ${summary.totalExpenses} gastos\n• Monto visible: ${summary.totalAmount}${filterText}`
+          message: `📊 **Resumen de gastos**\n\n• Gastos visibles: ${summary.filteredExpenses}\n• Total en proyecto: ${summary.totalExpenses}\n• Monto visible: ${amount}${filterText}`
         };
       }
     }
 
-    // No match found - check if it looks like a filter intent for GPT fallback
+    // ═══════════════════════════════════════════════════════════════════════
+    // 10. SHOW ACTIVE FILTERS
+    // ═══════════════════════════════════════════════════════════════════════
+    const showFiltersPatterns = [
+      /(?:que|cuales?|which)\s*filtros?\s*(?:hay|tengo|estan?\s*activos?)/i,
+      /(?:filtros?\s*activos?|active\s*filters?)/i,
+      /(?:mostrar|show|ver)\s*filtros?/i,
+    ];
+
+    for (const pattern of showFiltersPatterns) {
+      if (pattern.test(lower)) {
+        const summary = window.ExpensesArturito.getSummary();
+        const filters = summary.activeFilters;
+        const filterKeys = Object.keys(filters);
+
+        if (filterKeys.length === 0) {
+          return {
+            handled: true,
+            message: "📋 **No hay filtros activos**\n\nSe muestran todos los gastos del proyecto."
+          };
+        }
+
+        let filterList = filterKeys.map(key => {
+          const value = Array.isArray(filters[key]) ? filters[key].join(', ') : filters[key];
+          return `• **${key}:** ${value}`;
+        }).join('\n');
+
+        return {
+          handled: true,
+          message: `📋 **Filtros activos:**\n\n${filterList}\n\n💡 Para quitar: "quita filtros"`
+        };
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 11. GPT FALLBACK - Check for filter intent
+    // ═══════════════════════════════════════════════════════════════════════
     console.log('[WIDGET] No pattern matched, checking for filter intent...');
 
     // Keywords that suggest filter/expense intent
-    const filterKeywords = ['filtr', 'bill', 'factura', 'vendor', 'proveedor', 'gasto', 'expense', 'busca', 'search', 'muestra', 'show', 'quita', 'limpia', 'clear'];
+    const filterKeywords = [
+      'filtr', 'bill', 'factura', 'vendor', 'proveedor', 'gasto', 'expense',
+      'busca', 'search', 'muestra', 'show', 'quita', 'limpia', 'clear',
+      'cuenta', 'account', 'tipo', 'type', 'pago', 'payment', 'cheque', 'check',
+      'tarjeta', 'card', 'efectivo', 'cash', 'pendiente', 'autoriza', 'review',
+      'revision', 'categoria', 'category', 'total', 'resumen', 'cuanto'
+    ];
     const hasFilterIntent = filterKeywords.some(kw => lower.includes(kw));
 
     if (hasFilterIntent) {
       console.log('[WIDGET] Filter intent detected, using GPT fallback');
-      // Return special marker to use GPT for interpretation
       return { useGPT: true, originalText: text };
     }
 
@@ -747,13 +928,55 @@
             message: `❌ Status inválido "${data.value}". Usa: pending, auth, o review.`
           };
         }
+      } else if (data.action === 'filter_type' && data.value) {
+        // Filter by expense type/category
+        window.ExpensesArturito.filterBy('type', data.value);
+        const summary = window.ExpensesArturito.getSummary();
+        return {
+          message: data.message || `✅ **Filtro aplicado: Tipo "${data.value}"**\n\nMostrando ${summary.filteredExpenses} gasto(s) de este tipo.\n\n💡 Para quitar: "quita filtros"`
+        };
+      } else if (data.action === 'filter_payment' && data.value) {
+        // Filter by payment method
+        // Normalize common payment method names
+        const paymentNormalize = {
+          'efectivo': 'Cash', 'cash': 'Cash',
+          'tarjeta': 'Card', 'card': 'Card', 'credit': 'Card', 'credito': 'Card',
+          'cheque': 'Check', 'check': 'Check',
+          'transferencia': 'Transfer', 'transfer': 'Transfer', 'wire': 'Transfer',
+          'zelle': 'Zelle', 'venmo': 'Venmo', 'paypal': 'PayPal'
+        };
+        const normalizedPayment = paymentNormalize[data.value.toLowerCase()] || data.value;
+        window.ExpensesArturito.filterBy('payment', normalizedPayment);
+        const summary = window.ExpensesArturito.getSummary();
+        return {
+          message: data.message || `✅ **Filtro aplicado: Pago "${normalizedPayment}"**\n\nMostrando ${summary.filteredExpenses} gasto(s) con este método de pago.\n\n💡 Para quitar: "quita filtros"`
+        };
+      } else if (data.action === 'filter_date' && data.value) {
+        // Filter by date (expects YYYY-MM-DD or date range)
+        window.ExpensesArturito.filterBy('date', data.value);
+        const summary = window.ExpensesArturito.getSummary();
+        return {
+          message: data.message || `✅ **Filtro aplicado: Fecha "${data.value}"**\n\nMostrando ${summary.filteredExpenses} gasto(s).\n\n💡 Para quitar: "quita filtros"`
+        };
       } else if (data.action === 'search' && data.value) {
         window.ExpensesArturito.search(data.value);
         const summary = window.ExpensesArturito.getSummary();
-        return { message: data.message || `🔍 **Búsqueda: "${data.value}"**\n\nEncontrados ${summary.filteredExpenses} gasto(s).` };
+        return { message: data.message || `🔍 **Busqueda: "${data.value}"**\n\nEncontrados ${summary.filteredExpenses} gasto(s).` };
       } else if (data.action === 'summary') {
         const summary = window.ExpensesArturito.getSummary();
-        return { message: `📊 **Resumen de gastos**\n\n• Total visible: ${summary.filteredExpenses} gastos\n• Total: ${summary.totalExpenses} gastos` };
+        const amount = typeof summary.filteredAmount === 'number'
+          ? `$${summary.filteredAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+          : 'N/A';
+        return { message: `📊 **Resumen de gastos**\n\n• Gastos visibles: ${summary.filteredExpenses}\n• Total en proyecto: ${summary.totalExpenses}\n• Monto: ${amount}` };
+      } else if (data.action === 'show_filters') {
+        const summary = window.ExpensesArturito.getSummary();
+        const filters = summary.activeFilters;
+        const filterKeys = Object.keys(filters);
+        if (filterKeys.length === 0) {
+          return { message: "📋 **No hay filtros activos**\n\nSe muestran todos los gastos." };
+        }
+        let filterList = filterKeys.map(key => `• **${key}:** ${filters[key]}`).join('\n');
+        return { message: `📋 **Filtros activos:**\n\n${filterList}` };
       } else if (data.action === 'list_accounts') {
         // Fetch and display all available accounts
         try {

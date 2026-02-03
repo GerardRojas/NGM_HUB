@@ -1336,7 +1336,8 @@
         setupURLRouting();
 
         // Check for URL parameters to navigate to specific view
-        handleURLNavigation();
+        // Returns true if will navigate to a non-tree view (navigation handles its own centering)
+        const willNavigate = handleURLNavigation();
 
         // Hide loading overlay only after centering is complete
         const elapsed = Date.now() - PAGE_LOAD_START;
@@ -1347,8 +1348,12 @@
         setTimeout(() => {
             requestAnimationFrame(() => {
                 requestAnimationFrame(() => {
-                    centerCanvas();
-                    // Now hide loading overlay after canvas is centered
+                    // Only center if not navigating via URL
+                    // Navigation functions handle their own centering after render
+                    if (!willNavigate) {
+                        centerCanvas();
+                    }
+                    // Now hide loading overlay
                     document.body.classList.remove('page-loading');
                     document.body.classList.add('auth-ready');
                     const overlay = document.getElementById('pageLoadingOverlay');
@@ -3024,14 +3029,20 @@
 
         if (!level || level === 'tree') {
             // Already at tree view, just render
-            return;
+            return false;
         }
 
         if (level === 'detail' && groupId) {
             // Navigate to detail view
             setTimeout(() => {
-                navigateToDetail(groupId, state.groupBy);
+                // Custom modules use a different navigation function
+                if (groupId.startsWith('custom_')) {
+                    navigateToModuleDetail(groupId);
+                } else {
+                    navigateToDetail(groupId, state.groupBy);
+                }
             }, 100);
+            return true;
         } else if (level === 'flowchart' && processId) {
             // Navigate to flowchart view
             setTimeout(() => {
@@ -3042,6 +3053,7 @@
                 }
                 navigateToFlowchart(processId);
             }, 100);
+            return true;
         } else if (level === 'subprocess' && processId && nodeId) {
             // Navigate to subprocess view
             setTimeout(() => {
@@ -3054,7 +3066,10 @@
                 state.currentLevel = 'flowchart';
                 navigateToSubProcess(nodeId);
             }, 100);
+            return true;
         }
+
+        return false;
     }
 
     function restoreStateFromURL(historyState) {
@@ -3067,7 +3082,12 @@
         if (level === 'tree' || !level) {
             navigateToTree();
         } else if (level === 'detail' && groupId) {
-            navigateToDetail(groupId, state.groupBy);
+            // Custom modules use a different navigation function
+            if (groupId.startsWith('custom_')) {
+                navigateToModuleDetail(groupId);
+            } else {
+                navigateToDetail(groupId, state.groupBy);
+            }
         } else if (level === 'flowchart' && processId) {
             if (groupId) {
                 state.selectedGroupId = groupId;
@@ -5014,27 +5034,20 @@
     // Canvas Controls
     // ================================
     function handleCanvasMouseDown(e) {
-        // Check if clicking on a connection port to start connection
+        // Connection port clicks are handled by handlePortMouseDown via treeViewContainer
+        // Just let those events propagate - don't handle them here
         const port = e.target.closest('.connection-port');
         if (port) {
-            e.preventDefault();
-            e.stopPropagation();
-            const nodeId = port.dataset.node;
-            if (nodeId) {
-                startConnectionMode(nodeId);
-            }
+            // Let handlePortMouseDown on treeViewContainer handle this
             return;
         }
 
-        // If in connection mode and clicking on empty space, cancel
-        if (state.connectionMode.active) {
+        // If in connection drag mode and clicking on empty space, cancel
+        if (connectionDragState.isDragging) {
             const targetNode = e.target.closest('.tree-node');
-            if (targetNode) {
-                // Clicking on a node - complete connection
-                endConnectionMode(targetNode.dataset.id);
-            } else {
-                // Clicking on empty space - cancel
-                endConnectionMode(null);
+            if (!targetNode) {
+                // Clicking on empty space - cancel connection
+                cleanupConnectionDrag();
             }
             return;
         }
@@ -5341,7 +5354,7 @@
         const containerHeight = containerRect.height;
 
         // Find all visible nodes in the current view
-        const visibleNodes = elements.detailViewContainer?.querySelectorAll('.process-card, .step-card, .module-detail-header, .flowchart-entry-card') || [];
+        const visibleNodes = elements.detailViewContainer?.querySelectorAll('.process-card, .step-card, .module-detail-header, .flowchart-entry-card, .flow-node, .subprocess-empty') || [];
 
         if (visibleNodes.length === 0) {
             // Default center for empty views
@@ -5353,14 +5366,25 @@
         }
 
         // Calculate bounding box of all visible content
+        // Use offsetLeft/offsetTop for reliable positioning (works with %, px, and transforms)
         let minX = Infinity, minY = Infinity;
         let maxX = -Infinity, maxY = -Infinity;
 
         visibleNodes.forEach(node => {
-            const x = parseInt(node.style.left) || 0;
-            const y = parseInt(node.style.top) || 0;
+            // Use offsetLeft/offsetTop for accurate position regardless of CSS method used
+            let x = node.offsetLeft;
+            let y = node.offsetTop;
             const width = node.offsetWidth || 300;
             const height = node.offsetHeight || 200;
+
+            // For elements with transform: translateX(-50%), adjust x position
+            const transform = window.getComputedStyle(node).transform;
+            if (transform && transform !== 'none') {
+                // Parse the transform matrix to get translateX
+                const matrix = new DOMMatrix(transform);
+                x += matrix.m41; // translateX component
+                y += matrix.m42; // translateY component
+            }
 
             minX = Math.min(minX, x);
             minY = Math.min(minY, y);
@@ -5467,7 +5491,7 @@
     }
 
     function drawTreeMinimap(ctx, scaleX, scaleY) {
-        // Draw hub
+        // Draw hub using correct key format
         const hubPos = getNodePosition('hub', 470, 320);
         const hubCenterX = (hubPos.x + 160) * scaleX;
         const hubCenterY = (hubPos.y + 100) * scaleY;
@@ -5478,14 +5502,14 @@
         ctx.fill();
 
         // Draw custom modules and store positions for connections
-        const nodePositions = state.nodePositions || {};
         const moduleCenters = {};
 
         state.customModules.forEach((module, index) => {
             const defaultAngle = (index / Math.max(state.customModules.length, 1)) * Math.PI * 2 - Math.PI / 2;
             const defaultX = 600 + Math.cos(defaultAngle) * 320 - 110;
             const defaultY = 400 + Math.sin(defaultAngle) * 320 - 70;
-            const pos = nodePositions[module.id] || { x: defaultX, y: defaultY };
+            // Use getNodePosition which handles the groupBy prefix correctly
+            const pos = getNodePosition(module.id, defaultX, defaultY);
             const dims = getModuleDimensions(module.size);
 
             const centerX = (pos.x + dims.width / 2) * scaleX;
@@ -5530,19 +5554,28 @@
         const container = elements.detailViewContainer;
         if (!container || container.classList.contains('hidden')) return;
 
-        const nodes = container.querySelectorAll('.process-card, .step-card, .flow-node, .module-detail-header, .flowchart-card, .flowchart-entry-card');
+        const nodes = container.querySelectorAll('.process-card, .step-card, .flow-node, .module-detail-header, .flowchart-card, .flowchart-entry-card, .subprocess-empty');
 
         nodes.forEach(node => {
             // Skip hidden nodes
             if (node.offsetParent === null || node.classList.contains('hidden')) return;
 
-            const x = parseInt(node.style.left) || 0;
-            const y = parseInt(node.style.top) || 0;
+            // Use offsetLeft/offsetTop for reliable positioning (works with %, px, and transforms)
+            let x = node.offsetLeft;
+            let y = node.offsetTop;
             const width = node.offsetWidth || 200;
             const height = node.offsetHeight || 100;
 
-            // Skip nodes with no position (not rendered yet)
-            if (x === 0 && y === 0 && !node.style.left) return;
+            // For elements with transforms (like translateX(-50%)), adjust position
+            const transform = window.getComputedStyle(node).transform;
+            if (transform && transform !== 'none') {
+                const matrix = new DOMMatrix(transform);
+                x += matrix.m41;
+                y += matrix.m42;
+            }
+
+            // Skip nodes at origin with no dimensions (not rendered yet)
+            if (x === 0 && y === 0 && width === 0) return;
 
             // Determine color based on node type
             let color = '#3ecf8e';
@@ -7054,6 +7087,29 @@
             connectionDragState.tempLine.remove();
             connectionDragState.tempLine = null;
         }
+    }
+
+    function cleanupConnectionDrag() {
+        // Clean up visual elements
+        removeTempConnectionLine();
+        clearPortHighlights();
+        elements.canvasContainer.classList.remove('connecting-mode');
+
+        // Clear source port highlight
+        document.querySelectorAll('.connection-port.connected').forEach(p => {
+            p.classList.remove('connected');
+        });
+
+        // Reset state
+        connectionDragState = {
+            isDragging: false,
+            isNewConnection: false,
+            sourceNodeId: null,
+            sourcePort: null,
+            targetNodeId: null,
+            startPoint: null,
+            tempLine: null
+        };
     }
 
     function checkPortHover(clientX, clientY) {

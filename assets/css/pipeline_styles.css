@@ -1396,7 +1396,7 @@
 .pipeline-section{
   width: 100%;
   max-width: var(--pm-layout-max, 100%);
-  margin: 0 auto;
+  margin: 0;  /* Alineado a la izquierda, no centrado */
 }
 
 /* =========================================================

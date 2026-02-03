@@ -210,8 +210,8 @@
 
                         <!-- Expenses Table -->
                         <div class="expenses-table-container">
-                            <!-- Skeleton table (shown before data loads) -->
-                            <table class="skeleton-table" id="expensesSkeletonTable">
+                            <!-- Skeleton table (hidden by default, only shown during data loading) -->
+                            <table class="skeleton-table" id="expensesSkeletonTable" style="display: none;">
                                 <thead>
                                     <tr>
                                         <th style="width: 90px;">Date</th>
@@ -239,10 +239,10 @@
                                 </tbody>
                             </table>
 
-                            <!-- Empty state (shown when no data after selection) -->
-                            <div id="expensesEmptyState" class="expenses-empty-state" style="display: none;">
+                            <!-- Empty state (shown by default until project selected) -->
+                            <div id="expensesEmptyState" class="expenses-empty-state">
                                 <img src="assets/img/white_icon.png" class="expenses-empty-logo" alt="">
-                                <span class="expenses-empty-text">No expenses found</span>
+                                <span class="expenses-empty-text">Select a project to view expenses</span>
                             </div>
 
                             <table class="expenses-table" id="expensesTable" style="display: none;">
@@ -876,9 +876,8 @@
             <div class="modal-body">
                 <!-- Info banner -->
                 <div class="reconcile-info-banner">
-                    <span style="font-size: 20px;">🔗</span>
                     <div>
-                        <strong style="color: #4ade80; font-size: 13px;">How to Reconcile:</strong>
+                        <strong style="color: #888888; font-size: 13px;">How to Reconcile:</strong>
                         <p style="margin: 4px 0 0 0; font-size: 12px; color: #9ca3af;">
                             1. Click <strong>"Reconcile"</strong> on a QuickBooks invoice to start matching.<br>
                             2. Select one or more manual expenses that correspond to that invoice.<br>
@@ -896,7 +895,7 @@
                             <span class="active-reconcile-description" id="activeQBODescription">—</span>
                         </div>
                         <button type="button" class="btn-cancel-reconcile-mode" id="btnCancelReconcileMode">
-                            ✕ Cancel
+                            Cancel
                         </button>
                     </div>
                     <div class="active-reconcile-amounts">
@@ -921,7 +920,7 @@
                     </div>
                     <div class="active-reconcile-actions">
                         <button type="button" class="btn-confirm-match" id="btnConfirmMatch" disabled>
-                            ✓ Confirm Match
+                            Confirm Match
                         </button>
                     </div>
                 </div>

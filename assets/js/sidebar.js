@@ -32,11 +32,13 @@
 
     // Bookkeeping
     "expenses": { label: "Expenses Engine", href: "expenses.html", order: 1, category: "bookkeeping" },
-    "budget_monitor": { label: "Budget Monitor", href: "budget_monitor.html", order: 2, category: "bookkeeping" },
-    "budgets": { label: "Budgets", href: "budgets.html", order: 3, category: "bookkeeping" },
-    "accounts": { label: "Accounts", href: "accounts.html", order: 4, category: "bookkeeping" },
-    "vendors": { label: "Vendors", href: "vendors.html", order: 5, category: "bookkeeping" },
-    "reporting": { label: "Reporting", href: "reporting.html", order: 6, category: "bookkeeping" },
+    "company_expenses": { label: "Company Expenses", href: "company-expenses.html", order: 2, category: "bookkeeping" },
+    "budget_monitor": { label: "Budget Monitor", href: "budget_monitor.html", order: 3, category: "bookkeeping" },
+    "budgets": { label: "Budgets", href: "budgets.html", order: 4, category: "bookkeeping" },
+    "accounts": { label: "Accounts", href: "accounts.html", order: 5, category: "bookkeeping" },
+    "vendors": { label: "Vendors", href: "vendors.html", order: 6, category: "bookkeeping" },
+    "reporting": { label: "Reporting", href: "reporting.html", order: 7, category: "bookkeeping" },
+    "pnl_report": { label: "P&L Report", href: "pnl-report.html", order: 8, category: "bookkeeping" },
 
     // Architecture
     "projects": { label: "Projects", href: "projects.html", order: 1, category: "architecture" },

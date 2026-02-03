@@ -96,6 +96,45 @@
                             </div>
                         </div>
 
+                        <!-- Filtros de busqueda -->
+                        <div class="permissions-filters" style="display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 24px; background: rgba(24, 24, 27, 0.5); border-bottom: 1px solid #27272a; align-items: flex-end;">
+                            <div style="flex: 1; min-width: 200px; max-width: 300px;">
+                                <label style="font-size: 12px; color: #6b7280; display: block; margin-bottom: 6px;">Filter Modules/Pages</label>
+                                <input type="text" id="moduleSearchInput" placeholder="e.g. Dashboard, Budget..."
+                                    class="filter-input"
+                                    style="width: 100%; padding: 8px 12px; background: #0d0d0d; border: 1px solid #27272a; border-radius: 6px; color: #e5e7eb; font-size: 13px; transition: border-color 0.2s;">
+                            </div>
+                            <div style="flex: 1; min-width: 200px; max-width: 300px;">
+                                <label style="font-size: 12px; color: #6b7280; display: block; margin-bottom: 6px;">Filter Roles</label>
+                                <input type="text" id="roleSearchInput" placeholder="e.g. Admin, Manager..."
+                                    class="filter-input"
+                                    style="width: 100%; padding: 8px 12px; background: #0d0d0d; border: 1px solid #27272a; border-radius: 6px; color: #e5e7eb; font-size: 13px; transition: border-color 0.2s;">
+                            </div>
+                            <div>
+                                <button type="button" id="btnClearFilters"
+                                    class="btn-clear-filters"
+                                    style="padding: 8px 16px; background: transparent; border: 1px solid #27272a; border-radius: 6px; color: #9ca3af; font-size: 13px; cursor: pointer; transition: all 0.2s;">
+                                    Clear Filters
+                                </button>
+                            </div>
+                            <div style="margin-left: auto;">
+                                <span id="filterStats" style="font-size: 12px; color: #6b7280;"></span>
+                            </div>
+                        </div>
+                        <style>
+                            .filter-input:focus {
+                                outline: none;
+                                border-color: #3b82f6 !important;
+                            }
+                            .filter-input:hover {
+                                border-color: #3f3f46 !important;
+                            }
+                            .btn-clear-filters:hover {
+                                background: rgba(255, 255, 255, 0.05) !important;
+                                color: #e5e7eb !important;
+                            }
+                        </style>
+
                         <div class="expenses-table-container">
                             <div id="rolesLoadingState" class="expenses-loading-state">
                                 <img src="assets/img/white_icon.png" class="loading-logo loading-logo-lg" alt="Loading...">

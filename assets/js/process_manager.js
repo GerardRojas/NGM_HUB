@@ -2034,8 +2034,8 @@
         }
     }
 
-    function showFlowNodeContextMenu(e, nodeId, processId) {
-        console.log('[CONTEXT-MENU] showFlowNodeContextMenu called for node:', nodeId, 'process:', processId);
+    function showFlowNodeContextMenu(e, nodeId, processId, isSubProcess = false) {
+        console.log('[CONTEXT-MENU] showFlowNodeContextMenu called for node:', nodeId, 'process/module:', processId, 'isSubProcess:', isSubProcess);
         e.preventDefault();
         e.stopPropagation();
 
@@ -2047,6 +2047,7 @@
         // Store context for actions
         elements.flowNodeContextMenu.dataset.nodeId = nodeId;
         elements.flowNodeContextMenu.dataset.processId = processId;
+        elements.flowNodeContextMenu.dataset.isSubProcess = isSubProcess ? 'true' : 'false';
 
         elements.flowNodeContextMenu.style.left = `${e.clientX}px`;
         elements.flowNodeContextMenu.style.top = `${e.clientY}px`;
@@ -2064,29 +2065,89 @@
             const action = item.dataset.action;
             const nodeId = elements.flowNodeContextMenu.dataset.nodeId;
             const processId = elements.flowNodeContextMenu.dataset.processId;
+            const isSubProcess = elements.flowNodeContextMenu.dataset.isSubProcess === 'true';
 
-            console.log('[CONTEXT-MENU] Flow node action:', action, 'nodeId:', nodeId, 'processId:', processId);
+            console.log('[CONTEXT-MENU] Flow node action:', action, 'nodeId:', nodeId, 'processId:', processId, 'isSubProcess:', isSubProcess);
 
-            switch (action) {
-                case 'edit-node':
-                    // TODO: Open node editor modal
-                    showToast('Edit node functionality coming soon', 'info');
-                    break;
-                case 'add-connection':
-                    // TODO: Start connection drag mode
-                    showToast('Add connection functionality coming soon', 'info');
-                    break;
-                case 'duplicate-node':
-                    // TODO: Duplicate the node
-                    showToast('Duplicate node functionality coming soon', 'info');
-                    break;
-                case 'delete-node':
-                    // TODO: Delete the node with confirmation
-                    showToast('Delete node functionality coming soon', 'info');
-                    break;
+            if (isSubProcess) {
+                // Handle subprocess node actions
+                const moduleId = processId; // processId is actually moduleId for subprocesses
+                switch (action) {
+                    case 'edit-node':
+                        window.processManager?.editSubProcessNode?.(moduleId, nodeId);
+                        break;
+                    case 'add-connection':
+                        // Start connection mode from this node
+                        startConnectionModeFromNode(nodeId, true);
+                        break;
+                    case 'duplicate-node':
+                        duplicateSubProcessNode(moduleId, nodeId);
+                        break;
+                    case 'delete-node':
+                        if (confirm('Delete this step?')) {
+                            deleteSubProcessNode(moduleId, nodeId);
+                            const module = getCustomModule(moduleId);
+                            if (module) renderModuleDetailView(module);
+                        }
+                        break;
+                }
+            } else {
+                // Handle regular flow node actions
+                switch (action) {
+                    case 'edit-node':
+                        showToast('Edit node functionality coming soon', 'info');
+                        break;
+                    case 'add-connection':
+                        startConnectionModeFromNode(nodeId, false);
+                        break;
+                    case 'duplicate-node':
+                        showToast('Duplicate node functionality coming soon', 'info');
+                        break;
+                    case 'delete-node':
+                        showToast('Delete node functionality coming soon', 'info');
+                        break;
+                }
             }
             hideContextMenu();
         });
+    }
+
+    function startConnectionModeFromNode(nodeId, isDetailView) {
+        // Find the node element
+        const selector = isDetailView ? `.flow-node[data-node-id="${nodeId}"]` : `.tree-node[data-id="${nodeId}"]`;
+        const nodeEl = document.querySelector(selector);
+        if (!nodeEl) return;
+
+        // Get node center position
+        const nodeRect = nodeEl.getBoundingClientRect();
+        const gridRect = elements.canvasGrid.getBoundingClientRect();
+
+        const nodeCenterX = (nodeRect.left + nodeRect.width / 2 - gridRect.left) / state.canvas.scale;
+        const nodeCenterY = (nodeRect.top + nodeRect.height / 2 - gridRect.top) / state.canvas.scale;
+
+        // Start connection drag mode
+        connectionDragState.isDragging = true;
+        connectionDragState.isNewConnection = true;
+        connectionDragState.sourceNodeId = nodeId;
+        connectionDragState.sourcePort = 'right';
+        connectionDragState.startPoint = { x: nodeCenterX, y: nodeCenterY };
+        connectionDragState.isDetailView = isDetailView;
+
+        // Enter connecting mode
+        elements.canvasContainer.classList.add('connecting-mode');
+
+        // Mark all other nodes as valid drop targets
+        const nodeSelector = isDetailView ? '.flow-node' : '.tree-node';
+        document.querySelectorAll(nodeSelector).forEach(node => {
+            const id = isDetailView ? node.dataset.nodeId : node.dataset.id;
+            if (id !== nodeId) {
+                node.classList.add('valid-drop-target');
+            }
+        });
+
+        // Create temporary line
+        createTempConnectionLine();
+        showToast('Click on another node to connect', 'info');
     }
 
     // ================================
@@ -2729,96 +2790,125 @@
         });
     }
 
+    function buildDetailNodeRects(subProcessNodes) {
+        const nodeRects = {};
+        subProcessNodes.forEach(node => {
+            const nodeEl = elements.detailViewContainer?.querySelector(`[data-node-id="${node.id}"]`);
+            if (nodeEl) {
+                nodeRects[node.id] = {
+                    x: parseInt(nodeEl.style.left) || 0,
+                    y: parseInt(nodeEl.style.top) || 0,
+                    width: nodeEl.offsetWidth || 200,
+                    height: nodeEl.offsetHeight || 100
+                };
+            } else if (node.position) {
+                nodeRects[node.id] = {
+                    x: node.position.x,
+                    y: node.position.y,
+                    width: getNodeWidth(node.size),
+                    height: getNodeHeight(node)
+                };
+            }
+        });
+        return nodeRects;
+    }
+
     function redrawDetailConnections(module, subProcessNodes, nodeRects) {
         // Clear existing detail connections
         const existingConnections = elements.detailViewContainer.querySelectorAll('.detail-connection');
         existingConnections.forEach(c => c.remove());
 
-        // For now, draw connections based on node order or explicit connections
-        // Future: implement connection data in subProcessNodes
-        // This is a placeholder for visual consistency
+        // Get connections from module
+        const connections = module.subProcessConnections || [];
+        if (connections.length === 0) return;
+
+        // Create SVG layer for connections if not exists
+        let svgLayer = elements.detailViewContainer.querySelector('.detail-connections-svg');
+        if (!svgLayer) {
+            svgLayer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svgLayer.setAttribute('class', 'detail-connections-svg');
+            svgLayer.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+                z-index: 1;
+            `;
+            elements.detailViewContainer.insertBefore(svgLayer, elements.detailViewContainer.firstChild);
+        }
+        svgLayer.innerHTML = '';
+
+        // Draw each connection
+        connections.forEach(conn => {
+            const sourceRect = nodeRects[conn.source];
+            const targetRect = nodeRects[conn.target];
+
+            if (!sourceRect || !targetRect) return;
+
+            // Calculate center points
+            const sourceCX = sourceRect.x + sourceRect.width / 2;
+            const sourceCY = sourceRect.y + sourceRect.height / 2;
+            const targetCX = targetRect.x + targetRect.width / 2;
+            const targetCY = targetRect.y + targetRect.height / 2;
+
+            // Calculate orthogonal path
+            const points = calculateOrthogonalPath(sourceRect, targetRect, sourceCX, sourceCY, targetCX, targetCY);
+
+            // Build path with rounded corners
+            let d = `M ${points[0].x} ${points[0].y}`;
+            const cornerRadius = 12;
+
+            for (let i = 1; i < points.length; i++) {
+                const prev = points[i - 1];
+                const curr = points[i];
+                const next = points[i + 1];
+
+                if (next && i < points.length - 1) {
+                    const dx1 = curr.x - prev.x;
+                    const dy1 = curr.y - prev.y;
+                    const dx2 = next.x - curr.x;
+                    const dy2 = next.y - curr.y;
+
+                    const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+                    const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+
+                    if (len1 > 0 && len2 > 0) {
+                        const r = Math.min(cornerRadius, len1 / 2, len2 / 2);
+                        const startX = curr.x - (dx1 / len1) * r;
+                        const startY = curr.y - (dy1 / len1) * r;
+                        const endX = curr.x + (dx2 / len2) * r;
+                        const endY = curr.y + (dy2 / len2) * r;
+
+                        d += ` L ${startX} ${startY}`;
+                        d += ` Q ${curr.x} ${curr.y} ${endX} ${endY}`;
+                    } else {
+                        d += ` L ${curr.x} ${curr.y}`;
+                    }
+                } else {
+                    d += ` L ${curr.x} ${curr.y}`;
+                }
+            }
+
+            // Create path element
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('class', 'detail-connection');
+            path.setAttribute('d', d);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', '#3ecf8e');
+            path.setAttribute('stroke-width', '2');
+            path.setAttribute('data-source', conn.source);
+            path.setAttribute('data-target', conn.target);
+
+            svgLayer.appendChild(path);
+        });
     }
 
     function showSubProcessNodeContextMenu(e, moduleId, nodeId) {
-        // Remove any existing context menu
-        const existingMenu = document.querySelector('.subprocess-context-menu');
-        if (existingMenu) existingMenu.remove();
-
-        const menu = document.createElement('div');
-        menu.className = 'subprocess-context-menu context-menu';
-        menu.style.cssText = `
-            position: fixed;
-            left: ${e.clientX}px;
-            top: ${e.clientY}px;
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
-            border-radius: 8px;
-            padding: 8px 0;
-            min-width: 160px;
-            z-index: 1000;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-        `;
-
-        menu.innerHTML = `
-            <div class="context-menu-item" data-action="edit">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                </svg>
-                Edit Step
-            </div>
-            <div class="context-menu-item" data-action="duplicate">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                Duplicate
-            </div>
-            <div class="context-menu-divider"></div>
-            <div class="context-menu-item danger" data-action="delete">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6"></polyline>
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                </svg>
-                Delete
-            </div>
-        `;
-
-        document.body.appendChild(menu);
-
-        // Handle clicks
-        menu.querySelectorAll('.context-menu-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const action = item.dataset.action;
-                menu.remove();
-
-                switch (action) {
-                    case 'edit':
-                        window.processManager?.editSubProcessNode?.(moduleId, nodeId);
-                        break;
-                    case 'duplicate':
-                        duplicateSubProcessNode(moduleId, nodeId);
-                        break;
-                    case 'delete':
-                        if (confirm('Delete this step?')) {
-                            deleteSubProcessNode(moduleId, nodeId);
-                            const module = getCustomModule(moduleId);
-                            if (module) renderModuleDetailView(module);
-                        }
-                        break;
-                }
-            });
-        });
-
-        // Close on click outside
-        setTimeout(() => {
-            document.addEventListener('click', function closeMenu(e) {
-                if (!menu.contains(e.target)) {
-                    menu.remove();
-                    document.removeEventListener('click', closeMenu);
-                }
-            });
-        }, 10);
+        // Use the unified flow node context menu
+        // Store moduleId in processId and mark as subprocess
+        showFlowNodeContextMenu(e, nodeId, moduleId, true);
     }
 
     function duplicateSubProcessNode(moduleId, nodeId) {
@@ -6901,7 +6991,8 @@
         targetNodeId: null,
         startPoint: null,
         tempLine: null,
-        sourceRect: null         // For orthogonal path calculation
+        sourceRect: null,        // For orthogonal path calculation
+        isDetailView: false      // true when connecting in detail/subprocess view
     };
 
     function initConnectionDragging() {
@@ -6910,14 +7001,68 @@
             elements.connectionsLayer.addEventListener('mousedown', handleConnectionEndpointMouseDown);
         }
 
-        // Listen for mousedown on connection ports (for new connections)
+        // Listen for mousedown on connection ports (for new connections) - tree view
         if (elements.treeViewContainer) {
             elements.treeViewContainer.addEventListener('mousedown', handlePortMouseDown);
+        }
+
+        // Listen for mousedown on flow ports (for new connections) - detail/subprocess view
+        if (elements.detailViewContainer) {
+            elements.detailViewContainer.addEventListener('mousedown', handleFlowPortMouseDown);
         }
 
         // Global mouse events for dragging
         document.addEventListener('mousemove', handleConnectionDragMove);
         document.addEventListener('mouseup', handleConnectionDragEnd);
+    }
+
+    function handleFlowPortMouseDown(e) {
+        const port = e.target.closest('.flow-port');
+        if (!port) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const nodeEl = port.closest('.flow-node');
+        if (!nodeEl) return;
+
+        const nodeId = nodeEl.dataset.nodeId;
+        const portSide = port.getAttribute('data-port');
+        if (!nodeId || !portSide) return;
+
+        // Get the port's center position in canvas coordinates
+        const portRect = port.getBoundingClientRect();
+        const gridRect = elements.canvasGrid.getBoundingClientRect();
+
+        const portCenterX = (portRect.left + portRect.width / 2 - gridRect.left) / state.canvas.scale;
+        const portCenterY = (portRect.top + portRect.height / 2 - gridRect.top) / state.canvas.scale;
+
+        // Start drag mode for NEW connection
+        connectionDragState.isDragging = true;
+        connectionDragState.isNewConnection = true;
+        connectionDragState.sourceNodeId = nodeId;
+        connectionDragState.sourcePort = portSide;
+        connectionDragState.startPoint = {
+            x: portCenterX,
+            y: portCenterY
+        };
+        connectionDragState.isDetailView = true; // Mark as detail view connection
+
+        // Enter connecting mode
+        elements.canvasContainer.classList.add('connecting-mode');
+
+        // Highlight the source port
+        port.classList.add('connected');
+
+        // Mark all other flow nodes as valid drop targets
+        document.querySelectorAll('.flow-node').forEach(node => {
+            if (node.dataset.nodeId !== nodeId) {
+                node.classList.add('valid-drop-target');
+            }
+        });
+
+        // Create temporary line
+        createTempConnectionLine();
     }
 
     function handlePortMouseDown(e) {
@@ -7029,11 +7174,61 @@
     function handleConnectionDragEnd(e) {
         if (!connectionDragState.isDragging) return;
 
-        // Find if we dropped on a valid port
-        const port = document.elementFromPoint(e.clientX, e.clientY);
-        const portElement = port?.closest('.connection-port');
+        // Find if we dropped on a valid port (check both tree-view and flow-view ports)
+        const elementAtPoint = document.elementFromPoint(e.clientX, e.clientY);
+        const connectionPortElement = elementAtPoint?.closest('.connection-port');
+        const flowPortElement = elementAtPoint?.closest('.flow-port');
 
         let connectionHandled = false;  // Track if connection was reconnected or disconnected
+
+        // Handle detail view (flow node) connections
+        if (connectionDragState.isDetailView && flowPortElement) {
+            const targetNodeEl = flowPortElement.closest('.flow-node');
+            const targetNodeId = targetNodeEl?.dataset?.nodeId;
+
+            if (targetNodeId && targetNodeId !== connectionDragState.sourceNodeId) {
+                // Create connection between subprocess nodes
+                const moduleId = state.selectedGroupId;
+                const module = getCustomModule(moduleId);
+
+                if (module) {
+                    // Initialize subProcessConnections if needed
+                    if (!module.subProcessConnections) {
+                        module.subProcessConnections = [];
+                    }
+
+                    // Check if connection already exists
+                    const existingConn = module.subProcessConnections.find(c =>
+                        (c.source === connectionDragState.sourceNodeId && c.target === targetNodeId) ||
+                        (c.source === targetNodeId && c.target === connectionDragState.sourceNodeId)
+                    );
+
+                    if (!existingConn) {
+                        module.subProcessConnections.push({
+                            source: connectionDragState.sourceNodeId,
+                            target: targetNodeId,
+                            sourcePort: connectionDragState.sourcePort,
+                            targetPort: flowPortElement.getAttribute('data-port')
+                        });
+                        saveCustomModules();
+                        showToast('Steps connected', 'success');
+
+                        // Redraw detail connections
+                        const subProcessNodes = module.subProcessNodes || [];
+                        const nodeRects = buildDetailNodeRects(subProcessNodes);
+                        redrawDetailConnections(module, subProcessNodes, nodeRects);
+                    } else {
+                        showToast('Connection already exists', 'info');
+                    }
+                }
+            }
+
+            cleanupConnectionDrag();
+            return;
+        }
+
+        // Handle tree view (module) connections
+        const portElement = connectionPortElement;
 
         if (portElement) {
             const targetNodeId = portElement.getAttribute('data-node');
@@ -7132,13 +7327,13 @@
         clearPortHighlights();
         elements.canvasContainer.classList.remove('connecting-mode');
 
-        // Clear source port highlight
-        document.querySelectorAll('.connection-port.connected').forEach(p => {
+        // Clear source port highlight (both tree and flow ports)
+        document.querySelectorAll('.connection-port.connected, .flow-port.connected').forEach(p => {
             p.classList.remove('connected');
         });
 
-        // Remove valid-drop-target class from all nodes
-        document.querySelectorAll('.tree-node.valid-drop-target').forEach(node => {
+        // Remove valid-drop-target class from all nodes (both tree and flow nodes)
+        document.querySelectorAll('.tree-node.valid-drop-target, .flow-node.valid-drop-target').forEach(node => {
             node.classList.remove('valid-drop-target');
         });
 
@@ -7161,7 +7356,8 @@
             targetNodeId: null,
             startPoint: null,
             tempLine: null,
-            sourceRect: null
+            sourceRect: null,
+            isDetailView: false
         };
     }
 
@@ -7268,13 +7464,13 @@
         clearPortHighlights();
         elements.canvasContainer.classList.remove('connecting-mode');
 
-        // Clear source port highlight
-        document.querySelectorAll('.connection-port.connected').forEach(p => {
+        // Clear source port highlight (both tree and flow ports)
+        document.querySelectorAll('.connection-port.connected, .flow-port.connected').forEach(p => {
             p.classList.remove('connected');
         });
 
-        // Remove valid-drop-target class from all nodes
-        document.querySelectorAll('.tree-node.valid-drop-target').forEach(node => {
+        // Remove valid-drop-target class from all nodes (both tree and flow nodes)
+        document.querySelectorAll('.tree-node.valid-drop-target, .flow-node.valid-drop-target').forEach(node => {
             node.classList.remove('valid-drop-target');
         });
 
@@ -7287,7 +7483,8 @@
             targetNodeId: null,
             startPoint: null,
             tempLine: null,
-            sourceRect: null
+            sourceRect: null,
+            isDetailView: false
         };
     }
 

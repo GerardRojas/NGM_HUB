@@ -15,6 +15,10 @@
   let originalPermissions = {}; // Para detectar cambios
   let isEditMode = false;
 
+  // Filtros
+  let moduleFilter = '';
+  let roleFilter = '';
+
   // Roles protegidos que no se pueden modificar
   const PROTECTED_ROLES = ['CEO', 'COO'];
 
@@ -27,7 +31,11 @@
     btnEditPermissions: document.getElementById('btnEditPermissions'),
     btnCancelEdit: document.getElementById('btnCancelEdit'),
     btnSaveChanges: document.getElementById('btnSaveChanges'),
-    editModeFooter: document.getElementById('editModeFooter')
+    editModeFooter: document.getElementById('editModeFooter'),
+    moduleSearchInput: document.getElementById('moduleSearchInput'),
+    roleSearchInput: document.getElementById('roleSearchInput'),
+    btnClearFilters: document.getElementById('btnClearFilters'),
+    filterStats: document.getElementById('filterStats')
   };
 
   // ================================
@@ -120,15 +128,37 @@
   function renderPermissionsMatrix() {
     if (!roles || roles.length === 0 || !modules || modules.length === 0) {
       els.permissionsTableBody.innerHTML = '<tr><td colspan="100" style="text-align: center; padding: 40px; color: #6b7280;">No data available</td></tr>';
+      updateFilterStats(0, 0, 0, 0);
       return;
     }
 
-    // Crear header dinámico con los módulos
+    // Filtrar modulos y roles
+    const filteredModules = modules.filter(mod =>
+      mod.module_name.toLowerCase().includes(moduleFilter.toLowerCase()) ||
+      mod.module_key.toLowerCase().includes(moduleFilter.toLowerCase())
+    );
+
+    const filteredRoles = roles.filter(role =>
+      role.rol_name.toLowerCase().includes(roleFilter.toLowerCase())
+    );
+
+    // Actualizar estadisticas de filtrado
+    updateFilterStats(filteredModules.length, modules.length, filteredRoles.length, roles.length);
+
+    // Verificar si hay resultados
+    if (filteredModules.length === 0 || filteredRoles.length === 0) {
+      const thead = els.permissionsTable.querySelector('thead');
+      thead.innerHTML = '<tr><th>Role</th><th>No matching modules</th></tr>';
+      els.permissionsTableBody.innerHTML = '<tr><td colspan="100" style="text-align: center; padding: 40px; color: #6b7280;">No results match your filters. Try adjusting your search.</td></tr>';
+      return;
+    }
+
+    // Crear header dinámico con los módulos filtrados
     const thead = els.permissionsTable.querySelector('thead');
     thead.innerHTML = `
       <tr>
         <th style="position: sticky; left: 0; background: #18181b; z-index: 2; min-width: 180px;">Role</th>
-        ${modules.map(mod => `
+        ${filteredModules.map(mod => `
           <th style="min-width: 140px; text-align: center;">
             <div style="font-size: 13px; font-weight: 600;">${mod.module_name}</div>
             <div style="font-size: 11px; font-weight: 400; color: #6b7280; margin-top: 2px;">V · E · D</div>
@@ -138,8 +168,8 @@
       </tr>
     `;
 
-    // Renderizar filas de roles
-    els.permissionsTableBody.innerHTML = roles.map(role => {
+    // Renderizar filas de roles filtrados
+    els.permissionsTableBody.innerHTML = filteredRoles.map(role => {
       const isProtected = PROTECTED_ROLES.includes(role.rol_name);
       const rolePerms = permissions[role.rol_id] || {};
 
@@ -148,7 +178,7 @@
           <td style="position: sticky; left: 0; background: #18181b; z-index: 1;">
             <strong style="color: #e5e7eb;">${role.rol_name}</strong>
           </td>
-          ${modules.map(mod => {
+          ${filteredModules.map(mod => {
             const perm = rolePerms[mod.module_key] || { can_view: false, can_edit: false, can_delete: false };
             return renderPermissionCell(role.rol_id, mod.module_key, perm, isProtected);
           }).join('')}
@@ -162,6 +192,17 @@
         </tr>
       `;
     }).join('');
+  }
+
+  function updateFilterStats(modsShown, modsTotal, rolesShown, rolesTotal) {
+    if (els.filterStats) {
+      const hasFilter = moduleFilter || roleFilter;
+      if (hasFilter) {
+        els.filterStats.textContent = `Showing ${modsShown} of ${modsTotal} modules, ${rolesShown} of ${rolesTotal} roles`;
+      } else {
+        els.filterStats.textContent = `${modsTotal} modules, ${rolesTotal} roles`;
+      }
+    }
   }
 
   function renderPermissionCell(rolId, moduleKey, perm, isProtected) {
@@ -421,6 +462,33 @@
         const rolId = e.target.getAttribute('data-role-id');
         resetRole(rolId);
       }
+    });
+
+    // Filtros de busqueda
+    let filterDebounce = null;
+
+    els.moduleSearchInput?.addEventListener('input', (e) => {
+      clearTimeout(filterDebounce);
+      filterDebounce = setTimeout(() => {
+        moduleFilter = e.target.value.trim();
+        renderPermissionsMatrix();
+      }, 200);
+    });
+
+    els.roleSearchInput?.addEventListener('input', (e) => {
+      clearTimeout(filterDebounce);
+      filterDebounce = setTimeout(() => {
+        roleFilter = e.target.value.trim();
+        renderPermissionsMatrix();
+      }, 200);
+    });
+
+    els.btnClearFilters?.addEventListener('click', () => {
+      moduleFilter = '';
+      roleFilter = '';
+      if (els.moduleSearchInput) els.moduleSearchInput.value = '';
+      if (els.roleSearchInput) els.roleSearchInput.value = '';
+      renderPermissionsMatrix();
     });
   }
 

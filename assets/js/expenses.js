@@ -83,6 +83,41 @@
   // QBO Integration State
   let currentDataSource = 'manual';  // 'manual' or 'qbo'
   let qboExpenses = [];              // QBO expenses for current project
+
+  // ================================
+  // EXPENSE MODE: 'cogs' or 'company'
+  // ================================
+  // Configurable via window.EXPENSE_MODE before this script loads
+  // 'cogs' = Project COGS expenses (default, for expenses.html)
+  // 'company' = Company/Operating expenses (for company-expenses.html)
+  const expenseMode = window.EXPENSE_MODE || 'cogs';
+
+  const MODE_CONFIG = {
+    cogs: {
+      title: 'COGS Expenses',
+      pageTitle: 'Expenses Engine',
+      brandContext: 'NGM Hub - Expenses Engine',
+      emptyMessage: 'Select a project to view expenses',
+      noDataMessage: 'No expenses found for this project',
+      searchPlaceholder: 'Search expenses...',
+      loadingMessage: 'Loading expenses...',
+      qboParam: 'true'  // is_cogs=true for QBO
+    },
+    company: {
+      title: 'Company Expenses',
+      pageTitle: 'Company Expenses',
+      brandContext: 'NGM Hub - Company Expenses',
+      emptyMessage: 'Select a project to view company expenses',
+      noDataMessage: 'No company expenses found for this project',
+      searchPlaceholder: 'Search company expenses...',
+      loadingMessage: 'Loading company expenses...',
+      qboParam: 'false'  // is_cogs=false for QBO
+    }
+  };
+
+  // Get current mode config
+  const currentModeConfig = MODE_CONFIG[expenseMode] || MODE_CONFIG.cogs;
+  console.log('[EXPENSES] Mode:', expenseMode, '| Config:', currentModeConfig.title);
   let reconciliationData = {         // Reconciliation modal state
     manualExpenses: [],
     qboExpenses: [],
@@ -537,7 +572,29 @@
       metaData.projects = meta.projects || [];
       metaData.vendors = meta.vendors || [];
       metaData.payment_methods = meta.payment_methods || [];
-      metaData.accounts = meta.accounts || [];
+
+      // Filter accounts based on expense mode (cogs vs company)
+      const allAccounts = meta.accounts || [];
+      if (expenseMode === 'company') {
+        // Company mode: Exclude COGS accounts
+        metaData.accounts = allAccounts.filter(a =>
+          !a.is_cogs &&
+          a.AccountCategory !== 'Cost of Goods Sold' &&
+          a.AccountCategory !== 'COGS' &&
+          a.AccountCategory !== 'Cost of Sales'
+        );
+        console.log('[EXPENSES] Filtered accounts for COMPANY mode:', metaData.accounts.length, 'of', allAccounts.length);
+      } else {
+        // COGS mode: Only COGS accounts (or accounts without category - legacy support)
+        metaData.accounts = allAccounts.filter(a =>
+          a.is_cogs ||
+          a.AccountCategory === 'Cost of Goods Sold' ||
+          a.AccountCategory === 'COGS' ||
+          a.AccountCategory === 'Cost of Sales' ||
+          !a.AccountCategory  // Include accounts without category for backwards compatibility
+        );
+        console.log('[EXPENSES] Filtered accounts for COGS mode:', metaData.accounts.length, 'of', allAccounts.length);
+      }
 
       // Debug: Log metadata structure to help identify correct column names
       console.log('[METADATA] txn_types count:', metaData.txn_types.length);
@@ -693,7 +750,7 @@
   async function loadExpensesByProject(projectId) {
     if (!projectId) {
       expenses = [];
-      showEmptyState('Select a project to view expenses');
+      showEmptyState(currentModeConfig.emptyMessage);
       return;
     }
 
@@ -737,7 +794,7 @@
       await detectDuplicateBillNumbers();
 
       if (expenses.length === 0) {
-        showEmptyState(projectId === 'all' ? 'No expenses found' : 'No expenses found for this project');
+        showEmptyState(projectId === 'all' ? currentModeConfig.noDataMessage : currentModeConfig.noDataMessage);
       } else {
         renderExpensesTable();
       }
@@ -2359,7 +2416,7 @@
     if (!els.expensesTableBody) return;
 
     if (expenses.length === 0) {
-      showEmptyState('No expenses found');
+      showEmptyState(currentModeConfig.noDataMessage);
       return;
     }
 
@@ -8037,15 +8094,18 @@
   async function loadQBOExpenses(projectId) {
     if (!projectId) {
       qboExpenses = [];
-      showEmptyState('Select a project to view QBO expenses...');
+      showEmptyState(currentModeConfig.emptyMessage);
       return;
     }
 
     const apiBase = getApiBase();
 
     try {
-      showEmptyState('Loading QBO expenses...');
-      const url = `${apiBase}/qbo/expenses?project=${projectId}&is_cogs=true`;
+      showEmptyState(currentModeConfig.loadingMessage);
+      // Use dynamic is_cogs parameter based on expense mode
+      const isCogs = currentModeConfig.qboParam;
+      const url = `${apiBase}/qbo/expenses?project=${projectId}&is_cogs=${isCogs}`;
+      console.log('[QBO] Loading with is_cogs=' + isCogs + ' for mode:', expenseMode);
       const result = await apiJson(url);
 
       // Handle response format (similar to manual expenses)
@@ -8547,9 +8607,10 @@
     try {
       showEmptyState('Loading reconciliation data...');
 
+      const isCogs = currentModeConfig.qboParam;
       const [manualRes, qboRes] = await Promise.all([
         apiJson(`${apiBase}/expenses?project=${selectedProjectId}`),
-        apiJson(`${apiBase}/qbo/expenses?project=${selectedProjectId}&is_cogs=true`)
+        apiJson(`${apiBase}/qbo/expenses?project=${selectedProjectId}&is_cogs=${isCogs}`)
       ]);
 
       // Parse responses
@@ -9762,7 +9823,7 @@
     await loadMetaData();
 
     // Show initial empty state
-    showEmptyState('Select a project to view expenses');
+    showEmptyState(currentModeConfig.emptyMessage);
 
     // Check for pending budget alerts
     checkPendingBudgetAlerts();

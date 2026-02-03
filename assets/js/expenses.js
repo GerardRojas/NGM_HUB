@@ -4928,11 +4928,12 @@
         const currentStatus = currentEditingExpense.status || (currentEditingExpense.auth_status ? 'auth' : 'pending');
         if (selectedStatus !== currentStatus) {
           try {
-            await apiJson(`${apiBase}/expenses/${expenseId}/status`, {
+            const userId = currentUser?.user_id || currentUser?.id;
+            await apiJson(`${apiBase}/expenses/${expenseId}/status?user_id=${userId}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                new_status: selectedStatus,
+                status: selectedStatus,
                 reason: statusReason
               })
             });

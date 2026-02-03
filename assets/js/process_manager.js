@@ -2711,7 +2711,7 @@
 
         nodeEl.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
-            if (e.target.closest('.flow-port')) return;
+            if (e.target.closest('.flow-port') || e.target.closest('.connection-port')) return;
 
             isDragging = true;
             startX = e.clientX;
@@ -3449,8 +3449,15 @@
                 sourceRect, targetRect, sourceCenterX, sourceCenterY, targetCenterX, targetCenterY
             );
 
-            // Module-to-module connections use a different color (cyan)
-            const connection = createOrthogonalConnection(points, '#06b6d4', false, conn.id);
+            // Connection color depends on module status
+            // Green if both modules are live, gray if either is draft
+            const sourceModule = getCustomModule(conn.sourceId);
+            const targetModule = getCustomModule(conn.targetId);
+            const bothLive = sourceModule?.isImplemented && targetModule?.isImplemented;
+            const connectionColor = bothLive ? '#3ecf8e' : '#6b7280';
+            const isDraft = !bothLive;
+
+            const connection = createOrthogonalConnection(points, connectionColor, isDraft, conn.id);
             elements.connectionsLayer.appendChild(connection);
         });
 
@@ -3647,8 +3654,11 @@
         let initialPositions = {}; // Store initial positions for multi-select drag
 
         node.addEventListener('mousedown', (e) => {
-            // Don't start drag if in connection mode
+            // Don't start drag if clicking on a connection port
+            if (e.target.closest('.connection-port')) return;
+            // Don't start drag if in connection mode (old or new system)
             if (state.connectionMode.active) return;
+            if (connectionDragState.isDragging) return;
             if (e.button !== 0) return;
             e.preventDefault();
 
@@ -5299,11 +5309,45 @@
         }
     }
 
+    // Grid dimensions
+    const GRID_WIDTH = 8000;
+    const GRID_HEIGHT = 8000;
+
     function applyCanvasTransform() {
         if (!elements.canvasGrid) return;
 
+        // Apply bounds to prevent going outside the grid
+        constrainCanvasBounds();
+
         elements.canvasGrid.style.transform = `translate(${state.canvas.offsetX}px, ${state.canvas.offsetY}px) scale(${state.canvas.scale})`;
         updateMinimap();
+    }
+
+    function constrainCanvasBounds() {
+        if (!elements.canvasContainer) return;
+
+        const containerRect = elements.canvasContainer.getBoundingClientRect();
+        const viewportWidth = containerRect.width;
+        const viewportHeight = containerRect.height;
+
+        const scaledGridWidth = GRID_WIDTH * state.canvas.scale;
+        const scaledGridHeight = GRID_HEIGHT * state.canvas.scale;
+
+        // Minimum padding to always show some grid (100px)
+        const minPadding = 100;
+
+        // Calculate bounds
+        // Max offset: can't push grid too far right (left edge of grid past right edge of viewport)
+        const maxOffsetX = viewportWidth - minPadding;
+        // Min offset: can't push grid too far left (right edge of grid past left edge of viewport)
+        const minOffsetX = -(scaledGridWidth - minPadding);
+
+        const maxOffsetY = viewportHeight - minPadding;
+        const minOffsetY = -(scaledGridHeight - minPadding);
+
+        // Apply constraints
+        state.canvas.offsetX = Math.max(minOffsetX, Math.min(maxOffsetX, state.canvas.offsetX));
+        state.canvas.offsetY = Math.max(minOffsetY, Math.min(maxOffsetY, state.canvas.offsetY));
     }
 
     function centerCanvas() {
@@ -5452,8 +5496,8 @@
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Canvas dimensions
-        const canvasSize = 5000;
+        // Canvas dimensions - match the actual grid size
+        const canvasSize = GRID_WIDTH;
         const minimapWidth = canvas.width;
         const minimapHeight = canvas.height;
         const scaleX = minimapWidth / canvasSize;
@@ -5483,10 +5527,30 @@
             // Padding offset for the minimap body
             const padding = 8;
 
-            elements.minimapViewport.style.left = `${padding + viewX * scaleX}px`;
-            elements.minimapViewport.style.top = `${padding + viewY * scaleY}px`;
-            elements.minimapViewport.style.width = `${Math.max(10, viewWidth * scaleX)}px`;
-            elements.minimapViewport.style.height = `${Math.max(10, viewHeight * scaleY)}px`;
+            // Calculate viewport position and size
+            let vpLeft = padding + viewX * scaleX;
+            let vpTop = padding + viewY * scaleY;
+            let vpWidth = Math.max(10, viewWidth * scaleX);
+            let vpHeight = Math.max(10, viewHeight * scaleY);
+
+            // Constrain viewport to stay within minimap bounds
+            const maxLeft = minimapWidth + padding - 10;
+            const maxTop = minimapHeight + padding - 10;
+            vpLeft = Math.max(padding, Math.min(maxLeft, vpLeft));
+            vpTop = Math.max(padding, Math.min(maxTop, vpTop));
+
+            // Ensure viewport doesn't exceed minimap
+            if (vpLeft + vpWidth > minimapWidth + padding) {
+                vpWidth = minimapWidth + padding - vpLeft;
+            }
+            if (vpTop + vpHeight > minimapHeight + padding) {
+                vpHeight = minimapHeight + padding - vpTop;
+            }
+
+            elements.minimapViewport.style.left = `${vpLeft}px`;
+            elements.minimapViewport.style.top = `${vpTop}px`;
+            elements.minimapViewport.style.width = `${Math.max(10, vpWidth)}px`;
+            elements.minimapViewport.style.height = `${Math.max(10, vpHeight)}px`;
         }
     }
 
@@ -6121,7 +6185,7 @@
         let nodeStartX, nodeStartY;
 
         nodeEl.addEventListener('mousedown', (e) => {
-            if (e.target.closest('.flow-node-switch-toggle') || e.target.closest('.flow-port')) return;
+            if (e.target.closest('.flow-node-switch-toggle') || e.target.closest('.flow-port') || e.target.closest('.connection-port')) return;
             if (e.button !== 0) return;
 
             isDragging = true;
@@ -6590,7 +6654,8 @@
         nodeEl.addEventListener('mousedown', (e) => {
             if (e.target.closest('.flow-node-switch-toggle') ||
                 e.target.closest('.flow-node-option') ||
-                e.target.closest('.flow-subservice')) {
+                e.target.closest('.flow-subservice') ||
+                e.target.closest('.connection-port')) {
                 return;
             }
 
@@ -6863,6 +6928,13 @@
         // Highlight the source port
         port.classList.add('connected');
 
+        // Mark all other nodes as valid drop targets
+        document.querySelectorAll('.tree-node').forEach(node => {
+            if (node.dataset.id !== nodeId) {
+                node.classList.add('valid-drop-target');
+            }
+        });
+
         // Create temporary line
         createTempConnectionLine();
     }
@@ -7039,6 +7111,11 @@
             p.classList.remove('connected');
         });
 
+        // Remove valid-drop-target class from all nodes
+        document.querySelectorAll('.tree-node.valid-drop-target').forEach(node => {
+            node.classList.remove('valid-drop-target');
+        });
+
         // Show original connection again only if it wasn't disconnected
         if (!connectionDragState.isNewConnection && !connectionHandled) {
             const connectionGroup = elements.connectionsLayer.querySelector(
@@ -7098,6 +7175,11 @@
         // Clear source port highlight
         document.querySelectorAll('.connection-port.connected').forEach(p => {
             p.classList.remove('connected');
+        });
+
+        // Remove valid-drop-target class from all nodes
+        document.querySelectorAll('.tree-node.valid-drop-target').forEach(node => {
+            node.classList.remove('valid-drop-target');
         });
 
         // Reset state

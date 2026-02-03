@@ -789,6 +789,16 @@
 
         // Module filter state: null, 'implemented', or 'draft'
         moduleFilter: null,
+
+        // Multi-select state
+        selectedModules: [],  // Array of selected module IDs
+        selectionBox: {
+            active: false,
+            startX: 0,
+            startY: 0,
+            endX: 0,
+            endY: 0
+        },
     };
 
     // ================================
@@ -1202,6 +1212,7 @@
             detailViewContainer: document.getElementById('detailViewContainer'),
             connectionsLayer: document.getElementById('connectionsLayer'),
             snapGuides: document.getElementById('snapGuides'),
+            selectionBox: document.getElementById('selectionBox'),
             canvasEmpty: document.getElementById('canvasEmpty'),
             processPanel: document.getElementById('processPanel'),
             panelTitle: document.getElementById('panelTitle'),
@@ -2886,6 +2897,7 @@
         let startX, startY;
         let initialX, initialY;
         let hasMoved = false;
+        let initialPositions = {}; // Store initial positions for multi-select drag
 
         node.addEventListener('mousedown', (e) => {
             // Don't start drag if in connection mode
@@ -2893,12 +2905,37 @@
             if (e.button !== 0) return;
             e.preventDefault();
 
+            // Handle Ctrl+click for adding to selection
+            if (e.ctrlKey || e.shiftKey) {
+                toggleModuleSelection(nodeId);
+                return;
+            }
+
+            // If this node is not selected and we have selections, clear them
+            if (!state.selectedModules.includes(nodeId) && state.selectedModules.length > 0) {
+                clearModuleSelection();
+            }
+
             isDragging = true;
             hasMoved = false;
             startX = e.clientX;
             startY = e.clientY;
             initialX = parseInt(node.style.left) || 0;
             initialY = parseInt(node.style.top) || 0;
+
+            // Store initial positions of all selected modules for group drag
+            initialPositions = {};
+            if (state.selectedModules.length > 0 && state.selectedModules.includes(nodeId)) {
+                state.selectedModules.forEach(id => {
+                    const el = elements.treeViewContainer.querySelector(`[data-id="${id}"]`);
+                    if (el) {
+                        initialPositions[id] = {
+                            x: parseInt(el.style.left) || 0,
+                            y: parseInt(el.style.top) || 0
+                        };
+                    }
+                });
+            }
 
             node.style.cursor = 'grabbing';
             node.style.zIndex = '100';
@@ -2922,38 +2959,50 @@
             const nodeWidth = node.offsetWidth || 220;
             const nodeHeight = node.offsetHeight || 150;
 
-            // Calculate snap alignment
-            const snap = calculateSnap(nodeId, newX, newY, nodeWidth, nodeHeight);
+            // Calculate snap alignment (only for single node drag)
+            let snapDx = 0, snapDy = 0;
+            if (Object.keys(initialPositions).length === 0) {
+                const snap = calculateSnap(nodeId, newX, newY, nodeWidth, nodeHeight);
 
-            // Apply snap if detected
-            if (snap.snapX !== null) {
-                newX = snap.snapX;
-            }
-            if (snap.snapY !== null) {
-                newY = snap.snapY;
-            }
+                // Apply snap if detected
+                if (snap.snapX !== null) {
+                    snapDx = snap.snapX - newX;
+                    newX = snap.snapX;
+                }
+                if (snap.snapY !== null) {
+                    snapDy = snap.snapY - newY;
+                    newY = snap.snapY;
+                }
 
-            // Show/hide snap guides and snapping class
-            if (snap.guides.length > 0) {
-                renderSnapGuides(snap.guides);
-                node.classList.add('snapping');
+                // Show/hide snap guides and snapping class
+                if (snap.guides.length > 0) {
+                    renderSnapGuides(snap.guides);
+                    node.classList.add('snapping');
+                } else {
+                    clearSnapGuides();
+                    node.classList.remove('snapping');
+                }
             } else {
                 clearSnapGuides();
-                node.classList.remove('snapping');
             }
 
             node.style.left = `${newX}px`;
             node.style.top = `${newY}px`;
 
+            // Move all selected modules together (if this is a group drag)
+            if (Object.keys(initialPositions).length > 0) {
+                Object.entries(initialPositions).forEach(([id, pos]) => {
+                    if (id === nodeId) return; // Already moved the main node
+                    const el = elements.treeViewContainer.querySelector(`[data-id="${id}"]`);
+                    if (el) {
+                        el.style.left = `${pos.x + dx + snapDx}px`;
+                        el.style.top = `${pos.y + dy + snapDy}px`;
+                    }
+                });
+            }
+
             // Update nodeRects and redraw connections in real-time
             const nodeRects = buildCurrentNodeRects();
-            // Update the dragged node's position
-            if (nodeId === 'hub') {
-                nodeRects.hub = { x: newX, y: newY, width: 320, height: 200 };
-            } else if (nodeRects[nodeId]) {
-                nodeRects[nodeId].x = newX;
-                nodeRects[nodeId].y = newY;
-            }
             redrawConnections(nodeRects);
         });
 
@@ -2969,10 +3018,24 @@
 
             if (hasMoved) {
                 node.classList.add('was-dragged');
-                // Save position
+
+                // Save position of main node
                 const newX = parseInt(node.style.left) || 0;
                 const newY = parseInt(node.style.top) || 0;
                 setNodePosition(nodeId, newX, newY);
+
+                // Save positions of all selected nodes (if group drag)
+                if (Object.keys(initialPositions).length > 0) {
+                    Object.keys(initialPositions).forEach(id => {
+                        if (id === nodeId) return;
+                        const el = elements.treeViewContainer.querySelector(`[data-id="${id}"]`);
+                        if (el) {
+                            const x = parseInt(el.style.left) || 0;
+                            const y = parseInt(el.style.top) || 0;
+                            setNodePosition(id, x, y);
+                        }
+                    });
+                }
 
                 if (onDragEnd) onDragEnd();
 
@@ -2981,6 +3044,8 @@
                     node.classList.remove('was-dragged');
                 }, 200);
             }
+
+            initialPositions = {};
         });
     }
 
@@ -4176,12 +4241,48 @@
             return;
         }
 
-        if (e.target.closest('.tree-node, .service-node, .process-card, .step-card')) return;
-        if (e.button !== 0) return;
+        // Don't start selection if clicking on a node
+        if (e.target.closest('.tree-node, .service-node, .process-card, .step-card')) {
+            // If clicking a node without Ctrl/Shift, clear selection
+            if (!e.ctrlKey && !e.shiftKey) {
+                clearModuleSelection();
+            }
+            return;
+        }
 
-        state.canvas.isDragging = true;
-        state.canvas.dragStart = { x: e.clientX, y: e.clientY };
-        elements.canvasContainer.style.cursor = 'grabbing';
+        // Middle mouse button (wheel click) = pan
+        if (e.button === 1) {
+            e.preventDefault();
+            state.canvas.isDragging = true;
+            state.canvas.dragStart = { x: e.clientX, y: e.clientY };
+            elements.canvasContainer.style.cursor = 'grabbing';
+            return;
+        }
+
+        // Right mouse button = context menu (do nothing here)
+        if (e.button === 2) return;
+
+        // Left click on empty space = start selection box
+        if (e.button === 0) {
+            // Clear previous selection if not holding Ctrl/Shift
+            if (!e.ctrlKey && !e.shiftKey) {
+                clearModuleSelection();
+            }
+
+            // Get canvas-relative coordinates
+            const rect = elements.canvasGrid.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / state.canvas.scale;
+            const y = (e.clientY - rect.top) / state.canvas.scale;
+
+            state.selectionBox.active = true;
+            state.selectionBox.startX = x;
+            state.selectionBox.startY = y;
+            state.selectionBox.endX = x;
+            state.selectionBox.endY = y;
+
+            updateSelectionBox();
+            elements.canvasContainer.style.cursor = 'crosshair';
+        }
     }
 
     function handleCanvasMouseMove(e) {
@@ -4193,6 +4294,21 @@
             return;
         }
 
+        // Update selection box if active
+        if (state.selectionBox.active) {
+            const rect = elements.canvasGrid.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / state.canvas.scale;
+            const y = (e.clientY - rect.top) / state.canvas.scale;
+
+            state.selectionBox.endX = x;
+            state.selectionBox.endY = y;
+
+            updateSelectionBox();
+            highlightModulesInSelection();
+            return;
+        }
+
+        // Canvas panning
         if (!state.canvas.isDragging) return;
 
         const dx = e.clientX - state.canvas.dragStart.x;
@@ -4216,8 +4332,117 @@
             return;
         }
 
+        // End selection box
+        if (state.selectionBox.active) {
+            finishSelection();
+            state.selectionBox.active = false;
+            if (elements.selectionBox) {
+                elements.selectionBox.classList.remove('active');
+            }
+            elements.canvasContainer.style.cursor = 'grab';
+            return;
+        }
+
         state.canvas.isDragging = false;
-        elements.canvasContainer.style.cursor = 'default';
+        elements.canvasContainer.style.cursor = 'grab';
+    }
+
+    // ================================
+    // Multi-Select Functions
+    // ================================
+    function updateSelectionBox() {
+        if (!elements.selectionBox) return;
+
+        const { startX, startY, endX, endY } = state.selectionBox;
+
+        const left = Math.min(startX, endX);
+        const top = Math.min(startY, endY);
+        const width = Math.abs(endX - startX);
+        const height = Math.abs(endY - startY);
+
+        elements.selectionBox.style.left = `${left}px`;
+        elements.selectionBox.style.top = `${top}px`;
+        elements.selectionBox.style.width = `${width}px`;
+        elements.selectionBox.style.height = `${height}px`;
+        elements.selectionBox.classList.add('active');
+    }
+
+    function highlightModulesInSelection() {
+        const { startX, startY, endX, endY } = state.selectionBox;
+
+        const boxLeft = Math.min(startX, endX);
+        const boxRight = Math.max(startX, endX);
+        const boxTop = Math.min(startY, endY);
+        const boxBottom = Math.max(startY, endY);
+
+        // Check each module
+        const allNodes = elements.treeViewContainer.querySelectorAll('.tree-node');
+        allNodes.forEach(node => {
+            const nodeId = node.dataset.id;
+            const nodeLeft = parseInt(node.style.left) || 0;
+            const nodeTop = parseInt(node.style.top) || 0;
+            const nodeRight = nodeLeft + node.offsetWidth;
+            const nodeBottom = nodeTop + node.offsetHeight;
+
+            // Check if node intersects with selection box
+            const intersects = !(boxRight < nodeLeft || boxLeft > nodeRight ||
+                                boxBottom < nodeTop || boxTop > nodeBottom);
+
+            if (intersects) {
+                node.classList.add('selected');
+            } else if (!state.selectedModules.includes(nodeId)) {
+                node.classList.remove('selected');
+            }
+        });
+    }
+
+    function finishSelection() {
+        const { startX, startY, endX, endY } = state.selectionBox;
+
+        const boxLeft = Math.min(startX, endX);
+        const boxRight = Math.max(startX, endX);
+        const boxTop = Math.min(startY, endY);
+        const boxBottom = Math.max(startY, endY);
+
+        // Select modules inside the box
+        const allNodes = elements.treeViewContainer.querySelectorAll('.tree-node');
+        allNodes.forEach(node => {
+            const nodeId = node.dataset.id;
+            const nodeLeft = parseInt(node.style.left) || 0;
+            const nodeTop = parseInt(node.style.top) || 0;
+            const nodeRight = nodeLeft + node.offsetWidth;
+            const nodeBottom = nodeTop + node.offsetHeight;
+
+            // Check if node intersects with selection box
+            const intersects = !(boxRight < nodeLeft || boxLeft > nodeRight ||
+                                boxBottom < nodeTop || boxTop > nodeBottom);
+
+            if (intersects && !state.selectedModules.includes(nodeId)) {
+                state.selectedModules.push(nodeId);
+                node.classList.add('selected');
+            }
+        });
+
+        console.log('[MULTI-SELECT] Selected modules:', state.selectedModules);
+    }
+
+    function clearModuleSelection() {
+        state.selectedModules = [];
+        const allNodes = elements.treeViewContainer.querySelectorAll('.tree-node.selected');
+        allNodes.forEach(node => node.classList.remove('selected'));
+    }
+
+    function toggleModuleSelection(moduleId) {
+        const index = state.selectedModules.indexOf(moduleId);
+        const node = elements.treeViewContainer.querySelector(`[data-id="${moduleId}"]`);
+
+        if (index > -1) {
+            state.selectedModules.splice(index, 1);
+            if (node) node.classList.remove('selected');
+        } else {
+            state.selectedModules.push(moduleId);
+            if (node) node.classList.add('selected');
+        }
     }
 
     function handleCanvasWheel(e) {
@@ -4263,9 +4488,46 @@
     function centerCanvas() {
         if (!elements.canvasContainer || !elements.canvasGrid) return;
 
+        // Get container dimensions
+        const containerRect = elements.canvasContainer.getBoundingClientRect();
+        const containerWidth = containerRect.width;
+        const containerHeight = containerRect.height;
+
+        // Calculate center point based on modules or default starting area
+        let centerX, centerY;
+
+        // Check if we have modules to center on
+        const allModules = [...state.modules, ...state.customModules];
+        if (allModules.length > 0) {
+            // Calculate bounding box of all modules
+            let minX = Infinity, minY = Infinity;
+            let maxX = -Infinity, maxY = -Infinity;
+
+            allModules.forEach(m => {
+                const pos = state.nodePositions[m.id] || m.position || { x: 300, y: 300 };
+                const nodeWidth = 280;
+                const nodeHeight = 120;
+                minX = Math.min(minX, pos.x);
+                minY = Math.min(minY, pos.y);
+                maxX = Math.max(maxX, pos.x + nodeWidth);
+                maxY = Math.max(maxY, pos.y + nodeHeight);
+            });
+
+            // Center on the bounding box center
+            centerX = (minX + maxX) / 2;
+            centerY = (minY + maxY) / 2;
+        } else {
+            // Default starting area - top-left region where new modules are typically placed
+            centerX = 400;
+            centerY = 400;
+        }
+
         state.canvas.scale = 0.85;
-        state.canvas.offsetX = 50;
-        state.canvas.offsetY = 50;
+
+        // Calculate offset to center the target point in the viewport
+        state.canvas.offsetX = (containerWidth / 2) - (centerX * state.canvas.scale);
+        state.canvas.offsetY = (containerHeight / 2) - (centerY * state.canvas.scale);
+
         applyCanvasTransform();
     }
 

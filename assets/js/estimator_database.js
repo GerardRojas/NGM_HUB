@@ -325,6 +325,19 @@ const API = {
 };
 
 // ========================================
+// Helper Functions
+// ========================================
+
+/**
+ * Get unit name from unit_id using state.units lookup
+ */
+function getUnitName(unitId) {
+    if (!unitId) return null;
+    const unit = state.units.find(u => String(u.id_unit) === String(unitId));
+    return unit ? unit.unit_name : null;
+}
+
+// ========================================
 // Render Functions
 // ========================================
 function showLoading() {
@@ -387,7 +400,7 @@ function renderMaterialsTable() {
             <td class="col-category">${escapeHtml(mat.category_name || '-')}</td>
             <td class="col-brand">${escapeHtml(mat.brand || mat.Brand || '-')}</td>
             <td class="col-vendor">${escapeHtml(mat.vendor_name || '-')}</td>
-            <td class="col-unit">${escapeHtml(mat.unit_name || mat.Unit || '-')}</td>
+            <td class="col-unit">${escapeHtml(mat.unit_name || getUnitName(mat.unit_id) || mat.Unit || '-')}</td>
             <td class="col-unitcost">${formatCurrency(unitCost)}</td>
             <td class="col-tax">${taxPercent > 0 ? taxPercent.toFixed(1) + '%' : '-'}</td>
             <td class="col-costwithtax">${taxPercent > 0 ? formatCurrency(costWithTax) : '-'}</td>

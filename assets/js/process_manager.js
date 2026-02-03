@@ -1427,13 +1427,20 @@
             elements.statDraft.addEventListener('click', () => toggleModuleFilter('draft'));
         }
 
-        // Canvas panning
+        // Canvas panning and selection
         if (elements.canvasContainer) {
             elements.canvasContainer.addEventListener('mousedown', handleCanvasMouseDown);
             elements.canvasContainer.addEventListener('mousemove', handleCanvasMouseMove);
             elements.canvasContainer.addEventListener('mouseup', handleCanvasMouseUp);
             elements.canvasContainer.addEventListener('mouseleave', handleCanvasMouseUp);
             elements.canvasContainer.addEventListener('wheel', handleCanvasWheel, { passive: false });
+            // Prevent default context menu on canvas to allow right-click selection
+            elements.canvasContainer.addEventListener('contextmenu', (e) => {
+                // Only prevent if clicking on empty canvas space, not on nodes
+                if (!e.target.closest('.tree-node') && !e.target.closest('.flow-node')) {
+                    e.preventDefault();
+                }
+            });
         }
 
         // Modal events
@@ -5080,21 +5087,19 @@
             return;
         }
 
-        // Right mouse button = context menu (do nothing here)
-        if (e.button === 2) return;
-
-        // Left click handling
+        // Left click = pan (primary navigation)
         if (e.button === 0) {
-            // Space + left click = pan (same as middle mouse)
-            if (state.canvas.spacePressed) {
-                e.preventDefault();
-                state.canvas.isDragging = true;
-                state.canvas.dragStart = { x: e.clientX, y: e.clientY };
-                elements.canvasContainer.style.cursor = 'grabbing';
-                return;
-            }
+            e.preventDefault();
+            state.canvas.isDragging = true;
+            state.canvas.dragStart = { x: e.clientX, y: e.clientY };
+            elements.canvasContainer.style.cursor = 'grabbing';
+            return;
+        }
 
-            // Normal left click on empty space = start selection box
+        // Right click = selection box
+        if (e.button === 2) {
+            e.preventDefault();
+
             // Clear previous selection if not holding Ctrl/Shift
             if (!e.ctrlKey && !e.shiftKey) {
                 clearModuleSelection();
@@ -6875,7 +6880,8 @@
         sourcePort: null,        // 'top', 'right', 'bottom', 'left'
         targetNodeId: null,
         startPoint: null,
-        tempLine: null
+        tempLine: null,
+        sourceRect: null         // For orthogonal path calculation
     };
 
     function initConnectionDragging() {
@@ -7134,29 +7140,99 @@
             sourcePort: null,
             targetNodeId: null,
             startPoint: null,
-            tempLine: null
+            tempLine: null,
+            sourceRect: null
         };
     }
 
     function createTempConnectionLine() {
         if (!connectionDragState.startPoint) return;
 
-        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('class', 'connection-temp');
-        line.setAttribute('x1', connectionDragState.startPoint.x);
-        line.setAttribute('y1', connectionDragState.startPoint.y);
-        line.setAttribute('x2', connectionDragState.startPoint.x);
-        line.setAttribute('y2', connectionDragState.startPoint.y);
+        // Create a path element for orthogonal connections
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('class', 'connection-temp');
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', '#3ecf8e');
+        path.setAttribute('stroke-width', '2');
+        path.setAttribute('stroke-dasharray', '8 4');
+        path.setAttribute('opacity', '0.8');
 
-        elements.connectionsLayer.appendChild(line);
-        connectionDragState.tempLine = line;
+        // Store the source node rect for path calculation
+        const sourceNode = document.querySelector(`[data-id="${connectionDragState.sourceNodeId}"]`);
+        if (sourceNode) {
+            const nodeRect = sourceNode.getBoundingClientRect();
+            const containerRect = elements.canvasContainer.getBoundingClientRect();
+            connectionDragState.sourceRect = {
+                x: (nodeRect.left - containerRect.left - state.canvas.offsetX) / state.canvas.scale,
+                y: (nodeRect.top - containerRect.top - state.canvas.offsetY) / state.canvas.scale,
+                width: nodeRect.width / state.canvas.scale,
+                height: nodeRect.height / state.canvas.scale
+            };
+        }
+
+        elements.connectionsLayer.appendChild(path);
+        connectionDragState.tempLine = path;
     }
 
     function updateTempConnectionLine(x, y) {
-        if (!connectionDragState.tempLine) return;
+        if (!connectionDragState.tempLine || !connectionDragState.sourceRect) return;
 
-        connectionDragState.tempLine.setAttribute('x2', x);
-        connectionDragState.tempLine.setAttribute('y2', y);
+        const sourceRect = connectionDragState.sourceRect;
+
+        // Create a virtual target rect at mouse position
+        const targetRect = {
+            x: x - 10,
+            y: y - 10,
+            width: 20,
+            height: 20
+        };
+
+        const sourceCenterX = sourceRect.x + sourceRect.width / 2;
+        const sourceCenterY = sourceRect.y + sourceRect.height / 2;
+
+        // Calculate orthogonal path points
+        const points = calculateOrthogonalPath(
+            sourceRect, targetRect,
+            sourceCenterX, sourceCenterY,
+            x, y
+        );
+
+        // Build SVG path with rounded corners
+        let d = `M ${points[0].x} ${points[0].y}`;
+        const cornerRadius = 12;
+
+        for (let i = 1; i < points.length; i++) {
+            const prev = points[i - 1];
+            const curr = points[i];
+            const next = points[i + 1];
+
+            if (next && i < points.length - 1) {
+                const dx1 = curr.x - prev.x;
+                const dy1 = curr.y - prev.y;
+                const dx2 = next.x - curr.x;
+                const dy2 = next.y - curr.y;
+
+                const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
+                const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+
+                if (len1 > 0 && len2 > 0) {
+                    const r = Math.min(cornerRadius, len1 / 2, len2 / 2);
+                    const startX = curr.x - (dx1 / len1) * r;
+                    const startY = curr.y - (dy1 / len1) * r;
+                    const endX = curr.x + (dx2 / len2) * r;
+                    const endY = curr.y + (dy2 / len2) * r;
+
+                    d += ` L ${startX} ${startY}`;
+                    d += ` Q ${curr.x} ${curr.y} ${endX} ${endY}`;
+                } else {
+                    d += ` L ${curr.x} ${curr.y}`;
+                }
+            } else {
+                d += ` L ${curr.x} ${curr.y}`;
+            }
+        }
+
+        connectionDragState.tempLine.setAttribute('d', d);
     }
 
     function removeTempConnectionLine() {
@@ -7190,7 +7266,8 @@
             sourcePort: null,
             targetNodeId: null,
             startPoint: null,
-            tempLine: null
+            tempLine: null,
+            sourceRect: null
         };
     }
 

@@ -158,18 +158,39 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Show success message
-      showMessage("Login successful. Redirecting...", "info");
-
       // Get redirect target BEFORE clearing
       const redirectTo = sessionStorage.getItem("loginRedirect") || "dashboard.html";
       sessionStorage.removeItem("loginRedirect");
 
       console.log("[Login] Redirecting to:", redirectTo);
 
-      // Immediate redirect - no delay needed
-      // Use href instead of replace to ensure navigation happens
-      window.location.href = redirectTo;
+      // Show transition overlay before redirect
+      const transitionOverlay = document.getElementById("loginTransitionOverlay");
+      if (transitionOverlay) {
+        // Preload the logo image to ensure it's visible
+        const logoImg = transitionOverlay.querySelector(".transition-logo");
+
+        const showOverlayAndRedirect = () => {
+          transitionOverlay.classList.add("visible");
+          // Small delay to ensure overlay is visible before navigation
+          setTimeout(() => {
+            window.location.href = redirectTo;
+          }, 100);
+        };
+
+        // Wait for logo to load (with timeout fallback)
+        if (logoImg && !logoImg.complete) {
+          logoImg.onload = showOverlayAndRedirect;
+          logoImg.onerror = showOverlayAndRedirect;
+          // Fallback if image takes too long
+          setTimeout(showOverlayAndRedirect, 500);
+        } else {
+          showOverlayAndRedirect();
+        }
+      } else {
+        // Fallback: redirect immediately
+        window.location.href = redirectTo;
+      }
     } catch (err) {
       console.error("Error in login:", err);
       showMessage("Network error. Check your connection or contact support.", "error");

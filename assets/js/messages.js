@@ -21,7 +21,6 @@
   const API_BASE = window.API_BASE || window.NGM_CONFIG?.API_BASE || "http://localhost:3000";
   const SUPABASE_URL = window.SUPABASE_URL || window.NGM_CONFIG?.SUPABASE_URL || "";
   const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || window.NGM_CONFIG?.SUPABASE_ANON_KEY || "";
-  const PAGE_LOAD_START = Date.now();
   const MIN_LOADING_TIME = 800;
 
   // Helper function to get auth headers with JWT token
@@ -43,23 +42,44 @@
     });
   }
 
-  // Hide loading overlay after data is loaded (with minimum display time)
-  function hidePageLoading() {
-    const elapsed = Date.now() - PAGE_LOAD_START;
-    const remaining = Math.max(0, MIN_LOADING_TIME - elapsed);
+  // Page loading with logo wait
+  let logoReadyTime = null;
 
-    setTimeout(() => {
-      const overlay = document.getElementById("pageLoadingOverlay");
-      if (overlay) {
-        overlay.classList.add("hidden");
-        // Also hide with style for fallback
-        setTimeout(() => {
-          overlay.style.display = "none";
-        }, 300);
-      }
-      document.body.classList.remove("page-loading");
-      document.body.classList.add("auth-ready");
-    }, remaining);
+  (function initLogoReady() {
+    const overlay = document.getElementById("pageLoadingOverlay");
+    if (!overlay) { logoReadyTime = Date.now(); return; }
+    const logoImg = overlay.querySelector(".loading-logo");
+    if (!logoImg) { logoReadyTime = Date.now(); return; }
+    if (logoImg.complete && logoImg.naturalWidth > 0) { logoReadyTime = Date.now(); return; }
+    logoImg.addEventListener("load", () => { logoReadyTime = Date.now(); });
+    logoImg.addEventListener("error", () => { logoReadyTime = Date.now(); });
+    setTimeout(() => { if (!logoReadyTime) logoReadyTime = Date.now(); }, 2000);
+  })();
+
+  function hidePageLoading() {
+    const doHide = () => {
+      const now = Date.now();
+      const effectiveStart = logoReadyTime || now;
+      const elapsed = now - effectiveStart;
+      const remaining = Math.max(0, MIN_LOADING_TIME - elapsed);
+
+      setTimeout(() => {
+        const overlay = document.getElementById("pageLoadingOverlay");
+        if (overlay) {
+          overlay.classList.add("hidden");
+          setTimeout(() => { overlay.style.display = "none"; }, 300);
+        }
+        document.body.classList.remove("page-loading");
+        document.body.classList.add("auth-ready");
+      }, remaining);
+    };
+
+    if (!logoReadyTime) {
+      const check = setInterval(() => { if (logoReadyTime) { clearInterval(check); doHide(); } }, 50);
+      setTimeout(() => { clearInterval(check); doHide(); }, 2500);
+    } else {
+      doHide();
+    }
   }
 
   const state = {

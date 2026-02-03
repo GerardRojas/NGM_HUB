@@ -739,15 +739,44 @@
     async function loadStateFromSupabase(stateKey, defaultValue = {}) {
         try {
             const res = await fetch(`${API_BASE}/process-manager/state/${stateKey}`);
+
             if (res.ok) {
                 const data = await res.json();
                 console.log(`[PROCESS-MANAGER] Loaded ${stateKey} from Supabase`);
-                return data.state_data || defaultValue;
+                return {
+                    success: true,
+                    data: data.state_data || defaultValue,
+                    error: null
+                };
             }
+
+            if (res.status === 404) {
+                // No data saved yet (first time) - not an error
+                console.log(`[PROCESS-MANAGER] No ${stateKey} found in Supabase (first time)`);
+                return {
+                    success: true,
+                    data: defaultValue,
+                    error: null
+                };
+            }
+
+            // Server error
+            const error = await res.json().catch(() => ({ detail: 'Unknown error' }));
+            return {
+                success: false,
+                data: defaultValue,
+                error: `HTTP ${res.status}: ${error.detail || 'Server error'}`
+            };
+
         } catch (e) {
-            console.warn(`[PROCESS-MANAGER] Error loading ${stateKey} from Supabase:`, e);
+            // Network error or other exception
+            console.error(`[PROCESS-MANAGER] Error loading ${stateKey} from Supabase:`, e);
+            return {
+                success: false,
+                data: defaultValue,
+                error: e.message || 'Network error'
+            };
         }
-        return null; // Return null to indicate fallback to localStorage
     }
 
     // Generic function to save state to Supabase (debounced)
@@ -757,11 +786,17 @@
             clearTimeout(saveTimers[stateKey]);
         }
 
+        // Show sync indicator
+        const syncIndicator = document.getElementById('sync-indicator');
+        if (syncIndicator) {
+            syncIndicator.classList.remove('hidden', 'synced');
+        }
+
         // Debounce the save
         saveTimers[stateKey] = setTimeout(async () => {
             try {
                 const userId = state.currentUser?.id || null;
-                await fetch(`${API_BASE}/process-manager/state/${stateKey}`, {
+                const res = await fetch(`${API_BASE}/process-manager/state/${stateKey}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -769,9 +804,42 @@
                         updated_by: userId
                     })
                 });
+
+                if (!res.ok) {
+                    const error = await res.json().catch(() => ({ detail: 'Unknown error' }));
+                    throw new Error(error.detail || `HTTP ${res.status}`);
+                }
+
                 console.log(`[PROCESS-MANAGER] Saved ${stateKey} to Supabase`);
+
+                // Show synced state briefly
+                if (syncIndicator) {
+                    syncIndicator.classList.add('synced');
+                    setTimeout(() => {
+                        syncIndicator.classList.add('hidden');
+                    }, 1500);
+                }
+
+                // Clear any previous error flag for this key
+                if (state.saveErrors) {
+                    delete state.saveErrors[stateKey];
+                }
             } catch (e) {
-                console.warn(`[PROCESS-MANAGER] Error saving ${stateKey} to Supabase:`, e);
+                console.error(`[PROCESS-MANAGER] Error saving ${stateKey} to Supabase:`, e);
+
+                // Hide sync indicator on error
+                if (syncIndicator) {
+                    syncIndicator.classList.add('hidden');
+                }
+
+                // Show toast only once per key (avoid spam)
+                if (!state.saveErrors) state.saveErrors = {};
+                if (!state.saveErrors[stateKey]) {
+                    state.saveErrors[stateKey] = true;
+                    if (window.showToast) {
+                        showToast(`Failed to sync ${stateKey.replace(/_/g, ' ')} to server. Changes saved locally.`, 'warning');
+                    }
+                }
             }
         }, delay);
     }
@@ -780,24 +848,21 @@
     // Position Persistence
     // ================================
     async function loadNodePositions() {
-        // Try Supabase first
-        const supabaseData = await loadStateFromSupabase('node_positions', {});
-        if (supabaseData !== null) {
-            state.nodePositions = supabaseData;
-            // Update local cache
-            localStorage.setItem(POSITIONS_KEY, JSON.stringify(supabaseData));
-            return;
-        }
+        // Load from Supabase only (no localStorage fallback to avoid stale data)
+        const result = await loadStateFromSupabase('node_positions', {});
 
-        // Fallback to localStorage
-        try {
-            const saved = localStorage.getItem(POSITIONS_KEY);
-            if (saved) {
-                state.nodePositions = JSON.parse(saved);
-            }
-        } catch (e) {
-            console.warn('[PROCESS-MANAGER] Error loading positions:', e);
+        if (result.success) {
+            state.nodePositions = result.data;
+            // Update local cache only when successfully loaded from server
+            localStorage.setItem(POSITIONS_KEY, JSON.stringify(result.data));
+        } else {
+            // Server error - use empty state and show error
             state.nodePositions = {};
+            console.error('[PROCESS-MANAGER] Failed to load positions:', result.error);
+
+            if (window.showToast) {
+                showToast(`Error loading positions: ${result.error}. Using default layout.`, 'error');
+            }
         }
     }
 
@@ -817,26 +882,21 @@
     // Custom Modules Storage
     // ================================
     async function loadCustomModules() {
-        // Try Supabase first
-        const supabaseData = await loadStateFromSupabase('custom_modules', []);
-        if (supabaseData !== null) {
-            state.customModules = normalizeModules(supabaseData);
-            // Update local cache
-            localStorage.setItem(CUSTOM_MODULES_KEY, JSON.stringify(state.customModules));
-            return;
-        }
+        // Load from Supabase only (no localStorage fallback to avoid stale data)
+        const result = await loadStateFromSupabase('custom_modules', []);
 
-        // Fallback to localStorage
-        try {
-            const saved = localStorage.getItem(CUSTOM_MODULES_KEY);
-            if (saved) {
-                state.customModules = normalizeModules(JSON.parse(saved));
-            } else {
-                state.customModules = [];
-            }
-        } catch (e) {
-            console.warn('[PROCESS-MANAGER] Error loading custom modules:', e);
+        if (result.success) {
+            state.customModules = normalizeModules(result.data);
+            // Update local cache only when successfully loaded from server
+            localStorage.setItem(CUSTOM_MODULES_KEY, JSON.stringify(state.customModules));
+        } else {
+            // Server error - use empty state and show error
             state.customModules = [];
+            console.error('[PROCESS-MANAGER] Failed to load custom modules:', result.error);
+
+            if (window.showToast) {
+                showToast(`Error loading custom modules: ${result.error}`, 'error');
+            }
         }
     }
 
@@ -1763,11 +1823,10 @@
             });
 
             node.addEventListener('click', () => {
-                // Only navigate if not dragging
+                // Only navigate if not dragging (was-dragged removed automatically after 200ms)
                 if (!node.classList.contains('was-dragged')) {
                     navigateToDetail(group.id, state.groupBy);
                 }
-                node.classList.remove('was-dragged');
             });
 
             elements.treeViewContainer.appendChild(node);
@@ -2193,6 +2252,11 @@
                 setNodePosition(nodeId, newX, newY);
 
                 if (onDragEnd) onDragEnd();
+
+                // Remove was-dragged after 200ms to prevent accidental navigation
+                setTimeout(() => {
+                    node.classList.remove('was-dragged');
+                }, 200);
             }
         });
     }
@@ -2322,10 +2386,12 @@
             implemented.forEach((process, index) => {
                 const row = Math.floor(index / cardsPerRow);
                 const col = index % cardsPerRow;
-                const x = startX + col * (cardWidth + horizontalGap);
-                const y = currentY + row * (cardHeight + verticalGap);
+                const defaultX = startX + col * (cardWidth + horizontalGap);
+                const defaultY = currentY + row * (cardHeight + verticalGap);
 
-                const card = createProcessCard(process, x, y);
+                // Load saved position or use default grid position
+                const pos = getNodePosition(process.id, defaultX, defaultY);
+                const card = createProcessCard(process, pos.x, pos.y);
                 elements.detailViewContainer.appendChild(card);
             });
 
@@ -2351,10 +2417,12 @@
             drafts.forEach((process, index) => {
                 const row = Math.floor(index / cardsPerRow);
                 const col = index % cardsPerRow;
-                const x = startX + col * (cardWidth + horizontalGap);
-                const y = currentY + row * (cardHeight + verticalGap);
+                const defaultX = startX + col * (cardWidth + horizontalGap);
+                const defaultY = currentY + row * (cardHeight + verticalGap);
 
-                const card = createProcessCard(process, x, y);
+                // Load saved position or use default grid position
+                const pos = getNodePosition(process.id, defaultX, defaultY);
+                const card = createProcessCard(process, pos.x, pos.y);
                 elements.detailViewContainer.appendChild(card);
             });
         }
@@ -2741,18 +2809,16 @@
             ${stepIndicators ? `<div class="process-card-steps">${stepIndicators}</div>` : ''}
         `;
 
-        card.addEventListener('click', () => {
-            openProcessPanel(process);
-        });
+        // Add drag functionality to all process cards
+        makeDraggable(card, process.id);
 
-        // Make drafts draggable in draft mode
-        if (!isImplemented && state.mode === 'draft') {
-            card.style.cursor = 'grab';
-            card.addEventListener('mousedown', (e) => {
-                if (e.button !== 0) return;
-                startDragNode(e, card, process);
-            });
-        }
+        // Click handler with drag prevention
+        card.addEventListener('click', () => {
+            // Only open panel if not dragging (was-dragged removed automatically after 200ms)
+            if (!card.classList.contains('was-dragged')) {
+                openProcessPanel(process);
+            }
+        });
 
         return card;
     }
@@ -3078,11 +3144,6 @@
     }
 
     function handleCanvasMouseMove(e) {
-        if (state.draggedNode) {
-            handleNodeDrag(e);
-            return;
-        }
-
         if (!state.canvas.isDragging) return;
 
         const dx = e.clientX - state.canvas.dragStart.x;
@@ -3096,10 +3157,6 @@
     }
 
     function handleCanvasMouseUp() {
-        if (state.draggedNode) {
-            endNodeDrag();
-        }
-
         state.canvas.isDragging = false;
         elements.canvasContainer.style.cursor = 'default';
     }
@@ -3280,40 +3337,6 @@
         }
     }
 
-    // ================================
-    // Node Dragging (Drafts only)
-    // ================================
-    function startDragNode(e, node, process) {
-        if (process.is_implemented) return;
-        if (state.mode !== 'draft') return;
-
-        e.stopPropagation();
-        state.draggedNode = { element: node, process };
-        state.dragOffset = {
-            x: e.clientX - parseInt(node.style.left),
-            y: e.clientY - parseInt(node.style.top)
-        };
-        node.style.cursor = 'grabbing';
-        node.style.zIndex = '100';
-    }
-
-    function handleNodeDrag(e) {
-        if (!state.draggedNode) return;
-
-        const x = (e.clientX - state.dragOffset.x - state.canvas.offsetX) / state.canvas.scale;
-        const y = (e.clientY - state.dragOffset.y - state.canvas.offsetY) / state.canvas.scale;
-
-        state.draggedNode.element.style.left = `${x}px`;
-        state.draggedNode.element.style.top = `${y}px`;
-    }
-
-    function endNodeDrag() {
-        if (!state.draggedNode) return;
-
-        state.draggedNode.element.style.cursor = 'grab';
-        state.draggedNode.element.style.zIndex = '';
-        state.draggedNode = null;
-    }
 
     // ================================
     // Stats
@@ -3481,24 +3504,21 @@
     // Process Flowchart Rendering
     // ================================
     async function loadFlowPositions() {
-        // Try Supabase first
-        const supabaseData = await loadStateFromSupabase('flow_positions', {});
-        if (supabaseData !== null) {
-            state.flowNodePositions = supabaseData;
-            // Update local cache
-            localStorage.setItem(FLOW_POSITIONS_KEY, JSON.stringify(supabaseData));
-            return;
-        }
+        // Load from Supabase only (no localStorage fallback to avoid stale data)
+        const result = await loadStateFromSupabase('flow_positions', {});
 
-        // Fallback to localStorage
-        try {
-            const saved = localStorage.getItem(FLOW_POSITIONS_KEY);
-            if (saved) {
-                state.flowNodePositions = JSON.parse(saved);
-            }
-        } catch (e) {
-            console.warn('[PROCESS-MANAGER] Error loading flow positions:', e);
+        if (result.success) {
+            state.flowNodePositions = result.data;
+            // Update local cache only when successfully loaded from server
+            localStorage.setItem(FLOW_POSITIONS_KEY, JSON.stringify(result.data));
+        } else {
+            // Server error - use empty state and show error
             state.flowNodePositions = {};
+            console.error('[PROCESS-MANAGER] Failed to load flow positions:', result.error);
+
+            if (window.showToast) {
+                showToast(`Error loading flow positions: ${result.error}. Using default layout.`, 'error');
+            }
         }
     }
 
@@ -3940,24 +3960,20 @@
     }
 
     async function loadDraftStates() {
-        // Try Supabase first
-        const supabaseData = await loadStateFromSupabase('draft_states', {});
-        if (supabaseData !== null) {
-            applyDraftStates(supabaseData);
-            // Update local cache
-            localStorage.setItem('ngm_flowchart_draft_states', JSON.stringify(supabaseData));
-            return;
-        }
+        // Load from Supabase only (no localStorage fallback to avoid stale data)
+        const result = await loadStateFromSupabase('draft_states', {});
 
-        // Fallback to localStorage
-        try {
-            const saved = localStorage.getItem('ngm_flowchart_draft_states');
-            if (saved) {
-                const states = JSON.parse(saved);
-                applyDraftStates(states);
+        if (result.success) {
+            applyDraftStates(result.data);
+            // Update local cache only when successfully loaded from server
+            localStorage.setItem('ngm_flowchart_draft_states', JSON.stringify(result.data));
+        } else {
+            // Server error - show error but continue (draft states are less critical)
+            console.error('[PROCESS-MANAGER] Failed to load draft states:', result.error);
+
+            if (window.showToast) {
+                showToast(`Error loading draft states: ${result.error}`, 'warning');
             }
-        } catch (e) {
-            console.warn('[PROCESS-MANAGER] Error loading draft states:', e);
         }
     }
 
@@ -4327,6 +4343,8 @@
         const port = document.elementFromPoint(e.clientX, e.clientY);
         const portElement = port?.closest('.connection-port');
 
+        let connectionHandled = false;  // Track if connection was reconnected or disconnected
+
         if (portElement) {
             const targetNodeId = portElement.getAttribute('data-node');
 
@@ -4340,11 +4358,44 @@
                 } else {
                     // Reconnecting existing connection
                     console.log(`[CONNECTIONS] Reconnect: ${connectionDragState.sourceNodeId} -> ${targetNodeId}`);
+                    connectionHandled = true;
                 }
             }
             // If dropped on same node or invalid, silently ignore (no alert)
+        } else if (!connectionDragState.isNewConnection && connectionDragState.targetNodeId) {
+            // Dropped in empty space while dragging an EXISTING connection - DISCONNECT IT
+            console.log(`[CONNECTIONS] Disconnecting: ${connectionDragState.sourceNodeId} -> ${connectionDragState.targetNodeId}`);
+
+            // Remove the visual connection
+            const connectionGroup = elements.connectionsLayer.querySelector(
+                `[data-connection-id="${connectionDragState.sourceNodeId}-${connectionDragState.targetNodeId}"]`
+            );
+            if (connectionGroup) {
+                connectionGroup.remove();
+            }
+
+            // Update data model if we have access to the flowchart
+            if (state.currentProcessId && PROCESS_FLOWCHARTS[state.currentProcessId]) {
+                const flowchart = PROCESS_FLOWCHARTS[state.currentProcessId];
+                const sourceNode = flowchart.nodes.find(n => n.id === connectionDragState.sourceNodeId);
+
+                if (sourceNode && sourceNode.connects_to) {
+                    if (Array.isArray(sourceNode.connects_to)) {
+                        // Remove target from array
+                        sourceNode.connects_to = sourceNode.connects_to.filter(
+                            id => id !== connectionDragState.targetNodeId
+                        );
+                    } else if (sourceNode.connects_to === connectionDragState.targetNodeId) {
+                        // Clear single connection
+                        sourceNode.connects_to = null;
+                    }
+                }
+            }
+
+            connectionHandled = true;
+            showToast('Connection removed', 'info');
         }
-        // If not dropped on a port, silently cancel (no alert)
+        // If new connection dropped in empty space, silently cancel (no alert)
 
         // Clean up
         removeTempConnectionLine();
@@ -4356,8 +4407,8 @@
             p.classList.remove('connected');
         });
 
-        // Show original connection again (for existing connection drag)
-        if (!connectionDragState.isNewConnection) {
+        // Show original connection again only if it wasn't disconnected
+        if (!connectionDragState.isNewConnection && !connectionHandled) {
             const connectionGroup = elements.connectionsLayer.querySelector(
                 `[data-connection-id="${connectionDragState.sourceNodeId}-${connectionDragState.targetNodeId}"]`
             );

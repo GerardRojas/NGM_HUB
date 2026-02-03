@@ -2,8 +2,15 @@
 (function () {
   "use strict";
 
+  console.log("[PIPELINE-INTERACTIONS] Script loaded");
+
   const wrapper = document.getElementById("pm-groups-wrapper");
-  if (!wrapper) return;
+  console.log("[PIPELINE-INTERACTIONS] Wrapper element:", wrapper);
+
+  if (!wrapper) {
+    console.error("[PIPELINE-INTERACTIONS] ERROR: wrapper not found! Aborting.");
+    return;
+  }
 
   // ================================
   // CONFIGURACIÓN DE COLUMNAS
@@ -454,6 +461,8 @@
 
   // Dropdown de personas - Monday.com style using PeoplePicker
   async function createPersonDropdown(td, colKey, currentValue, taskId) {
+    console.log("[PIPELINE-INTERACTIONS] createPersonDropdown called:", { colKey, currentValue, taskId });
+
     // Crear contenedor para el PeoplePicker
     const container = document.createElement("div");
     container.className = "pm-inline-people-picker";
@@ -466,16 +475,19 @@
     let selectedUsers = [];
 
     // Verificar que PeoplePicker esté disponible
+    console.log("[PIPELINE-INTERACTIONS] window.PeoplePicker:", typeof window.PeoplePicker);
     if (typeof window.PeoplePicker !== "function") {
       console.warn("[PIPELINE] PeoplePicker not loaded, using fallback");
       return createPersonDropdownFallback(td, colKey, currentValue);
     }
 
     // Crear instancia del PeoplePicker
+    console.log("[PIPELINE-INTERACTIONS] Creating PeoplePicker instance...");
     const picker = new window.PeoplePicker(container, {
       multiple: isMultiple,
       placeholder: isMultiple ? "Add people..." : "Select person...",
       onChange: (users) => {
+        console.log("[PIPELINE-INTERACTIONS] PeoplePicker onChange:", users);
         selectedUsers = users || [];
 
         if (isMultiple) {
@@ -536,8 +548,12 @@
       }, 50);
     } else {
       setTimeout(() => {
+        console.log("[PIPELINE-INTERACTIONS] Opening PeoplePicker...");
         if (picker.open) {
           picker.open();
+          console.log("[PIPELINE-INTERACTIONS] PeoplePicker opened");
+        } else {
+          console.warn("[PIPELINE-INTERACTIONS] picker.open is not a function");
         }
       }, 50);
     }
@@ -546,6 +562,7 @@
     container._picker = picker;
     container._getValue = () => selectedValue;
 
+    console.log("[PIPELINE-INTERACTIONS] PeoplePicker container created:", container);
     return container;
   }
 
@@ -596,6 +613,8 @@
 
   // Dropdown de catálogos - Monday.com style using CatalogPicker
   async function createCatalogDropdown(td, colKey, currentValue, taskId) {
+    console.log("[PIPELINE-INTERACTIONS] createCatalogDropdown called:", { colKey, currentValue, taskId });
+
     // Crear contenedor para el CatalogPicker
     const container = document.createElement("div");
     container.className = "pm-inline-catalog-picker";
@@ -604,16 +623,19 @@
     let selectedValue = null;
 
     // Verificar que CatalogPicker esté disponible
+    console.log("[PIPELINE-INTERACTIONS] window.CatalogPicker:", typeof window.CatalogPicker);
     if (typeof window.CatalogPicker !== "function") {
       console.warn("[PIPELINE] CatalogPicker not loaded, using fallback");
       return createCatalogDropdownFallback(td, colKey, currentValue);
     }
 
     // Crear instancia del CatalogPicker
+    console.log("[PIPELINE-INTERACTIONS] Creating CatalogPicker instance...");
     const picker = new window.CatalogPicker(container, {
       catalogType: colKey,
       placeholder: `Select ${colKey}...`,
       onChange: (item) => {
+        console.log("[PIPELINE-INTERACTIONS] CatalogPicker onChange:", item);
         // Store both ID (for backend) and name (for display)
         const valueId = item ? item.id : null;
         const valueName = item ? item.name : null;
@@ -648,8 +670,12 @@
     } else {
       // Abrir el dropdown automáticamente
       setTimeout(() => {
+        console.log("[PIPELINE-INTERACTIONS] Opening CatalogPicker...");
         if (picker.open) {
           picker.open();
+          console.log("[PIPELINE-INTERACTIONS] CatalogPicker opened");
+        } else {
+          console.warn("[PIPELINE-INTERACTIONS] picker.open is not a function");
         }
       }, 50);
     }
@@ -658,6 +684,7 @@
     container._picker = picker;
     container._getValue = () => selectedValue;
 
+    console.log("[PIPELINE-INTERACTIONS] CatalogPicker container created:", container);
     return container;
   }
 
@@ -761,6 +788,8 @@
   // CLICK EN CELDA
   // ================================
   async function handleCellClick(td, tr, colKey, taskId) {
+    console.log("[PIPELINE-INTERACTIONS] handleCellClick called:", { colKey, taskId });
+
     // Si ya hay un editor activo, cerrarlo primero
     if (activeEditor) {
       if (activeEditor.td === td) return; // Click en el mismo editor
@@ -778,19 +807,29 @@
     let editorType;
 
     // Crear editor según tipo de columna
+    console.log("[PIPELINE-INTERACTIONS] Checking column type for:", colKey);
+    console.log("[PIPELINE-INTERACTIONS] PERSON_COLS:", PERSON_COLS, "includes:", PERSON_COLS.includes(colKey));
+    console.log("[PIPELINE-INTERACTIONS] CATALOG_COLS:", CATALOG_COLS, "includes:", CATALOG_COLS.includes(colKey));
+    console.log("[PIPELINE-INTERACTIONS] DATE_COLS:", DATE_COLS, "includes:", DATE_COLS.includes(colKey));
+
     if (PERSON_COLS.includes(colKey)) {
+      console.log("[PIPELINE-INTERACTIONS] Creating person dropdown");
       editor = await createPersonDropdown(td, colKey, currentValue, taskId);
       editorType = "person-dropdown";
     } else if (CATALOG_COLS.includes(colKey)) {
+      console.log("[PIPELINE-INTERACTIONS] Creating catalog dropdown");
       editor = await createCatalogDropdown(td, colKey, currentValue, taskId);
       editorType = "catalog-dropdown";
     } else if (NUMBER_COLS.includes(colKey)) {
+      console.log("[PIPELINE-INTERACTIONS] Creating number editor");
       editor = createNumberEditor(td, colKey, currentValue);
       editorType = "number";
     } else if (DATE_COLS.includes(colKey)) {
+      console.log("[PIPELINE-INTERACTIONS] Creating date editor");
       editor = createDateEditor(td, colKey, currentValue);
       editorType = "date";
     } else if (TEXT_COLS.includes(colKey)) {
+      console.log("[PIPELINE-INTERACTIONS] Creating text editor");
       editor = createTextEditor(td, colKey, currentValue);
       editorType = "text";
     } else {
@@ -798,6 +837,8 @@
       console.log("[PIPELINE] Column not editable:", colKey);
       return;
     }
+
+    console.log("[PIPELINE-INTERACTIONS] Editor created:", editorType, editor);
 
     // Guardar estado
     activeEditor = {
@@ -847,9 +888,18 @@
   // ================================
   // EVENT LISTENER PRINCIPAL
   // ================================
+  console.log("[PIPELINE-INTERACTIONS] Event listener registered on wrapper");
+
   wrapper.addEventListener("click", (e) => {
+    console.log("[PIPELINE-INTERACTIONS] Click detected:", e.target);
+
     const td = e.target.closest("td[data-col]");
-    if (!td) return;
+    if (!td) {
+      console.log("[PIPELINE-INTERACTIONS] No td[data-col] found");
+      return;
+    }
+
+    console.log("[PIPELINE-INTERACTIONS] td found:", td.dataset.col);
 
     // No activar si el click fue en el editor mismo o en los pickers
     if (e.target.closest(".pm-inline-editor") ||
@@ -864,7 +914,13 @@
     const taskId = tr?.dataset?.taskId || null;
     const colKey = td.getAttribute("data-col");
 
-    if (!taskId || !colKey) return;
+    console.log("[PIPELINE-INTERACTIONS] tr:", tr);
+    console.log("[PIPELINE-INTERACTIONS] taskId:", taskId, "colKey:", colKey);
+
+    if (!taskId || !colKey) {
+      console.log("[PIPELINE-INTERACTIONS] Missing taskId or colKey, returning");
+      return;
+    }
 
     // Special handling for links column - open modal
     if (colKey === "links") {

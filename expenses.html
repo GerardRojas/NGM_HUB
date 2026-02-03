@@ -386,15 +386,54 @@
                         <input type="number" class="form-input" id="singleExpenseAmount" step="0.01" min="0" placeholder="0.00">
                     </div>
 
-                    <!-- Authorization checkbox (only visible to authorized roles) -->
-                    <div class="form-field form-field-full" id="singleExpenseAuthContainer" style="display: none;">
-                        <label class="form-checkbox-wrapper">
-                            <input type="checkbox" class="form-checkbox" id="singleExpenseAuthStatus">
-                            <span class="form-checkbox-label">
-                                <span class="form-checkbox-text">Authorized</span>
-                                <span class="form-checkbox-hint">Mark this expense as authorized</span>
-                            </span>
+                    <!-- Expense Status (only visible to authorized roles) -->
+                    <div class="form-field form-field-full" id="singleExpenseStatusContainer" style="display: none;">
+                        <label class="form-label">Expense Status</label>
+                        <div class="expense-status-selector" id="expenseStatusSelector">
+                            <button type="button" class="expense-status-btn" data-status="pending">
+                                <span class="status-badge status-badge-pending">⏳</span>
+                                <div class="status-info">
+                                    <span class="status-name">Pending</span>
+                                    <span class="status-desc">Awaiting authorization</span>
+                                </div>
+                            </button>
+                            <button type="button" class="expense-status-btn" data-status="auth">
+                                <span class="status-badge status-badge-auth">✓</span>
+                                <div class="status-info">
+                                    <span class="status-name">Authorized</span>
+                                    <span class="status-desc">Approved by manager</span>
+                                </div>
+                            </button>
+                            <button type="button" class="expense-status-btn" data-status="review" id="btnStatusReview">
+                                <span class="status-badge status-badge-review">⚠</span>
+                                <div class="status-info">
+                                    <span class="status-name">Review</span>
+                                    <span class="status-desc">Needs recategorization</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Reason field (shown when changing to review status) -->
+                    <div class="form-field form-field-full hidden" id="singleExpenseReasonContainer">
+                        <label class="form-label">Reason for Review</label>
+                        <textarea class="form-input form-textarea" id="singleExpenseReason" rows="2" placeholder="Explain why this expense needs review (e.g., client requested recategorization)..."></textarea>
+                        <span class="form-hint">This will be logged in the audit trail</span>
+                    </div>
+
+                    <!-- Audit Trail Section -->
+                    <div class="form-field form-field-full hidden" id="singleExpenseAuditContainer">
+                        <label class="form-label">
+                            Audit Trail
+                            <button type="button" class="btn-toggle-audit" id="btnToggleAudit">
+                                Show History
+                            </button>
                         </label>
+                        <div class="audit-trail-list hidden" id="auditTrailList">
+                            <div class="audit-trail-loading">
+                                <span>Loading audit history...</span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Receipt section -->

@@ -487,3 +487,52 @@
         display: none;
     }
 }
+
+/* ==========================================
+   LOGIN TRANSITION OVERLAY
+   Shown after successful login, before redirect
+   ========================================== */
+
+.login-transition-overlay {
+    position: fixed;
+    inset: 0;
+    background: #0d0d0d;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    gap: 16px;
+    opacity: 0;
+    transition: opacity 0.2s ease-out;
+}
+
+.login-transition-overlay.visible {
+    display: flex;
+    opacity: 1;
+}
+
+.login-transition-overlay .transition-logo {
+    width: 160px;
+    height: 160px;
+    object-fit: contain;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.login-transition-overlay .transition-text {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 13px;
+    font-family: system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.05em;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.4;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+}

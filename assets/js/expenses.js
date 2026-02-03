@@ -317,6 +317,15 @@
     els.singleExpenseAuthContainer = document.getElementById('singleExpenseAuthContainer');
     els.singleExpenseAuthStatus = document.getElementById('singleExpenseAuthStatus');
 
+    // Expense status selector (new)
+    els.singleExpenseStatusContainer = document.getElementById('singleExpenseStatusContainer');
+    els.expenseStatusSelector = document.getElementById('expenseStatusSelector');
+    els.singleExpenseReason = document.getElementById('singleExpenseReason');
+    els.singleExpenseReasonContainer = document.getElementById('singleExpenseReasonContainer');
+    els.singleExpenseAuditContainer = document.getElementById('singleExpenseAuditContainer');
+    els.btnToggleAudit = document.getElementById('btnToggleAudit');
+    els.auditTrailList = document.getElementById('auditTrailList');
+
     // Column manager modal
     els.btnColumnManager = document.getElementById('btnColumnManager');
     els.columnManagerModal = document.getElementById('columnManagerModal');
@@ -4278,6 +4287,64 @@
   // ================================
   // SINGLE EXPENSE EDIT MODAL
   // ================================
+
+  async function loadAuditTrail(expenseId) {
+    if (!expenseId) {
+      console.error('[EXPENSES] No expense ID provided for audit trail');
+      return;
+    }
+
+    try {
+      els.auditTrailList.innerHTML = '<div class="audit-trail-loading">Loading audit history...</div>';
+
+      const response = await apiJson(`${apiBase}/expenses/${expenseId}/audit-trail`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const auditData = await response.json();
+      console.log('[EXPENSES] Audit trail loaded:', auditData);
+
+      // Render audit trail
+      if (!auditData.audit_trail || auditData.audit_trail.length === 0) {
+        els.auditTrailList.innerHTML = '<div class="audit-trail-empty">No history available</div>';
+        return;
+      }
+
+      const auditHTML = auditData.audit_trail.map(entry => {
+        const date = new Date(entry.changed_at).toLocaleString();
+        const isStatusChange = entry.change_type === 'status';
+
+        let changeText = '';
+        if (isStatusChange) {
+          changeText = `Status changed from <strong>${entry.old_status || 'pending'}</strong> to <strong>${entry.new_status}</strong>`;
+        } else {
+          changeText = `<strong>${entry.field_name}</strong> changed from "${entry.old_value || 'empty'}" to "${entry.new_value}"`;
+        }
+
+        return `
+          <div class="audit-trail-item">
+            <div class="audit-trail-header">
+              <span class="audit-trail-type audit-trail-type--${isStatusChange ? 'status' : 'field'}">
+                ${isStatusChange ? 'STATUS' : 'FIELD'}
+              </span>
+              <span class="audit-trail-date">${date}</span>
+            </div>
+            <div class="audit-trail-change">${changeText}</div>
+            ${entry.reason ? `<div class="audit-trail-reason">Reason: ${entry.reason}</div>` : ''}
+            ${entry.changed_by_name ? `<div class="audit-trail-user">By: ${entry.changed_by_name}</div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      els.auditTrailList.innerHTML = auditHTML;
+
+    } catch (err) {
+      console.error('[EXPENSES] Error loading audit trail:', err);
+      els.auditTrailList.innerHTML = '<div class="audit-trail-empty">Error loading history</div>';
+    }
+  }
+
   function openSingleExpenseModal(expenseId) {
     // Backend uses 'expense_id' as primary key
     // Convert both IDs to strings for safe comparison (IDs may come as strings or numbers)
@@ -4369,19 +4436,53 @@
     currentReceiptUrl = receiptUrl;
     renderSingleExpenseReceipt();
 
-    // Handle authorization checkbox (only show for authorized roles)
+    // Handle expense status selector (only show for authorized roles)
     console.log('[EXPENSES] Opening modal - canAuthorize:', canAuthorize);
-    console.log('[EXPENSES] Auth container element exists:', !!els.singleExpenseAuthContainer);
-    console.log('[EXPENSES] Current expense auth_status:', expense.auth_status);
+    console.log('[EXPENSES] Status container element exists:', !!els.singleExpenseStatusContainer);
+    console.log('[EXPENSES] Current expense status:', expense.status, 'auth_status:', expense.auth_status);
 
-    if (canAuthorize && els.singleExpenseAuthContainer) {
-      console.log('[EXPENSES] Showing authorization checkbox');
-      els.singleExpenseAuthContainer.style.display = 'block';
-      els.singleExpenseAuthStatus.checked = expense.auth_status === true || expense.auth_status === 1;
-      els.singleExpenseAuthStatus.disabled = false;
+    // Determine current status (backwards compatible with old auth_status)
+    let currentStatus = expense.status || 'pending';
+    if (!expense.status && (expense.auth_status === true || expense.auth_status === 1)) {
+      currentStatus = 'auth';
+    }
+
+    if (canAuthorize && els.singleExpenseStatusContainer) {
+      console.log('[EXPENSES] Showing status selector');
+      els.singleExpenseStatusContainer.style.display = 'block';
+      els.singleExpenseAuthContainer.style.display = 'none'; // Hide old checkbox
+
+      // Set active status button
+      const statusButtons = els.expenseStatusSelector.querySelectorAll('.expense-status-btn');
+      statusButtons.forEach(btn => {
+        const btnStatus = btn.getAttribute('data-status');
+        if (btnStatus === currentStatus) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+
+      // Hide reason field initially (show only if changing to review)
+      els.singleExpenseReasonContainer.classList.add('hidden');
+      els.singleExpenseReason.value = '';
+
+      // Show audit trail if expense has status (not new)
+      if (expense.status || expense.auth_status) {
+        els.singleExpenseAuditContainer.classList.remove('hidden');
+      } else {
+        els.singleExpenseAuditContainer.classList.add('hidden');
+      }
+
+      // Hide audit list initially
+      els.auditTrailList.classList.add('hidden');
+      els.btnToggleAudit.textContent = 'Show History';
+
     } else {
-      console.log('[EXPENSES] Hiding authorization checkbox - canAuthorize:', canAuthorize);
+      console.log('[EXPENSES] Hiding status selector - canAuthorize:', canAuthorize);
+      els.singleExpenseStatusContainer.style.display = 'none';
       els.singleExpenseAuthContainer.style.display = 'none';
+      els.singleExpenseAuditContainer.classList.add('hidden');
     }
 
     // Show modal
@@ -4582,13 +4683,40 @@
       created_by: currentUser.user_id || currentUser.id // Update created_by to current user
     };
 
-    // Include authorization fields if user has permission
-    if (canAuthorize && els.singleExpenseAuthStatus) {
+    // Get selected status (new status selector)
+    let selectedStatus = null;
+    let statusReason = null;
+    if (canAuthorize && els.expenseStatusSelector) {
+      const activeBtn = els.expenseStatusSelector.querySelector('.expense-status-btn.active');
+      if (activeBtn) {
+        selectedStatus = activeBtn.getAttribute('data-status');
+        if (selectedStatus === 'review' && els.singleExpenseReason) {
+          statusReason = els.singleExpenseReason.value.trim() || null;
+          // Require reason when changing to review
+          if (!statusReason) {
+            if (window.Toast) {
+              Toast.warning('Reason Required', 'Please provide a reason for marking this expense for review.');
+            }
+            els.btnSaveSingleExpense.disabled = false;
+            els.btnSaveSingleExpense.textContent = 'Save Changes';
+            return;
+          }
+        }
+      }
+    }
+
+    // Backwards compatibility: set auth_status based on selected status
+    if (selectedStatus) {
+      updatedData.auth_status = (selectedStatus === 'auth');
+      updatedData.auth_by = (selectedStatus === 'auth') ? (currentUser.user_id || currentUser.id) : null;
+    } else if (canAuthorize && els.singleExpenseAuthStatus) {
+      // Fallback to old checkbox if status selector not available
       updatedData.auth_status = els.singleExpenseAuthStatus.checked;
       updatedData.auth_by = els.singleExpenseAuthStatus.checked ? (currentUser.user_id || currentUser.id) : null;
     }
 
     console.log('[EXPENSES] Saving single expense:', expenseId, updatedData);
+    console.log('[EXPENSES] Selected status:', selectedStatus, 'Reason:', statusReason);
 
     // Validate: Check if trying to add/change to a closed bill
     const newBillId = updatedData.bill_id?.trim() || null;
@@ -4766,6 +4894,30 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData)
       });
+
+      // Update status separately if it changed (uses dedicated status endpoint for logging)
+      if (selectedStatus) {
+        const currentStatus = currentEditingExpense.status || (currentEditingExpense.auth_status ? 'auth' : 'pending');
+        if (selectedStatus !== currentStatus) {
+          try {
+            await apiJson(`${apiBase}/expenses/${expenseId}/status`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                new_status: selectedStatus,
+                reason: statusReason
+              })
+            });
+            console.log(`[EXPENSES] Status updated from ${currentStatus} to ${selectedStatus}`);
+          } catch (statusErr) {
+            console.error('[EXPENSES] Error updating status:', statusErr);
+            // Don't fail the whole save if status update fails
+            if (window.Toast) {
+              Toast.warning('Status Update Failed', 'Expense saved but status could not be updated.');
+            }
+          }
+        }
+      }
 
       // Reload expenses BEFORE closing modal so user doesn't see stale data
       try {
@@ -6318,6 +6470,47 @@
     els.singleExpenseModal?.addEventListener('click', (e) => {
       if (e.target === els.singleExpenseModal) {
         closeSingleExpenseModal();
+      }
+    });
+
+    // Status selector: Click handlers for status buttons
+    els.expenseStatusSelector?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.expense-status-btn');
+      if (!btn) return;
+
+      const newStatus = btn.getAttribute('data-status');
+      const currentActive = els.expenseStatusSelector.querySelector('.expense-status-btn.active');
+      const oldStatus = currentActive ? currentActive.getAttribute('data-status') : 'pending';
+
+      // Update active state
+      els.expenseStatusSelector.querySelectorAll('.expense-status-btn').forEach(b => {
+        b.classList.remove('active');
+      });
+      btn.classList.add('active');
+
+      // Show reason field if changing to review status
+      if (newStatus === 'review' && oldStatus !== 'review') {
+        els.singleExpenseReasonContainer.classList.remove('hidden');
+        els.singleExpenseReason.focus();
+      } else if (newStatus !== 'review') {
+        els.singleExpenseReasonContainer.classList.add('hidden');
+        els.singleExpenseReason.value = '';
+      }
+    });
+
+    // Audit trail: Toggle history button
+    els.btnToggleAudit?.addEventListener('click', async () => {
+      const isHidden = els.auditTrailList.classList.contains('hidden');
+
+      if (isHidden) {
+        // Load and show audit trail
+        els.auditTrailList.classList.remove('hidden');
+        els.btnToggleAudit.textContent = 'Hide History';
+        await loadAuditTrail(currentEditingExpense.expense_id || currentEditingExpense.id);
+      } else {
+        // Hide audit trail
+        els.auditTrailList.classList.add('hidden');
+        els.btnToggleAudit.textContent = 'Show History';
       }
     });
 

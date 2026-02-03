@@ -669,6 +669,30 @@
         window.ExpensesArturito.filterBy('vendor', data.value);
         const summary = window.ExpensesArturito.getSummary();
         return { message: data.message || `✅ **Filtro aplicado: Vendor "${data.value}"**\n\nMostrando ${summary.filteredExpenses} gasto(s).` };
+      } else if (data.action === 'filter_account' && data.value) {
+        // Search for matching accounts using fuzzy matching
+        try {
+          const accountsResp = await fetch(`${API_BASE}/arturito/search-accounts?query=${encodeURIComponent(data.value)}&limit=5`);
+          const accountsData = await accountsResp.json();
+
+          if (accountsData.matches && accountsData.matches.length > 0) {
+            const bestMatch = accountsData.matches[0];
+            window.ExpensesArturito.filterBy('account', bestMatch.account_id);
+            const summary = window.ExpensesArturito.getSummary();
+            return {
+              message: `✅ **Filtro aplicado: ${bestMatch.name}**\n\nMostrando ${summary.filteredExpenses} gasto(s) de esta cuenta.`
+            };
+          } else {
+            return {
+              message: `❌ No encontré la cuenta "${data.value}". Intenta con otro nombre o revisa las cuentas disponibles.`
+            };
+          }
+        } catch (error) {
+          console.error('[WIDGET] Error searching accounts:', error);
+          return {
+            message: `❌ Error buscando la cuenta. Intenta de nuevo.`
+          };
+        }
       } else if (data.action === 'search' && data.value) {
         window.ExpensesArturito.search(data.value);
         const summary = window.ExpensesArturito.getSummary();

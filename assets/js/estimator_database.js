@@ -1960,9 +1960,320 @@ async function init() {
     if (overlay) overlay.classList.add('hidden');
 }
 
+// ========================================
+// Advanced Filters (Column Filters)
+// ========================================
+const filterState = {
+    activeColumn: null,
+    columnFilters: {
+        code: new Set(),
+        name: new Set(),
+        category: new Set(),
+        brand: new Set(),
+        vendor: new Set(),
+        unit: new Set()
+    }
+};
+
+// ========================================
+// Resizable Columns
+// ========================================
+const resizeState = {
+    isResizing: false,
+    currentColumn: null,
+    startX: 0,
+    startWidth: 0
+};
+
+function initResizableColumns() {
+    const table = document.getElementById('materialsTable');
+    if (!table) return;
+
+    const headers = table.querySelectorAll('th:not(.col-actions):not(.col-image)');
+    headers.forEach(header => {
+        // Agregar resize handle
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'col-resize-handle';
+        header.appendChild(resizeHandle);
+
+        resizeHandle.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startResize(header, e);
+        });
+    });
+
+    // Mouse move y mouseup globales
+    document.addEventListener('mousemove', onResize);
+    document.addEventListener('mouseup', stopResize);
+}
+
+function startResize(column, e) {
+    resizeState.isResizing = true;
+    resizeState.currentColumn = column;
+    resizeState.startX = e.pageX;
+    resizeState.startWidth = column.offsetWidth;
+
+    const handle = column.querySelector('.col-resize-handle');
+    if (handle) handle.classList.add('resizing');
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+}
+
+function onResize(e) {
+    if (!resizeState.isResizing) return;
+
+    const diff = e.pageX - resizeState.startX;
+    const newWidth = Math.max(50, resizeState.startWidth + diff);
+
+    resizeState.currentColumn.style.width = newWidth + 'px';
+    resizeState.currentColumn.style.minWidth = newWidth + 'px';
+}
+
+function stopResize() {
+    if (!resizeState.isResizing) return;
+
+    resizeState.isResizing = false;
+
+    if (resizeState.currentColumn) {
+        const handle = resizeState.currentColumn.querySelector('.col-resize-handle');
+        if (handle) handle.classList.remove('resizing');
+        resizeState.currentColumn = null;
+    }
+
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+}
+
+function initFilters() {
+    const filterToggles = document.querySelectorAll('.filter-toggle');
+    filterToggles.forEach(toggle => {
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const column = toggle.dataset.column;
+            toggleFilterDropdown(column, toggle);
+        });
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.filter-dropdown') && !e.target.closest('.filter-toggle')) {
+            closeFilterDropdown();
+        }
+    });
+
+    // Filter dropdown buttons
+    const selectAllBtn = document.querySelector('.filter-select-all-btn');
+    const clearBtn = document.querySelector('.filter-clear-btn');
+    const applyBtn = document.querySelector('.filter-apply-btn');
+
+    if (selectAllBtn) selectAllBtn.addEventListener('click', selectAllFilters);
+    if (clearBtn) clearBtn.addEventListener('click', clearFilters);
+    if (applyBtn) applyBtn.addEventListener('click', applyFilters);
+
+    // Filter search
+    const filterSearch = document.querySelector('.filter-search');
+    if (filterSearch) {
+        filterSearch.addEventListener('input', (e) => {
+            filterDropdownOptions(e.target.value);
+        });
+    }
+}
+
+function toggleFilterDropdown(column, toggleBtn) {
+    const dropdown = document.getElementById('filterDropdown');
+    if (!dropdown) return;
+
+    // Si ya está abierto en esta columna, cerrarlo
+    if (filterState.activeColumn === column && !dropdown.classList.contains('hidden')) {
+        closeFilterDropdown();
+        return;
+    }
+
+    filterState.activeColumn = column;
+
+    // Posicionar dropdown
+    const rect = toggleBtn.getBoundingClientRect();
+    dropdown.style.left = rect.left + 'px';
+    dropdown.style.top = (rect.bottom + 4) + 'px';
+
+    // Poblar opciones
+    populateFilterOptions(column);
+
+    // Mostrar dropdown
+    dropdown.classList.remove('hidden');
+
+    // Marcar botón como activo
+    document.querySelectorAll('.filter-toggle').forEach(btn => btn.classList.remove('active'));
+    toggleBtn.classList.add('active');
+}
+
+function closeFilterDropdown() {
+    const dropdown = document.getElementById('filterDropdown');
+    if (dropdown) {
+        dropdown.classList.add('hidden');
+    }
+    document.querySelectorAll('.filter-toggle').forEach(btn => btn.classList.remove('active'));
+    filterState.activeColumn = null;
+}
+
+function populateFilterOptions(column) {
+    const optionsContainer = document.getElementById('filterDropdownOptions');
+    if (!optionsContainer) return;
+
+    // Extraer valores únicos de la columna
+    const values = new Set();
+    state.materials.forEach(mat => {
+        let value;
+        switch(column) {
+            case 'code':
+                value = mat.ID;
+                break;
+            case 'name':
+                value = mat.short_description || mat['Short Description'];
+                break;
+            case 'category':
+                value = mat.category_name;
+                break;
+            case 'brand':
+                value = mat.brand || mat.Brand;
+                break;
+            case 'vendor':
+                value = mat.vendor_name;
+                break;
+            case 'unit':
+                value = mat.unit_name || mat.Unit;
+                break;
+        }
+        if (value && value.trim()) values.add(value);
+    });
+
+    // Crear opciones
+    optionsContainer.innerHTML = '';
+    const sortedValues = Array.from(values).sort();
+
+    sortedValues.forEach(value => {
+        const isChecked = filterState.columnFilters[column].has(value);
+        const label = document.createElement('label');
+        label.className = 'filter-option';
+        label.innerHTML = `
+            <input type="checkbox" value="${escapeHtml(value)}" ${isChecked ? 'checked' : ''}>
+            <span>${escapeHtml(value)}</span>
+        `;
+        optionsContainer.appendChild(label);
+    });
+}
+
+function filterDropdownOptions(searchText) {
+    const optionsContainer = document.getElementById('filterDropdownOptions');
+    if (!optionsContainer) return;
+
+    const options = optionsContainer.querySelectorAll('.filter-option');
+    const search = searchText.toLowerCase();
+
+    options.forEach(option => {
+        const text = option.textContent.toLowerCase();
+        option.style.display = text.includes(search) ? 'flex' : 'none';
+    });
+}
+
+function selectAllFilters() {
+    const optionsContainer = document.getElementById('filterDropdownOptions');
+    if (!optionsContainer) return;
+
+    optionsContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+}
+
+function clearFilters() {
+    const optionsContainer = document.getElementById('filterDropdownOptions');
+    if (!optionsContainer) return;
+
+    optionsContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+}
+
+function applyFilters() {
+    const column = filterState.activeColumn;
+    if (!column) return;
+
+    const optionsContainer = document.getElementById('filterDropdownOptions');
+    if (!optionsContainer) return;
+
+    // Recopilar valores seleccionados
+    const selected = new Set();
+    optionsContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+        selected.add(checkbox.value);
+    });
+
+    filterState.columnFilters[column] = selected;
+
+    // Aplicar filtros a la tabla
+    filterTable();
+
+    // Cerrar dropdown
+    closeFilterDropdown();
+}
+
+function filterTable() {
+    const tbody = document.getElementById('materialsTableBody');
+    if (!tbody) return;
+
+    const rows = tbody.querySelectorAll('tr');
+
+    rows.forEach(row => {
+        let visible = true;
+
+        // Aplicar cada filtro de columna
+        for (const [column, selectedValues] of Object.entries(filterState.columnFilters)) {
+            if (selectedValues.size === 0) continue; // Sin filtro en esta columna
+
+            let cellValue;
+            const cells = row.querySelectorAll('td');
+
+            switch(column) {
+                case 'code':
+                    cellValue = cells[1]?.textContent?.trim();
+                    break;
+                case 'name':
+                    cellValue = cells[2]?.textContent?.trim();
+                    break;
+                case 'category':
+                    cellValue = cells[3]?.textContent?.trim();
+                    break;
+                case 'brand':
+                    cellValue = cells[4]?.textContent?.trim();
+                    break;
+                case 'vendor':
+                    cellValue = cells[5]?.textContent?.trim();
+                    break;
+                case 'unit':
+                    cellValue = cells[6]?.textContent?.trim();
+                    break;
+            }
+
+            if (cellValue && !selectedValues.has(cellValue)) {
+                visible = false;
+                break;
+            }
+        }
+
+        row.style.display = visible ? '' : 'none';
+    });
+}
+
 // Start when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', () => {
+        init();
+        initFilters();
+        initResizableColumns();
+    });
 } else {
     init();
+    initFilters();
+    initResizableColumns();
 }

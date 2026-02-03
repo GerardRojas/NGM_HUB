@@ -669,21 +669,53 @@
         const summary = window.ExpensesArturito.getSummary();
         return { message: data.message || `✅ **Filtro aplicado: Vendor "${data.value}"**\n\nMostrando ${summary.filteredExpenses} gasto(s).` };
       } else if (data.action === 'filter_account' && data.value) {
-        // Search for matching accounts using fuzzy matching
+        // Search for matching accounts using fuzzy + semantic matching
         try {
           const accountsResp = await fetch(`${API_BASE}/arturito/search-accounts?query=${encodeURIComponent(data.value)}&limit=5`);
           const accountsData = await accountsResp.json();
 
           if (accountsData.matches && accountsData.matches.length > 0) {
             const bestMatch = accountsData.matches[0];
-            window.ExpensesArturito.filterBy('account', bestMatch.account_id);
-            const summary = window.ExpensesArturito.getSummary();
-            return {
-              message: `✅ **Filtro aplicado: ${bestMatch.name}**\n\nMostrando ${summary.filteredExpenses} gasto(s) de esta cuenta.`
-            };
+            const method = accountsData.method || 'fuzzy';
+            const isSemantic = bestMatch.semantic || method === 'semantic';
+
+            // High confidence match (>= 85) - apply automatically
+            if (bestMatch.score >= 85) {
+              window.ExpensesArturito.filterBy('account', bestMatch.account_id);
+              const summary = window.ExpensesArturito.getSummary();
+
+              let message = `✅ **Filtro aplicado: ${bestMatch.name}**\n\nMostrando ${summary.filteredExpenses} gasto(s) de esta cuenta.`;
+
+              if (isSemantic && bestMatch.reasoning) {
+                message += `\n\n💡 ${bestMatch.reasoning}`;
+              }
+
+              // Show alternatives if multiple matches found
+              if (accountsData.matches.length > 1) {
+                const alternatives = accountsData.matches.slice(1, 3).map(m => m.name).join(', ');
+                message += `\n\n📋 Otras opciones disponibles: ${alternatives}`;
+              }
+
+              return { message };
+            } else {
+              // Lower confidence - ask for confirmation
+              let message = `🤔 Encontré estas cuentas relacionadas con "${data.value}":\n\n`;
+
+              accountsData.matches.slice(0, 3).forEach((match, idx) => {
+                message += `${idx + 1}. **${match.name}**\n`;
+              });
+
+              message += `\n💡 Responde con el nombre completo o escribe "filtrar [nombre]" para aplicar el filtro.`;
+
+              if (isSemantic && bestMatch.reasoning) {
+                message += `\n\n_${bestMatch.reasoning}_`;
+              }
+
+              return { message };
+            }
           } else {
             return {
-              message: `❌ No encontré la cuenta "${data.value}". Intenta con otro nombre o revisa las cuentas disponibles.`
+              message: `❌ No encontré ninguna cuenta relacionada con "${data.value}".\n\n💡 Intenta con otro nombre o escribe "ver cuentas" para listar todas las cuentas disponibles.`
             };
           }
         } catch (error) {
@@ -722,6 +754,35 @@
       } else if (data.action === 'summary') {
         const summary = window.ExpensesArturito.getSummary();
         return { message: `📊 **Resumen de gastos**\n\n• Total visible: ${summary.filteredExpenses} gastos\n• Total: ${summary.totalExpenses} gastos` };
+      } else if (data.action === 'list_accounts') {
+        // Fetch and display all available accounts
+        try {
+          const accountsResp = await fetch(`${API_BASE}/accounts`);
+          const accountsData = await accountsResp.json();
+
+          if (accountsData.accounts && accountsData.accounts.length > 0) {
+            let message = `📋 **Cuentas de gastos disponibles:**\n\n`;
+
+            // Group by type or show top categories
+            const topAccounts = accountsData.accounts.slice(0, 15);
+            topAccounts.forEach((acc, idx) => {
+              message += `${idx + 1}. ${acc.Name}\n`;
+            });
+
+            if (accountsData.accounts.length > 15) {
+              message += `\n_...y ${accountsData.accounts.length - 15} más._`;
+            }
+
+            message += `\n\n💡 Para filtrar por cuenta, escribe: "filtra gastos de [nombre cuenta]"`;
+
+            return { message };
+          } else {
+            return { message: `❌ No se pudieron cargar las cuentas. Intenta de nuevo.` };
+          }
+        } catch (error) {
+          console.error('[WIDGET] Error loading accounts:', error);
+          return { message: `❌ Error cargando las cuentas. Intenta de nuevo.` };
+        }
       }
 
       // GPT didn't understand it as a filter command

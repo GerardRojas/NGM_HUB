@@ -2158,15 +2158,12 @@
         elements.treeViewContainer.innerHTML = '';
         clearConnections();
 
-        // Hide empty state message
+        // Show empty state if no custom modules
         if (elements.canvasEmpty) {
-            elements.canvasEmpty.style.display = 'none';
+            elements.canvasEmpty.style.display = state.customModules.length === 0 ? 'flex' : 'none';
         }
 
-        const groups = state.groupBy === 'deliverable' ? DELIVERABLES : DEPARTMENTS;
-        const groupArray = Object.values(groups);
-
-        // Default positions - grid layout
+        // Default positions - radial layout around hub
         const defaultCenterX = 600;
         const defaultCenterY = 400;
         const defaultRadius = 320;
@@ -2193,65 +2190,13 @@
             hub: { x: hubPos.x, y: hubPos.y, width: 260, height: 160 }
         };
 
-        // Render group nodes around the hub
-        groupArray.forEach((group, index) => {
-            // Default position in radial layout
-            const angle = (index / groupArray.length) * Math.PI * 2 - Math.PI / 2;
+        // Render custom modules around the hub (radial layout)
+        const moduleCount = state.customModules.length;
+        state.customModules.forEach((module, index) => {
+            // Position in radial layout around hub
+            const angle = (index / Math.max(moduleCount, 1)) * Math.PI * 2 - Math.PI / 2;
             const defaultX = defaultCenterX + Math.cos(angle) * defaultRadius - 110;
             const defaultY = defaultCenterY + Math.sin(angle) * defaultRadius - 70;
-
-            // Get saved position or use default
-            const pos = getNodePosition(group.id, defaultX, defaultY);
-
-            // Count processes in this group
-            let processCount = 0;
-            let draftCount = 0;
-
-            if (state.groupBy === 'deliverable') {
-                const deliverable = DELIVERABLES[group.id];
-                const processes = state.processes.filter(p => deliverable.processIds.includes(p.id));
-                processCount = processes.filter(p => p.is_implemented).length;
-                draftCount = processes.filter(p => !p.is_implemented).length;
-            } else {
-                const processes = state.processes.filter(p => p.category === group.id);
-                processCount = processes.filter(p => p.is_implemented).length;
-                draftCount = processes.filter(p => !p.is_implemented).length;
-            }
-
-            const node = createTreeNode({
-                ...group,
-                processCount,
-                draftCount
-            }, pos.x, pos.y);
-
-            // Store for connections
-            nodeRects[group.id] = { x: pos.x, y: pos.y, width: 220, height: 140 };
-
-            // Add drag functionality
-            makeDraggable(node, group.id, () => {
-                // Redraw connections after drag
-                redrawConnections(nodeRects);
-            });
-
-            node.addEventListener('click', () => {
-                // Only navigate if not dragging (was-dragged removed automatically after 200ms)
-                if (!node.classList.contains('was-dragged')) {
-                    navigateToDetail(group.id, state.groupBy);
-                }
-            });
-
-            elements.treeViewContainer.appendChild(node);
-        });
-
-        // Render custom modules
-        state.customModules.forEach((module, index) => {
-            // Position custom modules in a different area (to the right)
-            const customStartX = 1050;
-            const customStartY = 150;
-            const customSpacing = 180;
-
-            const defaultX = customStartX;
-            const defaultY = customStartY + index * customSpacing;
 
             const pos = getNodePosition(module.id, defaultX, defaultY);
 

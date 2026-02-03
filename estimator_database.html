@@ -940,6 +940,127 @@
         .col-hidden {
             display: none !important;
         }
+
+        /* Filter Toggle Buttons */
+        .filter-toggle {
+            background: transparent;
+            border: none;
+            color: #6b7280;
+            font-size: 10px;
+            cursor: pointer;
+            padding: 2px 4px;
+            margin-left: 4px;
+            border-radius: 3px;
+            transition: all 0.15s ease;
+        }
+        .filter-toggle:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #9ca3af;
+        }
+        .filter-toggle.active {
+            color: #3ecf8e;
+        }
+
+        /* Filter Dropdown */
+        .filter-dropdown {
+            position: absolute;
+            background: #1a1a1a;
+            border: 1px solid #3f3f46;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            min-width: 220px;
+            max-width: 300px;
+        }
+        .filter-dropdown.hidden {
+            display: none;
+        }
+        .filter-dropdown-header {
+            padding: 12px;
+            border-bottom: 1px solid #27272f;
+        }
+        .filter-search {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid #2a2a2a;
+            border-radius: 4px;
+            color: #e5e7eb;
+            font-size: 13px;
+        }
+        .filter-search::placeholder {
+            color: #6b7280;
+        }
+        .filter-dropdown-options {
+            max-height: 280px;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+        .filter-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #e5e7eb;
+        }
+        .filter-option:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .filter-option input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .filter-dropdown-footer {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            border-top: 1px solid #27272f;
+        }
+        .filter-select-all-btn,
+        .filter-clear-btn,
+        .filter-apply-btn {
+            padding: 6px 12px;
+            border: 1px solid #3f3f46;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            background: transparent;
+            color: #9ca3af;
+            transition: all 0.15s ease;
+        }
+        .filter-select-all-btn:hover,
+        .filter-clear-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #e5e7eb;
+        }
+        .filter-apply-btn {
+            background: #3ecf8e;
+            color: #000;
+            border-color: #3ecf8e;
+            margin-left: auto;
+        }
+        .filter-apply-btn:hover {
+            background: #34b87a;
+        }
+
+        /* Resizable columns */
+        .expenses-table th {
+            position: relative;
+            user-select: none;
+        }
+        .col-resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            cursor: col-resize;
+            user-select: none;
+        }
+        .col-resize-handle:hover,
+        .col-resize-handle.resizing {
+            background: #3ecf8e;
+        }
     </style>
 
     <script src="assets/js/config.js"></script>
@@ -1065,12 +1186,30 @@
                                     <thead>
                                         <tr>
                                             <th class="col-image" style="width: 60px;">Image</th>
-                                            <th class="col-code" style="width: 100px;">Code</th>
-                                            <th class="col-name">Name</th>
-                                            <th class="col-category">Category</th>
-                                            <th class="col-brand">Brand</th>
-                                            <th class="col-vendor">Vendor</th>
-                                            <th class="col-unit" style="width: 80px;">Unit</th>
+                                            <th class="col-code" style="width: 100px;">
+                                                Code
+                                                <button type="button" class="filter-toggle" data-column="code" title="Filter">▼</button>
+                                            </th>
+                                            <th class="col-name">
+                                                Name
+                                                <button type="button" class="filter-toggle" data-column="name" title="Filter">▼</button>
+                                            </th>
+                                            <th class="col-category">
+                                                Category
+                                                <button type="button" class="filter-toggle" data-column="category" title="Filter">▼</button>
+                                            </th>
+                                            <th class="col-brand">
+                                                Brand
+                                                <button type="button" class="filter-toggle" data-column="brand" title="Filter">▼</button>
+                                            </th>
+                                            <th class="col-vendor">
+                                                Vendor
+                                                <button type="button" class="filter-toggle" data-column="vendor" title="Filter">▼</button>
+                                            </th>
+                                            <th class="col-unit" style="width: 80px;">
+                                                Unit
+                                                <button type="button" class="filter-toggle" data-column="unit" title="Filter">▼</button>
+                                            </th>
                                             <th class="col-unitcost" style="width: 110px;">Unit Cost</th>
                                             <th class="col-tax" style="width: 70px;">Tax %</th>
                                             <th class="col-costwithtax" style="width: 110px;">w/ Tax</th>
@@ -1081,6 +1220,21 @@
                                         <!-- Rows rendered by JS -->
                                     </tbody>
                                 </table>
+
+                                <!-- Filter dropdown (positioned absolutely) -->
+                                <div id="filterDropdown" class="filter-dropdown hidden">
+                                    <div class="filter-dropdown-header">
+                                        <input type="text" class="filter-search" placeholder="Search..." />
+                                    </div>
+                                    <div class="filter-dropdown-options" id="filterDropdownOptions">
+                                        <!-- Options populated by JS -->
+                                    </div>
+                                    <div class="filter-dropdown-footer">
+                                        <button type="button" class="filter-select-all-btn">Select All</button>
+                                        <button type="button" class="filter-clear-btn">Clear</button>
+                                        <button type="button" class="filter-apply-btn">Apply</button>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- Concepts Table -->

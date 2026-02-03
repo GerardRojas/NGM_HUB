@@ -1015,15 +1015,24 @@
 
     // Ensure all modules have required properties (backwards compatibility)
     function normalizeModules(modules) {
-        return modules.map((m, index) => ({
-            ...m,
-            // Ensure id exists - use existing id, module_id, or generate one
-            id: m.id || m.module_id || `custom_legacy_${Date.now()}_${index}`,
-            type: m.type || 'step',
-            size: m.size || 'medium',
-            connectedToHub: m.connectedToHub !== false,
-            isCustom: true
-        }));
+        return modules.map((m, index) => {
+            // Sanitize linkedModuleId - must be a valid string or null
+            let linkedModuleId = null;
+            if (m.linkedModuleId && typeof m.linkedModuleId === 'string' && !m.linkedModuleId.includes('[object')) {
+                linkedModuleId = m.linkedModuleId;
+            }
+
+            return {
+                ...m,
+                // Ensure id exists - use existing id, module_id, or generate one
+                id: m.id || m.module_id || `custom_legacy_${Date.now()}_${index}`,
+                type: m.type || 'step',
+                size: m.size || 'medium',
+                connectedToHub: m.connectedToHub !== false,
+                linkedModuleId: linkedModuleId,
+                isCustom: true
+            };
+        });
     }
 
     function saveCustomModules() {
@@ -1083,6 +1092,12 @@
     function addCustomModule(moduleData) {
         console.log('[MODULE-ADD] Creating new module with data:', moduleData);
 
+        // Validate linkedModuleId - must be a string (module ID) or null
+        let validLinkedModuleId = null;
+        if (moduleData.linkedModuleId && typeof moduleData.linkedModuleId === 'string') {
+            validLinkedModuleId = moduleData.linkedModuleId;
+        }
+
         const id = 'custom_' + Date.now();
         const module = {
             id: id,
@@ -1096,7 +1111,7 @@
             isImplemented: moduleData.isImplemented || false,
             isCustom: true,
             connectedToHub: moduleData.connectedToHub !== false, // Default true
-            linkedModuleId: moduleData.linkedModuleId || null, // Parent module if this is a sub-module
+            linkedModuleId: validLinkedModuleId, // Parent module if this is a sub-module
             linkedProcesses: moduleData.linkedProcesses || [],
             processIds: [],
             createdAt: new Date().toISOString()
@@ -1186,6 +1201,7 @@
             treeViewContainer: document.getElementById('treeViewContainer'),
             detailViewContainer: document.getElementById('detailViewContainer'),
             connectionsLayer: document.getElementById('connectionsLayer'),
+            snapGuides: document.getElementById('snapGuides'),
             canvasEmpty: document.getElementById('canvasEmpty'),
             processPanel: document.getElementById('processPanel'),
             panelTitle: document.getElementById('panelTitle'),
@@ -1337,7 +1353,7 @@
 
         // Add Module button
         if (elements.btnAddModule) {
-            elements.btnAddModule.addEventListener('click', openAddModuleModal);
+            elements.btnAddModule.addEventListener('click', () => openAddModuleModal());
         }
 
         // Context menu (close on click outside)
@@ -2899,8 +2915,32 @@
                 hasMoved = true;
             }
 
-            const newX = initialX + dx;
-            const newY = initialY + dy;
+            let newX = initialX + dx;
+            let newY = initialY + dy;
+
+            // Get node dimensions for snap calculation
+            const nodeWidth = node.offsetWidth || 220;
+            const nodeHeight = node.offsetHeight || 150;
+
+            // Calculate snap alignment
+            const snap = calculateSnap(nodeId, newX, newY, nodeWidth, nodeHeight);
+
+            // Apply snap if detected
+            if (snap.snapX !== null) {
+                newX = snap.snapX;
+            }
+            if (snap.snapY !== null) {
+                newY = snap.snapY;
+            }
+
+            // Show/hide snap guides and snapping class
+            if (snap.guides.length > 0) {
+                renderSnapGuides(snap.guides);
+                node.classList.add('snapping');
+            } else {
+                clearSnapGuides();
+                node.classList.remove('snapping');
+            }
 
             node.style.left = `${newX}px`;
             node.style.top = `${newY}px`;
@@ -2924,6 +2964,8 @@
             node.style.cursor = 'grab';
             node.style.zIndex = '';
             node.classList.remove('dragging');
+            node.classList.remove('snapping');
+            clearSnapGuides();
 
             if (hasMoved) {
                 node.classList.add('was-dragged');
@@ -2989,6 +3031,147 @@
             };
         }
         return { x: 440, y: 300, width: 320, height: 200 };
+    }
+
+    // ================================
+    // Snap/Magnetic Alignment System
+    // ================================
+    const SNAP_THRESHOLD = 12; // Pixels within which snapping activates
+
+    /**
+     * Calculate snap alignments for a dragged node
+     * @param {string} draggedId - ID of the node being dragged
+     * @param {number} x - Current X position
+     * @param {number} y - Current Y position
+     * @param {number} width - Width of dragged node
+     * @param {number} height - Height of dragged node
+     * @returns {Object} - {snapX, snapY, guides[]}
+     */
+    function calculateSnap(draggedId, x, y, width, height) {
+        const nodeRects = buildCurrentNodeRects();
+        let snapX = null;
+        let snapY = null;
+        const guides = [];
+
+        // Edges of dragged node
+        const dragLeft = x;
+        const dragRight = x + width;
+        const dragTop = y;
+        const dragBottom = y + height;
+        const dragCenterX = x + width / 2;
+        const dragCenterY = y + height / 2;
+
+        // Check against all other nodes
+        Object.entries(nodeRects).forEach(([id, rect]) => {
+            if (id === draggedId) return;
+
+            const targetLeft = rect.x;
+            const targetRight = rect.x + rect.width;
+            const targetTop = rect.y;
+            const targetBottom = rect.y + rect.height;
+            const targetCenterX = rect.x + rect.width / 2;
+            const targetCenterY = rect.y + rect.height / 2;
+
+            // Horizontal alignments (snap X)
+            // Left edge to left edge
+            if (Math.abs(dragLeft - targetLeft) < SNAP_THRESHOLD) {
+                snapX = targetLeft;
+                guides.push({ type: 'vertical', position: targetLeft });
+            }
+            // Right edge to right edge
+            if (Math.abs(dragRight - targetRight) < SNAP_THRESHOLD) {
+                snapX = targetRight - width;
+                guides.push({ type: 'vertical', position: targetRight });
+            }
+            // Left edge to right edge
+            if (Math.abs(dragLeft - targetRight) < SNAP_THRESHOLD) {
+                snapX = targetRight;
+                guides.push({ type: 'vertical', position: targetRight });
+            }
+            // Right edge to left edge
+            if (Math.abs(dragRight - targetLeft) < SNAP_THRESHOLD) {
+                snapX = targetLeft - width;
+                guides.push({ type: 'vertical', position: targetLeft });
+            }
+            // Center to center (horizontal)
+            if (Math.abs(dragCenterX - targetCenterX) < SNAP_THRESHOLD) {
+                snapX = targetCenterX - width / 2;
+                guides.push({ type: 'vertical', position: targetCenterX });
+            }
+
+            // Vertical alignments (snap Y)
+            // Top edge to top edge
+            if (Math.abs(dragTop - targetTop) < SNAP_THRESHOLD) {
+                snapY = targetTop;
+                guides.push({ type: 'horizontal', position: targetTop });
+            }
+            // Bottom edge to bottom edge
+            if (Math.abs(dragBottom - targetBottom) < SNAP_THRESHOLD) {
+                snapY = targetBottom - height;
+                guides.push({ type: 'horizontal', position: targetBottom });
+            }
+            // Top edge to bottom edge
+            if (Math.abs(dragTop - targetBottom) < SNAP_THRESHOLD) {
+                snapY = targetBottom;
+                guides.push({ type: 'horizontal', position: targetBottom });
+            }
+            // Bottom edge to top edge
+            if (Math.abs(dragBottom - targetTop) < SNAP_THRESHOLD) {
+                snapY = targetTop - height;
+                guides.push({ type: 'horizontal', position: targetTop });
+            }
+            // Center to center (vertical)
+            if (Math.abs(dragCenterY - targetCenterY) < SNAP_THRESHOLD) {
+                snapY = targetCenterY - height / 2;
+                guides.push({ type: 'horizontal', position: targetCenterY });
+            }
+        });
+
+        return { snapX, snapY, guides };
+    }
+
+    /**
+     * Render snap guides on the canvas
+     * @param {Array} guides - Array of guide objects {type, position}
+     */
+    function renderSnapGuides(guides) {
+        const container = elements.snapGuides;
+        if (!container) return;
+
+        // Clear existing guides
+        container.innerHTML = '';
+
+        // Remove duplicates based on type and position
+        const uniqueGuides = [];
+        const seen = new Set();
+        guides.forEach(g => {
+            const key = `${g.type}-${Math.round(g.position)}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueGuides.push(g);
+            }
+        });
+
+        // Render unique guides
+        uniqueGuides.forEach(guide => {
+            const el = document.createElement('div');
+            el.className = `snap-guide ${guide.type}`;
+            if (guide.type === 'horizontal') {
+                el.style.top = `${guide.position}px`;
+            } else {
+                el.style.left = `${guide.position}px`;
+            }
+            container.appendChild(el);
+        });
+    }
+
+    /**
+     * Clear all snap guides
+     */
+    function clearSnapGuides() {
+        if (elements.snapGuides) {
+            elements.snapGuides.innerHTML = '';
+        }
     }
 
     // ================================

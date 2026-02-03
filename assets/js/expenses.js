@@ -3808,10 +3808,15 @@
 
     // ============================================
     // VALIDATION: Reject expenses for closed bills
+    // (Skip validation in scanned receipt mode - we handle the bill status ourselves)
     // ============================================
     const closedBillErrors = [];
     expensesToSave.forEach((expense, idx) => {
       if (expense.bill_id) {
+        // Skip validation if this is the scanned receipt bill - we're creating/managing it
+        if (isScannedReceiptMode && expense.bill_id === scannedReceiptBillId) {
+          return; // Skip this expense - we'll handle the bill status
+        }
         const billData = getBillMetadata(expense.bill_id);
         if (billData && billData.status === 'closed') {
           closedBillErrors.push({
@@ -5407,6 +5412,66 @@
         console.log('[SCAN RECEIPT] Extracted bill_id:', scannedReceiptBillId);
         console.log('[SCAN RECEIPT] Extracted vendor_id:', scannedReceiptVendorId);
         console.log('[SCAN RECEIPT] Extracted total:', scannedReceiptTotal);
+
+        // Check if bill already exists and is closed
+        if (scannedReceiptBillId) {
+          const existingBill = getBillMetadata(scannedReceiptBillId);
+          if (existingBill && existingBill.status === 'closed') {
+            console.log('[SCAN RECEIPT] Bill is closed, prompting user to reopen:', scannedReceiptBillId);
+
+            const confirmReopen = confirm(
+              `Bill #${scannedReceiptBillId} already exists and is CLOSED.\n\n` +
+              'You cannot add expenses to a closed bill.\n\n' +
+              'Do you want to REOPEN this bill to add the scanned expenses?'
+            );
+
+            if (confirmReopen) {
+              // Reopen the bill via API
+              try {
+                els.scanReceiptProgressText.textContent = 'Reopening bill...';
+                await apiJson(`${apiBase}/bills/${scannedReceiptBillId}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ status: 'open' })
+                });
+                // Update local cache
+                existingBill.status = 'open';
+                console.log('[SCAN RECEIPT] Bill reopened successfully:', scannedReceiptBillId);
+
+                if (window.Toast) {
+                  Toast.info('Bill Reopened', `Bill #${scannedReceiptBillId} has been reopened to add expenses.`);
+                }
+              } catch (reopenErr) {
+                console.error('[SCAN RECEIPT] Failed to reopen bill:', reopenErr);
+                if (window.Toast) {
+                  Toast.error('Failed to Reopen', `Could not reopen Bill #${scannedReceiptBillId}. Please reopen it manually from Bill View.`);
+                }
+                // Reset state and abort
+                scannedReceiptFile = null;
+                scannedReceiptBillId = null;
+                scannedReceiptVendorId = null;
+                scannedReceiptTotal = null;
+                isScannedReceiptMode = false;
+                closeScanReceiptModal();
+                return;
+              }
+            } else {
+              // User cancelled - abort the scan process
+              console.log('[SCAN RECEIPT] User cancelled reopening bill, aborting');
+              if (window.Toast) {
+                Toast.warning('Scan Cancelled', 'Expenses were not added. Reopen the bill manually from Bill View if needed.');
+              }
+              // Reset state
+              scannedReceiptFile = null;
+              scannedReceiptBillId = null;
+              scannedReceiptVendorId = null;
+              scannedReceiptTotal = null;
+              isScannedReceiptMode = false;
+              closeScanReceiptModal();
+              return;
+            }
+          }
+        }
       }
 
       // Close scan modal
@@ -5449,9 +5514,9 @@
 
         const validationPassed = result.data?.validation?.validation_passed !== false;
         if (validationPassed) {
-          Toast.success('Receipt Scanned', `Successfully scanned ${result.count} expense(s) from receipt!`, { details: details || null });
+          Toast.success('Receipt Scanned', `Successfully scanned ${result.count} expense(s) from receipt!`, { details: details || null, persistent: true });
         } else {
-          Toast.warning('Receipt Scanned', `Scanned ${result.count} expense(s) but totals do not match.`, { details });
+          Toast.warning('Receipt Scanned', `Scanned ${result.count} expense(s) but totals do not match.`, { details, persistent: true });
         }
       }
 

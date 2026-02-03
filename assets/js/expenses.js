@@ -2309,11 +2309,19 @@
         return amount;
       };
 
-      // Auth - computed once
+      // Auth - computed once (supports new 3-state system: pending/auth/review)
       const getAuth = () => {
         if (authValue === undefined) {
-          const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
-          authValue = isAuthorized ? 'Authorized' : 'Pending';
+          // Use new status field if available, otherwise fall back to auth_status (backwards compatible)
+          if (exp.status) {
+            authValue = exp.status === 'auth' ? 'Authorized' :
+                       exp.status === 'review' ? 'Review' :
+                       'Pending';
+          } else {
+            // Legacy: use auth_status boolean
+            const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
+            authValue = isAuthorized ? 'Authorized' : 'Pending';
+          }
         }
         return authValue;
       };
@@ -9217,8 +9225,16 @@
           value = exp.account_name || findMetaName('accounts', exp.account_id, 'account_id', 'Name') || '—';
           break;
         case 'auth':
-          const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
-          value = isAuthorized ? 'Authorized' : 'Pending';
+          // Support new 3-state system (pending/auth/review)
+          if (exp.status) {
+            value = exp.status === 'auth' ? 'Authorized' :
+                   exp.status === 'review' ? 'Review' :
+                   'Pending';
+          } else {
+            // Legacy: use auth_status boolean
+            const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
+            value = isAuthorized ? 'Authorized' : 'Pending';
+          }
           break;
       }
       values.add(value);

@@ -500,13 +500,63 @@
                     outputs: ['vendor', 'amount', 'date', 'items'],
                     connects_to: ['quick_check']
                 },
-                // Step 5: Quick Check
+                // Step 5: Quick Check (has sub-process for detailed steps)
                 {
                     id: 'quick_check',
                     type: 'step',
                     size: 'medium',
                     name: 'Quick Check - Bookkeeper',
                     description: 'Revision visual de datos, Price Check alerts, completar campos',
+                    // Sub-process nodes (third level navigation)
+                    subProcessNodes: [
+                        {
+                            id: 'qc_review_data',
+                            type: 'step',
+                            size: 'medium',
+                            name: 'Review Extracted Data',
+                            description: 'Verify vendor, amount, date from IRIS extraction',
+                            position: { x: 100, y: 100 },
+                            connects_to: ['qc_price_check']
+                        },
+                        {
+                            id: 'qc_price_check',
+                            type: 'decision',
+                            size: 'medium',
+                            name: 'Price Check Alert',
+                            description: 'System flags unusual amounts or vendors',
+                            position: { x: 100, y: 280 },
+                            options: [
+                                { id: 'alert_yes', label: 'Alert Triggered', connects_to: 'qc_manual_review' },
+                                { id: 'alert_no', label: 'No Alert', connects_to: 'qc_complete_fields' }
+                            ]
+                        },
+                        {
+                            id: 'qc_manual_review',
+                            type: 'step',
+                            size: 'small',
+                            name: 'Manual Review',
+                            description: 'Bookkeeper manually verifies flagged expense',
+                            position: { x: 380, y: 280 },
+                            connects_to: ['qc_complete_fields']
+                        },
+                        {
+                            id: 'qc_complete_fields',
+                            type: 'step',
+                            size: 'medium',
+                            name: 'Complete Missing Fields',
+                            description: 'Fill in any missing information',
+                            position: { x: 100, y: 460 },
+                            connects_to: ['qc_done']
+                        },
+                        {
+                            id: 'qc_done',
+                            type: 'milestone',
+                            size: 'small',
+                            name: 'Quick Check Complete',
+                            description: 'Ready for categorization',
+                            position: { x: 100, y: 600 }
+                        }
+                    ],
                     is_implemented: true,
                     position: { x: 100, y: 780 },
                     subservices: [
@@ -723,6 +773,10 @@
         currentProcessId: null,      // Process being viewed in flowchart
         flowNodePositions: {},       // Positions of flowchart nodes
         selectedFlowNode: null,      // Currently selected node in flowchart
+
+        // Third level navigation (sub-process)
+        currentNodeId: null,         // Node being viewed in sub-process level
+        navigationStack: [],         // Stack for back navigation: [{level, processId, nodeId}]
     };
 
     // ================================
@@ -1076,6 +1130,7 @@
             moduleModal: document.getElementById('moduleModal'),
             btnAddModule: document.getElementById('btnAddModule'),
             moduleContextMenu: document.getElementById('moduleContextMenu'),
+            flowNodeContextMenu: document.getElementById('flowNodeContextMenu'),
             // Process navigator elements
             processNavigator: document.getElementById('processNavigator'),
             processNavigatorList: document.getElementById('processNavigatorList'),
@@ -1103,6 +1158,11 @@
         renderTreeView();
         updateStats();
         setupProcessNavigator();
+        setupURLRouting();
+
+        // Check for URL parameters to navigate to specific view
+        handleURLNavigation();
+
         centerCanvas();
 
         // Hide loading overlay
@@ -1184,6 +1244,7 @@
         // Modal events
         setupModalListeners();
         setupModuleModalListeners();
+        setupFlowNodeContextMenu();
 
         // Add Module button
         if (elements.btnAddModule) {
@@ -1192,7 +1253,7 @@
 
         // Context menu (close on click outside)
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.context-menu') && !e.target.closest('.tree-node.custom-module')) {
+            if (!e.target.closest('.context-menu') && !e.target.closest('.tree-node.custom-module') && !e.target.closest('.flow-node')) {
                 hideContextMenu();
             }
         });
@@ -1253,6 +1314,16 @@
             });
         }
 
+        // Implemented switch label update
+        const implementedCheckbox = document.getElementById('moduleImplemented');
+        const implementedLabel = document.getElementById('moduleImplementedLabel');
+        if (implementedCheckbox && implementedLabel) {
+            implementedCheckbox.addEventListener('change', (e) => {
+                implementedLabel.textContent = e.target.checked ? 'Live' : 'Draft';
+                implementedLabel.classList.toggle('live', e.target.checked);
+            });
+        }
+
         modal.addEventListener('click', (e) => {
             if (e.target === modal) closeModuleModal();
         });
@@ -1292,6 +1363,17 @@
         document.getElementById('moduleSize').value = 'medium';
         document.getElementById('btnDeleteModule').classList.add('hidden');
 
+        // Reset implemented switch to draft
+        const implementedCheckbox = document.getElementById('moduleImplemented');
+        const implementedLabel = document.getElementById('moduleImplementedLabel');
+        if (implementedCheckbox) {
+            implementedCheckbox.checked = false;
+        }
+        if (implementedLabel) {
+            implementedLabel.textContent = 'Draft';
+            implementedLabel.classList.remove('live');
+        }
+
         elements.moduleModal.classList.remove('hidden');
     }
 
@@ -1312,6 +1394,17 @@
         document.getElementById('moduleSize').value = module.size || 'medium';
         document.getElementById('btnDeleteModule').classList.remove('hidden');
 
+        // Set implemented switch
+        const implementedCheckbox = document.getElementById('moduleImplemented');
+        const implementedLabel = document.getElementById('moduleImplementedLabel');
+        if (implementedCheckbox) {
+            implementedCheckbox.checked = module.isImplemented === true;
+        }
+        if (implementedLabel) {
+            implementedLabel.textContent = module.isImplemented ? 'Live' : 'Draft';
+            implementedLabel.classList.toggle('live', module.isImplemented === true);
+        }
+
         elements.moduleModal.classList.remove('hidden');
     }
 
@@ -1330,6 +1423,7 @@
         }
 
         const editId = document.getElementById('moduleEditId').value;
+        const implementedCheckbox = document.getElementById('moduleImplemented');
 
         const moduleData = {
             name: document.getElementById('moduleName').value.trim(),
@@ -1337,7 +1431,8 @@
             icon: document.getElementById('moduleIcon').value,
             departmentId: document.getElementById('moduleDepartment').value || null,
             type: document.getElementById('moduleType').value || 'step',
-            size: document.getElementById('moduleSize').value || 'medium'
+            size: document.getElementById('moduleSize').value || 'medium',
+            isImplemented: implementedCheckbox ? implementedCheckbox.checked : false
         };
 
         if (!moduleData.name) {
@@ -1346,13 +1441,12 @@
         }
 
         if (editId) {
-            // Update existing module (preserve color and isImplemented)
+            // Update existing module
             updateCustomModule(editId, moduleData);
             showToast('Module updated', 'success');
         } else {
-            // Add new module with default values
-            moduleData.color = '#6b7280';
-            moduleData.isImplemented = false;
+            // Add new module with default color
+            moduleData.color = moduleData.isImplemented ? '#3ecf8e' : '#6b7280';
             addCustomModule(moduleData);
             showToast('Module added', 'success');
         }
@@ -1381,13 +1475,18 @@
     }
 
     function showContextMenu(e, moduleId) {
+        console.log('[CONTEXT-MENU] showContextMenu called for module:', moduleId);
         e.preventDefault();
         e.stopPropagation();
 
-        if (!elements.moduleContextMenu) return;
+        if (!elements.moduleContextMenu) {
+            console.error('[CONTEXT-MENU] moduleContextMenu element not found!');
+            return;
+        }
 
         // Update toggle label based on current connection state
         const module = getCustomModule(moduleId);
+        console.log('[CONTEXT-MENU] Module found:', module);
         const toggleLabel = document.getElementById('toggleConnectionLabel');
         if (toggleLabel && module) {
             const isConnected = module.connectedToHub !== false; // Default to true
@@ -1398,12 +1497,71 @@
         elements.moduleContextMenu.style.left = `${e.clientX}px`;
         elements.moduleContextMenu.style.top = `${e.clientY}px`;
         elements.moduleContextMenu.classList.remove('hidden');
+        console.log('[CONTEXT-MENU] Context menu shown at:', e.clientX, e.clientY);
     }
 
     function hideContextMenu() {
         if (elements.moduleContextMenu) {
             elements.moduleContextMenu.classList.add('hidden');
         }
+        if (elements.flowNodeContextMenu) {
+            elements.flowNodeContextMenu.classList.add('hidden');
+        }
+    }
+
+    function showFlowNodeContextMenu(e, nodeId, processId) {
+        console.log('[CONTEXT-MENU] showFlowNodeContextMenu called for node:', nodeId, 'process:', processId);
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!elements.flowNodeContextMenu) {
+            console.error('[CONTEXT-MENU] flowNodeContextMenu element not found!');
+            return;
+        }
+
+        // Store context for actions
+        elements.flowNodeContextMenu.dataset.nodeId = nodeId;
+        elements.flowNodeContextMenu.dataset.processId = processId;
+
+        elements.flowNodeContextMenu.style.left = `${e.clientX}px`;
+        elements.flowNodeContextMenu.style.top = `${e.clientY}px`;
+        elements.flowNodeContextMenu.classList.remove('hidden');
+        console.log('[CONTEXT-MENU] Flow node context menu shown at:', e.clientX, e.clientY);
+    }
+
+    function setupFlowNodeContextMenu() {
+        if (!elements.flowNodeContextMenu) return;
+
+        elements.flowNodeContextMenu.addEventListener('click', (e) => {
+            const item = e.target.closest('.context-menu-item');
+            if (!item) return;
+
+            const action = item.dataset.action;
+            const nodeId = elements.flowNodeContextMenu.dataset.nodeId;
+            const processId = elements.flowNodeContextMenu.dataset.processId;
+
+            console.log('[CONTEXT-MENU] Flow node action:', action, 'nodeId:', nodeId, 'processId:', processId);
+
+            switch (action) {
+                case 'edit-node':
+                    // TODO: Open node editor modal
+                    showToast('Edit node functionality coming soon', 'info');
+                    break;
+                case 'add-connection':
+                    // TODO: Start connection drag mode
+                    showToast('Add connection functionality coming soon', 'info');
+                    break;
+                case 'duplicate-node':
+                    // TODO: Duplicate the node
+                    showToast('Duplicate node functionality coming soon', 'info');
+                    break;
+                case 'delete-node':
+                    // TODO: Delete the node with confirmation
+                    showToast('Delete node functionality coming soon', 'info');
+                    break;
+            }
+            hideContextMenu();
+        });
     }
 
     // ================================
@@ -1608,6 +1766,7 @@
 
         // Update UI
         updateBreadcrumb();
+        updateURL();
         elements.btnBack.classList.remove('hidden');
         elements.treeViewContainer.classList.add('hidden');
         elements.detailViewContainer.classList.remove('hidden');
@@ -1625,6 +1784,23 @@
     }
 
     function navigateBack() {
+        // If in subprocess, go back to flowchart view
+        if (state.currentLevel === 'subprocess') {
+            state.currentLevel = 'flowchart';
+            state.currentNodeId = null;
+
+            updateBreadcrumb();
+            updateURL();
+
+            // Re-render flowchart view
+            const flowchart = PROCESS_FLOWCHARTS[state.currentProcessId];
+            if (flowchart) {
+                renderFlowchart(flowchart);
+            }
+            centerCanvas();
+            return;
+        }
+
         // If in flowchart, go back to detail view
         if (state.currentLevel === 'flowchart') {
             state.currentLevel = 'detail';
@@ -1632,6 +1808,7 @@
             state.selectedFlowNode = null;
 
             updateBreadcrumb();
+            updateURL();
             elements.btnBack.classList.remove('hidden');
 
             // Re-render detail view
@@ -1648,14 +1825,20 @@
         }
 
         // Otherwise go back to tree
+        navigateToTree();
+    }
+
+    function navigateToTree() {
         state.currentLevel = 'tree';
         state.selectedGroupId = null;
         state.selectedGroup = null;
         state.filteredProcesses = [];
         state.currentProcessId = null;
+        state.currentNodeId = null;
 
         // Update UI
         updateBreadcrumb();
+        updateURL();
         elements.btnBack.classList.add('hidden');
         elements.detailViewContainer.classList.add('hidden');
         elements.treeViewContainer.classList.remove('hidden');
@@ -1666,6 +1849,159 @@
         closePanel();
         renderTreeView();
         centerCanvas();
+    }
+
+    function navigateToSubProcess(nodeId) {
+        const flowchart = PROCESS_FLOWCHARTS[state.currentProcessId];
+        if (!flowchart) return;
+
+        const node = flowchart.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+
+        // Check if node has a sub-process defined
+        if (!node.subProcess && !node.subProcessNodes) {
+            console.log('[PROCESS-MANAGER] Node has no sub-process defined:', nodeId);
+            showToast('This node has no sub-process defined', 'info');
+            return;
+        }
+
+        state.currentLevel = 'subprocess';
+        state.currentNodeId = nodeId;
+
+        updateBreadcrumb();
+        updateURL();
+
+        // Render the sub-process view
+        renderSubProcessView(node);
+        centerCanvas();
+    }
+
+    // ================================
+    // URL Routing for Shareable Links
+    // ================================
+    function setupURLRouting() {
+        // Listen for browser back/forward
+        window.addEventListener('popstate', (e) => {
+            if (e.state) {
+                restoreStateFromURL(e.state);
+            } else {
+                handleURLNavigation();
+            }
+        });
+    }
+
+    function updateURL() {
+        const params = new URLSearchParams();
+
+        if (state.currentLevel !== 'tree') {
+            params.set('level', state.currentLevel);
+        }
+        if (state.selectedGroupId) {
+            params.set('group', state.selectedGroupId);
+        }
+        if (state.currentProcessId) {
+            params.set('process', state.currentProcessId);
+        }
+        if (state.currentNodeId) {
+            params.set('node', state.currentNodeId);
+        }
+        if (state.groupBy !== 'deliverable') {
+            params.set('groupBy', state.groupBy);
+        }
+
+        const newURL = params.toString() ? `?${params.toString()}` : window.location.pathname;
+
+        // Use replaceState to avoid cluttering history, pushState for actual navigation
+        const historyState = {
+            level: state.currentLevel,
+            groupId: state.selectedGroupId,
+            processId: state.currentProcessId,
+            nodeId: state.currentNodeId,
+            groupBy: state.groupBy
+        };
+
+        window.history.pushState(historyState, '', newURL);
+    }
+
+    function handleURLNavigation() {
+        const params = new URLSearchParams(window.location.search);
+
+        const level = params.get('level');
+        const groupId = params.get('group');
+        const processId = params.get('process');
+        const nodeId = params.get('node');
+        const groupBy = params.get('groupBy');
+
+        if (groupBy) {
+            state.groupBy = groupBy;
+        }
+
+        if (!level || level === 'tree') {
+            // Already at tree view, just render
+            return;
+        }
+
+        if (level === 'detail' && groupId) {
+            // Navigate to detail view
+            setTimeout(() => {
+                navigateToDetail(groupId, state.groupBy);
+            }, 100);
+        } else if (level === 'flowchart' && processId) {
+            // Navigate to flowchart view
+            setTimeout(() => {
+                if (groupId) {
+                    state.selectedGroupId = groupId;
+                    const group = PROCESS_GROUPS.find(g => g.id === groupId);
+                    state.selectedGroup = group;
+                }
+                navigateToFlowchart(processId);
+            }, 100);
+        } else if (level === 'subprocess' && processId && nodeId) {
+            // Navigate to subprocess view
+            setTimeout(() => {
+                if (groupId) {
+                    state.selectedGroupId = groupId;
+                    const group = PROCESS_GROUPS.find(g => g.id === groupId);
+                    state.selectedGroup = group;
+                }
+                state.currentProcessId = processId;
+                state.currentLevel = 'flowchart';
+                navigateToSubProcess(nodeId);
+            }, 100);
+        }
+    }
+
+    function restoreStateFromURL(historyState) {
+        if (!historyState) return;
+
+        const { level, groupId, processId, nodeId, groupBy } = historyState;
+
+        if (groupBy) state.groupBy = groupBy;
+
+        if (level === 'tree' || !level) {
+            navigateToTree();
+        } else if (level === 'detail' && groupId) {
+            navigateToDetail(groupId, state.groupBy);
+        } else if (level === 'flowchart' && processId) {
+            if (groupId) {
+                state.selectedGroupId = groupId;
+                const group = PROCESS_GROUPS.find(g => g.id === groupId);
+                state.selectedGroup = group;
+            }
+            navigateToFlowchart(processId);
+        } else if (level === 'subprocess' && processId && nodeId) {
+            if (groupId) {
+                state.selectedGroupId = groupId;
+                const group = PROCESS_GROUPS.find(g => g.id === groupId);
+                state.selectedGroup = group;
+            }
+            state.currentProcessId = processId;
+            navigateToSubProcess(nodeId);
+        }
+    }
+
+    function getShareableURL() {
+        return window.location.href;
     }
 
     function updateBreadcrumb() {
@@ -1715,6 +2051,49 @@
             if (detailItem) {
                 detailItem.style.cursor = 'pointer';
                 detailItem.addEventListener('click', navigateBack);
+            }
+        } else if (state.currentLevel === 'subprocess') {
+            const group = state.selectedGroup;
+            const flowchart = PROCESS_FLOWCHARTS[state.currentProcessId];
+            const currentNode = flowchart?.nodes?.find(n => n.id === state.currentNodeId);
+            elements.processBreadcrumb.innerHTML = `
+                <span class="breadcrumb-item clickable" data-level="tree">
+                    ${iconOverview}
+                    Overview
+                </span>
+                <span class="breadcrumb-separator">></span>
+                <span class="breadcrumb-item clickable" data-level="detail">
+                    ${group?.name || 'Module'}
+                </span>
+                <span class="breadcrumb-separator">></span>
+                <span class="breadcrumb-item clickable" data-level="flowchart">
+                    ${flowchart?.name || 'Process'}
+                </span>
+                <span class="breadcrumb-separator">></span>
+                <span class="breadcrumb-item active" data-level="subprocess">
+                    ${currentNode?.name || 'Sub-process'}
+                </span>
+            `;
+
+            // Click handlers
+            const overviewItem = elements.processBreadcrumb.querySelector('[data-level="tree"]');
+            const detailItem = elements.processBreadcrumb.querySelector('[data-level="detail"]');
+            const flowchartItem = elements.processBreadcrumb.querySelector('[data-level="flowchart"]');
+            if (overviewItem) {
+                overviewItem.style.cursor = 'pointer';
+                overviewItem.addEventListener('click', () => {
+                    navigateToTree();
+                });
+            }
+            if (detailItem) {
+                detailItem.style.cursor = 'pointer';
+                detailItem.addEventListener('click', () => {
+                    navigateToDetail(state.selectedGroupId, state.groupBy);
+                });
+            }
+            if (flowchartItem) {
+                flowchartItem.style.cursor = 'pointer';
+                flowchartItem.addEventListener('click', navigateBack);
             }
         } else {
             const group = state.selectedGroup;
@@ -1833,6 +2212,7 @@
         });
 
         // Render custom modules
+        console.log('[CONTEXT-MENU] Rendering', state.customModules.length, 'custom modules');
         state.customModules.forEach((module, index) => {
             // Position custom modules in a different area (to the right)
             const customStartX = 1050;
@@ -1863,6 +2243,7 @@
 
             // Right-click context menu for custom modules
             customNode.addEventListener('contextmenu', (e) => {
+                console.log('[CONTEXT-MENU] Right-click detected on custom module:', module.id);
                 showContextMenu(e, module.id);
             });
 
@@ -3557,8 +3938,9 @@
         state.currentProcessId = processId;
         state.currentLevel = 'flowchart';
 
-        // Update breadcrumb
+        // Update breadcrumb and URL
         updateBreadcrumb();
+        updateURL();
 
         // Show back button, hide other controls
         elements.btnBack.classList.remove('hidden');
@@ -3599,6 +3981,26 @@
             makeFlowNodeDraggable(nodeEl, flowchart.id, node.id, () => {
                 redrawFlowConnections(flowchart, nodeRects);
             });
+
+            // Right-click context menu for flow nodes
+            nodeEl.addEventListener('contextmenu', (e) => {
+                console.log('[CONTEXT-MENU] Right-click on flow node:', node.id);
+                showFlowNodeContextMenu(e, node.id, flowchart.id);
+            });
+
+            // Double-click to drill into sub-process (if node has one)
+            nodeEl.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                if (node.subProcess || node.subProcessNodes) {
+                    console.log('[PROCESS-MANAGER] Navigating to sub-process:', node.id);
+                    navigateToSubProcess(node.id);
+                }
+            });
+
+            // Visual indicator for expandable nodes
+            if (node.subProcess || node.subProcessNodes) {
+                nodeEl.classList.add('has-subprocess');
+            }
         });
 
         // Draw connections
@@ -3606,6 +4008,162 @@
 
         // Center on the flowchart
         centerCanvas();
+    }
+
+    function renderSubProcessView(parentNode) {
+        if (!elements.detailViewContainer) return;
+
+        elements.detailViewContainer.innerHTML = '';
+        clearConnections();
+        elements.canvasEmpty.style.display = 'none';
+
+        // Get sub-process data from node
+        const subProcessNodes = parentNode.subProcessNodes || parentNode.subProcess?.nodes || [];
+
+        if (subProcessNodes.length === 0) {
+            // Show empty state with option to add nodes
+            elements.detailViewContainer.innerHTML = `
+                <div class="subprocess-empty">
+                    <div class="subprocess-empty-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                    </div>
+                    <h3 class="subprocess-empty-title">No sub-process defined</h3>
+                    <p class="subprocess-empty-text">This module doesn't have a detailed sub-process yet.</p>
+                    <button class="btn-add-subprocess" onclick="window.ProcessManager?.addSubProcessNode?.()">
+                        Add First Step
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        const nodeRects = {};
+        const processId = state.currentProcessId;
+
+        // Render sub-process nodes
+        subProcessNodes.forEach((node, index) => {
+            // Default position if not specified
+            const defaultX = 150 + (index % 3) * 300;
+            const defaultY = 150 + Math.floor(index / 3) * 200;
+
+            const pos = getSubProcessNodePosition(processId, parentNode.id, node.id, node.position?.x || defaultX, node.position?.y || defaultY);
+            const nodeEl = createFlowNode(node, pos.x, pos.y, processId);
+
+            // Mark as sub-process node
+            nodeEl.classList.add('subprocess-node');
+
+            nodeRects[node.id] = {
+                x: pos.x,
+                y: pos.y,
+                width: getNodeWidth(node.size),
+                height: getNodeHeight(node),
+                type: node.type
+            };
+
+            elements.detailViewContainer.appendChild(nodeEl);
+
+            // Make draggable with sub-process position saving
+            makeSubProcessNodeDraggable(nodeEl, processId, parentNode.id, node.id, () => {
+                redrawSubProcessConnections(subProcessNodes, nodeRects);
+            });
+
+            // Right-click context menu
+            nodeEl.addEventListener('contextmenu', (e) => {
+                showFlowNodeContextMenu(e, node.id, processId);
+            });
+        });
+
+        // Draw connections between sub-process nodes
+        redrawSubProcessConnections(subProcessNodes, nodeRects);
+
+        centerCanvas();
+    }
+
+    function getSubProcessNodePosition(processId, parentNodeId, nodeId, defaultX, defaultY) {
+        const key = `${processId}_${parentNodeId}_${nodeId}`;
+        if (state.flowNodePositions[key]) {
+            return state.flowNodePositions[key];
+        }
+        return { x: defaultX, y: defaultY };
+    }
+
+    function setSubProcessNodePosition(processId, parentNodeId, nodeId, x, y) {
+        const key = `${processId}_${parentNodeId}_${nodeId}`;
+        state.flowNodePositions[key] = { x, y };
+        saveFlowNodePositions();
+    }
+
+    function makeSubProcessNodeDraggable(nodeEl, processId, parentNodeId, nodeId, onDrag) {
+        let isDragging = false;
+        let startX, startY;
+        let nodeStartX, nodeStartY;
+
+        nodeEl.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.flow-node-switch-toggle') || e.target.closest('.flow-port')) return;
+            if (e.button !== 0) return;
+
+            isDragging = true;
+            nodeEl.classList.add('dragging');
+
+            startX = e.clientX;
+            startY = e.clientY;
+            nodeStartX = parseInt(nodeEl.style.left) || 0;
+            nodeStartY = parseInt(nodeEl.style.top) || 0;
+
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const dx = (e.clientX - startX) / state.canvas.scale;
+            const dy = (e.clientY - startY) / state.canvas.scale;
+
+            const newX = Math.max(0, nodeStartX + dx);
+            const newY = Math.max(0, nodeStartY + dy);
+
+            nodeEl.style.left = `${newX}px`;
+            nodeEl.style.top = `${newY}px`;
+
+            if (onDrag) onDrag();
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            nodeEl.classList.remove('dragging');
+
+            const finalX = parseInt(nodeEl.style.left) || 0;
+            const finalY = parseInt(nodeEl.style.top) || 0;
+            setSubProcessNodePosition(processId, parentNodeId, nodeId, finalX, finalY);
+        });
+    }
+
+    function redrawSubProcessConnections(nodes, nodeRects) {
+        // Clear existing connections
+        const existingConnections = elements.connectionsLayer.querySelectorAll('.flow-connection');
+        existingConnections.forEach(c => c.remove());
+
+        // Draw connections
+        nodes.forEach(node => {
+            if (!node.connects_to) return;
+
+            const fromRect = nodeRects[node.id];
+            if (!fromRect) return;
+
+            const connections = Array.isArray(node.connects_to) ? node.connects_to : [node.connects_to];
+
+            connections.forEach(targetId => {
+                const toRect = nodeRects[targetId];
+                if (!toRect) return;
+
+                drawFlowConnection(fromRect, toRect, node.type);
+            });
+        });
     }
 
     function getNodeWidth(size) {

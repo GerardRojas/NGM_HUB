@@ -693,6 +693,29 @@
             message: `❌ Error buscando la cuenta. Intenta de nuevo.`
           };
         }
+      } else if (data.action === 'filter_status' && data.value) {
+        // Filter by authorization status (pending, auth, review)
+        // Map status values from API to filter values expected by ExpensesArturito
+        const statusMap = {
+          'pending': { filter: 'Pending', label: 'Pendientes' },
+          'auth': { filter: 'Authorized', label: 'Autorizados' },
+          'review': { filter: 'Review', label: 'En Revisión' }
+        };
+
+        const statusValue = data.value.toLowerCase();
+        const statusConfig = statusMap[statusValue];
+
+        if (statusConfig) {
+          window.ExpensesArturito.filterBy('auth', statusConfig.filter);
+          const summary = window.ExpensesArturito.getSummary();
+          return {
+            message: `✅ **Filtro aplicado: ${statusConfig.label}**\n\nMostrando ${summary.filteredExpenses} gasto(s).`
+          };
+        } else {
+          return {
+            message: `❌ Status inválido "${data.value}". Usa: pending, auth, o review.`
+          };
+        }
       } else if (data.action === 'search' && data.value) {
         window.ExpensesArturito.search(data.value);
         const summary = window.ExpensesArturito.getSummary();

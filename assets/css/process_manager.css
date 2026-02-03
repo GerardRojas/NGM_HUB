@@ -1215,6 +1215,82 @@
     padding-right: 36px;
 }
 
+/* Toggle Switch */
+.form-group-switch {
+    padding-top: 8px;
+    border-top: 1px solid #1f1f1f;
+    margin-top: 8px;
+}
+
+.switch-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #374151;
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.switch-slider::before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #9ca3af;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.switch input:checked + .switch-slider {
+    background-color: rgba(62, 207, 142, 0.3);
+}
+
+.switch input:checked + .switch-slider::before {
+    transform: translateX(20px);
+    background-color: #3ecf8e;
+}
+
+.switch-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    min-width: 80px;
+}
+
+.switch-label.live {
+    color: #3ecf8e;
+}
+
+.form-help {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 8px;
+}
+
 .btn-modal {
     padding: 10px 20px;
     border-radius: 6px;
@@ -4370,5 +4446,132 @@
 .sync-indicator.synced svg {
     animation: none;
     color: #3ecf8e;
+}
+
+/* ================================
+   Sub-Process View (Third Level)
+   ================================ */
+
+/* Expandable node indicator */
+.flow-node.has-subprocess {
+    cursor: pointer;
+}
+
+.flow-node.has-subprocess::after {
+    content: '';
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    background: rgba(62, 207, 142, 0.15);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.flow-node.has-subprocess:hover::after {
+    opacity: 1;
+}
+
+.flow-node.has-subprocess .expand-indicator {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    background: rgba(62, 207, 142, 0.15);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.flow-node.has-subprocess:hover .expand-indicator {
+    opacity: 1;
+}
+
+.flow-node.has-subprocess .expand-indicator svg {
+    width: 12px;
+    height: 12px;
+    color: #3ecf8e;
+}
+
+/* Sub-process node styling */
+.flow-node.subprocess-node {
+    border-style: solid;
+}
+
+/* Sub-process empty state */
+.subprocess-empty {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #6b7280;
+    padding: 40px;
+}
+
+.subprocess-empty-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px dashed #2a2a2a;
+    border-radius: 16px;
+}
+
+.subprocess-empty-icon svg {
+    color: #4b5563;
+}
+
+.subprocess-empty-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #e5e7eb;
+    margin-bottom: 8px;
+}
+
+.subprocess-empty-text {
+    font-size: 14px;
+    color: #6b7280;
+    margin-bottom: 24px;
+}
+
+.btn-add-subprocess {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: rgba(62, 207, 142, 0.1);
+    border: 1px solid rgba(62, 207, 142, 0.3);
+    border-radius: 8px;
+    color: #3ecf8e;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-add-subprocess:hover {
+    background: rgba(62, 207, 142, 0.2);
+    border-color: #3ecf8e;
+}
+
+/* Breadcrumb separator styling enhancement for deeper levels */
+.breadcrumb-item[data-level="subprocess"] {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 

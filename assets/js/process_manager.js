@@ -1399,9 +1399,9 @@
             elements.btnBack.addEventListener('click', navigateBack);
         }
 
-        // Add Process button
+        // Add Step button (in detail view)
         if (elements.btnAddProcess) {
-            elements.btnAddProcess.addEventListener('click', openAddProcessModal);
+            elements.btnAddProcess.addEventListener('click', addSubProcessNode);
         }
 
         // Close panel
@@ -2383,8 +2383,24 @@
     }
 
     function navigateToModuleDetail(moduleId) {
-        const module = getCustomModule(moduleId);
-        if (!module) return;
+        let module;
+
+        // Handle hub as a special module
+        if (moduleId === 'hub') {
+            module = {
+                id: 'hub',
+                name: 'NGM HUB',
+                description: 'Web Structure',
+                icon: 'hub',
+                color: '#3ecf8e',
+                isImplemented: true,
+                linkedProcesses: [],
+                type: 'process'
+            };
+        } else {
+            module = getCustomModule(moduleId);
+            if (!module) return;
+        }
 
         state.currentLevel = 'detail';
         state.selectedGroupId = moduleId;
@@ -2417,59 +2433,6 @@
 
         elements.detailViewContainer.innerHTML = '';
 
-        // Get linked processes
-        const linkedProcessIds = module.linkedProcesses || [];
-        const linkedProcesses = linkedProcessIds
-            .map(pid => state.processes.find(p => p.id === pid))
-            .filter(Boolean);
-
-        // Create module header card
-        const headerCard = document.createElement('div');
-        headerCard.className = 'module-detail-header';
-        headerCard.innerHTML = `
-            <div class="module-detail-icon" style="background: ${module.color || '#3ecf8e'}20; border-color: ${module.color || '#3ecf8e'};">
-                ${getIconSvg(module.icon || 'box', module.color || '#3ecf8e')}
-            </div>
-            <div class="module-detail-info">
-                <h2 class="module-detail-title">${escapeHtml(module.name)}</h2>
-                <p class="module-detail-description">${escapeHtml(module.description || 'No description')}</p>
-                <div class="module-detail-meta">
-                    <span class="module-status-badge ${module.isImplemented ? 'live' : 'draft'}">
-                        ${module.isImplemented ? 'LIVE' : 'DRAFT'}
-                    </span>
-                    <span class="module-type-badge">${module.type || 'step'}</span>
-                    <span class="module-process-count">${linkedProcesses.length} processes</span>
-                </div>
-            </div>
-            <div class="module-detail-actions">
-                <button type="button" class="btn-module-edit" onclick="window.processManager?.openEditModuleModal('${module.id}')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                    Edit
-                </button>
-            </div>
-        `;
-        headerCard.style.cssText = `
-            position: absolute;
-            top: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
-            border: 1px solid #2a2a2a;
-            border-radius: 16px;
-            padding: 24px 32px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            min-width: 500px;
-            max-width: 700px;
-            z-index: 10;
-        `;
-
-        elements.detailViewContainer.appendChild(headerCard);
-
         // Check if module has sub-process nodes
         const subProcessNodes = module.subProcessNodes || [];
 
@@ -2478,12 +2441,13 @@
             renderSubProcessNodesOnCanvas(module, subProcessNodes);
         } else {
             // Show empty state for sub-process with Add Step button
+            // Use fixed canvas coordinates for proper centering
             const emptyState = document.createElement('div');
             emptyState.className = 'subprocess-empty';
             emptyState.style.cssText = `
                 position: absolute;
-                top: 50%;
-                left: 50%;
+                left: 400px;
+                top: 300px;
                 transform: translate(-50%, -50%);
             `;
             emptyState.innerHTML = `
@@ -3259,8 +3223,8 @@
         // Render central hub
         const hubNode = createTreeNode({
             id: 'hub',
-            name: 'NGM Hub',
-            description: 'Process Automation System',
+            name: 'NGM HUB',
+            description: 'Web Structure',
             icon: 'hub',
             color: '#3ecf8e',
             isCentral: true
@@ -3268,6 +3232,28 @@
 
         // Add drag functionality to hub
         makeDraggable(hubNode, 'hub');
+
+        // Double-click on hub to enter its detail view
+        hubNode.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            // Don't navigate if we just finished dragging
+            if (hubNode.classList.contains('was-dragged')) return;
+            // Don't navigate if clicking on a port
+            if (e.target.closest('.connection-port')) return;
+            // Don't navigate if in connection mode
+            if (state.connectionMode.active) return;
+
+            // Navigate to hub detail view
+            navigateToModuleDetail('hub');
+        });
+
+        // Right-click context menu for hub
+        hubNode.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showContextMenu(e, 'hub');
+        });
+
         elements.treeViewContainer.appendChild(hubNode);
 
         // Store node positions for connection drawing
@@ -5292,8 +5278,24 @@
         zoomAtPoint(delta, mouseX, mouseY);
     }
 
+    function getMinScaleForViewport() {
+        // Calculate minimum scale to ensure grid always covers viewport
+        if (!elements.canvasContainer) return state.canvas.minScale;
+
+        const containerRect = elements.canvasContainer.getBoundingClientRect();
+        const minScaleX = containerRect.width / GRID_WIDTH;
+        const minScaleY = containerRect.height / GRID_HEIGHT;
+
+        // Use the larger of the two to ensure full coverage
+        const dynamicMin = Math.max(minScaleX, minScaleY);
+
+        // But don't go below the configured minimum
+        return Math.max(state.canvas.minScale, dynamicMin);
+    }
+
     function zoom(delta) {
-        const newScale = Math.max(state.canvas.minScale, Math.min(state.canvas.maxScale, state.canvas.scale + delta));
+        const minScale = getMinScaleForViewport();
+        const newScale = Math.max(minScale, Math.min(state.canvas.maxScale, state.canvas.scale + delta));
 
         if (newScale !== state.canvas.scale) {
             state.canvas.scale = newScale;
@@ -5303,7 +5305,8 @@
 
     function zoomAtPoint(delta, x, y) {
         const oldScale = state.canvas.scale;
-        const newScale = Math.max(state.canvas.minScale, Math.min(state.canvas.maxScale, oldScale + delta));
+        const minScale = getMinScaleForViewport();
+        const newScale = Math.max(minScale, Math.min(state.canvas.maxScale, oldScale + delta));
 
         if (newScale !== oldScale) {
             const scaleRatio = newScale / oldScale;
@@ -5338,17 +5341,33 @@
         const scaledGridWidth = GRID_WIDTH * state.canvas.scale;
         const scaledGridHeight = GRID_HEIGHT * state.canvas.scale;
 
-        // Minimum padding to always show some grid (100px)
-        const minPadding = 100;
+        // Strict bounds - no empty space allowed, only grid visible
+        // If grid is larger than viewport: constrain so edges don't show empty space
+        // If grid is smaller than viewport: center the grid
 
-        // Calculate bounds
-        // Max offset: can't push grid too far right (left edge of grid past right edge of viewport)
-        const maxOffsetX = viewportWidth - minPadding;
-        // Min offset: can't push grid too far left (right edge of grid past left edge of viewport)
-        const minOffsetX = -(scaledGridWidth - minPadding);
+        let minOffsetX, maxOffsetX, minOffsetY, maxOffsetY;
 
-        const maxOffsetY = viewportHeight - minPadding;
-        const minOffsetY = -(scaledGridHeight - minPadding);
+        if (scaledGridWidth >= viewportWidth) {
+            // Grid is wider than viewport - constrain to edges
+            maxOffsetX = 0; // Left edge of grid at left edge of viewport
+            minOffsetX = -(scaledGridWidth - viewportWidth); // Right edge of grid at right edge of viewport
+        } else {
+            // Grid is narrower than viewport - center it
+            const centerX = (viewportWidth - scaledGridWidth) / 2;
+            minOffsetX = centerX;
+            maxOffsetX = centerX;
+        }
+
+        if (scaledGridHeight >= viewportHeight) {
+            // Grid is taller than viewport - constrain to edges
+            maxOffsetY = 0; // Top edge of grid at top edge of viewport
+            minOffsetY = -(scaledGridHeight - viewportHeight); // Bottom edge of grid at bottom edge of viewport
+        } else {
+            // Grid is shorter than viewport - center it
+            const centerY = (viewportHeight - scaledGridHeight) / 2;
+            minOffsetY = centerY;
+            maxOffsetY = centerY;
+        }
 
         // Apply constraints
         state.canvas.offsetX = Math.max(minOffsetX, Math.min(maxOffsetX, state.canvas.offsetX));
@@ -5374,10 +5393,11 @@
 
         const nodePositions = state.nodePositions || {};
 
-        // Get hub position
+        // Get hub position using correct key format
         const defaultHubX = 600 - 160; // 440
         const defaultHubY = 400 - 100; // 300
-        const hubPos = nodePositions['hub'] || { x: defaultHubX, y: defaultHubY };
+        const hubKey = `${state.groupBy}_hub`;
+        const hubPos = nodePositions[hubKey] || { x: defaultHubX, y: defaultHubY };
 
         // Calculate hub center
         const hubWidth = 320;

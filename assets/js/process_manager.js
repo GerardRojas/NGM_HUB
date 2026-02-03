@@ -4496,15 +4496,18 @@
         // Calculate center point based on modules or default starting area
         let centerX, centerY;
 
-        // Check if we have modules to center on
-        const allModules = [...state.modules, ...state.customModules];
+        // Check if we have modules to center on (with safety checks)
+        const modules = Array.isArray(state.modules) ? state.modules : [];
+        const customModules = Array.isArray(state.customModules) ? state.customModules : [];
+        const allModules = [...modules, ...customModules];
         if (allModules.length > 0) {
             // Calculate bounding box of all modules
             let minX = Infinity, minY = Infinity;
             let maxX = -Infinity, maxY = -Infinity;
 
             allModules.forEach(m => {
-                const pos = state.nodePositions[m.id] || m.position || { x: 300, y: 300 };
+                const nodePositions = state.nodePositions || {};
+                const pos = nodePositions[m.id] || m.position || { x: 300, y: 300 };
                 const nodeWidth = 280;
                 const nodeHeight = 120;
                 minX = Math.min(minX, pos.x);

@@ -3455,6 +3455,20 @@ body.page-process-manager {
     color: #a78bfa;
 }
 
+/* Event type styling */
+.tree-node.custom-module.type-event {
+    border-color: #f472b6;
+}
+
+.tree-node.custom-module.type-event .tree-node-icon {
+    background: rgba(244, 114, 182, 0.15) !important;
+    border-color: #f472b6 !important;
+}
+
+.tree-node.custom-module.type-event .tree-node-icon svg {
+    color: #f472b6;
+}
+
 /* Algorithm type - special branding */
 .tree-node.custom-module.type-algorithm {
     border-width: 2px;
@@ -4188,6 +4202,247 @@ body.page-process-manager {
     color: #fbbf24;
 }
 
+/* ================================
+   Shape Variants (Diamond, Circle)
+   ================================ */
+
+/* Diamond Shape */
+.flow-node.shape-diamond {
+    width: 100px;
+    height: 100px;
+    min-height: unset;
+    padding: 0;
+    transform: rotate(45deg);
+    border-radius: 8px;
+}
+
+.flow-node.shape-diamond .flow-node-header,
+.flow-node.shape-diamond .flow-node-description,
+.flow-node.shape-diamond .flow-node-options,
+.flow-node.shape-diamond .flow-node-subservices,
+.flow-node.shape-diamond .flow-node-switch,
+.flow-node.shape-diamond .algorithm-modes,
+.flow-node.shape-diamond .algorithm-tech {
+    display: none;
+}
+
+.flow-node.shape-diamond .flow-node-icon {
+    transform: rotate(-45deg);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -20px;
+    margin-left: -20px;
+}
+
+.flow-node.shape-diamond .flow-node-title {
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-45deg);
+    white-space: nowrap;
+    font-size: 11px;
+    color: #9ca3af;
+    text-align: center;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Diamond ports */
+.flow-node.shape-diamond .flow-port {
+    width: 10px;
+    height: 10px;
+}
+
+.flow-node.shape-diamond .flow-port.port-top {
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-45deg);
+}
+
+.flow-node.shape-diamond .flow-port.port-bottom {
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-45deg);
+}
+
+.flow-node.shape-diamond .flow-port.port-left {
+    left: -5px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-45deg);
+}
+
+.flow-node.shape-diamond .flow-port.port-right {
+    right: -5px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-45deg);
+}
+
+/* Circle Shape */
+.flow-node.shape-circle {
+    width: 100px;
+    height: 100px;
+    min-height: unset;
+    padding: 0;
+    border-radius: 50%;
+}
+
+.flow-node.shape-circle .flow-node-header,
+.flow-node.shape-circle .flow-node-description,
+.flow-node.shape-circle .flow-node-options,
+.flow-node.shape-circle .flow-node-subservices,
+.flow-node.shape-circle .flow-node-switch,
+.flow-node.shape-circle .algorithm-modes,
+.flow-node.shape-circle .algorithm-tech {
+    display: none;
+}
+
+.flow-node.shape-circle .flow-node-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -20px;
+    margin-left: -20px;
+}
+
+.flow-node.shape-circle .flow-node-title {
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: 11px;
+    color: #9ca3af;
+    text-align: center;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Circle ports */
+.flow-node.shape-circle .flow-port.port-top {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.flow-node.shape-circle .flow-port.port-bottom {
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.flow-node.shape-circle .flow-port.port-left {
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.flow-node.shape-circle .flow-port.port-right {
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Shape size variants */
+.flow-node.shape-diamond.size-small,
+.flow-node.shape-circle.size-small {
+    width: 70px;
+    height: 70px;
+}
+
+.flow-node.shape-diamond.size-small .flow-node-icon,
+.flow-node.shape-circle.size-small .flow-node-icon {
+    width: 28px;
+    height: 28px;
+    margin-top: -14px;
+    margin-left: -14px;
+}
+
+.flow-node.shape-diamond.size-large,
+.flow-node.shape-circle.size-large {
+    width: 130px;
+    height: 130px;
+}
+
+.flow-node.shape-diamond.size-large .flow-node-icon,
+.flow-node.shape-circle.size-large .flow-node-icon {
+    width: 48px;
+    height: 48px;
+    margin-top: -24px;
+    margin-left: -24px;
+}
+
+/* Tree node shape variants */
+.tree-node.shape-diamond {
+    width: 90px;
+    height: 90px;
+    min-height: unset;
+    padding: 0;
+    transform: rotate(45deg);
+    border-radius: 8px;
+}
+
+.tree-node.shape-diamond .tree-node-badge,
+.tree-node.shape-diamond .tree-node-subtitle {
+    display: none;
+}
+
+.tree-node.shape-diamond .tree-node-icon {
+    transform: rotate(-45deg);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -20px;
+    margin-left: -20px;
+}
+
+.tree-node.shape-diamond .tree-node-title {
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-45deg);
+    white-space: nowrap;
+    font-size: 11px;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tree-node.shape-circle {
+    width: 90px;
+    height: 90px;
+    min-height: unset;
+    padding: 0;
+    border-radius: 50%;
+}
+
+.tree-node.shape-circle .tree-node-badge,
+.tree-node.shape-circle .tree-node-subtitle {
+    display: none;
+}
+
+.tree-node.shape-circle .tree-node-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -20px;
+    margin-left: -20px;
+}
+
+.tree-node.shape-circle .tree-node-title {
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-size: 11px;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* Node content layout */
 .flow-node-header {
     display: flex;
@@ -4396,6 +4651,22 @@ body.page-process-manager {
 .flow-node.type-decision .flow-node-badge {
     background: rgba(167, 139, 250, 0.15);
     color: #a78bfa;
+}
+
+/* Node type: event (trigger/notification) */
+.flow-node.type-event {
+    border-color: #f472b6;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2e1a28 100%);
+}
+
+.flow-node.type-event .flow-node-icon {
+    background: rgba(244, 114, 182, 0.15);
+    color: #f472b6;
+}
+
+.flow-node.type-event .flow-node-badge {
+    background: rgba(244, 114, 182, 0.15);
+    color: #f472b6;
 }
 
 /* Node type: algorithm (proprietary IP) */
@@ -4763,6 +5034,14 @@ body.page-process-manager {
     stroke: #a78bfa;
 }
 
+.flow-connection-line.type-event {
+    stroke: #f472b6;
+}
+
+.flow-connection-line.type-milestone {
+    stroke: #f59e0b;
+}
+
 /* Flow connection arrow markers */
 .flow-arrow-marker {
     fill: #3a3a3a;
@@ -4778,6 +5057,18 @@ body.page-process-manager {
 
 .flow-arrow-marker.type-link {
     fill: #60a5fa;
+}
+
+.flow-arrow-marker.type-decision {
+    fill: #a78bfa;
+}
+
+.flow-arrow-marker.type-event {
+    fill: #f472b6;
+}
+
+.flow-arrow-marker.type-milestone {
+    fill: #f59e0b;
 }
 
 /* Subservice cards (inside nodes) */

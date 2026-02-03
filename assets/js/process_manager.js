@@ -1612,6 +1612,7 @@
         document.getElementById('moduleLinkedModuleId').value = linkedModuleId || '';
         document.getElementById('moduleType').value = 'step';
         document.getElementById('moduleSize').value = 'medium';
+        document.getElementById('moduleShape').value = 'rectangle';
         document.getElementById('btnDeleteModule').classList.add('hidden');
 
         // Reset implemented switch to draft
@@ -1644,6 +1645,7 @@
         document.getElementById('moduleDepartment').value = module.departmentId || '';
         document.getElementById('moduleType').value = module.type || 'step';
         document.getElementById('moduleSize').value = module.size || 'medium';
+        document.getElementById('moduleShape').value = module.shape || 'rectangle';
         document.getElementById('btnDeleteModule').classList.remove('hidden');
 
         // Set implemented switch
@@ -1773,6 +1775,7 @@
         document.getElementById('moduleLinkedModuleId').value = currentModule.id;  // Store parent module ID
         document.getElementById('moduleType').value = 'step';
         document.getElementById('moduleSize').value = 'medium';
+        document.getElementById('moduleShape').value = 'rectangle';
         document.getElementById('btnDeleteModule').classList.add('hidden');
 
         // Reset implemented switch to draft
@@ -1802,6 +1805,7 @@
             icon: nodeData.icon,
             type: nodeData.type || 'step',
             size: nodeData.size || 'medium',
+            shape: nodeData.shape || 'rectangle',
             is_implemented: nodeData.isImplemented || false,
             position: {
                 x: 200 + (existingCount % 3) * 300,
@@ -1840,6 +1844,7 @@
         document.getElementById('moduleDepartment').value = '';  // Sub-process nodes don't have departments
         document.getElementById('moduleType').value = node.type || 'step';
         document.getElementById('moduleSize').value = node.size || 'medium';
+        document.getElementById('moduleShape').value = node.shape || 'rectangle';
         document.getElementById('btnDeleteModule').classList.remove('hidden');
 
         // Set implemented switch
@@ -1869,6 +1874,7 @@
             icon: nodeData.icon,
             type: nodeData.type,
             size: nodeData.size,
+            shape: nodeData.shape,
             is_implemented: nodeData.isImplemented
         };
 
@@ -1908,6 +1914,7 @@
             departmentId: document.getElementById('moduleDepartment').value || null,
             type: document.getElementById('moduleType').value || 'step',
             size: document.getElementById('moduleSize').value || 'medium',
+            shape: document.getElementById('moduleShape').value || 'rectangle',
             isImplemented: implementedCheckbox ? implementedCheckbox.checked : false
         };
 
@@ -2493,6 +2500,12 @@
         if (!elements.detailViewContainer) return;
 
         elements.detailViewContainer.innerHTML = '';
+
+        // Get linked processes for this module
+        const linkedProcessIds = module.linkedProcesses || [];
+        const linkedProcesses = linkedProcessIds
+            .map(pid => state.processes.find(p => p.id === pid))
+            .filter(Boolean);
 
         // Check if module has sub-process nodes
         const subProcessNodes = module.subProcessNodes || [];
@@ -3432,7 +3445,8 @@
         const statusClass = module.isImplemented ? 'is-implemented' : 'is-draft';
         const typeClass = module.type ? `type-${module.type}` : 'type-step';
         const sizeClass = module.size ? `size-${module.size}` : 'size-medium';
-        node.className = `tree-node custom-module ${statusClass} ${typeClass} ${sizeClass}`;
+        const shapeClass = module.shape && module.shape !== 'rectangle' ? `shape-${module.shape}` : '';
+        node.className = `tree-node custom-module ${statusClass} ${typeClass} ${sizeClass} ${shapeClass}`.trim();
         node.style.left = `${x}px`;
         node.style.top = `${y}px`;
         node.dataset.id = module.id;
@@ -6414,7 +6428,8 @@
 
     function createFlowNode(node, x, y, processId) {
         const el = document.createElement('div');
-        el.className = `flow-node type-${node.type} size-${node.size}`;
+        const shapeClass = node.shape && node.shape !== 'rectangle' ? `shape-${node.shape}` : '';
+        el.className = `flow-node type-${node.type} size-${node.size} ${shapeClass}`.trim();
         if (node.type === 'draft' && node.is_implemented) {
             el.classList.add('is-implemented');
         }
@@ -6638,6 +6653,10 @@
                 // CPU/chip icon for algorithms
                 iconSvg = '<rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line>';
                 break;
+            case 'event':
+                // Zap/lightning icon for events
+                iconSvg = '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>';
+                break;
             default:
                 iconSvg = '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>';
         }
@@ -6651,6 +6670,8 @@
             case 'draft': label = node.is_implemented ? 'LIVE' : 'DRAFT'; break;
             case 'link': label = node.direction === 'incoming' ? 'FROM' : 'TO'; break;
             case 'decision': label = 'DECISION'; break;
+            case 'event': label = 'EVENT'; break;
+            case 'milestone': label = 'MILESTONE'; break;
             default: label = node.type.toUpperCase();
         }
         return `<div class="flow-node-badge">${label}</div>`;
@@ -6956,9 +6977,32 @@
             book: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>`,
             users: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
             dollar: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>`,
-            settings: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`
+            settings: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`,
+            // Additional icons
+            box: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`,
+            database: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>`,
+            code: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`,
+            terminal: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>`,
+            cloud: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`,
+            lock: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
+            shield: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>`,
+            bell: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`,
+            calendar: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`,
+            clock: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`,
+            file: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>`,
+            folder: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+            globe: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
+            mail: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`,
+            phone: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`,
+            camera: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>`,
+            heart: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
+            star: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
+            flag: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>`,
+            zap: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`,
+            truck: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>`,
+            package: `<svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>`
         };
-        return icons[icon] || icons.hub;
+        return icons[icon] || icons.box;
     }
 
     function getServiceIconSvg(icon, color = '#f59e0b') {

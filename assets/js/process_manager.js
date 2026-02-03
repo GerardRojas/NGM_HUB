@@ -764,6 +764,9 @@
         // Custom modules (user-created)
         customModules: [],
 
+        // Module-to-module connections
+        moduleConnections: [],
+
         // Departments from Supabase
         departments: [],
 
@@ -1063,6 +1066,68 @@
     }
 
     // ================================
+    // Module Connections (module-to-module)
+    // ================================
+    async function loadModuleConnections() {
+        const result = await loadStateFromSupabase('module_connections', []);
+
+        if (result.success && Array.isArray(result.data)) {
+            state.moduleConnections = result.data;
+            console.log(`[PROCESS-MANAGER] Loaded ${state.moduleConnections.length} module connections from Supabase`);
+        } else {
+            state.moduleConnections = [];
+            console.warn('[PROCESS-MANAGER] Failed to load module connections:', result.error);
+        }
+    }
+
+    function saveModuleConnections() {
+        if (state.serverError) {
+            console.warn('[PROCESS-MANAGER] Cannot save connections - server unavailable');
+            return;
+        }
+
+        console.log('[PROCESS-MANAGER] Saving', state.moduleConnections.length, 'module connections to Supabase');
+        saveStateToSupabase('module_connections', state.moduleConnections);
+    }
+
+    function addModuleConnection(sourceId, targetId) {
+        // Check if connection already exists (in either direction)
+        const exists = state.moduleConnections.some(conn =>
+            (conn.sourceId === sourceId && conn.targetId === targetId) ||
+            (conn.sourceId === targetId && conn.targetId === sourceId)
+        );
+
+        if (exists) {
+            console.log('[CONNECTION] Connection already exists');
+            return false;
+        }
+
+        state.moduleConnections.push({
+            id: `conn_${Date.now()}`,
+            sourceId,
+            targetId,
+            createdAt: new Date().toISOString()
+        });
+
+        saveModuleConnections();
+        return true;
+    }
+
+    function removeModuleConnection(sourceId, targetId) {
+        const initialLength = state.moduleConnections.length;
+        state.moduleConnections = state.moduleConnections.filter(conn =>
+            !((conn.sourceId === sourceId && conn.targetId === targetId) ||
+              (conn.sourceId === targetId && conn.targetId === sourceId))
+        );
+
+        if (state.moduleConnections.length < initialLength) {
+            saveModuleConnections();
+            return true;
+        }
+        return false;
+    }
+
+    // ================================
     // Departments from Supabase
     // ================================
     async function loadDepartments() {
@@ -1257,6 +1322,7 @@
         await Promise.all([
             loadNodePositions(),
             loadCustomModules(),
+            loadModuleConnections(),
             loadFlowPositions(),
             loadDraftStates()
         ]);
@@ -1662,6 +1728,149 @@
         }
     }
 
+    // ================================
+    // Sub-Process Node Functions
+    // ================================
+    // Track if we're adding a sub-process node vs a top-level module
+    let isAddingSubProcessNode = false;
+
+    function addSubProcessNode() {
+        // Get the current module being viewed in detail
+        const currentModule = state.selectedModule || getCustomModule(state.selectedGroupId);
+        if (!currentModule) {
+            showToast('No module selected', 'error');
+            return;
+        }
+
+        isAddingSubProcessNode = true;
+
+        // Open the module modal adapted for sub-process
+        if (!elements.moduleModal) return;
+
+        state.editingModuleId = null;
+        document.getElementById('moduleModalTitle').textContent = `Add Step to "${currentModule.name}"`;
+        document.getElementById('moduleForm').reset();
+        document.getElementById('moduleEditId').value = '';
+        document.getElementById('moduleLinkedModuleId').value = currentModule.id;  // Store parent module ID
+        document.getElementById('moduleType').value = 'step';
+        document.getElementById('moduleSize').value = 'medium';
+        document.getElementById('btnDeleteModule').classList.add('hidden');
+
+        // Reset implemented switch to draft
+        const implementedCheckbox = document.getElementById('moduleImplemented');
+        const implementedLabel = document.getElementById('moduleImplementedLabel');
+        if (implementedCheckbox) implementedCheckbox.checked = false;
+        if (implementedLabel) {
+            implementedLabel.textContent = 'Draft';
+            implementedLabel.classList.remove('live');
+        }
+
+        elements.moduleModal.classList.remove('hidden');
+    }
+
+    function saveSubProcessNode(parentModule, nodeData) {
+        // Initialize subProcessNodes array if it doesn't exist
+        if (!parentModule.subProcessNodes) {
+            parentModule.subProcessNodes = [];
+        }
+
+        // Create the node with a unique ID and position
+        const existingCount = parentModule.subProcessNodes.length;
+        const newNode = {
+            id: `node_${Date.now()}`,
+            name: nodeData.name,
+            description: nodeData.description,
+            icon: nodeData.icon,
+            type: nodeData.type || 'step',
+            size: nodeData.size || 'medium',
+            is_implemented: nodeData.isImplemented || false,
+            position: {
+                x: 200 + (existingCount % 3) * 300,
+                y: 200 + Math.floor(existingCount / 3) * 200
+            }
+        };
+
+        parentModule.subProcessNodes.push(newNode);
+
+        // Save to Supabase
+        saveCustomModules();
+
+        console.log('[SUBPROCESS] Added node to module:', parentModule.id, newNode);
+        return newNode;
+    }
+
+    function editSubProcessNode(parentModuleId, nodeId) {
+        const parentModule = getCustomModule(parentModuleId);
+        if (!parentModule || !parentModule.subProcessNodes) return;
+
+        const node = parentModule.subProcessNodes.find(n => n.id === nodeId);
+        if (!node) return;
+
+        isAddingSubProcessNode = true;
+
+        // Open the module modal for editing
+        if (!elements.moduleModal) return;
+
+        state.editingModuleId = nodeId;  // Use this to identify we're editing a sub-process node
+        document.getElementById('moduleModalTitle').textContent = 'Edit Step';
+        document.getElementById('moduleEditId').value = nodeId;
+        document.getElementById('moduleLinkedModuleId').value = parentModuleId;
+        document.getElementById('moduleName').value = node.name || '';
+        document.getElementById('moduleDescription').value = node.description || '';
+        document.getElementById('moduleIcon').value = node.icon || 'box';
+        document.getElementById('moduleDepartment').value = '';  // Sub-process nodes don't have departments
+        document.getElementById('moduleType').value = node.type || 'step';
+        document.getElementById('moduleSize').value = node.size || 'medium';
+        document.getElementById('btnDeleteModule').classList.remove('hidden');
+
+        // Set implemented switch
+        const implementedCheckbox = document.getElementById('moduleImplemented');
+        const implementedLabel = document.getElementById('moduleImplementedLabel');
+        if (implementedCheckbox) implementedCheckbox.checked = node.is_implemented === true;
+        if (implementedLabel) {
+            implementedLabel.textContent = node.is_implemented ? 'Live' : 'Draft';
+            implementedLabel.classList.toggle('live', node.is_implemented === true);
+        }
+
+        elements.moduleModal.classList.remove('hidden');
+    }
+
+    function updateSubProcessNode(parentModuleId, nodeId, nodeData) {
+        const parentModule = getCustomModule(parentModuleId);
+        if (!parentModule || !parentModule.subProcessNodes) return;
+
+        const nodeIndex = parentModule.subProcessNodes.findIndex(n => n.id === nodeId);
+        if (nodeIndex === -1) return;
+
+        // Update the node, preserving position
+        parentModule.subProcessNodes[nodeIndex] = {
+            ...parentModule.subProcessNodes[nodeIndex],
+            name: nodeData.name,
+            description: nodeData.description,
+            icon: nodeData.icon,
+            type: nodeData.type,
+            size: nodeData.size,
+            is_implemented: nodeData.isImplemented
+        };
+
+        // Save to Supabase
+        saveCustomModules();
+
+        console.log('[SUBPROCESS] Updated node:', nodeId);
+    }
+
+    function deleteSubProcessNode(parentModuleId, nodeId) {
+        const parentModule = getCustomModule(parentModuleId);
+        if (!parentModule || !parentModule.subProcessNodes) return;
+
+        parentModule.subProcessNodes = parentModule.subProcessNodes.filter(n => n.id !== nodeId);
+
+        // Save to Supabase
+        saveCustomModules();
+
+        console.log('[SUBPROCESS] Deleted node:', nodeId);
+    }
+
     function saveModule() {
         const form = document.getElementById('moduleForm');
         if (!form.checkValidity()) {
@@ -1688,6 +1897,30 @@
             return;
         }
 
+        // Check if we're adding/editing a sub-process node
+        if (isAddingSubProcessNode && linkedModuleId) {
+            const parentModule = getCustomModule(linkedModuleId);
+            if (parentModule) {
+                if (editId) {
+                    // Update existing sub-process node
+                    updateSubProcessNode(linkedModuleId, editId, moduleData);
+                    showToast('Step updated', 'success');
+                } else {
+                    // Add new sub-process node
+                    saveSubProcessNode(parentModule, moduleData);
+                    showToast('Step added', 'success');
+                }
+
+                closeModuleModal();
+                isAddingSubProcessNode = false;
+
+                // Re-render the detail view to show the new/updated node
+                renderModuleDetailView(parentModule);
+                return;
+            }
+        }
+
+        // Normal module save (not sub-process)
         if (editId) {
             // Update existing module
             updateCustomModule(editId, moduleData);
@@ -1705,11 +1938,31 @@
         }
 
         closeModuleModal();
+        isAddingSubProcessNode = false;
         renderTreeView();
     }
 
     function confirmDeleteModule() {
         const editId = document.getElementById('moduleEditId').value;
+        const linkedModuleId = document.getElementById('moduleLinkedModuleId').value;
+
+        // Check if deleting a sub-process node
+        if (isAddingSubProcessNode && linkedModuleId && editId) {
+            const parentModule = getCustomModule(linkedModuleId);
+            if (parentModule) {
+                const node = parentModule.subProcessNodes?.find(n => n.id === editId);
+                if (node && confirm(`Are you sure you want to delete "${node.name}"?`)) {
+                    deleteSubProcessNode(linkedModuleId, editId);
+                    closeModuleModal();
+                    isAddingSubProcessNode = false;
+                    showToast('Step deleted', 'success');
+                    renderModuleDetailView(parentModule);
+                    return;
+                }
+            }
+        }
+
+        // Normal module delete
         if (editId) {
             confirmDeleteModuleById(editId);
         }
@@ -2198,16 +2451,96 @@
 
         elements.detailViewContainer.appendChild(headerCard);
 
-        // Create processes container
+        // Check if module has sub-process nodes
+        const subProcessNodes = module.subProcessNodes || [];
+
+        if (subProcessNodes.length > 0) {
+            // Render sub-process nodes as flow nodes on the canvas
+            renderSubProcessNodesOnCanvas(module, subProcessNodes);
+        } else {
+            // Show empty state for sub-process with Add Step button
+            const emptyState = document.createElement('div');
+            emptyState.className = 'subprocess-empty';
+            emptyState.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            `;
+            emptyState.innerHTML = `
+                <div class="subprocess-empty-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                </div>
+                <h3 class="subprocess-empty-title">No steps defined</h3>
+                <p class="subprocess-empty-text">Add steps to define the internal flow of this module.</p>
+                <button class="btn-add-subprocess" onclick="window.processManager?.addSubProcessNode?.()">
+                    Add First Step
+                </button>
+            `;
+            elements.detailViewContainer.appendChild(emptyState);
+        }
+
+        // Add floating "Add Step" button (always visible when there are nodes)
+        if (subProcessNodes.length > 0) {
+            const addBtn = document.createElement('button');
+            addBtn.className = 'btn-add-step-float';
+            addBtn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add Step
+            `;
+            addBtn.style.cssText = `
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                background: linear-gradient(135deg, #3ecf8e 0%, #2da77a 100%);
+                color: #000;
+                border: none;
+                border-radius: 12px;
+                padding: 12px 20px;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                box-shadow: 0 4px 20px rgba(62, 207, 142, 0.3);
+                z-index: 100;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            `;
+            addBtn.addEventListener('mouseenter', () => {
+                addBtn.style.transform = 'scale(1.05)';
+                addBtn.style.boxShadow = '0 6px 30px rgba(62, 207, 142, 0.4)';
+            });
+            addBtn.addEventListener('mouseleave', () => {
+                addBtn.style.transform = 'scale(1)';
+                addBtn.style.boxShadow = '0 4px 20px rgba(62, 207, 142, 0.3)';
+            });
+            addBtn.addEventListener('click', () => window.processManager?.addSubProcessNode?.());
+            elements.detailViewContainer.appendChild(addBtn);
+        }
+
+        // Create processes container (smaller, at the bottom)
         const processesContainer = document.createElement('div');
         processesContainer.className = 'module-processes-container';
         processesContainer.style.cssText = `
-            position: absolute;
-            top: 180px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 900px;
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid #2a2a2a;
+            border-radius: 12px;
+            padding: 12px;
+            z-index: 50;
         `;
 
         if (linkedProcesses.length > 0) {
@@ -2302,6 +2635,230 @@
         }
 
         elements.detailViewContainer.appendChild(processesContainer);
+    }
+
+    function renderSubProcessNodesOnCanvas(module, subProcessNodes) {
+        const nodeRects = {};
+
+        // Render each sub-process node
+        subProcessNodes.forEach((node, index) => {
+            // Default position if not specified
+            const defaultX = 200 + (index % 3) * 300;
+            const defaultY = 250 + Math.floor(index / 3) * 200;
+
+            const pos = node.position || { x: defaultX, y: defaultY };
+            const nodeEl = createFlowNode(node, pos.x, pos.y, module.id);
+
+            // Mark as sub-process node
+            nodeEl.classList.add('subprocess-node');
+            nodeEl.dataset.parentModuleId = module.id;
+
+            nodeRects[node.id] = {
+                x: pos.x,
+                y: pos.y,
+                width: getNodeWidth(node.size),
+                height: getNodeHeight(node),
+                type: node.type
+            };
+
+            elements.detailViewContainer.appendChild(nodeEl);
+
+            // Make draggable with position saving
+            makeDetailNodeDraggable(nodeEl, module.id, node.id, () => {
+                redrawDetailConnections(module, subProcessNodes, nodeRects);
+            });
+
+            // Double-click to edit
+            nodeEl.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                // Milestone and Decision types open notepad
+                if (node.type === 'milestone' || node.type === 'decision') {
+                    // For sub-process nodes, we'd need a different approach
+                    // For now, open edit modal
+                    window.processManager?.editSubProcessNode?.(module.id, node.id);
+                } else {
+                    window.processManager?.editSubProcessNode?.(module.id, node.id);
+                }
+            });
+
+            // Right-click context menu
+            nodeEl.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showSubProcessNodeContextMenu(e, module.id, node.id);
+            });
+        });
+
+        // Draw connections between sub-process nodes if any
+        redrawDetailConnections(module, subProcessNodes, nodeRects);
+    }
+
+    function makeDetailNodeDraggable(nodeEl, moduleId, nodeId, onDrag) {
+        let isDragging = false;
+        let startX, startY;
+        let nodeStartX, nodeStartY;
+
+        nodeEl.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            if (e.target.closest('.flow-port')) return;
+
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            nodeStartX = parseInt(nodeEl.style.left) || 0;
+            nodeStartY = parseInt(nodeEl.style.top) || 0;
+
+            nodeEl.classList.add('dragging');
+            e.stopPropagation();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const dx = (e.clientX - startX) / state.canvas.scale;
+            const dy = (e.clientY - startY) / state.canvas.scale;
+
+            const newX = nodeStartX + dx;
+            const newY = nodeStartY + dy;
+
+            nodeEl.style.left = `${newX}px`;
+            nodeEl.style.top = `${newY}px`;
+
+            if (onDrag) onDrag();
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            nodeEl.classList.remove('dragging');
+
+            // Save position to module
+            const module = getCustomModule(moduleId);
+            if (module && module.subProcessNodes) {
+                const node = module.subProcessNodes.find(n => n.id === nodeId);
+                if (node) {
+                    node.position = {
+                        x: parseInt(nodeEl.style.left) || 0,
+                        y: parseInt(nodeEl.style.top) || 0
+                    };
+                    saveCustomModules();
+                }
+            }
+        });
+    }
+
+    function redrawDetailConnections(module, subProcessNodes, nodeRects) {
+        // Clear existing detail connections
+        const existingConnections = elements.detailViewContainer.querySelectorAll('.detail-connection');
+        existingConnections.forEach(c => c.remove());
+
+        // For now, draw connections based on node order or explicit connections
+        // Future: implement connection data in subProcessNodes
+        // This is a placeholder for visual consistency
+    }
+
+    function showSubProcessNodeContextMenu(e, moduleId, nodeId) {
+        // Remove any existing context menu
+        const existingMenu = document.querySelector('.subprocess-context-menu');
+        if (existingMenu) existingMenu.remove();
+
+        const menu = document.createElement('div');
+        menu.className = 'subprocess-context-menu context-menu';
+        menu.style.cssText = `
+            position: fixed;
+            left: ${e.clientX}px;
+            top: ${e.clientY}px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 8px 0;
+            min-width: 160px;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        `;
+
+        menu.innerHTML = `
+            <div class="context-menu-item" data-action="edit">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Edit Step
+            </div>
+            <div class="context-menu-item" data-action="duplicate">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Duplicate
+            </div>
+            <div class="context-menu-divider"></div>
+            <div class="context-menu-item danger" data-action="delete">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Delete
+            </div>
+        `;
+
+        document.body.appendChild(menu);
+
+        // Handle clicks
+        menu.querySelectorAll('.context-menu-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const action = item.dataset.action;
+                menu.remove();
+
+                switch (action) {
+                    case 'edit':
+                        window.processManager?.editSubProcessNode?.(moduleId, nodeId);
+                        break;
+                    case 'duplicate':
+                        duplicateSubProcessNode(moduleId, nodeId);
+                        break;
+                    case 'delete':
+                        if (confirm('Delete this step?')) {
+                            deleteSubProcessNode(moduleId, nodeId);
+                            const module = getCustomModule(moduleId);
+                            if (module) renderModuleDetailView(module);
+                        }
+                        break;
+                }
+            });
+        });
+
+        // Close on click outside
+        setTimeout(() => {
+            document.addEventListener('click', function closeMenu(e) {
+                if (!menu.contains(e.target)) {
+                    menu.remove();
+                    document.removeEventListener('click', closeMenu);
+                }
+            });
+        }, 10);
+    }
+
+    function duplicateSubProcessNode(moduleId, nodeId) {
+        const module = getCustomModule(moduleId);
+        if (!module || !module.subProcessNodes) return;
+
+        const node = module.subProcessNodes.find(n => n.id === nodeId);
+        if (!node) return;
+
+        const newNode = {
+            ...node,
+            id: `node_${Date.now()}`,
+            name: `${node.name} (Copy)`,
+            position: {
+                x: (node.position?.x || 200) + 50,
+                y: (node.position?.y || 200) + 50
+            }
+        };
+
+        module.subProcessNodes.push(newNode);
+        saveCustomModules();
+        showToast('Step duplicated', 'success');
+        renderModuleDetailView(module);
     }
 
     function showLinkProcessModal(moduleId) {
@@ -2827,7 +3384,7 @@
         const hubCenterX = hubRect.x + hubRect.width / 2;
         const hubCenterY = hubRect.y + hubRect.height / 2;
 
-        // Draw connections for custom modules only
+        // Draw connections from custom modules to hub
         state.customModules.forEach((module) => {
             // Skip if module is not connected to hub
             if (module.connectedToHub === false) return;
@@ -2846,6 +3403,27 @@
             const connectionColor = module.isImplemented ? '#3ecf8e' : '#6b7280';
             const isDraft = !module.isImplemented;
             const connection = createOrthogonalConnection(points, connectionColor, isDraft, `hub-${module.id}`);
+            elements.connectionsLayer.appendChild(connection);
+        });
+
+        // Draw module-to-module connections
+        state.moduleConnections.forEach((conn) => {
+            const sourceRect = actualRects[conn.sourceId];
+            const targetRect = actualRects[conn.targetId];
+
+            if (!sourceRect || !targetRect) return;
+
+            const sourceCenterX = sourceRect.x + sourceRect.width / 2;
+            const sourceCenterY = sourceRect.y + sourceRect.height / 2;
+            const targetCenterX = targetRect.x + targetRect.width / 2;
+            const targetCenterY = targetRect.y + targetRect.height / 2;
+
+            const points = calculateOrthogonalPath(
+                sourceRect, targetRect, sourceCenterX, sourceCenterY, targetCenterX, targetCenterY
+            );
+
+            // Module-to-module connections use a different color (cyan)
+            const connection = createOrthogonalConnection(points, '#06b6d4', false, conn.id);
             elements.connectionsLayer.appendChild(connection);
         });
 
@@ -3510,10 +4088,9 @@
             // If we have a valid target, create the connection
             if (targetId && targetId !== sourceId) {
                 console.log('[CONNECTION] Creating connection:', sourceId, '->', targetId);
-                console.log('[CONNECTION] Custom modules before:', state.customModules.length);
 
-                // For now, we connect modules to hub
-                // Future: store module-to-module connections
+                let connectionCreated = false;
+
                 if (targetId === 'hub') {
                     // Connect module to hub
                     const module = getCustomModule(sourceId);
@@ -3521,6 +4098,7 @@
                         module.connectedToHub = true;
                         saveCustomModules();
                         showToast('Connected to Hub', 'success');
+                        connectionCreated = true;
                     }
                 } else if (sourceId === 'hub') {
                     // Connect hub to module
@@ -3529,28 +4107,41 @@
                         module.connectedToHub = true;
                         saveCustomModules();
                         showToast('Connected to Hub', 'success');
+                        connectionCreated = true;
                     }
                 } else {
-                    // Module to module connection - store in module data
-                    // Future enhancement: implement module-to-module connections
-                    showToast('Module-to-module connections coming soon', 'info');
+                    // Module to module connection
+                    if (addModuleConnection(sourceId, targetId)) {
+                        showToast('Modules connected', 'success');
+                        connectionCreated = true;
+                    } else {
+                        showToast('Connection already exists', 'info');
+                    }
                 }
 
-                console.log('[CONNECTION] Custom modules after:', state.customModules.length);
+                // Reset connection mode state BEFORE redrawing to prevent duplicate preview line
+                state.connectionMode.active = false;
+                state.connectionMode.sourceId = null;
+                state.connectionMode.sourceRect = null;
 
-                // Redraw connections
-                const nodeRects = buildCurrentNodeRects();
-                console.log('[CONNECTION] Node rects:', Object.keys(nodeRects));
-                redrawConnections(nodeRects);
+                if (connectionCreated) {
+                    // Redraw connections
+                    const nodeRects = buildCurrentNodeRects();
+                    redrawConnections(nodeRects);
+                }
+            } else {
+                // No valid target - still reset state
+                state.connectionMode.active = false;
+                state.connectionMode.sourceId = null;
+                state.connectionMode.sourceRect = null;
             }
         } catch (error) {
             console.error('[CONNECTION] Error in endConnectionMode:', error);
+            // Reset state on error too
+            state.connectionMode.active = false;
+            state.connectionMode.sourceId = null;
+            state.connectionMode.sourceRect = null;
         }
-
-        // Reset state
-        state.connectionMode.active = false;
-        state.connectionMode.sourceId = null;
-        state.connectionMode.sourceRect = null;
 
         console.log('[CONNECTION] Ended connection mode');
     }
@@ -5398,7 +5989,7 @@
                     </div>
                     <h3 class="subprocess-empty-title">No sub-process defined</h3>
                     <p class="subprocess-empty-text">This module doesn't have a detailed sub-process yet.</p>
-                    <button class="btn-add-subprocess" onclick="window.ProcessManager?.addSubProcessNode?.()">
+                    <button class="btn-add-subprocess" onclick="window.processManager?.addSubProcessNode?.()">
                         Add First Step
                     </button>
                 </div>
@@ -5536,6 +6127,7 @@
             case 'large': return 280;
             case 'medium': return 220;
             case 'small': return 160;
+            case 'milestone': return 90;
             default: return 220;
         }
     }
@@ -5546,6 +6138,7 @@
             case 'large': baseHeight = 120; break;
             case 'medium': baseHeight = 90; break;
             case 'small': baseHeight = 60; break;
+            case 'milestone': baseHeight = 90; break;  // Diamond is 90x90
             default: baseHeight = 90;
         }
 
@@ -5686,8 +6279,22 @@
             `;
         }
 
-        // Build the node content based on type
-        if (node.type === 'milestone') {
+        // Build the node content based on type and size
+        if (node.size === 'milestone') {
+            // Diamond milestone node with external label
+            const milestoneIcon = node.type === 'decision'
+                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>'
+                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>';
+
+            el.innerHTML = `
+                ${portsHtml}
+                <div class="milestone-inner">
+                    <div class="milestone-icon">${milestoneIcon}</div>
+                </div>
+                <div class="milestone-label">${escapeHtml(node.name)}</div>
+            `;
+        } else if (node.type === 'milestone') {
+            // Standard milestone (non-diamond size)
             el.innerHTML = `
                 ${portsHtml}
                 <div class="flow-node-header">
@@ -6414,7 +7021,9 @@
         navigateToTree,
         navigateToModuleDetail,
         linkProcessToModule,
-        unlinkProcessFromModule
+        unlinkProcessFromModule,
+        addSubProcessNode,
+        editSubProcessNode
     };
 
 })();

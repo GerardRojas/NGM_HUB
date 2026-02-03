@@ -3159,17 +3159,25 @@ body.page-process-manager {
     background: rgba(255, 255, 255, 0.05);
 }
 
-.context-menu-item.text-danger {
+.context-menu-item.text-danger,
+.context-menu-item.danger {
     color: #ef4444;
 }
 
-.context-menu-item.text-danger:hover {
+.context-menu-item.text-danger:hover,
+.context-menu-item.danger:hover {
     background: rgba(239, 68, 68, 0.1);
 }
 
 .context-menu-item svg {
     flex-shrink: 0;
     opacity: 0.7;
+}
+
+.context-menu-divider {
+    height: 1px;
+    background: #2a2a2a;
+    margin: 6px 12px;
 }
 
 /* ================================
@@ -3692,21 +3700,26 @@ body.page-process-manager {
 }
 
 .canvas-container.connecting-mode .tree-node {
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
-}
-
-.canvas-container.connecting-mode .tree-node:hover {
-    box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.5);
-    border-color: #3ecf8e;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .canvas-container.connecting-mode .tree-node.valid-drop-target {
     border-color: rgba(62, 207, 142, 0.3);
+    cursor: pointer;
 }
 
 .canvas-container.connecting-mode .tree-node.valid-drop-target:hover {
+    transform: scale(1.08);
     border-color: #3ecf8e;
-    box-shadow: 0 0 20px rgba(62, 207, 142, 0.4);
+    box-shadow: 0 0 25px rgba(62, 207, 142, 0.5), 0 0 0 3px rgba(62, 207, 142, 0.3);
+    z-index: 100;
+}
+
+/* Source node in connection mode - highlight differently */
+.canvas-container.connecting-mode .tree-node:not(.valid-drop-target) {
+    opacity: 0.7;
+    border-color: #3ecf8e;
+    box-shadow: 0 0 15px rgba(62, 207, 142, 0.3);
 }
 
 /* Connection preview line */
@@ -4020,6 +4033,125 @@ body.page-process-manager {
     width: 160px;
     min-height: 70px;
     padding: 12px 14px;
+}
+
+/* Milestone Diamond Size */
+.flow-node.size-milestone {
+    width: 90px;
+    height: 90px;
+    min-height: unset;
+    padding: 0;
+    transform: rotate(45deg);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%);
+    border-color: rgba(139, 92, 246, 0.4);
+    box-shadow:
+        0 0 20px rgba(139, 92, 246, 0.2),
+        0 0 40px rgba(139, 92, 246, 0.1),
+        inset 0 0 20px rgba(139, 92, 246, 0.05);
+}
+
+.flow-node.size-milestone:hover {
+    border-color: rgba(139, 92, 246, 0.6);
+    box-shadow:
+        0 0 30px rgba(139, 92, 246, 0.3),
+        0 0 60px rgba(139, 92, 246, 0.15),
+        inset 0 0 30px rgba(139, 92, 246, 0.1);
+}
+
+.flow-node.size-milestone .milestone-inner {
+    transform: rotate(-45deg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+    padding: 8px;
+}
+
+.flow-node.size-milestone .milestone-icon {
+    width: 24px;
+    height: 24px;
+    margin-bottom: 4px;
+    color: #a78bfa;
+}
+
+.flow-node.size-milestone .milestone-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Milestone external label (outside the diamond) */
+.flow-node.size-milestone .milestone-label {
+    position: absolute;
+    bottom: -35px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-45deg);
+    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Milestone connection ports - repositioned for diamond */
+.flow-node.size-milestone .flow-port {
+    width: 10px;
+    height: 10px;
+}
+
+.flow-node.size-milestone .flow-port.port-top {
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-45deg);
+}
+
+.flow-node.size-milestone .flow-port.port-bottom {
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-45deg);
+}
+
+.flow-node.size-milestone .flow-port.port-left {
+    left: -5px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-45deg);
+}
+
+.flow-node.size-milestone .flow-port.port-right {
+    right: -5px;
+    top: 50%;
+    transform: translateY(-50%) rotate(-45deg);
+}
+
+/* Decision Diamond (similar but different color) */
+.flow-node.size-milestone.type-decision {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%);
+    border-color: rgba(245, 158, 11, 0.4);
+    box-shadow:
+        0 0 20px rgba(245, 158, 11, 0.2),
+        0 0 40px rgba(245, 158, 11, 0.1),
+        inset 0 0 20px rgba(245, 158, 11, 0.05);
+}
+
+.flow-node.size-milestone.type-decision:hover {
+    border-color: rgba(245, 158, 11, 0.6);
+    box-shadow:
+        0 0 30px rgba(245, 158, 11, 0.3),
+        0 0 60px rgba(245, 158, 11, 0.15),
+        inset 0 0 30px rgba(245, 158, 11, 0.1);
+}
+
+.flow-node.size-milestone.type-decision .milestone-icon {
+    color: #fbbf24;
 }
 
 /* Node content layout */

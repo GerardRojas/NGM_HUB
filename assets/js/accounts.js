@@ -88,6 +88,11 @@
       const row = isEditMode ? renderEditRow(account, index) : renderReadRow(account, index);
       els.tbody.insertAdjacentHTML('beforeend', row);
     });
+
+    // Re-apply search filter if there's a search term
+    if (els.searchInput && els.searchInput.value.trim()) {
+      filterTable();
+    }
   }
 
   function renderReadRow(account, index) {
@@ -356,16 +361,55 @@
 
     rows.forEach(row => {
       const cells = row.querySelectorAll('td');
-      const acctNum = cells[0]?.textContent.toLowerCase() || '';
-      const accountName = cells[1]?.textContent.toLowerCase() || '';
-      const category = cells[2]?.textContent.toLowerCase() || '';
 
-      if (acctNum.includes(searchTerm) || accountName.includes(searchTerm) || category.includes(searchTerm)) {
-        row.style.display = '';
+      // Get values - handle both read mode (text content) and edit mode (input values)
+      let acctNum = '';
+      let accountName = '';
+      let category = '';
+
+      if (isEditMode) {
+        // In edit mode, get values from inputs
+        const inputs = row.querySelectorAll('.edit-input');
+        inputs.forEach(input => {
+          const field = input.getAttribute('data-field');
+          const value = (input.value || '').toLowerCase();
+          if (field === 'AcctNum') acctNum = value;
+          else if (field === 'Name') accountName = value;
+          else if (field === 'AccountCategory') category = value;
+        });
       } else {
-        row.style.display = 'none';
+        // In read mode, get text content directly
+        acctNum = (cells[0]?.textContent || '').toLowerCase();
+        accountName = (cells[1]?.textContent || '').toLowerCase();
+        category = (cells[2]?.textContent || '').toLowerCase();
       }
+
+      // Check if any field matches search term
+      const matches = acctNum.includes(searchTerm) ||
+                      accountName.includes(searchTerm) ||
+                      category.includes(searchTerm);
+
+      row.style.display = matches ? '' : 'none';
     });
+
+    // Update empty state visibility based on visible rows
+    updateEmptyStateAfterFilter();
+  }
+
+  function updateEmptyStateAfterFilter() {
+    const visibleRows = els.tbody.querySelectorAll('tr:not([style*="display: none"])');
+    const searchTerm = els.searchInput.value.trim();
+
+    if (visibleRows.length === 0 && accounts.length > 0 && searchTerm) {
+      // Show "no results" message but keep table header visible
+      els.emptyState.querySelector('.expenses-empty-text').textContent = `No accounts match "${searchTerm}"`;
+      els.emptyState.style.display = 'flex';
+    } else if (accounts.length === 0) {
+      els.emptyState.querySelector('.expenses-empty-text').textContent = 'No accounts found';
+      els.emptyState.style.display = 'flex';
+    } else {
+      els.emptyState.style.display = 'none';
+    }
   }
 
   // ================================
@@ -401,8 +445,20 @@
       }
     });
 
-    // Search
+    // Search - real-time filtering as user types
     els.searchInput?.addEventListener('input', filterTable);
+
+    // Clear search on Escape key
+    els.searchInput?.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        els.searchInput.value = '';
+        filterTable();
+        els.searchInput.blur();
+      }
+    });
+
+    // Also filter when search input is cleared via the X button (type="search")
+    els.searchInput?.addEventListener('search', filterTable);
 
     // Sort buttons
     els.btnSortByNumber?.addEventListener('click', () => {

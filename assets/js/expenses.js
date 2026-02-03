@@ -573,28 +573,10 @@
       metaData.vendors = meta.vendors || [];
       metaData.payment_methods = meta.payment_methods || [];
 
-      // Filter accounts based on expense mode (cogs vs company)
-      const allAccounts = meta.accounts || [];
-      if (expenseMode === 'company') {
-        // Company mode: Exclude COGS accounts
-        metaData.accounts = allAccounts.filter(a =>
-          !a.is_cogs &&
-          a.AccountCategory !== 'Cost of Goods Sold' &&
-          a.AccountCategory !== 'COGS' &&
-          a.AccountCategory !== 'Cost of Sales'
-        );
-        console.log('[EXPENSES] Filtered accounts for COMPANY mode:', metaData.accounts.length, 'of', allAccounts.length);
-      } else {
-        // COGS mode: Only COGS accounts (or accounts without category - legacy support)
-        metaData.accounts = allAccounts.filter(a =>
-          a.is_cogs ||
-          a.AccountCategory === 'Cost of Goods Sold' ||
-          a.AccountCategory === 'COGS' ||
-          a.AccountCategory === 'Cost of Sales' ||
-          !a.AccountCategory  // Include accounts without category for backwards compatibility
-        );
-        console.log('[EXPENSES] Filtered accounts for COGS mode:', metaData.accounts.length, 'of', allAccounts.length);
-      }
+      // TODO: Re-enable account filtering when frontend mode switching is implemented
+      // For now, show all accounts in both modes
+      metaData.accounts = meta.accounts || [];
+      console.log('[EXPENSES] All accounts loaded (filtering disabled):', metaData.accounts.length);
 
       // Debug: Log metadata structure to help identify correct column names
       console.log('[METADATA] txn_types count:', metaData.txn_types.length);

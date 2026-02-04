@@ -10,7 +10,8 @@
       "Bash(node --check:*)",
       "Bash(node -c:*)",
       "Bash(git checkout:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -File:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"

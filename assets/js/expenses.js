@@ -33,6 +33,7 @@
   let currentReceiptDeleted = false; // Flag to track if user deleted receipt
   let currentBlobUrl = null; // Track blob URL for cleanup (memory leak prevention)
   let currentEditingExpense = null; // Expense being edited in single modal
+  let originalExpenseStatus = null; // Original status when modal opened (to detect auth->review)
   let columnFilters = {
     date: [],
     bill_id: [],
@@ -4487,7 +4488,14 @@
     }
 
     currentEditingExpense = { ...expense };
-    console.log('[EXPENSES] Opening single expense modal for:', currentEditingExpense);
+
+    // Resolve and store original status for amount-change detection
+    originalExpenseStatus = expense.status || 'pending';
+    if (!expense.status && (expense.auth_status === true || expense.auth_status === 1)) {
+      originalExpenseStatus = 'auth';
+    }
+
+    console.log('[EXPENSES] Opening single expense modal for:', currentEditingExpense, 'originalStatus:', originalExpenseStatus);
 
     // Populate form fields
     els.singleExpenseDate.value = expense.TxnDate ? expense.TxnDate.split('T')[0] : '';
@@ -4631,6 +4639,7 @@
     }
     els.singleExpenseModal.classList.add('hidden');
     currentEditingExpense = null;
+    originalExpenseStatus = null;
     currentReceiptFile = null;
     currentReceiptUrl = null;
     currentReceiptDeleted = false;
@@ -4826,24 +4835,39 @@
         selectedStatus = activeBtn.getAttribute('data-status');
         if (selectedStatus === 'review' && els.singleExpenseReason) {
           statusReason = els.singleExpenseReason.value.trim() || null;
-          // Require reason when changing to review
-          if (!statusReason) {
-            if (window.Toast) {
-              Toast.warning('Reason Required', 'Please provide a reason for marking this expense for review.');
-            }
-            els.btnSaveSingleExpense.disabled = false;
-            els.btnSaveSingleExpense.textContent = 'Save Changes';
-            return;
-          }
         }
       }
     }
 
+    // Detect amount change on authorized expense -> force status to 'review'
+    const originalAmount = parseFloat(currentEditingExpense.Amount || currentEditingExpense.amount || 0);
+    const newAmount = updatedData.Amount || 0;
+    const amountChangedOnAuth = (originalExpenseStatus === 'auth' && newAmount !== originalAmount);
+
+    if (amountChangedOnAuth) {
+      selectedStatus = 'review';
+      if (!statusReason) {
+        statusReason = 'Amount modified from ' + originalAmount.toFixed(2) + ' to ' + newAmount.toFixed(2);
+      }
+      updatedData.auth_status = false;
+      updatedData.auth_by = null;
+    }
+
+    // Require reason when manually changing to review (not auto-triggered by amount change)
+    if (selectedStatus === 'review' && !statusReason && !amountChangedOnAuth) {
+      if (window.Toast) {
+        Toast.warning('Reason Required', 'Please provide a reason for marking this expense for review.');
+      }
+      els.btnSaveSingleExpense.disabled = false;
+      els.btnSaveSingleExpense.textContent = 'Save Changes';
+      return;
+    }
+
     // Backwards compatibility: set auth_status based on selected status
-    if (selectedStatus) {
+    if (selectedStatus && !amountChangedOnAuth) {
       updatedData.auth_status = (selectedStatus === 'auth');
       updatedData.auth_by = (selectedStatus === 'auth') ? (currentUser.user_id || currentUser.id) : null;
-    } else if (canAuthorize && els.singleExpenseAuthStatus) {
+    } else if (!amountChangedOnAuth && canAuthorize && els.singleExpenseAuthStatus) {
       // Fallback to old checkbox if status selector not available
       updatedData.auth_status = els.singleExpenseAuthStatus.checked;
       updatedData.auth_by = els.singleExpenseAuthStatus.checked ? (currentUser.user_id || currentUser.id) : null;
@@ -6690,11 +6714,11 @@
       });
     });
 
-    // Format currency on blur for single expense modal
+    // Format amount on blur for single expense modal (use toFixed, not currency format, for type=number inputs)
     els.singleExpenseAmount?.addEventListener('blur', (e) => {
       const value = parseCurrency(e.target.value);
       if (value !== null) {
-        e.target.value = formatCurrency(value);
+        e.target.value = value.toFixed(2);
       }
     });
 
@@ -6703,6 +6727,36 @@
       const value = parseCurrency(e.target.value);
       if (value !== null) {
         e.target.value = value.toString();
+      }
+    });
+
+    // Auto-switch to 'review' when amount changes on an authorized expense
+    els.singleExpenseAmount?.addEventListener('change', () => {
+      if (!currentEditingExpense || originalExpenseStatus !== 'auth') return;
+
+      const originalAmount = parseFloat(currentEditingExpense.Amount || currentEditingExpense.amount || 0);
+      const newAmount = parseCurrency(els.singleExpenseAmount.value);
+      if (newAmount === null || newAmount === originalAmount) return;
+
+      // Auto-switch status selector to 'review'
+      if (els.expenseStatusSelector) {
+        const reviewBtn = els.expenseStatusSelector.querySelector('.expense-status-btn[data-status="review"]');
+        if (reviewBtn && !reviewBtn.classList.contains('active')) {
+          els.expenseStatusSelector.querySelectorAll('.expense-status-btn').forEach(b => b.classList.remove('active'));
+          reviewBtn.classList.add('active');
+
+          // Show reason field pre-filled
+          if (els.singleExpenseReasonContainer) {
+            els.singleExpenseReasonContainer.classList.remove('hidden');
+          }
+          if (els.singleExpenseReason && !els.singleExpenseReason.value.trim()) {
+            els.singleExpenseReason.value = 'Amount modified from ' + originalAmount.toFixed(2) + ' to ' + newAmount.toFixed(2);
+          }
+
+          if (window.Toast) {
+            Toast.info('Status Changed', 'Expense was authorized. Changing the amount sets it to Review.');
+          }
+        }
       }
     });
 

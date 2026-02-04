@@ -1251,6 +1251,220 @@
         return state.customModules.find(m => m.id === id);
     }
 
+    function duplicateModule(moduleId) {
+        const module = getCustomModule(moduleId);
+        if (!module) return;
+
+        const newModule = {
+            ...module,
+            id: 'custom_' + Date.now(),
+            name: `${module.name} (Copy)`,
+            subProcessNodes: module.subProcessNodes
+                ? module.subProcessNodes.map(n => ({ ...n, id: `node_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`, position: n.position ? { x: n.position.x, y: n.position.y } : null }))
+                : [],
+            subProcessConnections: [],
+            connectedToHub: module.connectedToHub,
+            createdAt: new Date().toISOString()
+        };
+
+        state.customModules.push(newModule);
+
+        // Position the duplicate offset from the original
+        const origPos = getNodePosition(moduleId, 600, 400);
+        setNodePosition(newModule.id, origPos.x + 60, origPos.y + 60);
+
+        saveCustomModules();
+        showToast('Module duplicated', 'success');
+        renderTreeView();
+    }
+
+    function disconnectSubProcessNode(moduleId, nodeId) {
+        const module = getCustomModule(moduleId);
+        if (!module || !module.subProcessConnections) return;
+
+        const before = module.subProcessConnections.length;
+        module.subProcessConnections = module.subProcessConnections.filter(
+            c => c.source !== nodeId && c.target !== nodeId
+        );
+
+        if (module.subProcessConnections.length < before) {
+            saveCustomModules();
+            showToast('Connections removed', 'success');
+            renderModuleDetailView(module);
+        } else {
+            showToast('No connections to remove', 'info');
+        }
+    }
+
+    function showQuickInsertModule(nearModuleId) {
+        const modal = document.createElement('div');
+        modal.className = 'link-process-modal';
+        modal.innerHTML = `
+            <div class="link-process-modal-content" style="width: 380px;">
+                <div class="link-process-modal-header">
+                    <h3>Quick Insert Module</h3>
+                    <button type="button" class="btn-close-modal">&times;</button>
+                </div>
+                <div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;">
+                    <div>
+                        <label style="display: block; font-size: 12px; color: #9ca3af; margin-bottom: 6px;">Type</label>
+                        <select id="quickInsertType" style="width: 100%; padding: 8px 12px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 6px; color: #e5e7eb; font-size: 14px;">
+                            <option value="step">Step</option>
+                            <option value="draft">Draft</option>
+                            <option value="milestone">Milestone</option>
+                            <option value="decision">Decision</option>
+                            <option value="event">Event</option>
+                            <option value="link">Link</option>
+                            <option value="algorithm">Algorithm</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 12px; color: #9ca3af; margin-bottom: 6px;">Name</label>
+                        <input type="text" id="quickInsertName" placeholder="Module name..." style="width: 100%; padding: 8px 12px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 6px; color: #e5e7eb; font-size: 14px;" />
+                    </div>
+                    <button type="button" id="quickInsertConfirm" style="padding: 10px; background: #3ecf8e; color: #0d0d0d; border: none; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">Create</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        const nameInput = modal.querySelector('#quickInsertName');
+        const typeSelect = modal.querySelector('#quickInsertType');
+        const confirmBtn = modal.querySelector('#quickInsertConfirm');
+        const closeBtn = modal.querySelector('.btn-close-modal');
+
+        nameInput.focus();
+
+        const shapeByType = {
+            'decision': 'diamond', 'milestone': 'diamond', 'event': 'circle',
+            'step': 'rectangle', 'draft': 'rectangle', 'link': 'rectangle', 'algorithm': 'rectangle'
+        };
+
+        function doInsert() {
+            const name = nameInput.value.trim();
+            const type = typeSelect.value;
+            if (!name) { nameInput.focus(); return; }
+
+            const moduleData = {
+                name: name,
+                description: '',
+                icon: 'box',
+                color: '#6b7280',
+                type: type,
+                size: 'medium',
+                shape: shapeByType[type] || 'rectangle',
+                isImplemented: false
+            };
+
+            const newModule = addCustomModule(moduleData);
+
+            // Position near the clicked module or at a default location
+            if (nearModuleId) {
+                const pos = getNodePosition(nearModuleId, 600, 400);
+                setNodePosition(newModule.id, pos.x + 80, pos.y + 80);
+            }
+
+            modal.remove();
+            showToast('Module created', 'success');
+            renderTreeView();
+        }
+
+        confirmBtn.addEventListener('click', doInsert);
+        nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doInsert(); });
+        closeBtn.addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    }
+
+    function showQuickInsertNode(moduleId, nearNodeId) {
+        const module = getCustomModule(moduleId);
+        if (!module) return;
+
+        const modal = document.createElement('div');
+        modal.className = 'link-process-modal';
+        modal.innerHTML = `
+            <div class="link-process-modal-content" style="width: 380px;">
+                <div class="link-process-modal-header">
+                    <h3>Quick Insert Node</h3>
+                    <button type="button" class="btn-close-modal">&times;</button>
+                </div>
+                <div style="padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;">
+                    <div>
+                        <label style="display: block; font-size: 12px; color: #9ca3af; margin-bottom: 6px;">Type</label>
+                        <select id="quickInsertNodeType" style="width: 100%; padding: 8px 12px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 6px; color: #e5e7eb; font-size: 14px;">
+                            <option value="step">Step</option>
+                            <option value="draft">Draft</option>
+                            <option value="milestone">Milestone</option>
+                            <option value="decision">Decision</option>
+                            <option value="event">Event</option>
+                            <option value="link">Link</option>
+                            <option value="algorithm">Algorithm</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 12px; color: #9ca3af; margin-bottom: 6px;">Name</label>
+                        <input type="text" id="quickInsertNodeName" placeholder="Node name..." style="width: 100%; padding: 8px 12px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 6px; color: #e5e7eb; font-size: 14px;" />
+                    </div>
+                    <button type="button" id="quickInsertNodeConfirm" style="padding: 10px; background: #3ecf8e; color: #0d0d0d; border: none; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">Create</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        const nameInput = modal.querySelector('#quickInsertNodeName');
+        const typeSelect = modal.querySelector('#quickInsertNodeType');
+        const confirmBtn = modal.querySelector('#quickInsertNodeConfirm');
+        const closeBtn = modal.querySelector('.btn-close-modal');
+
+        nameInput.focus();
+
+        const shapeByType = {
+            'decision': 'diamond', 'milestone': 'diamond', 'event': 'circle',
+            'step': 'rectangle', 'draft': 'rectangle', 'link': 'rectangle', 'algorithm': 'rectangle'
+        };
+
+        function doInsert() {
+            const name = nameInput.value.trim();
+            const type = typeSelect.value;
+            if (!name) { nameInput.focus(); return; }
+
+            // Calculate position near the reference node
+            let posX = 400, posY = 300;
+            if (nearNodeId) {
+                const refNode = module.subProcessNodes?.find(n => n.id === nearNodeId);
+                if (refNode && refNode.position) {
+                    posX = refNode.position.x + 80;
+                    posY = refNode.position.y + 80;
+                }
+            }
+
+            const nodeData = {
+                id: `node_${Date.now()}`,
+                name: name,
+                description: '',
+                type: type,
+                size: type === 'milestone' ? 'milestone' : 'medium',
+                shape: shapeByType[type] || 'rectangle',
+                is_implemented: false,
+                position: { x: posX, y: posY }
+            };
+
+            if (!module.subProcessNodes) module.subProcessNodes = [];
+            module.subProcessNodes.push(nodeData);
+            saveCustomModules();
+
+            modal.remove();
+            showToast('Node created', 'success');
+            renderModuleDetailView(module);
+        }
+
+        confirmBtn.addEventListener('click', doInsert);
+        nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doInsert(); });
+        closeBtn.addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    }
+
     function getNodePosition(nodeId, defaultX, defaultY) {
         const key = `${state.groupBy}_${nodeId}`;
         if (state.nodePositions[key]) {
@@ -1500,6 +1714,8 @@
                     }
                 }
                 clearModuleSelection();
+                closeFlowNodeDetailPanel();
+                hideContextMenu();
             }
         });
 
@@ -1588,6 +1804,10 @@
                     startConnectionMode(moduleId);
                 } else if (action === 'create-linked-module' && moduleId) {
                     openAddModuleModal(moduleId);
+                } else if (action === 'duplicate' && moduleId) {
+                    duplicateModule(moduleId);
+                } else if (action === 'quick-insert') {
+                    showQuickInsertModule(moduleId);
                 }
                 hideContextMenu();
             });
@@ -2166,6 +2386,7 @@
         console.log('[CONTEXT-MENU] showFlowNodeContextMenu called for node:', nodeId, 'process/module:', processId, 'isSubProcess:', isSubProcess);
         e.preventDefault();
         e.stopPropagation();
+        closeFlowNodeDetailPanel();
 
         if (!elements.flowNodeContextMenu) {
             console.error('[CONTEXT-MENU] flowNodeContextMenu element not found!');
@@ -2205,11 +2426,16 @@
                         window.processManager?.editSubProcessNode?.(moduleId, nodeId);
                         break;
                     case 'add-connection':
-                        // Start connection mode from this node
                         startConnectionModeFromNode(nodeId, true);
                         break;
                     case 'duplicate-node':
                         duplicateSubProcessNode(moduleId, nodeId);
+                        break;
+                    case 'disconnect-node':
+                        disconnectSubProcessNode(moduleId, nodeId);
+                        break;
+                    case 'quick-insert-node':
+                        showQuickInsertNode(moduleId, nodeId);
                         break;
                     case 'delete-node':
                         if (confirm('Delete this step?')) {
@@ -2230,6 +2456,12 @@
                         break;
                     case 'duplicate-node':
                         showToast('Duplicate node functionality coming soon', 'info');
+                        break;
+                    case 'disconnect-node':
+                        showToast('Disconnect functionality coming soon', 'info');
+                        break;
+                    case 'quick-insert-node':
+                        showToast('Quick insert functionality coming soon', 'info');
                         break;
                     case 'delete-node':
                         showToast('Delete node functionality coming soon', 'info');
@@ -2498,6 +2730,8 @@
     }
 
     function navigateBack() {
+        closeFlowNodeDetailPanel();
+
         // If in subprocess, go back to flowchart view
         if (state.currentLevel === 'subprocess') {
             state.currentLevel = 'flowchart';
@@ -2567,6 +2801,7 @@
         }
 
         closePanel();
+        closeFlowNodeDetailPanel();
         renderTreeView();
         centerCanvas();
     }
@@ -2619,6 +2854,7 @@
 
     function renderModuleDetailView(module) {
         if (!elements.detailViewContainer) return;
+        closeFlowNodeDetailPanel();
 
         elements.detailViewContainer.innerHTML = '';
 
@@ -3157,14 +3393,18 @@
 
             if (!sourceRect || !targetRect) return;
 
-            // Calculate center points
-            const sourceCX = sourceRect.x + sourceRect.width / 2;
-            const sourceCY = sourceRect.y + sourceRect.height / 2;
-            const targetCX = targetRect.x + targetRect.width / 2;
-            const targetCY = targetRect.y + targetRect.height / 2;
-
-            // Calculate orthogonal path
-            const points = calculateOrthogonalPath(sourceRect, targetRect, sourceCX, sourceCY, targetCX, targetCY);
+            // Use port-based routing when port data is available, fall back to auto-routing
+            let points;
+            if (conn.sourcePort && conn.targetPort) {
+                points = calculatePortBasedPath(sourceRect, targetRect, conn.sourcePort, conn.targetPort);
+            } else {
+                // Legacy connections without port data: use center-to-center auto-routing
+                const sourceCX = sourceRect.x + sourceRect.width / 2;
+                const sourceCY = sourceRect.y + sourceRect.height / 2;
+                const targetCX = targetRect.x + targetRect.width / 2;
+                const targetCY = targetRect.y + targetRect.height / 2;
+                points = calculateOrthogonalPath(sourceRect, targetRect, sourceCX, sourceCY, targetCX, targetCY);
+            }
 
             // Build path with rounded corners
             let d = `M ${points[0].x} ${points[0].y}`;
@@ -3959,6 +4199,82 @@
                 { x: toX, y: toY }
             ];
         }
+    }
+
+    // Get the exact edge point for a given port on a node rect
+    function getPortPoint(rect, port) {
+        switch (port) {
+            case 'top':    return { x: rect.x + rect.width / 2, y: rect.y };
+            case 'bottom': return { x: rect.x + rect.width / 2, y: rect.y + rect.height };
+            case 'left':   return { x: rect.x, y: rect.y + rect.height / 2 };
+            case 'right':  return { x: rect.x + rect.width, y: rect.y + rect.height / 2 };
+            default:       return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+        }
+    }
+
+    // Extend a point away from a port by a given distance
+    function extendFromPort(point, port, distance) {
+        switch (port) {
+            case 'top':    return { x: point.x, y: point.y - distance };
+            case 'bottom': return { x: point.x, y: point.y + distance };
+            case 'left':   return { x: point.x - distance, y: point.y };
+            case 'right':  return { x: point.x + distance, y: point.y };
+            default:       return { ...point };
+        }
+    }
+
+    // Calculate orthogonal path using explicit port data
+    function calculatePortBasedPath(sourceRect, targetRect, sourcePort, targetPort) {
+        const from = getPortPoint(sourceRect, sourcePort);
+        const to = getPortPoint(targetRect, targetPort);
+
+        const OFFSET = 30;
+        const fromExt = extendFromPort(from, sourcePort, OFFSET);
+        const toExt = extendFromPort(to, targetPort, OFFSET);
+
+        const isSourceH = (sourcePort === 'left' || sourcePort === 'right');
+        const isTargetH = (targetPort === 'left' || targetPort === 'right');
+
+        let points;
+
+        if (isSourceH && isTargetH) {
+            // Both horizontal: Z-shaped path with vertical segment in middle
+            const midX = (fromExt.x + toExt.x) / 2;
+            points = [from, fromExt, {x: midX, y: fromExt.y}, {x: midX, y: toExt.y}, toExt, to];
+        } else if (!isSourceH && !isTargetH) {
+            // Both vertical: Z-shaped path with horizontal segment in middle
+            const midY = (fromExt.y + toExt.y) / 2;
+            points = [from, fromExt, {x: fromExt.x, y: midY}, {x: toExt.x, y: midY}, toExt, to];
+        } else if (isSourceH && !isTargetH) {
+            // Horizontal source, vertical target: L-shaped
+            points = [from, fromExt, {x: toExt.x, y: fromExt.y}, toExt, to];
+        } else {
+            // Vertical source, horizontal target: L-shaped
+            points = [from, fromExt, {x: fromExt.x, y: toExt.y}, toExt, to];
+        }
+
+        // Clean up: remove consecutive duplicate or collinear points
+        return simplifyPoints(points);
+    }
+
+    // Remove redundant points from an orthogonal path
+    function simplifyPoints(points) {
+        if (points.length <= 2) return points;
+        const result = [points[0]];
+        for (let i = 1; i < points.length - 1; i++) {
+            const prev = result[result.length - 1];
+            const curr = points[i];
+            const next = points[i + 1];
+            // Skip if same position as previous
+            if (Math.abs(curr.x - prev.x) < 0.5 && Math.abs(curr.y - prev.y) < 0.5) continue;
+            // Skip if collinear (all on same horizontal or vertical line)
+            const sameX = Math.abs(prev.x - curr.x) < 0.5 && Math.abs(curr.x - next.x) < 0.5;
+            const sameY = Math.abs(prev.y - curr.y) < 0.5 && Math.abs(curr.y - next.y) < 0.5;
+            if (sameX || sameY) continue;
+            result.push(curr);
+        }
+        result.push(points[points.length - 1]);
+        return result;
     }
 
     function createOrthogonalConnection(points, color = '#3ecf8e', isDraft = false, connectionId = null) {
@@ -6969,7 +7285,7 @@
                 toggleModuleSelection(node.id);
             } else {
                 clearModuleSelection();
-                selectFlowNode(el, node);
+                selectFlowNode(el, node, processId);
             }
         });
 
@@ -7022,7 +7338,7 @@
         return `<div class="flow-node-badge">${label}</div>`;
     }
 
-    function selectFlowNode(el, node) {
+    function selectFlowNode(el, node, processId) {
         // Deselect previous
         document.querySelectorAll('.flow-node.selected').forEach(n => n.classList.remove('selected'));
 
@@ -7030,7 +7346,182 @@
         el.classList.add('selected');
         state.selectedFlowNode = node;
 
-        // Could show a panel with details here
+        // Show detail panel
+        showFlowNodeDetailPanel(node, processId);
+    }
+
+    function ensureFlowNodeDetailPanel() {
+        let panel = document.getElementById('flowNodeDetailPanel');
+        if (panel) return panel;
+
+        panel = document.createElement('div');
+        panel.id = 'flowNodeDetailPanel';
+        panel.className = 'flow-node-detail-panel';
+        panel.innerHTML = `
+            <div class="flow-node-detail-panel-header">
+                <div class="flow-node-detail-panel-icon" id="fndpIcon"></div>
+                <div class="flow-node-detail-panel-header-info">
+                    <div class="flow-node-detail-panel-name" id="fndpName"></div>
+                    <span class="flow-node-detail-panel-type" id="fndpType"></span>
+                </div>
+                <button type="button" class="flow-node-detail-panel-close" id="fndpClose">&times;</button>
+            </div>
+            <div class="flow-node-detail-panel-body">
+                <div class="flow-node-detail-section">
+                    <div class="flow-node-detail-section-title">Description</div>
+                    <div class="flow-node-detail-description" id="fndpDescription"></div>
+                </div>
+                <div class="flow-node-detail-section" id="fndpLongDescSection" style="display:none;">
+                    <div class="flow-node-detail-section-title">Details</div>
+                    <div class="flow-node-detail-description" id="fndpLongDescription"></div>
+                </div>
+                <div class="flow-node-detail-section">
+                    <div class="flow-node-detail-section-title">Info</div>
+                    <div class="flow-node-detail-meta">
+                        <div class="flow-node-detail-meta-row">
+                            <span class="flow-node-detail-meta-label">Status</span>
+                            <span class="flow-node-detail-meta-value" id="fndpStatus"></span>
+                        </div>
+                        <div class="flow-node-detail-meta-row">
+                            <span class="flow-node-detail-meta-label">Size</span>
+                            <span class="flow-node-detail-meta-value" id="fndpSize"></span>
+                        </div>
+                        <div class="flow-node-detail-meta-row" id="fndpConnectionsRow">
+                            <span class="flow-node-detail-meta-label">Connections</span>
+                            <span class="flow-node-detail-meta-value" id="fndpConnections"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flow-node-detail-panel-actions">
+                <button type="button" id="fndpEdit" class="primary">Edit</button>
+                <button type="button" id="fndpConnect">Connect</button>
+            </div>
+        `;
+        document.body.appendChild(panel);
+
+        // Close button
+        panel.querySelector('#fndpClose').addEventListener('click', closeFlowNodeDetailPanel);
+
+        // Edit button
+        panel.querySelector('#fndpEdit').addEventListener('click', () => {
+            const nodeId = panel.dataset.nodeId;
+            const moduleId = panel.dataset.processId;
+            if (moduleId && nodeId) {
+                closeFlowNodeDetailPanel();
+                window.processManager?.editSubProcessNode?.(moduleId, nodeId);
+            }
+        });
+
+        // Connect button
+        panel.querySelector('#fndpConnect').addEventListener('click', () => {
+            const nodeId = panel.dataset.nodeId;
+            if (nodeId) {
+                closeFlowNodeDetailPanel();
+                startConnectionModeFromNode(nodeId, true);
+            }
+        });
+
+        // Close on outside click
+        document.addEventListener('mousedown', (e) => {
+            if (panel.classList.contains('active') &&
+                !panel.contains(e.target) &&
+                !e.target.closest('.flow-node')) {
+                closeFlowNodeDetailPanel();
+            }
+        });
+
+        return panel;
+    }
+
+    function showFlowNodeDetailPanel(node, processId) {
+        const panel = ensureFlowNodeDetailPanel();
+
+        panel.dataset.nodeId = node.id;
+        panel.dataset.processId = processId || '';
+
+        // Icon
+        const iconContainer = panel.querySelector('#fndpIcon');
+        const typeColors = {
+            step: '#3ecf8e', draft: '#6b7280', milestone: '#a78bfa',
+            decision: '#fbbf24', event: '#10b981', algorithm: '#60a5fa', link: '#f472b6'
+        };
+        const color = typeColors[node.type] || '#6b7280';
+        iconContainer.style.background = `${color}15`;
+        iconContainer.style.border = `1px solid ${color}40`;
+
+        if (node.icon) {
+            iconContainer.innerHTML = getIconSvg(node.icon, color);
+        } else {
+            const flowIcon = getFlowNodeIcon(node);
+            iconContainer.innerHTML = flowIcon;
+            const svg = iconContainer.querySelector('svg');
+            if (svg) { svg.style.color = color; svg.style.width = '20px'; svg.style.height = '20px'; }
+        }
+
+        // Name
+        panel.querySelector('#fndpName').textContent = node.name || 'Unnamed';
+
+        // Type badge
+        const typeBadge = panel.querySelector('#fndpType');
+        typeBadge.textContent = (node.type || 'step').toUpperCase();
+        typeBadge.className = 'flow-node-detail-panel-type type-' + (node.type || 'step');
+
+        // Short description
+        const descEl = panel.querySelector('#fndpDescription');
+        const shortDesc = node.shortDescription || node.description || '';
+        descEl.textContent = shortDesc || 'No description.';
+        descEl.className = 'flow-node-detail-description' + (shortDesc ? '' : ' empty');
+
+        // Long description
+        const longDescSection = panel.querySelector('#fndpLongDescSection');
+        const longDescEl = panel.querySelector('#fndpLongDescription');
+        const longDesc = node.longDescription || '';
+        if (longDesc) {
+            longDescEl.textContent = longDesc;
+            longDescSection.style.display = '';
+        } else {
+            longDescSection.style.display = 'none';
+        }
+
+        // Status
+        const statusEl = panel.querySelector('#fndpStatus');
+        const isLive = node.is_implemented || node.isImplemented;
+        statusEl.textContent = isLive ? 'Live' : 'Draft';
+        statusEl.className = 'flow-node-detail-meta-value ' + (isLive ? 'status-live' : 'status-draft');
+
+        // Size
+        const sizeText = node.size ? node.size.charAt(0).toUpperCase() + node.size.slice(1) : 'Medium';
+        panel.querySelector('#fndpSize').textContent = sizeText;
+
+        // Connections count
+        const connRow = panel.querySelector('#fndpConnectionsRow');
+        if (processId) {
+            const module = getCustomModule(processId);
+            if (module && module.subProcessConnections) {
+                const count = module.subProcessConnections.filter(
+                    c => c.source === node.id || c.target === node.id
+                ).length;
+                panel.querySelector('#fndpConnections').textContent = count.toString();
+                connRow.style.display = '';
+            } else {
+                connRow.style.display = 'none';
+            }
+        } else {
+            connRow.style.display = 'none';
+        }
+
+        // Show
+        panel.classList.add('active');
+    }
+
+    function closeFlowNodeDetailPanel() {
+        const panel = document.getElementById('flowNodeDetailPanel');
+        if (panel) {
+            panel.classList.remove('active');
+        }
+        document.querySelectorAll('.flow-node.selected').forEach(n => n.classList.remove('selected'));
+        state.selectedFlowNode = null;
     }
 
     function toggleDraftStatus(processId, nodeId, toggleEl) {

@@ -4589,19 +4589,25 @@ body.page-process-manager {
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%) rotate(-45deg);
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     white-space: nowrap;
-    font-size: 12px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
     text-align: center;
-    max-width: 160px;
+    max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 4px 10px;
-    border-radius: 4px;
-    backdrop-filter: blur(4px);
+    background: rgba(13, 13, 13, 0.85);
+    padding: 5px 14px;
+    border-radius: 6px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    letter-spacing: 0.02em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    pointer-events: none;
 }
 
 /* Diamond ports */
@@ -4707,19 +4713,24 @@ body.page-process-manager {
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    margin-bottom: 10px;
+    margin-bottom: 12px;
     white-space: nowrap;
-    font-size: 12px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.9);
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
     text-align: center;
-    max-width: 160px;
+    max-width: 200px;
     overflow: hidden;
     text-overflow: ellipsis;
-    background: rgba(0, 0, 0, 0.6);
-    padding: 4px 10px;
-    border-radius: 4px;
-    backdrop-filter: blur(4px);
+    background: rgba(13, 13, 13, 0.85);
+    padding: 5px 14px;
+    border-radius: 6px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    pointer-events: none;
 }
 
 /* Circle ports */
@@ -4805,17 +4816,27 @@ body.page-process-manager {
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%) rotate(-45deg);
-    margin-bottom: 12px;
+    margin-bottom: 18px;
     white-space: nowrap;
-    font-size: 11px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.85);
-    max-width: 140px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    max-width: 180px;
     overflow: hidden;
     text-overflow: ellipsis;
-    background: rgba(0, 0, 0, 0.5);
-    padding: 3px 8px;
-    border-radius: 3px;
+    background: rgba(13, 13, 13, 0.85);
+    padding: 4px 12px;
+    border-radius: 5px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.tree-node.shape-diamond .tree-node-stats {
+    display: none;
 }
 
 .tree-node.shape-circle {
@@ -4844,17 +4865,27 @@ body.page-process-manager {
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     white-space: nowrap;
-    font-size: 11px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.85);
-    max-width: 140px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    max-width: 180px;
     overflow: hidden;
     text-overflow: ellipsis;
-    background: rgba(0, 0, 0, 0.5);
-    padding: 3px 8px;
-    border-radius: 3px;
+    background: rgba(13, 13, 13, 0.85);
+    padding: 4px 12px;
+    border-radius: 5px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    pointer-events: none;
+}
+
+.tree-node.shape-circle .tree-node-stats {
+    display: none;
 }
 
 /* Node content layout */
@@ -6271,4 +6302,213 @@ body.page-process-manager {
     font-size: 11px;
     color: #6b7280;
     text-transform: capitalize;
+}
+
+/* ================================
+   Flow Node Detail Panel
+   ================================ */
+.flow-node-detail-panel {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%) translateX(20px);
+    width: 320px;
+    max-height: 70vh;
+    background: #111111;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.03);
+    z-index: 500;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.flow-node-detail-panel.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(-50%) translateX(0);
+}
+
+.flow-node-detail-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid #1f1f1f;
+    flex-shrink: 0;
+}
+
+.flow-node-detail-panel-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.flow-node-detail-panel-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.flow-node-detail-panel-header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.flow-node-detail-panel-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e5e7eb;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.flow-node-detail-panel-type {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+    background: rgba(107, 114, 128, 0.2);
+    color: #9ca3af;
+}
+
+.flow-node-detail-panel-type.type-step { background: rgba(62, 207, 142, 0.15); color: #3ecf8e; }
+.flow-node-detail-panel-type.type-draft { background: rgba(107, 114, 128, 0.15); color: #9ca3af; }
+.flow-node-detail-panel-type.type-milestone { background: rgba(167, 139, 250, 0.15); color: #a78bfa; }
+.flow-node-detail-panel-type.type-decision { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+.flow-node-detail-panel-type.type-event { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.flow-node-detail-panel-type.type-algorithm { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+.flow-node-detail-panel-type.type-link { background: rgba(244, 114, 182, 0.15); color: #f472b6; }
+
+.flow-node-detail-panel-close {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    font-size: 20px;
+    line-height: 1;
+    transition: color 0.15s, background 0.15s;
+    flex-shrink: 0;
+}
+
+.flow-node-detail-panel-close:hover {
+    color: #e5e7eb;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.flow-node-detail-panel-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.flow-node-detail-section {
+    margin-bottom: 16px;
+}
+
+.flow-node-detail-section:last-child {
+    margin-bottom: 0;
+}
+
+.flow-node-detail-section-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.flow-node-detail-description {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #d1d5db;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.flow-node-detail-description.empty {
+    color: #4b5563;
+    font-style: italic;
+}
+
+.flow-node-detail-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.flow-node-detail-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.flow-node-detail-meta-label {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.flow-node-detail-meta-value {
+    font-size: 12px;
+    color: #d1d5db;
+    font-weight: 500;
+}
+
+.flow-node-detail-meta-value.status-live {
+    color: #3ecf8e;
+}
+
+.flow-node-detail-meta-value.status-draft {
+    color: #6b7280;
+}
+
+.flow-node-detail-panel-actions {
+    padding: 12px 20px;
+    border-top: 1px solid #1f1f1f;
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.flow-node-detail-panel-actions button {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    color: #d1d5db;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.flow-node-detail-panel-actions button:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: #3a3a3a;
+}
+
+.flow-node-detail-panel-actions button.primary {
+    background: rgba(62, 207, 142, 0.1);
+    border-color: rgba(62, 207, 142, 0.3);
+    color: #3ecf8e;
+}
+
+.flow-node-detail-panel-actions button.primary:hover {
+    background: rgba(62, 207, 142, 0.2);
 }

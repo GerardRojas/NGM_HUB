@@ -437,6 +437,14 @@
                                 <option value="decision">Decision</option>
                                 <option value="event">Event</option>
                                 <option value="algorithm">Algorithm (IP)</option>
+                                <optgroup label="Infrastructure">
+                                    <option value="supabase-pg">Supabase Postgres</option>
+                                    <option value="supabase-storage">Supabase Storage</option>
+                                    <option value="render">Render</option>
+                                    <option value="nass">NASS (Synology)</option>
+                                    <option value="firebase">Firebase</option>
+                                    <option value="pwd">PWD</option>
+                                </optgroup>
                             </select>
                         </div>
                         <div class="form-group">
@@ -491,6 +499,10 @@
                             <select id="moduleDepartment" class="form-select">
                                 <option value="">-- Select --</option>
                             </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="moduleRole">Role</label>
+                            <input type="text" id="moduleRole" class="form-input" placeholder="e.g. PM, CEO, Bookkeeper">
                         </div>
                     </div>
                     <div class="form-group form-group-switch">

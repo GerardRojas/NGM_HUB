@@ -6,8 +6,9 @@
 
   const qs = (id) => document.getElementById(id);
 
-  // Storage key for automation settings
+  // Storage keys
   const STORAGE_KEY = 'pm_automations_v1';
+  const VISIBILITY_KEY = 'pm_automations_visible';
 
   // Available automations
   const AUTOMATIONS = [
@@ -62,6 +63,17 @@
       enabled: false,
       statusKey: 'overdue_tasks',
       comingSoon: true
+    },
+    {
+      id: 'budget_monitor_alerts',
+      name: 'Budget Monitor Alerts',
+      description: 'Creates alert tasks when a project budget exceeds defined thresholds or shows unusual spending patterns.',
+      taskTemplate: 'Alerta de presupuesto en {project}',
+      icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+      iconColor: '#f43f5e',
+      enabled: false,
+      statusKey: 'budget_monitor_alerts',
+      comingSoon: true
     }
   ];
 
@@ -99,6 +111,23 @@
       defaults[a.id] = { enabled: false };
     });
     return defaults;
+  }
+
+  // ================================
+  // VISIBILITY (show/hide automated tasks in table)
+  // ================================
+
+  function loadVisibility() {
+    const val = localStorage.getItem(VISIBILITY_KEY);
+    return val === null ? true : val === 'true';
+  }
+
+  function saveVisibility(visible) {
+    localStorage.setItem(VISIBILITY_KEY, String(visible));
+  }
+
+  function areAutomatedTasksVisible() {
+    return loadVisibility();
   }
 
   // ================================
@@ -142,6 +171,10 @@
 
     // Fetch automation status from backend
     await fetchAutomationStatus();
+
+    // Sync visibility checkbox
+    const visCheckbox = qs('chkShowAutomatedTasks');
+    if (visCheckbox) visCheckbox.checked = loadVisibility();
 
     // Render automation list
     renderAutomationsList();
@@ -237,7 +270,7 @@
     const btn = qs('btnRunAutomations');
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '<span class="btn-icon">⏳</span> Running...';
+      btn.innerHTML = '<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span> Running...';
     }
 
     try {
@@ -300,7 +333,7 @@
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.innerHTML = '<span class="btn-icon">▶</span> Run Now';
+        btn.innerHTML = '<span class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg></span> Run Now';
       }
     }
   }
@@ -341,6 +374,15 @@
     qs('btnCloseAutomations')?.addEventListener('click', (e) => {
       e.preventDefault();
       close();
+    });
+
+    // Visibility toggle (show/hide automated tasks in table)
+    qs('chkShowAutomatedTasks')?.addEventListener('change', (e) => {
+      saveVisibility(e.target.checked);
+      console.log(`[AUTOMATIONS] Automated tasks ${e.target.checked ? 'visible' : 'hidden'}`);
+      if (typeof window.renderGroups === 'function') {
+        window.renderGroups();
+      }
     });
 
     // Run button
@@ -385,6 +427,7 @@
     run: runAutomations,
     getEnabled: getEnabledAutomations,
     isEnabled: isAutomationEnabled,
+    areTasksVisible: areAutomatedTasksVisible,
     fetchStatus: fetchAutomationStatus,
     AUTOMATIONS
   };

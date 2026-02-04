@@ -1316,6 +1316,14 @@
                             <option value="event">Event</option>
                             <option value="link">Link</option>
                             <option value="algorithm">Algorithm</option>
+                            <optgroup label="Infrastructure">
+                                <option value="supabase-pg">Supabase Postgres</option>
+                                <option value="supabase-storage">Supabase Storage</option>
+                                <option value="render">Render</option>
+                                <option value="nass">NASS (Synology)</option>
+                                <option value="firebase">Firebase</option>
+                                <option value="pwd">PWD</option>
+                            </optgroup>
                         </select>
                     </div>
                     <div>
@@ -1338,7 +1346,9 @@
 
         const shapeByType = {
             'decision': 'diamond', 'milestone': 'diamond', 'event': 'circle',
-            'step': 'rectangle', 'draft': 'rectangle', 'link': 'rectangle', 'algorithm': 'rectangle'
+            'step': 'rectangle', 'draft': 'rectangle', 'link': 'rectangle', 'algorithm': 'rectangle',
+            'supabase-pg': 'rectangle', 'supabase-storage': 'rectangle', 'render': 'rectangle',
+            'nass': 'rectangle', 'firebase': 'rectangle', 'pwd': 'rectangle'
         };
 
         function doInsert() {
@@ -1399,6 +1409,14 @@
                             <option value="event">Event</option>
                             <option value="link">Link</option>
                             <option value="algorithm">Algorithm</option>
+                            <optgroup label="Infrastructure">
+                                <option value="supabase-pg">Supabase Postgres</option>
+                                <option value="supabase-storage">Supabase Storage</option>
+                                <option value="render">Render</option>
+                                <option value="nass">NASS (Synology)</option>
+                                <option value="firebase">Firebase</option>
+                                <option value="pwd">PWD</option>
+                            </optgroup>
                         </select>
                     </div>
                     <div>
@@ -1421,7 +1439,9 @@
 
         const shapeByType = {
             'decision': 'diamond', 'milestone': 'diamond', 'event': 'circle',
-            'step': 'rectangle', 'draft': 'rectangle', 'link': 'rectangle', 'algorithm': 'rectangle'
+            'step': 'rectangle', 'draft': 'rectangle', 'link': 'rectangle', 'algorithm': 'rectangle',
+            'supabase-pg': 'rectangle', 'supabase-storage': 'rectangle', 'render': 'rectangle',
+            'nass': 'rectangle', 'firebase': 'rectangle', 'pwd': 'rectangle'
         };
 
         function doInsert() {
@@ -1866,6 +1886,7 @@
         document.getElementById('moduleLongDescription').value = module.longDescription || '';
         document.getElementById('moduleIcon').value = module.icon || 'box';
         document.getElementById('moduleDepartment').value = module.departmentId || '';
+        document.getElementById('moduleRole').value = module.role || '';
         document.getElementById('moduleType').value = module.type || 'step';
         document.getElementById('moduleSize').value = module.size || 'medium';
         document.getElementById('btnDeleteModule').classList.remove('hidden');
@@ -1926,8 +1947,8 @@
         document.getElementById('moduleDetailSize').textContent = sizeText;
 
         // Get department name
-        const dept = state.departments?.find(d => d.id === module.departmentId);
-        document.getElementById('moduleDetailDepartment').textContent = dept ? dept.name : '-';
+        const dept = state.departments?.find(d => d.department_id === module.departmentId);
+        document.getElementById('moduleDetailDepartment').textContent = dept ? dept.department_name : '-';
 
         // Update type badge color based on type
         const typeBadge = document.getElementById('moduleDetailType');
@@ -2126,8 +2147,12 @@
         const newNode = {
             id: `node_${Date.now()}`,
             name: nodeData.name,
+            shortDescription: nodeData.shortDescription,
+            longDescription: nodeData.longDescription,
             description: nodeData.description,
             icon: nodeData.icon,
+            departmentId: nodeData.departmentId || null,
+            role: nodeData.role || null,
             type: nodeData.type || 'step',
             size: nodeData.size || 'medium',
             shape: nodeData.shape,  // Shape is auto-determined in saveModule
@@ -2167,7 +2192,8 @@
         document.getElementById('moduleShortDescription').value = node.shortDescription || node.description || '';
         document.getElementById('moduleLongDescription').value = node.longDescription || '';
         document.getElementById('moduleIcon').value = node.icon || 'box';
-        document.getElementById('moduleDepartment').value = '';  // Sub-process nodes don't have departments
+        document.getElementById('moduleDepartment').value = node.departmentId || '';
+        document.getElementById('moduleRole').value = node.role || '';
         document.getElementById('moduleType').value = node.type || 'step';
         document.getElementById('moduleSize').value = node.size || 'medium';
         document.getElementById('btnDeleteModule').classList.remove('hidden');
@@ -2195,8 +2221,12 @@
         parentModule.subProcessNodes[nodeIndex] = {
             ...parentModule.subProcessNodes[nodeIndex],
             name: nodeData.name,
+            shortDescription: nodeData.shortDescription,
+            longDescription: nodeData.longDescription,
             description: nodeData.description,
             icon: nodeData.icon,
+            departmentId: nodeData.departmentId || null,
+            role: nodeData.role || null,
             type: nodeData.type,
             size: nodeData.size,
             shape: nodeData.shape,
@@ -2242,7 +2272,13 @@
             'step': 'rectangle',
             'draft': 'rectangle',
             'link': 'rectangle',
-            'algorithm': 'rectangle'
+            'algorithm': 'rectangle',
+            'supabase-pg': 'rectangle',
+            'supabase-storage': 'rectangle',
+            'render': 'rectangle',
+            'nass': 'rectangle',
+            'firebase': 'rectangle',
+            'pwd': 'rectangle'
         };
 
         const moduleData = {
@@ -2253,6 +2289,7 @@
             description: document.getElementById('moduleShortDescription').value.trim(),
             icon: document.getElementById('moduleIcon').value,
             departmentId: document.getElementById('moduleDepartment').value || null,
+            role: document.getElementById('moduleRole').value.trim() || null,
             type: moduleType,
             size: document.getElementById('moduleSize').value || 'medium',
             shape: shapeByType[moduleType] || 'rectangle',
@@ -4220,22 +4257,33 @@
     // Get the exact edge point for a given port on a node rect
     function getPortPoint(rect, port) {
         switch (port) {
-            case 'top':    return { x: rect.x + rect.width / 2, y: rect.y };
-            case 'bottom': return { x: rect.x + rect.width / 2, y: rect.y + rect.height };
-            case 'left':   return { x: rect.x, y: rect.y + rect.height / 2 };
-            case 'right':  return { x: rect.x + rect.width, y: rect.y + rect.height / 2 };
-            default:       return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+            case 'top':          return { x: rect.x + rect.width / 2, y: rect.y };
+            case 'bottom':       return { x: rect.x + rect.width / 2, y: rect.y + rect.height };
+            case 'left':         return { x: rect.x, y: rect.y + rect.height / 2 };
+            case 'right':        return { x: rect.x + rect.width, y: rect.y + rect.height / 2 };
+            // Diagonal ports: midpoints of diamond flat edges (at 1/4 and 3/4 of bounding rect)
+            case 'top-right':    return { x: rect.x + rect.width * 0.75, y: rect.y + rect.height * 0.25 };
+            case 'bottom-right': return { x: rect.x + rect.width * 0.75, y: rect.y + rect.height * 0.75 };
+            case 'bottom-left':  return { x: rect.x + rect.width * 0.25, y: rect.y + rect.height * 0.75 };
+            case 'top-left':     return { x: rect.x + rect.width * 0.25, y: rect.y + rect.height * 0.25 };
+            default:             return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
         }
     }
 
     // Extend a point away from a port by a given distance
     function extendFromPort(point, port, distance) {
+        const diag = distance * 0.707; // cos(45) = sin(45)
         switch (port) {
-            case 'top':    return { x: point.x, y: point.y - distance };
-            case 'bottom': return { x: point.x, y: point.y + distance };
-            case 'left':   return { x: point.x - distance, y: point.y };
-            case 'right':  return { x: point.x + distance, y: point.y };
-            default:       return { ...point };
+            case 'top':          return { x: point.x, y: point.y - distance };
+            case 'bottom':       return { x: point.x, y: point.y + distance };
+            case 'left':         return { x: point.x - distance, y: point.y };
+            case 'right':        return { x: point.x + distance, y: point.y };
+            // Diagonal ports extend outward at 45 degrees
+            case 'top-right':    return { x: point.x + diag, y: point.y - diag };
+            case 'bottom-right': return { x: point.x + diag, y: point.y + diag };
+            case 'bottom-left':  return { x: point.x - diag, y: point.y + diag };
+            case 'top-left':     return { x: point.x - diag, y: point.y - diag };
+            default:             return { ...point };
         }
     }
 
@@ -4250,10 +4298,33 @@
 
         const isSourceH = (sourcePort === 'left' || sourcePort === 'right');
         const isTargetH = (targetPort === 'left' || targetPort === 'right');
+        const isSourceDiag = sourcePort.includes('-');
+        const isTargetDiag = targetPort.includes('-');
 
         let points;
 
-        if (isSourceH && isTargetH) {
+        if (isSourceDiag || isTargetDiag) {
+            // Routing involving diagonal ports:
+            // From diagonal extension, route with an L-bend to the target extension
+            const midX = (fromExt.x + toExt.x) / 2;
+
+            if (isSourceDiag && isTargetDiag) {
+                // Both diagonal: Z-path through midpoint
+                points = [from, fromExt, {x: midX, y: fromExt.y}, {x: midX, y: toExt.y}, toExt, to];
+            } else if (isSourceDiag && isTargetH) {
+                // Diagonal source to horizontal target: L-shape
+                points = [from, fromExt, {x: fromExt.x, y: toExt.y}, toExt, to];
+            } else if (isSourceDiag && !isTargetH) {
+                // Diagonal source to vertical target: L-shape
+                points = [from, fromExt, {x: toExt.x, y: fromExt.y}, toExt, to];
+            } else if (isTargetDiag && isSourceH) {
+                // Horizontal source to diagonal target: L-shape
+                points = [from, fromExt, {x: toExt.x, y: fromExt.y}, toExt, to];
+            } else {
+                // Vertical source to diagonal target: L-shape
+                points = [from, fromExt, {x: fromExt.x, y: toExt.y}, toExt, to];
+            }
+        } else if (isSourceH && isTargetH) {
             // Both horizontal: Z-shaped path with vertical segment in middle
             const midX = (fromExt.x + toExt.x) / 2;
             points = [from, fromExt, {x: midX, y: fromExt.y}, {x: midX, y: toExt.y}, toExt, to];
@@ -7113,13 +7184,22 @@
         el.dataset.nodeId = node.id;
         el.dataset.processId = processId;
 
-        // Connection ports
-        const portsHtml = `
+        // Connection ports (cardinal directions for all nodes)
+        let portsHtml = `
             <div class="flow-port port-top" data-port="top"></div>
             <div class="flow-port port-bottom" data-port="bottom"></div>
             <div class="flow-port port-left" data-port="left"></div>
             <div class="flow-port port-right" data-port="right"></div>
         `;
+        // Diamond shapes get additional ports on the flat edges
+        if (effectiveShape === 'diamond') {
+            portsHtml += `
+                <div class="flow-port port-top-right" data-port="top-right"></div>
+                <div class="flow-port port-bottom-right" data-port="bottom-right"></div>
+                <div class="flow-port port-bottom-left" data-port="bottom-left"></div>
+                <div class="flow-port port-top-left" data-port="top-left"></div>
+            `;
+        }
 
         // Icon based on type
         const iconHtml = getFlowNodeIcon(node);
@@ -7210,6 +7290,22 @@
             `;
         }
 
+        // Department and role info line for cards
+        let nodeMetaHtml = '';
+        {
+            const metaParts = [];
+            if (node.departmentId) {
+                const dept = state.departments.find(d => d.department_id === node.departmentId);
+                if (dept) metaParts.push(escapeHtml(dept.department_name));
+            }
+            if (node.role) {
+                metaParts.push(escapeHtml(node.role));
+            }
+            if (metaParts.length > 0) {
+                nodeMetaHtml = `<div class="flow-node-meta">${metaParts.join(' / ')}</div>`;
+            }
+        }
+
         // Build the node content based on type and shape
         if (effectiveShape === 'diamond' || effectiveShape === 'circle') {
             // Diamond/Circle node with external label (for decision, milestone, event types)
@@ -7231,7 +7327,10 @@
                 <div class="milestone-inner">
                     <div class="milestone-icon">${shapeIcon}</div>
                 </div>
-                <div class="milestone-label">${escapeHtml(node.name)}</div>
+                <div class="milestone-label">
+                    <span class="milestone-label-name">${escapeHtml(node.name)}</span>
+                    ${nodeMetaHtml ? `<span class="milestone-label-meta">${nodeMetaHtml.replace(/<\/?div[^>]*>/g, '')}</span>` : ''}
+                </div>
             `;
         } else if (node.type === 'algorithm') {
             // Set custom colors via CSS variables
@@ -7267,6 +7366,7 @@
                 </div>
                 <div class="flow-node-title">${escapeHtml(node.name)}</div>
                 <div class="flow-node-description">${escapeHtml(node.description || '')}</div>
+                ${nodeMetaHtml}
                 ${subservicesHtml}
                 ${optionsHtml}
                 ${switchHtml}
@@ -7337,6 +7437,30 @@
                 // Zap/lightning icon for events
                 iconSvg = '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>';
                 break;
+            case 'supabase-pg':
+                // Database cylinder icon
+                iconSvg = '<ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>';
+                break;
+            case 'supabase-storage':
+                // Cloud icon
+                iconSvg = '<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>';
+                break;
+            case 'render':
+                // Server icon
+                iconSvg = '<rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line>';
+                break;
+            case 'nass':
+                // Hard drive / NAS icon
+                iconSvg = '<line x1="22" y1="12" x2="2" y2="12"></line><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path><line x1="6" y1="16" x2="6.01" y2="16"></line><line x1="10" y1="16" x2="10.01" y2="16"></line>';
+                break;
+            case 'firebase':
+                // Flame icon
+                iconSvg = '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path>';
+                break;
+            case 'pwd':
+                // Terminal icon
+                iconSvg = '<polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line>';
+                break;
             default:
                 iconSvg = '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>';
         }
@@ -7352,6 +7476,12 @@
             case 'decision': label = 'DECISION'; break;
             case 'event': label = 'EVENT'; break;
             case 'milestone': label = 'MILESTONE'; break;
+            case 'supabase-pg': label = 'SUPA PG'; break;
+            case 'supabase-storage': label = 'SUPA STORAGE'; break;
+            case 'render': label = 'RENDER'; break;
+            case 'nass': label = 'NASS'; break;
+            case 'firebase': label = 'FIREBASE'; break;
+            case 'pwd': label = 'PWD'; break;
             default: label = node.type.toUpperCase();
         }
         return `<div class="flow-node-badge">${label}</div>`;
@@ -7400,6 +7530,14 @@
                         <div class="flow-node-detail-meta-row">
                             <span class="flow-node-detail-meta-label">Status</span>
                             <span class="flow-node-detail-meta-value" id="fndpStatus"></span>
+                        </div>
+                        <div class="flow-node-detail-meta-row" id="fndpDepartmentRow">
+                            <span class="flow-node-detail-meta-label">Department</span>
+                            <span class="flow-node-detail-meta-value" id="fndpDepartment"></span>
+                        </div>
+                        <div class="flow-node-detail-meta-row" id="fndpRoleRow">
+                            <span class="flow-node-detail-meta-label">Role</span>
+                            <span class="flow-node-detail-meta-value" id="fndpRole"></span>
                         </div>
                         <div class="flow-node-detail-meta-row">
                             <span class="flow-node-detail-meta-label">Size</span>
@@ -7463,7 +7601,9 @@
         const iconContainer = panel.querySelector('#fndpIcon');
         const typeColors = {
             step: '#3ecf8e', draft: '#6b7280', milestone: '#a78bfa',
-            decision: '#fbbf24', event: '#10b981', algorithm: '#60a5fa', link: '#f472b6'
+            decision: '#fbbf24', event: '#10b981', algorithm: '#60a5fa', link: '#f472b6',
+            'supabase-pg': '#3ecf8e', 'supabase-storage': '#3ecf8e', render: '#46e3b7',
+            nass: '#f97316', firebase: '#ffca28', pwd: '#4285f4'
         };
         const color = typeColors[node.type] || '#6b7280';
         iconContainer.style.background = `${color}15`;
@@ -7508,6 +7648,25 @@
         const isLive = node.is_implemented || node.isImplemented;
         statusEl.textContent = isLive ? 'Live' : 'Draft';
         statusEl.className = 'flow-node-detail-meta-value ' + (isLive ? 'status-live' : 'status-draft');
+
+        // Department
+        const deptRow = panel.querySelector('#fndpDepartmentRow');
+        if (node.departmentId) {
+            const dept = state.departments.find(d => d.department_id === node.departmentId);
+            panel.querySelector('#fndpDepartment').textContent = dept ? dept.department_name : '-';
+            deptRow.style.display = '';
+        } else {
+            deptRow.style.display = 'none';
+        }
+
+        // Role
+        const roleRow = panel.querySelector('#fndpRoleRow');
+        if (node.role) {
+            panel.querySelector('#fndpRole').textContent = node.role;
+            roleRow.style.display = '';
+        } else {
+            roleRow.style.display = 'none';
+        }
 
         // Size
         const sizeText = node.size ? node.size.charAt(0).toUpperCase() + node.size.slice(1) : 'Medium';
@@ -7886,7 +8045,7 @@
         isDragging: false,
         isNewConnection: false,  // true when creating new connection from port
         sourceNodeId: null,
-        sourcePort: null,        // 'top', 'right', 'bottom', 'left'
+        sourcePort: null,        // cardinal: 'top','right','bottom','left' | diagonal: 'top-right','bottom-right','bottom-left','top-left'
         targetNodeId: null,
         startPoint: null,
         tempLine: null,

@@ -759,8 +759,9 @@
   // Smart Re-rendering: Track existing DOM elements
   const groupElementsMap = new Map(); // Maps groupKey -> DOM element
 
-  // Expose fetchPipeline to window for modal refresh
+  // Expose fetchPipeline and renderGroups to window for modal refresh
   window.fetchPipeline = fetchPipeline;
+  window.renderGroups = renderGroups;
 
   async function fetchPipeline() {
     const startTime = performance.now();
@@ -971,10 +972,18 @@
     const selectedProject = projectFilter ? projectFilter.value : "all";
     const selectedOwner = ownerFilter ? ownerFilter.value : "all";
     const selectedPriority = priorityFilter ? priorityFilter.value : "all";
+    const showAutomated = window.PM_Automations?.areTasksVisible?.() ?? true;
 
     return groups.map(group => {
       const tasks = Array.isArray(group.tasks) ? group.tasks : [];
       const filteredTasks = tasks.filter(t => {
+        // Automated tasks visibility filter
+        if (!showAutomated) {
+          const isAutomated = t.is_automated ||
+            (t.task_notes && t.task_notes.includes('[AUTOMATED]')) ||
+            (t.automation_type && t.automation_type !== '');
+          if (isAutomated) return false;
+        }
         // Project filter
         const pid =
           t.project_name ||

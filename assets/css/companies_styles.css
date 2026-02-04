@@ -1,0 +1,383 @@
+/* ===========================
+   COMPANIES MANAGEMENT — Supabase Style
+   Clean, minimal, professional
+   =========================== */
+
+/* Section container */
+.companies-section {
+  padding: 24px 28px 32px;
+}
+
+/* Header row */
+.companies-section .section-header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.companies-section .section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.companies-section .section-subtitle {
+  margin: 4px 0 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* Action buttons container */
+.companies-section .companies-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.companies-actions button {
+  border: 1px solid #2a2a2a;
+  background: transparent;
+  color: var(--text-primary);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.companies-actions button:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
+}
+
+/* Primary button: Add Company */
+.companies-actions #btn-add-company {
+  background: #3ecf8e;
+  border-color: #3ecf8e;
+  color: #000;
+  font-weight: 600;
+}
+
+.companies-actions #btn-add-company:hover {
+  background: #34b87d;
+  border-color: #34b87d;
+}
+
+/* Board container */
+.companies-board {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0;
+}
+
+/* Placeholder */
+.companies-placeholder {
+  width: 100%;
+  min-height: 200px;
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+  background: #111111;
+  border: 1px solid #1f1f1f;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* Cards grid */
+.companies-cards {
+  display: grid;
+  gap: 16px;
+  justify-content: start;
+  align-items: start;
+}
+
+/* ===========================
+   CARD — Simple flat design
+   =========================== */
+
+.company-card-stack {
+  position: relative;
+}
+
+/* Remove backplate completely */
+.company-card-back {
+  display: none;
+}
+
+.company-card {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+
+  background: #111111;
+  border: 1px solid #1f1f1f;
+  border-radius: 8px;
+
+  transition: border-color 0.15s ease;
+}
+
+.company-card:hover {
+  border-color: #2a2a2a;
+}
+
+/* ===========================
+   AVATAR — Ring style (not filled)
+   =========================== */
+
+.company-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Ring style: transparent center, colored border */
+  background: transparent;
+  border: 2px solid currentColor;
+
+  font-weight: 600;
+  font-size: 20px;
+  color: #888;
+
+  align-self: center;
+  margin-bottom: 4px;
+}
+
+/* ===========================
+   CARD CONTENT
+   =========================== */
+
+.company-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+/* Header: name + status */
+.company-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.company-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary);
+  margin: 0;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Status indicator - simple text, no pill */
+.company-status-pill {
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+
+  /* No background, no border - just text */
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.company-status-pill.is-active {
+  color: #3ecf8e;
+}
+
+/* ===========================
+   FIELDS — Clean key-value rows
+   =========================== */
+
+.company-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.company-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+
+  /* Clean style: no background, just subtle separator */
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+
+  font-size: 13px;
+}
+
+.company-field:last-child {
+  border-bottom: none;
+}
+
+.company-field-label {
+  color: #666;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.company-field-value {
+  color: var(--text-primary);
+  text-align: right;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ===========================
+   ACTION BUTTONS
+   =========================== */
+
+.company-card-actions {
+  margin-top: auto;
+  padding-top: 12px;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.company-action-btn {
+  flex: 1;
+  text-align: center;
+
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #2a2a2a;
+  background: transparent;
+
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.company-action-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
+}
+
+/* Delete button - subtle danger style */
+.company-action-btn[data-action="delete"] {
+  border-color: rgba(239, 68, 68, 0.25);
+  color: rgba(239, 68, 68, 0.8);
+}
+
+.company-action-btn[data-action="delete"]:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+}
+
+/* ===========================
+   RESPONSIVE
+   =========================== */
+
+@media (max-width: 900px) {
+  .company-card {
+    width: 260px;
+  }
+}
+
+@media (max-width: 620px) {
+  .companies-section {
+    padding: 16px;
+  }
+
+  .companies-section .section-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .company-card {
+    width: 100%;
+    max-width: 320px;
+  }
+}
+
+/* ===========================
+   PAGE OVERRIDES
+   =========================== */
+
+.page-companies .main-content {
+  max-width: none !important;
+  margin-inline: 0 !important;
+}
+
+.page-companies .main-area,
+.page-companies .main-content {
+  width: 100%;
+}
+
+/* Ensure vertical card layout */
+.page-companies .company-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch;
+}
+
+.page-companies .company-avatar {
+  align-self: center;
+}
+
+.page-companies .company-card,
+.page-companies .company-card-main {
+  overflow: hidden;
+  min-width: 0;
+}
+
+.page-companies .company-head {
+  min-width: 0;
+}
+
+.page-companies .company-name {
+  flex: 1;
+  min-width: 0;
+}
+
+.page-companies .company-fields,
+.page-companies .company-field {
+  min-width: 0;
+}
+
+/* Grid overrides */
+#companies-board .companies-cards {
+  display: grid;
+  gap: 16px;
+  justify-content: start;
+  justify-items: start;
+  align-items: start;
+}
+
+#companies-board .company-card {
+  width: 280px;
+  border-radius: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+#companies-board .company-card-actions {
+  margin-top: auto;
+}

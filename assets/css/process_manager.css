@@ -3533,6 +3533,31 @@ body.page-process-manager {
     color: #8b5cf6;
 }
 
+/* Infrastructure / Service tree-node types */
+.tree-node.custom-module.type-supabase-pg { border-color: #3ecf8e; }
+.tree-node.custom-module.type-supabase-pg .tree-node-icon { background: rgba(62, 207, 142, 0.15) !important; border-color: #3ecf8e !important; }
+.tree-node.custom-module.type-supabase-pg .tree-node-icon svg { color: #3ecf8e; }
+
+.tree-node.custom-module.type-supabase-storage { border-color: #3ecf8e; }
+.tree-node.custom-module.type-supabase-storage .tree-node-icon { background: rgba(62, 207, 142, 0.15) !important; border-color: #3ecf8e !important; }
+.tree-node.custom-module.type-supabase-storage .tree-node-icon svg { color: #3ecf8e; }
+
+.tree-node.custom-module.type-render { border-color: #46e3b7; }
+.tree-node.custom-module.type-render .tree-node-icon { background: rgba(70, 227, 183, 0.15) !important; border-color: #46e3b7 !important; }
+.tree-node.custom-module.type-render .tree-node-icon svg { color: #46e3b7; }
+
+.tree-node.custom-module.type-nass { border-color: #f97316; }
+.tree-node.custom-module.type-nass .tree-node-icon { background: rgba(249, 115, 22, 0.15) !important; border-color: #f97316 !important; }
+.tree-node.custom-module.type-nass .tree-node-icon svg { color: #f97316; }
+
+.tree-node.custom-module.type-firebase { border-color: #ffca28; }
+.tree-node.custom-module.type-firebase .tree-node-icon { background: rgba(255, 202, 40, 0.15) !important; border-color: #ffca28 !important; }
+.tree-node.custom-module.type-firebase .tree-node-icon svg { color: #ffca28; }
+
+.tree-node.custom-module.type-pwd { border-color: #4285f4; }
+.tree-node.custom-module.type-pwd .tree-node-icon { background: rgba(66, 133, 244, 0.15) !important; border-color: #4285f4 !important; }
+.tree-node.custom-module.type-pwd .tree-node-icon svg { color: #4285f4; }
+
 /* ================================
    Connection Colors by Status
    ================================ */
@@ -3895,6 +3920,12 @@ body.page-process-manager {
 .module-detail-type.type-event { color: #10b981; background: rgba(16, 185, 129, 0.15); }
 .module-detail-type.type-algorithm { color: #60a5fa; background: rgba(96, 165, 250, 0.15); }
 .module-detail-type.type-link { color: #f472b6; background: rgba(244, 114, 182, 0.15); }
+.module-detail-type.type-supabase-pg { color: #3ecf8e; background: rgba(62, 207, 142, 0.15); }
+.module-detail-type.type-supabase-storage { color: #3ecf8e; background: rgba(62, 207, 142, 0.15); }
+.module-detail-type.type-render { color: #46e3b7; background: rgba(70, 227, 183, 0.15); }
+.module-detail-type.type-nass { color: #f97316; background: rgba(249, 115, 22, 0.15); }
+.module-detail-type.type-firebase { color: #ffca28; background: rgba(255, 202, 40, 0.15); }
+.module-detail-type.type-pwd { color: #4285f4; background: rgba(66, 133, 244, 0.15); }
 
 /* Status colors */
 .meta-value.status-live { color: #3ecf8e; }
@@ -4362,6 +4393,7 @@ body.page-process-manager {
 /* Hide regular content inside milestone-sized nodes */
 .flow-node.size-milestone .flow-node-header,
 .flow-node.size-milestone .flow-node-description,
+.flow-node.size-milestone .flow-node-meta,
 .flow-node.size-milestone .flow-node-options,
 .flow-node.size-milestone .flow-node-subservices,
 .flow-node.size-milestone .flow-node-switch,
@@ -4426,9 +4458,6 @@ body.page-process-manager {
     font-weight: 500;
     color: rgba(255, 255, 255, 0.9);
     text-align: center;
-    max-width: 160px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     background: rgba(0, 0, 0, 0.6);
     padding: 4px 10px;
     border-radius: 4px;
@@ -4538,6 +4567,7 @@ body.page-process-manager {
 
 .flow-node.shape-diamond .flow-node-header,
 .flow-node.shape-diamond .flow-node-description,
+.flow-node.shape-diamond .flow-node-meta,
 .flow-node.shape-diamond .flow-node-options,
 .flow-node.shape-diamond .flow-node-subservices,
 .flow-node.shape-diamond .flow-node-switch,
@@ -4595,9 +4625,6 @@ body.page-process-manager {
     font-weight: 600;
     color: #fff;
     text-align: center;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     background: rgba(13, 13, 13, 0.85);
     padding: 5px 14px;
     border-radius: 6px;
@@ -4608,6 +4635,21 @@ body.page-process-manager {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     z-index: 10;
     pointer-events: none;
+}
+
+/* Milestone label internal structure */
+.milestone-label-name {
+    display: block;
+}
+
+.milestone-label-meta {
+    display: block;
+    font-size: 10px;
+    font-weight: 400;
+    color: #9ca3af;
+    margin-top: 2px;
+    letter-spacing: 0;
+    text-shadow: none;
 }
 
 /* Diamond ports */
@@ -4640,6 +4682,31 @@ body.page-process-manager {
     transform: translateY(-50%) rotate(-45deg);
 }
 
+/* Diamond edge (flat side) ports - positioned at corners of unrotated square */
+.flow-node.shape-diamond .flow-port.port-top-right {
+    top: -3px;
+    right: -3px;
+    transform: rotate(-45deg);
+}
+
+.flow-node.shape-diamond .flow-port.port-bottom-right {
+    bottom: -3px;
+    right: -3px;
+    transform: rotate(-45deg);
+}
+
+.flow-node.shape-diamond .flow-port.port-bottom-left {
+    bottom: -3px;
+    left: -3px;
+    transform: rotate(-45deg);
+}
+
+.flow-node.shape-diamond .flow-port.port-top-left {
+    top: -3px;
+    left: -3px;
+    transform: rotate(-45deg);
+}
+
 /* Circle Shape */
 .flow-node.shape-circle {
     width: 90px;
@@ -4668,6 +4735,7 @@ body.page-process-manager {
 
 .flow-node.shape-circle .flow-node-header,
 .flow-node.shape-circle .flow-node-description,
+.flow-node.shape-circle .flow-node-meta,
 .flow-node.shape-circle .flow-node-options,
 .flow-node.shape-circle .flow-node-subservices,
 .flow-node.shape-circle .flow-node-switch,
@@ -4719,9 +4787,6 @@ body.page-process-manager {
     font-weight: 600;
     color: #fff;
     text-align: center;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     background: rgba(13, 13, 13, 0.85);
     padding: 5px 14px;
     border-radius: 6px;
@@ -4821,9 +4886,6 @@ body.page-process-manager {
     font-size: 12px;
     font-weight: 600;
     color: #fff;
-    max-width: 180px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     background: rgba(13, 13, 13, 0.85);
     padding: 4px 12px;
     border-radius: 5px;
@@ -4976,6 +5038,19 @@ body.page-process-manager {
     display: none;
 }
 
+.flow-node-meta {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    line-height: 1.4;
+}
+
+.flow-node.size-small .flow-node-meta {
+    display: none;
+}
+
 /* Node type: step (default/implemented) */
 .flow-node.type-step {
     border-color: #2a2a2a;
@@ -5099,6 +5174,15 @@ body.page-process-manager {
         inset 0 0 20px rgba(139, 92, 246, 0.05);
 }
 
+.flow-node.shape-diamond.type-milestone.size-small {
+    width: 70px;
+    height: 70px;
+    min-width: unset;
+    max-width: unset;
+    min-height: unset;
+    padding: 0;
+}
+
 .flow-node.shape-circle.type-milestone {
     border-radius: 50%;
     text-align: inherit;
@@ -5174,6 +5258,64 @@ body.page-process-manager {
     font-weight: 700;
     letter-spacing: 0.5px;
 }
+
+/* ================================
+   Infrastructure / Service types
+   ================================ */
+
+/* Node type: supabase-pg (Supabase Postgres) */
+.flow-node.type-supabase-pg {
+    border-color: #3ecf8e;
+    background: linear-gradient(135deg, #1a1a1a 0%, #1a2e24 100%);
+}
+.flow-node.type-supabase-pg .flow-node-icon { background: rgba(62, 207, 142, 0.15); color: #3ecf8e; }
+.flow-node.type-supabase-pg .flow-node-badge { background: rgba(62, 207, 142, 0.15); color: #3ecf8e; }
+.flow-node.type-supabase-pg:hover { border-color: #6ee7b7; }
+
+/* Node type: supabase-storage (Supabase Storage) */
+.flow-node.type-supabase-storage {
+    border-color: #3ecf8e;
+    background: linear-gradient(135deg, #1a1a1a 0%, #1a2e24 100%);
+}
+.flow-node.type-supabase-storage .flow-node-icon { background: rgba(62, 207, 142, 0.15); color: #3ecf8e; }
+.flow-node.type-supabase-storage .flow-node-badge { background: rgba(62, 207, 142, 0.15); color: #3ecf8e; }
+.flow-node.type-supabase-storage:hover { border-color: #6ee7b7; }
+
+/* Node type: render (Render) */
+.flow-node.type-render {
+    border-color: #46e3b7;
+    background: linear-gradient(135deg, #1a1a1a 0%, #1a2e2a 100%);
+}
+.flow-node.type-render .flow-node-icon { background: rgba(70, 227, 183, 0.15); color: #46e3b7; }
+.flow-node.type-render .flow-node-badge { background: rgba(70, 227, 183, 0.15); color: #46e3b7; }
+.flow-node.type-render:hover { border-color: #6ee7cb; }
+
+/* Node type: nass (NASS / Synology) */
+.flow-node.type-nass {
+    border-color: #f97316;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2e1f1a 100%);
+}
+.flow-node.type-nass .flow-node-icon { background: rgba(249, 115, 22, 0.15); color: #f97316; }
+.flow-node.type-nass .flow-node-badge { background: rgba(249, 115, 22, 0.15); color: #f97316; }
+.flow-node.type-nass:hover { border-color: #fb923c; }
+
+/* Node type: firebase (Firebase) */
+.flow-node.type-firebase {
+    border-color: #ffca28;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2e2a1a 100%);
+}
+.flow-node.type-firebase .flow-node-icon { background: rgba(255, 202, 40, 0.15); color: #ffca28; }
+.flow-node.type-firebase .flow-node-badge { background: rgba(255, 202, 40, 0.15); color: #ffca28; }
+.flow-node.type-firebase:hover { border-color: #ffd54f; }
+
+/* Node type: pwd (PWD) */
+.flow-node.type-pwd {
+    border-color: #4285f4;
+    background: linear-gradient(135deg, #1a1a1a 0%, #1a1f2e 100%);
+}
+.flow-node.type-pwd .flow-node-icon { background: rgba(66, 133, 244, 0.15); color: #4285f4; }
+.flow-node.type-pwd .flow-node-badge { background: rgba(66, 133, 244, 0.15); color: #4285f4; }
+.flow-node.type-pwd:hover { border-color: #6ea8fe; }
 
 /* Algorithm trademark symbol */
 .algorithm-name {
@@ -6310,9 +6452,9 @@ body.page-process-manager {
 .flow-node-detail-panel {
     position: fixed;
     right: 20px;
-    top: 50%;
-    transform: translateY(-50%) translateX(20px);
-    width: 320px;
+    top: 80px;
+    transform: translateX(20px);
+    width: 380px;
     max-height: 70vh;
     background: #111111;
     border: 1px solid #2a2a2a;
@@ -6330,7 +6472,7 @@ body.page-process-manager {
 .flow-node-detail-panel.active {
     opacity: 1;
     pointer-events: auto;
-    transform: translateY(-50%) translateX(0);
+    transform: translateX(0);
 }
 
 .flow-node-detail-panel-header {
@@ -6391,6 +6533,12 @@ body.page-process-manager {
 .flow-node-detail-panel-type.type-event { background: rgba(16, 185, 129, 0.15); color: #10b981; }
 .flow-node-detail-panel-type.type-algorithm { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
 .flow-node-detail-panel-type.type-link { background: rgba(244, 114, 182, 0.15); color: #f472b6; }
+.flow-node-detail-panel-type.type-supabase-pg { background: rgba(62, 207, 142, 0.15); color: #3ecf8e; }
+.flow-node-detail-panel-type.type-supabase-storage { background: rgba(62, 207, 142, 0.15); color: #3ecf8e; }
+.flow-node-detail-panel-type.type-render { background: rgba(70, 227, 183, 0.15); color: #46e3b7; }
+.flow-node-detail-panel-type.type-nass { background: rgba(249, 115, 22, 0.15); color: #f97316; }
+.flow-node-detail-panel-type.type-firebase { background: rgba(255, 202, 40, 0.15); color: #ffca28; }
+.flow-node-detail-panel-type.type-pwd { background: rgba(66, 133, 244, 0.15); color: #4285f4; }
 
 .flow-node-detail-panel-close {
     background: none;

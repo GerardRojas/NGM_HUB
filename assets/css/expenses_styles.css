@@ -835,6 +835,17 @@
   border-color: rgba(62, 207, 142, 0.5);
 }
 
+.auth-badge-review {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.auth-badge-review:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
 .auth-badge-disabled {
   cursor: not-allowed;
   opacity: 0.6;

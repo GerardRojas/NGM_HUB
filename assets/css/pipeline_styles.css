@@ -2,6 +2,12 @@
    PIPELINE MANAGER — layout & visual
    ========================================== */
 
+/* Pipeline necesita ancho completo: eliminar el centrado de .main-content */
+.page-pipeline .main-content {
+    max-width: none;
+    margin-inline: 0;
+}
+
 /* Wrapper interno del pipeline (no toca layout global) */
 .pipeline-section .pm-panel {
     max-width: none;
@@ -925,6 +931,13 @@
   overflow: visible !important;
   position: relative;
   z-index: 100;
+}
+
+/* El div interior de la celda tambien necesita overflow visible
+   para que los dropdowns (position:absolute) no se corten */
+.pm-group .table td.pm-cell-editing > div {
+  overflow: visible !important;
+  max-width: none;
 }
 
 /* Ensure parent elements allow dropdown overflow (modern browsers with :has) */
@@ -2439,16 +2452,48 @@ textarea.pm-inline-editor {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  padding: 0;
+}
+
+#automationsModal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: #111111;
+  border-bottom: 1px solid #1f1f1f;
 }
 
 #automationsModal .modal-title {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ngm-text-main, #ededed);
 }
 
 #automationsModal .modal-title-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f59e0b;
+}
+
+#automationsModal .modal-btn {
+  background: transparent;
+  border: none;
+  color: var(--ngm-text-muted, #666);
   font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+#automationsModal .modal-btn:hover {
+  color: var(--ngm-text-main, #ededed);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 #automationsModal .modal-body {
@@ -2462,6 +2507,32 @@ textarea.pm-inline-editor {
   color: rgba(255, 255, 255, 0.6);
   margin: 0 0 16px 0;
   line-height: 1.5;
+}
+
+/* Visibility toggle bar */
+.pm-automations-visibility {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #1f1f1f;
+  border-radius: 8px;
+}
+
+.pm-automations-visibility-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.pm-automations-visibility-info svg {
+  color: rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
 }
 
 .pm-automations-list {
@@ -2570,9 +2641,29 @@ textarea.pm-inline-editor {
   box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.2);
 }
 
+/* Scrollbar (automations) */
+#automationsModal .modal-body::-webkit-scrollbar {
+  width: 10px;
+}
+#automationsModal .modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+}
+#automationsModal .modal-body::-webkit-scrollbar-thumb {
+  background-color: rgba(180, 180, 180, 0.35);
+  border-radius: 8px;
+  border: 2px solid rgba(0, 0, 0, 0.4);
+}
+#automationsModal .modal-body::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(200, 200, 200, 0.5);
+}
+
 /* Run Now button */
 #automationsModal .btn-icon {
+  display: inline-flex;
+  align-items: center;
   margin-right: 4px;
+  vertical-align: middle;
 }
 
 #automationsModal .modal-footer {
@@ -2582,6 +2673,43 @@ textarea.pm-inline-editor {
   padding: 14px 18px;
   border-top: 1px solid #1f1f1f;
   background: #111111;
+}
+
+#automationsModal .modal-footer .btn-secondary,
+#automationsModal .modal-footer .btn-primary {
+  appearance: none;
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+#automationsModal .modal-footer .btn-secondary {
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: var(--text-primary, #ededed);
+}
+#automationsModal .modal-footer .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
+}
+
+#automationsModal .modal-footer .btn-primary {
+  background: #3ecf8e;
+  border: 1px solid #3ecf8e;
+  color: #000;
+  font-weight: 600;
+}
+#automationsModal .modal-footer .btn-primary:hover {
+  background: #34b87d;
+  border-color: #34b87d;
+}
+
+#automationsModal .modal-footer .btn-secondary:active,
+#automationsModal .modal-footer .btn-primary:active {
+  transform: translateY(1px);
 }
 
 /* Automation indicator on tasks */
@@ -2599,8 +2727,10 @@ textarea.pm-inline-editor {
 }
 
 .pm-task-auto-badge::before {
-  content: "⚡";
-  font-size: 9px;
+  content: "A";
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 /* Automation status badge */

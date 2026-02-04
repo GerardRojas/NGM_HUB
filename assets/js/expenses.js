@@ -178,6 +178,16 @@
   }
 
   // ================================
+  // UTILITY: Format date without timezone conversion
+  // ================================
+  function formatDateSafe(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('T')[0].split('-');
+    if (parts.length !== 3) return dateStr;
+    return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])).toLocaleDateString();
+  }
+
+  // ================================
   // PERFORMANCE: Build Lookup Maps
   // ================================
   function buildLookupMaps() {
@@ -1770,7 +1780,7 @@
     const expId = exp.expense_id || exp.id;
     const hasBillNumber = exp.bill_id && exp.bill_id.trim() !== '';
     const hasReceipt = !!getExpenseReceiptUrl(exp);
-    const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : 'No date';
+    const date = exp.TxnDate ? formatDateSafe(exp.TxnDate) : 'No date';
     const desc = exp.LineDescription || 'No description';
     const vendor = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '—';
     const amount = exp.Amount ? formatCurrency(Number(exp.Amount)) : '$0.00';
@@ -1936,7 +1946,7 @@
     expensesEl.innerHTML = cluster.expenses.map((exp, idx) => {
       const expId = exp.expense_id || exp.id;
       const amount = parseFloat(exp.Amount) || 0;
-      const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : 'No date';
+      const date = exp.TxnDate ? formatDateSafe(exp.TxnDate) : 'No date';
       const desc = exp.LineDescription || 'No description';
       const billId = exp.bill_id || 'No bill #';
       const paymentType = exp.PaymentType || 'N/A';
@@ -2337,7 +2347,7 @@
       // Date - computed once
       const getDate = () => {
         if (date === undefined) {
-          date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
+          date = exp.TxnDate ? formatDateSafe(exp.TxnDate) : '—';
         }
         return date;
       };
@@ -2526,7 +2536,7 @@
   }
 
   function renderReadOnlyRow(exp, index) {
-    const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
+    const date = exp.TxnDate ? formatDateSafe(exp.TxnDate) : '—';
     const billIdRaw = exp.bill_id || '';
     const billId = billIdRaw || '—';
     const description = exp.LineDescription || '—';
@@ -7613,7 +7623,7 @@
   }
 
   function renderBillGroupRow(exp, index, isFirst, isLast, groupBillId = null) {
-    const date = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
+    const date = exp.TxnDate ? formatDateSafe(exp.TxnDate) : '—';
     const billId = exp.bill_id || '—';
     const billGroupAttr = groupBillId ? `data-bill-group="${groupBillId}"` : '';
     const description = exp.LineDescription || '—';
@@ -8278,7 +8288,7 @@
 
   function renderQBORow(exp) {
     const globalUid = exp.global_line_uid || '';
-    const txnDate = exp.txn_date ? new Date(exp.txn_date).toLocaleDateString() : '';
+    const txnDate = exp.txn_date ? formatDateSafe(exp.txn_date) : '';
     const amount = exp.signed_amount !== undefined ? exp.signed_amount : (exp.amount || 0);
     const formattedAmount = formatCurrency(Math.abs(amount));
     const amountClass = amount < 0 ? 'color: #ef4444;' : '';
@@ -8329,7 +8339,7 @@
     // Date filter
     if (columnFilters.date?.length > 0) {
       filtered = filtered.filter(exp => {
-        const dateStr = exp.txn_date ? new Date(exp.txn_date).toLocaleDateString() : '';
+        const dateStr = exp.txn_date ? formatDateSafe(exp.txn_date) : '';
         return columnFilters.date.includes(dateStr);
       });
     }
@@ -8867,7 +8877,7 @@
 
       return `
         <tr class="${rowClass}" data-qbo-id="${exp.id}">
-          <td>${exp.txn_date ? new Date(exp.txn_date).toLocaleDateString() : ''}</td>
+          <td>${exp.txn_date ? formatDateSafe(exp.txn_date) : ''}</td>
           <td>${exp.description || exp.memo || ''}</td>
           <td>${exp.vendor_name || ''}</td>
           <td style="text-align: right; font-weight: 600;">${formatCurrency(exp.amount)}</td>
@@ -8941,7 +8951,7 @@
               ${checkboxDisabled ? 'disabled' : ''}
               ${checkboxChecked ? 'checked' : ''}>
           </td>
-          <td>${exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : ''}</td>
+          <td>${exp.TxnDate ? formatDateSafe(exp.TxnDate) : ''}</td>
           <td>${exp.LineDescription || exp.description || ''}</td>
           <td>${exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || ''}</td>
           <td style="text-align: right;">${formatCurrency(exp.Amount || exp.amount)}</td>
@@ -9393,7 +9403,7 @@
       let value;
       switch (column) {
         case 'date':
-          value = exp.TxnDate ? new Date(exp.TxnDate).toLocaleDateString() : '—';
+          value = exp.TxnDate ? formatDateSafe(exp.TxnDate) : '—';
           break;
         case 'bill_id':
           value = exp.bill_id || '—';
@@ -10084,7 +10094,7 @@
             if (!exp.TxnDate) return null;
             const expDate = new Date(exp.TxnDate);
             if (expDate >= startDate && expDate <= endDate) {
-              return expDate.toLocaleDateString();
+              return formatDateSafe(exp.TxnDate);
             }
             return null;
           }).filter(d => d !== null))];

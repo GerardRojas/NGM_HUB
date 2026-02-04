@@ -2843,15 +2843,9 @@
 
             // Make draggable with position saving
             makeDetailNodeDraggable(nodeEl, module.id, node.id, () => {
-                // Update rects for all moved nodes from current DOM positions
-                subProcessNodes.forEach(n => {
-                    const el = elements.detailViewContainer.querySelector(`[data-node-id="${n.id}"]`);
-                    if (el && nodeRects[n.id]) {
-                        nodeRects[n.id].x = parseInt(el.style.left) || 0;
-                        nodeRects[n.id].y = parseInt(el.style.top) || 0;
-                    }
-                });
-                redrawDetailConnections(module, subProcessNodes, nodeRects);
+                // Rebuild rects from DOM on every drag frame for accurate dimensions
+                const freshRects = buildDetailNodeRects(subProcessNodes);
+                redrawDetailConnections(module, subProcessNodes, freshRects);
             });
 
             // Double-click to edit
@@ -2875,7 +2869,9 @@
         });
 
         // Draw connections between sub-process nodes if any
-        redrawDetailConnections(module, subProcessNodes, nodeRects);
+        // Use buildDetailNodeRects to get actual DOM dimensions (handles diamond shapes)
+        const finalRects = buildDetailNodeRects(subProcessNodes);
+        redrawDetailConnections(module, subProcessNodes, finalRects);
     }
 
     function makeDetailNodeDraggable(nodeEl, moduleId, nodeId, onDrag) {
@@ -3107,12 +3103,14 @@
         subProcessNodes.forEach(node => {
             const nodeEl = elements.detailViewContainer?.querySelector(`[data-node-id="${node.id}"]`);
             if (nodeEl) {
-                nodeRects[node.id] = {
+                let rect = {
                     x: parseInt(nodeEl.style.left) || 0,
                     y: parseInt(nodeEl.style.top) || 0,
                     width: nodeEl.offsetWidth || 200,
                     height: nodeEl.offsetHeight || 100
                 };
+                rect = adjustRectForDiamond(rect, nodeEl);
+                nodeRects[node.id] = rect;
             } else if (node.position) {
                 nodeRects[node.id] = {
                     x: node.position.x,
@@ -3884,11 +3882,13 @@
                 // Use actual rendered dimensions
                 const width = nodeEl.offsetWidth || fallbackRects[nodeId].width;
                 const height = nodeEl.offsetHeight || fallbackRects[nodeId].height;
-                actualRects[nodeId] = {
+                let rect = {
                     x, y, width, height,
                     isCustom: fallbackRects[nodeId].isCustom,
                     isImplemented: fallbackRects[nodeId].isImplemented
                 };
+                rect = adjustRectForDiamond(rect, nodeEl);
+                actualRects[nodeId] = rect;
             } else {
                 actualRects[nodeId] = fallbackRects[nodeId];
             }
@@ -4212,12 +4212,12 @@
     function buildCurrentNodeRects() {
         const nodeRects = { hub: getHubRect() };
 
-        // Add all custom modules with fixed dimensions based on size
+        // Add all custom modules with actual dimensions from DOM
         state.customModules.forEach(module => {
             const el = elements.treeViewContainer.querySelector(`[data-id="${module.id}"]`);
             if (el) {
                 const dims = getModuleDimensions(module.size);
-                nodeRects[module.id] = {
+                let rect = {
                     x: parseInt(el.style.left) || 0,
                     y: parseInt(el.style.top) || 0,
                     width: el.offsetWidth || dims.width,
@@ -4225,6 +4225,8 @@
                     isCustom: true,
                     isImplemented: module.isImplemented
                 };
+                rect = adjustRectForDiamond(rect, el);
+                nodeRects[module.id] = rect;
             }
         });
 
@@ -4242,6 +4244,26 @@
             default:
                 return { width: 220, height: 150 };
         }
+    }
+
+    // Adjust rect to account for CSS transform: rotate(45deg) on diamond shapes.
+    // offsetWidth/offsetHeight return the un-rotated CSS box, but the visual
+    // bounding box of a rotated square is sqrt(2) times larger.
+    function adjustRectForDiamond(rect, nodeEl) {
+        if (!nodeEl || !nodeEl.classList.contains('shape-diamond')) return rect;
+        const cssWidth = rect.width;
+        const cssHeight = rect.height;
+        const visualWidth = cssWidth * Math.SQRT2;
+        const visualHeight = cssHeight * Math.SQRT2;
+        const offsetX = (visualWidth - cssWidth) / 2;
+        const offsetY = (visualHeight - cssHeight) / 2;
+        return {
+            ...rect,
+            x: rect.x - offsetX,
+            y: rect.y - offsetY,
+            width: visualWidth,
+            height: visualHeight
+        };
     }
 
     function getHubRect() {

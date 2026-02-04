@@ -3336,17 +3336,30 @@
 
     function buildDetailNodeRects(subProcessNodes) {
         const nodeRects = {};
+        // Use getBoundingClientRect for accurate visual dimensions (handles CSS transforms like rotate)
+        const gridBCR = elements.canvasGrid.getBoundingClientRect();
+        const scale = state.canvas.scale;
+
         subProcessNodes.forEach(node => {
             const nodeEl = elements.detailViewContainer?.querySelector(`[data-node-id="${node.id}"]`);
             if (nodeEl) {
-                let rect = {
-                    x: parseInt(nodeEl.style.left) || 0,
-                    y: parseInt(nodeEl.style.top) || 0,
-                    width: nodeEl.offsetWidth || 200,
-                    height: nodeEl.offsetHeight || 100
-                };
-                rect = adjustRectForDiamond(rect, nodeEl);
-                nodeRects[node.id] = rect;
+                const bcr = nodeEl.getBoundingClientRect();
+                if (bcr.width > 0 && bcr.height > 0) {
+                    nodeRects[node.id] = {
+                        x: (bcr.left - gridBCR.left) / scale,
+                        y: (bcr.top - gridBCR.top) / scale,
+                        width: bcr.width / scale,
+                        height: bcr.height / scale
+                    };
+                } else {
+                    // Fallback if element not laid out yet
+                    nodeRects[node.id] = {
+                        x: parseInt(nodeEl.style.left) || 0,
+                        y: parseInt(nodeEl.style.top) || 0,
+                        width: nodeEl.offsetWidth || 200,
+                        height: nodeEl.offsetHeight || 100
+                    };
+                }
             } else if (node.position) {
                 nodeRects[node.id] = {
                     x: node.position.x,
@@ -3386,32 +3399,12 @@
         }
         svgLayer.innerHTML = '';
 
-        // DEBUG: Draw rect outlines to visualize where nodeRects think nodes are
-        Object.entries(nodeRects).forEach(([id, rect]) => {
-            const debugRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            debugRect.setAttribute('x', rect.x);
-            debugRect.setAttribute('y', rect.y);
-            debugRect.setAttribute('width', rect.width);
-            debugRect.setAttribute('height', rect.height);
-            debugRect.setAttribute('fill', 'none');
-            debugRect.setAttribute('stroke', 'red');
-            debugRect.setAttribute('stroke-width', '1');
-            debugRect.setAttribute('stroke-dasharray', '4 2');
-            debugRect.setAttribute('class', 'debug-rect');
-            svgLayer.appendChild(debugRect);
-            console.log(`[DEBUG RECT] ${id}: x=${rect.x}, y=${rect.y}, w=${rect.width}, h=${rect.height}`);
-        });
-
         // Draw each connection
         connections.forEach(conn => {
             const sourceRect = nodeRects[conn.source];
             const targetRect = nodeRects[conn.target];
 
             if (!sourceRect || !targetRect) return;
-
-            console.log(`[DEBUG CONN] ${conn.source} -> ${conn.target}`,
-                `sourcePort=${conn.sourcePort}, targetPort=${conn.targetPort}`,
-                `sourceRect:`, sourceRect, `targetRect:`, targetRect);
 
             // Use port-based routing when port data is available, fall back to auto-routing
             let points;
@@ -4130,25 +4123,28 @@
         updateMinimap();
     }
 
-    // Get actual rendered dimensions of nodes from DOM
+    // Get actual rendered dimensions of nodes from DOM (uses getBoundingClientRect for transform accuracy)
     function getActualNodeRects(fallbackRects) {
         const actualRects = {};
+        const gridBCR = elements.canvasGrid.getBoundingClientRect();
+        const scale = state.canvas.scale;
 
         Object.keys(fallbackRects).forEach(nodeId => {
             const nodeEl = elements.treeViewContainer.querySelector(`[data-id="${nodeId}"]`);
             if (nodeEl) {
-                const x = parseInt(nodeEl.style.left) || fallbackRects[nodeId].x;
-                const y = parseInt(nodeEl.style.top) || fallbackRects[nodeId].y;
-                // Use actual rendered dimensions
-                const width = nodeEl.offsetWidth || fallbackRects[nodeId].width;
-                const height = nodeEl.offsetHeight || fallbackRects[nodeId].height;
-                let rect = {
-                    x, y, width, height,
-                    isCustom: fallbackRects[nodeId].isCustom,
-                    isImplemented: fallbackRects[nodeId].isImplemented
-                };
-                rect = adjustRectForDiamond(rect, nodeEl);
-                actualRects[nodeId] = rect;
+                const bcr = nodeEl.getBoundingClientRect();
+                if (bcr.width > 0 && bcr.height > 0) {
+                    actualRects[nodeId] = {
+                        x: (bcr.left - gridBCR.left) / scale,
+                        y: (bcr.top - gridBCR.top) / scale,
+                        width: bcr.width / scale,
+                        height: bcr.height / scale,
+                        isCustom: fallbackRects[nodeId].isCustom,
+                        isImplemented: fallbackRects[nodeId].isImplemented
+                    };
+                } else {
+                    actualRects[nodeId] = fallbackRects[nodeId];
+                }
             } else {
                 actualRects[nodeId] = fallbackRects[nodeId];
             }
@@ -4547,22 +4543,34 @@
     // Build nodeRects from current DOM state
     function buildCurrentNodeRects() {
         const nodeRects = { hub: getHubRect() };
+        const gridBCR = elements.canvasGrid.getBoundingClientRect();
+        const scale = state.canvas.scale;
 
-        // Add all custom modules with actual dimensions from DOM
+        // Add all custom modules with actual visual dimensions from DOM
         state.customModules.forEach(module => {
             const el = elements.treeViewContainer.querySelector(`[data-id="${module.id}"]`);
             if (el) {
-                const dims = getModuleDimensions(module.size);
-                let rect = {
-                    x: parseInt(el.style.left) || 0,
-                    y: parseInt(el.style.top) || 0,
-                    width: el.offsetWidth || dims.width,
-                    height: el.offsetHeight || dims.height,
-                    isCustom: true,
-                    isImplemented: module.isImplemented
-                };
-                rect = adjustRectForDiamond(rect, el);
-                nodeRects[module.id] = rect;
+                const bcr = el.getBoundingClientRect();
+                if (bcr.width > 0 && bcr.height > 0) {
+                    nodeRects[module.id] = {
+                        x: (bcr.left - gridBCR.left) / scale,
+                        y: (bcr.top - gridBCR.top) / scale,
+                        width: bcr.width / scale,
+                        height: bcr.height / scale,
+                        isCustom: true,
+                        isImplemented: module.isImplemented
+                    };
+                } else {
+                    const dims = getModuleDimensions(module.size);
+                    nodeRects[module.id] = {
+                        x: parseInt(el.style.left) || 0,
+                        y: parseInt(el.style.top) || 0,
+                        width: el.offsetWidth || dims.width,
+                        height: el.offsetHeight || dims.height,
+                        isCustom: true,
+                        isImplemented: module.isImplemented
+                    };
+                }
             }
         });
 
@@ -4582,29 +4590,20 @@
         }
     }
 
-    // Adjust rect to account for CSS transform: rotate(45deg) on diamond shapes.
-    // offsetWidth/offsetHeight return the un-rotated CSS box, but the visual
-    // bounding box of a rotated square is sqrt(2) times larger.
-    function adjustRectForDiamond(rect, nodeEl) {
-        if (!nodeEl || !nodeEl.classList.contains('shape-diamond')) return rect;
-        const cssWidth = rect.width;
-        const cssHeight = rect.height;
-        const visualWidth = cssWidth * Math.SQRT2;
-        const visualHeight = cssHeight * Math.SQRT2;
-        const offsetX = (visualWidth - cssWidth) / 2;
-        const offsetY = (visualHeight - cssHeight) / 2;
-        return {
-            ...rect,
-            x: rect.x - offsetX,
-            y: rect.y - offsetY,
-            width: visualWidth,
-            height: visualHeight
-        };
-    }
-
     function getHubRect() {
         const hubNode = elements.treeViewContainer.querySelector('[data-id="hub"]');
         if (hubNode) {
+            const gridBCR = elements.canvasGrid.getBoundingClientRect();
+            const scale = state.canvas.scale;
+            const bcr = hubNode.getBoundingClientRect();
+            if (bcr.width > 0 && bcr.height > 0) {
+                return {
+                    x: (bcr.left - gridBCR.left) / scale,
+                    y: (bcr.top - gridBCR.top) / scale,
+                    width: bcr.width / scale,
+                    height: bcr.height / scale
+                };
+            }
             return {
                 x: parseInt(hubNode.style.left) || 0,
                 y: parseInt(hubNode.style.top) || 0,

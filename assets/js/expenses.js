@@ -484,6 +484,56 @@
   }
 
   /**
+   * Show a confirm modal dialog (replaces window.confirm to avoid Chrome suppression)
+   * @param {string} message - The message to display
+   * @param {string} title - Optional title (default: "Confirm Action")
+   * @param {string} confirmText - Optional confirm button text (default: "Confirm")
+   * @returns {Promise<boolean>} - Resolves to true if confirmed, false if cancelled
+   */
+  function showConfirmModal(message, title = 'Confirm Action', confirmText = 'Confirm') {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('confirmModal');
+      const titleEl = document.getElementById('confirmModalTitle');
+      const messageEl = document.getElementById('confirmModalMessage');
+      const btnOk = document.getElementById('btnConfirmOk');
+      const btnCancel = document.getElementById('btnConfirmCancel');
+      const btnClose = document.getElementById('btnCloseConfirmModal');
+
+      if (!modal || !titleEl || !messageEl || !btnOk || !btnCancel) {
+        console.warn('[CONFIRM MODAL] Modal elements not found, falling back to window.confirm');
+        resolve(confirm(message));
+        return;
+      }
+
+      titleEl.textContent = title;
+      messageEl.textContent = message;
+      btnOk.textContent = confirmText;
+      modal.classList.remove('hidden');
+
+      const cleanup = () => {
+        modal.classList.add('hidden');
+        btnOk.removeEventListener('click', onConfirm);
+        btnCancel.removeEventListener('click', onCancel);
+        btnClose.removeEventListener('click', onCancel);
+      };
+
+      const onConfirm = () => {
+        cleanup();
+        resolve(true);
+      };
+
+      const onCancel = () => {
+        cleanup();
+        resolve(false);
+      };
+
+      btnOk.addEventListener('click', onConfirm);
+      btnCancel.addEventListener('click', onCancel);
+      btnClose.addEventListener('click', onCancel);
+    });
+  }
+
+  /**
    * Get JWT token from localStorage with validation
    * Redirects to login if token is missing or expired
    * @returns {string|null} The JWT token or null if invalid
@@ -5419,10 +5469,10 @@
           if (existingBill && existingBill.status === 'closed') {
             console.log('[SCAN RECEIPT] Bill is closed, prompting user to reopen:', scannedReceiptBillId);
 
-            const confirmReopen = confirm(
-              `Bill #${scannedReceiptBillId} already exists and is CLOSED.\n\n` +
-              'You cannot add expenses to a closed bill.\n\n' +
-              'Do you want to REOPEN this bill to add the scanned expenses?'
+            const confirmReopen = await showConfirmModal(
+              `Bill #${scannedReceiptBillId} already exists and is CLOSED.\n\nYou cannot add expenses to a closed bill.\n\nDo you want to REOPEN this bill to add the scanned expenses?`,
+              'Reopen Closed Bill',
+              'Reopen Bill'
             );
 
             if (confirmReopen) {
@@ -5611,13 +5661,16 @@
         console.log('[POPULATE] ⚠ No description in expense data');
       }
 
-      // Populate amount
+      // Populate amount (include tax if present)
       if (expense.amount) {
         const amountInput = row.querySelector('[data-field="Amount"]');
         console.log('[POPULATE] Looking for amount input, found:', !!amountInput);
         if (amountInput) {
-          amountInput.value = expense.amount;
-          console.log('[POPULATE] ✓ Set amount:', expense.amount);
+          // Add tax_included to amount if present
+          const taxAmount = expense.tax_included || 0;
+          const totalAmount = parseFloat(expense.amount) + parseFloat(taxAmount);
+          amountInput.value = totalAmount.toFixed(2);
+          console.log('[POPULATE] ✓ Set amount:', expense.amount, '+ tax:', taxAmount, '= total:', totalAmount.toFixed(2));
         } else {
           console.warn('[POPULATE] ❌ Amount input not found!');
         }
@@ -7017,15 +7070,26 @@
 
     // Handle context menu actions
     contextMenu.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent document click handler from firing first
+      e.preventDefault();
+
       const actionBtn = e.target.closest('[data-action]');
       if (!actionBtn) return;
 
       const action = actionBtn.dataset.action;
+      console.log('[CONTEXT MENU] Action clicked:', action);
+
+      // Save references before any async operations or hideContextMenu
+      const savedTarget = contextMenuTarget;
+      const savedRowIndex = contextMenuRowIndex;
+
+      console.log('[CONTEXT MENU] Saved target:', savedTarget);
+      console.log('[CONTEXT MENU] Saved rowIndex:', savedRowIndex);
 
       if (action === 'fill-down') {
-        fillDown();
+        fillDownWithParams(savedTarget, savedRowIndex);
       } else if (action === 'clear-below') {
-        clearBelow();
+        clearBelowWithParams(savedTarget, savedRowIndex);
       }
 
       hideContextMenu();
@@ -7066,11 +7130,21 @@
   }
 
   function fillDown() {
-    if (!contextMenuTarget || contextMenuRowIndex === null) return;
+    console.log('[FILL DOWN] Starting fillDown...');
+    console.log('[FILL DOWN] contextMenuTarget:', contextMenuTarget);
+    console.log('[FILL DOWN] contextMenuRowIndex:', contextMenuRowIndex);
+
+    if (!contextMenuTarget || contextMenuRowIndex === null) {
+      console.log('[FILL DOWN] Aborted: no target or row index');
+      return;
+    }
 
     const rows = els.expenseRowsBody?.querySelectorAll('tr') || [];
+    console.log('[FILL DOWN] Total rows found:', rows.length);
+
     const isSelect = contextMenuTarget.tagName === 'SELECT';
     const isInput = contextMenuTarget.tagName === 'INPUT';
+    console.log('[FILL DOWN] Target type:', contextMenuTarget.tagName);
 
     // Get the value to copy
     let valueToCopy;
@@ -7083,25 +7157,50 @@
       valueToCopy = contextMenuTarget.value;
     }
 
-    if (!valueToCopy && valueToCopy !== 0) return;
+    console.log('[FILL DOWN] Value to copy:', valueToCopy);
+
+    if (!valueToCopy && valueToCopy !== 0) {
+      console.log('[FILL DOWN] Aborted: empty value');
+      return;
+    }
 
     // Get the cell index to find the same column in other rows
     const cell = contextMenuTarget.closest('td');
     const cellIndex = cell?.cellIndex;
-    if (cellIndex === undefined) return;
+    console.log('[FILL DOWN] Cell index:', cellIndex);
+
+    if (cellIndex === undefined) {
+      console.log('[FILL DOWN] Aborted: no cell index');
+      return;
+    }
 
     let filledCount = 0;
 
     // Fill all rows below the current one
     rows.forEach((row) => {
       const rowIndex = parseInt(row.dataset.rowIndex, 10);
+      console.log('[FILL DOWN] Checking row:', rowIndex, 'vs contextMenuRowIndex:', contextMenuRowIndex);
+
+      if (isNaN(rowIndex)) {
+        console.log('[FILL DOWN] Skipping row with invalid index');
+        return;
+      }
+
       if (rowIndex <= contextMenuRowIndex) return; // Skip current and above rows
 
       const targetCell = row.cells[cellIndex];
-      if (!targetCell) return;
+      if (!targetCell) {
+        console.log('[FILL DOWN] No target cell at index:', cellIndex);
+        return;
+      }
 
       const targetInput = targetCell.querySelector('.exp-input, .exp-select');
-      if (!targetInput) return;
+      if (!targetInput) {
+        console.log('[FILL DOWN] No input found in cell');
+        return;
+      }
+
+      console.log('[FILL DOWN] Filling row:', rowIndex);
 
       // Set the value
       if (targetInput.tagName === 'SELECT') {
@@ -7121,9 +7220,13 @@
       targetInput.dispatchEvent(new Event('change', { bubbles: true }));
     });
 
+    console.log('[FILL DOWN] Filled count:', filledCount);
+
     // Show toast notification
     if (filledCount > 0 && window.Toast) {
       Toast.success('Fill Down', `Copied to ${filledCount} row${filledCount > 1 ? 's' : ''} below`);
+    } else if (filledCount === 0) {
+      console.log('[FILL DOWN] No rows were filled');
     }
 
     // Update auto-categorize button state

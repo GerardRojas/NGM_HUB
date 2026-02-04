@@ -1018,6 +1018,23 @@
         </div>
     </div>
 
+    <!-- Confirm Modal (reusable) -->
+    <div id="confirmModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width: 450px;">
+            <div class="modal-header">
+                <div class="modal-title" id="confirmModalTitle">Confirm Action</div>
+                <button type="button" class="modal-close-btn" id="btnCloseConfirmModal">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <p id="confirmModalMessage" style="margin: 0; white-space: pre-line; color: #d1d5db; font-size: 14px; line-height: 1.6;"></p>
+            </div>
+            <div class="modal-footer" style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn-modal-secondary" id="btnConfirmCancel">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="btnConfirmOk">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Context Menu for Fill Down -->
     <div id="expenseContextMenu" class="expense-context-menu hidden">
         <button type="button" class="expense-context-menu-item" data-action="fill-down">

@@ -2575,10 +2575,11 @@
       ? `<span class="receipt-icon-btn receipt-icon-btn--has-receipt" title="Click to view/edit receipt">📎<span class="receipt-badge"></span></span>`
       : `<span class="receipt-icon-btn" title="No receipt attached">📎<span class="receipt-badge receipt-badge--missing"></span></span>`;
 
-    // Authorization badge
-    const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
-    const authBadgeClass = isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending';
-    const authBadgeText = isAuthorized ? '✓ Auth' : '⏳ Pending';
+    // Authorization badge - use status field first, fall back to auth_status (must match filter logic)
+    const isAuthorized = exp.status ? exp.status === 'auth' : (exp.auth_status === true || exp.auth_status === 1);
+    const isReview = exp.status === 'review';
+    const authBadgeClass = isReview ? 'auth-badge-review' : (isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending');
+    const authBadgeText = isReview ? '⚠ Review' : (isAuthorized ? '✓ Auth' : '⏳ Pending');
     const authBadgeDisabled = canAuthorize ? '' : ' auth-badge-disabled';
     const cursorStyle = canAuthorize ? 'cursor: pointer;' : 'cursor: not-allowed;';
     const authBadge = `<span class="auth-badge ${authBadgeClass}${authBadgeDisabled}"
@@ -2617,10 +2618,11 @@
       ? `<span class="receipt-icon-btn receipt-icon-btn--has-receipt" title="Has receipt attached">📎<span class="receipt-badge"></span></span>`
       : `<span class="receipt-icon-btn" title="No receipt attached">📎<span class="receipt-badge receipt-badge--missing"></span></span>`;
 
-    // Authorization badge (not editable in bulk edit mode)
-    const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
-    const authBadgeClass = isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending';
-    const authBadgeText = isAuthorized ? '✓ Auth' : '⏳ Pending';
+    // Authorization badge (not editable in bulk edit mode) - use status field first, fall back to auth_status
+    const isAuthorized = exp.status ? exp.status === 'auth' : (exp.auth_status === true || exp.auth_status === 1);
+    const isReview = exp.status === 'review';
+    const authBadgeClass = isReview ? 'auth-badge-review' : (isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending');
+    const authBadgeText = isReview ? '⚠ Review' : (isAuthorized ? '✓ Auth' : '⏳ Pending');
     const authBadge = `<span class="auth-badge ${authBadgeClass}">${authBadgeText}</span>`;
 
     // Get the ID - backend uses 'expense_id' as primary key
@@ -7630,9 +7632,11 @@
       ? `<span class="receipt-icon-btn receipt-icon-btn--has-receipt" title="Click to view/edit receipt">📎<span class="receipt-badge"></span></span>`
       : `<span class="receipt-icon-btn" title="No receipt attached">📎<span class="receipt-badge receipt-badge--missing"></span></span>`;
 
-    const isAuthorized = exp.auth_status === true || exp.auth_status === 1;
-    const authBadgeClass = isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending';
-    const authBadgeText = isAuthorized ? '✓ Auth' : '⏳ Pending';
+    // Use status field first, fall back to auth_status (must match filter logic)
+    const isAuthorized = exp.status ? exp.status === 'auth' : (exp.auth_status === true || exp.auth_status === 1);
+    const isReview = exp.status === 'review';
+    const authBadgeClass = isReview ? 'auth-badge-review' : (isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending');
+    const authBadgeText = isReview ? '⚠ Review' : (isAuthorized ? '✓ Auth' : '⏳ Pending');
     const authBadgeDisabled = canAuthorize ? '' : ' auth-badge-disabled';
     const cursorStyle = canAuthorize ? 'cursor: pointer;' : 'cursor: not-allowed;';
     const authBadge = `<span class="auth-badge ${authBadgeClass}${authBadgeDisabled}"
@@ -9541,21 +9545,24 @@
 
       // Update authorization status
       const userId = currentUser.user_id || currentUser.id;
+      const newStatusStr = newStatus ? 'auth' : 'pending';
       const response = await apiJson(`${apiBase}/expenses/${expenseId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           auth_status: newStatus,
+          status: newStatusStr,
           auth_by: newStatus ? userId : null // Record who authorized, clear if un-authorizing
         })
       });
 
       console.log('[AUTH] Authorization updated:', response);
 
-      // Update local expense data
+      // Update local expense data (both status and auth_status to keep in sync)
       const expense = expenses.find(e => String(e.expense_id || e.id) === String(expenseId));
       if (expense) {
         expense.auth_status = newStatus;
+        expense.status = newStatusStr;
         expense.auth_by = newStatus ? userId : null;
       }
 

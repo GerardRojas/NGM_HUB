@@ -1,0 +1,774 @@
+/* ==========================================
+   Allowance ADU Calculator — Dark Theme
+   ========================================== */
+
+.page-allowance-adu .main-content {
+  max-width: 1200px;
+  width: 100%;
+  padding-inline: 16px;
+}
+
+.page-allowance-adu .workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 24px;
+}
+
+.page-allowance-adu .data-section {
+  max-width: none;
+  margin-inline: auto;
+  width: 100%;
+}
+
+/* ==========================================
+   CALCULATOR CONTAINER
+   ========================================== */
+
+.adu-calc-container {
+  background: var(--ngm-bg-card, #18181b);
+  border: 1px solid var(--border-soft, #27272f);
+  border-radius: 12px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+/* ==========================================
+   PARAMETER SECTION (reusable for each step)
+   ========================================== */
+
+.adu-param-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.adu-param-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.adu-param-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(62, 207, 142, 0.12);
+  color: #3ecf8e;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.adu-param-step.completed {
+  background: #3ecf8e;
+  color: #0a0a0a;
+}
+
+.adu-param-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #ededed);
+  letter-spacing: 0.01em;
+}
+
+.adu-param-subtitle {
+  font-size: 12px;
+  color: var(--ngm-text-soft, #888888);
+  margin-left: 40px;
+  margin-top: -8px;
+}
+
+/* ==========================================
+   OPTION CARDS (type & story selection)
+   ========================================== */
+
+.adu-options-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-left: 40px;
+}
+
+.adu-option-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 140px;
+  padding: 18px 22px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.adu-option-card:hover:not(.disabled):not(.selected) {
+  border-color: rgba(148, 163, 184, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.adu-option-card.selected {
+  border-color: rgba(62, 207, 142, 0.6);
+  background: rgba(62, 207, 142, 0.1);
+  color: #3ecf8e;
+  font-weight: 600;
+  box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.08);
+}
+
+.adu-option-card.disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.adu-option-card .card-icon {
+  font-size: 22px;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+.adu-option-card.selected .card-icon {
+  opacity: 1;
+}
+
+.adu-option-card .card-label {
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.adu-option-card .card-desc {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  line-height: 1.3;
+}
+
+.adu-option-card.selected .card-desc {
+  color: rgba(62, 207, 142, 0.6);
+}
+
+/* Story cards - slightly smaller */
+.adu-options-grid.stories .adu-option-card {
+  min-width: 100px;
+  padding: 16px 20px;
+}
+
+/* ==========================================
+   STORY SECTION LOCKED STATE
+   ========================================== */
+
+.adu-param-section.locked .adu-param-step {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.adu-param-section.locked .adu-param-title {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.adu-param-section.locked .adu-param-subtitle {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.adu-param-section.locked .adu-options-grid,
+.adu-param-section.locked .adu-input-row,
+.adu-param-section.locked .adu-screenshot-uploads,
+.adu-param-section.locked .adu-screenshot-actions,
+.adu-param-section.locked .adu-analysis-results,
+.adu-param-section.locked .adu-results-container {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* ==========================================
+   TEXT INPUT (square footage, etc.)
+   ========================================== */
+
+.adu-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.adu-input-field {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.adu-text-input {
+  width: 180px;
+  padding: 12px 60px 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 8px;
+  color: var(--text-primary, #ededed);
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  -moz-appearance: textfield;
+}
+
+.adu-text-input::-webkit-outer-spin-button,
+.adu-text-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.adu-text-input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.adu-text-input:hover {
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.adu-text-input:focus {
+  border-color: rgba(62, 207, 142, 0.6);
+  box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.1);
+}
+
+.adu-input-suffix {
+  position: absolute;
+  right: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+
+/* ==========================================
+   SELECTION SUMMARY BAR
+   ========================================== */
+
+.adu-summary-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border-soft, #27272f);
+  border-radius: 10px;
+  min-height: 52px;
+}
+
+.adu-summary-bar .summary-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ngm-text-muted, #666666);
+  flex-shrink: 0;
+}
+
+.adu-summary-bar .summary-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.adu-summary-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(62, 207, 142, 0.1);
+  border: 1px solid rgba(62, 207, 142, 0.25);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #3ecf8e;
+}
+
+.adu-summary-tag .tag-key {
+  color: rgba(62, 207, 142, 0.6);
+  font-weight: 400;
+}
+
+.adu-summary-placeholder {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.25);
+  font-style: italic;
+}
+
+/* ==========================================
+   SECTION DIVIDER
+   ========================================== */
+
+.adu-section-divider {
+  height: 1px;
+  background: var(--border-soft, #27272f);
+  margin: 0;
+}
+
+/* ==========================================
+   OPTIONAL BADGE
+   ========================================== */
+
+.adu-optional-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+/* ==========================================
+   SCREENSHOT UPLOAD ZONE
+   ========================================== */
+
+.adu-screenshot-uploads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.adu-upload-zone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 260px;
+  min-height: 180px;
+  padding: 24px 16px;
+  border: 2px dashed rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.adu-upload-zone:hover {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.adu-upload-zone.dragover {
+  border-color: rgba(62, 207, 142, 0.5);
+  background: rgba(62, 207, 142, 0.05);
+}
+
+.adu-upload-zone .upload-icon {
+  font-size: 28px;
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.adu-upload-zone .upload-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.adu-upload-zone .upload-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.25);
+  text-align: center;
+}
+
+.adu-upload-zone input[type="file"] {
+  display: none;
+}
+
+/* Upload preview (after file selected) */
+.adu-upload-preview {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 260px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.adu-upload-preview img {
+  width: 100%;
+  max-height: 160px;
+  object-fit: cover;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.adu-upload-preview .preview-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  width: 100%;
+}
+
+.adu-upload-preview .preview-name {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.adu-upload-preview .preview-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 12px 10px;
+}
+
+.adu-upload-preview .preview-actions button {
+  padding: 5px 12px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.adu-upload-preview .btn-preview-remove {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.adu-upload-preview .btn-preview-remove:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Upload status states */
+.adu-upload-preview.analyzing {
+  border-color: rgba(62, 207, 142, 0.3);
+}
+
+.adu-upload-preview.analyzed {
+  border-color: rgba(62, 207, 142, 0.4);
+}
+
+.adu-upload-preview .preview-status {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.adu-upload-preview .preview-status.status-ready {
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.adu-upload-preview .preview-status.status-analyzing {
+  color: #3ecf8e;
+  background: rgba(62, 207, 142, 0.1);
+}
+
+.adu-upload-preview .preview-status.status-done {
+  color: #3ecf8e;
+  background: rgba(62, 207, 142, 0.12);
+}
+
+.adu-upload-preview .preview-status.status-error {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* ==========================================
+   ANALYSIS SPINNER
+   ========================================== */
+
+.adu-analysis-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(62, 207, 142, 0.2);
+  border-top-color: #3ecf8e;
+  border-radius: 50%;
+  animation: adu-spin 0.7s linear infinite;
+}
+
+@keyframes adu-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================
+   ANALYSIS RESULTS
+   ========================================== */
+
+.adu-analysis-results {
+  margin-top: 16px;
+}
+
+.adu-analysis-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(62, 207, 142, 0.15);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+}
+
+.adu-analysis-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #3ecf8e;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.adu-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.adu-analysis-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adu-analysis-item .item-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.adu-analysis-item .item-value {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #ededed);
+}
+
+.adu-analysis-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.adu-feature-tag {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.adu-confidence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.adu-confidence-badge.high {
+  background: rgba(62, 207, 142, 0.12);
+  color: #3ecf8e;
+}
+
+.adu-confidence-badge.medium {
+  background: rgba(250, 204, 21, 0.12);
+  color: #facc15;
+}
+
+.adu-confidence-badge.low {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+/* ==========================================
+   COST RESULTS
+   ========================================== */
+
+.adu-results-container {
+  margin-left: 40px;
+}
+
+.adu-cost-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.adu-cost-total {
+  font-size: 32px;
+  font-weight: 700;
+  color: #3ecf8e;
+  letter-spacing: -0.02em;
+}
+
+.adu-cost-per-sqft {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.adu-cost-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.adu-cost-table thead th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.4);
+  border-bottom: 1px solid var(--border-soft, #27272f);
+}
+
+.adu-cost-table tbody td {
+  padding: 10px 14px;
+  color: var(--text-primary, #ededed);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.adu-cost-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.adu-cost-table .col-cost {
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.adu-cost-table .col-notes {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+}
+
+.adu-cost-assumptions {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.adu-cost-assumptions-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.35);
+  margin-bottom: 8px;
+}
+
+.adu-cost-assumptions ul {
+  margin: 0;
+  padding-left: 16px;
+  list-style: disc;
+}
+
+.adu-cost-assumptions li {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.6;
+}
+
+.adu-cost-disclaimer {
+  margin-top: 12px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.25);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+
+@media (max-width: 768px) {
+  .adu-calc-container {
+    padding: 20px 16px;
+    gap: 28px;
+  }
+
+  .adu-options-grid {
+    margin-left: 0;
+    gap: 8px;
+  }
+
+  .adu-option-card {
+    min-width: 110px;
+    padding: 14px 16px;
+    flex: 1 1 calc(50% - 8px);
+  }
+
+  .adu-options-grid.stories .adu-option-card {
+    min-width: 80px;
+    flex: 1 1 calc(25% - 8px);
+  }
+
+  .adu-param-subtitle {
+    margin-left: 0;
+  }
+
+  .adu-input-row {
+    margin-left: 0 !important;
+  }
+
+  .adu-summary-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .adu-screenshot-uploads {
+    flex-direction: column;
+  }
+
+  .adu-upload-zone,
+  .adu-upload-preview {
+    width: 100%;
+  }
+
+  .adu-results-container {
+    margin-left: 0;
+  }
+
+  .adu-cost-total {
+    font-size: 24px;
+  }
+
+  .adu-analysis-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}

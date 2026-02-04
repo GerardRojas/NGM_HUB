@@ -3442,6 +3442,21 @@ body.page-process-manager {
     color: #f59e0b;
 }
 
+/* When milestone has diamond shape, use purple diamond styling instead */
+.tree-node.custom-module.type-milestone.shape-diamond {
+    border-color: rgba(139, 92, 246, 0.4);
+    border-radius: 8px;
+}
+
+.tree-node.custom-module.type-milestone.shape-diamond .tree-node-icon {
+    background: rgba(139, 92, 246, 0.15) !important;
+    border-color: rgba(139, 92, 246, 0.4) !important;
+}
+
+.tree-node.custom-module.type-milestone.shape-diamond .tree-node-icon svg {
+    color: #a78bfa;
+}
+
 .tree-node.custom-module.type-decision {
     border-color: #a78bfa;
 }
@@ -4357,10 +4372,10 @@ body.page-process-manager {
 
 .flow-node.size-milestone .flow-node-title {
     position: absolute;
-    top: 100%;
+    bottom: 100%;
     left: 50%;
     transform: translateX(-50%) rotate(-45deg);
-    margin-top: 15px;
+    margin-bottom: 15px;
     white-space: nowrap;
     font-size: 12px;
     font-weight: 500;
@@ -4399,13 +4414,13 @@ body.page-process-manager {
     height: 100%;
 }
 
-/* Milestone external label (outside the diamond) */
+/* Milestone external label (above the diamond) */
 .flow-node.size-milestone .milestone-label {
     position: absolute;
-    top: 100%;
+    bottom: 100%;
     left: 50%;
     transform: translateX(-50%) rotate(-45deg);
-    margin-top: 15px;
+    margin-bottom: 15px;
     white-space: nowrap;
     font-size: 12px;
     font-weight: 500;
@@ -4571,10 +4586,10 @@ body.page-process-manager {
 .flow-node.shape-diamond .flow-node-title,
 .flow-node.shape-diamond .milestone-label {
     position: absolute;
-    top: 100%;
+    bottom: 100%;
     left: 50%;
     transform: translateX(-50%) rotate(-45deg);
-    margin-top: 15px;
+    margin-bottom: 15px;
     white-space: nowrap;
     font-size: 12px;
     font-weight: 500;
@@ -4689,10 +4704,10 @@ body.page-process-manager {
 .flow-node.shape-circle .flow-node-title,
 .flow-node.shape-circle .milestone-label {
     position: absolute;
-    top: 100%;
+    bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    margin-top: 10px;
+    margin-bottom: 10px;
     white-space: nowrap;
     font-size: 12px;
     font-weight: 500;
@@ -4787,10 +4802,10 @@ body.page-process-manager {
 
 .tree-node.shape-diamond .tree-node-title {
     position: absolute;
-    top: 100%;
+    bottom: 100%;
     left: 50%;
     transform: translateX(-50%) rotate(-45deg);
-    margin-top: 12px;
+    margin-bottom: 12px;
     white-space: nowrap;
     font-size: 11px;
     font-weight: 500;
@@ -4826,10 +4841,10 @@ body.page-process-manager {
 
 .tree-node.shape-circle .tree-node-title {
     position: absolute;
-    top: 100%;
+    bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    margin-top: 8px;
+    margin-bottom: 8px;
     white-space: nowrap;
     font-size: 11px;
     font-weight: 500;
@@ -5035,6 +5050,34 @@ body.page-process-manager {
     font-size: 11px;
     font-weight: 500;
     margin: 0;
+}
+
+/* Shape overrides type styles (shape-diamond/circle take priority) */
+.flow-node.shape-diamond.type-milestone,
+.flow-node.shape-diamond.type-decision {
+    border-radius: 12px;
+    text-align: inherit;
+}
+
+.flow-node.shape-diamond.type-milestone {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(139, 92, 246, 0.05) 100%);
+    border-color: rgba(139, 92, 246, 0.4);
+    box-shadow:
+        0 0 20px rgba(139, 92, 246, 0.2),
+        0 0 40px rgba(139, 92, 246, 0.1),
+        inset 0 0 20px rgba(139, 92, 246, 0.05);
+}
+
+.flow-node.shape-circle.type-milestone {
+    border-radius: 50%;
+    text-align: inherit;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
+    border-color: rgba(16, 185, 129, 0.4);
+}
+
+.tree-node.shape-diamond.type-milestone {
+    border-radius: 8px;
+    border-color: rgba(139, 92, 246, 0.4);
 }
 
 /* Node type: decision (branching) */

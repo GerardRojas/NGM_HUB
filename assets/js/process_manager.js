@@ -2843,6 +2843,14 @@
 
             // Make draggable with position saving
             makeDetailNodeDraggable(nodeEl, module.id, node.id, () => {
+                // Update rects for all moved nodes from current DOM positions
+                subProcessNodes.forEach(n => {
+                    const el = elements.detailViewContainer.querySelector(`[data-node-id="${n.id}"]`);
+                    if (el && nodeRects[n.id]) {
+                        nodeRects[n.id].x = parseInt(el.style.left) || 0;
+                        nodeRects[n.id].y = parseInt(el.style.top) || 0;
+                    }
+                });
                 redrawDetailConnections(module, subProcessNodes, nodeRects);
             });
 
@@ -2874,16 +2882,44 @@
         let isDragging = false;
         let startX, startY;
         let nodeStartX, nodeStartY;
+        let groupInitialPositions = {};
 
         nodeEl.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
             if (e.target.closest('.flow-port') || e.target.closest('.connection-port')) return;
+            if (connectionDragState.isDragging) return;
+
+            // Ctrl+click for multi-select (don't start drag)
+            if (e.ctrlKey || e.shiftKey) {
+                toggleModuleSelection(nodeId);
+                e.stopPropagation();
+                return;
+            }
+
+            // If this node is not selected and we have selections, clear them
+            if (!state.selectedModules.includes(nodeId) && state.selectedModules.length > 0) {
+                clearModuleSelection();
+            }
 
             isDragging = true;
             startX = e.clientX;
             startY = e.clientY;
             nodeStartX = parseInt(nodeEl.style.left) || 0;
             nodeStartY = parseInt(nodeEl.style.top) || 0;
+
+            // Store initial positions of all selected nodes for group drag
+            groupInitialPositions = {};
+            if (state.selectedModules.length > 0 && state.selectedModules.includes(nodeId)) {
+                state.selectedModules.forEach(id => {
+                    const el = elements.detailViewContainer.querySelector(`[data-node-id="${id}"]`);
+                    if (el) {
+                        groupInitialPositions[id] = {
+                            x: parseInt(el.style.left) || 0,
+                            y: parseInt(el.style.top) || 0
+                        };
+                    }
+                });
+            }
 
             nodeEl.classList.add('dragging');
             e.stopPropagation();
@@ -2902,31 +2938,45 @@
             const nodeWidth = nodeEl.offsetWidth || 200;
             const nodeHeight = nodeEl.offsetHeight || 100;
 
-            // Calculate snap alignment for detail view nodes
-            const module = getCustomModule(moduleId);
-            if (module && module.subProcessNodes) {
-                const snap = calculateDetailSnap(nodeId, newX, newY, nodeWidth, nodeHeight, module.subProcessNodes);
+            // Calculate snap alignment (only for single node drag)
+            if (Object.keys(groupInitialPositions).length === 0) {
+                const module = getCustomModule(moduleId);
+                if (module && module.subProcessNodes) {
+                    const snap = calculateDetailSnap(nodeId, newX, newY, nodeWidth, nodeHeight, module.subProcessNodes);
 
-                // Apply snap if detected
-                if (snap.snapX !== null) {
-                    newX = snap.snapX;
-                }
-                if (snap.snapY !== null) {
-                    newY = snap.snapY;
-                }
+                    if (snap.snapX !== null) {
+                        newX = snap.snapX;
+                    }
+                    if (snap.snapY !== null) {
+                        newY = snap.snapY;
+                    }
 
-                // Show/hide snap guides
-                if (snap.guides.length > 0) {
-                    renderSnapGuides(snap.guides);
-                    nodeEl.classList.add('snapping');
-                } else {
-                    clearSnapGuides();
-                    nodeEl.classList.remove('snapping');
+                    if (snap.guides.length > 0) {
+                        renderSnapGuides(snap.guides);
+                        nodeEl.classList.add('snapping');
+                    } else {
+                        clearSnapGuides();
+                        nodeEl.classList.remove('snapping');
+                    }
                 }
+            } else {
+                clearSnapGuides();
             }
 
             nodeEl.style.left = `${newX}px`;
             nodeEl.style.top = `${newY}px`;
+
+            // Move all selected nodes together (group drag)
+            if (Object.keys(groupInitialPositions).length > 0) {
+                Object.entries(groupInitialPositions).forEach(([id, pos]) => {
+                    if (id === nodeId) return;
+                    const el = elements.detailViewContainer.querySelector(`[data-node-id="${id}"]`);
+                    if (el) {
+                        el.style.left = `${pos.x + dx}px`;
+                        el.style.top = `${pos.y + dy}px`;
+                    }
+                });
+            }
 
             if (onDrag) onDrag();
         });
@@ -2938,18 +2988,37 @@
             nodeEl.classList.remove('snapping');
             clearSnapGuides();
 
-            // Save position to module
+            // Save positions of all moved nodes
             const module = getCustomModule(moduleId);
             if (module && module.subProcessNodes) {
-                const node = module.subProcessNodes.find(n => n.id === nodeId);
-                if (node) {
-                    node.position = {
+                // Save main node position
+                const mainNode = module.subProcessNodes.find(n => n.id === nodeId);
+                if (mainNode) {
+                    mainNode.position = {
                         x: parseInt(nodeEl.style.left) || 0,
                         y: parseInt(nodeEl.style.top) || 0
                     };
-                    saveCustomModules();
                 }
+
+                // Save group drag positions
+                if (Object.keys(groupInitialPositions).length > 0) {
+                    Object.keys(groupInitialPositions).forEach(id => {
+                        if (id === nodeId) return;
+                        const el = elements.detailViewContainer.querySelector(`[data-node-id="${id}"]`);
+                        const node = module.subProcessNodes.find(n => n.id === id);
+                        if (el && node) {
+                            node.position = {
+                                x: parseInt(el.style.left) || 0,
+                                y: parseInt(el.style.top) || 0
+                            };
+                        }
+                    });
+                }
+
+                saveCustomModules();
             }
+
+            groupInitialPositions = {};
         });
     }
 
@@ -5396,7 +5465,7 @@
         }
 
         // Don't start selection if clicking on a node
-        if (e.target.closest('.tree-node, .service-node, .process-card, .step-card')) {
+        if (e.target.closest('.tree-node, .flow-node, .service-node, .process-card, .step-card')) {
             // If clicking a node without Ctrl/Shift, clear selection
             if (!e.ctrlKey && !e.shiftKey) {
                 clearModuleSelection();
@@ -5537,10 +5606,13 @@
         const boxTop = Math.min(startY, endY);
         const boxBottom = Math.max(startY, endY);
 
-        // Check each module
-        const allNodes = elements.treeViewContainer.querySelectorAll('.tree-node');
+        // Check nodes in both tree view and detail view
+        const flowNodes = elements.detailViewContainer ? elements.detailViewContainer.querySelectorAll('.flow-node') : [];
+        const treeNodes = elements.treeViewContainer ? elements.treeViewContainer.querySelectorAll('.tree-node') : [];
+        const allNodes = flowNodes.length > 0 ? flowNodes : treeNodes;
+
         allNodes.forEach(node => {
-            const nodeId = node.dataset.id;
+            const nodeId = node.dataset.id || node.dataset.nodeId;
             const nodeLeft = parseInt(node.style.left) || 0;
             const nodeTop = parseInt(node.style.top) || 0;
             const nodeRight = nodeLeft + node.offsetWidth;
@@ -5566,10 +5638,13 @@
         const boxTop = Math.min(startY, endY);
         const boxBottom = Math.max(startY, endY);
 
-        // Select modules inside the box
-        const allNodes = elements.treeViewContainer.querySelectorAll('.tree-node');
+        // Select nodes in both tree view and detail view
+        const flowNodes = elements.detailViewContainer ? elements.detailViewContainer.querySelectorAll('.flow-node') : [];
+        const treeNodes = elements.treeViewContainer ? elements.treeViewContainer.querySelectorAll('.tree-node') : [];
+        const allNodes = flowNodes.length > 0 ? flowNodes : treeNodes;
+
         allNodes.forEach(node => {
-            const nodeId = node.dataset.id;
+            const nodeId = node.dataset.id || node.dataset.nodeId;
             const nodeLeft = parseInt(node.style.left) || 0;
             const nodeTop = parseInt(node.style.top) || 0;
             const nodeRight = nodeLeft + node.offsetWidth;
@@ -5590,13 +5665,17 @@
 
     function clearModuleSelection() {
         state.selectedModules = [];
-        const allNodes = elements.treeViewContainer.querySelectorAll('.tree-node.selected');
-        allNodes.forEach(node => node.classList.remove('selected'));
+        const treeSelected = elements.treeViewContainer ? elements.treeViewContainer.querySelectorAll('.tree-node.selected') : [];
+        treeSelected.forEach(node => node.classList.remove('selected'));
+        const flowSelected = elements.detailViewContainer ? elements.detailViewContainer.querySelectorAll('.flow-node.selected') : [];
+        flowSelected.forEach(node => node.classList.remove('selected'));
     }
 
     function toggleModuleSelection(moduleId) {
         const index = state.selectedModules.indexOf(moduleId);
-        const node = elements.treeViewContainer.querySelector(`[data-id="${moduleId}"]`);
+        // Find node in either tree view or detail view
+        const node = (elements.treeViewContainer && elements.treeViewContainer.querySelector(`[data-id="${moduleId}"]`))
+            || (elements.detailViewContainer && elements.detailViewContainer.querySelector(`[data-node-id="${moduleId}"]`));
 
         if (index > -1) {
             state.selectedModules.splice(index, 1);
@@ -6777,11 +6856,18 @@
         // Build the node content based on type and shape
         if (effectiveShape === 'diamond' || effectiveShape === 'circle') {
             // Diamond/Circle node with external label (for decision, milestone, event types)
-            const shapeIcon = node.type === 'decision'
-                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>'
-                : node.type === 'event'
-                    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>'
-                    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>';
+            let shapeIcon;
+            if (node.icon) {
+                // Use custom icon from modal selector
+                shapeIcon = getIconSvg(node.icon, 'currentColor');
+            } else {
+                // Default icon based on type
+                shapeIcon = node.type === 'decision'
+                    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>'
+                    : node.type === 'event'
+                        ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>'
+                        : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>';
+            }
 
             el.innerHTML = `
                 ${portsHtml}
@@ -6852,12 +6938,17 @@
             }
         }
 
-        // Add click to select
+        // Add click to select (Ctrl+click for multi-select, same as tree view)
         el.addEventListener('click', (e) => {
             if (e.target.closest('.flow-node-switch-toggle') || e.target.closest('.flow-node-option')) {
                 return;
             }
-            selectFlowNode(el, node);
+            if (e.ctrlKey || e.shiftKey) {
+                toggleModuleSelection(node.id);
+            } else {
+                clearModuleSelection();
+                selectFlowNode(el, node);
+            }
         });
 
         return el;

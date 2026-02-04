@@ -46,6 +46,7 @@
     // Costs & Estimates
     "estimator": { label: "Estimator Suite", href: "estimator.html", order: 1, category: "costs" },
     "estimator_database": { label: "Estimator Database", href: "estimator_database.html", order: 2, category: "costs" },
+    "allowance_adu_calculator": { label: "Allowance ADU Calculator", href: "allowance-adu-calculator.html", order: 3, category: "costs" },
 
     // Admin
     "team": { label: "Team Management", href: "team.html", order: 1, category: "admin" },

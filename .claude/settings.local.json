@@ -9,7 +9,8 @@
       "Bash(git clone:*)",
       "Bash(node --check:*)",
       "Bash(node -c:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(findstr:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"

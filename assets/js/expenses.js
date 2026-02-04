@@ -351,6 +351,7 @@
     els.btnCloseSingleExpenseModal = document.getElementById('btnCloseSingleExpenseModal');
     els.btnCancelSingleExpense = document.getElementById('btnCancelSingleExpense');
     els.btnSaveSingleExpense = document.getElementById('btnSaveSingleExpense');
+    els.btnDeleteSingleExpense = document.getElementById('btnDeleteSingleExpense');
     els.singleExpenseDate = document.getElementById('singleExpenseDate');
     els.singleExpenseBillId = document.getElementById('singleExpenseBillId');
     els.singleExpenseDescription = document.getElementById('singleExpenseDescription');
@@ -4424,42 +4425,93 @@
     try {
       els.auditTrailList.innerHTML = '<div class="audit-trail-loading">Loading audit history...</div>';
 
-      const response = await apiJson(`${apiBase}/expenses/${expenseId}/audit-trail`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
+      const base = getApiBase();
+      const auditData = await apiJson(`${base}/expenses/${expenseId}/audit-trail`, {
+        method: 'GET'
       });
 
-      const auditData = await response.json();
       console.log('[EXPENSES] Audit trail loaded:', auditData);
 
-      // Render audit trail
-      if (!auditData.audit_trail || auditData.audit_trail.length === 0) {
+      if (!auditData || !auditData.audit_trail || auditData.audit_trail.length === 0) {
         els.auditTrailList.innerHTML = '<div class="audit-trail-empty">No history available</div>';
         return;
       }
 
+      // Field name labels for readability
+      const fieldLabels = {
+        Amount: 'Amount',
+        account_id: 'Account',
+        txn_type: 'Type',
+        vendor_id: 'Vendor',
+        payment_type: 'Payment Method',
+        LineDescription: 'Description',
+        TxnDate: 'Date',
+        bill_id: 'Bill #'
+      };
+
+      // Status badge labels
+      const statusLabels = {
+        pending: 'Pending',
+        auth: 'Authorized',
+        review: 'Review'
+      };
+
       const auditHTML = auditData.audit_trail.map(entry => {
-        const date = new Date(entry.changed_at).toLocaleString();
-        const isStatusChange = entry.change_type === 'status';
+        const date = new Date(entry.timestamp).toLocaleString();
+        const isStatusChange = entry.type === 'status_change';
+        const userName = entry.changed_by?.name || '';
 
         let changeText = '';
+        let typeLabel = '';
+
         if (isStatusChange) {
-          changeText = `Status changed from <strong>${entry.old_status || 'pending'}</strong> to <strong>${entry.new_status}</strong>`;
+          const oldLabel = statusLabels[entry.old_status] || entry.old_status || 'Pending';
+          const newLabel = statusLabels[entry.new_status] || entry.new_status;
+          changeText = `Status: <strong>${oldLabel}</strong> &rarr; <strong>${newLabel}</strong>`;
+          typeLabel = 'STATUS';
         } else {
-          changeText = `<strong>${entry.field_name}</strong> changed from "${entry.old_value || 'empty'}" to "${entry.new_value}"`;
+          const field = fieldLabels[entry.field_name] || entry.field_name;
+          let oldVal = entry.old_value || 'empty';
+          let newVal = entry.new_value || 'empty';
+
+          // Format Amount values as currency
+          if (entry.field_name === 'Amount') {
+            const oldNum = parseFloat(oldVal);
+            const newNum = parseFloat(newVal);
+            if (!isNaN(oldNum)) oldVal = '$' + oldNum.toFixed(2);
+            if (!isNaN(newNum)) newVal = '$' + newNum.toFixed(2);
+          }
+
+          // Resolve IDs to names for lookup fields
+          if (entry.field_name === 'account_id' && lookupMaps.accounts) {
+            oldVal = lookupMaps.accounts[oldVal] || oldVal;
+            newVal = lookupMaps.accounts[newVal] || newVal;
+          } else if (entry.field_name === 'vendor_id' && lookupMaps.vendors) {
+            oldVal = lookupMaps.vendors[oldVal] || oldVal;
+            newVal = lookupMaps.vendors[newVal] || newVal;
+          } else if (entry.field_name === 'txn_type' && lookupMaps.txnTypes) {
+            oldVal = lookupMaps.txnTypes[oldVal] || oldVal;
+            newVal = lookupMaps.txnTypes[newVal] || newVal;
+          } else if (entry.field_name === 'payment_type' && lookupMaps.paymentMethods) {
+            oldVal = lookupMaps.paymentMethods[oldVal] || oldVal;
+            newVal = lookupMaps.paymentMethods[newVal] || newVal;
+          }
+
+          changeText = `<strong>${field}</strong>: "${oldVal}" &rarr; "${newVal}"`;
+          typeLabel = 'EDIT';
         }
 
         return `
           <div class="audit-trail-item">
             <div class="audit-trail-header">
               <span class="audit-trail-type audit-trail-type--${isStatusChange ? 'status' : 'field'}">
-                ${isStatusChange ? 'STATUS' : 'FIELD'}
+                ${typeLabel}
               </span>
               <span class="audit-trail-date">${date}</span>
             </div>
             <div class="audit-trail-change">${changeText}</div>
             ${entry.reason ? `<div class="audit-trail-reason">Reason: ${entry.reason}</div>` : ''}
-            ${entry.changed_by_name ? `<div class="audit-trail-user">By: ${entry.changed_by_name}</div>` : ''}
+            ${userName ? `<div class="audit-trail-user">By: ${userName}</div>` : ''}
           </div>
         `;
       }).join('');
@@ -6627,6 +6679,14 @@
 
     // Single expense modal: Save button
     els.btnSaveSingleExpense?.addEventListener('click', saveSingleExpense);
+
+    // Single expense modal: Delete button
+    els.btnDeleteSingleExpense?.addEventListener('click', async () => {
+      if (!currentEditingExpense) return;
+      const expenseId = currentEditingExpense.expense_id || currentEditingExpense.id;
+      closeSingleExpenseModal();
+      await deleteExpense(expenseId);
+    });
 
     // Single expense modal: Close on backdrop click
     els.singleExpenseModal?.addEventListener('click', (e) => {

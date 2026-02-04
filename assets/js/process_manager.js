@@ -3386,12 +3386,32 @@
         }
         svgLayer.innerHTML = '';
 
+        // DEBUG: Draw rect outlines to visualize where nodeRects think nodes are
+        Object.entries(nodeRects).forEach(([id, rect]) => {
+            const debugRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            debugRect.setAttribute('x', rect.x);
+            debugRect.setAttribute('y', rect.y);
+            debugRect.setAttribute('width', rect.width);
+            debugRect.setAttribute('height', rect.height);
+            debugRect.setAttribute('fill', 'none');
+            debugRect.setAttribute('stroke', 'red');
+            debugRect.setAttribute('stroke-width', '1');
+            debugRect.setAttribute('stroke-dasharray', '4 2');
+            debugRect.setAttribute('class', 'debug-rect');
+            svgLayer.appendChild(debugRect);
+            console.log(`[DEBUG RECT] ${id}: x=${rect.x}, y=${rect.y}, w=${rect.width}, h=${rect.height}`);
+        });
+
         // Draw each connection
         connections.forEach(conn => {
             const sourceRect = nodeRects[conn.source];
             const targetRect = nodeRects[conn.target];
 
             if (!sourceRect || !targetRect) return;
+
+            console.log(`[DEBUG CONN] ${conn.source} -> ${conn.target}`,
+                `sourcePort=${conn.sourcePort}, targetPort=${conn.targetPort}`,
+                `sourceRect:`, sourceRect, `targetRect:`, targetRect);
 
             // Use port-based routing when port data is available, fall back to auto-routing
             let points;
@@ -7372,7 +7392,7 @@
                     <div class="flow-node-detail-description" id="fndpDescription"></div>
                 </div>
                 <div class="flow-node-detail-section" id="fndpLongDescSection" style="display:none;">
-                    <div class="flow-node-detail-section-title">Details</div>
+                    <div class="flow-node-detail-section-title">Summary</div>
                     <div class="flow-node-detail-description" id="fndpLongDescription"></div>
                 </div>
                 <div class="flow-node-detail-section">
@@ -7467,18 +7487,18 @@
         typeBadge.textContent = (node.type || 'step').toUpperCase();
         typeBadge.className = 'flow-node-detail-panel-type type-' + (node.type || 'step');
 
-        // Short description
+        // Full description (prioritize longDescription)
         const descEl = panel.querySelector('#fndpDescription');
-        const shortDesc = node.shortDescription || node.description || '';
-        descEl.textContent = shortDesc || 'No description.';
-        descEl.className = 'flow-node-detail-description' + (shortDesc ? '' : ' empty');
+        const fullDesc = node.longDescription || node.shortDescription || node.description || '';
+        descEl.textContent = fullDesc || 'No description.';
+        descEl.className = 'flow-node-detail-description' + (fullDesc ? '' : ' empty');
 
-        // Long description
+        // Short description as summary (show only if longDescription is present and short differs)
         const longDescSection = panel.querySelector('#fndpLongDescSection');
         const longDescEl = panel.querySelector('#fndpLongDescription');
-        const longDesc = node.longDescription || '';
-        if (longDesc) {
-            longDescEl.textContent = longDesc;
+        const shortDesc = node.shortDescription || node.description || '';
+        if (shortDesc && node.longDescription && shortDesc !== node.longDescription) {
+            longDescEl.textContent = shortDesc;
             longDescSection.style.display = '';
         } else {
             longDescSection.style.display = 'none';

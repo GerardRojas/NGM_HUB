@@ -3742,6 +3742,14 @@ body.page-process-manager {
     opacity: 0.8;
 }
 
+/* Detail view connection lines - dashed and animated like tree view */
+.detail-connection {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 8 4;
+    animation: flowDash 0.8s linear infinite;
+}
+
 /* Connecting mode - show visual feedback */
 .canvas-container.connecting-mode {
     cursor: crosshair;
@@ -4336,6 +4344,37 @@ body.page-process-manager {
         inset 0 0 30px rgba(139, 92, 246, 0.1);
 }
 
+/* Hide regular content inside milestone-sized nodes */
+.flow-node.size-milestone .flow-node-header,
+.flow-node.size-milestone .flow-node-description,
+.flow-node.size-milestone .flow-node-options,
+.flow-node.size-milestone .flow-node-subservices,
+.flow-node.size-milestone .flow-node-switch,
+.flow-node.size-milestone .algorithm-modes,
+.flow-node.size-milestone .algorithm-tech {
+    display: none;
+}
+
+.flow-node.size-milestone .flow-node-title {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%) rotate(-45deg);
+    margin-top: 15px;
+    white-space: nowrap;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 4px 10px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+}
+
 .flow-node.size-milestone .milestone-inner {
     transform: rotate(-45deg);
     display: flex;
@@ -4810,6 +4849,7 @@ body.page-process-manager {
     justify-content: space-between;
     gap: 10px;
     margin-bottom: 10px;
+    overflow: hidden;
 }
 
 .flow-node-icon {

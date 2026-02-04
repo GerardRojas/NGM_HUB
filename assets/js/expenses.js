@@ -5462,66 +5462,6 @@
         console.log('[SCAN RECEIPT] Extracted bill_id:', scannedReceiptBillId);
         console.log('[SCAN RECEIPT] Extracted vendor_id:', scannedReceiptVendorId);
         console.log('[SCAN RECEIPT] Extracted total:', scannedReceiptTotal);
-
-        // Check if bill already exists and is closed
-        if (scannedReceiptBillId) {
-          const existingBill = getBillMetadata(scannedReceiptBillId);
-          if (existingBill && existingBill.status === 'closed') {
-            console.log('[SCAN RECEIPT] Bill is closed, prompting user to reopen:', scannedReceiptBillId);
-
-            const confirmReopen = await showConfirmModal(
-              `Bill #${scannedReceiptBillId} already exists and is CLOSED.\n\nYou cannot add expenses to a closed bill.\n\nDo you want to REOPEN this bill to add the scanned expenses?`,
-              'Reopen Closed Bill',
-              'Reopen Bill'
-            );
-
-            if (confirmReopen) {
-              // Reopen the bill via API
-              try {
-                els.scanReceiptProgressText.textContent = 'Reopening bill...';
-                await apiJson(`${apiBase}/bills/${scannedReceiptBillId}`, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ status: 'open' })
-                });
-                // Update local cache
-                existingBill.status = 'open';
-                console.log('[SCAN RECEIPT] Bill reopened successfully:', scannedReceiptBillId);
-
-                if (window.Toast) {
-                  Toast.info('Bill Reopened', `Bill #${scannedReceiptBillId} has been reopened to add expenses.`);
-                }
-              } catch (reopenErr) {
-                console.error('[SCAN RECEIPT] Failed to reopen bill:', reopenErr);
-                if (window.Toast) {
-                  Toast.error('Failed to Reopen', `Could not reopen Bill #${scannedReceiptBillId}. Please reopen it manually from Bill View.`);
-                }
-                // Reset state and abort
-                scannedReceiptFile = null;
-                scannedReceiptBillId = null;
-                scannedReceiptVendorId = null;
-                scannedReceiptTotal = null;
-                isScannedReceiptMode = false;
-                closeScanReceiptModal();
-                return;
-              }
-            } else {
-              // User cancelled - abort the scan process
-              console.log('[SCAN RECEIPT] User cancelled reopening bill, aborting');
-              if (window.Toast) {
-                Toast.warning('Scan Cancelled', 'Expenses were not added. Reopen the bill manually from Bill View if needed.');
-              }
-              // Reset state
-              scannedReceiptFile = null;
-              scannedReceiptBillId = null;
-              scannedReceiptVendorId = null;
-              scannedReceiptTotal = null;
-              isScannedReceiptMode = false;
-              closeScanReceiptModal();
-              return;
-            }
-          }
-        }
       }
 
       // Close scan modal
@@ -7130,42 +7070,58 @@
   }
 
   function fillDown() {
-    console.log('[FILL DOWN] Starting fillDown...');
-    console.log('[FILL DOWN] contextMenuTarget:', contextMenuTarget);
-    console.log('[FILL DOWN] contextMenuRowIndex:', contextMenuRowIndex);
+    fillDownWithParams(contextMenuTarget, contextMenuRowIndex);
+  }
 
-    if (!contextMenuTarget || contextMenuRowIndex === null) {
+  function fillDownWithParams(target, sourceRowIndex) {
+    console.log('[FILL DOWN] Starting fillDown...');
+    console.log('[FILL DOWN] target:', target);
+    console.log('[FILL DOWN] sourceRowIndex:', sourceRowIndex);
+
+    if (!target || sourceRowIndex === null || sourceRowIndex === undefined) {
       console.log('[FILL DOWN] Aborted: no target or row index');
+      if (window.Toast) {
+        Toast.warning('Fill Down', 'No source cell selected');
+      }
       return;
     }
 
     const rows = els.expenseRowsBody?.querySelectorAll('tr') || [];
     console.log('[FILL DOWN] Total rows found:', rows.length);
 
-    const isSelect = contextMenuTarget.tagName === 'SELECT';
-    const isInput = contextMenuTarget.tagName === 'INPUT';
-    console.log('[FILL DOWN] Target type:', contextMenuTarget.tagName);
+    if (rows.length <= 1) {
+      console.log('[FILL DOWN] Aborted: not enough rows');
+      if (window.Toast) {
+        Toast.info('Fill Down', 'No rows below to fill');
+      }
+      return;
+    }
+
+    const isSelect = target.tagName === 'SELECT';
+    const isInput = target.tagName === 'INPUT';
+    console.log('[FILL DOWN] Target type:', target.tagName);
 
     // Get the value to copy
     let valueToCopy;
-    let textToCopy; // For selects, we need to copy the text too for datalist matching
 
     if (isSelect) {
-      valueToCopy = contextMenuTarget.value;
-      textToCopy = contextMenuTarget.options[contextMenuTarget.selectedIndex]?.text || '';
+      valueToCopy = target.value;
     } else if (isInput) {
-      valueToCopy = contextMenuTarget.value;
+      valueToCopy = target.value;
     }
 
     console.log('[FILL DOWN] Value to copy:', valueToCopy);
 
     if (!valueToCopy && valueToCopy !== 0) {
       console.log('[FILL DOWN] Aborted: empty value');
+      if (window.Toast) {
+        Toast.warning('Fill Down', 'Source cell is empty');
+      }
       return;
     }
 
     // Get the cell index to find the same column in other rows
-    const cell = contextMenuTarget.closest('td');
+    const cell = target.closest('td');
     const cellIndex = cell?.cellIndex;
     console.log('[FILL DOWN] Cell index:', cellIndex);
 
@@ -7179,14 +7135,13 @@
     // Fill all rows below the current one
     rows.forEach((row) => {
       const rowIndex = parseInt(row.dataset.rowIndex, 10);
-      console.log('[FILL DOWN] Checking row:', rowIndex, 'vs contextMenuRowIndex:', contextMenuRowIndex);
 
       if (isNaN(rowIndex)) {
         console.log('[FILL DOWN] Skipping row with invalid index');
         return;
       }
 
-      if (rowIndex <= contextMenuRowIndex) return; // Skip current and above rows
+      if (rowIndex <= sourceRowIndex) return; // Skip current and above rows
 
       const targetCell = row.cells[cellIndex];
       if (!targetCell) {
@@ -7204,7 +7159,6 @@
 
       // Set the value
       if (targetInput.tagName === 'SELECT') {
-        // For selects, find the option with matching value
         const option = Array.from(targetInput.options).find(opt => opt.value === valueToCopy);
         if (option) {
           targetInput.value = valueToCopy;
@@ -7225,8 +7179,8 @@
     // Show toast notification
     if (filledCount > 0 && window.Toast) {
       Toast.success('Fill Down', `Copied to ${filledCount} row${filledCount > 1 ? 's' : ''} below`);
-    } else if (filledCount === 0) {
-      console.log('[FILL DOWN] No rows were filled');
+    } else if (filledCount === 0 && window.Toast) {
+      Toast.info('Fill Down', 'No rows below to fill');
     }
 
     // Update auto-categorize button state
@@ -7234,12 +7188,16 @@
   }
 
   function clearBelow() {
-    if (!contextMenuTarget || contextMenuRowIndex === null) return;
+    clearBelowWithParams(contextMenuTarget, contextMenuRowIndex);
+  }
+
+  function clearBelowWithParams(target, sourceRowIndex) {
+    if (!target || sourceRowIndex === null || sourceRowIndex === undefined) return;
 
     const rows = els.expenseRowsBody?.querySelectorAll('tr') || [];
 
     // Get the cell index
-    const cell = contextMenuTarget.closest('td');
+    const cell = target.closest('td');
     const cellIndex = cell?.cellIndex;
     if (cellIndex === undefined) return;
 
@@ -7248,7 +7206,7 @@
     // Clear all rows below the current one
     rows.forEach((row) => {
       const rowIndex = parseInt(row.dataset.rowIndex, 10);
-      if (rowIndex <= contextMenuRowIndex) return; // Skip current and above rows
+      if (isNaN(rowIndex) || rowIndex <= sourceRowIndex) return; // Skip current and above rows
 
       const targetCell = row.cells[cellIndex];
       if (!targetCell) return;
@@ -7261,12 +7219,7 @@
         targetInput.selectedIndex = 0; // Reset to first option (usually empty/placeholder)
         clearedCount++;
       } else if (targetInput.tagName === 'INPUT') {
-        // For date fields, don't clear to today's date
-        if (targetInput.type === 'date') {
-          targetInput.value = '';
-        } else {
-          targetInput.value = '';
-        }
+        targetInput.value = '';
         clearedCount++;
       }
 

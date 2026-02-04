@@ -1309,6 +1309,8 @@
             processNavigator: document.getElementById('processNavigator'),
             processNavigatorList: document.getElementById('processNavigatorList'),
             processSearchInput: document.getElementById('processSearchInput'),
+            // Module detail panel
+            moduleDetailPanel: document.getElementById('moduleDetailPanel'),
         };
     }
 
@@ -1448,6 +1450,7 @@
         setupModuleModalListeners();
         setupNotepadListeners();
         setupFlowNodeContextMenu();
+        setupModuleDetailPanelListeners();
 
         // Add Module button
         if (elements.btnAddModule) {
@@ -1612,7 +1615,6 @@
         document.getElementById('moduleLinkedModuleId').value = linkedModuleId || '';
         document.getElementById('moduleType').value = 'step';
         document.getElementById('moduleSize').value = 'medium';
-        document.getElementById('moduleShape').value = 'rectangle';
         document.getElementById('btnDeleteModule').classList.add('hidden');
 
         // Reset implemented switch to draft
@@ -1640,12 +1642,12 @@
         document.getElementById('moduleEditId').value = moduleId;
         document.getElementById('moduleLinkedModuleId').value = '';  // Clear linked module field
         document.getElementById('moduleName').value = module.name;
-        document.getElementById('moduleDescription').value = module.description || '';
+        document.getElementById('moduleShortDescription').value = module.shortDescription || module.description || '';
+        document.getElementById('moduleLongDescription').value = module.longDescription || '';
         document.getElementById('moduleIcon').value = module.icon || 'box';
         document.getElementById('moduleDepartment').value = module.departmentId || '';
         document.getElementById('moduleType').value = module.type || 'step';
         document.getElementById('moduleSize').value = module.size || 'medium';
-        document.getElementById('moduleShape').value = module.shape || 'rectangle';
         document.getElementById('btnDeleteModule').classList.remove('hidden');
 
         // Set implemented switch
@@ -1667,6 +1669,110 @@
             elements.moduleModal.classList.add('hidden');
             state.editingModuleId = null;
         }
+    }
+
+    // ================================
+    // Module Detail Panel
+    // ================================
+    let currentDetailModuleId = null;
+
+    function openModuleDetailPanel(moduleId) {
+        const module = getCustomModule(moduleId);
+        if (!module || !elements.moduleDetailPanel) return;
+
+        currentDetailModuleId = moduleId;
+
+        // Set module name and type
+        document.getElementById('moduleDetailName').textContent = module.name;
+        const typeLabel = module.type ? module.type.charAt(0).toUpperCase() + module.type.slice(1) : 'Step';
+        document.getElementById('moduleDetailType').textContent = typeLabel.toUpperCase();
+
+        // Set icon
+        const iconContainer = document.getElementById('moduleDetailIcon');
+        if (iconContainer) {
+            const iconSvg = getIconSvg(module.icon || 'box', module.isImplemented ? '#3ecf8e' : '#6b7280');
+            iconContainer.innerHTML = iconSvg;
+        }
+
+        // Set description (prefer longDescription, fallback to shortDescription or description)
+        const descriptionText = module.longDescription || module.shortDescription || module.description || 'No description available.';
+        document.getElementById('moduleDetailDescription').textContent = descriptionText;
+
+        // Set meta information
+        document.getElementById('moduleDetailStatus').textContent = module.isImplemented ? 'Live' : 'Draft';
+        document.getElementById('moduleDetailStatus').className = 'meta-value ' + (module.isImplemented ? 'status-live' : 'status-draft');
+
+        const sizeText = module.size ? module.size.charAt(0).toUpperCase() + module.size.slice(1) : 'Medium';
+        document.getElementById('moduleDetailSize').textContent = sizeText;
+
+        // Get department name
+        const dept = state.departments?.find(d => d.id === module.departmentId);
+        document.getElementById('moduleDetailDepartment').textContent = dept ? dept.name : '-';
+
+        // Update type badge color based on type
+        const typeBadge = document.getElementById('moduleDetailType');
+        typeBadge.className = 'module-detail-type type-' + (module.type || 'step');
+
+        // Show panel
+        elements.moduleDetailPanel.classList.remove('hidden');
+        setTimeout(() => {
+            elements.moduleDetailPanel.classList.add('active');
+        }, 10);
+    }
+
+    function closeModuleDetailPanel() {
+        if (elements.moduleDetailPanel) {
+            elements.moduleDetailPanel.classList.remove('active');
+            setTimeout(() => {
+                elements.moduleDetailPanel.classList.add('hidden');
+            }, 300);
+        }
+        currentDetailModuleId = null;
+    }
+
+    function setupModuleDetailPanelListeners() {
+        const btnClose = document.getElementById('btnCloseDetailPanel');
+        const btnEdit = document.getElementById('btnDetailEdit');
+        const btnOpen = document.getElementById('btnDetailOpen');
+
+        if (btnClose) {
+            btnClose.addEventListener('click', closeModuleDetailPanel);
+        }
+
+        if (btnEdit) {
+            btnEdit.addEventListener('click', () => {
+                if (currentDetailModuleId) {
+                    closeModuleDetailPanel();
+                    openEditModuleModal(currentDetailModuleId);
+                }
+            });
+        }
+
+        if (btnOpen) {
+            btnOpen.addEventListener('click', () => {
+                if (currentDetailModuleId) {
+                    const module = getCustomModule(currentDetailModuleId);
+                    closeModuleDetailPanel();
+                    if (module) {
+                        if (module.type === 'milestone' || module.type === 'decision') {
+                            openModuleNotepad(currentDetailModuleId);
+                        } else {
+                            navigateToModuleDetail(currentDetailModuleId);
+                        }
+                    }
+                }
+            });
+        }
+
+        // Close panel when clicking outside
+        document.addEventListener('click', (e) => {
+            if (elements.moduleDetailPanel &&
+                elements.moduleDetailPanel.classList.contains('active') &&
+                !elements.moduleDetailPanel.contains(e.target) &&
+                !e.target.closest('.tree-node')) {
+                closeModuleDetailPanel();
+            }
+        });
     }
 
     // ================================
@@ -1775,7 +1881,6 @@
         document.getElementById('moduleLinkedModuleId').value = currentModule.id;  // Store parent module ID
         document.getElementById('moduleType').value = 'step';
         document.getElementById('moduleSize').value = 'medium';
-        document.getElementById('moduleShape').value = 'rectangle';
         document.getElementById('btnDeleteModule').classList.add('hidden');
 
         // Reset implemented switch to draft
@@ -1805,7 +1910,7 @@
             icon: nodeData.icon,
             type: nodeData.type || 'step',
             size: nodeData.size || 'medium',
-            shape: nodeData.shape || 'rectangle',
+            shape: nodeData.shape,  // Shape is auto-determined in saveModule
             is_implemented: nodeData.isImplemented || false,
             position: {
                 x: 200 + (existingCount % 3) * 300,
@@ -1839,12 +1944,12 @@
         document.getElementById('moduleEditId').value = nodeId;
         document.getElementById('moduleLinkedModuleId').value = parentModuleId;
         document.getElementById('moduleName').value = node.name || '';
-        document.getElementById('moduleDescription').value = node.description || '';
+        document.getElementById('moduleShortDescription').value = node.shortDescription || node.description || '';
+        document.getElementById('moduleLongDescription').value = node.longDescription || '';
         document.getElementById('moduleIcon').value = node.icon || 'box';
         document.getElementById('moduleDepartment').value = '';  // Sub-process nodes don't have departments
         document.getElementById('moduleType').value = node.type || 'step';
         document.getElementById('moduleSize').value = node.size || 'medium';
-        document.getElementById('moduleShape').value = node.shape || 'rectangle';
         document.getElementById('btnDeleteModule').classList.remove('hidden');
 
         // Set implemented switch
@@ -1907,14 +2012,30 @@
         const linkedModuleId = document.getElementById('moduleLinkedModuleId').value;
         const implementedCheckbox = document.getElementById('moduleImplemented');
 
+        const moduleType = document.getElementById('moduleType').value || 'step';
+
+        // Auto-determine shape based on type
+        const shapeByType = {
+            'decision': 'diamond',
+            'milestone': 'diamond',
+            'event': 'circle',
+            'step': 'rectangle',
+            'draft': 'rectangle',
+            'link': 'rectangle',
+            'algorithm': 'rectangle'
+        };
+
         const moduleData = {
             name: document.getElementById('moduleName').value.trim(),
-            description: document.getElementById('moduleDescription').value.trim(),
+            shortDescription: document.getElementById('moduleShortDescription').value.trim(),
+            longDescription: document.getElementById('moduleLongDescription').value.trim(),
+            // Keep 'description' for backwards compatibility (use shortDescription)
+            description: document.getElementById('moduleShortDescription').value.trim(),
             icon: document.getElementById('moduleIcon').value,
             departmentId: document.getElementById('moduleDepartment').value || null,
-            type: document.getElementById('moduleType').value || 'step',
+            type: moduleType,
             size: document.getElementById('moduleSize').value || 'medium',
-            shape: document.getElementById('moduleShape').value || 'rectangle',
+            shape: shapeByType[moduleType] || 'rectangle',
             isImplemented: implementedCheckbox ? implementedCheckbox.checked : false
         };
 
@@ -2774,8 +2895,35 @@
             const dx = (e.clientX - startX) / state.canvas.scale;
             const dy = (e.clientY - startY) / state.canvas.scale;
 
-            const newX = nodeStartX + dx;
-            const newY = nodeStartY + dy;
+            let newX = nodeStartX + dx;
+            let newY = nodeStartY + dy;
+
+            // Get node dimensions for snap calculation
+            const nodeWidth = nodeEl.offsetWidth || 200;
+            const nodeHeight = nodeEl.offsetHeight || 100;
+
+            // Calculate snap alignment for detail view nodes
+            const module = getCustomModule(moduleId);
+            if (module && module.subProcessNodes) {
+                const snap = calculateDetailSnap(nodeId, newX, newY, nodeWidth, nodeHeight, module.subProcessNodes);
+
+                // Apply snap if detected
+                if (snap.snapX !== null) {
+                    newX = snap.snapX;
+                }
+                if (snap.snapY !== null) {
+                    newY = snap.snapY;
+                }
+
+                // Show/hide snap guides
+                if (snap.guides.length > 0) {
+                    renderSnapGuides(snap.guides);
+                    nodeEl.classList.add('snapping');
+                } else {
+                    clearSnapGuides();
+                    nodeEl.classList.remove('snapping');
+                }
+            }
 
             nodeEl.style.left = `${newX}px`;
             nodeEl.style.top = `${newY}px`;
@@ -2787,6 +2935,8 @@
             if (!isDragging) return;
             isDragging = false;
             nodeEl.classList.remove('dragging');
+            nodeEl.classList.remove('snapping');
+            clearSnapGuides();
 
             // Save position to module
             const module = getCustomModule(moduleId);
@@ -2801,6 +2951,86 @@
                 }
             }
         });
+    }
+
+    /**
+     * Calculate snap alignments for detail view nodes
+     */
+    function calculateDetailSnap(draggedId, x, y, width, height, subProcessNodes) {
+        let snapX = null;
+        let snapY = null;
+        const guides = [];
+
+        // Edges of dragged node
+        const dragLeft = x;
+        const dragRight = x + width;
+        const dragTop = y;
+        const dragBottom = y + height;
+        const dragCenterX = x + width / 2;
+        const dragCenterY = y + height / 2;
+
+        // Check against all other detail nodes
+        subProcessNodes.forEach(node => {
+            if (node.id === draggedId) return;
+
+            const nodeEl = elements.detailViewContainer?.querySelector(`[data-node-id="${node.id}"]`);
+            if (!nodeEl) return;
+
+            const targetLeft = parseInt(nodeEl.style.left) || node.position?.x || 0;
+            const targetTop = parseInt(nodeEl.style.top) || node.position?.y || 0;
+            const targetWidth = nodeEl.offsetWidth || 200;
+            const targetHeight = nodeEl.offsetHeight || 100;
+            const targetRight = targetLeft + targetWidth;
+            const targetBottom = targetTop + targetHeight;
+            const targetCenterX = targetLeft + targetWidth / 2;
+            const targetCenterY = targetTop + targetHeight / 2;
+
+            // Horizontal alignments (snap X)
+            if (Math.abs(dragLeft - targetLeft) < SNAP_THRESHOLD) {
+                snapX = targetLeft;
+                guides.push({ type: 'vertical', position: targetLeft });
+            }
+            if (Math.abs(dragRight - targetRight) < SNAP_THRESHOLD) {
+                snapX = targetRight - width;
+                guides.push({ type: 'vertical', position: targetRight });
+            }
+            if (Math.abs(dragLeft - targetRight) < SNAP_THRESHOLD) {
+                snapX = targetRight;
+                guides.push({ type: 'vertical', position: targetRight });
+            }
+            if (Math.abs(dragRight - targetLeft) < SNAP_THRESHOLD) {
+                snapX = targetLeft - width;
+                guides.push({ type: 'vertical', position: targetLeft });
+            }
+            if (Math.abs(dragCenterX - targetCenterX) < SNAP_THRESHOLD) {
+                snapX = targetCenterX - width / 2;
+                guides.push({ type: 'vertical', position: targetCenterX });
+            }
+
+            // Vertical alignments (snap Y)
+            if (Math.abs(dragTop - targetTop) < SNAP_THRESHOLD) {
+                snapY = targetTop;
+                guides.push({ type: 'horizontal', position: targetTop });
+            }
+            if (Math.abs(dragBottom - targetBottom) < SNAP_THRESHOLD) {
+                snapY = targetBottom - height;
+                guides.push({ type: 'horizontal', position: targetBottom });
+            }
+            if (Math.abs(dragTop - targetBottom) < SNAP_THRESHOLD) {
+                snapY = targetBottom;
+                guides.push({ type: 'horizontal', position: targetBottom });
+            }
+            if (Math.abs(dragBottom - targetTop) < SNAP_THRESHOLD) {
+                snapY = targetTop - height;
+                guides.push({ type: 'horizontal', position: targetTop });
+            }
+            if (Math.abs(dragCenterY - targetCenterY) < SNAP_THRESHOLD) {
+                snapY = targetCenterY - height / 2;
+                guides.push({ type: 'horizontal', position: targetCenterY });
+            }
+        });
+
+        return { snapX, snapY, guides };
     }
 
     function buildDetailNodeRects(subProcessNodes) {
@@ -3417,7 +3647,7 @@
                 }
             });
 
-            // Single click to select/toggle module
+            // Single click to open detail panel (or toggle selection with Ctrl)
             customNode.addEventListener('click', (e) => {
                 // Don't select if we just finished dragging
                 if (customNode.classList.contains('was-dragged')) return;
@@ -3426,8 +3656,14 @@
                 // Don't select if in connection mode
                 if (state.connectionMode.active) return;
 
-                // Toggle selection
-                toggleModuleSelection(module.id);
+                // Ctrl+click for multi-select, normal click opens detail panel
+                if (e.ctrlKey || e.shiftKey) {
+                    toggleModuleSelection(module.id);
+                } else {
+                    // Clear selection and open detail panel
+                    clearModuleSelection();
+                    openModuleDetailPanel(module.id);
+                }
             });
 
             elements.treeViewContainer.appendChild(customNode);
@@ -5151,7 +5387,7 @@
 
         // If in connection drag mode and clicking on empty space, cancel
         if (connectionDragState.isDragging) {
-            const targetNode = e.target.closest('.tree-node');
+            const targetNode = e.target.closest('.tree-node, .flow-node');
             if (!targetNode) {
                 // Clicking on empty space - cancel connection
                 cleanupConnectionDrag();
@@ -5195,10 +5431,10 @@
                 clearModuleSelection();
             }
 
-            // Get canvas-relative coordinates
-            const rect = elements.canvasGrid.getBoundingClientRect();
-            const x = (e.clientX - rect.left) / state.canvas.scale;
-            const y = (e.clientY - rect.top) / state.canvas.scale;
+            // Get canvas-relative coordinates (accounting for offset and scale)
+            const rect = elements.canvasContainer.getBoundingClientRect();
+            const x = (e.clientX - rect.left - state.canvas.offsetX) / state.canvas.scale;
+            const y = (e.clientY - rect.top - state.canvas.offsetY) / state.canvas.scale;
 
             state.selectionBox.active = true;
             state.selectionBox.startX = x;
@@ -5222,9 +5458,9 @@
 
         // Update selection box if active
         if (state.selectionBox.active) {
-            const rect = elements.canvasGrid.getBoundingClientRect();
-            const x = (e.clientX - rect.left) / state.canvas.scale;
-            const y = (e.clientY - rect.top) / state.canvas.scale;
+            const rect = elements.canvasContainer.getBoundingClientRect();
+            const x = (e.clientX - rect.left - state.canvas.offsetX) / state.canvas.scale;
+            const y = (e.clientY - rect.top - state.canvas.offsetY) / state.canvas.scale;
 
             state.selectionBox.endX = x;
             state.selectionBox.endY = y;
@@ -6535,28 +6771,21 @@
             `;
         }
 
-        // Build the node content based on type and size
-        if (node.size === 'milestone') {
-            // Diamond milestone node with external label
-            const milestoneIcon = node.type === 'decision'
+        // Build the node content based on type and shape
+        if (node.shape === 'diamond' || node.shape === 'circle') {
+            // Diamond/Circle node with external label (for decision, milestone, event types)
+            const shapeIcon = node.type === 'decision'
                 ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>'
-                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>';
+                : node.type === 'event'
+                    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>'
+                    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>';
 
             el.innerHTML = `
                 ${portsHtml}
                 <div class="milestone-inner">
-                    <div class="milestone-icon">${milestoneIcon}</div>
+                    <div class="milestone-icon">${shapeIcon}</div>
                 </div>
                 <div class="milestone-label">${escapeHtml(node.name)}</div>
-            `;
-        } else if (node.type === 'milestone') {
-            // Standard milestone (non-diamond size)
-            el.innerHTML = `
-                ${portsHtml}
-                <div class="flow-node-header">
-                    ${iconHtml}
-                    <div class="flow-node-title">${escapeHtml(node.name)}</div>
-                </div>
             `;
         } else if (node.type === 'algorithm') {
             // Set custom colors via CSS variables
@@ -6571,7 +6800,7 @@
                 ${portsHtml}
                 <div class="flow-node-header">
                     ${iconHtml}
-                    <div class="flow-node-badge">${node.codename || 'ALGO'}</div>
+                    <div class="flow-node-badge">${node.codename || 'ALGORITHM'}</div>
                     <span class="algorithm-version">v${node.version || '1.0'}</span>
                 </div>
                 <div class="algorithm-codename">
@@ -7218,16 +7447,18 @@
     function handleConnectionDragEnd(e) {
         if (!connectionDragState.isDragging) return;
 
-        // Find if we dropped on a valid port (check both tree-view and flow-view ports)
+        // Find if we dropped on a valid port or node (check both tree-view and flow-view)
         const elementAtPoint = document.elementFromPoint(e.clientX, e.clientY);
         const connectionPortElement = elementAtPoint?.closest('.connection-port');
         const flowPortElement = elementAtPoint?.closest('.flow-port');
+        const flowNodeElement = elementAtPoint?.closest('.flow-node');
 
         let connectionHandled = false;  // Track if connection was reconnected or disconnected
 
         // Handle detail view (flow node) connections
-        if (connectionDragState.isDetailView && flowPortElement) {
-            const targetNodeEl = flowPortElement.closest('.flow-node');
+        // Allow dropping on either a port or the node itself
+        if (connectionDragState.isDetailView) {
+            const targetNodeEl = flowPortElement?.closest('.flow-node') || flowNodeElement;
             const targetNodeId = targetNodeEl?.dataset?.nodeId;
 
             if (targetNodeId && targetNodeId !== connectionDragState.sourceNodeId) {
@@ -7248,11 +7479,37 @@
                     );
 
                     if (!existingConn) {
+                        // Determine target port - use port if dropped on one, otherwise auto-detect best port
+                        let targetPort = 'left'; // Default
+                        if (flowPortElement) {
+                            targetPort = flowPortElement.getAttribute('data-port');
+                        } else if (targetNodeEl) {
+                            // Auto-detect best port based on relative positions
+                            const sourceNode = document.querySelector(`[data-node-id="${connectionDragState.sourceNodeId}"]`);
+                            if (sourceNode && targetNodeEl) {
+                                const sourceRect = sourceNode.getBoundingClientRect();
+                                const targetRect = targetNodeEl.getBoundingClientRect();
+                                const sourceCenterX = sourceRect.left + sourceRect.width / 2;
+                                const sourceCenterY = sourceRect.top + sourceRect.height / 2;
+                                const targetCenterX = targetRect.left + targetRect.width / 2;
+                                const targetCenterY = targetRect.top + targetRect.height / 2;
+
+                                const dx = targetCenterX - sourceCenterX;
+                                const dy = targetCenterY - sourceCenterY;
+
+                                if (Math.abs(dx) > Math.abs(dy)) {
+                                    targetPort = dx > 0 ? 'left' : 'right';
+                                } else {
+                                    targetPort = dy > 0 ? 'top' : 'bottom';
+                                }
+                            }
+                        }
+
                         module.subProcessConnections.push({
                             source: connectionDragState.sourceNodeId,
                             target: targetNodeId,
                             sourcePort: connectionDragState.sourcePort,
-                            targetPort: flowPortElement.getAttribute('data-port')
+                            targetPort: targetPort
                         });
                         saveCustomModules();
                         showToast('Steps connected', 'success');
@@ -7418,7 +7675,11 @@
         path.setAttribute('opacity', '0.8');
 
         // Store the source node rect for path calculation
-        const sourceNode = document.querySelector(`[data-id="${connectionDragState.sourceNodeId}"]`);
+        // Support both tree-view (data-id) and detail/flow-view (data-node-id) nodes
+        let sourceNode = document.querySelector(`[data-id="${connectionDragState.sourceNodeId}"]`);
+        if (!sourceNode) {
+            sourceNode = document.querySelector(`[data-node-id="${connectionDragState.sourceNodeId}"]`);
+        }
         if (sourceNode) {
             const nodeRect = sourceNode.getBoundingClientRect();
             const containerRect = elements.canvasContainer.getBoundingClientRect();
@@ -7430,7 +7691,30 @@
             };
         }
 
-        elements.connectionsLayer.appendChild(path);
+        // Append to the correct SVG layer based on view type
+        if (connectionDragState.isDetailView) {
+            // For detail view, use or create the detail connections SVG
+            let svgLayer = elements.detailViewContainer?.querySelector('.detail-connections-svg');
+            if (!svgLayer) {
+                svgLayer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svgLayer.setAttribute('class', 'detail-connections-svg');
+                svgLayer.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    pointer-events: none;
+                    z-index: 1;
+                `;
+                if (elements.detailViewContainer) {
+                    elements.detailViewContainer.insertBefore(svgLayer, elements.detailViewContainer.firstChild);
+                }
+            }
+            svgLayer.appendChild(path);
+        } else {
+            elements.connectionsLayer.appendChild(path);
+        }
         connectionDragState.tempLine = path;
     }
 

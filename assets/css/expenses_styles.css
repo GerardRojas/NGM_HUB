@@ -857,6 +857,33 @@
 }
 
 /* ==========================================
+   REVIEW / SOFT-DELETE ROW STYLES
+   ========================================== */
+
+/* Dimmed row for expenses in review (soft-deleted by bookkeeper) */
+.expenses-table tbody tr.expense-row-review {
+  opacity: 0.4;
+  background: rgba(239, 68, 68, 0.03);
+}
+
+.expenses-table tbody tr.expense-row-review:hover {
+  opacity: 0.55;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.expenses-table tbody tr.expense-row-review td {
+  text-decoration: line-through;
+  text-decoration-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Keep auth badge and actions readable (no line-through) */
+.expenses-table tbody tr.expense-row-review td.col-auth,
+.expenses-table tbody tr.expense-row-review td.col-actions,
+.expenses-table tbody tr.expense-row-review td.col-checkbox {
+  text-decoration: none;
+}
+
+/* ==========================================
    DUPLICATE BILL WARNING STYLES
    ========================================== */
 

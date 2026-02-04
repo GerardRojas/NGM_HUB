@@ -2505,8 +2505,9 @@
         }
       }).join('');
 
-      // Calculate total
+      // Calculate total (exclude review/soft-deleted expenses)
       const total = displayExpenses.reduce((sum, exp) => {
+        if (exp.status === 'review') return sum;
         const amount = parseFloat(exp.Amount) || 0;
         return sum + amount;
       }, 0);
@@ -2601,8 +2602,10 @@
       style="${cursorStyle}"
       title="${canAuthorize ? 'Click to toggle authorization' : 'You do not have permission to authorize'}">${authBadgeText}</span>`;
 
+    const reviewClass = isReview ? ' expense-row-review' : '';
+
     return `
-      <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable${rowWarningClass}" style="cursor: pointer;">
+      <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable${rowWarningClass}${reviewClass}" style="cursor: pointer;">
         <td class="col-checkbox" style="display: none;"></td>
         <td class="col-date">${date}</td>
         <td class="col-bill-id">${billDisplayHtml}</td>
@@ -2643,8 +2646,10 @@
     // Checkbox checked state
     const isChecked = selectedExpenseIds.has(expenseId) ? 'checked' : '';
 
+    const reviewClass = isReview ? ' expense-row-review' : '';
+
     return `
-      <tr data-index="${index}" data-id="${expenseId}" class="edit-mode-row">
+      <tr data-index="${index}" data-id="${expenseId}" class="edit-mode-row${reviewClass}">
         <td class="col-checkbox" style="display: ${isEditMode ? '' : 'none'};">
           <input type="checkbox" class="row-checkbox" data-id="${expenseId}" ${isChecked}>
         </td>
@@ -2985,15 +2990,52 @@
   async function deleteExpense(expenseId) {
     if (!expenseId) return;
 
-    const confirmed = confirm('Delete this expense? This cannot be undone.');
+    const apiBase = getApiBase();
+    const userId = currentUser?.user_id || currentUser?.id;
+
+    // Bookkeeper (non-manager): soft-delete -> mark as review
+    if (!canAuthorize) {
+      const confirmed = confirm('Request deletion? The expense will be marked for review and a manager will confirm.');
+      if (!confirmed) return;
+
+      try {
+        const softDeleteUrl = `${apiBase}/expenses/${expenseId}/soft-delete?user_id=${userId}`;
+        await apiJson(softDeleteUrl, { method: 'POST' });
+
+        // Update local arrays
+        const exp = expenses.find(e => (e.expense_id || e.id) === expenseId);
+        if (exp) {
+          exp.status = 'review';
+          exp.auth_status = false;
+          exp.auth_by = null;
+        }
+        const origExp = originalExpenses.find(e => (e.expense_id || e.id) === expenseId);
+        if (origExp) {
+          origExp.status = 'review';
+          origExp.auth_status = false;
+          origExp.auth_by = null;
+        }
+
+        renderExpensesTable();
+        if (window.Toast) {
+          Toast.success('Deletion Requested', 'Expense marked for review. A manager will confirm the deletion.');
+        }
+      } catch (err) {
+        console.error('[EXPENSES] Error soft-deleting expense:', err);
+        if (window.Toast) {
+          Toast.error('Request Failed', 'Error requesting deletion.', { details: err.message });
+        }
+      }
+      return;
+    }
+
+    // Manager: hard delete
+    const confirmed = confirm('Permanently delete this expense? This cannot be undone.');
     if (!confirmed) return;
 
-    const apiBase = getApiBase();
-
-    // Build URL - include user_id if available (required for authorized expenses)
-    const userId = currentUser?.user_id || currentUser?.id;
+    const deleteReason = encodeURIComponent('Deleted by manager');
     const deleteUrl = userId
-      ? `${apiBase}/expenses/${expenseId}?user_id=${userId}`
+      ? `${apiBase}/expenses/${expenseId}?user_id=${userId}&delete_reason=${deleteReason}`
       : `${apiBase}/expenses/${expenseId}`;
 
     try {
@@ -3035,24 +3077,81 @@
       return;
     }
 
-    const confirmed = confirm(`Delete ${selectedExpenseIds.size} expense(s)? This cannot be undone.`);
-    if (!confirmed) return;
-
     const apiBase = getApiBase();
+    const userId = currentUser?.user_id || currentUser?.id;
+
+    // Bookkeeper: soft-delete all selected
+    if (!canAuthorize) {
+      const confirmed = confirm(`Request deletion for ${selectedExpenseIds.size} expense(s)? They will be marked for review.`);
+      if (!confirmed) return;
+
+      els.btnBulkDelete.disabled = true;
+      const originalText = els.btnBulkDelete.innerHTML;
+      els.btnBulkDelete.innerHTML = '<span style="font-size: 14px;">...</span> Processing...';
+
+      try {
+        const softDeletePromises = Array.from(selectedExpenseIds).map(expenseId => {
+          const url = `${apiBase}/expenses/${expenseId}/soft-delete?user_id=${userId}`;
+          return apiJson(url, { method: 'POST' })
+            .then(() => ({ expenseId, success: true }))
+            .catch(err => ({ expenseId, success: false, error: err.message }));
+        });
+
+        const results = await Promise.allSettled(softDeletePromises);
+        let successCount = 0;
+        let failCount = 0;
+
+        results.forEach(result => {
+          if (result.status === 'fulfilled' && result.value.success) {
+            const eid = result.value.expenseId;
+            successCount++;
+            const exp = expenses.find(e => (e.expense_id || e.id) === eid);
+            if (exp) { exp.status = 'review'; exp.auth_status = false; exp.auth_by = null; }
+            const origExp = originalExpenses.find(e => (e.expense_id || e.id) === eid);
+            if (origExp) { origExp.status = 'review'; origExp.auth_status = false; origExp.auth_by = null; }
+            selectedExpenseIds.delete(eid);
+          } else {
+            failCount++;
+          }
+        });
+
+        renderExpensesTable();
+        updateBulkDeleteButton();
+
+        if (window.Toast) {
+          if (failCount === 0) {
+            Toast.success('Deletion Requested', `${successCount} expense(s) marked for review.`);
+          } else {
+            Toast.warning('Partial Success', `${successCount} marked for review, ${failCount} failed.`);
+          }
+        }
+      } catch (err) {
+        console.error('[BULK_DELETE] Unexpected error:', err);
+        if (window.Toast) {
+          Toast.error('Unexpected Error', 'Error during bulk soft-delete.', { details: err.message });
+        }
+      } finally {
+        els.btnBulkDelete.disabled = false;
+        els.btnBulkDelete.innerHTML = originalText;
+      }
+      return;
+    }
+
+    // Manager: hard delete
+    const confirmed = confirm(`Permanently delete ${selectedExpenseIds.size} expense(s)? This cannot be undone.`);
+    if (!confirmed) return;
 
     // Disable button
     els.btnBulkDelete.disabled = true;
     const originalText = els.btnBulkDelete.innerHTML;
-    els.btnBulkDelete.innerHTML = '<span style="font-size: 14px;">⏳</span> Deleting...';
-
-    // Build base URL - include user_id if available (required for authorized expenses)
-    const userId = currentUser?.user_id || currentUser?.id;
+    els.btnBulkDelete.innerHTML = '<span style="font-size: 14px;">...</span> Deleting...';
 
     try {
       // Use Promise.allSettled to handle individual failures without stopping others
+      const bulkDeleteReason = encodeURIComponent('Bulk deleted by manager');
       const deletePromises = Array.from(selectedExpenseIds).map(expenseId => {
         const deleteUrl = userId
-          ? `${apiBase}/expenses/${expenseId}?user_id=${userId}`
+          ? `${apiBase}/expenses/${expenseId}?user_id=${userId}&delete_reason=${bulkDeleteReason}`
           : `${apiBase}/expenses/${expenseId}`;
         return apiJson(deleteUrl, { method: 'DELETE' })
           .then(() => ({ expenseId, success: true }))
@@ -3074,7 +3173,6 @@
             failedDeletes.push({ expenseId, error });
           }
         } else {
-          // Promise itself rejected (shouldn't happen with our .catch above)
           failedDeletes.push({ expenseId: 'unknown', error: result.reason?.message || 'Unknown error' });
         }
       });
@@ -4891,22 +4989,31 @@
       }
     }
 
-    // Detect amount change on authorized expense -> force status to 'review'
+    // Detect field changes on authorized expense -> force status to 'review'
     const originalAmount = parseFloat(currentEditingExpense.Amount || currentEditingExpense.amount || 0);
     const newAmount = updatedData.Amount || 0;
     const amountChangedOnAuth = (originalExpenseStatus === 'auth' && newAmount !== originalAmount);
 
-    if (amountChangedOnAuth) {
+    const originalAccountId = currentEditingExpense.account_id || null;
+    const newAccountId = updatedData.account_id || null;
+    const accountChangedOnAuth = (originalExpenseStatus === 'auth' && newAccountId && String(newAccountId) !== String(originalAccountId || ''));
+
+    const fieldChangedOnAuth = amountChangedOnAuth || accountChangedOnAuth;
+
+    if (fieldChangedOnAuth) {
       selectedStatus = 'review';
       if (!statusReason) {
-        statusReason = 'Amount modified from ' + originalAmount.toFixed(2) + ' to ' + newAmount.toFixed(2);
+        const reasons = [];
+        if (amountChangedOnAuth) reasons.push('Amount modified from ' + originalAmount.toFixed(2) + ' to ' + newAmount.toFixed(2));
+        if (accountChangedOnAuth) reasons.push('Account changed');
+        statusReason = reasons.join('; ');
       }
       updatedData.auth_status = false;
       updatedData.auth_by = null;
     }
 
-    // Require reason when manually changing to review (not auto-triggered by amount change)
-    if (selectedStatus === 'review' && !statusReason && !amountChangedOnAuth) {
+    // Require reason when manually changing to review (not auto-triggered by field change)
+    if (selectedStatus === 'review' && !statusReason && !fieldChangedOnAuth) {
       if (window.Toast) {
         Toast.warning('Reason Required', 'Please provide a reason for marking this expense for review.');
       }
@@ -4916,10 +5023,10 @@
     }
 
     // Backwards compatibility: set auth_status based on selected status
-    if (selectedStatus && !amountChangedOnAuth) {
+    if (selectedStatus && !fieldChangedOnAuth) {
       updatedData.auth_status = (selectedStatus === 'auth');
       updatedData.auth_by = (selectedStatus === 'auth') ? (currentUser.user_id || currentUser.id) : null;
-    } else if (!amountChangedOnAuth && canAuthorize && els.singleExpenseAuthStatus) {
+    } else if (!fieldChangedOnAuth && canAuthorize && els.singleExpenseAuthStatus) {
       // Fallback to old checkbox if status selector not available
       updatedData.auth_status = els.singleExpenseAuthStatus.checked;
       updatedData.auth_by = els.singleExpenseAuthStatus.checked ? (currentUser.user_id || currentUser.id) : null;
@@ -5098,19 +5205,32 @@
         console.log('[EXPENSES] Receipt deleted');
       }
 
-      // Update the current expense (without receipt_url if stored in bills)
-      await apiJson(`${apiBase}/expenses/${expenseId}`, {
+      // For bookkeepers: include status in PATCH body (bypasses status endpoint role check)
+      // For managers: use dedicated status endpoint (has proper role-based logging)
+      if (selectedStatus && !canAuthorize) {
+        const currentStatus = currentEditingExpense.status || (currentEditingExpense.auth_status ? 'auth' : 'pending');
+        if (selectedStatus !== currentStatus) {
+          updatedData.status = selectedStatus;
+          updatedData.status_reason = statusReason;
+        }
+      }
+
+      // Update the current expense
+      const userId = currentUser?.user_id || currentUser?.id;
+      const patchUrl = userId
+        ? `${apiBase}/expenses/${expenseId}?user_id=${userId}`
+        : `${apiBase}/expenses/${expenseId}`;
+      await apiJson(patchUrl, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData)
       });
 
-      // Update status separately if it changed (uses dedicated status endpoint for logging)
-      if (selectedStatus) {
+      // Managers: update status separately via dedicated endpoint (role-based logging)
+      if (selectedStatus && canAuthorize) {
         const currentStatus = currentEditingExpense.status || (currentEditingExpense.auth_status ? 'auth' : 'pending');
         if (selectedStatus !== currentStatus) {
           try {
-            const userId = currentUser?.user_id || currentUser?.id;
             await apiJson(`${apiBase}/expenses/${expenseId}/status?user_id=${userId}`, {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
@@ -5122,7 +5242,6 @@
             console.log(`[EXPENSES] Status updated from ${currentStatus} to ${selectedStatus}`);
           } catch (statusErr) {
             console.error('[EXPENSES] Error updating status:', statusErr);
-            // Don't fail the whole save if status update fails
             if (window.Toast) {
               Toast.warning('Status Update Failed', 'Expense saved but status could not be updated.');
             }
@@ -6798,25 +6917,53 @@
       const newAmount = parseCurrency(els.singleExpenseAmount.value);
       if (newAmount === null || newAmount === originalAmount) return;
 
-      // Auto-switch status selector to 'review'
-      if (els.expenseStatusSelector) {
+      // Auto-switch status selector to 'review' (managers see the selector)
+      if (canAuthorize && els.expenseStatusSelector) {
         const reviewBtn = els.expenseStatusSelector.querySelector('.expense-status-btn[data-status="review"]');
         if (reviewBtn && !reviewBtn.classList.contains('active')) {
           els.expenseStatusSelector.querySelectorAll('.expense-status-btn').forEach(b => b.classList.remove('active'));
           reviewBtn.classList.add('active');
 
-          // Show reason field pre-filled
           if (els.singleExpenseReasonContainer) {
             els.singleExpenseReasonContainer.classList.remove('hidden');
           }
           if (els.singleExpenseReason && !els.singleExpenseReason.value.trim()) {
             els.singleExpenseReason.value = 'Amount modified from ' + originalAmount.toFixed(2) + ' to ' + newAmount.toFixed(2);
           }
+        }
+      }
 
-          if (window.Toast) {
-            Toast.info('Status Changed', 'Expense was authorized. Changing the amount sets it to Review.');
+      if (window.Toast) {
+        Toast.info('Status Changed', 'Expense was authorized. Changing the amount sets it to Review.');
+      }
+    });
+
+    // Auto-switch to 'review' when account changes on an authorized expense
+    els.singleExpenseAccount?.addEventListener('change', () => {
+      if (!currentEditingExpense || originalExpenseStatus !== 'auth') return;
+
+      const originalAccountId = currentEditingExpense.account_id || '';
+      const newAccountId = getDatalistValue(els.singleExpenseAccount, 'singleExpenseAccountList');
+      if (!newAccountId || String(newAccountId) === String(originalAccountId)) return;
+
+      // Auto-switch status selector to 'review' (managers see the selector)
+      if (canAuthorize && els.expenseStatusSelector) {
+        const reviewBtn = els.expenseStatusSelector.querySelector('.expense-status-btn[data-status="review"]');
+        if (reviewBtn && !reviewBtn.classList.contains('active')) {
+          els.expenseStatusSelector.querySelectorAll('.expense-status-btn').forEach(b => b.classList.remove('active'));
+          reviewBtn.classList.add('active');
+
+          if (els.singleExpenseReasonContainer) {
+            els.singleExpenseReasonContainer.classList.remove('hidden');
+          }
+          if (els.singleExpenseReason && !els.singleExpenseReason.value.trim()) {
+            els.singleExpenseReason.value = 'Account changed';
           }
         }
+      }
+
+      if (window.Toast) {
+        Toast.info('Status Changed', 'Expense was authorized. Changing the account sets it to Review.');
       }
     });
 
@@ -7415,7 +7562,10 @@
 
     billIds.forEach(billId => {
       const billExpenses = groups.withBill[billId];
-      const billTotal = billExpenses.reduce((sum, exp) => sum + (parseFloat(exp.Amount) || 0), 0);
+      const billTotal = billExpenses.reduce((sum, exp) => {
+        if (exp.status === 'review') return sum;
+        return sum + (parseFloat(exp.Amount) || 0);
+      }, 0);
       grandTotal += billTotal;
 
       // Determine bill status
@@ -7496,7 +7646,7 @@
       `;
 
       groups.withoutBill.forEach((exp, idx) => {
-        grandTotal += parseFloat(exp.Amount) || 0;
+        if (exp.status !== 'review') grandTotal += parseFloat(exp.Amount) || 0;
         const isFirst = idx === 0;
         const isLast = idx === groups.withoutBill.length - 1;
         html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), isFirst, isLast, 'no-bill');
@@ -7774,6 +7924,7 @@
     let borderClass = 'bill-group-row';
     if (isFirst) borderClass += ' bill-group-first';
     if (isLast) borderClass += ' bill-group-last';
+    if (isReview) borderClass += ' expense-row-review';
 
     return `
       <tr data-index="${index}" data-id="${expenseId}" ${billGroupAttr} class="expense-row-clickable ${borderClass}" style="cursor: pointer;">
@@ -7821,7 +7972,10 @@
 
     // Get expenses for this bill to calculate stats
     const billExpenses = expenses.filter(exp => exp.bill_id === billId);
-    const billTotal = billExpenses.reduce((sum, exp) => sum + (parseFloat(exp.Amount) || 0), 0);
+    const billTotal = billExpenses.reduce((sum, exp) => {
+      if (exp.status === 'review') return sum;
+      return sum + (parseFloat(exp.Amount) || 0);
+    }, 0);
 
     // Populate modal header
     els.billEditNumber.textContent = `#${billId}`;
@@ -10592,8 +10746,14 @@
     const total = expenses.length;
     const filtered = filteredExpenses.length;
     const hasFilters = Object.values(columnFilters).some(f => f.length > 0) || globalSearchTerm;
-    const totalAmount = expenses.reduce((sum, e) => sum + (parseFloat(e.Amount) || 0), 0);
-    const filteredAmount = filteredExpenses.reduce((sum, e) => sum + (parseFloat(e.Amount) || 0), 0);
+    const totalAmount = expenses.reduce((sum, e) => {
+      if (e.status === 'review') return sum;
+      return sum + (parseFloat(e.Amount) || 0);
+    }, 0);
+    const filteredAmount = filteredExpenses.reduce((sum, e) => {
+      if (e.status === 'review') return sum;
+      return sum + (parseFloat(e.Amount) || 0);
+    }, 0);
 
     return {
       totalExpenses: total,

@@ -298,9 +298,13 @@
 
       // Select item from list
       this.list.addEventListener('click', (e) => {
+        console.log('[CatalogPicker] List click detected!');
+        console.log('[CatalogPicker] Click target:', e.target);
         const itemEl = e.target.closest('.pm-catalog-item');
+        console.log('[CatalogPicker] Found item:', itemEl);
         if (itemEl) {
           const itemId = itemEl.dataset.itemId;
+          console.log('[CatalogPicker] itemId:', itemId);
           this.selectItem(itemId);
         }
       });
@@ -314,19 +318,21 @@
         }
       });
 
-      // Close on outside click
-      document.addEventListener('click', (e) => {
+      // Close on outside click - store reference for cleanup
+      this._onDocumentClick = (e) => {
         if (this.isOpen && !this.container.contains(e.target)) {
           this.close();
         }
-      });
+      };
+      document.addEventListener('click', this._onDocumentClick);
 
-      // Close on Escape
-      document.addEventListener('keydown', (e) => {
+      // Close on Escape - store reference for cleanup
+      this._onDocumentKeydown = (e) => {
         if (e.key === 'Escape' && this.isOpen) {
           this.close();
         }
-      });
+      };
+      document.addEventListener('keydown', this._onDocumentKeydown);
     }
 
     async toggle() {
@@ -554,6 +560,18 @@
     }
 
     destroy() {
+      console.log('[CatalogPicker] destroy() called');
+      // Remove document event listeners to prevent memory leaks and interference
+      if (this._onDocumentClick) {
+        document.removeEventListener('click', this._onDocumentClick);
+      }
+      if (this._onDocumentKeydown) {
+        document.removeEventListener('keydown', this._onDocumentKeydown);
+      }
+      // Clear active dropdown reference if this was it
+      if (activeDropdown === this) {
+        activeDropdown = null;
+      }
       this.container.innerHTML = '';
     }
   }

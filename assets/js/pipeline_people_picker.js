@@ -259,15 +259,25 @@
 
       // Prevent dropdown close when clicking inside
       this.dropdown.addEventListener('click', (e) => {
+        console.log('[PeoplePicker] Dropdown click event!');
+        console.log('[PeoplePicker] Dropdown click target:', e.target);
         e.stopPropagation();
       });
 
       // Select user from list
       this.list.addEventListener('click', (e) => {
+        console.log('[PeoplePicker] List click detected!');
+        console.log('[PeoplePicker] Click target:', e.target);
+        console.log('[PeoplePicker] Click target tagName:', e.target.tagName);
+        console.log('[PeoplePicker] Click target className:', e.target.className);
         const item = e.target.closest('.pm-people-item');
+        console.log('[PeoplePicker] Found item:', item);
         if (item) {
           const userId = item.dataset.userId;
+          console.log('[PeoplePicker] userId:', userId);
           this.toggleUser(userId);
+        } else {
+          console.log('[PeoplePicker] No .pm-people-item found from target');
         }
       });
 
@@ -281,19 +291,24 @@
         }
       });
 
-      // Close on outside click
-      document.addEventListener('click', (e) => {
+      // Close on outside click - store reference for cleanup
+      this._onDocumentClick = (e) => {
+        console.log('[PeoplePicker] Document click, isOpen:', this.isOpen, 'target:', e.target);
+        console.log('[PeoplePicker] container.contains(target):', this.container.contains(e.target));
         if (this.isOpen && !this.container.contains(e.target)) {
+          console.log('[PeoplePicker] Closing due to outside click');
           this.close();
         }
-      });
+      };
+      document.addEventListener('click', this._onDocumentClick);
 
-      // Close on Escape
-      document.addEventListener('keydown', (e) => {
+      // Close on Escape - store reference for cleanup
+      this._onDocumentKeydown = (e) => {
         if (e.key === 'Escape' && this.isOpen) {
           this.close();
         }
-      });
+      };
+      document.addEventListener('keydown', this._onDocumentKeydown);
     }
 
     async toggle() {
@@ -357,6 +372,8 @@
     }
 
     close() {
+      console.log('[PeoplePicker] close() called');
+      console.trace('[PeoplePicker] close() stack trace');
       this.isOpen = false;
       if (activeDropdown === this) activeDropdown = null;
       this.trigger.classList.remove('is-open');
@@ -536,6 +553,18 @@
     }
 
     destroy() {
+      console.log('[PeoplePicker] destroy() called');
+      // Remove document event listeners to prevent memory leaks and interference
+      if (this._onDocumentClick) {
+        document.removeEventListener('click', this._onDocumentClick);
+      }
+      if (this._onDocumentKeydown) {
+        document.removeEventListener('keydown', this._onDocumentKeydown);
+      }
+      // Clear active dropdown reference if this was it
+      if (activeDropdown === this) {
+        activeDropdown = null;
+      }
       this.container.innerHTML = '';
     }
   }

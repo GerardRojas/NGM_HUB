@@ -127,6 +127,7 @@
 
   function closeActiveEditor(save = false) {
     if (!activeEditor) return;
+    console.log("[PIPELINE-INTERACTIONS] closeActiveEditor called, save:", save);
 
     const { element, td, taskId, colKey, originalValue, type } = activeEditor;
 
@@ -140,6 +141,12 @@
     // Restaurar contenido original si no se guardó
     if (!save) {
       restoreCellContent(td, colKey, originalValue);
+    }
+
+    // Destroy picker instances to clean up event listeners
+    if (element._picker && typeof element._picker.destroy === 'function') {
+      console.log("[PIPELINE-INTERACTIONS] Destroying picker instance");
+      element._picker.destroy();
     }
 
     // Remove editing classes from cell and parents (for dropdown overflow)

@@ -962,6 +962,20 @@
 .pm-group-body:has(.pm-cell-editing),
 .pm-group-body.pm-has-editing {
   overflow: visible !important;
+  overflow-x: visible !important;
+}
+
+/* Ensure pm-group allows overflow for dropdowns */
+.pm-group:has(.pm-cell-editing),
+.pm-group.pm-has-editing {
+  overflow: visible !important;
+  z-index: 50;
+}
+
+/* Inline text editor must be clickable and editable */
+.pm-group .table td.pm-cell-editing .pm-inline-editor {
+  pointer-events: auto !important;
+  z-index: 101;
 }
 
 /* Avatar inicial + nombre (Owner/Collaborator) */
@@ -1604,6 +1618,7 @@ textarea.pm-inline-editor {
 .pm-inline-people-picker {
   width: 100%;
   min-width: 180px;
+  position: relative;
 }
 
 .pm-inline-people-picker .pm-people-picker {
@@ -1620,8 +1635,9 @@ textarea.pm-inline-editor {
 
 .pm-inline-people-picker .pm-people-dropdown {
   min-width: 260px;
-  left: auto;
+  left: 0;
   right: auto;
+  z-index: 9000;
 }
 
 /* Trigger button (shows selected users or placeholder) */
@@ -1957,6 +1973,7 @@ textarea.pm-inline-editor {
 .pm-inline-catalog-picker {
   width: 100%;
   min-width: 140px;
+  position: relative;
 }
 
 .pm-inline-catalog-picker .pm-catalog-picker {
@@ -1973,8 +1990,9 @@ textarea.pm-inline-editor {
 
 .pm-inline-catalog-picker .pm-catalog-dropdown {
   min-width: 220px;
-  left: auto;
+  left: 0;
   right: auto;
+  z-index: 9000;
 }
 
 /* Main picker container */

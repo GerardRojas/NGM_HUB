@@ -108,7 +108,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   try {
     await Promise.all([
       loadMentions(user),
-      loadMyWorkTasks(user)
+      loadMyWorkTasks(user),
+      loadPendingReviews(user)
     ]);
   } catch (err) {
     console.error("[Dashboard] Error loading data:", err);
@@ -374,6 +375,7 @@ async function loadMyWorkTasks(user) {
         const statusLower = (task.status_name || "").toLowerCase();
         const isWorking = statusLower === "working on it";
         const isNotStarted = statusLower === "not started";
+        const userRole = task.role || "owner"; // owner, collaborator, or manager
 
         // Determine icon based on priority or status
         let icon = "T";
@@ -393,6 +395,9 @@ async function loadMyWorkTasks(user) {
           iconClass = "task-icon-working";
         }
 
+        // Only owners can start tasks, collaborators/managers view them
+        const canStart = isNotStarted && userRole === "owner";
+
         tasks.push({
           type: "pipeline_task",
           taskId: task.task_id,
@@ -402,11 +407,12 @@ async function loadMyWorkTasks(user) {
           icon: icon,
           iconClass: iconClass,
           link: `pipeline.html?task=${task.task_id}`,
-          actionText: isWorking ? "Working" : (isNotStarted ? "Start" : "View"),
-          isStartable: isNotStarted,
-          isWorking: isWorking,
+          actionText: isWorking ? "Working" : (canStart ? "Start" : "View"),
+          isStartable: canStart,
+          isWorking: isWorking && userRole === "owner", // Only owner sees working controls
           timeStart: task.time_start,
           statusName: task.status_name,
+          userRole: userRole, // owner, collaborator, or manager
         });
       });
     }
@@ -471,17 +477,24 @@ function renderMyWorkTasks(tasks) {
 
     // Status badge for pipeline tasks
     let statusBadge = "";
-    if (task.type === "pipeline_task" && task.statusName && !task.isNotStarted && !task.isWorking) {
+    if (task.type === "pipeline_task" && task.statusName && !task.isStartable && !task.isWorking) {
       statusBadge = `<span class="task-status-badge">${escapeHtml(task.statusName)}</span>`;
     }
 
+    // Role badge for collaborators and managers
+    let roleBadge = "";
+    if (task.type === "pipeline_task" && task.userRole && task.userRole !== "owner") {
+      const roleLabel = task.userRole === "collaborator" ? "Collaborator" : "Manager";
+      roleBadge = `<span class="task-role-badge task-role-${task.userRole}">${roleLabel}</span>`;
+    }
+
     return `
-      <div class="my-work-task" data-type="${task.type}" data-task-id="${task.taskId || ''}">
+      <div class="my-work-task" data-type="${task.type}" data-task-id="${task.taskId || ''}" data-role="${task.userRole || 'owner'}">
         <div class="my-work-task-icon">
           <span class="task-icon-badge ${task.iconClass}">${task.icon}</span>
         </div>
         <div class="my-work-task-content">
-          <div class="my-work-task-title">${escapeHtml(task.title)} ${statusBadge}</div>
+          <div class="my-work-task-title">${escapeHtml(task.title)} ${statusBadge} ${roleBadge}</div>
           <div class="my-work-task-meta">
             <span class="task-meta-module">${escapeHtml(task.module)}</span>
             ${task.subtitle ? `<span class="task-meta-separator">·</span><span class="task-meta-project">${escapeHtml(task.subtitle)}</span>` : ''}
@@ -601,6 +614,15 @@ function showReviewModal(taskId, taskTitle, buttonEl) {
         </div>
         <div class="dashboard-modal-body">
           <p class="review-task-name">${escapeHtml(taskTitle)}</p>
+
+          <label class="review-notes-label">Result Link</label>
+          <input
+            type="url"
+            id="reviewResultLink"
+            class="review-link-input"
+            placeholder="https://drive.google.com/... or deliverable URL"
+          />
+
           <label class="review-notes-label">Notes (optional)</label>
           <textarea
             id="reviewNotes"
@@ -612,7 +634,7 @@ function showReviewModal(taskId, taskTitle, buttonEl) {
         <div class="dashboard-modal-footer">
           <button type="button" class="btn-secondary" id="cancelReview">Cancel</button>
           <button type="button" class="btn-primary" id="confirmReview">
-            <span class="btn-icon">→</span> Send to Review
+            <span class="btn-icon">-&gt;</span> Send to Review
           </button>
         </div>
       </div>
@@ -622,13 +644,14 @@ function showReviewModal(taskId, taskTitle, buttonEl) {
   document.body.insertAdjacentHTML("beforeend", modalHtml);
 
   const modal = document.getElementById("reviewModal");
+  const resultLinkInput = document.getElementById("reviewResultLink");
   const notesInput = document.getElementById("reviewNotes");
   const confirmBtn = document.getElementById("confirmReview");
   const cancelBtn = document.getElementById("cancelReview");
   const closeBtn = document.getElementById("closeReviewModal");
 
-  // Focus notes input
-  setTimeout(() => notesInput.focus(), 100);
+  // Focus result link input
+  setTimeout(() => resultLinkInput.focus(), 100);
 
   // Close modal function
   const closeModal = () => {
@@ -637,11 +660,12 @@ function showReviewModal(taskId, taskTitle, buttonEl) {
 
   // Handle confirm
   confirmBtn.addEventListener("click", async () => {
+    const resultLink = resultLinkInput.value.trim();
     const notes = notesInput.value.trim();
     confirmBtn.disabled = true;
-    confirmBtn.innerHTML = '<span class="btn-icon">⏳</span> Sending...';
+    confirmBtn.innerHTML = '<span class="btn-icon">...</span> Sending...';
 
-    await handleSendToReview(taskId, notes, closeModal);
+    await handleSendToReview(taskId, notes, resultLink, closeModal);
   });
 
   // Handle cancel/close
@@ -663,7 +687,7 @@ function showReviewModal(taskId, taskTitle, buttonEl) {
   document.addEventListener("keydown", handleEscape);
 }
 
-async function handleSendToReview(taskId, notes, closeModalFn) {
+async function handleSendToReview(taskId, notes, resultLink, closeModalFn) {
   console.log("[Dashboard] Sending task to review:", taskId);
 
   try {
@@ -673,11 +697,17 @@ async function handleSendToReview(taskId, notes, closeModalFn) {
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     };
 
+    const payload = {
+      notes: notes || null,
+      result_link: resultLink || null,
+      performed_by: currentUser?.user_id || null
+    };
+
     const response = await fetch(`${DASHBOARD_API}/pipeline/tasks/${taskId}/send-to-review`, {
       method: "POST",
       credentials: "include",
       headers,
-      body: JSON.stringify({ notes: notes || null })
+      body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
@@ -788,3 +818,392 @@ function formatCurrency(amount) {
     maximumFractionDigits: 2
   });
 }
+
+// ---------------------------------------------------------------------------
+// PENDING REVIEWS SECTION (for managers)
+// ---------------------------------------------------------------------------
+
+async function loadPendingReviews(user) {
+  const sectionEl = document.getElementById("pending-reviews-section");
+  const dividerEl = document.getElementById("pending-reviews-divider");
+  const loadingEl = document.getElementById("pending-reviews-loading");
+  const emptyEl = document.getElementById("pending-reviews-empty");
+  const listEl = document.getElementById("pending-reviews-list");
+
+  if (!sectionEl || !loadingEl || !emptyEl || !listEl) {
+    console.log("[Dashboard] Pending reviews elements not found");
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem("ngmToken");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+
+    // Fetch pending reviews for this user
+    const response = await fetch(
+      `${DASHBOARD_API}/pipeline/tasks/pending-reviews/${user.user_id}`,
+      {
+        credentials: "include",
+        headers
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const reviews = data.tasks || [];
+
+    // Hide loading
+    loadingEl.style.display = "none";
+
+    if (reviews.length === 0) {
+      // Hide section entirely if no pending reviews
+      sectionEl.style.display = "none";
+      if (dividerEl) dividerEl.style.display = "none";
+    } else {
+      // Show section
+      sectionEl.style.display = "block";
+      if (dividerEl) dividerEl.style.display = "block";
+      emptyEl.style.display = "none";
+      listEl.style.display = "block";
+      renderPendingReviews(reviews);
+    }
+
+  } catch (err) {
+    console.error("[Dashboard] Failed to load pending reviews:", err);
+    // Hide section on error
+    sectionEl.style.display = "none";
+    if (dividerEl) dividerEl.style.display = "none";
+  }
+}
+
+function renderPendingReviews(reviews) {
+  const listEl = document.getElementById("pending-reviews-list");
+  if (!listEl) return;
+
+  const html = reviews.map((review) => {
+    // Get the original task if this is a review task
+    const originalTask = review.original_task || review;
+    const taskId = originalTask.task_id || review.task_id;
+    const description = originalTask.task_description || review.task_description || "Untitled task";
+    const projectName = review.project_name || originalTask.project_name || null;
+    const ownerName = review.owner_name || "Unknown";
+    const resultLink = originalTask.result_link || review.result_link;
+    const rejectionCount = originalTask.rejection_count || 0;
+
+    // Actions - Result link (if available), Approve, Reject
+    let actionsHtml = "";
+
+    if (resultLink) {
+      actionsHtml += `
+        <a href="${escapeHtml(resultLink)}" target="_blank" rel="noopener" class="task-result-link">
+          View Result
+        </a>
+      `;
+    }
+
+    actionsHtml += `
+      <button type="button" class="task-approve-btn" data-task-id="${taskId}" data-review-id="${review.task_id}">
+        Approve
+      </button>
+      <button type="button" class="task-reject-btn" data-task-id="${taskId}" data-review-id="${review.task_id}" data-task-title="${escapeHtml(description)}">
+        Reject
+      </button>
+    `;
+
+    // Rejection count badge
+    let rejectionBadge = "";
+    if (rejectionCount > 0) {
+      rejectionBadge = `<span class="task-rejection-count">Rejected ${rejectionCount}x</span>`;
+    }
+
+    return `
+      <div class="pending-review-task" data-task-id="${taskId}" data-review-id="${review.task_id}">
+        <div class="pending-review-task-icon">
+          <span class="task-icon-badge task-icon-review">R</span>
+        </div>
+        <div class="pending-review-task-content">
+          <div class="pending-review-task-title">${escapeHtml(description)} ${rejectionBadge}</div>
+          <div class="pending-review-task-meta">
+            <span class="task-submitted-by">Submitted by ${escapeHtml(ownerName)}</span>
+            ${projectName ? `<span class="task-meta-separator">-</span><span class="task-meta-project">${escapeHtml(projectName)}</span>` : ''}
+          </div>
+        </div>
+        <div class="pending-review-task-actions">
+          ${actionsHtml}
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  listEl.innerHTML = html;
+
+  // Attach event handlers
+  listEl.querySelectorAll(".task-approve-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const taskId = btn.dataset.taskId;
+      const reviewId = btn.dataset.reviewId;
+      if (taskId) {
+        handleApproveTask(taskId, reviewId, btn);
+      }
+    });
+  });
+
+  listEl.querySelectorAll(".task-reject-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const taskId = btn.dataset.taskId;
+      const reviewId = btn.dataset.reviewId;
+      const taskTitle = btn.dataset.taskTitle;
+      if (taskId) {
+        showRejectModal(taskId, reviewId, taskTitle, btn);
+      }
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
+// APPROVE TASK
+// ---------------------------------------------------------------------------
+
+async function handleApproveTask(taskId, reviewId, buttonEl) {
+  console.log("[Dashboard] Approving task:", taskId);
+
+  // Disable button
+  buttonEl.disabled = true;
+  buttonEl.textContent = "Approving...";
+
+  try {
+    const token = localStorage.getItem("ngmToken");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+
+    const payload = {
+      reviewer_notes: null,
+      performed_by: currentUser?.user_id || null
+    };
+
+    const response = await fetch(`${DASHBOARD_API}/pipeline/tasks/${taskId}/approve`, {
+      method: "POST",
+      credentials: "include",
+      headers,
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Server error (${response.status}): ${errText}`);
+    }
+
+    const result = await response.json();
+    console.log("[Dashboard] Task approved:", result);
+
+    // Show success toast
+    if (window.Toast) {
+      Toast.success("Task Approved", "Task moved to Good to Go. Ready for coordination.");
+    }
+
+    // Reload reviews
+    if (currentUser) {
+      loadPendingReviews(currentUser);
+    }
+
+  } catch (err) {
+    console.error("[Dashboard] Failed to approve task:", err);
+
+    // Re-enable button
+    buttonEl.disabled = false;
+    buttonEl.textContent = "Approve";
+
+    if (window.Toast) {
+      Toast.error("Approval Failed", err.message);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// REJECT TASK MODAL
+// ---------------------------------------------------------------------------
+
+function showRejectModal(taskId, reviewId, taskTitle, buttonEl) {
+  // Remove existing modal
+  const existingModal = document.getElementById("rejectModal");
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  const modalHtml = `
+    <div id="rejectModal" class="dashboard-modal-backdrop reject-modal">
+      <div class="dashboard-modal">
+        <div class="dashboard-modal-header">
+          <h3 class="dashboard-modal-title">Return for Revision</h3>
+          <button type="button" class="dashboard-modal-close" id="closeRejectModal">&times;</button>
+        </div>
+        <div class="dashboard-modal-body">
+          <p class="review-task-name">${escapeHtml(taskTitle)}</p>
+
+          <label class="review-notes-label">Feedback / Rejection Notes (required)</label>
+          <textarea
+            id="rejectNotes"
+            class="review-notes-input"
+            placeholder="Explain what needs to be revised or corrected..."
+            rows="4"
+            required
+          ></textarea>
+
+          <label class="review-notes-label">Reference Link (optional)</label>
+          <input
+            type="url"
+            id="rejectRefLink"
+            class="review-link-input"
+            placeholder="https://... reference document or example"
+          />
+        </div>
+        <div class="dashboard-modal-footer">
+          <button type="button" class="btn-secondary" id="cancelReject">Cancel</button>
+          <button type="button" class="btn-primary" id="confirmReject">
+            Return for Revision
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML("beforeend", modalHtml);
+
+  const modal = document.getElementById("rejectModal");
+  const notesInput = document.getElementById("rejectNotes");
+  const refLinkInput = document.getElementById("rejectRefLink");
+  const confirmBtn = document.getElementById("confirmReject");
+  const cancelBtn = document.getElementById("cancelReject");
+  const closeBtn = document.getElementById("closeRejectModal");
+
+  // Focus notes input
+  setTimeout(() => notesInput.focus(), 100);
+
+  const closeModal = () => {
+    modal.remove();
+  };
+
+  // Handle confirm
+  confirmBtn.addEventListener("click", async () => {
+    const notes = notesInput.value.trim();
+    if (!notes) {
+      notesInput.focus();
+      if (window.Toast) {
+        Toast.warning("Notes Required", "Please provide feedback for the task owner.");
+      }
+      return;
+    }
+
+    const refLink = refLinkInput.value.trim();
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = "Returning...";
+
+    await handleRejectTask(taskId, reviewId, notes, refLink, closeModal);
+  });
+
+  // Handle cancel/close
+  cancelBtn.addEventListener("click", closeModal);
+  closeBtn.addEventListener("click", closeModal);
+
+  // Close on backdrop click
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  // Close on Escape
+  const handleEscape = (e) => {
+    if (e.key === "Escape") {
+      closeModal();
+      document.removeEventListener("keydown", handleEscape);
+    }
+  };
+  document.addEventListener("keydown", handleEscape);
+}
+
+async function handleRejectTask(taskId, reviewId, notes, refLink, closeModalFn) {
+  console.log("[Dashboard] Rejecting task:", taskId);
+
+  try {
+    const token = localStorage.getItem("ngmToken");
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+
+    const attachments = refLink ? [refLink] : null;
+
+    const payload = {
+      rejection_notes: notes,
+      attachments: attachments,
+      performed_by: currentUser?.user_id || null
+    };
+
+    const response = await fetch(`${DASHBOARD_API}/pipeline/tasks/${taskId}/reject`, {
+      method: "POST",
+      credentials: "include",
+      headers,
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Server error (${response.status}): ${errText}`);
+    }
+
+    const result = await response.json();
+    console.log("[Dashboard] Task rejected:", result);
+
+    // Close modal
+    closeModalFn();
+
+    // Show toast
+    if (window.Toast) {
+      Toast.info("Returned for Revision", `Task returned to owner. Rejection count: ${result.rejection_count}`);
+    }
+
+    // Reload reviews
+    if (currentUser) {
+      loadPendingReviews(currentUser);
+    }
+
+  } catch (err) {
+    console.error("[Dashboard] Failed to reject task:", err);
+
+    if (window.Toast) {
+      Toast.error("Rejection Failed", err.message);
+    }
+
+    // Re-enable button in modal
+    const confirmBtn = document.getElementById("confirmReject");
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = "Return for Revision";
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// EXPOSE GLOBAL API FOR REALTIME
+// ---------------------------------------------------------------------------
+
+window.loadMyWorkTasks = loadMyWorkTasks;
+window.loadPendingReviews = loadPendingReviews;
+window.loadMentions = loadMentions;
+
+// Also expose currentUser for realtime module
+Object.defineProperty(window, 'currentUser', {
+  get: function() { return currentUser; },
+  configurable: true
+});

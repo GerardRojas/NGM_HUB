@@ -304,11 +304,40 @@
       this.trigger.classList.add('is-open');
       this.dropdown.classList.add('is-open');
 
+      // Position dropdown using fixed positioning for table cell overflow
+      this.positionDropdown();
+
       // Load users if not cached
       await this.loadUsers();
 
       // Focus search
       setTimeout(() => this.searchInput.focus(), 50);
+    }
+
+    positionDropdown() {
+      // Get trigger position in viewport
+      const triggerRect = this.trigger.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const dropdownHeight = 320; // max-height from CSS
+
+      // Position dropdown below trigger, or above if not enough space
+      const spaceBelow = viewportHeight - triggerRect.bottom;
+      const spaceAbove = triggerRect.top;
+
+      // Use fixed positioning to escape overflow containers
+      this.dropdown.style.position = 'fixed';
+      this.dropdown.style.left = `${triggerRect.left}px`;
+      this.dropdown.style.width = `${Math.max(triggerRect.width, 260)}px`;
+
+      if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
+        // Position below
+        this.dropdown.style.top = `${triggerRect.bottom + 4}px`;
+        this.dropdown.style.bottom = 'auto';
+      } else {
+        // Position above
+        this.dropdown.style.bottom = `${viewportHeight - triggerRect.top + 4}px`;
+        this.dropdown.style.top = 'auto';
+      }
     }
 
     close() {
@@ -318,6 +347,12 @@
       this.dropdown.classList.remove('is-open');
       this.searchQuery = '';
       this.searchInput.value = '';
+      // Reset positioning styles
+      this.dropdown.style.position = '';
+      this.dropdown.style.top = '';
+      this.dropdown.style.bottom = '';
+      this.dropdown.style.left = '';
+      this.dropdown.style.width = '';
     }
 
     async loadUsers() {

@@ -143,10 +143,12 @@
     const tbody = td.closest("tbody");
     const table = td.closest("table");
     const groupBody = td.closest(".pm-group-body");
+    const group = td.closest(".pm-group");
     if (tr) tr.classList.remove("pm-has-editing");
     if (tbody) tbody.classList.remove("pm-has-editing");
     if (table) table.classList.remove("pm-has-editing");
     if (groupBody) groupBody.classList.remove("pm-has-editing");
+    if (group) group.classList.remove("pm-has-editing");
 
     activeEditor = null;
   }
@@ -879,10 +881,12 @@
     const tbody = td.closest("tbody");
     const table = td.closest("table");
     const groupBody = td.closest(".pm-group-body");
+    const group = td.closest(".pm-group");
     if (tr) tr.classList.add("pm-has-editing");
     if (tbody) tbody.classList.add("pm-has-editing");
     if (table) table.classList.add("pm-has-editing");
     if (groupBody) groupBody.classList.add("pm-has-editing");
+    if (group) group.classList.add("pm-has-editing");
   }
 
   // ================================

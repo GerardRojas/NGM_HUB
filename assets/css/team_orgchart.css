@@ -11,6 +11,40 @@ body.page-team.orgchart-active {
     height: 100vh;
 }
 
+/* Allow sidebar to scroll independently when orgchart is active */
+body.page-team.orgchart-active .sidebar {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #2a2a2a transparent;
+}
+
+/* Webkit scrollbar styling for sidebar */
+body.page-team.orgchart-active .sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+body.page-team.orgchart-active .sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+body.page-team.orgchart-active .sidebar::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 3px;
+}
+
+body.page-team.orgchart-active .sidebar::-webkit-scrollbar-thumb:hover {
+    background: #3a3a3a;
+}
+
+/* Ensure sidebar nav card can scroll if needed */
+body.page-team.orgchart-active .sidebar-nav-card {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+}
+
 body.page-team.orgchart-active .main-content {
     padding: 0;
     height: calc(100vh - 60px);

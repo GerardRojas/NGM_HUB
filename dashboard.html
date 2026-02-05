@@ -213,7 +213,35 @@
                     </div>
                 </section>
 
-                <!-- Separador visual entre my work y módulos -->
+                <!-- Separador visual entre my work y pending reviews -->
+                <div class="section-divider" id="pending-reviews-divider" style="display: none;"></div>
+
+                <!-- Pending Reviews Section (for managers) -->
+                <section class="pending-reviews-section" id="pending-reviews-section" style="display: none;">
+                    <div class="section-header-row">
+                        <div>
+                            <h2 class="section-title">Pending Reviews</h2>
+                            <p class="section-subtitle">
+                                Tasks awaiting your approval as manager or reviewer.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div id="pending-reviews-container" class="module-card pending-reviews-card">
+                        <div class="pending-reviews-loading" id="pending-reviews-loading">
+                            <span class="pending-reviews-loading-text">Loading reviews...</span>
+                        </div>
+                        <div class="pending-reviews-empty" id="pending-reviews-empty" style="display: none;">
+                            <div class="pending-reviews-empty-icon">&#x2713;</div>
+                            <p class="pending-reviews-empty-text">No pending reviews</p>
+                        </div>
+                        <div class="pending-reviews-list" id="pending-reviews-list" style="display: none;">
+                            <!-- Reviews rendered by dashboard.js -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Separador visual entre pending reviews y módulos -->
                 <div class="section-divider"></div>
 
                 <!-- Grid de módulos (webapps) -->
@@ -517,6 +545,10 @@
     </div>
 
     <script src="assets/js/arturito_widget.js"></script>
+
+    <!-- Supabase Realtime -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/dashboard_realtime.js"></script>
 
     <!-- Firebase Push Notifications -->
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>

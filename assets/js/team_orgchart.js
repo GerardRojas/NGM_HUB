@@ -1682,6 +1682,10 @@
                 Edit user
             </div>
             <div class="orgchart-ctx-sep"></div>
+            <div class="orgchart-ctx-item" data-action="disconnect-user">
+                <svg class="orgchart-ctx-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10 2l4 4M6 14l-4-4M7 9l2-2M4.5 6.5L2 9l5 5 2.5-2.5M11.5 9.5L14 7l-5-5-2.5 2.5"/></svg>
+                Disconnect
+            </div>
             <div class="orgchart-ctx-item" data-action="hide-user">
                 <svg class="orgchart-ctx-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/><line x1="2" y1="14" x2="14" y2="2"/></svg>
                 Remove from orgchart
@@ -1700,6 +1704,17 @@
             if (!item || !nodeCtxUser) return;
             const action = item.getAttribute('data-action');
             if (action === 'edit-user') { hideNodeContextMenu(); openUserEdit(nodeCtxUser); }
+            if (action === 'disconnect-user') {
+                const uid = nodeCtxUser.user_id;
+                hideNodeContextMenu();
+                const before = state.connections.length;
+                state.connections = state.connections.filter(c => c.sourceId !== uid && c.targetId !== uid);
+                if (state.connections.length !== before) {
+                    saveConnections();
+                    redrawConnections();
+                    updateMinimap();
+                }
+            }
             if (action === 'hide-user') {
                 const uid = nodeCtxUser.user_id;
                 hideNodeContextMenu();

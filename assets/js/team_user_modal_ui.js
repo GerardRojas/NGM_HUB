@@ -100,6 +100,7 @@
   }
 
   async function open({ mode = "create", user = null, onSaved = null, onDeleted = null } = {}) {
+    console.log("[TeamUserModal] open called with:", { mode, user });
     let modal = qs(MODAL_ID);
     if (!modal) {
       try {
@@ -118,6 +119,8 @@
     state.userId = user?.user_id || null;
     state.onSaved = onSaved;
     state.onDeleted = onDeleted;
+
+    console.log("[TeamUserModal] state after setting:", { mode: state.mode, user: state.user, userId: state.userId });
 
     await render();
 
@@ -179,6 +182,7 @@
     if (btnDelete) btnDelete.classList.toggle("hidden", state.mode !== "edit");
 
     const u = state.user || {};
+    console.log("[TeamUserModal] render() u =", u, "u.user_name =", u.user_name);
     const roleId = u?.role?.id || "";
     const seniorityId = u?.seniority?.id || "";
     const statusId =

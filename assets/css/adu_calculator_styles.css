@@ -254,6 +254,169 @@
   pointer-events: none;
 }
 
+/* Multiple inputs in a row (bedrooms/bathrooms) */
+.adu-input-row-multi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.adu-input-row-multi .adu-input-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.adu-input-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.adu-text-input-small {
+  width: 100px;
+  padding-right: 16px;
+}
+
+/* ==========================================
+   SELECT / DROPDOWN INPUT
+   ========================================== */
+
+.adu-select-field {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.adu-select-input {
+  width: 260px;
+  padding: 12px 40px 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 8px;
+  color: var(--text-primary, #ededed);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.adu-select-input option {
+  background: #1a1a1a;
+  color: var(--text-primary, #ededed);
+  padding: 8px;
+}
+
+.adu-select-input:hover {
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.adu-select-input:focus {
+  border-color: rgba(62, 207, 142, 0.6);
+  box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.1);
+}
+
+.adu-select-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   CHECKBOX CARDS
+   ========================================== */
+
+.adu-checkbox-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.adu-checkbox-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 180px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.adu-checkbox-card:hover {
+  border-color: rgba(148, 163, 184, 0.4);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.adu-checkbox-card input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.adu-checkbox-card .checkbox-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(148, 163, 184, 0.35);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.adu-checkbox-card .checkbox-box::after {
+  content: "";
+  display: none;
+  width: 5px;
+  height: 9px;
+  border: solid #0a0a0a;
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+  margin-bottom: 2px;
+}
+
+.adu-checkbox-card input[type="checkbox"]:checked + .checkbox-box {
+  background: #3ecf8e;
+  border-color: #3ecf8e;
+}
+
+.adu-checkbox-card input[type="checkbox"]:checked + .checkbox-box::after {
+  display: block;
+}
+
+.adu-checkbox-card input[type="checkbox"]:checked ~ .checkbox-label {
+  color: #3ecf8e;
+}
+
+.adu-checkbox-card:has(input[type="checkbox"]:checked) {
+  border-color: rgba(62, 207, 142, 0.5);
+  background: rgba(62, 207, 142, 0.08);
+}
+
+.adu-checkbox-card .checkbox-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 0.15s ease;
+}
+
 /* ==========================================
    SELECTION SUMMARY BAR
    ========================================== */
@@ -712,6 +875,164 @@
 }
 
 /* ==========================================
+   WARNINGS
+   ========================================== */
+
+.adu-cost-warnings {
+  margin-bottom: 16px;
+}
+
+.adu-warning-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(250, 204, 21, 0.08);
+  border: 1px solid rgba(250, 204, 21, 0.25);
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.adu-warning-item .warning-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: rgba(250, 204, 21, 0.2);
+  border-radius: 50%;
+  color: #facc15;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.adu-warning-item .warning-text {
+  font-size: 12px;
+  color: #facc15;
+  line-height: 1.4;
+}
+
+/* ==========================================
+   BREAKDOWN SECTION
+   ========================================== */
+
+.adu-breakdown-section {
+  margin-bottom: 20px;
+}
+
+.adu-breakdown-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 12px;
+}
+
+.adu-cost-table .row-subtotal td {
+  border-top: 1px solid rgba(62, 207, 142, 0.2);
+  font-weight: 600;
+  color: #3ecf8e;
+}
+
+.adu-cost-table .val-penalty {
+  color: #f87171;
+}
+
+.adu-cost-table .val-discount {
+  color: #3ecf8e;
+}
+
+/* ==========================================
+   VISUAL BREAKDOWN BARS
+   ========================================== */
+
+.adu-breakdown-visual {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+}
+
+.adu-breakdown-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.breakdown-bar-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 100px;
+  align-items: center;
+  gap: 12px;
+}
+
+.breakdown-bar-row .bar-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: right;
+}
+
+.breakdown-bar-row .bar-track {
+  height: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.breakdown-bar-row .bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.breakdown-bar-row .bar-fill.bar-base {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+
+.breakdown-bar-row .bar-fill.bar-penalty {
+  background: linear-gradient(90deg, #f87171, #fca5a5);
+}
+
+.breakdown-bar-row .bar-fill.bar-discount {
+  background: linear-gradient(90deg, #34d399, #6ee7b7);
+}
+
+.breakdown-bar-row .bar-fill.bar-additions {
+  background: linear-gradient(90deg, #a78bfa, #c4b5fd);
+}
+
+.breakdown-bar-row .bar-fill.bar-total {
+  background: linear-gradient(90deg, #3ecf8e, #6ee7b7);
+}
+
+.breakdown-bar-row .bar-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown-bar-row.row-total {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.breakdown-bar-row.row-total .bar-label {
+  font-weight: 600;
+  color: #3ecf8e;
+}
+
+.breakdown-bar-row.row-total .bar-value {
+  font-size: 14px;
+  color: #3ecf8e;
+}
+
+/* ==========================================
    RESPONSIVE
    ========================================== */
 
@@ -745,6 +1066,25 @@
     margin-left: 0 !important;
   }
 
+  .adu-select-input {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .adu-checkbox-grid {
+    margin-left: 0 !important;
+    flex-direction: column;
+  }
+
+  .adu-checkbox-card {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .adu-input-row-multi {
+    gap: 16px;
+  }
+
   .adu-summary-bar {
     flex-direction: column;
     align-items: flex-start;
@@ -768,7 +1108,652 @@
     font-size: 24px;
   }
 
+  .breakdown-bar-row {
+    grid-template-columns: 80px 1fr 80px;
+    gap: 8px;
+  }
+
+  .breakdown-bar-row .bar-label {
+    font-size: 11px;
+  }
+
+  .breakdown-bar-row .bar-value {
+    font-size: 11px;
+  }
+
   .adu-analysis-grid {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}
+
+/* ==========================================
+   OPTIONAL MEASURABLE FEATURES
+   ========================================== */
+
+.adu-optional-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.adu-feature-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 10px;
+  padding: 14px 16px;
+  transition: all 0.2s ease;
+}
+
+.adu-feature-card:hover {
+  border-color: rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.adu-feature-card.is-enabled {
+  border-color: rgba(62, 207, 142, 0.35);
+  background: rgba(62, 207, 142, 0.04);
+}
+
+.adu-feature-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.adu-feature-toggle input[type="checkbox"] {
+  display: none;
+}
+
+.feature-toggle-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(148, 163, 184, 0.35);
+  border-radius: 5px;
+  background: transparent;
+  transition: all 0.15s ease;
+}
+
+.feature-toggle-box::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: transparent;
+  transition: all 0.15s ease;
+}
+
+.adu-feature-toggle input:checked + .feature-toggle-box {
+  border-color: #3ecf8e;
+  background: rgba(62, 207, 142, 0.15);
+}
+
+.adu-feature-toggle input:checked + .feature-toggle-box::after {
+  background: #3ecf8e;
+}
+
+.feature-toggle-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #ededed);
+}
+
+.adu-feature-inputs {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.adu-feature-inputs.hidden {
+  display: none;
+}
+
+.adu-input-row-compact {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.adu-input-row-compact + .adu-input-row-compact {
+  margin-top: 10px;
+}
+
+.adu-input-field-sm {
+  flex: 1;
+  min-width: 80px;
+}
+
+.adu-input-field-sm .adu-input-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.adu-text-input-small,
+.adu-select-small {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 6px;
+  color: var(--text-primary, #ededed);
+  transition: all 0.15s ease;
+}
+
+.adu-text-input-small:focus,
+.adu-select-small:focus {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+}
+
+.adu-select-small {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 28px;
+}
+
+.adu-input-hint {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.35);
+  font-style: italic;
+  align-self: center;
+}
+
+.adu-checkbox-row-sm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.adu-checkbox-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  user-select: none;
+}
+
+.adu-checkbox-inline input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: #3ecf8e;
+}
+
+.adu-checkbox-inline span {
+  white-space: nowrap;
+}
+
+/* Responsive for optional features */
+@media (max-width: 768px) {
+  .adu-optional-features-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .adu-feature-card {
+    padding: 12px 14px;
+  }
+
+  .adu-input-row-compact {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .adu-input-field-sm {
+    width: 100%;
+  }
+}
+
+/* ==========================================
+   ALGORITHM VISUALIZATION PANEL
+   ========================================== */
+
+.adu-algo-panel {
+  margin-top: 32px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.adu-algo-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.adu-algo-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.adu-algo-panel.is-open .adu-algo-header {
+  border-bottom-color: rgba(148, 163, 184, 0.12);
+}
+
+.algo-header-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(139, 92, 246, 0.12);
+  border-radius: 8px;
+  color: #a78bfa;
+  font-size: 16px;
+}
+
+.algo-header-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #ededed);
+  flex: 1;
+}
+
+.algo-header-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #a78bfa;
+}
+
+.algo-header-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: rgba(255, 255, 255, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.adu-algo-panel.is-open .algo-header-toggle {
+  transform: rotate(180deg);
+}
+
+/* Content area */
+.adu-algo-content {
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.adu-algo-content.hidden {
+  display: none;
+}
+
+/* Graph container */
+.algo-graph-container {
+  position: relative;
+  width: 100%;
+  min-height: 500px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.algo-graph-svg {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+}
+
+/* Edge lines */
+.algo-edge {
+  stroke: rgba(148, 163, 184, 0.25);
+  stroke-width: 1.5;
+  fill: none;
+  transition: stroke 0.2s ease, stroke-width 0.2s ease;
+}
+
+.algo-edge.edge-active {
+  stroke: rgba(62, 207, 142, 0.5);
+  stroke-width: 2;
+}
+
+.algo-edge.edge-warning {
+  stroke: rgba(250, 204, 21, 0.5);
+  stroke-width: 2;
+  stroke-dasharray: 5, 3;
+}
+
+.algo-edge.edge-penalty {
+  stroke: rgba(248, 113, 113, 0.5);
+  stroke-width: 2;
+}
+
+/* Node groups */
+.algo-node {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.algo-node:hover {
+  transform: scale(1.05);
+}
+
+/* Node circles */
+.algo-node-circle {
+  fill: rgba(30, 30, 35, 0.9);
+  stroke: rgba(148, 163, 184, 0.35);
+  stroke-width: 2;
+  transition: all 0.2s ease;
+}
+
+.algo-node:hover .algo-node-circle {
+  stroke: rgba(148, 163, 184, 0.6);
+}
+
+/* Node status colors */
+.algo-node.node-active .algo-node-circle {
+  fill: rgba(62, 207, 142, 0.15);
+  stroke: #3ecf8e;
+  stroke-width: 2.5;
+}
+
+.algo-node.node-warning .algo-node-circle {
+  fill: rgba(250, 204, 21, 0.12);
+  stroke: #facc15;
+  stroke-width: 2.5;
+}
+
+.algo-node.node-penalty .algo-node-circle {
+  fill: rgba(248, 113, 113, 0.12);
+  stroke: #f87171;
+  stroke-width: 2.5;
+}
+
+.algo-node.node-discount .algo-node-circle {
+  fill: rgba(52, 211, 153, 0.12);
+  stroke: #34d399;
+  stroke-width: 2.5;
+}
+
+.algo-node.node-output .algo-node-circle {
+  fill: rgba(139, 92, 246, 0.15);
+  stroke: #a78bfa;
+  stroke-width: 3;
+}
+
+/* Node labels */
+.algo-node-label {
+  fill: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  font-weight: 500;
+  text-anchor: middle;
+  pointer-events: none;
+  transition: fill 0.2s ease;
+}
+
+.algo-node.node-active .algo-node-label {
+  fill: #3ecf8e;
+  font-weight: 600;
+}
+
+.algo-node.node-warning .algo-node-label {
+  fill: #facc15;
+}
+
+.algo-node.node-penalty .algo-node-label {
+  fill: #f87171;
+}
+
+.algo-node.node-discount .algo-node-label {
+  fill: #34d399;
+}
+
+.algo-node.node-output .algo-node-label {
+  fill: #a78bfa;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+/* Node value display */
+.algo-node-value {
+  fill: rgba(255, 255, 255, 0.45);
+  font-size: 9px;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.algo-node.node-active .algo-node-value,
+.algo-node.node-discount .algo-node-value {
+  fill: rgba(62, 207, 142, 0.8);
+}
+
+.algo-node.node-penalty .algo-node-value {
+  fill: rgba(248, 113, 113, 0.8);
+}
+
+/* Legend */
+.algo-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 8px;
+}
+
+.algo-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.algo-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+
+.algo-legend-dot.dot-inactive {
+  background: rgba(30, 30, 35, 0.9);
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+.algo-legend-dot.dot-active {
+  background: rgba(62, 207, 142, 0.15);
+  border-color: #3ecf8e;
+}
+
+.algo-legend-dot.dot-penalty {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: #f87171;
+}
+
+.algo-legend-dot.dot-discount {
+  background: rgba(52, 211, 153, 0.12);
+  border-color: #34d399;
+}
+
+.algo-legend-dot.dot-warning {
+  background: rgba(250, 204, 21, 0.12);
+  border-color: #facc15;
+}
+
+/* Node details panel */
+.algo-node-details {
+  margin-top: 16px;
+  padding: 16px 20px;
+  background: rgba(139, 92, 246, 0.06);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 10px;
+  animation: fadeIn 0.2s ease;
+}
+
+.algo-node-details.hidden {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.algo-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.algo-details-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #a78bfa;
+}
+
+.algo-details-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.algo-details-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.algo-details-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.algo-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.algo-detail-label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.algo-detail-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #ededed);
+}
+
+.algo-detail-value.value-positive {
+  color: #34d399;
+}
+
+.algo-detail-value.value-negative {
+  color: #f87171;
+}
+
+.algo-detail-value.value-warning {
+  color: #facc15;
+}
+
+.algo-details-description {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(139, 92, 246, 0.15);
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.5;
+}
+
+/* Responsive for algorithm panel */
+@media (max-width: 768px) {
+  .adu-algo-panel {
+    margin-top: 24px;
+  }
+
+  .adu-algo-header {
+    padding: 14px 16px;
+  }
+
+  .algo-header-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .algo-header-title {
+    font-size: 13px;
+  }
+
+  .adu-algo-content {
+    padding: 16px;
+  }
+
+  .algo-graph-container {
+    min-height: 400px;
+    overflow-x: auto;
+  }
+
+  .algo-graph-svg {
+    min-width: 600px;
+    min-height: 400px;
+  }
+
+  .algo-legend {
+    gap: 12px;
+    padding: 12px 16px;
+  }
+
+  .algo-legend-item {
+    font-size: 10px;
+  }
+
+  .algo-node-details {
+    padding: 14px 16px;
+  }
+
+  .algo-details-content {
+    grid-template-columns: 1fr 1fr;
   }
 }

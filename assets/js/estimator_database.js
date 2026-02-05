@@ -132,6 +132,7 @@ const DOM = {
     conceptImage: document.getElementById('conceptImage'),
     conceptImageInput: document.getElementById('conceptImageInput'),
     conceptImageContainer: document.getElementById('conceptImageContainer'),
+    conceptWastePercent: document.getElementById('conceptWastePercent'),
     btnCloseConceptModal: document.getElementById('btnCloseConceptModal'),
     btnCancelConcept: document.getElementById('btnCancelConcept'),
     btnSaveConcept: document.getElementById('btnSaveConcept'),
@@ -485,9 +486,17 @@ function populateCategoryFilter() {
 }
 
 function populateUnitFilter() {
+    console.log('[UNIT FILTER] Populating with', state.units.length, 'units');
+
     const select = DOM.filterUnit;
+    if (!select) {
+        console.error('[UNIT FILTER] DOM.filterUnit not found!');
+        return;
+    }
+
     select.innerHTML = '<option value="">All Units</option>';
     state.units.forEach(unit => {
+        console.log('[UNIT FILTER] Adding unit:', unit);
         select.innerHTML += `<option value="${unit.id_unit}">${escapeHtml(unit.unit_name)}</option>`;
     });
 
@@ -495,13 +504,21 @@ function populateUnitFilter() {
     const materialUnit = DOM.materialUnit;
     const conceptUnit = DOM.conceptUnit;
 
-    materialUnit.innerHTML = '<option value="">Select unit...</option>';
-    conceptUnit.innerHTML = '<option value="">Select unit...</option>';
+    if (materialUnit) {
+        materialUnit.innerHTML = '<option value="">Select unit...</option>';
+        state.units.forEach(unit => {
+            materialUnit.innerHTML += `<option value="${unit.id_unit}">${escapeHtml(unit.unit_name)}</option>`;
+        });
+        console.log('[UNIT FILTER] materialUnit populated with', materialUnit.options.length - 1, 'units');
+    }
 
-    state.units.forEach(unit => {
-        materialUnit.innerHTML += `<option value="${unit.id_unit}">${escapeHtml(unit.unit_name)}</option>`;
-        conceptUnit.innerHTML += `<option value="${unit.id_unit}">${escapeHtml(unit.unit_name)}</option>`;
-    });
+    if (conceptUnit) {
+        conceptUnit.innerHTML = '<option value="">Select unit...</option>';
+        state.units.forEach(unit => {
+            conceptUnit.innerHTML += `<option value="${unit.id_unit}">${escapeHtml(unit.unit_name)}</option>`;
+        });
+        console.log('[UNIT FILTER] conceptUnit populated with', conceptUnit.options.length - 1, 'units');
+    }
 }
 
 // ========================================
@@ -557,18 +574,28 @@ async function loadData() {
 
 async function loadLookups() {
     try {
+        console.log('[LOOKUPS] Fetching categories and units...');
         const [categoriesRes, unitsRes] = await Promise.all([
             API.fetchCategories(),
             API.fetchUnits()
         ]);
 
+        console.log('[LOOKUPS] Categories response:', categoriesRes);
+        console.log('[LOOKUPS] Units response:', unitsRes);
+
         state.categories = categoriesRes.data || [];
         state.units = unitsRes.data || [];
+
+        console.log('[LOOKUPS] state.categories:', state.categories.length, 'items');
+        console.log('[LOOKUPS] state.units:', state.units.length, 'items');
+        if (state.units.length > 0) {
+            console.log('[LOOKUPS] First unit:', state.units[0]);
+        }
 
         populateCategoryFilter();
         populateUnitFilter();
     } catch (error) {
-        console.error('Error loading lookups:', error);
+        console.error('[LOOKUPS] Error loading lookups:', error);
     }
 }
 

@@ -182,10 +182,332 @@
 
                             <div class="adu-section-divider"></div>
 
-                            <!-- STEP 5: Floor Plan Screenshot (Optional) -->
+                            <!-- STEP 5: Design Package -->
+                            <div class="adu-param-section locked" id="sectionDesignPackage">
+                                <div class="adu-param-header">
+                                    <span class="adu-param-step" id="stepDesignPackage">5</span>
+                                    <span class="adu-param-title">Design Package</span>
+                                </div>
+                                <p class="adu-param-subtitle">Select the design tier for finishes and materials</p>
+                                <div class="adu-input-row" style="margin-left: 40px;">
+                                    <div class="adu-select-field">
+                                        <select id="selectDesignPackage" class="adu-select-input">
+                                            <option value="">Select design package...</option>
+                                            <option value="basic">Basic</option>
+                                            <option value="standard">Standard</option>
+                                            <option value="high_end">High End</option>
+                                            <option value="custom">Custom</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="adu-section-divider"></div>
+
+                            <!-- STEP 6: Configuration -->
+                            <div class="adu-param-section locked" id="sectionConfiguration">
+                                <div class="adu-param-header">
+                                    <span class="adu-param-step" id="stepConfiguration">6</span>
+                                    <span class="adu-param-title">Configuration</span>
+                                </div>
+                                <p class="adu-param-subtitle">Number of bedrooms and bathrooms</p>
+                                <div class="adu-input-row adu-input-row-multi" style="margin-left: 40px;">
+                                    <div class="adu-input-field">
+                                        <label class="adu-input-label">Bedrooms</label>
+                                        <input type="number" id="inputBedrooms" class="adu-text-input adu-text-input-small" placeholder="0" min="0" max="10" step="1" />
+                                    </div>
+                                    <div class="adu-input-field">
+                                        <label class="adu-input-label">Bathrooms</label>
+                                        <input type="number" id="inputBathrooms" class="adu-text-input adu-text-input-small" placeholder="0" min="0" max="10" step="1" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="adu-section-divider"></div>
+
+                            <!-- STEP 7: Foundation Type -->
+                            <div class="adu-param-section locked" id="sectionFoundation">
+                                <div class="adu-param-header">
+                                    <span class="adu-param-step" id="stepFoundation">7</span>
+                                    <span class="adu-param-title">Foundation Type</span>
+                                </div>
+                                <p class="adu-param-subtitle">Select the foundation construction method</p>
+                                <div class="adu-input-row" style="margin-left: 40px;">
+                                    <div class="adu-select-field">
+                                        <select id="selectFoundation" class="adu-select-input">
+                                            <option value="">Select foundation type...</option>
+                                            <option value="slab_on_grade">Slab on Grade</option>
+                                            <option value="raised_foundation">Raised Foundation</option>
+                                            <option value="reinforced_foundation">Reinforced Foundation</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="adu-section-divider"></div>
+
+                            <!-- STEP 8: Land Surface -->
+                            <div class="adu-param-section locked" id="sectionLandSurface">
+                                <div class="adu-param-header">
+                                    <span class="adu-param-step" id="stepLandSurface">8</span>
+                                    <span class="adu-param-title">Land Surface</span>
+                                </div>
+                                <p class="adu-param-subtitle">Select the terrain type of the property</p>
+                                <div class="adu-input-row" style="margin-left: 40px;">
+                                    <div class="adu-select-field">
+                                        <select id="selectLandSurface" class="adu-select-input">
+                                            <option value="">Select land surface...</option>
+                                            <option value="flat_land">Flat Land</option>
+                                            <option value="hill_side">Hill Side</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="adu-section-divider"></div>
+
+                            <!-- STEP 9: Additional Options -->
+                            <div class="adu-param-section locked" id="sectionAdditionalOptions">
+                                <div class="adu-param-header">
+                                    <span class="adu-param-step" id="stepAdditionalOptions">9</span>
+                                    <span class="adu-param-title">Additional Options</span>
+                                </div>
+                                <p class="adu-param-subtitle">Select any additional features to include</p>
+                                <div class="adu-checkbox-grid" style="margin-left: 40px;">
+                                    <label class="adu-checkbox-card">
+                                        <input type="checkbox" id="chkPlansPermits" value="plans_permits" />
+                                        <span class="checkbox-box"></span>
+                                        <span class="checkbox-label">Plans And Permits</span>
+                                    </label>
+                                    <label class="adu-checkbox-card">
+                                        <input type="checkbox" id="chkSolarPanels" value="solar_panels" />
+                                        <span class="checkbox-box"></span>
+                                        <span class="checkbox-label">Solar Panels</span>
+                                    </label>
+                                    <label class="adu-checkbox-card">
+                                        <input type="checkbox" id="chkFireSprinklers" value="fire_sprinklers" />
+                                        <span class="checkbox-box"></span>
+                                        <span class="checkbox-label">Fire Sprinklers</span>
+                                    </label>
+                                    <label class="adu-checkbox-card">
+                                        <input type="checkbox" id="chkAppliances" value="appliances" />
+                                        <span class="checkbox-box"></span>
+                                        <span class="checkbox-label">Appliances</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="adu-section-divider"></div>
+
+                            <!-- STEP 10: Optional Measurable Features -->
+                            <div class="adu-param-section locked" id="sectionOptionalFeatures">
+                                <div class="adu-param-header">
+                                    <span class="adu-param-step" id="stepOptionalFeatures">10</span>
+                                    <span class="adu-param-title">Site & Finish Features <span class="adu-optional-badge">Optional</span></span>
+                                </div>
+                                <p class="adu-param-subtitle">Add measurable features for more accurate estimates</p>
+
+                                <div class="adu-optional-features-grid" style="margin-left: 40px;">
+
+                                    <!-- Retaining Wall -->
+                                    <div class="adu-feature-card" id="featureRetainingWall">
+                                        <label class="adu-feature-toggle">
+                                            <input type="checkbox" id="chkRetainingWall" />
+                                            <span class="feature-toggle-box"></span>
+                                            <span class="feature-toggle-label">Retaining Wall</span>
+                                        </label>
+                                        <div class="adu-feature-inputs hidden" id="inputsRetainingWall">
+                                            <div class="adu-input-row-compact">
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Length (ft)</label>
+                                                    <input type="number" id="inputRetainingWallFt" class="adu-text-input adu-text-input-small" placeholder="0" min="0" />
+                                                </div>
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Height</label>
+                                                    <select id="selectRetainingWallHeight" class="adu-select-input adu-select-small">
+                                                        <option value="low">Low (under 3ft)</option>
+                                                        <option value="medium" selected>Medium (3-5ft)</option>
+                                                        <option value="high">High (5-8ft)</option>
+                                                        <option value="extreme">Extreme (8ft+)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Kitchen Linear -->
+                                    <div class="adu-feature-card" id="featureKitchenLinear">
+                                        <label class="adu-feature-toggle">
+                                            <input type="checkbox" id="chkKitchenLinear" />
+                                            <span class="feature-toggle-box"></span>
+                                            <span class="feature-toggle-label">Kitchen Counters/Cabinets</span>
+                                        </label>
+                                        <div class="adu-feature-inputs hidden" id="inputsKitchenLinear">
+                                            <div class="adu-input-row-compact">
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Linear Feet</label>
+                                                    <input type="number" id="inputKitchenLinearFt" class="adu-text-input adu-text-input-small" placeholder="0" min="8" max="40" />
+                                                </div>
+                                                <span class="adu-input-hint">Tier based on Design Package</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Kitchen Island -->
+                                    <div class="adu-feature-card" id="featureKitchenIsland">
+                                        <label class="adu-feature-toggle">
+                                            <input type="checkbox" id="chkKitchenIsland" />
+                                            <span class="feature-toggle-box"></span>
+                                            <span class="feature-toggle-label">Kitchen Island</span>
+                                        </label>
+                                        <div class="adu-feature-inputs hidden" id="inputsKitchenIsland">
+                                            <div class="adu-input-row-compact">
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Size</label>
+                                                    <select id="selectKitchenIslandSize" class="adu-select-input adu-select-small">
+                                                        <option value="small">Small (3-4ft)</option>
+                                                        <option value="medium" selected>Medium (5-6ft)</option>
+                                                        <option value="large">Large (7-8ft+)</option>
+                                                        <option value="custom">Custom</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="adu-checkbox-row-sm">
+                                                <label class="adu-checkbox-inline">
+                                                    <input type="checkbox" id="chkIslandPlumbing" />
+                                                    <span>+ Sink</span>
+                                                </label>
+                                                <label class="adu-checkbox-inline">
+                                                    <input type="checkbox" id="chkIslandSeating" />
+                                                    <span>+ Seating</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Rooftop Deck -->
+                                    <div class="adu-feature-card" id="featureRooftopDeck">
+                                        <label class="adu-feature-toggle">
+                                            <input type="checkbox" id="chkRooftopDeck" />
+                                            <span class="feature-toggle-box"></span>
+                                            <span class="feature-toggle-label">Rooftop Deck</span>
+                                        </label>
+                                        <div class="adu-feature-inputs hidden" id="inputsRooftopDeck">
+                                            <div class="adu-input-row-compact">
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Sq Ft</label>
+                                                    <input type="number" id="inputRooftopDeckSqft" class="adu-text-input adu-text-input-small" placeholder="0" min="60" />
+                                                </div>
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Tier</label>
+                                                    <select id="selectRooftopDeckTier" class="adu-select-input adu-select-small">
+                                                        <option value="basic">Basic</option>
+                                                        <option value="standard" selected>Standard</option>
+                                                        <option value="premium">Premium</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="adu-checkbox-row-sm">
+                                                <label class="adu-checkbox-inline">
+                                                    <input type="checkbox" id="chkRooftopStructural" />
+                                                    <span>+ Structural Reinforcement</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Exterior Deck -->
+                                    <div class="adu-feature-card" id="featureExteriorDeck">
+                                        <label class="adu-feature-toggle">
+                                            <input type="checkbox" id="chkExteriorDeck" />
+                                            <span class="feature-toggle-box"></span>
+                                            <span class="feature-toggle-label">Exterior Deck</span>
+                                        </label>
+                                        <div class="adu-feature-inputs hidden" id="inputsExteriorDeck">
+                                            <div class="adu-input-row-compact">
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Sq Ft</label>
+                                                    <input type="number" id="inputExteriorDeckSqft" class="adu-text-input adu-text-input-small" placeholder="0" min="0" />
+                                                </div>
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Material</label>
+                                                    <select id="selectExteriorDeckMaterial" class="adu-select-input adu-select-small">
+                                                        <option value="wood">Wood</option>
+                                                        <option value="composite" selected>Composite</option>
+                                                        <option value="premium">Premium</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="adu-input-row-compact">
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Railing (ft)</label>
+                                                    <input type="number" id="inputDeckRailingFt" class="adu-text-input adu-text-input-small" placeholder="0" min="0" />
+                                                </div>
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Stairs (steps)</label>
+                                                    <input type="number" id="inputDeckStairs" class="adu-text-input adu-text-input-small" placeholder="0" min="0" />
+                                                </div>
+                                            </div>
+                                            <div class="adu-checkbox-row-sm">
+                                                <label class="adu-checkbox-inline">
+                                                    <input type="checkbox" id="chkDeckCovered" />
+                                                    <span>+ Covered/Pergola</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Landscaping -->
+                                    <div class="adu-feature-card" id="featureLandscape">
+                                        <label class="adu-feature-toggle">
+                                            <input type="checkbox" id="chkLandscape" />
+                                            <span class="feature-toggle-box"></span>
+                                            <span class="feature-toggle-label">Landscaping</span>
+                                        </label>
+                                        <div class="adu-feature-inputs hidden" id="inputsLandscape">
+                                            <div class="adu-input-row-compact">
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Area (sqft)</label>
+                                                    <input type="number" id="inputLandscapeSqft" class="adu-text-input adu-text-input-small" placeholder="0" min="0" />
+                                                </div>
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Tier</label>
+                                                    <select id="selectLandscapeTier" class="adu-select-input adu-select-small">
+                                                        <option value="minimal">Minimal</option>
+                                                        <option value="standard" selected>Standard</option>
+                                                        <option value="enhanced">Enhanced</option>
+                                                        <option value="premium">Premium</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="adu-input-row-compact">
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Hardscape (sqft)</label>
+                                                    <input type="number" id="inputHardscapeSqft" class="adu-text-input adu-text-input-small" placeholder="0" min="0" />
+                                                </div>
+                                                <div class="adu-input-field-sm">
+                                                    <label class="adu-input-label">Fence (ft)</label>
+                                                    <input type="number" id="inputFenceFt" class="adu-text-input adu-text-input-small" placeholder="0" min="0" />
+                                                </div>
+                                            </div>
+                                            <div class="adu-checkbox-row-sm">
+                                                <label class="adu-checkbox-inline">
+                                                    <input type="checkbox" id="chkIrrigation" />
+                                                    <span>+ Irrigation System</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <div class="adu-section-divider"></div>
+
+                            <!-- STEP 11: Floor Plan Screenshot (Optional) -->
                             <div class="adu-param-section locked" id="sectionScreenshot">
                                 <div class="adu-param-header">
-                                    <span class="adu-param-step" id="stepScreenshot">5</span>
+                                    <span class="adu-param-step" id="stepScreenshot">11</span>
                                     <span class="adu-param-title">Floor Plan Screenshot <span class="adu-optional-badge">Optional</span></span>
                                 </div>
                                 <p class="adu-param-subtitle">Upload floor plan images for AI-powered feature analysis</p>
@@ -206,10 +528,10 @@
 
                             <div class="adu-section-divider"></div>
 
-                            <!-- STEP 6: Cost Estimate Results -->
+                            <!-- STEP 12: Cost Estimate Results -->
                             <div class="adu-param-section locked" id="sectionResults">
                                 <div class="adu-param-header">
-                                    <span class="adu-param-step" id="stepResults">6</span>
+                                    <span class="adu-param-step" id="stepResults">12</span>
                                     <span class="adu-param-title">Cost Estimate</span>
                                 </div>
                                 <div class="adu-results-container" id="resultsContainer">
@@ -224,6 +546,39 @@
                                 <span class="summary-label">Selection</span>
                                 <div class="summary-tags" id="summaryTags">
                                     <span class="adu-summary-placeholder">Select ADU type to begin</span>
+                                </div>
+                            </div>
+
+                            <!-- ALGORITHM VISUALIZATION PANEL -->
+                            <div class="adu-algo-panel" id="algoPanel">
+                                <div class="adu-algo-header" id="algoPanelToggle">
+                                    <span class="algo-header-icon">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="5" r="3"/>
+                                            <circle cx="5" cy="19" r="3"/>
+                                            <circle cx="19" cy="19" r="3"/>
+                                            <line x1="12" y1="8" x2="5" y2="16"/>
+                                            <line x1="12" y1="8" x2="19" y2="16"/>
+                                        </svg>
+                                    </span>
+                                    <span class="algo-header-title">Algorithm Visualization</span>
+                                    <span class="algo-header-badge">Beta</span>
+                                    <span class="algo-header-toggle" id="algoPanelArrow">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="6 9 12 15 18 9"/>
+                                        </svg>
+                                    </span>
+                                </div>
+                                <div class="adu-algo-content hidden" id="algoPanelContent">
+                                    <div class="algo-graph-container" id="algoGraphContainer">
+                                        <!-- SVG graph rendered by JS -->
+                                    </div>
+                                    <div class="algo-legend" id="algoLegend">
+                                        <!-- Legend rendered by JS -->
+                                    </div>
+                                    <div class="algo-node-details hidden" id="algoNodeDetails">
+                                        <!-- Node details shown on click -->
+                                    </div>
                                 </div>
                             </div>
 

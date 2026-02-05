@@ -681,7 +681,7 @@
 
           <!-- Typing indicator -->
           <div class="arturito-widget-typing" id="arturito-widget-typing" style="display: none;">
-            <div class="arturito-widget-msg-avatar" style="background: linear-gradient(135deg, #3ecf8e, #10b981);">A</div>
+            <div class="arturito-widget-msg-avatar arturito-widget-msg-avatar--bot">A</div>
             <div class="arturito-widget-typing-dots">
               <span></span><span></span><span></span>
             </div>
@@ -1098,20 +1098,20 @@
     const errorClass = isError ? "arturito-widget-msg--error" : "";
     const roleClass = isUser ? "arturito-widget-msg--user" : "arturito-widget-msg--bot";
 
-    // Build avatar
+    // Build avatar - ring style matching Team page
     let avatarHtml;
     if (isUser) {
       const userPhoto = state.currentUser?.user_photo;
       const avatarColor = getAvatarColor(state.currentUser);
-      const initials = getInitials(state.currentUser?.user_name || "U");
+      const initials = getInitials(state.currentUser?.user_name || "?");
 
       if (userPhoto) {
-        avatarHtml = `<div class="arturito-widget-msg-avatar arturito-widget-msg-avatar--img" style="background-image: url('${escapeHtml(userPhoto)}')"></div>`;
+        avatarHtml = `<div class="arturito-widget-msg-avatar arturito-widget-msg-avatar--img" style="border-color: ${avatarColor}; background-image: url('${escapeHtml(userPhoto)}')"></div>`;
       } else {
-        avatarHtml = `<div class="arturito-widget-msg-avatar" style="background: ${avatarColor}">${initials}</div>`;
+        avatarHtml = `<div class="arturito-widget-msg-avatar" style="color: ${avatarColor}; border-color: ${avatarColor}">${initials}</div>`;
       }
     } else {
-      avatarHtml = `<div class="arturito-widget-msg-avatar" style="background: linear-gradient(135deg, #3ecf8e, #10b981);">A</div>`;
+      avatarHtml = `<div class="arturito-widget-msg-avatar arturito-widget-msg-avatar--bot">A</div>`;
     }
 
     // Build action buttons if applicable

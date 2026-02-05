@@ -1,0 +1,779 @@
+/* ================================
+   TEAM ORG CHART — Canvas-based Organizational Chart
+   Reuses visual patterns from Process Manager
+   ================================ */
+
+/* ================================
+   Page overrides when orgchart is active
+   ================================ */
+body.page-team.orgchart-active {
+    overflow: hidden;
+    height: 100vh;
+}
+
+body.page-team.orgchart-active .main-content {
+    padding: 0;
+    height: calc(100vh - 60px);
+    overflow: hidden;
+}
+
+body.page-team.orgchart-active .team-section {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* ================================
+   View Toggle (Cards / Org Chart)
+   ================================ */
+.team-view-toggle {
+    display: flex;
+    background: #111111;
+    border: 1px solid #1f1f1f;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.team-view-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: transparent;
+    border: none;
+    color: #666666;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.team-view-btn:hover {
+    color: #ededed;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.team-view-btn.active {
+    color: #3ecf8e;
+    background: rgba(62, 207, 142, 0.1);
+}
+
+.team-view-btn svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+/* ================================
+   Orgchart Container
+   ================================ */
+.orgchart-wrapper {
+    display: none;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+    background: #0d0d0d;
+}
+
+.orgchart-wrapper.visible {
+    display: flex;
+}
+
+/* Toolbar */
+.orgchart-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: #0d0d0d;
+    border-bottom: 1px solid #1f1f1f;
+    flex-shrink: 0;
+    gap: 12px;
+}
+
+.orgchart-toolbar-left {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.orgchart-toolbar-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e5e7eb;
+    margin: 0;
+}
+
+.orgchart-toolbar-subtitle {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.orgchart-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.orgchart-zoom-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: #111111;
+    border: 1px solid #1f1f1f;
+    border-radius: 6px;
+    color: #888888;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 14px;
+}
+
+.orgchart-zoom-btn:hover {
+    color: #ededed;
+    border-color: #2a2a2a;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.orgchart-zoom-level {
+    font-size: 11px;
+    color: #6b7280;
+    min-width: 36px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.orgchart-btn-fit {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid #1f1f1f;
+    border-radius: 6px;
+    color: #888;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.orgchart-btn-fit:hover {
+    color: #ededed;
+    border-color: #2a2a2a;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* ================================
+   Canvas Container
+   ================================ */
+.orgchart-canvas-container {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    cursor: grab;
+    background: #0d0d0d;
+}
+
+.orgchart-canvas-container:active {
+    cursor: grabbing;
+}
+
+.orgchart-canvas-container.connecting-mode {
+    cursor: crosshair;
+}
+
+/* ================================
+   Dot Grid Background
+   ================================ */
+.orgchart-grid {
+    position: absolute;
+    width: 8000px;
+    height: 8000px;
+    transform-origin: 0 0;
+    background-color: #0d0d0d;
+    background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.18) 1.2px, transparent 1.2px);
+    background-size: 32px 32px;
+    z-index: 1;
+}
+
+/* ================================
+   SVG Connections Layer
+   ================================ */
+.orgchart-connections-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.orgchart-connection-path {
+    fill: none;
+    stroke: #3ecf8e;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.orgchart-connection-path.animated {
+    stroke-dasharray: 8 4;
+    animation: orgchartFlowDash 0.8s linear infinite;
+}
+
+@keyframes orgchartFlowDash {
+    to {
+        stroke-dashoffset: -12px;
+    }
+}
+
+.orgchart-connection-endpoint {
+    fill: #3ecf8e;
+}
+
+/* Temp line while dragging new connection */
+.orgchart-temp-line {
+    stroke: #3ecf8e;
+    stroke-width: 2;
+    stroke-dasharray: 6 4;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* ================================
+   Snap Guides
+   ================================ */
+.orgchart-snap-guides {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 50;
+}
+
+.orgchart-snap-guide {
+    position: absolute;
+    background: #3ecf8e;
+    opacity: 0.7;
+    z-index: 51;
+}
+
+.orgchart-snap-guide.horizontal {
+    height: 1px;
+    left: 0;
+    right: 0;
+    box-shadow: 0 0 4px rgba(62, 207, 142, 0.8);
+}
+
+.orgchart-snap-guide.vertical {
+    width: 1px;
+    top: 0;
+    bottom: 0;
+    box-shadow: 0 0 4px rgba(62, 207, 142, 0.8);
+}
+
+/* ================================
+   Nodes Container
+   ================================ */
+.orgchart-nodes {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 3;
+}
+
+/* ================================
+   Org Chart Node
+   ================================ */
+.orgchart-node {
+    position: absolute;
+    width: 220px;
+    background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
+    border: 2px solid #1f1f1f;
+    border-radius: 12px;
+    padding: 18px 16px;
+    cursor: grab;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.orgchart-node:hover {
+    border-color: #3ecf8e;
+    box-shadow: 0 8px 32px rgba(62, 207, 142, 0.15);
+}
+
+.orgchart-node.dragging {
+    cursor: grabbing;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    border-color: #3ecf8e;
+    z-index: 100;
+}
+
+.orgchart-node.selected {
+    border-color: #3ecf8e;
+    box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.2), 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.orgchart-node.snapping {
+    box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.5), 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.orgchart-node.valid-drop-target {
+    border-color: rgba(62, 207, 142, 0.4);
+}
+
+/* Node internal layout */
+.orgchart-node-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 2px solid currentColor;
+    font-weight: 600;
+    font-size: 17px;
+    margin: 0 auto 10px;
+    color: #888;
+}
+
+.orgchart-node-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+.orgchart-node-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e5e7eb;
+    text-align: center;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.orgchart-node-role {
+    font-size: 11px;
+    font-weight: 500;
+    color: #3ecf8e;
+    text-align: center;
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.orgchart-node-seniority {
+    font-size: 10px;
+    color: #6b7280;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.orgchart-node-status {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #6b7280;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+.orgchart-node-status.is-active {
+    background: #3ecf8e;
+    box-shadow: 0 0 6px rgba(62, 207, 142, 0.6);
+}
+
+/* ================================
+   Connection Ports
+   ================================ */
+.orgchart-port {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #3a3a3a;
+    border: 2px solid #5a5a5a;
+    border-radius: 50%;
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    cursor: crosshair;
+    transition: all 0.15s ease;
+}
+
+.orgchart-node:hover .orgchart-port {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.orgchart-port:hover {
+    background: #3ecf8e;
+    border-color: #3ecf8e;
+    transform: scale(1.4);
+    box-shadow: 0 0 12px rgba(62, 207, 142, 0.8);
+}
+
+.orgchart-port.connected {
+    background: #3ecf8e;
+    border-color: #3ecf8e;
+    opacity: 1;
+}
+
+.orgchart-port.port-top {
+    top: -7px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.orgchart-port.port-bottom {
+    bottom: -7px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.orgchart-port.port-left {
+    left: -7px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.orgchart-port.port-right {
+    right: -7px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.orgchart-port.port-top:hover {
+    transform: translateX(-50%) scale(1.4);
+}
+.orgchart-port.port-bottom:hover {
+    transform: translateX(-50%) scale(1.4);
+}
+.orgchart-port.port-left:hover {
+    transform: translateY(-50%) scale(1.4);
+}
+.orgchart-port.port-right:hover {
+    transform: translateY(-50%) scale(1.4);
+}
+
+/* ================================
+   Minimap
+   ================================ */
+.orgchart-minimap {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    width: 160px;
+    background: rgba(17, 17, 17, 0.95);
+    border: 1px solid #1f1f1f;
+    border-radius: 10px;
+    overflow: hidden;
+    z-index: 500;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(8px);
+}
+
+.orgchart-minimap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: #0d0d0d;
+    border-bottom: 1px solid #1f1f1f;
+    cursor: pointer;
+}
+
+.orgchart-minimap-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+}
+
+.orgchart-minimap-body {
+    position: relative;
+    height: 90px;
+    padding: 6px;
+    overflow: hidden;
+}
+
+.orgchart-minimap-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.orgchart-minimap-viewport {
+    position: absolute;
+    border: 1.5px solid rgba(62, 207, 142, 0.6);
+    background: rgba(62, 207, 142, 0.08);
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* ================================
+   Header adjustments when orgchart active
+   ================================ */
+body.page-team.orgchart-active .section-header-row {
+    padding: 16px 20px;
+    margin-bottom: 0;
+    border-bottom: 1px solid #1f1f1f;
+    background: #0d0d0d;
+    flex-shrink: 0;
+}
+
+body.page-team.orgchart-active .team-board {
+    display: none !important;
+}
+
+/* ================================
+   Group Areas (behind nodes)
+   ================================ */
+.orgchart-groups {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.orgchart-group {
+    position: absolute;
+    border-radius: 12px;
+    border: 1.5px dashed rgba(255, 255, 255, 0.12);
+    min-width: 80px;
+    min-height: 60px;
+    cursor: grab;
+    user-select: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.orgchart-group:hover {
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.orgchart-group.dragging {
+    cursor: grabbing;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.orgchart-group.snapping {
+    box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.4);
+}
+
+.orgchart-group.drawing {
+    pointer-events: none;
+}
+
+/* Group resize handles */
+.orgchart-group-resize {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.orgchart-group:hover .orgchart-group-resize {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.orgchart-group-resize:hover {
+    background: rgba(62, 207, 142, 0.3);
+    border-color: #3ecf8e;
+}
+
+.orgchart-group-resize.handle-se {
+    right: -6px;
+    bottom: -6px;
+    cursor: nwse-resize;
+}
+
+.orgchart-group-resize.handle-sw {
+    left: -6px;
+    bottom: -6px;
+    cursor: nesw-resize;
+}
+
+.orgchart-group-resize.handle-ne {
+    right: -6px;
+    top: -6px;
+    cursor: nesw-resize;
+}
+
+.orgchart-group-resize.handle-nw {
+    left: -6px;
+    top: -6px;
+    cursor: nwse-resize;
+}
+
+/* Group label (top-right) */
+.orgchart-group-label {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    cursor: text;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background 0.15s ease, color 0.15s ease;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.orgchart-group:hover .orgchart-group-label {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.orgchart-group-label:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.orgchart-group-label[contenteditable="true"] {
+    outline: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+    cursor: text;
+    min-width: 40px;
+}
+
+/* ================================
+   Context Menu
+   ================================ */
+.orgchart-ctx-menu {
+    position: fixed;
+    z-index: 10000;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 4px 0;
+    min-width: 180px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    font-size: 13px;
+    color: #e5e7eb;
+    display: none;
+}
+
+.orgchart-ctx-menu.visible {
+    display: block;
+}
+
+.orgchart-ctx-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: background 0.1s ease;
+    white-space: nowrap;
+}
+
+.orgchart-ctx-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.orgchart-ctx-item.danger {
+    color: #ef4444;
+}
+
+.orgchart-ctx-item.danger:hover {
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.orgchart-ctx-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+.orgchart-ctx-sep {
+    height: 1px;
+    background: #2a2a2a;
+    margin: 4px 0;
+}
+
+/* Context menu color swatches */
+.orgchart-ctx-colors {
+    display: flex;
+    gap: 6px;
+    padding: 8px 14px;
+    flex-wrap: wrap;
+}
+
+.orgchart-ctx-swatch {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.orgchart-ctx-swatch:hover {
+    transform: scale(1.2);
+}
+
+.orgchart-ctx-swatch.active {
+    border-color: #fff;
+}
+
+/* ================================
+   Drawing mode cursor
+   ================================ */
+.orgchart-canvas-container.drawing-mode {
+    cursor: crosshair;
+}
+
+/* Drawing preview rect */
+.orgchart-draw-preview {
+    position: absolute;
+    border: 2px dashed rgba(62, 207, 142, 0.6);
+    background: rgba(62, 207, 142, 0.06);
+    border-radius: 12px;
+    pointer-events: none;
+    z-index: 4;
+}
+
+/* ================================
+   Responsive
+   ================================ */
+@media (max-width: 900px) {
+    .orgchart-node {
+        width: 180px;
+        padding: 14px 12px;
+    }
+
+    .orgchart-minimap {
+        display: none;
+    }
+}

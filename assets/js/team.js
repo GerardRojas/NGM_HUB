@@ -64,6 +64,35 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchInput = document.getElementById("team-search-input");
   const pageLoadingOverlay = document.getElementById("pageLoadingOverlay");
 
+  // View toggle: cards vs orgchart
+  let currentView = "cards";
+  const btnViewCards = document.getElementById("btn-view-cards");
+  const btnViewOrgchart = document.getElementById("btn-view-orgchart");
+  let orgchartInitialized = false;
+
+  async function setView(view) {
+    currentView = view;
+    if (btnViewCards) btnViewCards.classList.toggle("active", view === "cards");
+    if (btnViewOrgchart) btnViewOrgchart.classList.toggle("active", view === "orgchart");
+
+    if (view === "orgchart") {
+      if (window.TeamOrgChart) {
+        if (!orgchartInitialized) {
+          await window.TeamOrgChart.init(usersStore);
+          orgchartInitialized = true;
+        } else {
+          window.TeamOrgChart.refresh(usersStore);
+        }
+        window.TeamOrgChart.show();
+      }
+    } else {
+      if (window.TeamOrgChart) window.TeamOrgChart.hide();
+    }
+  }
+
+  if (btnViewCards) btnViewCards.addEventListener("click", () => setView("cards"));
+  if (btnViewOrgchart) btnViewOrgchart.addEventListener("click", () => setView("orgchart"));
+
   if (!board) return;
 
   // Page loading with logo wait
@@ -368,6 +397,9 @@ document.addEventListener("DOMContentLoaded", () => {
       usersStore = Array.isArray(data) ? data.map(adaptUser) : [];
       if (keepQuery && searchInput) searchInput.value = currentQ;
       rerender();
+      if (orgchartInitialized && window.TeamOrgChart) {
+        window.TeamOrgChart.refresh(usersStore);
+      }
       if (isInitialLoad) hidePageLoading();
     } catch (err) {
       console.error("[TEAM] loadUsersFromApi failed:", err);

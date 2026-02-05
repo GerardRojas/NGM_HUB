@@ -276,20 +276,26 @@
   font-size: 12px;
   font-weight: 600;
   flex-shrink: 0;
-  color: white;
+  /* Ring style: transparent center, colored border */
+  background: transparent;
+  border: 2px solid currentColor;
+  color: #888;
 }
 
 .arturito-widget-msg--user .arturito-widget-msg-avatar {
-  /* Color set via inline style */
+  /* color and border-color set via inline style */
 }
 
-.arturito-widget-msg--bot .arturito-widget-msg-avatar {
-  background: linear-gradient(135deg, #3ecf8e, #10b981);
+.arturito-widget-msg-avatar--bot {
+  color: #10b981;
+  border-color: #10b981;
 }
 
 .arturito-widget-msg-avatar--img {
   background-size: cover;
   background-position: center;
+  border: 2px solid;
+  /* border-color set via inline style */
 }
 
 .arturito-widget-msg-content {

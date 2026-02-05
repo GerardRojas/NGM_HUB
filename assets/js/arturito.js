@@ -741,12 +741,23 @@
   // DATA LOADING
   // ─────────────────────────────────────────────────────────────────────────
 
+  function normalizeUser(user) {
+    return {
+      user_id: user.user_id || user.id,
+      user_name: user.username || user.user_name || user.name,
+      email: user.email,
+      user_role: user.user_role || user.role,
+      avatar_color: user.avatar_color,
+      user_photo: user.user_photo || user.photo || user.avatar,
+    };
+  }
+
   async function loadCurrentUser() {
     try {
       // First try to get user from localStorage (set by login.js)
       const userStr = localStorage.getItem('ngmUser');
       if (userStr) {
-        state.currentUser = JSON.parse(userStr);
+        state.currentUser = normalizeUser(JSON.parse(userStr));
         console.log("[Arturito] Current user from localStorage:", state.currentUser.user_name);
         return;
       }
@@ -755,7 +766,7 @@
       const res = await fetch(`${API_BASE}/auth/me`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to load user");
       const data = await res.json();
-      state.currentUser = data.user || data;
+      state.currentUser = normalizeUser(data.user || data);
       console.log("[Arturito] Current user from API:", state.currentUser.user_name);
     } catch (err) {
       console.warn("[Arturito] Failed to load current user:", err);
@@ -1094,23 +1105,21 @@
     const errorClass = isError ? "arturito-message--error" : "";
     const roleClass = isUser ? "arturito-message--user" : "arturito-message--bot";
 
-    // Build avatar HTML - for user messages use their photo/color, for bot use green "A"
+    // Build avatar HTML - ring style matching Team page
     let avatarHtml;
     if (isUser) {
       const userPhoto = state.currentUser?.user_photo;
       const avatarColor = getAvatarColor(state.currentUser);
-      const initials = getInitials(state.currentUser?.user_name || msg.user_name || "Tu");
+      const initials = getInitials(state.currentUser?.user_name || msg.user_name || "?");
 
       if (userPhoto) {
-        // User has a photo - use image avatar
-        avatarHtml = `<div class="arturito-message-avatar arturito-message-avatar--img" style="background-image: url('${escapeHtml(userPhoto)}')"></div>`;
+        avatarHtml = `<div class="arturito-message-avatar arturito-message-avatar--img" style="border-color: ${avatarColor}; background-image: url('${escapeHtml(userPhoto)}')"></div>`;
       } else {
-        // Use initials with user's color
-        avatarHtml = `<div class="arturito-message-avatar" style="background: ${avatarColor}">${initials}</div>`;
+        avatarHtml = `<div class="arturito-message-avatar" style="color: ${avatarColor}; border-color: ${avatarColor}">${initials}</div>`;
       }
     } else {
-      // Bot avatar - green "A"
-      avatarHtml = `<div class="arturito-message-avatar">A</div>`;
+      // Bot avatar - green ring "A"
+      avatarHtml = `<div class="arturito-message-avatar arturito-message-avatar--bot">A</div>`;
     }
 
     return `

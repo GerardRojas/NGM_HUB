@@ -13,6 +13,13 @@
     return;
   }
 
+  // Prevent double initialization (fixes memory leak from duplicate listeners)
+  if (wrapper._pipelineInteractionsInitialized) {
+    console.log("[PIPELINE-INTERACTIONS] Already initialized, skipping.");
+    return;
+  }
+  wrapper._pipelineInteractionsInitialized = true;
+
   // Debug: verify wrapper is correct element
   console.log("[PIPELINE-INTERACTIONS] Wrapper id:", wrapper.id);
   console.log("[PIPELINE-INTERACTIONS] Wrapper className:", wrapper.className);
@@ -979,6 +986,11 @@
       // Don't open modal if clicking on a link
       if (e.target.closest("a")) return;
 
+      // Close any active editor before opening modal (prevents orphan state)
+      if (activeEditor) {
+        closeActiveEditor(true);
+      }
+
       // Get current link values from row dataset
       const docsLink = tr?.dataset?.docsLink || '';
       const resultLink = tr?.dataset?.resultLink || '';
@@ -997,8 +1009,8 @@
     handleCellClick(td, tr, colKey, taskId);
   });
 
-  // Cerrar editor al hacer click fuera
-  document.addEventListener("click", (e) => {
+  // Named handlers for document listeners (allows cleanup)
+  function handleDocumentClick(e) {
     if (!activeEditor) return;
     // Don't close if clicking on picker dropdowns (they live outside wrapper)
     if (e.target.closest(".pm-people-dropdown") ||
@@ -1008,14 +1020,17 @@
     if (!wrapper.contains(e.target)) {
       closeActiveEditor(true);
     }
-  });
+  }
 
-  // Cerrar con Escape global
-  document.addEventListener("keydown", (e) => {
+  function handleDocumentKeydown(e) {
     if (e.key === "Escape" && activeEditor) {
       closeActiveEditor(false);
     }
-  });
+  }
+
+  // Register document listeners
+  document.addEventListener("click", handleDocumentClick);
+  document.addEventListener("keydown", handleDocumentKeydown);
 
   // ================================
   // DOUBLE CLICK TO OPEN EDIT MODAL
@@ -1089,6 +1104,19 @@
       finished_status: ds.finishedStatusId || '',
     };
   }
+
+  // Cleanup function to remove document listeners (call when navigating away)
+  function destroy() {
+    document.removeEventListener("click", handleDocumentClick);
+    document.removeEventListener("keydown", handleDocumentKeydown);
+    if (wrapper) {
+      wrapper._pipelineInteractionsInitialized = false;
+    }
+    console.log("[PIPELINE-INTERACTIONS] Destroyed - document listeners removed");
+  }
+
+  // Expose destroy function for SPA navigation cleanup
+  window.PM_TableInteractions = { destroy };
 
   // Final debug log
   console.log("[PIPELINE-INTERACTIONS] Script fully loaded and initialized!");

@@ -3,7 +3,7 @@
 **Creado:** 2026-02-05
 **Estado General:** EN PROGRESO
 **Total Issues:** 39
-**Resueltos:** 6
+**Resueltos:** 12
 
 ---
 
@@ -19,7 +19,7 @@
 - **Test:** Editar colaboradores en tabla inline, verificar que se guarde en backend
 
 ### [P1-02] Memory Leak - Document Listeners en Table Interactions
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** CRITICA
 - **Archivo:** `assets/js/pipeline_table_interactions.js`
 - **Lineas:** 992-1009
@@ -28,7 +28,7 @@
 - **Test:** Navegar a Pipeline multiples veces, verificar en DevTools que no hay listeners duplicados
 
 ### [P1-03] Memory Leak - Document Listeners en PeoplePicker
-- **Estado:** [x] PARCIAL (destroy() agregado pero no siempre se llama)
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** CRITICA
 - **Archivo:** `assets/js/pipeline_people_picker.js`
 - **Lineas:** 295-312
@@ -37,7 +37,7 @@
 - **Test:** Abrir/cerrar modal New Task 10 veces, verificar memoria
 
 ### [P1-04] Memory Leak - Document Listeners en CatalogPicker
-- **Estado:** [x] PARCIAL (destroy() agregado pero no siempre se llama)
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** CRITICA
 - **Archivo:** `assets/js/pipeline_catalog_picker.js`
 - **Lineas:** 317-330
@@ -68,7 +68,7 @@
 ## PRIORIDAD 2: SEGURIDAD
 
 ### [P2-01] Validacion de URL Insuficiente
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** MEDIA-ALTA
 - **Archivo:** `assets/js/pipeline_links_modal.js`
 - **Lineas:** 160-167 (isValidUrl)
@@ -121,7 +121,7 @@
 ## PRIORIDAD 4: ESTADO E INCONSISTENCIAS
 
 ### [P4-01] activeEditor State Puede Quedar Huerfano
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** MEDIA
 - **Archivo:** `assets/js/pipeline_table_interactions.js`
 - **Lineas:** 126-166
@@ -241,7 +241,7 @@
 - **Test:** N/A (UX review)
 
 ### [P6-05] Null Check Faltante en getCellValue
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** MEDIA
 - **Archivo:** `assets/js/pipeline.js`
 - **Lineas:** 207
@@ -349,4 +349,10 @@
 | 2026-02-05 | P1-06 | COMPLETADO | Agregado destroy() a managerPicker en close() de edit_task_ui |
 | 2026-02-05 | P3-01 | COMPLETADO | Agregado destroy() a todos los pickers en close() de new_task_ui |
 | 2026-02-05 | P3-02 | COMPLETADO | Agregado destroy() a todos los pickers en close() de edit_task_ui |
+| 2026-02-05 | P2-01 | COMPLETADO | isValidUrl ahora solo acepta http:// y https:// |
+| 2026-02-05 | P1-02 | COMPLETADO | Init guard, named handlers, destroy() expuesto en window.PM_TableInteractions |
+| 2026-02-05 | P1-03 | COMPLETADO | destroy() ya existia, ahora se llama desde P3-01, P3-02 y table_interactions |
+| 2026-02-05 | P1-04 | COMPLETADO | destroy() ya existia, ahora se llama desde P3-01, P3-02 y table_interactions |
+| 2026-02-05 | P6-05 | COMPLETADO | Guard clause if (!task) return "-" en getCellValue |
+| 2026-02-05 | P4-01 | COMPLETADO | closeActiveEditor() antes de abrir links modal |
 

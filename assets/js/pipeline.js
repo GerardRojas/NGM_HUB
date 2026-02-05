@@ -205,6 +205,8 @@
      * Gets the cell value for a specific column key
      */
     getCellValue(task, key) {
+      // Guard clause for null/undefined task
+      if (!task) return "-";
       const t = task;
 
       switch (key) {

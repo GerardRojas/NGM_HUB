@@ -376,12 +376,18 @@
     expenses.forEach(expense => {
       totalExpensesCount++;
 
+      // Filter: Skip soft-deleted expenses (status = 'review')
+      if (expense.status === 'review') {
+        skippedExpensesCount++;
+        return;
+      }
+
       // Filter: Only include expenses that are authorized
       const isAuthorized = expense.auth_status === true;
 
       if (!isAuthorized) {
         skippedExpensesCount++;
-        console.log('[BUDGET_VS_ACTUALS] ⚠ Skipping unauthorized expense:', {
+        console.log('[BUDGET_VS_ACTUALS] Skipping unauthorized expense:', {
           expense_id: expense.expense_id,
           description: expense.LineDescription,
           amount: expense.Amount || expense.amount,

@@ -210,9 +210,9 @@
         return;
       }
 
-      // Load expenses (actuals) for project - authorized only
+      // Load expenses (actuals) for project - authorized only, exclude soft-deleted
       const expensesRes = await apiGet(`/expenses/?project=${projectId}`);
-      const expenses = (expensesRes.data || []).filter(e => e.auth_status === true);
+      const expenses = (expensesRes.data || []).filter(e => e.auth_status === true && e.status !== 'review');
 
       // Group budgets by account
       const budgetByAccount = {};

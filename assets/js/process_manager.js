@@ -1176,7 +1176,7 @@
             const res = await fetch(`${API_BASE}/permissions/roles`);
             if (res.ok) {
                 const data = await res.json();
-                state.roles = data.roles || data || [];
+                state.roles = data.data || data.roles || [];
                 console.log('[PROCESS-MANAGER] Loaded', state.roles.length, 'roles');
                 populateRoleDropdown();
             }

@@ -7781,7 +7781,10 @@
 
       // If we have expected total from bills table, compare with actual
       if (billData.expected_total) {
-        const actualTotal = billExpenses.reduce((sum, exp) => sum + (parseFloat(exp.Amount) || 0), 0);
+        const actualTotal = billExpenses.reduce((sum, exp) => {
+          if (exp.status === 'review') return sum;
+          return sum + (parseFloat(exp.Amount) || 0);
+        }, 0);
         const expectedTotal = parseFloat(billData.expected_total);
 
         if (Math.abs(actualTotal - expectedTotal) < 0.01) {
@@ -7834,7 +7837,10 @@
     }
 
     if (billMetadata?.expected_total) {
-      const actualTotal = billExpenses.reduce((sum, exp) => sum + (parseFloat(exp.Amount) || 0), 0);
+      const actualTotal = billExpenses.reduce((sum, exp) => {
+        if (exp.status === 'review') return sum;
+        return sum + (parseFloat(exp.Amount) || 0);
+      }, 0);
       const expectedTotal = parseFloat(billMetadata.expected_total);
 
       if (Math.abs(actualTotal - expectedTotal) < 0.01) {

@@ -2040,6 +2040,24 @@ textarea.pm-inline-editor {
   text-align: center;
   color: rgba(255, 255, 255, 0.4);
   font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.pm-people-loading::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  animation: pm-spinner 0.8s linear infinite;
+}
+
+@keyframes pm-spinner {
+  to { transform: rotate(360deg); }
 }
 
 /* ==========================================
@@ -2368,6 +2386,20 @@ textarea.pm-inline-editor {
   text-align: center;
   color: rgba(255, 255, 255, 0.4);
   font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.pm-catalog-loading::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  animation: pm-spinner 0.8s linear infinite;
 }
 
 /* ==========================================

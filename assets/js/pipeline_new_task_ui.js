@@ -297,6 +297,8 @@
     if (missing.length) {
       if (window.Toast) {
         Toast.warning('Missing Fields', 'Please fill in: ' + missing.join(', '));
+      } else {
+        console.warn('[NewTask] Missing fields:', missing.join(', '));
       }
       return null;
     }
@@ -358,6 +360,8 @@
 
         if (window.Toast) {
           Toast.success('Task Created', 'Task created successfully!');
+        } else {
+          console.log('[NewTask] Task created successfully');
         }
         close();
 
@@ -370,6 +374,8 @@
         console.error("[NEW TASK] Error:", err);
         if (window.Toast) {
           Toast.error('Create Failed', 'Error creating task.', { details: err.message });
+        } else {
+          console.warn('[NewTask] Create failed:', err.message);
         }
       } finally {
         btn.disabled = false;

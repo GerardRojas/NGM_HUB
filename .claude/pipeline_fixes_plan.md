@@ -3,7 +3,7 @@
 **Creado:** 2026-02-05
 **Estado General:** EN PROGRESO
 **Total Issues:** 39
-**Resueltos:** 18
+**Resueltos:** 23
 
 ---
 
@@ -77,13 +77,13 @@
 - **Test:** Intentar guardar `javascript:alert(1)` como link
 
 ### [P2-02] XSS Potencial en Links Display
-- **Estado:** [ ] PENDIENTE
-- **Severidad:** MEDIA
+- **Estado:** [x] REVISADO - BAJO RIESGO (2026-02-05)
+- **Severidad:** BAJA (reclasificado)
 - **Archivo:** `assets/js/pipeline.js`
 - **Lineas:** 321-330
-- **Problema:** Inline onclick handler es code smell
-- **Solucion:** Usar event delegation en vez de inline handlers
-- **Test:** Inspeccionar HTML generado para links
+- **Analisis:** URLs ya escapados con Utils.escapeHtml(). El onclick="event.stopPropagation()" es codigo estatico sin variables de usuario. No hay XSS real.
+- **Conclusion:** Code smell menor, no vulnerabilidad. Event delegation seria mas limpio pero funcionalidad es correcta. Considerar para refactoring futuro.
+- **Test:** Verificado que URLs se escapan correctamente
 
 ---
 
@@ -108,12 +108,11 @@
 - **Test:** Mismo que P3-01
 
 ### [P3-03] Dropdown Positioning Styles No Se Limpian
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** BAJA
-- **Archivo:** `assets/js/pipeline_catalog_picker.js`
-- **Lineas:** 382-395
+- **Archivos:** pipeline_catalog_picker.js, pipeline_people_picker.js
 - **Problema:** position: fixed y estilos inline persisten en DOM detached
-- **Solucion:** Limpiar estilos en close() y destroy()
+- **Solucion:** destroy() ahora llama a close() primero para limpiar estilos
 - **Test:** Inspeccionar DOM despues de cerrar picker
 
 ---
@@ -160,30 +159,29 @@
 ## PRIORIDAD 5: UX
 
 ### [P5-01] Sin Estado de Carga en Pickers Lentos
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** BAJA
-- **Archivos:** people_picker.js, catalog_picker.js
+- **Archivos:** pipeline_styles.css (.pm-people-loading, .pm-catalog-loading)
 - **Problema:** Solo "Loading..." sin indicador de progreso
-- **Solucion:** Agregar spinner o skeleton loader
+- **Solucion:** Agregado spinner CSS animado con ::before pseudo-element
 - **Test:** Simular latencia, verificar UX
 
 ### [P5-02] Toast Fallback Faltante
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** BAJA
-- **Archivo:** `assets/js/pipeline_new_task_ui.js`
-- **Lineas:** 291-292
+- **Archivos:** pipeline_new_task_ui.js, pipeline_edit_task_ui.js, pipeline_table_interactions.js, pipeline_automations.js, pipeline_links_modal.js
 - **Problema:** Si Toast no existe, error silencioso
-- **Solucion:** Agregar console.warn como fallback
+- **Solucion:** Agregado console.warn/log como fallback en todos los archivos
 - **Test:** Eliminar Toast, verificar que haya feedback en consola
 
 ### [P5-03] Date Picker Blur vs Change Confuso
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** BAJA
 - **Archivo:** `assets/js/pipeline_table_interactions.js`
-- **Lineas:** 434-440
+- **Lineas:** 440-468 (createDateEditor)
 - **Problema:** Usuario no sabe si cambio se guardo
-- **Solucion:** Agregar feedback visual mas claro
-- **Test:** Abrir date picker, cerrar sin seleccionar, verificar feedback
+- **Solucion:** Guardar valor original, solo guardar si realmente cambio (element.value !== originalValue)
+- **Test:** Abrir date picker, cerrar sin cambiar, verificar que no hay flash de "saving"
 
 ### [P5-04] Sin Undo para Ediciones Inline
 - **Estado:** [ ] PENDIENTE
@@ -361,4 +359,9 @@
 | 2026-02-05 | P4-02 | COMPLETADO | clearCache() expuesto en window.PM_PeoplePicker |
 | 2026-02-05 | P4-03 | COMPLETADO | pluralMap para cache keys correctos (companies, priorities) |
 | 2026-02-05 | P4-04 | COMPLETADO | .catch() agregado a todas las llamadas a fetchPipeline |
+| 2026-02-05 | P5-02 | COMPLETADO | Toast fallback con console.warn en todos los archivos pipeline |
+| 2026-02-05 | P5-01 | COMPLETADO | Spinner CSS animado para .pm-people-loading y .pm-catalog-loading |
+| 2026-02-05 | P3-03 | COMPLETADO | destroy() llama a close() para limpiar estilos inline |
+| 2026-02-05 | P2-02 | REVISADO | No XSS real (URLs escapados, onclick estatico), reclasificado a bajo riesgo |
+| 2026-02-05 | P5-03 | COMPLETADO | Date picker solo guarda si valor realmente cambio |
 

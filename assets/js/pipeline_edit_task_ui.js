@@ -555,6 +555,8 @@
     if (!payload.task_description) {
       if (window.Toast) {
         Toast.warning('Missing Fields', 'Task description is required.');
+      } else {
+        console.warn('[EditTask] Missing: Task description is required');
       }
       return null;
     }
@@ -562,6 +564,8 @@
     if (!ownerUser) {
       if (window.Toast) {
         Toast.warning('Missing Fields', 'Owner is required.');
+      } else {
+        console.warn('[EditTask] Missing: Owner is required');
       }
       return null;
     }
@@ -602,6 +606,8 @@
 
       if (window.Toast) {
         Toast.success('Task Updated', 'Changes saved successfully!');
+      } else {
+        console.log('[EditTask] Task updated successfully');
       }
 
       close();
@@ -615,6 +621,8 @@
       console.error('[EditTask] Error:', err);
       if (window.Toast) {
         Toast.error('Save Failed', 'Error saving changes.', { details: err.message });
+      } else {
+        console.warn('[EditTask] Save failed:', err.message);
       }
     } finally {
       if (btn) {
@@ -657,6 +665,8 @@
 
       if (window.Toast) {
         Toast.success('Task Deleted', 'Task has been removed.');
+      } else {
+        console.log('[EditTask] Task deleted successfully');
       }
 
       close();
@@ -670,6 +680,8 @@
       console.error('[EditTask] Delete error:', err);
       if (window.Toast) {
         Toast.error('Delete Failed', 'Error deleting task.', { details: err.message });
+      } else {
+        console.warn('[EditTask] Delete failed:', err.message);
       }
     } finally {
       if (btn) {

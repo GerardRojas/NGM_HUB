@@ -573,6 +573,10 @@
 
     destroy() {
       console.log('[CatalogPicker] destroy() called');
+      // Close dropdown first to clean up positioning styles
+      if (this.isOpen) {
+        this.close();
+      }
       // Remove document event listeners to prevent memory leaks and interference
       if (this._onDocumentClick) {
         document.removeEventListener('click', this._onDocumentClick);

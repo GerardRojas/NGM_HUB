@@ -89,6 +89,8 @@
     if (docsLink && !isValidUrl(docsLink)) {
       if (window.Toast) {
         Toast.warning('Invalid URL', 'Documentation link is not a valid URL');
+      } else {
+        console.warn('[LinksModal] Invalid docs link URL');
       }
       return;
     }
@@ -96,6 +98,8 @@
     if (resultLink && !isValidUrl(resultLink)) {
       if (window.Toast) {
         Toast.warning('Invalid URL', 'Result link is not a valid URL');
+      } else {
+        console.warn('[LinksModal] Invalid result link URL');
       }
       return;
     }
@@ -147,6 +151,8 @@
 
       if (window.Toast) {
         Toast.success('Links Saved', 'Task links updated successfully!');
+      } else {
+        console.log('[LinksModal] Links saved successfully');
       }
 
       close();
@@ -160,6 +166,8 @@
       console.error('[LinksModal] Error:', err);
       if (window.Toast) {
         Toast.error('Save Failed', 'Error saving links.', { details: err.message });
+      } else {
+        console.warn('[LinksModal] Save failed:', err.message);
       }
     } finally {
       if (btn) {

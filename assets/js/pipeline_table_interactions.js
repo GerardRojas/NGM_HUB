@@ -267,6 +267,8 @@
       setTimeout(() => td.classList.remove("pm-cell-error"), 2000);
       if (window.Toast) {
         Toast.error('Save Failed', 'Error saving field.', { details: err.message });
+      } else {
+        console.warn('[Pipeline] Save failed:', err.message);
       }
     }
   }
@@ -442,17 +444,23 @@
     element.type = "date";
 
     // Convertir valor actual a formato YYYY-MM-DD
+    let originalValue = '';
     if (currentValue && currentValue !== "-") {
       const dateStr = currentValue.split("T")[0];
       element.value = dateStr;
+      originalValue = dateStr;
     }
 
     element.addEventListener("blur", () => {
-      setTimeout(() => closeActiveEditor(true), 100);
+      // Only save if value actually changed
+      const hasChanged = element.value !== originalValue;
+      setTimeout(() => closeActiveEditor(hasChanged), 100);
     });
 
     element.addEventListener("change", () => {
-      closeActiveEditor(true);
+      // Only save if value actually changed
+      const hasChanged = element.value !== originalValue;
+      closeActiveEditor(hasChanged);
     });
 
     element.addEventListener("keydown", (e) => {

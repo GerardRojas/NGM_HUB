@@ -292,6 +292,8 @@
       if (enabledIds.length === 0) {
         if (window.Toast) {
           Toast.warning('No Automations', 'Enable at least one automation first.');
+        } else {
+          console.warn('[AUTOMATIONS] No automations enabled');
         }
         return;
       }
@@ -320,6 +322,10 @@
         } else {
           Toast.info('Automations Complete', 'No new tasks needed.');
         }
+      } else {
+        const created = result.tasks_created || 0;
+        const updated = result.tasks_updated || 0;
+        console.log(`[AUTOMATIONS] Complete: ${created} created, ${updated} updated`);
       }
 
       // Refresh status and pipeline
@@ -334,6 +340,8 @@
       console.error('[AUTOMATIONS] Error running:', err);
       if (window.Toast) {
         Toast.error('Automation Failed', err.message);
+      } else {
+        console.warn('[AUTOMATIONS] Run failed:', err.message);
       }
     } finally {
       if (btn) {

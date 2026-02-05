@@ -293,11 +293,20 @@
   // ================================
   function renderPersonHtml(name) {
     const raw = String(name || "").trim();
-    const safeName = escapeHtml(raw || "-");
-    const initial = (raw || "-")[0]?.toUpperCase() || "?";
 
+    // Empty/placeholder state - show gray avatar
+    if (!raw || raw === "-") {
+      return `
+        <span class="pm-person pm-person--empty" title="Click to assign">
+          <span class="pm-avatar pm-avatar--placeholder"></span>
+        </span>
+      `;
+    }
+
+    const safeName = escapeHtml(raw);
+    const initial = raw[0]?.toUpperCase() || "?";
     const hue = hashStringToHue(raw.toLowerCase());
-    const color = raw && raw !== "-" ? `hsl(${hue} 70% 45%)` : "#666";
+    const color = `hsl(${hue} 70% 45%)`;
 
     return `
       <span class="pm-person" title="${safeName}">
@@ -311,7 +320,11 @@
   // Color formula matches Team Management: hsl(hue 70% 45%)
   function renderMultiplePeopleHtml(namesStr) {
     if (!namesStr || namesStr === "-") {
-      return `<span class="pm-person-empty">-</span>`;
+      return `
+        <span class="pm-person pm-person--empty" title="Click to assign">
+          <span class="pm-avatar pm-avatar--placeholder"></span>
+        </span>
+      `;
     }
 
     // Parse comma-separated names

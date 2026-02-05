@@ -1040,6 +1040,37 @@
   font-size: 12px;
 }
 
+/* Placeholder avatar - gray circle for empty person fields */
+.pm-person--empty {
+  cursor: pointer;
+}
+
+.pm-avatar--placeholder {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  display: grid;
+  place-items: center;
+}
+
+.pm-avatar--placeholder::before {
+  content: "+";
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.pm-person--empty:hover .pm-avatar--placeholder {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.pm-person--empty:hover .pm-avatar--placeholder::before {
+  color: rgba(255, 255, 255, 0.5);
+}
+
 /* Stacked avatars for multiple people */
 .pm-people-stack {
   display: flex;
@@ -1625,13 +1656,50 @@ textarea.pm-inline-editor {
   width: 100%;
 }
 
-/* Inline people trigger - button-like appearance */
+/* Inline people trigger - minimal but functional */
 .pm-inline-people-picker .pm-people-trigger {
-  border: 1px solid transparent;
-  background: transparent;
-  box-shadow: none;
-  padding: 2px 6px;
-  min-height: 28px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 4px !important;
+  min-height: 30px !important;
+  min-width: 100px !important;
+  border-radius: 4px !important;
+}
+
+.pm-inline-people-picker .pm-people-trigger:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.pm-inline-people-picker .pm-people-trigger:focus,
+.pm-inline-people-picker .pm-people-trigger:focus-within,
+.pm-inline-people-picker .pm-people-trigger.is-open {
+  border: none !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+}
+
+/* Show placeholder avatar when no selection in inline mode */
+.pm-inline-people-picker .pm-people-trigger-placeholder {
+  display: flex !important;
+  align-items: center;
+  gap: 0;
+  color: transparent !important;
+  font-size: 0 !important;
+}
+
+.pm-inline-people-picker .pm-people-trigger-placeholder::before {
+  content: "+";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 14px;
 }
 
 .pm-inline-people-picker .pm-people-dropdown {
@@ -1642,29 +1710,11 @@ textarea.pm-inline-editor {
   position: fixed !important;
 }
 
-/* Hide search for inline pickers - make them act like buttons */
-.pm-inline-people-picker .pm-people-search-wrap {
-  display: none !important;
-}
-
-.pm-inline-people-picker .pm-people-footer {
-  display: none !important;
-}
-
-/* Hide section header for cleaner inline dropdown */
+/* Hide search, footer, header for inline pickers */
+.pm-inline-people-picker .pm-people-search-wrap,
+.pm-inline-people-picker .pm-people-footer,
 .pm-inline-people-picker .pm-people-section-header {
   display: none !important;
-}
-
-.pm-inline-people-picker .pm-people-trigger:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.pm-inline-people-picker .pm-people-trigger.is-open {
-  border-color: #3ecf8e;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: none;
 }
 
 /* Trigger button (shows selected users or placeholder) */
@@ -2007,13 +2057,38 @@ textarea.pm-inline-editor {
   width: 100%;
 }
 
-/* Inline catalog trigger - button-like appearance */
+/* Inline catalog trigger - minimal but functional */
 .pm-inline-catalog-picker .pm-catalog-trigger {
-  border: 1px solid transparent;
-  background: transparent;
-  box-shadow: none;
-  padding: 2px 6px;
-  min-height: 28px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 4px !important;
+  min-height: 30px !important;
+  min-width: 80px !important;
+  border-radius: 4px !important;
+}
+
+.pm-inline-catalog-picker .pm-catalog-trigger:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.pm-inline-catalog-picker .pm-catalog-trigger:focus,
+.pm-inline-catalog-picker .pm-catalog-trigger:focus-within,
+.pm-inline-catalog-picker .pm-catalog-trigger.is-open {
+  border: none !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: none !important;
+}
+
+/* Hide arrow in inline mode */
+.pm-inline-catalog-picker .pm-catalog-trigger-arrow {
+  display: none !important;
+}
+
+/* Show minimal placeholder when no selection in inline mode */
+.pm-inline-catalog-picker .pm-catalog-trigger-placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+  font-size: 12px !important;
 }
 
 .pm-inline-catalog-picker .pm-catalog-dropdown {
@@ -2024,20 +2099,9 @@ textarea.pm-inline-editor {
   position: fixed !important;
 }
 
-/* Hide search for inline pickers - make them act like buttons */
+/* Hide search for inline pickers */
 .pm-inline-catalog-picker .pm-catalog-search-wrap {
   display: none !important;
-}
-
-.pm-inline-catalog-picker .pm-catalog-trigger:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.pm-inline-catalog-picker .pm-catalog-trigger.is-open {
-  border-color: #3ecf8e;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: none;
 }
 
 /* Main picker container */

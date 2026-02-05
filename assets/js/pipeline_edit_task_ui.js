@@ -422,61 +422,86 @@
   async function preSelectCatalogItem(picker, catalogType, name, id) {
     if (!picker) return;
 
-    // Wait for items to load
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // Poll until items are loaded (max 3 seconds, check every 100ms)
+    const maxAttempts = 30;
+    let attempts = 0;
 
-    if (picker.items && picker.setValue) {
-      const item = picker.items.find(i =>
-        i.id === id ||
-        (i.name && i.name.toLowerCase() === name.toLowerCase())
-      );
-      if (item) {
-        picker.setValue(item);
+    while (attempts < maxAttempts) {
+      if (picker.items && picker.items.length > 0) {
+        const item = picker.items.find(i =>
+          i.id === id ||
+          (i.name && i.name.toLowerCase() === name.toLowerCase())
+        );
+        if (item && picker.setValue) {
+          picker.setValue(item);
+        }
+        return;
       }
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
     }
+
+    console.warn(`[EditTask] Timeout waiting for ${catalogType} items to load`);
   }
 
   // Pre-select a user in picker by name/id
   async function preSelectUser(picker, name, id) {
     if (!picker) return;
 
-    // Wait for users to load
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Poll until users are loaded (max 3 seconds, check every 100ms)
+    const maxAttempts = 30;
+    let attempts = 0;
 
-    if (picker.users) {
-      const user = picker.users.find(u =>
-        u.id === id ||
-        u.name.toLowerCase() === name.toLowerCase()
-      );
-      if (user) {
-        picker.selectedUsers = [user];
-        picker.renderSelected();
+    while (attempts < maxAttempts) {
+      if (picker.users && picker.users.length > 0) {
+        const user = picker.users.find(u =>
+          u.id === id ||
+          u.name.toLowerCase() === name.toLowerCase()
+        );
+        if (user) {
+          picker.selectedUsers = [user];
+          picker.renderSelected();
+        }
+        return;
       }
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
     }
+
+    console.warn('[EditTask] Timeout waiting for users to load for pre-selection');
   }
 
   async function preSelectUsers(picker, collaborators) {
     if (!picker || !collaborators.length) return;
 
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Poll until users are loaded (max 3 seconds, check every 100ms)
+    const maxAttempts = 30;
+    let attempts = 0;
 
-    if (picker.users) {
-      const selected = [];
-      collaborators.forEach(c => {
-        const name = c.name || c;
-        const id = c.id;
-        const user = picker.users.find(u =>
-          u.id === id ||
-          u.name.toLowerCase() === name.toLowerCase()
-        );
-        if (user) selected.push(user);
-      });
+    while (attempts < maxAttempts) {
+      if (picker.users && picker.users.length > 0) {
+        const selected = [];
+        collaborators.forEach(c => {
+          const name = c.name || c;
+          const id = c.id;
+          const user = picker.users.find(u =>
+            u.id === id ||
+            u.name.toLowerCase() === name.toLowerCase()
+          );
+          if (user) selected.push(user);
+        });
 
-      if (selected.length) {
-        picker.selectedUsers = selected;
-        picker.renderSelected();
+        if (selected.length) {
+          picker.selectedUsers = selected;
+          picker.renderSelected();
+        }
+        return;
       }
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
     }
+
+    console.warn('[EditTask] Timeout waiting for users to load for collaborators pre-selection');
   }
 
   // ================================

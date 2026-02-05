@@ -3,7 +3,7 @@
 **Creado:** 2026-02-05
 **Estado General:** EN PROGRESO
 **Total Issues:** 39
-**Resueltos:** 2
+**Resueltos:** 3
 
 ---
 
@@ -46,7 +46,7 @@
 - **Test:** Mismo que P1-03
 
 ### [P1-05] Race Condition en Pre-seleccion de Catalogos
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** CRITICA
 - **Archivo:** `assets/js/pipeline_edit_task_ui.js`
 - **Lineas:** 402-417 (preSelectCatalogItem)
@@ -345,4 +345,5 @@
 | 2026-02-05 | PLAN | CREADO | Plan inicial con 39 issues |
 | 2026-02-05 | P1-01 | COMPLETADO | Agregado fieldMap para plurales, flag alreadySaved para evitar doble-save |
 | 2026-02-05 | P5-05 | COMPLETADO | Movido MULTI_PERSON_COLS al inicio con otras constantes |
+| 2026-02-05 | P1-05 | COMPLETADO | Reemplazado delays hardcodeados con polling (max 3s, 100ms intervals) |
 

@@ -1625,19 +1625,46 @@ textarea.pm-inline-editor {
   width: 100%;
 }
 
+/* Inline people trigger - button-like appearance */
 .pm-inline-people-picker .pm-people-trigger {
-  min-height: 32px;
-  padding: 4px 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(62, 207, 142, 0.5);
-  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  padding: 2px 6px;
+  min-height: 28px;
 }
 
 .pm-inline-people-picker .pm-people-dropdown {
   min-width: 260px;
   left: 0;
   right: auto;
-  z-index: 9000;
+  z-index: 99999 !important;
+  position: fixed !important;
+}
+
+/* Hide search for inline pickers - make them act like buttons */
+.pm-inline-people-picker .pm-people-search-wrap {
+  display: none !important;
+}
+
+.pm-inline-people-picker .pm-people-footer {
+  display: none !important;
+}
+
+/* Hide section header for cleaner inline dropdown */
+.pm-inline-people-picker .pm-people-section-header {
+  display: none !important;
+}
+
+.pm-inline-people-picker .pm-people-trigger:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.pm-inline-people-picker .pm-people-trigger.is-open {
+  border-color: #3ecf8e;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
 }
 
 /* Trigger button (shows selected users or placeholder) */
@@ -1980,19 +2007,37 @@ textarea.pm-inline-editor {
   width: 100%;
 }
 
+/* Inline catalog trigger - button-like appearance */
 .pm-inline-catalog-picker .pm-catalog-trigger {
-  min-height: 32px;
-  padding: 4px 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(62, 207, 142, 0.5);
-  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  padding: 2px 6px;
+  min-height: 28px;
 }
 
 .pm-inline-catalog-picker .pm-catalog-dropdown {
   min-width: 220px;
   left: 0;
   right: auto;
-  z-index: 9000;
+  z-index: 99999 !important;
+  position: fixed !important;
+}
+
+/* Hide search for inline pickers - make them act like buttons */
+.pm-inline-catalog-picker .pm-catalog-search-wrap {
+  display: none !important;
+}
+
+.pm-inline-catalog-picker .pm-catalog-trigger:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.pm-inline-catalog-picker .pm-catalog-trigger.is-open {
+  border-color: #3ecf8e;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
 }
 
 /* Main picker container */

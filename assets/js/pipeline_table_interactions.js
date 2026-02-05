@@ -961,6 +961,10 @@
       return;
     }
 
+    // Stop propagation to prevent the click from triggering picker's close handler
+    // The picker opens after a short delay, and the original click event could close it
+    e.stopPropagation();
+
     handleCellClick(td, tr, colKey, taskId);
   });
 

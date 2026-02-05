@@ -882,7 +882,7 @@
     td.classList.add(isPickerType ? "pm-cell-editing--picker" : "pm-cell-editing--text");
 
     // Add parent classes for dropdown overflow (fallback for :has())
-    const tr = td.closest("tr");
+    // Note: tr is already passed as parameter to handleCellClick
     const tbody = td.closest("tbody");
     const table = td.closest("table");
     const groupBody = td.closest(".pm-group-body");

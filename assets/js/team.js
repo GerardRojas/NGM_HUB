@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const role = String(user.role || user.role_id || "").trim();
-  const allowedRoles = new Set(["COO", "CEO", "General Coordinator", "Project Coordinator"]);
+  const allowedRoles = new Set(["COO", "CEO", "General Coordinator", "Project Coordinator", "Operation Specialist"]);
 
   // Update topbar user pill (best-effort)
   const userPill = document.getElementById("user-pill");

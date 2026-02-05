@@ -770,6 +770,9 @@
         // Departments from Supabase
         departments: [],
 
+        // Roles from Supabase
+        roles: [],
+
         // Currently editing module
         editingModuleId: null,
 
@@ -1161,6 +1164,38 @@
             const option = document.createElement('option');
             option.value = dept.department_id;
             option.textContent = dept.department_name;
+            select.appendChild(option);
+        });
+    }
+
+    // ================================
+    // Roles from Supabase
+    // ================================
+    async function loadRoles() {
+        try {
+            const res = await fetch(`${API_BASE}/permissions/roles`);
+            if (res.ok) {
+                const data = await res.json();
+                state.roles = data.roles || data || [];
+                console.log('[PROCESS-MANAGER] Loaded', state.roles.length, 'roles');
+                populateRoleDropdown();
+            }
+        } catch (err) {
+            console.warn('[PROCESS-MANAGER] Error loading roles:', err);
+            state.roles = [];
+            populateRoleDropdown();
+        }
+    }
+
+    function populateRoleDropdown() {
+        const select = document.getElementById('moduleRole');
+        if (!select) return;
+
+        select.innerHTML = '<option value="">-- Select --</option>';
+        state.roles.forEach(role => {
+            const option = document.createElement('option');
+            option.value = role.rol_name;
+            option.textContent = role.rol_name;
             select.appendChild(option);
         });
     }
@@ -1566,6 +1601,7 @@
         initConnectionDragging();
         await loadProcesses();
         await loadDepartments();
+        await loadRoles();
         renderTreeView();
         updateStats();
         setupProcessNavigator();

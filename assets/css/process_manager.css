@@ -6452,9 +6452,9 @@ body.page-process-manager {
 .flow-node-detail-panel {
     position: fixed;
     right: 20px;
-    top: 80px;
-    transform: translateX(20px);
-    width: 380px;
+    top: 50%;
+    transform: translate(20px, -50%);
+    width: 480px;
     max-height: 70vh;
     background: #111111;
     border: 1px solid #2a2a2a;
@@ -6472,7 +6472,7 @@ body.page-process-manager {
 .flow-node-detail-panel.active {
     opacity: 1;
     pointer-events: auto;
-    transform: translateX(0);
+    transform: translate(0, -50%);
 }
 
 .flow-node-detail-panel-header {

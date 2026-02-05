@@ -144,8 +144,11 @@
     // Don't save again if picker already saved via onChange
     if (save && !alreadySaved) {
       const newValue = getEditorValue(element, type);
+      console.log("[PIPELINE-INTERACTIONS] closeActiveEditor comparing values:", { colKey, newValue, originalValue, different: newValue !== originalValue });
       if (newValue !== originalValue) {
         saveFieldToBackend(taskId, colKey, newValue, td);
+      } else {
+        console.log("[PIPELINE-INTERACTIONS] No change detected, not saving");
       }
     }
 
@@ -205,6 +208,7 @@
   // GUARDAR EN BACKEND
   // ================================
   async function saveFieldToBackend(taskId, colKey, newValue, td) {
+    console.log("[PIPELINE-INTERACTIONS] saveFieldToBackend called:", { taskId, colKey, newValue });
     const apiBase = window.API_BASE || "";
 
     // Mapear columna UI -> campo backend

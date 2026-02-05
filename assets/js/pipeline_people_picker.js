@@ -280,10 +280,19 @@
       });
 
       // Close on outside click - store reference for cleanup
+      // Use _openingLock to prevent the original click from closing the picker
+      this._openingLock = false;
       this._onDocumentClick = (e) => {
+        // Ignore clicks while opening (the original click that triggered open)
+        if (this._openingLock) {
+          console.log('[PeoplePicker] Ignoring click during opening');
+          return;
+        }
         console.log('[PeoplePicker] Document click, isOpen:', this.isOpen, 'target:', e.target);
         console.log('[PeoplePicker] container.contains(target):', this.container.contains(e.target));
-        if (this.isOpen && !this.container.contains(e.target)) {
+        console.log('[PeoplePicker] dropdown.contains(target):', this.dropdown.contains(e.target));
+        // Also check if click is inside dropdown (which may be positioned outside container due to fixed)
+        if (this.isOpen && !this.container.contains(e.target) && !this.dropdown.contains(e.target)) {
           console.log('[PeoplePicker] Closing due to outside click');
           this.close();
         }
@@ -314,6 +323,10 @@
       if (activeDropdown && activeDropdown !== this) {
         activeDropdown.close();
       }
+
+      // Lock to prevent the opening click from immediately closing
+      this._openingLock = true;
+      setTimeout(() => { this._openingLock = false; }, 100);
 
       this.isOpen = true;
       activeDropdown = this;

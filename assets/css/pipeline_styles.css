@@ -199,8 +199,8 @@
 }
 
 .pipeline-section .filter-select:focus-visible {
-    border-color: #3ecf8e;
-    box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+    border-color: rgba(255, 255, 255, 0.35);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
 }
 
 /* ==========================================
@@ -554,14 +554,14 @@
 
 /* Primary (acciones fuertes, pocas) */
 .pm-btn-primary {
-    background: #3ecf8e;
-    border-color: #3ecf8e;
-    color: #000000;
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
 }
 
 .pm-btn-primary:hover {
-    background: #2db77a;
-    border-color: #2db77a;
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.35);
 }
 
 /* Ghost (acciones ligeras) */
@@ -883,11 +883,11 @@
   cursor: not-allowed;
 }
 
-/* ===== NGM Accent: Save hover green ===== */
+/* ===== NGM Accent: Save hover ===== */
 #layoutModal .modal-footer .btn-primary:hover {
-  background: rgba(34, 197, 94, 0.22);   /* verde suave */
-  border-color: rgba(34, 197, 94, 0.55);
-  color: #eafff3;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
 }
 
 /* ==========================
@@ -1393,8 +1393,8 @@
 }
 
 :is(#layoutModal, #newTaskModal) .pm-input:focus {
-  border-color: #3ecf8e;
-  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 :is(#layoutModal, #newTaskModal) textarea.pm-input {
@@ -1480,8 +1480,8 @@
 #newTaskModal #nt_attach_link:focus,
 #newTaskModal #nt_attach_link:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--accent-soft);
-  border-color: rgba(34,197,94,0.65);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 /* Layout width controlled by Manage Layout slider */
@@ -1502,7 +1502,7 @@
   border-radius: 8px;
 
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   color: rgba(255, 255, 255, 0.95);
 
   font-size: 12px;
@@ -1510,13 +1510,13 @@
   line-height: 1.4;
 
   outline: none;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .pm-inline-editor:focus {
-  border-color: rgba(34, 197, 94, 0.7);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.1);
 }
 
@@ -1626,17 +1626,15 @@ textarea.pm-inline-editor {
 
 /* Cell saved success state */
 .pm-cell-saved {
-  animation: pm-saved-flash 1.5s ease-out;
+  animation: pm-saved-flash 1s ease-out;
 }
 
 @keyframes pm-saved-flash {
   0% {
-    background: rgba(34, 197, 94, 0.25);
-    box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.5);
+    background: rgba(255, 255, 255, 0.08);
   }
   100% {
     background: transparent;
-    box-shadow: none;
   }
 }
 
@@ -1779,8 +1777,8 @@ textarea.pm-inline-editor {
 
 .pm-people-trigger:focus-within,
 .pm-people-trigger.is-open {
-  border-color: #3ecf8e;
-  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
 }
 
 .pm-people-trigger-placeholder {
@@ -2184,8 +2182,8 @@ textarea.pm-inline-editor {
 
 .pm-catalog-trigger:focus-within,
 .pm-catalog-trigger.is-open {
-  border-color: #3ecf8e;
-  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
 }
 
 .pm-catalog-trigger-placeholder {
@@ -2527,8 +2525,8 @@ textarea.pm-inline-editor {
 .pm-form-select:focus,
 .pm-form-textarea:focus {
   outline: none;
-  border-color: #3ecf8e;
-  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
 }
 
 .pm-form-input::placeholder,
@@ -3011,8 +3009,8 @@ textarea.pm-inline-editor {
 }
 
 .pm-links-input:focus {
-  border-color: #3ecf8e;
-  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
 }
 
 .pm-links-input::placeholder {
@@ -3036,9 +3034,9 @@ textarea.pm-inline-editor {
 }
 
 .pm-links-btn-open:hover:not(:disabled) {
-  background: rgba(62, 207, 142, 0.15);
-  border-color: #3ecf8e;
-  color: #3ecf8e;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .pm-links-btn-clear:hover:not(:disabled) {
@@ -3147,9 +3145,9 @@ td[data-col="links"]:hover {
 }
 
 .pm-links-add-btn:hover {
-  background: rgba(62, 207, 142, 0.1);
-  border-color: #3ecf8e;
-  color: #3ecf8e;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* ==========================================
@@ -3234,8 +3232,8 @@ td[data-col="links"]:hover {
 }
 
 .pm-cluster-toggle:hover {
-  background: rgba(62, 207, 142, 0.2);
-  border-color: #3ecf8e;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .pm-cluster-arrow {

@@ -6660,3 +6660,313 @@ body.page-process-manager {
 .flow-node-detail-panel-actions button.primary:hover {
     background: rgba(62, 207, 142, 0.2);
 }
+
+/* ===================== ALGORITHM DIAGRAM STYLES ===================== */
+
+/* Badge en nodo algorithm */
+.algorithm-diagram-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    background: rgba(96, 165, 250, 0.2);
+    border: 1px solid rgba(96, 165, 250, 0.4);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #60a5fa;
+    z-index: 5;
+}
+
+.algorithm-diagram-badge:hover {
+    background: rgba(96, 165, 250, 0.3);
+    border-color: #60a5fa;
+    transform: scale(1.1);
+}
+
+/* Preview flotante */
+.algorithm-diagram-preview {
+    position: fixed;
+    z-index: 9999;
+    width: 300px;
+    background: #111111;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.algorithm-diagram-preview.hidden {
+    display: none;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #1a1a1a;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.preview-title {
+    font-weight: 600;
+    font-size: 12px;
+    color: #60a5fa;
+}
+
+.preview-hint {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.preview-svg-container {
+    padding: 12px;
+    height: 180px;
+}
+
+/* Modal de diagrama */
+.diagram-modal {
+    max-width: 900px;
+    width: 90%;
+}
+
+.diagram-modal-header {
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.diagram-modal-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.diagram-modal-badge {
+    background: rgba(96, 165, 250, 0.2);
+    color: #60a5fa;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.diagram-modal-version {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+}
+
+.diagram-modal-body {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    min-height: 450px;
+}
+
+.diagram-svg-container {
+    flex: 1;
+    background: #0a0a0a;
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* SVG del diagrama */
+.algo-diagram-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.algo-diagram-svg.mini {
+    max-height: 160px;
+}
+
+.diagram-edge {
+    stroke: rgba(148, 163, 184, 0.4);
+    stroke-width: 2;
+}
+
+.diagram-edge-label {
+    fill: rgba(255, 255, 255, 0.5);
+    font-size: 10px;
+    font-family: Inter, system-ui, sans-serif;
+}
+
+.diagram-node {
+    cursor: pointer;
+}
+
+.diagram-node:hover .diagram-node-shape {
+    filter: brightness(1.3);
+}
+
+.diagram-node-shape {
+    fill: rgba(30, 41, 59, 0.9);
+    stroke: rgba(148, 163, 184, 0.5);
+    stroke-width: 2;
+    transition: filter 0.2s ease;
+}
+
+.diagram-node.node-input .diagram-node-shape {
+    fill: rgba(6, 78, 59, 0.6);
+    stroke: #3ecf8e;
+}
+
+.diagram-node.node-output .diagram-node-shape {
+    fill: rgba(88, 28, 135, 0.6);
+    stroke: #a78bfa;
+}
+
+.diagram-node.node-decision .diagram-node-shape {
+    fill: rgba(113, 63, 18, 0.6);
+    stroke: #fbbf24;
+}
+
+.diagram-node.node-process .diagram-node-shape {
+    fill: rgba(30, 58, 138, 0.6);
+    stroke: #60a5fa;
+}
+
+.diagram-node-label {
+    fill: rgba(255, 255, 255, 0.9);
+    text-anchor: middle;
+    font-family: Inter, system-ui, sans-serif;
+    font-weight: 500;
+}
+
+/* Panel de detalles del diagrama */
+.diagram-node-details {
+    width: 240px;
+    min-width: 240px;
+    background: #1a1a1a;
+    border-radius: 8px;
+    padding: 16px;
+    align-self: flex-start;
+}
+
+.diagram-node-details.hidden {
+    display: none;
+}
+
+.diagram-details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.diagram-details-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #fff;
+}
+
+.diagram-details-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 0;
+    line-height: 1;
+}
+
+.diagram-details-close:hover {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.diagram-details-body .details-type {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 12px;
+    margin-bottom: 16px;
+}
+
+.diagram-details-body .details-type strong {
+    color: #60a5fa;
+    text-transform: capitalize;
+}
+
+.diagram-details-body .details-section {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 12px 0 6px;
+}
+
+.diagram-details-body .details-connections {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.diagram-details-body .conn-chip {
+    background: rgba(96, 165, 250, 0.15);
+    color: #60a5fa;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* Legend en footer del modal */
+.diagram-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.diagram-legend {
+    display: flex;
+    gap: 16px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.legend-dot.input { background: #3ecf8e; }
+.legend-dot.process { background: #60a5fa; }
+.legend-dot.decision { background: #fbbf24; }
+.legend-dot.output { background: #a78bfa; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .diagram-modal {
+        max-width: 95%;
+    }
+
+    .diagram-modal-body {
+        flex-direction: column;
+        min-height: 350px;
+    }
+
+    .diagram-node-details {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .diagram-legend {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+}

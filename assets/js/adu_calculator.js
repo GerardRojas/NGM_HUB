@@ -550,6 +550,7 @@
   // Cost estimate state
   var costEstimate = null;
   var costLoading  = false;
+  var hasFirstCalculation = false;  // Flag to enable auto-recalculation after first estimate
 
   // ------------------------------------------
   // DOM refs
@@ -890,6 +891,20 @@
     updateStoryAvailability();
     updateSections();
     updateSummary();
+
+    // Auto-recalculate after first calculation (live update)
+    if (hasFirstCalculation && !costLoading && canCalculate()) {
+      calculateCost(true);  // true = silent mode (no toast/spinner)
+    }
+  }
+
+  /**
+   * Check if all required fields are filled for calculation
+   */
+  function canCalculate() {
+    return selectedType && selectedStories && selectedConstruction && enteredSqft &&
+           selectedDesignPackage && enteredBedrooms !== null && enteredBathrooms !== null &&
+           selectedFoundation && selectedLandSurface;
   }
 
   // ------------------------------------------
@@ -1955,16 +1970,28 @@
 
   /**
    * Main calculate function (now uses local calculation)
+   * @param {boolean} silent - If true, skip loading UI and toast (for auto-recalculation)
    */
-  function calculateCost() {
+  function calculateCost(silent) {
     // Validate minimum required fields
     if (!selectedType || !selectedStories || !selectedConstruction || !enteredSqft ||
         !selectedDesignPackage || enteredBedrooms === null || enteredBathrooms === null ||
         !selectedFoundation || !selectedLandSurface) {
-      if (window.Toast) Toast.error("Missing Parameters", "Please complete all steps before calculating.");
+      if (!silent && window.Toast) Toast.error("Missing Parameters", "Please complete all steps before calculating.");
       return;
     }
 
+    // Silent mode: instant calculation without loading UI
+    if (silent) {
+      var estimate = calculateLocalEstimate();
+      if (estimate && !estimate.error) {
+        costEstimate = estimate;
+        renderCostResults();
+      }
+      return;
+    }
+
+    // Normal mode: show loading state
     costLoading = true;
     resultsContainer.innerHTML = '<div style="padding: 24px; text-align: center; color: rgba(255,255,255,0.4);">'
       + '<span class="adu-analysis-spinner" style="width: 24px; height: 24px; border-width: 3px;"></span>'
@@ -1994,8 +2021,9 @@
       }
 
       costEstimate = estimate;
+      hasFirstCalculation = true;  // Enable auto-recalculation from now on
       renderCostResults();
-      refresh();
+      // Note: no refresh() call here to avoid triggering auto-recalculation loop
 
       if (window.Toast) Toast.success("Estimate Ready", "$" + estimate.total_estimated_cost.toLocaleString() + " total");
     }, 300);
@@ -2779,6 +2807,7 @@
     screenshotSkipped = false;
     costEstimate      = null;
     costLoading       = false;
+    hasFirstCalculation = false;  // Require new first calculation
 
     screenshotUploads.innerHTML = "";
     analysisResultsDiv.classList.add("hidden");
@@ -3094,7 +3123,6 @@
     btnSkipScreenshot.addEventListener("click", function () {
       screenshotSkipped = true;
       calculateCost();
-      refresh();
     });
   }
 
@@ -3117,6 +3145,7 @@
       selectedConstruction = null;
       enteredSqft = null;
       selectedDesignPackage = null;
+      hasFirstCalculation = false;  // Reset auto-recalculation flag
       enteredBedrooms = null;
       enteredBathrooms = null;
       selectedFoundation = null;

@@ -319,8 +319,25 @@
       });
 
       // Close on outside click - store reference for cleanup
+      // Use _openingLock to prevent the original click from closing the picker
+      this._openingLock = false;
       this._onDocumentClick = (e) => {
-        if (this.isOpen && !this.container.contains(e.target)) {
+        console.log('[CatalogPicker] Document click handler:', {
+          isOpen: this.isOpen,
+          openingLock: this._openingLock,
+          target: e.target,
+          targetClass: e.target.className,
+          containerContains: this.container.contains(e.target),
+          dropdownContains: this.dropdown.contains(e.target)
+        });
+        // Ignore clicks while opening (the original click that triggered open)
+        if (this._openingLock) {
+          console.log('[CatalogPicker] Ignoring click - opening lock active');
+          return;
+        }
+        // Also check if click is inside dropdown (which may be positioned outside container due to fixed)
+        if (this.isOpen && !this.container.contains(e.target) && !this.dropdown.contains(e.target)) {
+          console.log('[CatalogPicker] Closing - click outside container and dropdown');
           this.close();
         }
       };
@@ -350,6 +367,10 @@
       if (activeDropdown && activeDropdown !== this) {
         activeDropdown.close();
       }
+
+      // Lock to prevent the opening click from immediately closing
+      this._openingLock = true;
+      setTimeout(() => { this._openingLock = false; }, 100);
 
       this.isOpen = true;
       activeDropdown = this;

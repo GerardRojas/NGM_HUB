@@ -518,6 +518,14 @@
                         </div>
                         <p class="form-help">Toggle to mark this module as implemented (live) or keep as draft.</p>
                     </div>
+                    <!-- Algorithm Diagram Selection (shown only for algorithm type) -->
+                    <div class="form-group hidden" id="moduleDiagramGroup">
+                        <label for="moduleDiagram">Algorithm Diagram</label>
+                        <select id="moduleDiagram" class="form-select">
+                            <option value="">-- No diagram --</option>
+                        </select>
+                        <p class="form-help">Select a pre-built diagram to visualize this algorithm's flow.</p>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -750,6 +758,53 @@
             </svg>
             Delete Node
         </button>
+    </div>
+
+    <!-- Algorithm Diagram Preview (hover tooltip) -->
+    <div class="algorithm-diagram-preview hidden" id="algorithmDiagramPreview">
+        <div class="preview-header">
+            <span class="preview-title" id="previewDiagramTitle">ALGORITHM</span>
+            <span class="preview-hint">Click to expand</span>
+        </div>
+        <div class="preview-svg-container" id="previewSvgContainer"></div>
+    </div>
+
+    <!-- Algorithm Diagram Modal -->
+    <div class="modal-backdrop hidden" id="diagramModal">
+        <div class="modal modal-lg diagram-modal">
+            <div class="modal-header diagram-modal-header">
+                <div class="diagram-modal-title-group">
+                    <span class="diagram-modal-badge" id="diagramModalBadge">ALGORITHM</span>
+                    <h3 class="modal-title" id="diagramModalTitle">Algorithm Name</h3>
+                    <span class="diagram-modal-version" id="diagramModalVersion">v1.0</span>
+                </div>
+                <button type="button" class="modal-close" id="btnCloseDiagramModal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body diagram-modal-body">
+                <div class="diagram-svg-container" id="diagramSvgContainer"></div>
+                <div class="diagram-node-details hidden" id="diagramNodeDetails">
+                    <div class="diagram-details-header">
+                        <span class="diagram-details-title" id="diagramDetailsTitle">Node</span>
+                        <button type="button" class="diagram-details-close" id="btnCloseDiagramDetails">&times;</button>
+                    </div>
+                    <div class="diagram-details-body" id="diagramDetailsBody"></div>
+                </div>
+            </div>
+            <div class="modal-footer diagram-modal-footer">
+                <div class="diagram-legend">
+                    <span class="legend-item"><span class="legend-dot input"></span> Input</span>
+                    <span class="legend-item"><span class="legend-dot process"></span> Process</span>
+                    <span class="legend-item"><span class="legend-dot decision"></span> Decision</span>
+                    <span class="legend-item"><span class="legend-dot output"></span> Output</span>
+                </div>
+                <button type="button" class="btn-modal btn-modal-secondary" id="btnDiagramModalClose">Close</button>
+            </div>
+        </div>
     </div>
 
     <script src="assets/js/process_manager.js" defer></script>

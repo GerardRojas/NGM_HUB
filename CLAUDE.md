@@ -42,6 +42,7 @@ Antes de trabajar en un modulo complejo, leer su archivo de referencia en `.clau
 - **Expenses** -> `.claude/expenses_reference.md`
 - **Pipeline** -> `.claude/pipeline_reference.md`
 - **Arturito (AI Assistant)** -> `.claude/arturito_reference.md`
+- **Algorithm Diagrams** -> `.claude/algorithm_diagram_spec.md` (para generar diagramas de algoritmos)
 
 ## Patrones Comunes (aplican a todos los modulos)
 

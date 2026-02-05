@@ -498,7 +498,48 @@
                     tech: ['OpenAI Vision', 'OCR'],
                     inputs: ['image', 'pdf'],
                     outputs: ['vendor', 'amount', 'date', 'items'],
-                    connects_to: ['quick_check']
+                    connects_to: ['quick_check'],
+                    diagram: {
+                        nodes: [
+                            // Layer 0: Input
+                            { id: 'input', label: 'Image/PDF', x: 250, y: 40, type: 'input' },
+                            // Layer 1: Format detection
+                            { id: 'format', label: 'Format?', x: 250, y: 110, type: 'decision' },
+                            // Layer 2: Branch - PDF text extraction vs Image OCR
+                            { id: 'try_text', label: 'Try Text Extract', x: 150, y: 180, type: 'process' },
+                            { id: 'ocr', label: 'OCR Vision', x: 350, y: 180, type: 'process' },
+                            // Layer 3: Check if PDF has extractable text
+                            { id: 'has_text', label: 'Has Text?', x: 150, y: 250, type: 'decision' },
+                            // Layer 4: Text ready or fallback to OCR
+                            { id: 'text_ok', label: 'Text Ready', x: 80, y: 320, type: 'process' },
+                            { id: 'ocr_fallback', label: 'OCR Fallback', x: 220, y: 320, type: 'process' },
+                            // Layer 5: Processing mode selection
+                            { id: 'mode', label: 'Mode?', x: 250, y: 390, type: 'decision' },
+                            // Layer 6: Model selection
+                            { id: 'fast', label: 'GPT-4o-mini', x: 150, y: 460, type: 'process' },
+                            { id: 'heavy', label: 'GPT-4o', x: 350, y: 460, type: 'process' },
+                            // Layer 7: Parse and extract
+                            { id: 'parse', label: 'Parse Fields', x: 250, y: 530, type: 'process' },
+                            // Layer 8: Output
+                            { id: 'output', label: 'vendor, amount, date', x: 250, y: 600, type: 'output' }
+                        ],
+                        edges: [
+                            { from: 'input', to: 'format' },
+                            { from: 'format', to: 'try_text', label: 'PDF' },
+                            { from: 'format', to: 'ocr', label: 'Image' },
+                            { from: 'try_text', to: 'has_text' },
+                            { from: 'has_text', to: 'text_ok', label: 'Yes' },
+                            { from: 'has_text', to: 'ocr_fallback', label: 'No' },
+                            { from: 'text_ok', to: 'mode' },
+                            { from: 'ocr_fallback', to: 'mode' },
+                            { from: 'ocr', to: 'mode' },
+                            { from: 'mode', to: 'fast', label: 'Fast' },
+                            { from: 'mode', to: 'heavy', label: 'Heavy' },
+                            { from: 'fast', to: 'parse' },
+                            { from: 'heavy', to: 'parse' },
+                            { from: 'parse', to: 'output' }
+                        ]
+                    }
                 },
                 // Step 5: Quick Check (has sub-process for detailed steps)
                 {
@@ -598,7 +639,31 @@
                     tech: ['OpenAI', 'Context Analysis'],
                     inputs: ['expense_data', 'vendor', 'amount'],
                     outputs: ['category', 'confidence', 'suggestions'],
-                    connects_to: ['review_confidence']
+                    connects_to: ['review_confidence'],
+                    diagram: {
+                        nodes: [
+                            { id: 'input', label: 'Expense Data', x: 200, y: 40, type: 'input' },
+                            { id: 'context', label: 'Load Context', x: 200, y: 110, type: 'process' },
+                            { id: 'mode', label: 'Mode?', x: 200, y: 180, type: 'decision' },
+                            { id: 'standard', label: 'GPT-4o-mini', x: 100, y: 260, type: 'process' },
+                            { id: 'deep', label: 'GPT-4o', x: 300, y: 260, type: 'process' },
+                            { id: 'match', label: 'Match History', x: 200, y: 340, type: 'process' },
+                            { id: 'confidence', label: 'Confidence?', x: 200, y: 410, type: 'decision' },
+                            { id: 'output', label: 'category', x: 120, y: 480, type: 'output' },
+                            { id: 'suggestions', label: 'suggestions[]', x: 280, y: 480, type: 'output' }
+                        ],
+                        edges: [
+                            { from: 'input', to: 'context' },
+                            { from: 'context', to: 'mode' },
+                            { from: 'mode', to: 'standard', label: 'Standard' },
+                            { from: 'mode', to: 'deep', label: 'Deep' },
+                            { from: 'standard', to: 'match' },
+                            { from: 'deep', to: 'match' },
+                            { from: 'match', to: 'confidence' },
+                            { from: 'confidence', to: 'output', label: '>70%' },
+                            { from: 'confidence', to: 'suggestions', label: '<70%' }
+                        ]
+                    }
                 },
                 // Review confidence (sub-step)
                 {
@@ -789,6 +854,10 @@
         currentProcessId: null,      // Process being viewed in flowchart
         flowNodePositions: {},       // Positions of flowchart nodes
         selectedFlowNode: null,      // Currently selected node in flowchart
+
+        // Algorithm diagram state
+        currentDiagramNode: null,    // Algorithm node whose diagram is being viewed
+        algorithmDiagrams: [],       // Available diagrams from Supabase
 
         // Third level navigation (sub-process)
         currentNodeId: null,         // Node being viewed in sub-process level
@@ -1012,6 +1081,45 @@
             // Show persistent error banner
             showServerErrorBanner();
         }
+    }
+
+    // ================================
+    // Algorithm Diagrams Library
+    // ================================
+    async function loadAlgorithmDiagrams() {
+        const supabaseUrl = window.SUPABASE_URL || window.NGM_CONFIG?.SUPABASE_URL;
+        const supabaseKey = window.SUPABASE_ANON_KEY || window.NGM_CONFIG?.SUPABASE_ANON_KEY;
+
+        if (!supabaseUrl || !supabaseKey) {
+            console.warn('[PROCESS-MANAGER] Supabase config not available for algorithm diagrams');
+            return;
+        }
+
+        try {
+            const res = await fetch(`${supabaseUrl}/rest/v1/algorithm_diagrams?select=*&order=name.asc`, {
+                headers: {
+                    'apikey': supabaseKey,
+                    'Authorization': `Bearer ${supabaseKey}`
+                }
+            });
+
+            if (res.ok) {
+                state.algorithmDiagrams = await res.json();
+                console.log(`[PROCESS-MANAGER] Loaded ${state.algorithmDiagrams.length} algorithm diagrams`);
+            } else {
+                console.warn('[PROCESS-MANAGER] Failed to load algorithm diagrams:', res.status);
+            }
+        } catch (err) {
+            console.error('[PROCESS-MANAGER] Error loading algorithm diagrams:', err);
+        }
+    }
+
+    function getAlgorithmDiagramById(diagramId) {
+        return state.algorithmDiagrams.find(d => d.id === diagramId);
+    }
+
+    function getAlgorithmDiagramByCodename(codename) {
+        return state.algorithmDiagrams.find(d => d.codename === codename);
     }
 
     function showServerErrorBanner() {
@@ -1637,9 +1745,11 @@
         ]);
         setupEventListeners();
         initConnectionDragging();
+        setupDiagramModalListeners();
         await loadProcesses();
         await loadDepartments();
         await loadRoles();
+        await loadAlgorithmDiagrams();
         renderTreeView();
         updateStats();
         setupProcessNavigator();
@@ -1760,6 +1870,24 @@
         setupFlowNodeContextMenu();
         setupModuleDetailPanelListeners();
 
+        // Algorithm diagram badge events (event delegation)
+        document.addEventListener('mouseenter', (e) => {
+            if (e.target.closest('.algorithm-diagram-badge')) {
+                handleDiagramBadgeMouseEnter(e);
+            }
+        }, true);
+        document.addEventListener('mouseleave', (e) => {
+            if (e.target.closest('.algorithm-diagram-badge')) {
+                handleDiagramBadgeMouseLeave(e);
+            }
+        }, true);
+        document.addEventListener('click', (e) => {
+            const badge = e.target.closest('.algorithm-diagram-badge');
+            if (badge) {
+                handleDiagramBadgeClick(e);
+            }
+        }, true);
+
         // Add Module button
         if (elements.btnAddModule) {
             elements.btnAddModule.addEventListener('click', () => openAddModuleModal());
@@ -1856,12 +1984,15 @@
         if (btnSave) btnSave.addEventListener('click', saveModule);
         if (btnDelete) btnDelete.addEventListener('click', confirmDeleteModule);
 
-        // Auto-select small size for algorithm type
+        // Auto-select small size for algorithm type + show/hide diagram dropdown
         if (typeSelect && sizeSelect) {
             typeSelect.addEventListener('change', (e) => {
-                if (e.target.value === 'algorithm') {
+                const isAlgorithm = e.target.value === 'algorithm';
+                if (isAlgorithm) {
                     sizeSelect.value = 'small';
                 }
+                // Show/hide diagram dropdown
+                toggleDiagramDropdownVisibility(isAlgorithm);
             });
         }
 
@@ -1909,6 +2040,36 @@
     }
 
     // ================================
+    // Algorithm Diagram Dropdown Helpers
+    // ================================
+    function toggleDiagramDropdownVisibility(show) {
+        const diagramGroup = document.getElementById('moduleDiagramGroup');
+        if (diagramGroup) {
+            diagramGroup.classList.toggle('hidden', !show);
+            // Populate dropdown if showing
+            if (show) {
+                populateDiagramDropdown();
+            }
+        }
+    }
+
+    function populateDiagramDropdown() {
+        const select = document.getElementById('moduleDiagram');
+        if (!select) return;
+
+        // Keep first option (-- No diagram --)
+        select.innerHTML = '<option value="">-- No diagram --</option>';
+
+        // Add diagrams from state
+        state.algorithmDiagrams.forEach(diagram => {
+            const option = document.createElement('option');
+            option.value = diagram.id;
+            option.textContent = `${diagram.codename || diagram.name} v${diagram.version || '1.0'}`;
+            select.appendChild(option);
+        });
+    }
+
+    // ================================
     // Module Modal Functions
     // ================================
     function openAddModuleModal(linkedModuleId = null) {
@@ -1942,6 +2103,9 @@
             implementedLabel.classList.remove('live');
         }
 
+        // Hide diagram dropdown (default type is 'step')
+        toggleDiagramDropdownVisibility(false);
+
         elements.moduleModal.classList.remove('hidden');
     }
 
@@ -1974,6 +2138,16 @@
         if (implementedLabel) {
             implementedLabel.textContent = module.isImplemented ? 'Live' : 'Draft';
             implementedLabel.classList.toggle('live', module.isImplemented === true);
+        }
+
+        // Show/hide diagram dropdown based on type and set value
+        const isAlgorithm = module.type === 'algorithm';
+        toggleDiagramDropdownVisibility(isAlgorithm);
+        if (isAlgorithm) {
+            const diagramSelect = document.getElementById('moduleDiagram');
+            if (diagramSelect) {
+                diagramSelect.value = module.diagram_id || '';
+            }
         }
 
         elements.moduleModal.classList.remove('hidden');
@@ -2369,6 +2543,12 @@
             shape: shapeByType[moduleType] || 'rectangle',
             isImplemented: implementedCheckbox ? implementedCheckbox.checked : false
         };
+
+        // Add diagram_id for algorithm type
+        if (moduleType === 'algorithm') {
+            const diagramSelect = document.getElementById('moduleDiagram');
+            moduleData.diagram_id = diagramSelect?.value || null;
+        }
 
         if (!moduleData.name) {
             showToast('Module name is required', 'error');
@@ -7421,8 +7601,21 @@
                 el.style.setProperty('--algo-glow', node.glowColor);
             }
 
+            // Diagram badge if algorithm has a diagram (inline or by ID)
+            const hasInlineDiagram = node.diagram && node.diagram.nodes && node.diagram.nodes.length > 0;
+            const hasLinkedDiagram = node.diagram_id && getAlgorithmDiagramById(node.diagram_id);
+            const hasDiagram = hasInlineDiagram || hasLinkedDiagram;
+            const diagramBadgeHtml = hasDiagram ? `
+                <div class="algorithm-diagram-badge" data-node-id="${node.id}" title="View algorithm diagram">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                </div>
+            ` : '';
+
             el.innerHTML = `
                 ${portsHtml}
+                ${diagramBadgeHtml}
                 <div class="flow-node-header">
                     ${iconHtml}
                     <div class="flow-node-badge">${node.codename || 'ALGORITHM'}</div>
@@ -8116,6 +8309,458 @@
         } else {
             console.log(`[TOAST ${type.toUpperCase()}] ${message}`);
         }
+    }
+
+    // ================================
+    // Algorithm Diagram Functions
+    // ================================
+    let diagramPreviewTimeout = null;
+    const DIAGRAM_PREVIEW_DELAY = 300;
+
+    /**
+     * Generate a diagram object from an AlgorithmSpec
+     *
+     * @param {Object} spec - Algorithm specification
+     * @param {string} spec.id - Algorithm ID
+     * @param {string} spec.name - Algorithm name
+     * @param {Array} spec.flow - Flow definition array
+     * @param {Object} options - Layout options
+     * @param {number} options.width - Canvas width (default 400)
+     * @param {number} options.height - Canvas height (default 500)
+     * @param {number} options.nodeSpacingY - Vertical spacing between layers (default 80)
+     * @param {number} options.nodeSpacingX - Horizontal spacing for branches (default 120)
+     * @returns {Object} diagram - { nodes: [], edges: [] }
+     *
+     * Flow item format:
+     * { id, type, label, from?, branch? }
+     * - type: 'input' | 'process' | 'decision' | 'output'
+     * - from: string or array of source node IDs
+     * - branch: label for the edge (used when coming from a decision)
+     */
+    function generateDiagramFromSpec(spec, options = {}) {
+        const {
+            width = 400,
+            nodeSpacingY = 80,
+            nodeSpacingX = 120
+        } = options;
+
+        const { flow } = spec;
+        if (!flow || flow.length === 0) {
+            return { nodes: [], edges: [] };
+        }
+
+        // Step 1: Build dependency graph and calculate layers
+        const nodeMap = new Map();
+        const inDegree = new Map();
+        const children = new Map();
+
+        flow.forEach(item => {
+            nodeMap.set(item.id, item);
+            inDegree.set(item.id, 0);
+            children.set(item.id, []);
+        });
+
+        // Build edges and count in-degrees
+        flow.forEach(item => {
+            if (item.from) {
+                const sources = Array.isArray(item.from) ? item.from : [item.from];
+                sources.forEach(srcId => {
+                    if (children.has(srcId)) {
+                        children.get(srcId).push({ id: item.id, branch: item.branch });
+                    }
+                    inDegree.set(item.id, (inDegree.get(item.id) || 0) + 1);
+                });
+            }
+        });
+
+        // Step 2: Topological sort to assign layers
+        const layers = [];
+        const nodeLayer = new Map();
+        const queue = [];
+
+        // Start with nodes that have no incoming edges
+        flow.forEach(item => {
+            if (!item.from || (Array.isArray(item.from) && item.from.length === 0)) {
+                queue.push(item.id);
+                nodeLayer.set(item.id, 0);
+            }
+        });
+
+        while (queue.length > 0) {
+            const nodeId = queue.shift();
+            const layer = nodeLayer.get(nodeId);
+
+            if (!layers[layer]) layers[layer] = [];
+            layers[layer].push(nodeId);
+
+            const nodeChildren = children.get(nodeId) || [];
+            nodeChildren.forEach(child => {
+                const newDegree = inDegree.get(child.id) - 1;
+                inDegree.set(child.id, newDegree);
+
+                // Set layer as max of current or parent layer + 1
+                const currentLayer = nodeLayer.get(child.id) || 0;
+                const newLayer = Math.max(currentLayer, layer + 1);
+                nodeLayer.set(child.id, newLayer);
+
+                if (newDegree === 0) {
+                    queue.push(child.id);
+                }
+            });
+        }
+
+        // Step 3: Calculate positions
+        const centerX = width / 2;
+        const startY = 50;
+        const nodes = [];
+        const edges = [];
+
+        layers.forEach((layerNodes, layerIndex) => {
+            const y = startY + (layerIndex * nodeSpacingY);
+            const totalWidth = (layerNodes.length - 1) * nodeSpacingX;
+            const startX = centerX - (totalWidth / 2);
+
+            layerNodes.forEach((nodeId, nodeIndex) => {
+                const item = nodeMap.get(nodeId);
+                const x = layerNodes.length === 1 ? centerX : startX + (nodeIndex * nodeSpacingX);
+
+                nodes.push({
+                    id: item.id,
+                    label: item.label,
+                    type: item.type,
+                    x: Math.round(x),
+                    y: Math.round(y)
+                });
+            });
+        });
+
+        // Step 4: Generate edges
+        flow.forEach(item => {
+            if (item.from) {
+                const sources = Array.isArray(item.from) ? item.from : [item.from];
+                sources.forEach(srcId => {
+                    const edge = { from: srcId, to: item.id };
+                    if (item.branch) {
+                        edge.label = item.branch;
+                    }
+                    edges.push(edge);
+                });
+            }
+        });
+
+        return { nodes, edges };
+    }
+
+    // Expose for external use (Claude, console, etc.)
+    window.generateDiagramFromSpec = generateDiagramFromSpec;
+
+    function renderDiagramSvg(diagram, options = {}) {
+        const { width = 400, height = 300, mini = false } = options;
+        const { nodes, edges } = diagram;
+
+        // Calculate unique arrowhead ID to avoid conflicts
+        const arrowId = 'arrowhead-' + Math.random().toString(36).substr(2, 9);
+
+        let svg = `<svg class="algo-diagram-svg ${mini ? 'mini' : ''}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">`;
+
+        // Arrow marker definition
+        svg += `
+            <defs>
+                <marker id="${arrowId}" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="rgba(148, 163, 184, 0.6)"/>
+                </marker>
+            </defs>
+        `;
+
+        // Edges first (behind nodes)
+        svg += '<g class="diagram-edges">';
+        edges.forEach(edge => {
+            const fromNode = nodes.find(n => n.id === edge.from);
+            const toNode = nodes.find(n => n.id === edge.to);
+            if (!fromNode || !toNode) return;
+
+            // Calculate edge points
+            const nodeHeight = fromNode.type === 'decision' ? 25 : 18;
+            const y1 = fromNode.y + nodeHeight;
+            const y2 = toNode.y - nodeHeight;
+
+            svg += `<line class="diagram-edge" x1="${fromNode.x}" y1="${y1}" x2="${toNode.x}" y2="${y2}" marker-end="url(#${arrowId})"/>`;
+
+            // Edge label (not in mini mode)
+            if (edge.label && !mini) {
+                const midX = (fromNode.x + toNode.x) / 2;
+                const midY = (y1 + y2) / 2;
+                const offsetX = fromNode.x !== toNode.x ? 0 : 8;
+                svg += `<text class="diagram-edge-label" x="${midX + offsetX}" y="${midY}">${escapeHtml(edge.label)}</text>`;
+            }
+        });
+        svg += '</g>';
+
+        // Nodes
+        svg += '<g class="diagram-nodes">';
+        nodes.forEach(node => {
+            const nodeClass = `diagram-node node-${node.type}`;
+            svg += `<g class="${nodeClass}" data-node="${node.id}" transform="translate(${node.x}, ${node.y})">`;
+
+            if (node.type === 'decision') {
+                // Diamond for decision
+                svg += `<polygon class="diagram-node-shape" points="0,-25 35,0 0,25 -35,0"/>`;
+            } else if (node.type === 'input' || node.type === 'output') {
+                // Rounded rectangle for input/output
+                const w = mini ? 60 : 80;
+                svg += `<rect class="diagram-node-shape" x="${-w/2}" y="-18" width="${w}" height="36" rx="18"/>`;
+            } else {
+                // Rectangle for process
+                const w = mini ? 60 : 80;
+                svg += `<rect class="diagram-node-shape" x="${-w/2}" y="-18" width="${w}" height="36" rx="4"/>`;
+            }
+
+            // Label
+            const fontSize = mini ? 8 : 11;
+            const label = mini && node.label.length > 10 ? node.label.substring(0, 9) + '..' : node.label;
+            svg += `<text class="diagram-node-label" y="4" style="font-size:${fontSize}px">${escapeHtml(label)}</text>`;
+
+            svg += '</g>';
+        });
+        svg += '</g>';
+
+        svg += '</svg>';
+        return svg;
+    }
+
+    function findAlgorithmNodeById(nodeId) {
+        // Search in customModules
+        for (const module of state.customModules) {
+            if (module.id === nodeId && module.type === 'algorithm') {
+                return module;
+            }
+            // Search in subProcessNodes
+            if (module.subProcessNodes) {
+                const subNode = module.subProcessNodes.find(n => n.id === nodeId && n.type === 'algorithm');
+                if (subNode) return subNode;
+            }
+        }
+        // Search in flowcharts
+        for (const key of Object.keys(PROCESS_FLOWCHARTS || {})) {
+            const flowchart = PROCESS_FLOWCHARTS[key];
+            if (flowchart.nodes) {
+                const node = flowchart.nodes.find(n => n.id === nodeId && n.type === 'algorithm');
+                if (node) return node;
+            }
+        }
+        return null;
+    }
+
+    // Get diagram for a node (handles both inline and ID-based diagrams)
+    function getDiagramForNode(node) {
+        if (!node) return null;
+        // Prefer inline diagram if it exists
+        if (node.diagram && node.diagram.nodes && node.diagram.nodes.length > 0) {
+            return node.diagram;
+        }
+        // Look up by diagram_id
+        if (node.diagram_id) {
+            const linkedDiagram = getAlgorithmDiagramById(node.diagram_id);
+            if (linkedDiagram) {
+                return linkedDiagram.diagram;
+            }
+        }
+        return null;
+    }
+
+    function showDiagramPreview(nodeId, mouseX, mouseY) {
+        const node = findAlgorithmNodeById(nodeId);
+        const diagram = getDiagramForNode(node);
+        if (!node || !diagram) return;
+
+        const preview = document.getElementById('algorithmDiagramPreview');
+        const container = document.getElementById('previewSvgContainer');
+        const title = document.getElementById('previewDiagramTitle');
+
+        if (!preview || !container) return;
+
+        title.textContent = node.codename || node.name;
+        container.innerHTML = renderDiagramSvg(diagram, { width: 280, height: 160, mini: true });
+
+        // Position near mouse, but keep in viewport
+        let left = mouseX + 15;
+        let top = mouseY + 15;
+
+        // Adjust if near right edge
+        if (left + 320 > window.innerWidth) {
+            left = mouseX - 320;
+        }
+        // Adjust if near bottom edge
+        if (top + 220 > window.innerHeight) {
+            top = mouseY - 220;
+        }
+
+        preview.style.left = `${left}px`;
+        preview.style.top = `${top}px`;
+        preview.classList.remove('hidden');
+    }
+
+    function hideDiagramPreview() {
+        const preview = document.getElementById('algorithmDiagramPreview');
+        if (preview) {
+            preview.classList.add('hidden');
+        }
+    }
+
+    function handleDiagramBadgeMouseEnter(e) {
+        const badge = e.target.closest('.algorithm-diagram-badge');
+        if (!badge) return;
+
+        const nodeId = badge.dataset.nodeId;
+        clearTimeout(diagramPreviewTimeout);
+
+        diagramPreviewTimeout = setTimeout(() => {
+            showDiagramPreview(nodeId, e.clientX, e.clientY);
+        }, DIAGRAM_PREVIEW_DELAY);
+    }
+
+    function handleDiagramBadgeMouseLeave(e) {
+        clearTimeout(diagramPreviewTimeout);
+        hideDiagramPreview();
+    }
+
+    function handleDiagramBadgeClick(e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        const badge = e.target.closest('.algorithm-diagram-badge');
+        if (!badge) return;
+
+        const nodeId = badge.dataset.nodeId;
+        hideDiagramPreview();
+        openDiagramModal(nodeId);
+    }
+
+    function openDiagramModal(nodeId) {
+        const node = findAlgorithmNodeById(nodeId);
+        const diagram = getDiagramForNode(node);
+        if (!node || !diagram) {
+            showToast('No diagram available for this algorithm', 'info');
+            return;
+        }
+
+        const modal = document.getElementById('diagramModal');
+        if (!modal) return;
+
+        document.getElementById('diagramModalBadge').textContent = node.codename || 'ALGORITHM';
+        document.getElementById('diagramModalTitle').textContent = node.name;
+        document.getElementById('diagramModalVersion').textContent = `v${node.version || '1.0'}`;
+
+        const container = document.getElementById('diagramSvgContainer');
+        container.innerHTML = renderDiagramSvg(diagram, { width: 500, height: 520, mini: false });
+
+        // Hide details panel initially
+        document.getElementById('diagramNodeDetails').classList.add('hidden');
+
+        // Bind click events on diagram nodes
+        bindDiagramNodeEvents(diagram);
+
+        modal.classList.remove('hidden');
+        state.currentDiagramNode = node;
+        state.currentDiagram = diagram;
+    }
+
+    function closeDiagramModal() {
+        const modal = document.getElementById('diagramModal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        document.getElementById('diagramNodeDetails')?.classList.add('hidden');
+        state.currentDiagramNode = null;
+    }
+
+    function bindDiagramNodeEvents(diagram) {
+        const container = document.getElementById('diagramSvgContainer');
+        if (!container) return;
+
+        container.querySelectorAll('.diagram-node').forEach(nodeEl => {
+            nodeEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const nodeId = nodeEl.dataset.node;
+                showDiagramNodeDetails(nodeId, diagram);
+
+                // Highlight selected node
+                container.querySelectorAll('.diagram-node').forEach(n => n.classList.remove('selected'));
+                nodeEl.classList.add('selected');
+            });
+        });
+
+        // Click on container background to hide details
+        container.addEventListener('click', (e) => {
+            if (e.target === container || e.target.closest('.algo-diagram-svg') === e.target) {
+                document.getElementById('diagramNodeDetails')?.classList.add('hidden');
+                container.querySelectorAll('.diagram-node').forEach(n => n.classList.remove('selected'));
+            }
+        });
+    }
+
+    function showDiagramNodeDetails(nodeId, diagram) {
+        const node = diagram.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+
+        const detailsPanel = document.getElementById('diagramNodeDetails');
+        const title = document.getElementById('diagramDetailsTitle');
+        const body = document.getElementById('diagramDetailsBody');
+
+        if (!detailsPanel || !title || !body) return;
+
+        // Find connections
+        const inEdges = diagram.edges.filter(e => e.to === nodeId);
+        const outEdges = diagram.edges.filter(e => e.from === nodeId);
+
+        title.textContent = node.label;
+
+        let html = `<div class="details-type">Type: <strong>${node.type}</strong></div>`;
+
+        if (inEdges.length > 0) {
+            html += '<div class="details-section">Receives from:</div><div class="details-connections">';
+            inEdges.forEach(edge => {
+                const fromNode = diagram.nodes.find(n => n.id === edge.from);
+                const label = fromNode ? fromNode.label : edge.from;
+                html += `<span class="conn-chip">${escapeHtml(label)}</span>`;
+            });
+            html += '</div>';
+        }
+
+        if (outEdges.length > 0) {
+            html += '<div class="details-section">Feeds into:</div><div class="details-connections">';
+            outEdges.forEach(edge => {
+                const toNode = diagram.nodes.find(n => n.id === edge.to);
+                const label = toNode ? toNode.label : edge.to;
+                html += `<span class="conn-chip">${escapeHtml(label)}</span>`;
+            });
+            html += '</div>';
+        }
+
+        body.innerHTML = html;
+        detailsPanel.classList.remove('hidden');
+    }
+
+    function setupDiagramModalListeners() {
+        const modal = document.getElementById('diagramModal');
+        if (!modal) return;
+
+        const btnClose = document.getElementById('btnCloseDiagramModal');
+        const btnCloseFooter = document.getElementById('btnDiagramModalClose');
+        const btnCloseDetails = document.getElementById('btnCloseDiagramDetails');
+
+        if (btnClose) btnClose.addEventListener('click', closeDiagramModal);
+        if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeDiagramModal);
+        if (btnCloseDetails) {
+            btnCloseDetails.addEventListener('click', () => {
+                document.getElementById('diagramNodeDetails')?.classList.add('hidden');
+            });
+        }
+
+        // Close on backdrop click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeDiagramModal();
+        });
     }
 
     // ================================

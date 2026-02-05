@@ -109,25 +109,40 @@
 
     try {
       const apiBase = window.API_BASE || '';
+      const updates = [];
 
-      // Save docs_link
+      // Queue docs_link update if changed
       if (docsLink !== currentDocsLink) {
-        await fetch(`${apiBase}/pipeline/tasks/${currentTaskId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ docs_link: docsLink }),
-        });
+        updates.push(
+          fetch(`${apiBase}/pipeline/tasks/${currentTaskId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ docs_link: docsLink }),
+          })
+        );
       }
 
-      // Save result_link
+      // Queue result_link update if changed
       if (resultLink !== currentResultLink) {
-        await fetch(`${apiBase}/pipeline/tasks/${currentTaskId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ result_link: resultLink }),
-        });
+        updates.push(
+          fetch(`${apiBase}/pipeline/tasks/${currentTaskId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ result_link: resultLink }),
+          })
+        );
+      }
+
+      // Execute all updates in parallel
+      if (updates.length > 0) {
+        const results = await Promise.all(updates);
+        // Check if any failed
+        const failed = results.filter(r => !r.ok);
+        if (failed.length > 0) {
+          throw new Error(`${failed.length} update(s) failed`);
+        }
       }
 
       if (window.Toast) {

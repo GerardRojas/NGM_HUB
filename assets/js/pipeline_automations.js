@@ -192,7 +192,8 @@
     const container = qs('automationsList');
     if (!container) return;
 
-    container.innerHTML = AUTOMATIONS.map(automation => {
+    try {
+      container.innerHTML = AUTOMATIONS.map(automation => {
       const isEnabled = settings[automation.id]?.enabled || false;
       const isComingSoon = automation.comingSoon || false;
 
@@ -239,12 +240,16 @@
           </label>
         </div>
       `;
-    }).join('');
+      }).join('');
 
-    // Attach change listeners
-    container.querySelectorAll('.pm-automation-checkbox').forEach(checkbox => {
-      checkbox.addEventListener('change', handleToggleChange);
-    });
+      // Attach change listeners
+      container.querySelectorAll('.pm-automation-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', handleToggleChange);
+      });
+    } catch (err) {
+      console.error('[AUTOMATIONS] Error rendering list:', err);
+      container.innerHTML = '<p class="pm-automation-error">Failed to load automations. Please try again.</p>';
+    }
   }
 
   function handleToggleChange(e) {

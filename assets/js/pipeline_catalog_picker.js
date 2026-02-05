@@ -150,6 +150,10 @@
       return items;
     } catch (err) {
       console.error(`[CatalogPicker] Error fetching ${catalogType}:`, err);
+      // Only show toast if no cached data to fall back on
+      if (!cache?.data && window.Toast) {
+        Toast.error('Load Failed', `Could not load ${catalogType} options.`);
+      }
       return cache?.data || [];
     }
   }

@@ -3,7 +3,7 @@
 **Creado:** 2026-02-05
 **Estado General:** EN PROGRESO
 **Total Issues:** 39
-**Resueltos:** 12
+**Resueltos:** 15
 
 ---
 
@@ -224,7 +224,7 @@
 - **Test:** N/A (documentacion)
 
 ### [P6-03] Error Handling Faltante en fetchCatalog
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** MEDIA
 - **Archivo:** `assets/js/pipeline_catalog_picker.js`
 - **Lineas:** 151-154
@@ -254,7 +254,7 @@
 ## PRIORIDAD 7: FUNCIONALIDAD
 
 ### [P7-01] Links Modal Hace Updates Secuenciales
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** MEDIA
 - **Archivo:** `assets/js/pipeline_links_modal.js`
 - **Lineas:** 113-131
@@ -263,7 +263,7 @@
 - **Test:** Cambiar ambos links, verificar que ambos se guarden
 
 ### [P7-02] Automations Status Sin Graceful Fail
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** MEDIA
 - **Archivo:** `assets/js/pipeline_automations.js`
 - **Lineas:** 137-156 vs 201-213
@@ -355,4 +355,7 @@
 | 2026-02-05 | P1-04 | COMPLETADO | destroy() ya existia, ahora se llama desde P3-01, P3-02 y table_interactions |
 | 2026-02-05 | P6-05 | COMPLETADO | Guard clause if (!task) return "-" en getCellValue |
 | 2026-02-05 | P4-01 | COMPLETADO | closeActiveEditor() antes de abrir links modal |
+| 2026-02-05 | P6-03 | COMPLETADO | Toast de error cuando fetchCatalog falla sin cache |
+| 2026-02-05 | P7-01 | COMPLETADO | Promise.all() para updates paralelos en links modal |
+| 2026-02-05 | P7-02 | COMPLETADO | try/catch con mensaje de error en renderAutomationsList |
 

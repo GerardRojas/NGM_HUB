@@ -692,16 +692,9 @@
   }
 
   // ================================
-  // UTILITIES
+  // UTILITIES (use shared PipelineUtils)
   // ================================
-  function escapeHtml(str) {
-    return String(str ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
+  const escapeHtml = window.PipelineUtils?.escapeHtml || (s => String(s ?? ''));
 
   function formatDateForInput(dateValue) {
     if (!dateValue) return '';

@@ -161,6 +161,57 @@
     }
   }
 
+  // ================================
+  // SCROLL INDICATORS
+  // Shows visual hint when table has horizontal scroll
+  // ================================
+  function initScrollIndicators() {
+    const groupBodies = document.querySelectorAll('.pm-group-body');
+
+    function updateScrollIndicators(el) {
+      const scrollLeft = el.scrollLeft;
+      const scrollWidth = el.scrollWidth;
+      const clientWidth = el.clientWidth;
+
+      // Check if content is wider than container
+      const hasScroll = scrollWidth > clientWidth;
+
+      if (hasScroll) {
+        // Show left indicator if scrolled
+        el.classList.toggle('has-scroll-left', scrollLeft > 5);
+        // Show right indicator if more content to the right
+        el.classList.toggle('has-scroll-right', scrollLeft < scrollWidth - clientWidth - 5);
+      } else {
+        el.classList.remove('has-scroll-left', 'has-scroll-right');
+      }
+    }
+
+    groupBodies.forEach(body => {
+      // Initial check
+      updateScrollIndicators(body);
+
+      // Update on scroll
+      body.addEventListener('scroll', () => updateScrollIndicators(body), { passive: true });
+
+      // Update on window resize
+      window.addEventListener('resize', () => updateScrollIndicators(body), { passive: true });
+    });
+  }
+
+  // Initialize scroll indicators when DOM is ready or when called
+  function setupScrollIndicators() {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initScrollIndicators);
+    } else {
+      // Small delay to ensure tables are rendered
+      setTimeout(initScrollIndicators, 100);
+    }
+  }
+
   window.initTableWidthSlider = initTableWidthSlider;
   window.refreshPipelineTables = refreshPipelineTables;
+  window.initScrollIndicators = initScrollIndicators;
+
+  // Auto-init scroll indicators
+  setupScrollIndicators();
 })();

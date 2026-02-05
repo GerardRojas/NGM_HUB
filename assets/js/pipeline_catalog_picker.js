@@ -24,22 +24,10 @@
   let activeDropdown = null;
 
   // ================================
-  // UTILITIES
+  // UTILITIES (use shared PipelineUtils)
   // ================================
-  function escapeHtml(str) {
-    return String(str ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
-
-  function getInitial(name) {
-    const s = String(name || '').trim();
-    if (!s) return '?';
-    return s[0].toUpperCase();
-  }
+  const escapeHtml = window.PipelineUtils?.escapeHtml || (s => String(s ?? ''));
+  const getInitial = window.PipelineUtils?.getInitial || (n => (n || '?')[0]?.toUpperCase() || '?');
 
   // Generate stable hue from string
   function stableHueFromString(str) {
@@ -372,6 +360,16 @@
       // Position dropdown using fixed positioning for table cell overflow
       this.positionDropdown();
 
+      // Add scroll listener to reposition dropdown when table scrolls
+      this._scrollContainer = this.container.closest('.pm-group-body') || this.container.closest('[style*="overflow"]');
+      if (this._scrollContainer) {
+        this._onScroll = () => this.positionDropdown();
+        this._scrollContainer.addEventListener('scroll', this._onScroll, { passive: true });
+      }
+      // Also listen to window scroll
+      this._onWindowScroll = () => this.positionDropdown();
+      window.addEventListener('scroll', this._onWindowScroll, { passive: true });
+
       // Load items if not cached
       console.log('[CatalogPicker] Loading items...');
       await this.loadItems();
@@ -414,6 +412,16 @@
       this.dropdown.classList.remove('is-open');
       this.searchQuery = '';
       this.searchInput.value = '';
+      // Remove scroll listeners
+      if (this._scrollContainer && this._onScroll) {
+        this._scrollContainer.removeEventListener('scroll', this._onScroll);
+        this._scrollContainer = null;
+        this._onScroll = null;
+      }
+      if (this._onWindowScroll) {
+        window.removeEventListener('scroll', this._onWindowScroll);
+        this._onWindowScroll = null;
+      }
       // Reset positioning styles
       this.dropdown.style.position = '';
       this.dropdown.style.top = '';

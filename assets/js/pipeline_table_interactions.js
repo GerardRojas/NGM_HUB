@@ -386,20 +386,13 @@
     return html;
   }
 
-  function escapeHtml(s) {
-    return String(s)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  function hashStringToHue(str) {
+  // Use shared PipelineUtils (with fallbacks for safety)
+  const escapeHtml = window.PipelineUtils?.escapeHtml || (s => String(s ?? ''));
+  const hashStringToHue = window.PipelineUtils?.hashStringToHue || (str => {
     let h = 0;
     for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
     return h % 360;
-  }
+  });
 
   // ================================
   // CREAR EDITORES

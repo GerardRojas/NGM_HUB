@@ -900,6 +900,40 @@
   padding-bottom: 6px; /* 👈 SEPARA LA TABLA DEL SCROLLBAR */
   overflow-x: auto;
   max-width: var(--pm-group-body-max, 100%);
+  position: relative;
+}
+
+/* Scroll indicators - fade effect showing more content is available */
+.pm-group-body::before,
+.pm-group-body::after {
+  content: '';
+  position: sticky;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.pm-group-body::before {
+  left: 0;
+  background: linear-gradient(to right, rgba(30, 31, 34, 0.95), transparent);
+}
+
+.pm-group-body::after {
+  right: 0;
+  background: linear-gradient(to left, rgba(30, 31, 34, 0.95), transparent);
+}
+
+/* Show indicators when scrollable - controlled by JS class */
+.pm-group-body.has-scroll-left::before {
+  opacity: 1;
+}
+
+.pm-group-body.has-scroll-right::after {
+  opacity: 1;
 }
 
 /* opcional: que el scroll se vea “gris” */

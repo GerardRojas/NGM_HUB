@@ -3,7 +3,7 @@
 **Creado:** 2026-02-05
 **Estado General:** EN PROGRESO
 **Total Issues:** 39
-**Resueltos:** 23
+**Resueltos:** 26
 
 ---
 
@@ -205,11 +205,11 @@
 ## PRIORIDAD 6: CODIGO (Calidad y Mantenibilidad)
 
 ### [P6-01] escapeHtml Duplicado 5 Veces
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** BAJA
-- **Archivos:** pipeline.js, people_picker.js, catalog_picker.js, table_interactions.js, edit_task_ui.js
+- **Archivos:** Nuevo: pipeline_utils.js; Actualizados: people_picker, catalog_picker, table_interactions, edit_task_ui
 - **Problema:** Mismo codigo copiado 5 veces
-- **Solucion:** Crear assets/js/utils.js con funciones compartidas
+- **Solucion:** Creado pipeline_utils.js con escapeHtml, getInitial, hashStringToHue; archivos usan PipelineUtils con fallback
 - **Test:** Verificar que todas las referencias funcionen despues de refactor
 
 ### [P6-02] API Endpoints Inconsistentes
@@ -291,19 +291,19 @@
 ## PRIORIDAD 8: LAYOUT
 
 ### [P8-01] Dropdown Positioning con Scroll
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** MEDIA
-- **Archivos:** people_picker.js:348-371, catalog_picker.js:372-395
+- **Archivos:** people_picker.js, catalog_picker.js
 - **Problema:** getBoundingClientRect() relativo a viewport, no a tabla scrolleada
-- **Solucion:** Recalcular posicion cuando tabla scrollea o usar Popper.js
+- **Solucion:** Scroll listeners en open() que reposicionan dropdown; cleanup en close()
 - **Test:** Scrollear tabla, abrir picker, verificar posicion
 
 ### [P8-02] Sin Scroll Horizontal Indicator
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** BAJA
 - **Archivos:** pipeline_layout.js, pipeline_styles.css
 - **Problema:** Tabla puede ser mas ancha que viewport sin indicador
-- **Solucion:** Agregar indicador visual o sticky column
+- **Solucion:** CSS pseudo-elements con gradientes + JS que agrega clases has-scroll-left/right
 - **Test:** Expandir tabla al maximo, verificar UX
 
 ---
@@ -364,4 +364,7 @@
 | 2026-02-05 | P3-03 | COMPLETADO | destroy() llama a close() para limpiar estilos inline |
 | 2026-02-05 | P2-02 | REVISADO | No XSS real (URLs escapados, onclick estatico), reclasificado a bajo riesgo |
 | 2026-02-05 | P5-03 | COMPLETADO | Date picker solo guarda si valor realmente cambio |
+| 2026-02-05 | P6-01 | COMPLETADO | pipeline_utils.js con escapeHtml, getInitial, hashStringToHue compartidos |
+| 2026-02-05 | P8-01 | COMPLETADO | Scroll listeners para reposicionar dropdowns en people/catalog picker |
+| 2026-02-05 | P8-02 | COMPLETADO | CSS gradient indicators + JS scroll detection en pm-group-body |
 

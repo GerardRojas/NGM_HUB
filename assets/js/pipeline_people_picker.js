@@ -3,6 +3,8 @@
 (function() {
   'use strict';
 
+  console.log('[PeoplePicker] Script loaded');
+
   // ================================
   // CONFIGURATION
   // ================================
@@ -64,15 +66,18 @@
   }
 
   async function fetchUsers() {
+    console.log('[PeoplePicker] fetchUsers() called');
     const now = Date.now();
 
     // Return cached data if still valid
     if (usersCache && (now - cacheTimestamp) < CACHE_TTL) {
+      console.log('[PeoplePicker] Returning cached users:', usersCache.length);
       return usersCache;
     }
 
     try {
       const apiBase = window.API_BASE || '';
+      console.log('[PeoplePicker] Fetching from:', `${apiBase}/team/users`);
       const res = await fetch(`${apiBase}/team/users`, {
         credentials: 'include',
         headers: {
@@ -81,9 +86,11 @@
         }
       });
 
+      console.log('[PeoplePicker] Response status:', res.status);
       if (!res.ok) throw new Error(`Failed to load users: ${res.status}`);
 
       const data = await res.json();
+      console.log('[PeoplePicker] Raw data:', data);
       usersCache = Array.isArray(data) ? data : (data.users || data.data || []);
       cacheTimestamp = now;
 
@@ -98,6 +105,7 @@
         status: u.status?.name || u.user_status_name || ''
       }));
 
+      console.log('[PeoplePicker] Normalized users count:', usersCache.length);
       return usersCache;
     } catch (err) {
       console.error('[PeoplePicker] Error fetching users:', err);
@@ -160,6 +168,7 @@
   // ================================
   class PeoplePicker {
     constructor(container, options = {}) {
+      console.log('[PeoplePicker] Constructor called with options:', options);
       this.container = typeof container === 'string'
         ? document.querySelector(container)
         : container;
@@ -180,9 +189,11 @@
       this.isOpen = false;
       this.searchQuery = '';
 
+      console.log('[PeoplePicker] Building UI, multiple:', this.multiple);
       // Build UI
       this.render();
       this.bindEvents();
+      console.log('[PeoplePicker] Instance created successfully');
     }
 
     render() {
@@ -286,6 +297,7 @@
     }
 
     async toggle() {
+      console.log('[PeoplePicker] toggle() called, isOpen:', this.isOpen);
       if (this.isOpen) {
         this.close();
       } else {
@@ -294,6 +306,7 @@
     }
 
     async open() {
+      console.log('[PeoplePicker] open() called');
       // Close any other open dropdown
       if (activeDropdown && activeDropdown !== this) {
         activeDropdown.close();
@@ -303,12 +316,15 @@
       activeDropdown = this;
       this.trigger.classList.add('is-open');
       this.dropdown.classList.add('is-open');
+      console.log('[PeoplePicker] Dropdown classes added, positioning...');
 
       // Position dropdown using fixed positioning for table cell overflow
       this.positionDropdown();
 
       // Load users if not cached
+      console.log('[PeoplePicker] Loading users...');
       await this.loadUsers();
+      console.log('[PeoplePicker] Users loaded, count:', this.users?.length);
 
       // Focus search
       setTimeout(() => this.searchInput.focus(), 50);
@@ -356,16 +372,20 @@
     }
 
     async loadUsers() {
+      console.log('[PeoplePicker] loadUsers() instance method called');
       this.list.innerHTML = '<div class="pm-people-loading">Loading...</div>';
 
       const users = await fetchUsers();
+      console.log('[PeoplePicker] fetchUsers returned:', users?.length, 'users');
 
       if (!users.length) {
+        console.log('[PeoplePicker] No users found');
         this.list.innerHTML = '<div class="pm-people-empty">No users found</div>';
         return;
       }
 
       this.users = users;
+      console.log('[PeoplePicker] Rendering list...');
       this.renderList();
     }
 
@@ -394,19 +414,25 @@
     }
 
     toggleUser(userId) {
+      console.log('[PeoplePicker] toggleUser() called with id:', userId);
       const existingIndex = this.selectedUsers.findIndex(u => u.id === userId);
+      console.log('[PeoplePicker] Existing index:', existingIndex);
 
       if (existingIndex >= 0) {
         // Remove
+        console.log('[PeoplePicker] Removing user');
         this.selectedUsers.splice(existingIndex, 1);
       } else {
         // Add
         const user = this.users.find(u => u.id === userId);
+        console.log('[PeoplePicker] Found user:', user);
         if (user) {
           if (!this.multiple) {
             // Single select: replace
+            console.log('[PeoplePicker] Single select - replacing');
             this.selectedUsers = [user];
           } else {
+            console.log('[PeoplePicker] Multi select - adding');
             this.selectedUsers.push(user);
           }
         }
@@ -414,6 +440,7 @@
 
       this.renderSelected();
       this.renderList();
+      console.log('[PeoplePicker] Emitting change, selected:', this.selectedUsers);
       this.emitChange();
 
       // Close if single select

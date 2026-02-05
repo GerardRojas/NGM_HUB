@@ -1425,187 +1425,240 @@
 .algo-graph-svg {
   width: 100%;
   height: 100%;
-  min-height: 500px;
+  min-height: 580px;
 }
 
-/* Edge lines */
+/* Edge lines - straight lines for neural network style */
 .algo-edge {
-  stroke: rgba(148, 163, 184, 0.25);
-  stroke-width: 1.5;
-  fill: none;
+  stroke: rgba(100, 116, 139, 0.2);
+  stroke-width: 1;
   transition: stroke 0.2s ease, stroke-width 0.2s ease;
 }
 
 .algo-edge.edge-active {
-  stroke: rgba(62, 207, 142, 0.5);
-  stroke-width: 2;
+  stroke: rgba(62, 207, 142, 0.4);
+  stroke-width: 1.5;
 }
 
-.algo-edge.edge-warning {
-  stroke: rgba(250, 204, 21, 0.5);
-  stroke-width: 2;
-  stroke-dasharray: 5, 3;
+.algo-edge.edge-discount {
+  stroke: rgba(52, 211, 153, 0.5);
+  stroke-width: 1.5;
 }
 
 .algo-edge.edge-penalty {
-  stroke: rgba(248, 113, 113, 0.5);
-  stroke-width: 2;
+  stroke: rgba(248, 113, 113, 0.4);
+  stroke-width: 1.5;
 }
 
-/* Node groups */
+/* Node groups - circles */
 .algo-node {
   cursor: pointer;
-  transition: transform 0.15s ease;
 }
 
-.algo-node:hover {
-  transform: scale(1.05);
+.algo-node:hover .algo-node-circle {
+  filter: brightness(1.2);
 }
 
 /* Node circles */
 .algo-node-circle {
-  fill: rgba(30, 30, 35, 0.9);
-  stroke: rgba(148, 163, 184, 0.35);
+  fill: rgba(30, 41, 59, 0.85);
+  stroke: rgba(148, 163, 184, 0.3);
   stroke-width: 2;
   transition: all 0.2s ease;
 }
 
-.algo-node:hover .algo-node-circle {
-  stroke: rgba(148, 163, 184, 0.6);
+/* Node type colors */
+.algo-node.node-input .algo-node-circle {
+  fill: rgba(51, 65, 85, 0.9);
+  stroke: rgba(148, 163, 184, 0.4);
 }
 
-/* Node status colors */
+.algo-node.node-calc .algo-node-circle {
+  fill: rgba(30, 58, 138, 0.6);
+  stroke: rgba(96, 165, 250, 0.5);
+}
+
+.algo-node.node-modifier .algo-node-circle {
+  fill: rgba(88, 28, 135, 0.5);
+  stroke: rgba(167, 139, 250, 0.5);
+}
+
+/* Active state */
 .algo-node.node-active .algo-node-circle {
-  fill: rgba(62, 207, 142, 0.15);
+  fill: rgba(6, 78, 59, 0.7);
   stroke: #3ecf8e;
   stroke-width: 2.5;
 }
 
+/* Penalty state - red glow */
+.algo-node.node-penalty .algo-node-circle {
+  fill: rgba(127, 29, 29, 0.6);
+  stroke: #f87171;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 4px rgba(248, 113, 113, 0.4));
+}
+
+/* Discount state - green glow */
+.algo-node.node-discount .algo-node-circle {
+  fill: rgba(6, 78, 59, 0.6);
+  stroke: #34d399;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 0 4px rgba(52, 211, 153, 0.4));
+}
+
+/* Warning state */
 .algo-node.node-warning .algo-node-circle {
-  fill: rgba(250, 204, 21, 0.12);
+  fill: rgba(113, 63, 18, 0.6);
   stroke: #facc15;
   stroke-width: 2.5;
 }
 
-.algo-node.node-penalty .algo-node-circle {
-  fill: rgba(248, 113, 113, 0.12);
-  stroke: #f87171;
-  stroke-width: 2.5;
-}
-
-.algo-node.node-discount .algo-node-circle {
-  fill: rgba(52, 211, 153, 0.12);
-  stroke: #34d399;
-  stroke-width: 2.5;
-}
-
+/* Output node - prominent purple */
 .algo-node.node-output .algo-node-circle {
-  fill: rgba(139, 92, 246, 0.15);
+  fill: rgba(88, 28, 135, 0.7);
   stroke: #a78bfa;
   stroke-width: 3;
+  filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.5));
 }
 
-/* Node labels */
+/* Node labels inside circles */
 .algo-node-label {
-  fill: rgba(255, 255, 255, 0.7);
-  font-size: 11px;
-  font-weight: 500;
+  fill: rgba(255, 255, 255, 0.85);
+  font-size: 10px;
+  font-weight: 600;
   text-anchor: middle;
   pointer-events: none;
-  transition: fill 0.2s ease;
-}
-
-.algo-node.node-active .algo-node-label {
-  fill: #3ecf8e;
-  font-weight: 600;
-}
-
-.algo-node.node-warning .algo-node-label {
-  fill: #facc15;
-}
-
-.algo-node.node-penalty .algo-node-label {
-  fill: #f87171;
-}
-
-.algo-node.node-discount .algo-node-label {
-  fill: #34d399;
+  dominant-baseline: middle;
 }
 
 .algo-node.node-output .algo-node-label {
-  fill: #a78bfa;
+  fill: #fff;
+  font-size: 13px;
   font-weight: 700;
-  font-size: 12px;
 }
 
-/* Node value display */
+.algo-node.node-active .algo-node-label {
+  fill: #6ee7b7;
+}
+
+.algo-node.node-penalty .algo-node-label {
+  fill: #fca5a5;
+}
+
+.algo-node.node-discount .algo-node-label {
+  fill: #6ee7b7;
+}
+
+/* Node value below circle */
 .algo-node-value {
-  fill: rgba(255, 255, 255, 0.45);
+  fill: rgba(255, 255, 255, 0.5);
   font-size: 9px;
   text-anchor: middle;
   pointer-events: none;
 }
 
-.algo-node.node-active .algo-node-value,
-.algo-node.node-discount .algo-node-value {
-  fill: rgba(62, 207, 142, 0.8);
+.algo-node.node-active .algo-node-value {
+  fill: rgba(110, 231, 183, 0.9);
 }
 
 .algo-node.node-penalty .algo-node-value {
-  fill: rgba(248, 113, 113, 0.8);
+  fill: rgba(252, 165, 165, 0.9);
 }
 
-/* Legend */
+.algo-node.node-discount .algo-node-value {
+  fill: rgba(110, 231, 183, 0.9);
+}
+
+/* Modifier badge below value */
+.algo-node-mod {
+  font-size: 10px;
+  font-weight: 600;
+  text-anchor: middle;
+  pointer-events: none;
+}
+
+.algo-node-mod.mod-penalty {
+  fill: #f87171;
+}
+
+.algo-node-mod.mod-discount {
+  fill: #34d399;
+}
+
+/* Legend - Neural Network style */
 .algo-legend {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 20px;
-  padding: 14px 20px;
-  background: rgba(255, 255, 255, 0.02);
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: rgba(15, 23, 42, 0.5);
   border: 1px solid rgba(148, 163, 184, 0.1);
   border-radius: 8px;
 }
 
-.algo-legend-item {
+.legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+.legend-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 11px;
+  gap: 6px;
+  font-size: 10px;
   color: rgba(255, 255, 255, 0.6);
 }
 
-.algo-legend-dot {
-  width: 10px;
-  height: 10px;
+.legend-circle {
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   border: 2px solid;
 }
 
-.algo-legend-dot.dot-inactive {
-  background: rgba(30, 30, 35, 0.9);
-  border-color: rgba(148, 163, 184, 0.35);
+.legend-circle.circle-input {
+  background: rgba(51, 65, 85, 0.9);
+  border-color: rgba(148, 163, 184, 0.5);
 }
 
-.algo-legend-dot.dot-active {
-  background: rgba(62, 207, 142, 0.15);
+.legend-circle.circle-calc {
+  background: rgba(30, 58, 138, 0.6);
+  border-color: rgba(96, 165, 250, 0.6);
+}
+
+.legend-circle.circle-modifier {
+  background: rgba(88, 28, 135, 0.5);
+  border-color: rgba(167, 139, 250, 0.6);
+}
+
+.legend-circle.circle-active {
+  background: rgba(6, 78, 59, 0.7);
   border-color: #3ecf8e;
 }
 
-.algo-legend-dot.dot-penalty {
-  background: rgba(248, 113, 113, 0.12);
+.legend-circle.circle-penalty {
+  background: rgba(127, 29, 29, 0.6);
   border-color: #f87171;
 }
 
-.algo-legend-dot.dot-discount {
-  background: rgba(52, 211, 153, 0.12);
+.legend-circle.circle-discount {
+  background: rgba(6, 78, 59, 0.6);
   border-color: #34d399;
 }
 
-.algo-legend-dot.dot-warning {
-  background: rgba(250, 204, 21, 0.12);
-  border-color: #facc15;
+.legend-circle.circle-output {
+  background: rgba(88, 28, 135, 0.7);
+  border-color: #a78bfa;
+}
+
+.legend-hint {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.35);
+  font-style: italic;
 }
 
 /* Node details panel */
@@ -1741,12 +1794,21 @@
   }
 
   .algo-legend {
-    gap: 12px;
-    padding: 12px 16px;
+    gap: 8px;
+    padding: 10px 14px;
   }
 
-  .algo-legend-item {
-    font-size: 10px;
+  .legend-items {
+    gap: 10px;
+  }
+
+  .legend-item {
+    font-size: 9px;
+  }
+
+  .legend-circle {
+    width: 10px;
+    height: 10px;
   }
 
   .algo-node-details {

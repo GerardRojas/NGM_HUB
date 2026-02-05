@@ -3993,3 +3993,9 @@ select.edit-input option {
   background: #1f1f1f;
   color: #9ca3af;
 }
+
+/* Database Estimator - Material Description Field */
+#materialDescription {
+  min-height: 120px;
+  resize: vertical;
+}

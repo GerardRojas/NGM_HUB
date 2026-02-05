@@ -996,6 +996,9 @@
         if (result.success && Array.isArray(result.data)) {
             state.customModules = normalizeModules(result.data);
             console.log(`[PROCESS-MANAGER] Loaded ${state.customModules.length} modules from Supabase`);
+
+            // Ensure hub module exists in customModules (for special modules persistence)
+            ensureHubModuleExists();
         } else {
             // Server error - show error and disable editing
             state.customModules = [];
@@ -1050,6 +1053,35 @@
                 isCustom: true
             };
         });
+    }
+
+    // Ensure the hub module exists in customModules for persistence
+    function ensureHubModuleExists() {
+        const existingHub = state.customModules.find(m => m.id === 'hub');
+        if (!existingHub) {
+            const hubModule = {
+                id: 'hub',
+                name: 'NGM HUB',
+                description: 'Web Structure',
+                icon: 'hub',
+                color: '#3ecf8e',
+                isImplemented: true,
+                type: 'process',
+                linkedProcesses: [],
+                subProcessNodes: [],
+                subProcessConnections: [],
+                connectedToHub: false,
+                isCustom: false,
+                isHub: true,
+                createdAt: new Date().toISOString()
+            };
+            state.customModules.push(hubModule);
+            console.log('[PROCESS-MANAGER] Created hub module in customModules');
+            // Save immediately to persist
+            saveCustomModules();
+        } else {
+            console.log('[PROCESS-MANAGER] Hub module already exists in customModules');
+        }
     }
 
     function saveCustomModules() {
@@ -1269,6 +1301,12 @@
     }
 
     function deleteCustomModule(id) {
+        // Protect the hub from being deleted
+        if (id === 'hub') {
+            showToast('The hub module cannot be deleted', 'warning');
+            return false;
+        }
+
         const index = state.customModules.findIndex(m => m.id === id);
         if (index !== -1) {
             state.customModules.splice(index, 1);
@@ -2882,8 +2920,12 @@
     function navigateToModuleDetail(moduleId) {
         let module;
 
-        // Handle hub as a special module
-        if (moduleId === 'hub') {
+        // Get module from customModules (hub is also stored there now)
+        module = getCustomModule(moduleId);
+
+        // Fallback for hub if not found (shouldn't happen after ensureHubModuleExists)
+        if (!module && moduleId === 'hub') {
+            console.warn('[PROCESS-MANAGER] Hub not found in customModules, creating fallback');
             module = {
                 id: 'hub',
                 name: 'NGM HUB',
@@ -2892,12 +2934,12 @@
                 color: '#3ecf8e',
                 isImplemented: true,
                 linkedProcesses: [],
+                subProcessNodes: [],
                 type: 'process'
             };
-        } else {
-            module = getCustomModule(moduleId);
-            if (!module) return;
         }
+
+        if (!module) return;
 
         state.currentLevel = 'detail';
         state.selectedGroupId = moduleId;

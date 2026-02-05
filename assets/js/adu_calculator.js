@@ -7,14 +7,16 @@
   // RULES: allowed stories per ADU type
   // ------------------------------------------
   var STORY_RULES = {
+    studio:             [1],
     attached:           [1, 2],
-    detached:           [1, 2],
+    detached:           [1, 2, 3],
     above_garage:       [1],
     garage_conversion:  [1],
     multifamily:        [1, 2, 4, 5],
   };
 
   var TYPE_LABELS = {
+    studio:             "Studio",
     attached:           "Attached",
     detached:           "Detached",
     above_garage:       "Above the Garage",
@@ -57,6 +59,9 @@
     // Base rates: $/sqft by [adu_type][construction_type]
     // These are the foundation of all calculations
     base_rates: {
+      studio: {
+        stick_build: 165, energy_efficient: 200, renovation: 140, manufactured: 130
+      },
       attached: {
         stick_build: 175, energy_efficient: 215, renovation: 145, manufactured: 135
       },
@@ -77,6 +82,7 @@
     // SQFT curves: optimal ranges per adu_type
     // Outside optimal range = price adjustments
     sqft_curves: {
+      studio:            { min: 200, optimal_min: 300,  optimal_max: 500,  max: 600  },
       attached:          { min: 400, optimal_min: 600,  optimal_max: 1200, max: 1600 },
       detached:          { min: 350, optimal_min: 500,  optimal_max: 1000, max: 1400 },
       above_garage:      { min: 300, optimal_min: 400,  optimal_max: 800,  max: 1000 },
@@ -97,6 +103,7 @@
     stories_multipliers: {
       1: 1.0,
       2: 1.35,
+      3: 1.50,  // detached 3-story
       4: 1.65,  // multifamily
       5: 1.80   // multifamily
     },
@@ -1990,27 +1997,42 @@
 
   var algoGraphExpanded = false;
 
-  // Node definitions for the graph
+  // Node definitions - Neural Network style
+  // Weight indicates relative visual importance (affects circle size)
+  // baseRadius = 18, maxRadius = 38, scaled by weight
   var ALGO_NODES = [
-    { id: "adu_type", label: "ADU Type", x: 400, y: 40, layer: 0, type: "input" },
-    { id: "construction", label: "Construction", x: 250, y: 120, layer: 1, type: "input" },
-    { id: "sqft", label: "Square Feet", x: 550, y: 120, layer: 1, type: "input" },
-    { id: "base_rate", label: "Base Rate", x: 400, y: 200, layer: 2, type: "calc" },
-    { id: "sqft_curve", label: "Size Curve", x: 550, y: 200, layer: 2, type: "modifier" },
-    { id: "efficiency", label: "Efficiency", x: 700, y: 200, layer: 2, type: "modifier" },
-    { id: "stories", label: "Stories", x: 100, y: 280, layer: 3, type: "input" },
-    { id: "design", label: "Design Pkg", x: 230, y: 280, layer: 3, type: "input" },
-    { id: "foundation", label: "Foundation", x: 360, y: 280, layer: 3, type: "input" },
-    { id: "land", label: "Land Surface", x: 490, y: 280, layer: 3, type: "input" },
-    { id: "density", label: "Density", x: 620, y: 280, layer: 3, type: "modifier" },
-    { id: "multiplier", label: "Multiplier", x: 300, y: 370, layer: 4, type: "calc" },
-    { id: "rules", label: "Rules Check", x: 450, y: 370, layer: 4, type: "modifier" },
-    { id: "cross", label: "Cross Adj", x: 600, y: 370, layer: 4, type: "modifier" },
-    { id: "config", label: "Bed/Bath", x: 150, y: 460, layer: 5, type: "input" },
-    { id: "options", label: "Add-ons", x: 300, y: 460, layer: 5, type: "input" },
-    { id: "opt_features", label: "Site Features", x: 470, y: 460, layer: 5, type: "input" },
-    { id: "additions", label: "Additions", x: 300, y: 530, layer: 6, type: "calc" },
-    { id: "total", label: "TOTAL", x: 400, y: 610, layer: 7, type: "output" }
+    // Layer 0: Primary input
+    { id: "adu_type", label: "Type", x: 400, y: 55, layer: 0, type: "input", weight: 1.0 },
+
+    // Layer 1: Secondary inputs
+    { id: "construction", label: "Build", x: 280, y: 130, layer: 1, type: "input", weight: 0.8 },
+    { id: "sqft", label: "Sqft", x: 520, y: 130, layer: 1, type: "input", weight: 0.9 },
+
+    // Layer 2: Rate calculations
+    { id: "base_rate", label: "Rate", x: 320, y: 210, layer: 2, type: "calc", weight: 1.0 },
+    { id: "sqft_curve", label: "Size", x: 480, y: 210, layer: 2, type: "modifier", weight: 0.5 },
+    { id: "efficiency", label: "Eff", x: 620, y: 210, layer: 2, type: "modifier", weight: 0.6 },
+
+    // Layer 3: Multiplier inputs
+    { id: "stories", label: "Story", x: 100, y: 300, layer: 3, type: "input", weight: 0.7 },
+    { id: "design", label: "Design", x: 210, y: 300, layer: 3, type: "input", weight: 0.6 },
+    { id: "foundation", label: "Found", x: 320, y: 300, layer: 3, type: "input", weight: 0.5 },
+    { id: "land", label: "Land", x: 430, y: 300, layer: 3, type: "input", weight: 0.5 },
+    { id: "density", label: "Dens", x: 540, y: 300, layer: 3, type: "modifier", weight: 0.4 },
+    { id: "config", label: "Bed/Ba", x: 650, y: 300, layer: 3, type: "input", weight: 0.3 },
+
+    // Layer 4: Combined calculations
+    { id: "multiplier", label: "Mult", x: 260, y: 400, layer: 4, type: "calc", weight: 0.9 },
+    { id: "rules", label: "Rules", x: 400, y: 400, layer: 4, type: "modifier", weight: 0.4 },
+    { id: "cross", label: "Cross", x: 540, y: 400, layer: 4, type: "modifier", weight: 0.3 },
+
+    // Layer 5: Additions
+    { id: "options", label: "Opts", x: 220, y: 490, layer: 5, type: "input", weight: 0.5 },
+    { id: "opt_features", label: "Site", x: 400, y: 490, layer: 5, type: "input", weight: 0.4 },
+    { id: "additions", label: "Adds", x: 580, y: 490, layer: 5, type: "calc", weight: 0.6 },
+
+    // Layer 6: Output
+    { id: "total", label: "TOTAL", x: 400, y: 580, layer: 6, type: "output", weight: 1.3 }
   ];
 
   // Edge definitions (connections between nodes)
@@ -2238,15 +2260,35 @@
     return status;
   }
 
+  // Calculate node radius based on weight (dynamic based on modifier impact)
+  function getNodeRadius(node, status) {
+    var baseRadius = 18;
+    var maxRadius = 36;
+    var weight = node.weight || 0.5;
+
+    // Increase radius if node has significant modifier
+    if (status.modifier && status.modifier !== 1) {
+      var impact = Math.abs(status.modifier - 1);
+      weight = Math.min(1.3, weight + impact * 0.5);
+    }
+
+    // Output node is always larger
+    if (node.type === "output") {
+      return maxRadius + 4;
+    }
+
+    return baseRadius + (maxRadius - baseRadius) * weight;
+  }
+
   function renderAlgorithmGraph() {
     if (!algoGraphContainer) return;
 
-    var width = 800;
-    var height = 680;
+    var width = 760;
+    var height = 640;
 
     var svg = '<svg class="algo-graph-svg" viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="xMidYMid meet">';
 
-    // Draw edges first (behind nodes)
+    // Draw edges first (behind nodes) - straight lines
     svg += '<g class="algo-edges">';
     ALGO_EDGES.forEach(function (edge) {
       var fromNode = ALGO_NODES.find(function (n) { return n.id === edge.from; });
@@ -2256,48 +2298,70 @@
       var fromStatus = getNodeStatus(edge.from);
       var toStatus = getNodeStatus(edge.to);
       var edgeActive = fromStatus.active && toStatus.active;
+      var edgePenalty = edgeActive && (fromStatus.status === "penalty" || toStatus.status === "penalty");
+      var edgeDiscount = edgeActive && (fromStatus.status === "discount" || toStatus.status === "discount");
 
-      var x1 = fromNode.x;
-      var y1 = fromNode.y + 20;
-      var x2 = toNode.x;
-      var y2 = toNode.y - 20;
+      var fromRadius = getNodeRadius(fromNode, fromStatus);
+      var toRadius = getNodeRadius(toNode, toStatus);
 
-      // Curved path
-      var midY = (y1 + y2) / 2;
-      var path = "M" + x1 + "," + y1 + " Q" + x1 + "," + midY + " " + ((x1 + x2) / 2) + "," + midY + " T" + x2 + "," + y2;
+      // Calculate edge endpoints at circle boundaries
+      var dx = toNode.x - fromNode.x;
+      var dy = toNode.y - fromNode.y;
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist === 0) return;
 
-      var edgeClass = "algo-edge" + (edgeActive ? " active" : "");
+      var x1 = fromNode.x + (dx / dist) * fromRadius;
+      var y1 = fromNode.y + (dy / dist) * fromRadius;
+      var x2 = toNode.x - (dx / dist) * toRadius;
+      var y2 = toNode.y - (dy / dist) * toRadius;
 
-      svg += '<path class="' + edgeClass + '" d="' + path + '" data-from="' + edge.from + '" data-to="' + edge.to + '"/>';
+      var edgeClass = "algo-edge";
+      if (edgeActive) edgeClass += " edge-active";
+      if (edgePenalty) edgeClass += " edge-penalty";
+      if (edgeDiscount) edgeClass += " edge-discount";
+
+      // Straight line
+      svg += '<line class="' + edgeClass + '" x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '"/>';
     });
     svg += '</g>';
 
-    // Draw nodes
+    // Draw nodes as circles
     svg += '<g class="algo-nodes">';
     ALGO_NODES.forEach(function (node) {
       var status = getNodeStatus(node.id);
+      var radius = getNodeRadius(node, status);
+
       var nodeClass = "algo-node";
       nodeClass += " node-" + node.type;
-      if (status.active) nodeClass += " active";
-      if (status.status === "penalty") nodeClass += " status-penalty";
-      if (status.status === "discount") nodeClass += " status-discount";
-      if (status.status === "warning") nodeClass += " status-warning";
-      if (status.status === "output") nodeClass += " status-output";
-
-      var rx = node.type === "output" ? 25 : (node.type === "calc" ? 8 : 12);
-      var nodeWidth = node.type === "output" ? 100 : 80;
-      var nodeHeight = node.type === "output" ? 50 : 40;
+      if (status.active) nodeClass += " node-active";
+      if (status.status === "penalty") nodeClass += " node-penalty";
+      if (status.status === "discount") nodeClass += " node-discount";
+      if (status.status === "warning") nodeClass += " node-warning";
+      if (status.status === "output") nodeClass += " node-output";
 
       svg += '<g class="' + nodeClass + '" data-node="' + node.id + '" transform="translate(' + node.x + ',' + node.y + ')">';
-      svg += '<rect x="' + (-nodeWidth / 2) + '" y="' + (-nodeHeight / 2) + '" width="' + nodeWidth + '" height="' + nodeHeight + '" rx="' + rx + '"/>';
-      svg += '<text class="node-label" y="-2">' + node.label + '</text>';
+
+      // Circle
+      svg += '<circle class="algo-node-circle" r="' + radius + '"/>';
+
+      // Label inside circle
+      svg += '<text class="algo-node-label" y="1">' + node.label + '</text>';
+
+      // Value below circle (if has value)
       if (status.value) {
-        svg += '<text class="node-value" y="12">' + status.value + '</text>';
+        var valueText = status.value;
+        // Truncate long values
+        if (valueText.length > 12) valueText = valueText.substring(0, 11) + "...";
+        svg += '<text class="algo-node-value" y="' + (radius + 14) + '">' + valueText + '</text>';
       }
+
+      // Modifier badge (if has modifier != 1)
       if (status.modifier && status.modifier !== 1) {
         var modStr = status.modifier > 1 ? "+" + Math.round((status.modifier - 1) * 100) + "%" : Math.round((status.modifier - 1) * 100) + "%";
-        svg += '<text class="node-modifier" y="' + (nodeHeight / 2 + 14) + '">' + modStr + '</text>';
+        var badgeClass = status.modifier > 1 ? "mod-penalty" : "mod-discount";
+        svg += '<text class="algo-node-mod ' + badgeClass + '" y="' + (radius + 26) + '">' + modStr + '</text>';
       }
+
       svg += '</g>';
     });
     svg += '</g>';
@@ -2316,16 +2380,16 @@
   function renderAlgoLegend() {
     if (!algoLegend) return;
 
-    var html = '<div class="legend-title">Legend</div>'
-             + '<div class="legend-items">'
-             + '<div class="legend-item"><span class="legend-dot dot-input"></span>Input</div>'
-             + '<div class="legend-item"><span class="legend-dot dot-calc"></span>Calculation</div>'
-             + '<div class="legend-item"><span class="legend-dot dot-modifier"></span>Modifier</div>'
-             + '<div class="legend-item"><span class="legend-dot dot-output"></span>Output</div>'
-             + '<div class="legend-item"><span class="legend-dot dot-penalty"></span>+ Cost</div>'
-             + '<div class="legend-item"><span class="legend-dot dot-discount"></span>- Cost</div>'
-             + '<div class="legend-item"><span class="legend-dot dot-warning"></span>Warning</div>'
-             + '</div>';
+    var html = '<div class="legend-items">'
+             + '<div class="legend-item"><span class="legend-circle circle-input"></span><span>Input</span></div>'
+             + '<div class="legend-item"><span class="legend-circle circle-calc"></span><span>Calc</span></div>'
+             + '<div class="legend-item"><span class="legend-circle circle-modifier"></span><span>Modifier</span></div>'
+             + '<div class="legend-item"><span class="legend-circle circle-active"></span><span>Active</span></div>'
+             + '<div class="legend-item"><span class="legend-circle circle-penalty"></span><span>+Cost</span></div>'
+             + '<div class="legend-item"><span class="legend-circle circle-discount"></span><span>-Cost</span></div>'
+             + '<div class="legend-item"><span class="legend-circle circle-output"></span><span>Total</span></div>'
+             + '</div>'
+             + '<div class="legend-hint">Circle size = cost impact</div>';
 
     algoLegend.innerHTML = html;
   }

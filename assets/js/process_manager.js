@@ -8473,40 +8473,80 @@
         const { width = 400, height = 300, mini = false } = options;
         const { nodes, edges } = diagram;
 
-        // Calculate unique arrowhead ID to avoid conflicts
-        const arrowId = 'arrowhead-' + Math.random().toString(36).substr(2, 9);
+        // Calculate dynamic viewBox based on actual node positions
+        const padding = 60;
+        const minX = Math.min(...nodes.map(n => n.x)) - padding;
+        const maxX = Math.max(...nodes.map(n => n.x)) + padding;
+        const minY = Math.min(...nodes.map(n => n.y)) - padding;
+        const maxY = Math.max(...nodes.map(n => n.y)) + padding;
+        const viewWidth = maxX - minX;
+        const viewHeight = maxY - minY;
 
-        let svg = `<svg class="algo-diagram-svg ${mini ? 'mini' : ''}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">`;
+        // Unique IDs for this SVG instance
+        const uniqueId = Math.random().toString(36).substr(2, 9);
+        const dotId = `flow-dot-${uniqueId}`;
+        const animId = `flow-anim-${uniqueId}`;
 
-        // Arrow marker definition
+        let svg = `<svg class="algo-diagram-svg ${mini ? 'mini' : ''}" viewBox="${minX} ${minY} ${viewWidth} ${viewHeight}" preserveAspectRatio="xMidYMid meet">`;
+
+        // Defs for small dot marker
         svg += `
             <defs>
-                <marker id="${arrowId}" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="rgba(148, 163, 184, 0.6)"/>
+                <marker id="${dotId}" markerWidth="6" markerHeight="6" refX="3" refY="3">
+                    <circle cx="3" cy="3" r="2" fill="rgba(62, 207, 142, 0.8)"/>
                 </marker>
             </defs>
         `;
 
-        // Edges first (behind nodes)
+        // Edges first (behind nodes) - dashed animated lines
         svg += '<g class="diagram-edges">';
-        edges.forEach(edge => {
+        edges.forEach((edge, idx) => {
             const fromNode = nodes.find(n => n.id === edge.from);
             const toNode = nodes.find(n => n.id === edge.to);
             if (!fromNode || !toNode) return;
 
-            // Calculate edge points
-            const nodeHeight = fromNode.type === 'decision' ? 25 : 18;
-            const y1 = fromNode.y + nodeHeight;
-            const y2 = toNode.y - nodeHeight;
+            // Calculate edge points based on node type
+            const fromRadius = fromNode.type === 'decision' ? 28 : (fromNode.type === 'input' || fromNode.type === 'output' ? 22 : 20);
+            const toRadius = toNode.type === 'decision' ? 28 : (toNode.type === 'input' || toNode.type === 'output' ? 22 : 20);
 
-            svg += `<line class="diagram-edge" x1="${fromNode.x}" y1="${y1}" x2="${toNode.x}" y2="${y2}" marker-end="url(#${arrowId})"/>`;
+            const y1 = fromNode.y + fromRadius;
+            const y2 = toNode.y - toRadius;
 
-            // Edge label (not in mini mode)
+            // Calculate path for curved or straight line
+            const dx = toNode.x - fromNode.x;
+            const dy = y2 - y1;
+            const pathId = `path-${uniqueId}-${idx}`;
+
+            // Use quadratic bezier for diagonal lines, straight for vertical
+            let pathD;
+            if (Math.abs(dx) < 10) {
+                // Straight vertical line
+                pathD = `M ${fromNode.x} ${y1} L ${toNode.x} ${y2}`;
+            } else {
+                // Smooth curve
+                const midY = y1 + dy * 0.5;
+                pathD = `M ${fromNode.x} ${y1} Q ${fromNode.x} ${midY} ${(fromNode.x + toNode.x) / 2} ${midY} Q ${toNode.x} ${midY} ${toNode.x} ${y2}`;
+            }
+
+            svg += `<path id="${pathId}" class="diagram-edge" d="${pathD}" marker-end="url(#${dotId})"/>`;
+
+            // Animated flow dot (only in non-mini mode)
+            if (!mini) {
+                svg += `
+                    <circle class="flow-particle" r="3" fill="#3ecf8e">
+                        <animateMotion dur="${1.5 + idx * 0.2}s" repeatCount="indefinite">
+                            <mpath href="#${pathId}"/>
+                        </animateMotion>
+                    </circle>
+                `;
+            }
+
+            // Edge label
             if (edge.label && !mini) {
-                const midX = (fromNode.x + toNode.x) / 2;
-                const midY = (y1 + y2) / 2;
-                const offsetX = fromNode.x !== toNode.x ? 0 : 8;
-                svg += `<text class="diagram-edge-label" x="${midX + offsetX}" y="${midY}">${escapeHtml(edge.label)}</text>`;
+                const labelX = (fromNode.x + toNode.x) / 2;
+                const labelY = y1 + dy * 0.35;
+                const offsetX = dx > 0 ? -15 : (dx < 0 ? 15 : 12);
+                svg += `<text class="diagram-edge-label" x="${labelX + offsetX}" y="${labelY}">${escapeHtml(edge.label)}</text>`;
             }
         });
         svg += '</g>';
@@ -8518,22 +8558,27 @@
             svg += `<g class="${nodeClass}" data-node="${node.id}" transform="translate(${node.x}, ${node.y})">`;
 
             if (node.type === 'decision') {
-                // Diamond for decision
-                svg += `<polygon class="diagram-node-shape" points="0,-25 35,0 0,25 -35,0"/>`;
+                // Diamond for decision - slightly smaller
+                const size = mini ? 20 : 25;
+                svg += `<polygon class="diagram-node-shape" points="0,${-size} ${size + 5},0 0,${size} ${-(size + 5)},0"/>`;
             } else if (node.type === 'input' || node.type === 'output') {
-                // Rounded rectangle for input/output
-                const w = mini ? 60 : 80;
-                svg += `<rect class="diagram-node-shape" x="${-w/2}" y="-18" width="${w}" height="36" rx="18"/>`;
+                // Circle for input/output (algorithm style)
+                const r = mini ? 18 : 22;
+                svg += `<circle class="diagram-node-shape" cx="0" cy="0" r="${r}"/>`;
             } else {
-                // Rectangle for process
-                const w = mini ? 60 : 80;
-                svg += `<rect class="diagram-node-shape" x="${-w/2}" y="-18" width="${w}" height="36" rx="4"/>`;
+                // Rounded rectangle for process
+                const w = mini ? 70 : 90;
+                const h = mini ? 28 : 34;
+                svg += `<rect class="diagram-node-shape" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="4"/>`;
             }
 
             // Label
-            const fontSize = mini ? 8 : 11;
-            const label = mini && node.label.length > 10 ? node.label.substring(0, 9) + '..' : node.label;
-            svg += `<text class="diagram-node-label" y="4" style="font-size:${fontSize}px">${escapeHtml(label)}</text>`;
+            const fontSize = mini ? 7 : 10;
+            const label = node.label;
+            // For circles, may need to truncate more
+            const maxLen = (node.type === 'input' || node.type === 'output') ? (mini ? 8 : 12) : (mini ? 10 : 14);
+            const displayLabel = label.length > maxLen ? label.substring(0, maxLen - 1) + '..' : label;
+            svg += `<text class="diagram-node-label" y="${mini ? 3 : 4}" style="font-size:${fontSize}px">${escapeHtml(displayLabel)}</text>`;
 
             svg += '</g>';
         });

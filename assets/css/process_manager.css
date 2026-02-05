@@ -6788,15 +6788,33 @@ body.page-process-manager {
     max-height: 160px;
 }
 
+/* Edges - dashed animated lines */
 .diagram-edge {
-    stroke: rgba(148, 163, 184, 0.4);
-    stroke-width: 2;
+    stroke: rgba(62, 207, 142, 0.3);
+    stroke-width: 1.5;
+    stroke-dasharray: 4 3;
+    fill: none;
+    animation: flowDash 1s linear infinite;
+}
+
+@keyframes flowDash {
+    to {
+        stroke-dashoffset: -7;
+    }
+}
+
+/* Flow particle */
+.flow-particle {
+    opacity: 0.8;
+    filter: drop-shadow(0 0 3px rgba(62, 207, 142, 0.6));
 }
 
 .diagram-edge-label {
-    fill: rgba(255, 255, 255, 0.5);
-    font-size: 10px;
-    font-family: Inter, system-ui, sans-serif;
+    fill: rgba(255, 255, 255, 0.45);
+    font-size: 9px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-weight: 400;
+    letter-spacing: 0.3px;
 }
 
 .diagram-node {
@@ -6804,41 +6822,50 @@ body.page-process-manager {
 }
 
 .diagram-node:hover .diagram-node-shape {
-    filter: brightness(1.3);
+    filter: brightness(1.2) drop-shadow(0 0 8px currentColor);
 }
 
 .diagram-node-shape {
-    fill: rgba(30, 41, 59, 0.9);
-    stroke: rgba(148, 163, 184, 0.5);
-    stroke-width: 2;
+    fill: rgba(17, 24, 39, 0.95);
+    stroke: rgba(148, 163, 184, 0.4);
+    stroke-width: 1.5;
     transition: filter 0.2s ease;
 }
 
+/* Input - green circle */
 .diagram-node.node-input .diagram-node-shape {
-    fill: rgba(6, 78, 59, 0.6);
+    fill: rgba(6, 78, 59, 0.7);
     stroke: #3ecf8e;
+    stroke-width: 2;
 }
 
+/* Output - purple circle */
 .diagram-node.node-output .diagram-node-shape {
-    fill: rgba(88, 28, 135, 0.6);
+    fill: rgba(88, 28, 135, 0.7);
     stroke: #a78bfa;
+    stroke-width: 2;
 }
 
+/* Decision - gold diamond */
 .diagram-node.node-decision .diagram-node-shape {
-    fill: rgba(113, 63, 18, 0.6);
+    fill: rgba(113, 63, 18, 0.7);
     stroke: #fbbf24;
+    stroke-width: 2;
 }
 
+/* Process - blue rectangle */
 .diagram-node.node-process .diagram-node-shape {
-    fill: rgba(30, 58, 138, 0.6);
+    fill: rgba(30, 58, 138, 0.5);
     stroke: #60a5fa;
+    stroke-width: 1.5;
 }
 
 .diagram-node-label {
-    fill: rgba(255, 255, 255, 0.9);
+    fill: rgba(255, 255, 255, 0.95);
     text-anchor: middle;
-    font-family: Inter, system-ui, sans-serif;
+    font-family: 'SF Mono', 'Fira Code', Inter, system-ui, sans-serif;
     font-weight: 500;
+    letter-spacing: -0.2px;
 }
 
 /* Panel de detalles del diagrama */

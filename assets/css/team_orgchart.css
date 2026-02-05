@@ -239,9 +239,12 @@ body.page-team.orgchart-active .team-section {
 
 /* Temp line while dragging new connection */
 .orgchart-temp-line {
+    fill: none;
     stroke: #3ecf8e;
     stroke-width: 2;
     stroke-dasharray: 6 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
     opacity: 0.6;
     pointer-events: none;
 }
@@ -630,12 +633,12 @@ body.page-team.orgchart-active .team-board {
     cursor: nwse-resize;
 }
 
-/* Group label (top-right) */
+/* Group label (top-left, with size variants) */
 .orgchart-group-label {
     position: absolute;
-    top: 8px;
-    right: 10px;
-    font-size: 11px;
+    top: 10px;
+    left: 12px;
+    font-size: 16px;
     font-weight: 600;
     letter-spacing: 0.03em;
     color: rgba(255, 255, 255, 0.5);
@@ -643,12 +646,16 @@ body.page-team.orgchart-active .team-board {
     cursor: text;
     padding: 2px 6px;
     border-radius: 4px;
-    transition: background 0.15s ease, color 0.15s ease;
-    max-width: 200px;
+    transition: background 0.15s ease, color 0.15s ease, font-size 0.15s ease;
+    max-width: calc(100% - 40px);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
+.orgchart-group-label.label-sm { font-size: 11px; }
+.orgchart-group-label.label-md { font-size: 16px; }
+.orgchart-group-label.label-lg { font-size: 22px; }
 
 .orgchart-group:hover .orgchart-group-label {
     color: rgba(255, 255, 255, 0.7);
@@ -763,6 +770,62 @@ body.page-team.orgchart-active .team-board {
     pointer-events: none;
     z-index: 4;
 }
+
+/* ================================
+   Selection box (multi-select lasso)
+   ================================ */
+.orgchart-selection-box {
+    position: absolute;
+    border: 2px solid rgba(62, 207, 142, 0.8);
+    background: rgba(62, 207, 142, 0.1);
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    border-radius: 4px;
+}
+
+.orgchart-selection-box.active {
+    display: block;
+}
+
+/* ================================
+   Context menu — label size buttons
+   ================================ */
+.orgchart-ctx-sizes {
+    display: flex;
+    gap: 6px;
+    padding: 4px 14px 8px;
+}
+
+.orgchart-ctx-size-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.orgchart-ctx-size-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.orgchart-ctx-size-btn.active {
+    border-color: #3ecf8e;
+    color: #3ecf8e;
+    background: rgba(62, 207, 142, 0.1);
+}
+
+.orgchart-ctx-size-btn[data-size-id="sm"] { font-size: 10px; }
+.orgchart-ctx-size-btn[data-size-id="md"] { font-size: 13px; }
+.orgchart-ctx-size-btn[data-size-id="lg"] { font-size: 16px; }
 
 /* ================================
    Responsive

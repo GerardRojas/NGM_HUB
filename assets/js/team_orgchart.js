@@ -12,12 +12,14 @@
         positions:   'orgchart_positions',
         connections: 'orgchart_connections',
         groups:      'orgchart_groups',
+        hidden:      'orgchart_hidden_users',
     };
     // localStorage keys (used as cache / fallback)
     const LS_KEYS = {
         positions:   'ngm_orgchart_positions',
         connections: 'ngm_orgchart_connections',
         groups:      'ngm_orgchart_groups',
+        hidden:      'ngm_orgchart_hidden_users',
     };
     const saveTimers = {};
 
@@ -63,6 +65,16 @@
         },
         ctxMenu: null,         // context menu DOM element
         ctxGroupId: null,      // group id if right-clicked on a group
+        hiddenUsers: [],       // user_ids hidden from orgchart
+        selectedNodes: [],     // user_ids of multi-selected nodes
+        selectionBox: {
+            active: false,
+            startX: 0,
+            startY: 0,
+            endX: 0,
+            endY: 0,
+            justFinished: false,
+        },
     };
 
     // ================================
@@ -193,6 +205,22 @@
     function saveGroups() {
         saveToCache(LS_KEYS.groups, state.groups);
         saveStateToApi(STATE_KEYS.groups, state.groups);
+    }
+
+    async function loadHiddenUsers() {
+        const result = await loadStateFromApi(STATE_KEYS.hidden, []);
+        if (result.success && Array.isArray(result.data) && result.data.length > 0) {
+            state.hiddenUsers = result.data;
+            saveToCache(LS_KEYS.hidden, state.hiddenUsers);
+        } else {
+            state.hiddenUsers = loadFromCache(LS_KEYS.hidden, []);
+            if (result.error) console.warn('[ORGCHART] Hidden users loaded from cache:', result.error);
+        }
+    }
+
+    function saveHiddenUsers() {
+        saveToCache(LS_KEYS.hidden, state.hiddenUsers);
+        saveStateToApi(STATE_KEYS.hidden, state.hiddenUsers);
     }
 
     function getGroupColor(colorId) {
@@ -328,6 +356,7 @@
 
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         state.users.forEach(u => {
+            if (state.hiddenUsers.includes(u.user_id)) return;
             const p = getNodePos(u.user_id);
             if (!p) return;
             minX = Math.min(minX, p.x);
@@ -368,6 +397,7 @@
 
         state.users.forEach(u => {
             if (u.user_id === draggedId) return;
+            if (state.hiddenUsers.includes(u.user_id)) return;
             const p = getNodePos(u.user_id);
             if (!p) return;
             const tw = 220, th = 120; // approx node dims
@@ -522,7 +552,7 @@
     function getNodeRect(userId) {
         const p = getNodePos(userId);
         if (!p) return null;
-        return { x: p.x, y: p.y, w: 220, h: 0 };
+        return { x: p.x, y: p.y, w: 220, h: 120 };
     }
 
     function getNodeRectFromDOM(userId) {
@@ -632,6 +662,21 @@
         div.style.left = pos.x + 'px';
         div.style.top = pos.y + 'px';
 
+        // Double-click to edit user
+        div.addEventListener('dblclick', e => {
+            if (e.target.closest('.orgchart-port')) return;
+            e.preventDefault();
+            e.stopPropagation();
+            openUserEdit(u);
+        });
+
+        // Right-click context menu on node
+        div.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            showNodeContextMenu(e.clientX, e.clientY, u);
+        });
+
         return div;
     }
 
@@ -641,6 +686,7 @@
     function makeDraggable(nodeEl, userId) {
         let dragging = false;
         let startX, startY, initX, initY;
+        let groupPositions = {};
 
         nodeEl.addEventListener('mousedown', e => {
             if (e.target.closest('.orgchart-port')) return;
@@ -654,6 +700,16 @@
             startY = e.clientY;
             initX = parseInt(nodeEl.style.left) || 0;
             initY = parseInt(nodeEl.style.top) || 0;
+
+            // Prepare group drag if this node is selected
+            groupPositions = {};
+            if (state.selectedNodes.includes(userId)) {
+                state.selectedNodes.forEach(id => {
+                    if (id === userId) return;
+                    const p = getNodePos(id);
+                    if (p) groupPositions[id] = { x: p.x, y: p.y };
+                });
+            }
 
             nodeEl.classList.add('dragging');
             nodeEl.style.zIndex = '100';
@@ -683,12 +739,28 @@
             nodeEl.style.top = ny + 'px';
 
             state.nodePositions[userId] = { x: nx, y: ny };
+
+            // Group drag: move all other selected nodes by same delta
+            const actualDx = nx - initX;
+            const actualDy = ny - initY;
+            Object.entries(groupPositions).forEach(([id, orig]) => {
+                const gx = orig.x + actualDx;
+                const gy = orig.y + actualDy;
+                state.nodePositions[id] = { x: gx, y: gy };
+                const el2 = els.nodes.querySelector(`[data-user-id="${id}"]`);
+                if (el2) {
+                    el2.style.left = gx + 'px';
+                    el2.style.top = gy + 'px';
+                }
+            });
+
             redrawConnections();
         };
 
         const onUp = () => {
             if (!dragging) return;
             dragging = false;
+            groupPositions = {};
             nodeEl.classList.remove('dragging');
             nodeEl.classList.remove('snapping');
             nodeEl.style.zIndex = '';
@@ -739,15 +811,12 @@
                 }
             });
 
-            // Create temp line
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('class', 'orgchart-temp-line');
-            line.setAttribute('x1', px);
-            line.setAttribute('y1', py);
-            line.setAttribute('x2', px);
-            line.setAttribute('y2', py);
-            state.connectionDrag.tempLine = line;
-            els.connectionsLayer.appendChild(line);
+            // Create temp path (orthogonal routing)
+            const tempPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            tempPath.setAttribute('class', 'orgchart-temp-line');
+            tempPath.setAttribute('d', `M ${px} ${py}`);
+            state.connectionDrag.tempLine = tempPath;
+            els.connectionsLayer.appendChild(tempPath);
         });
 
         document.addEventListener('mousemove', e => {
@@ -758,8 +827,22 @@
             const mx = (e.clientX - gridBCR.left) / s;
             const my = (e.clientY - gridBCR.top) / s;
 
-            state.connectionDrag.tempLine.setAttribute('x2', mx);
-            state.connectionDrag.tempLine.setAttribute('y2', my);
+            // Build orthogonal path from source port to mouse cursor
+            const sp = state.connectionDrag.startPoint;
+            const srcPort = state.connectionDrag.sourcePort;
+            const OFF = 30;
+            const fe = extendFromPort(sp, srcPort, OFF);
+            const sH = srcPort === 'left' || srcPort === 'right';
+
+            let pts;
+            if (sH) {
+                const midX = (fe.x + mx) / 2;
+                pts = [sp, fe, { x: midX, y: fe.y }, { x: midX, y: my }, { x: mx, y: my }];
+            } else {
+                const midY = (fe.y + my) / 2;
+                pts = [sp, fe, { x: fe.x, y: midY }, { x: mx, y: midY }, { x: mx, y: my }];
+            }
+            state.connectionDrag.tempLine.setAttribute('d', buildSVGPath(simplifyPts(pts)));
         });
 
         document.addEventListener('mouseup', e => {
@@ -922,6 +1005,7 @@
 
         // Draw nodes
         state.users.forEach(u => {
+            if (state.hiddenUsers.includes(u.user_id)) return;
             const p = getNodePos(u.user_id);
             if (!p) return;
             const cx = (p.x + 110) * sx;
@@ -990,6 +1074,7 @@
 
         // Snap against nodes
         state.users.forEach(u => {
+            if (state.hiddenUsers.includes(u.user_id)) return;
             const p = getNodePos(u.user_id);
             if (!p) return;
             const tw = 220, th = 120;
@@ -1027,6 +1112,7 @@
         });
 
         state.users.forEach(u => {
+            if (state.hiddenUsers.includes(u.user_id)) return;
             const p = getNodePos(u.user_id);
             if (!p) return;
             if (axis === 'x') {
@@ -1070,8 +1156,9 @@
         div.style.borderColor = color.border;
 
         // Label
+        const sizeClass = 'label-' + (g.labelSize || 'md');
         const label = document.createElement('span');
-        label.className = 'orgchart-group-label';
+        label.className = 'orgchart-group-label ' + sizeClass;
         label.textContent = g.label || 'Group';
         label.addEventListener('dblclick', e => {
             e.stopPropagation();
@@ -1268,12 +1355,22 @@
                 <svg class="orgchart-ctx-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="2"/><line x1="8" y1="5" x2="8" y2="11"/><line x1="5" y1="8" x2="11" y2="8"/></svg>
                 Add group area
             </div>
+            <div class="orgchart-ctx-item ctx-restore-hidden" data-action="restore-hidden" style="display:none">
+                <svg class="orgchart-ctx-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2"/></svg>
+                Restore hidden users
+            </div>
             <div class="orgchart-ctx-sep ctx-group-only"></div>
             <div class="orgchart-ctx-item ctx-group-only" data-action="edit-label">
                 <svg class="orgchart-ctx-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2l3 3-9 9H2v-3z"/></svg>
                 Rename group
             </div>
             <div class="orgchart-ctx-colors ctx-group-only" data-action="colors"></div>
+            <div class="orgchart-ctx-sep ctx-group-only"></div>
+            <div class="orgchart-ctx-item ctx-group-only" data-action="label-size">
+                <svg class="orgchart-ctx-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13l4-10h4l4 10M4 9h8"/></svg>
+                Label size
+            </div>
+            <div class="orgchart-ctx-sizes ctx-group-only" data-action="sizes"></div>
             <div class="orgchart-ctx-sep ctx-group-only"></div>
             <div class="orgchart-ctx-item ctx-group-only danger" data-action="delete-group">
                 <svg class="orgchart-ctx-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1M6 7v5M10 7v5M4 4l1 10h6l1-10"/></svg>
@@ -1302,6 +1399,29 @@
             colorsDiv.appendChild(swatch);
         });
 
+        // Build label size buttons
+        const sizesDiv = menu.querySelector('[data-action="sizes"]');
+        [
+            { id: 'sm', label: 'S' },
+            { id: 'md', label: 'M' },
+            { id: 'lg', label: 'L' },
+        ].forEach(s => {
+            const btn = document.createElement('div');
+            btn.className = 'orgchart-ctx-size-btn';
+            btn.setAttribute('data-size-id', s.id);
+            btn.textContent = s.label;
+            btn.addEventListener('click', () => {
+                if (!state.ctxGroupId) return;
+                const g = state.groups.find(gr => gr.id === state.ctxGroupId);
+                if (!g) return;
+                g.labelSize = s.id;
+                saveGroups();
+                renderGroups();
+                hideContextMenu();
+            });
+            sizesDiv.appendChild(btn);
+        });
+
         // Item clicks
         menu.addEventListener('click', e => {
             const item = e.target.closest('.orgchart-ctx-item');
@@ -1324,6 +1444,14 @@
                 renderGroups();
                 hideContextMenu();
             }
+            if (action === 'restore-hidden') {
+                state.hiddenUsers = [];
+                saveHiddenUsers();
+                renderNodes();
+                redrawConnections();
+                updateMinimap();
+                hideContextMenu();
+            }
         });
 
         // Close on outside click
@@ -1343,11 +1471,20 @@
             el.style.display = isGroupCtx ? '' : 'none';
         });
 
-        // Highlight current color
+        // Show/hide restore-hidden option
+        const restoreItem = menu.querySelector('.ctx-restore-hidden');
+        if (restoreItem) {
+            restoreItem.style.display = (!isGroupCtx && state.hiddenUsers.length > 0) ? '' : 'none';
+        }
+
+        // Highlight current color and label size
         if (isGroupCtx && state.ctxGroupId) {
             const g = state.groups.find(gr => gr.id === state.ctxGroupId);
             menu.querySelectorAll('.orgchart-ctx-swatch').forEach(s => {
                 s.classList.toggle('active', s.getAttribute('data-color-id') === (g?.colorId || 'green'));
+            });
+            menu.querySelectorAll('.orgchart-ctx-size-btn').forEach(s => {
+                s.classList.toggle('active', s.getAttribute('data-size-id') === (g?.labelSize || 'md'));
             });
         }
 
@@ -1487,8 +1624,286 @@
             if (e.target.closest('.orgchart-node')) return;
 
             e.preventDefault();
+
+            // Don't show context menu if selection box just finished
+            if (state.selectionBox.justFinished) {
+                state.selectionBox.justFinished = false;
+                return;
+            }
+
             state.ctxGroupId = null;
             showContextMenu(e.clientX, e.clientY, false);
+        });
+    }
+
+    // ================================
+    // Node actions: edit & delete
+    // ================================
+    function triggerTeamReload() {
+        window.dispatchEvent(new CustomEvent('ngm-team-reload'));
+    }
+
+    function openUserEdit(u) {
+        if (!window.TeamUserModal) return;
+        window.TeamUserModal.open({
+            mode: 'edit',
+            user: u,
+            onSaved: triggerTeamReload,
+            onDeleted: triggerTeamReload,
+        });
+    }
+
+    async function deleteUser(u) {
+        if (!confirm('Delete user "' + (u.user_name || '') + '"?')) return;
+        try {
+            const res = await fetch(`${API_BASE}/team/users/${u.user_id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            if (window.Toast) window.Toast.success('User deleted');
+            triggerTeamReload();
+        } catch (e) {
+            console.error('[ORGCHART] Delete failed:', e);
+            if (window.Toast) window.Toast.error('Failed to delete user');
+        }
+    }
+
+    // ================================
+    // Node context menu
+    // ================================
+    let nodeCtxMenu = null;
+    let nodeCtxUser = null;
+
+    function createNodeContextMenu() {
+        if (nodeCtxMenu) return;
+        const menu = document.createElement('div');
+        menu.className = 'orgchart-ctx-menu';
+        menu.innerHTML = `
+            <div class="orgchart-ctx-item" data-action="edit-user">
+                <svg class="orgchart-ctx-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 2l3 3-9 9H2v-3z"/></svg>
+                Edit user
+            </div>
+            <div class="orgchart-ctx-sep"></div>
+            <div class="orgchart-ctx-item" data-action="hide-user">
+                <svg class="orgchart-ctx-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5z"/><line x1="2" y1="14" x2="14" y2="2"/></svg>
+                Remove from orgchart
+            </div>
+            <div class="orgchart-ctx-sep"></div>
+            <div class="orgchart-ctx-item danger" data-action="delete-user">
+                <svg class="orgchart-ctx-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1M6 7v5M10 7v5M4 4l1 10h6l1-10"/></svg>
+                Delete user
+            </div>
+        `;
+        document.body.appendChild(menu);
+        nodeCtxMenu = menu;
+
+        menu.addEventListener('click', e => {
+            const item = e.target.closest('.orgchart-ctx-item');
+            if (!item || !nodeCtxUser) return;
+            const action = item.getAttribute('data-action');
+            if (action === 'edit-user') { hideNodeContextMenu(); openUserEdit(nodeCtxUser); }
+            if (action === 'hide-user') {
+                const uid = nodeCtxUser.user_id;
+                hideNodeContextMenu();
+                if (!state.hiddenUsers.includes(uid)) {
+                    state.hiddenUsers.push(uid);
+                    saveHiddenUsers();
+                    renderNodes();
+                    redrawConnections();
+                    updateMinimap();
+                }
+            }
+            if (action === 'delete-user') { hideNodeContextMenu(); deleteUser(nodeCtxUser); }
+        });
+
+        document.addEventListener('mousedown', e => {
+            if (nodeCtxMenu && !nodeCtxMenu.contains(e.target)) hideNodeContextMenu();
+        });
+    }
+
+    function showNodeContextMenu(clientX, clientY, user) {
+        // Hide group context menu if open
+        hideContextMenu();
+        createNodeContextMenu();
+        nodeCtxUser = user;
+        nodeCtxMenu.style.left = clientX + 'px';
+        nodeCtxMenu.style.top = clientY + 'px';
+        nodeCtxMenu.classList.add('visible');
+
+        requestAnimationFrame(() => {
+            const rect = nodeCtxMenu.getBoundingClientRect();
+            if (rect.right > window.innerWidth) nodeCtxMenu.style.left = (clientX - rect.width) + 'px';
+            if (rect.bottom > window.innerHeight) nodeCtxMenu.style.top = (clientY - rect.height) + 'px';
+        });
+    }
+
+    function hideNodeContextMenu() {
+        if (nodeCtxMenu) nodeCtxMenu.classList.remove('visible');
+        nodeCtxUser = null;
+    }
+
+    // ================================
+    // Multi-select (lasso) — right-click drag
+    // ================================
+    function updateSelectionBox() {
+        if (!els.selectionBox) return;
+        const { active, startX, startY, endX, endY } = state.selectionBox;
+        if (!active) {
+            els.selectionBox.classList.remove('active');
+            return;
+        }
+        const x = Math.min(startX, endX);
+        const y = Math.min(startY, endY);
+        const w = Math.abs(endX - startX);
+        const h = Math.abs(endY - startY);
+        els.selectionBox.style.left = x + 'px';
+        els.selectionBox.style.top = y + 'px';
+        els.selectionBox.style.width = w + 'px';
+        els.selectionBox.style.height = h + 'px';
+        els.selectionBox.classList.add('active');
+    }
+
+    function highlightNodesInSelection() {
+        const { startX, startY, endX, endY } = state.selectionBox;
+        const boxL = Math.min(startX, endX);
+        const boxR = Math.max(startX, endX);
+        const boxT = Math.min(startY, endY);
+        const boxB = Math.max(startY, endY);
+
+        els.nodes.querySelectorAll('.orgchart-node').forEach(node => {
+            const uid = node.getAttribute('data-user-id');
+            const nL = parseInt(node.style.left) || 0;
+            const nT = parseInt(node.style.top) || 0;
+            const nR = nL + (node.offsetWidth || 220);
+            const nB = nT + (node.offsetHeight || 120);
+
+            const intersects = !(boxR < nL || boxL > nR || boxB < nT || boxT > nB);
+            if (intersects) {
+                node.classList.add('selected');
+            } else if (!state.selectedNodes.includes(uid)) {
+                node.classList.remove('selected');
+            }
+        });
+    }
+
+    function finishSelection() {
+        const { startX, startY, endX, endY } = state.selectionBox;
+        const boxL = Math.min(startX, endX);
+        const boxR = Math.max(startX, endX);
+        const boxT = Math.min(startY, endY);
+        const boxB = Math.max(startY, endY);
+
+        els.nodes.querySelectorAll('.orgchart-node').forEach(node => {
+            const uid = node.getAttribute('data-user-id');
+            const nL = parseInt(node.style.left) || 0;
+            const nT = parseInt(node.style.top) || 0;
+            const nR = nL + (node.offsetWidth || 220);
+            const nB = nT + (node.offsetHeight || 120);
+
+            const intersects = !(boxR < nL || boxL > nR || boxB < nT || boxT > nB);
+            if (intersects && !state.selectedNodes.includes(uid)) {
+                state.selectedNodes.push(uid);
+                node.classList.add('selected');
+            }
+        });
+    }
+
+    function clearNodeSelection() {
+        state.selectedNodes = [];
+        if (els.nodes) {
+            els.nodes.querySelectorAll('.orgchart-node.selected').forEach(n => n.classList.remove('selected'));
+        }
+    }
+
+    function initSelection() {
+        let tracking = false;
+        let startScreenX = 0, startScreenY = 0;
+
+        els.container.addEventListener('mousedown', e => {
+            if (e.button !== 2) return;
+            if (e.target.closest('.orgchart-node')) return;
+            if (e.target.closest('.orgchart-group')) return;
+            if (e.target.closest('.orgchart-minimap')) return;
+            if (state.connectionDrag.active) return;
+            if (state.groupDraw.active) return;
+
+            tracking = true;
+            startScreenX = e.clientX;
+            startScreenY = e.clientY;
+
+            const gridBCR = els.grid.getBoundingClientRect();
+            const s = state.canvas.scale;
+            const gx = (e.clientX - gridBCR.left) / s;
+            const gy = (e.clientY - gridBCR.top) / s;
+
+            state.selectionBox.startX = gx;
+            state.selectionBox.startY = gy;
+            state.selectionBox.endX = gx;
+            state.selectionBox.endY = gy;
+            state.selectionBox.active = false;
+            state.selectionBox.justFinished = false;
+
+            // Clear previous selection unless Ctrl/Shift held
+            if (!e.ctrlKey && !e.shiftKey) {
+                clearNodeSelection();
+            }
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (!tracking) return;
+
+            const dist = Math.sqrt(
+                Math.pow(e.clientX - startScreenX, 2) + Math.pow(e.clientY - startScreenY, 2)
+            );
+            if (dist > 5 && !state.selectionBox.active) {
+                state.selectionBox.active = true;
+                els.container.style.cursor = 'crosshair';
+            }
+
+            if (!state.selectionBox.active) return;
+
+            const gridBCR = els.grid.getBoundingClientRect();
+            const s = state.canvas.scale;
+            state.selectionBox.endX = (e.clientX - gridBCR.left) / s;
+            state.selectionBox.endY = (e.clientY - gridBCR.top) / s;
+
+            updateSelectionBox();
+            highlightNodesInSelection();
+        });
+
+        document.addEventListener('mouseup', e => {
+            if (!tracking || e.button !== 2) return;
+            tracking = false;
+
+            if (state.selectionBox.active) {
+                finishSelection();
+                state.selectionBox.active = false;
+                state.selectionBox.justFinished = true;
+                updateSelectionBox();
+                els.container.style.cursor = '';
+            }
+        });
+
+        // Escape clears selection
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') {
+                if (state.selectionBox.active) {
+                    tracking = false;
+                    state.selectionBox.active = false;
+                    updateSelectionBox();
+                    els.container.style.cursor = '';
+                }
+                clearNodeSelection();
+            }
+        });
+
+        // Click on empty canvas clears selection
+        els.container.addEventListener('mousedown', e => {
+            if (e.button !== 0) return;
+            if (e.target.closest('.orgchart-node')) return;
+            if (e.target.closest('.orgchart-group')) return;
+            if (e.target.closest('.orgchart-minimap')) return;
+            if (!e.ctrlKey && !e.shiftKey && state.selectedNodes.length > 0) {
+                clearNodeSelection();
+            }
         });
     }
 
@@ -1500,6 +1915,9 @@
         els.nodes.innerHTML = '';
 
         state.users.forEach(u => {
+            // Skip hidden users
+            if (state.hiddenUsers.includes(u.user_id)) return;
+
             const nodeEl = createNodeEl(u);
             els.nodes.appendChild(nodeEl);
             makeDraggable(nodeEl, u.user_id);
@@ -1530,10 +1948,20 @@
 
         if (!els.container || !els.grid) return;
 
-        // Load persisted state from API (falls back to localStorage cache)
-        await Promise.all([loadPositions(), loadConnections(), loadGroups()]);
+        // Create selection box element
+        const selBox = document.createElement('div');
+        selBox.className = 'orgchart-selection-box';
+        els.grid.appendChild(selBox);
+        els.selectionBox = selBox;
 
-        state.users = users || [];
+        // Load persisted state from API (falls back to localStorage cache)
+        await Promise.all([loadPositions(), loadConnections(), loadGroups(), loadHiddenUsers()]);
+
+        // Filter to active users only
+        state.users = (users || []).filter(u => {
+            const status = String(u.user_status_name || u.status?.name || '').toLowerCase();
+            return status === 'active';
+        });
         computeDefaultPositions(state.users);
         savePositions();
 
@@ -1544,6 +1972,7 @@
         initConnectionDelete();
         initGroupDraw();
         initContextMenu();
+        initSelection();
 
         // Initial view
         requestAnimationFrame(() => {
@@ -1556,16 +1985,22 @@
     }
 
     function refresh(users) {
-        state.users = users || [];
+        // Filter to active users only
+        state.users = (users || []).filter(u => {
+            const status = String(u.user_status_name || u.status?.name || '').toLowerCase();
+            return status === 'active';
+        });
         computeDefaultPositions(state.users);
         savePositions();
         renderGroups();
         renderNodes();
 
-        // Remove connections referencing deleted users
-        const ids = new Set(state.users.map(u => u.user_id));
+        // Remove connections referencing deleted/hidden users
+        const visibleIds = new Set(
+            state.users.filter(u => !state.hiddenUsers.includes(u.user_id)).map(u => u.user_id)
+        );
         const before = state.connections.length;
-        state.connections = state.connections.filter(c => ids.has(c.sourceId) && ids.has(c.targetId));
+        state.connections = state.connections.filter(c => visibleIds.has(c.sourceId) && visibleIds.has(c.targetId));
         if (state.connections.length !== before) saveConnections();
     }
 

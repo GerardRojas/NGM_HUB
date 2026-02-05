@@ -504,6 +504,11 @@ document.addEventListener("DOMContentLoaded", () => {
     resizeT = setTimeout(() => rerender(), 120);
   });
 
+  // Listen for orgchart-triggered reloads (edit/delete from orgchart context menu)
+  window.addEventListener("ngm-team-reload", () => {
+    loadUsersFromApi({ keepQuery: true });
+  });
+
   // Initial load
   loadUsersFromApi({ keepQuery: false, isInitialLoad: true });
 });

@@ -123,7 +123,7 @@
         saveTimers[stateKey] = setTimeout(async () => {
             const url = `${API_BASE}/process-manager/state/${stateKey}`;
             try {
-                const payload = { state_data: data, updated_by: getCurrentUserId() };
+                const payload = { state_data: data, updated_by: null };
                 const res = await fetch(url, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -1037,7 +1037,7 @@
         const vh = cr.height / state.canvas.scale;
         const vx = -state.canvas.offsetX / state.canvas.scale;
         const vy = -state.canvas.offsetY / state.canvas.scale;
-        const pad = 6;
+        const pad = 8;
 
         vp.style.left = (pad + vx * sx) + 'px';
         vp.style.top = (pad + vy * sy) + 'px';

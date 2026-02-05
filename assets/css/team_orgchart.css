@@ -480,10 +480,10 @@ body.page-team.orgchart-active .team-section {
    Minimap
    ================================ */
 .orgchart-minimap {
-    position: absolute;
-    bottom: 16px;
-    right: 16px;
-    width: 160px;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 180px;
     background: rgba(17, 17, 17, 0.95);
     border: 1px solid #1f1f1f;
     border-radius: 10px;
@@ -513,8 +513,8 @@ body.page-team.orgchart-active .team-section {
 
 .orgchart-minimap-body {
     position: relative;
-    height: 90px;
-    padding: 6px;
+    height: 100px;
+    padding: 8px;
     overflow: hidden;
 }
 

@@ -2381,6 +2381,9 @@
             implementedLabel.classList.remove('live');
         }
 
+        // Hide diagram dropdown (default type is 'step')
+        toggleDiagramDropdownVisibility(false);
+
         elements.moduleModal.classList.remove('hidden');
     }
 

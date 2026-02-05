@@ -860,26 +860,37 @@
    REVIEW / SOFT-DELETE ROW STYLES
    ========================================== */
 
-/* Dimmed row for expenses in review (soft-deleted by bookkeeper) */
+/* Normal review row - field changed on authorized expense */
+/* Shows with subtle background, no strikethrough, excluded from calculations */
 .expenses-table tbody tr.expense-row-review {
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.expenses-table tbody tr.expense-row-review:hover {
+  background: rgba(245, 158, 11, 0.12);
+}
+
+/* Soft-delete row - deletion requested by bookkeeper */
+/* Dimmed with strikethrough to indicate pending deletion */
+.expenses-table tbody tr.expense-row-review.expense-row-soft-delete {
   opacity: 0.4;
   background: rgba(239, 68, 68, 0.03);
 }
 
-.expenses-table tbody tr.expense-row-review:hover {
+.expenses-table tbody tr.expense-row-review.expense-row-soft-delete:hover {
   opacity: 0.55;
   background: rgba(239, 68, 68, 0.06);
 }
 
-.expenses-table tbody tr.expense-row-review td {
+.expenses-table tbody tr.expense-row-review.expense-row-soft-delete td {
   text-decoration: line-through;
   text-decoration-color: rgba(239, 68, 68, 0.4);
 }
 
 /* Keep auth badge and actions readable (no line-through) */
-.expenses-table tbody tr.expense-row-review td.col-auth,
-.expenses-table tbody tr.expense-row-review td.col-actions,
-.expenses-table tbody tr.expense-row-review td.col-checkbox {
+.expenses-table tbody tr.expense-row-review.expense-row-soft-delete td.col-auth,
+.expenses-table tbody tr.expense-row-review.expense-row-soft-delete td.col-actions,
+.expenses-table tbody tr.expense-row-review.expense-row-soft-delete td.col-checkbox {
   text-decoration: none;
 }
 

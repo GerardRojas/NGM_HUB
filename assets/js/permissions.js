@@ -179,17 +179,10 @@
       await loadUserPermissions(userId);
       applyPermissionsToDOM();
 
-      // Reaplica permisos cuando el DOM cambia (para contenido dinámico)
-      if (window.MutationObserver) {
-        const observer = new MutationObserver(() => {
-          applyPermissionsToDOM();
-        });
-
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true
-        });
-      }
+      // NOTE: Removed aggressive MutationObserver that was causing issues
+      // with dynamic pickers (CatalogPicker, PeoplePicker) by triggering
+      // on every DOM change. If permissions need to be reapplied after
+      // dynamic content loads, call PermissionsManager.apply() manually.
     } catch (err) {
       console.error('[PERMISSIONS] Error parsing user data:', err);
     }

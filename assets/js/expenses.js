@@ -2664,6 +2664,9 @@
     // Authorization badge - use status field first, fall back to auth_status (must match filter logic)
     const isAuthorized = exp.status ? exp.status === 'auth' : (exp.auth_status === true || exp.auth_status === 1);
     const isReview = exp.status === 'review';
+    // Soft-delete: status_reason contains 'Deletion' - show strikethrough style
+    // Normal review: field changed on authorized expense - show normal style (just badge)
+    const isSoftDelete = isReview && exp.status_reason && exp.status_reason.toLowerCase().includes('deletion');
     const authBadgeClass = isReview ? 'auth-badge-review' : (isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending');
     const authBadgeText = isReview ? '⚠ Review' : (isAuthorized ? '✓ Auth' : '⏳ Pending');
     const authBadgeDisabled = canAuthorize ? '' : ' auth-badge-disabled';
@@ -2675,7 +2678,7 @@
       style="${cursorStyle}"
       title="${canAuthorize ? 'Click to toggle authorization' : 'You do not have permission to authorize'}">${authBadgeText}</span>`;
 
-    const reviewClass = isReview ? ' expense-row-review' : '';
+    const reviewClass = isReview ? (isSoftDelete ? ' expense-row-review expense-row-soft-delete' : ' expense-row-review') : '';
 
     return `
       <tr data-index="${index}" data-id="${expenseId}" class="expense-row-clickable${rowWarningClass}${reviewClass}" style="cursor: pointer;">
@@ -2709,6 +2712,7 @@
     // Authorization badge (not editable in bulk edit mode) - use status field first, fall back to auth_status
     const isAuthorized = exp.status ? exp.status === 'auth' : (exp.auth_status === true || exp.auth_status === 1);
     const isReview = exp.status === 'review';
+    const isSoftDelete = isReview && exp.status_reason && exp.status_reason.toLowerCase().includes('deletion');
     const authBadgeClass = isReview ? 'auth-badge-review' : (isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending');
     const authBadgeText = isReview ? '⚠ Review' : (isAuthorized ? '✓ Auth' : '⏳ Pending');
     const authBadge = `<span class="auth-badge ${authBadgeClass}">${authBadgeText}</span>`;
@@ -2719,7 +2723,7 @@
     // Checkbox checked state
     const isChecked = selectedExpenseIds.has(expenseId) ? 'checked' : '';
 
-    const reviewClass = isReview ? ' expense-row-review' : '';
+    const reviewClass = isReview ? (isSoftDelete ? ' expense-row-review expense-row-soft-delete' : ' expense-row-review') : '';
 
     return `
       <tr data-index="${index}" data-id="${expenseId}" class="edit-mode-row${reviewClass}">
@@ -3079,12 +3083,14 @@
         const exp = expenses.find(e => (e.expense_id || e.id) === expenseId);
         if (exp) {
           exp.status = 'review';
+          exp.status_reason = 'Deletion requested';
           exp.auth_status = false;
           exp.auth_by = null;
         }
         const origExp = originalExpenses.find(e => (e.expense_id || e.id) === expenseId);
         if (origExp) {
           origExp.status = 'review';
+          origExp.status_reason = 'Deletion requested';
           origExp.auth_status = false;
           origExp.auth_by = null;
         }
@@ -5089,9 +5095,9 @@
       const billData = getBillMetadata(newBillId);
       if (billData && billData.status === 'closed') {
         if (window.Toast) {
-          Toast.error('Closed Bill', `Cannot assign expense to Bill #${newBillId}. Reopen it in Bill View first.`);
+          Toast.warning('Closed Bill', `Bill #${newBillId} is closed. The expense will be assigned but consider reopening the bill if needed.`);
         }
-        return;
+        // Warning only, allow saving to continue
       }
     }
 
@@ -7960,6 +7966,7 @@
     // Use status field first, fall back to auth_status (must match filter logic)
     const isAuthorized = exp.status ? exp.status === 'auth' : (exp.auth_status === true || exp.auth_status === 1);
     const isReview = exp.status === 'review';
+    const isSoftDelete = isReview && exp.status_reason && exp.status_reason.toLowerCase().includes('deletion');
     const authBadgeClass = isReview ? 'auth-badge-review' : (isAuthorized ? 'auth-badge-authorized' : 'auth-badge-pending');
     const authBadgeText = isReview ? '⚠ Review' : (isAuthorized ? '✓ Auth' : '⏳ Pending');
     const authBadgeDisabled = canAuthorize ? '' : ' auth-badge-disabled';
@@ -7976,6 +7983,7 @@
     if (isFirst) borderClass += ' bill-group-first';
     if (isLast) borderClass += ' bill-group-last';
     if (isReview) borderClass += ' expense-row-review';
+    if (isSoftDelete) borderClass += ' expense-row-soft-delete';
 
     return `
       <tr data-index="${index}" data-id="${expenseId}" ${billGroupAttr} class="expense-row-clickable ${borderClass}" style="cursor: pointer;">

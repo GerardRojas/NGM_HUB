@@ -3,14 +3,14 @@
 **Creado:** 2026-02-05
 **Estado General:** EN PROGRESO
 **Total Issues:** 39
-**Resueltos:** 0
+**Resueltos:** 2
 
 ---
 
 ## PRIORIDAD 1: BUGS CRITICOS (Causan perdida de datos o fallos)
 
 ### [P1-01] Mapeo de Campo Collaborator Roto
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** CRITICA
 - **Archivo:** `assets/js/pipeline_table_interactions.js`
 - **Lineas:** 200-214 (fieldMap) y 520-534 (onChange)
@@ -194,7 +194,7 @@
 - **Test:** N/A
 
 ### [P5-05] MULTI_PERSON_COLS Referenciado Antes de Definir
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** MEDIA
 - **Archivo:** `assets/js/pipeline_table_interactions.js`
 - **Lineas:** 266 (uso) vs 487 (definicion)
@@ -343,4 +343,6 @@
 | Fecha | Issue | Estado | Notas |
 |-------|-------|--------|-------|
 | 2026-02-05 | PLAN | CREADO | Plan inicial con 39 issues |
+| 2026-02-05 | P1-01 | COMPLETADO | Agregado fieldMap para plurales, flag alreadySaved para evitar doble-save |
+| 2026-02-05 | P5-05 | COMPLETADO | Movido MULTI_PERSON_COLS al inicio con otras constantes |
 

@@ -30,6 +30,9 @@
   // Columnas de personas (dropdown de usuarios)
   const PERSON_COLS = ["owner", "collaborator", "manager"];
 
+  // Columns that support multiple people selection (subset of PERSON_COLS)
+  const MULTI_PERSON_COLS = ["collaborator", "manager"];
+
   // Columnas de fecha (date picker)
   // Note: time_start and time_finish are hidden (backend only calculations)
   const DATE_COLS = ["due", "start", "deadline"];
@@ -129,17 +132,18 @@
     if (!activeEditor) return;
     console.log("[PIPELINE-INTERACTIONS] closeActiveEditor called, save:", save);
 
-    const { element, td, taskId, colKey, originalValue, type } = activeEditor;
+    const { element, td, taskId, colKey, originalValue, type, alreadySaved } = activeEditor;
 
-    if (save) {
+    // Don't save again if picker already saved via onChange
+    if (save && !alreadySaved) {
       const newValue = getEditorValue(element, type);
       if (newValue !== originalValue) {
         saveFieldToBackend(taskId, colKey, newValue, td);
       }
     }
 
-    // Restaurar contenido original si no se guardó
-    if (!save) {
+    // Restaurar contenido original si no se guardó (and wasn't already saved by picker)
+    if (!save && !alreadySaved) {
       restoreCellContent(td, colKey, originalValue);
     }
 
@@ -197,6 +201,7 @@
     const apiBase = window.API_BASE || "";
 
     // Mapear columna UI -> campo backend
+    // Note: collaborators/managers (plural) are for array values from multi-select pickers
     const fieldMap = {
       task: "task_description",
       project: "project",
@@ -205,12 +210,16 @@
       type: "type",
       owner: "owner",
       collaborator: "collaborator",
+      collaborators: "collaborators",  // plural for multi-select
       manager: "manager",
+      managers: "managers",            // plural for multi-select
       due: "due_date",
       start: "start_date",
       deadline: "deadline",
       time_start: "time_start",
       time_finish: "time_finish",
+      est: "estimated_hours",          // was missing
+      priority: "priority",            // was missing
     };
 
     const backendField = fieldMap[colKey] || colKey;
@@ -483,9 +492,6 @@
     return element;
   }
 
-  // Columns that support multiple people selection
-  const MULTI_PERSON_COLS = ["collaborator", "manager"];
-
   // Dropdown de personas - Monday.com style using PeoplePicker
   async function createPersonDropdown(td, colKey, currentValue, taskId) {
     console.log("[PIPELINE-INTERACTIONS] createPersonDropdown called:", { colKey, currentValue, taskId });
@@ -529,6 +535,7 @@
           if (activeEditor && activeEditor.td === td) {
             saveFieldToBackend(taskId, pluralField, userIds, td);
             activeEditor.originalValue = userNames;
+            activeEditor.alreadySaved = true; // Mark as saved to prevent double-save in closeActiveEditor
             updateCellDisplay(td, colKey, userNames);
             // Don't close immediately for multi-select - user clicks away to close
           }
@@ -542,8 +549,9 @@
           if (activeEditor && activeEditor.td === td) {
             saveFieldToBackend(taskId, colKey, userId, td);
             activeEditor.originalValue = userName;
+            activeEditor.alreadySaved = true; // Mark as saved to prevent double-save in closeActiveEditor
             updateCellDisplay(td, colKey, userName);
-            closeActiveEditor(false);
+            closeActiveEditor(false); // false = don't save again
           }
         }
       }
@@ -673,6 +681,7 @@
           saveFieldToBackend(taskId, colKey, valueId, td);
           // Update originalValue with the name for display restoration
           activeEditor.originalValue = valueName;
+          activeEditor.alreadySaved = true; // Mark as saved to prevent double-save
           // Update cell display with the name
           updateCellDisplay(td, colKey, valueName);
           closeActiveEditor(false); // false porque ya guardamos

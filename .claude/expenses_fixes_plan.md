@@ -117,7 +117,7 @@ Luego reemplazar:
 ## FASE 2: Optimizaciones de Rendimiento (Riesgo Bajo)
 
 ### 2.1 Usar lookupMaps Consistentemente
-**Estado:** [ ] Pendiente
+**Estado:** [x] COMPLETADO 2026-02-05
 **Riesgo:** BAJO
 **Tiempo estimado:** 30 min
 
@@ -137,7 +137,7 @@ Solucion:
 ```
 
 ### 2.2 Throttle en Resize de Columnas
-**Estado:** [ ] Pendiente
+**Estado:** [x] COMPLETADO 2026-02-05
 **Riesgo:** BAJO
 **Tiempo estimado:** 10 min
 
@@ -163,7 +163,7 @@ document.addEventListener('mousemove', throttle(onMouseMove, 16)); // ~60fps
 ```
 
 ### 2.3 Debounce en Input de Filtros
-**Estado:** [ ] Pendiente
+**Estado:** [x] VERIFICADO 2026-02-05 - Ya existe debounce en busqueda global (250ms)
 **Riesgo:** BAJO
 **Tiempo estimado:** 10 min
 
@@ -284,10 +284,10 @@ SEMANA 1 - Limpieza (sin riesgo): COMPLETADA 2026-02-05
 [x] 1.2 Cleanup listeners panel duplicados (15 min) - HECHO: cleanupPanelDrag()
 [x] 1.3 Cleanup listeners resize columnas (15 min) - HECHO: handles cleanup + blur handler
 
-SEMANA 2 - Optimizaciones (riesgo bajo):
-[ ] 2.1 Usar lookupMaps consistentemente (30 min)
-[ ] 2.2 Throttle en resize (10 min)
-[ ] 2.3 Verificar debounce en filtros (10 min)
+SEMANA 2 - Optimizaciones (riesgo bajo): COMPLETADA 2026-02-05
+[x] 2.1 Usar lookupMaps consistentemente (30 min) - HECHO: buildExpenseMap() helper
+[x] 2.2 Throttle en resize (10 min) - HECHO: requestAnimationFrame
+[x] 2.3 Verificar debounce en filtros (10 min) - VERIFICADO: ya existe 250ms en busqueda global
 
 SEMANA 3+ - Mejoras estructurales (evaluar):
 [ ] 3.1 Lazy rendering (2-3 horas) - PROBAR EN STAGING PRIMERO

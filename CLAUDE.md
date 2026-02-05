@@ -73,3 +73,66 @@ Antes de trabajar en un modulo complejo, leer su archivo de referencia en `.clau
 El backend esta en el proyecto separado `NGM_API`. Ubicacion segun PC:
 - `C:\Users\germa\Desktop\NGM_API`
 - `C:\Users\ADMIN\Desktop\NGM_API`
+
+---
+
+## Git & Deployment
+
+### Branches
+```
+main     → Produccion (tu equipo usa esto)
+staging  → Pruebas (para testear cambios antes de produccion)
+```
+
+### Servicios en Render
+| Servicio | Branch | URL | Proposito |
+|----------|--------|-----|-----------|
+| ngm-hub | main | ngm-hub.onrender.com | Produccion |
+| ngm-hub-staging | staging | ngm-hub-staging.onrender.com | Testing |
+| ngm-fastapi | main | ngm-fastapi.onrender.com | API Produccion |
+| ngm-api-staging | staging | ngm-api-staging.onrender.com | API Testing |
+
+### Flujo de Trabajo
+
+**Para cambios en Frontend (NGM_HUB):**
+```bash
+git checkout staging
+# hacer cambios...
+git add .
+git commit -m "feat/fix/refactor: descripcion"
+git push origin staging
+# → Render auto-deploya a ngm-hub-staging
+# → Probar en URL de staging
+# Si OK:
+git checkout main
+git merge staging
+git push origin main
+# → Render auto-deploya a produccion
+```
+
+**Para cambios en Backend (NGM_API):**
+```bash
+cd ../NGM_API
+git checkout staging
+# hacer cambios...
+git push origin staging
+# → Render auto-deploya a ngm-api-staging
+# → Frontend staging automaticamente usa este backend
+```
+
+**Para cambios en AMBOS:**
+1. Push staging en NGM_API primero
+2. Push staging en NGM_HUB
+3. Probar todo junto en URLs de staging
+4. Si OK → merge a main en ambos repos
+
+### Variables de Entorno por Ambiente
+El frontend detecta el ambiente via `config.js`:
+- **Produccion**: `API_BASE = https://ngm-fastapi.onrender.com`
+- **Staging**: `API_BASE = https://ngm-api-staging.onrender.com`
+
+### Reglas de Deployment
+- **NUNCA** pushear directamente a `main` sin probar en `staging`
+- Cambios grandes de refactorizacion → siempre por staging
+- Hotfixes criticos → pueden ir directo a main (con cuidado)
+- Dia de deployment a produccion: coordinar con el equipo

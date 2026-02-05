@@ -14,7 +14,11 @@
       "Bash(powershell -ExecutionPolicy Bypass -File:*)",
       "Bash(powershell -Command:*)",
       "Bash(find:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git diff:*)",
+      "Bash(node -e:*)",
+      "Bash(wsl grep -c \"function \" assets/js/estimator.js)",
+      "Read(//c/**)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"

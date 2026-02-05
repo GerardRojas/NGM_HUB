@@ -1942,7 +1942,6 @@
       optional_features_count: optionalFeaturesCost.items.length,
       breakdown: breakdown,
       assumptions: [
-        "Prices based on Los Angeles County averages (2024-2025)",
         "Optional features (deck, landscape, etc.) included if specified",
         "Actual costs may vary based on site conditions and material choices",
         "Permit timeline and fees vary by jurisdiction",
@@ -2458,22 +2457,25 @@
 
   // Calculate node radius based on weight (dynamic based on modifier impact)
   function getNodeRadius(node, status) {
-    var baseRadius = 18;
-    var maxRadius = 36;
+    var minRadius = 12;
+    var maxRadius = 40;
     var weight = node.weight || 0.5;
 
-    // Increase radius if node has significant modifier
+    // Apply exponential curve for more contrast (low weights get smaller)
+    var scaledWeight = Math.pow(weight, 1.5);
+
+    // Increase radius if node has significant modifier (active impact)
     if (status.modifier && status.modifier !== 1) {
       var impact = Math.abs(status.modifier - 1);
-      weight = Math.min(1.3, weight + impact * 0.5);
+      scaledWeight = Math.min(1.3, scaledWeight + impact * 0.4);
     }
 
     // Output node is always larger
     if (node.type === "output") {
-      return maxRadius + 4;
+      return maxRadius + 6;
     }
 
-    return baseRadius + (maxRadius - baseRadius) * weight;
+    return minRadius + (maxRadius - minRadius) * scaledWeight;
   }
 
   function renderAlgorithmGraph() {
@@ -2601,6 +2603,29 @@
     });
   }
 
+  // Node adjustment hints - how to change each parameter
+  var NODE_ADJUST_HINTS = {
+    adu_type: { control: "Type selector cards", tip: "Detached ADU has lowest base rate, Conversion reuses existing structure" },
+    construction: { control: "Build type cards", tip: "Renovation is cheapest if structure exists, Prefab is faster" },
+    sqft: { control: "Square footage input", tip: "Stay within optimal range to avoid size penalties" },
+    base_rate: { control: "Calculated from Type + Build", tip: "Change ADU type or construction method to adjust" },
+    sqft_curve: { control: "Derived from sqft input", tip: "Adjust square footage to stay in optimal range" },
+    efficiency: { control: "Auto-calculated", tip: "Conversion types get efficiency bonus for reusing structure" },
+    stories: { control: "Stories selector", tip: "Single story is most cost-effective" },
+    design: { control: "Design package selector", tip: "Basic design is cheapest, Premium adds ~15% cost" },
+    foundation: { control: "Foundation selector", tip: "Slab is cheapest, raised floor adds ~8%" },
+    land: { control: "Land surface selector", tip: "Flat land is cheapest, slope adds significant cost" },
+    density: { control: "Bed/Bath configuration", tip: "Higher density (more rooms/sqft) increases plumbing costs" },
+    config: { control: "Bedrooms & Bathrooms inputs", tip: "More bathrooms = higher plumbing costs" },
+    multiplier: { control: "Combined from all inputs", tip: "Reduce individual modifiers to lower this" },
+    rules: { control: "Auto-validated", tip: "Some combinations trigger warnings or adjustments" },
+    cross: { control: "Auto-calculated", tip: "Certain input combinations add extra costs" },
+    options: { control: "Interior options checkboxes", tip: "Uncheck options to reduce cost" },
+    opt_features: { control: "Site features checkboxes", tip: "Deck, landscape, etc. are optional" },
+    additions: { control: "Sum of optional costs", tip: "Reduce by unchecking optional features" },
+    total: { control: "Final estimate", tip: "Sum of base cost + multipliers + additions" }
+  };
+
   function showNodeDetails(nodeId) {
     if (!algoNodeDetails) return;
 
@@ -2609,6 +2634,10 @@
 
     var status = getNodeStatus(nodeId);
     var PM = PRICING_MATRIX;
+
+    // Get connections
+    var incomingEdges = ALGO_EDGES.filter(function (e) { return e.to === nodeId; });
+    var outgoingEdges = ALGO_EDGES.filter(function (e) { return e.from === nodeId; });
 
     var html = '<div class="node-details-header">'
              + '<span class="details-title">' + node.label + '</span>'
@@ -2620,12 +2649,39 @@
     // Show current value
     if (status.value) {
       html += '<div class="details-row"><span class="details-label">Current:</span><span class="details-value">' + status.value + '</span></div>';
+    } else {
+      html += '<div class="details-row"><span class="details-label">Status:</span><span class="details-value inactive-val">Not set</span></div>';
     }
 
     // Show modifier if applicable
     if (status.modifier) {
       var modClass = status.modifier > 1 ? "val-penalty" : (status.modifier < 1 ? "val-discount" : "");
-      html += '<div class="details-row"><span class="details-label">Modifier:</span><span class="details-value ' + modClass + '">x' + status.modifier.toFixed(2) + '</span></div>';
+      var modLabel = status.modifier > 1 ? "Adds cost" : (status.modifier < 1 ? "Reduces cost" : "No impact");
+      html += '<div class="details-row"><span class="details-label">Modifier:</span><span class="details-value ' + modClass + '">x' + status.modifier.toFixed(2) + ' (' + modLabel + ')</span></div>';
+    }
+
+    // Show connections - what affects this node
+    if (incomingEdges.length > 0) {
+      html += '<div class="details-section">Receives input from</div>';
+      html += '<div class="details-connections">';
+      incomingEdges.forEach(function (edge) {
+        var fromNode = ALGO_NODES.find(function (n) { return n.id === edge.from; });
+        var fromStatus = getNodeStatus(edge.from);
+        var statusClass = fromStatus.active ? "conn-active" : "conn-inactive";
+        html += '<span class="conn-chip ' + statusClass + '">' + fromNode.label + '</span>';
+      });
+      html += '</div>';
+    }
+
+    // Show connections - what this node affects
+    if (outgoingEdges.length > 0) {
+      html += '<div class="details-section">Feeds into</div>';
+      html += '<div class="details-connections">';
+      outgoingEdges.forEach(function (edge) {
+        var toNode = ALGO_NODES.find(function (n) { return n.id === edge.to; });
+        html += '<span class="conn-chip">' + toNode.label + '</span>';
+      });
+      html += '</div>';
     }
 
     // Show relevant config based on node
@@ -2670,6 +2726,14 @@
           }
         }
         break;
+    }
+
+    // Show adjustment hints
+    var hint = NODE_ADJUST_HINTS[nodeId];
+    if (hint) {
+      html += '<div class="details-section">How to adjust</div>';
+      html += '<div class="details-row"><span class="details-label">Control:</span><span class="details-value">' + hint.control + '</span></div>';
+      html += '<div class="details-hint">' + hint.tip + '</div>';
     }
 
     html += '</div>';

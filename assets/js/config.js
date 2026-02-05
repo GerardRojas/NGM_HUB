@@ -1,13 +1,35 @@
 // assets/js/config.js
 
-// Definimos API_BASE como global y además como constante local
-const API_BASE =
-  window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
-    ? "http://127.0.0.1:8000"
-    : "https://ngm-fastapi.onrender.com";
+// Detectar ambiente: localhost, staging, o produccion
+function detectEnvironment() {
+  const hostname = window.location.hostname;
+
+  // Localhost / desarrollo local
+  if (hostname === "127.0.0.1" || hostname === "localhost") {
+    return "development";
+  }
+
+  // Staging (URL contiene "staging")
+  if (hostname.includes("staging")) {
+    return "staging";
+  }
+
+  // Produccion (default)
+  return "production";
+}
+
+const ENVIRONMENT = detectEnvironment();
+
+// API_BASE segun ambiente
+const API_BASE = {
+  development: "http://127.0.0.1:8000",
+  staging: "https://ngm-api-staging.onrender.com",
+  production: "https://ngm-fastapi.onrender.com"
+}[ENVIRONMENT];
 
 // También lo colgamos explícitamente en window por si acaso
 window.API_BASE = API_BASE;
+window.ENVIRONMENT = ENVIRONMENT;
 
 // Supabase configuration for receipt uploads and realtime
 window.SUPABASE_URL = 'https://frpshidpuazlqfxodrbs.supabase.co';
@@ -20,5 +42,6 @@ window.NGM_CONFIG = {
   SUPABASE_ANON_KEY: window.SUPABASE_ANON_KEY
 };
 
+console.log("CONFIG LOADED → ENVIRONMENT =", ENVIRONMENT);
 console.log("CONFIG LOADED → API_BASE =", API_BASE);
 console.log("CONFIG LOADED → SUPABASE_URL =", window.SUPABASE_URL);

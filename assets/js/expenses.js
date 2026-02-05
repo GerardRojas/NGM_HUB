@@ -187,6 +187,20 @@
   }
 
   // ================================
+  // UTILITY: Throttle Function (for high-frequency events like mousemove)
+  // ================================
+  function throttle(func, limit) {
+    let inThrottle;
+    return function executedFunction(...args) {
+      if (!inThrottle) {
+        func.apply(this, args);
+        inThrottle = true;
+        setTimeout(() => inThrottle = false, limit);
+      }
+    };
+  }
+
+  // ================================
   // UTILITY: Format date without timezone conversion
   // ================================
   function formatDateSafe(dateStr) {
@@ -204,6 +218,18 @@
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  // ================================
+  // UTILITY: Build expense lookup Map (O(1) access by ID)
+  // ================================
+  function buildExpenseMap(expenseArray) {
+    const map = new Map();
+    expenseArray.forEach(exp => {
+      const id = exp.expense_id || exp.id;
+      if (id) map.set(String(id), exp);
+    });
+    return map;
   }
 
   // ================================
@@ -2873,6 +2899,9 @@
     const rows = els.expensesTableBody.querySelectorAll('tr[data-index]:not(.total-row)');
     const updates = [];
 
+    // PERFORMANCE: Build Map for O(1) lookups instead of O(n) .find() calls
+    const originalExpensesMap = buildExpenseMap(originalExpenses);
+
     console.log('[EDIT] Starting save process...');
     console.log('[EDIT] Number of rows to check:', rows.length);
 
@@ -2909,11 +2938,8 @@
 
       console.log(`[EDIT] Row ${index} updated data:`, updatedData);
 
-      // Check if data changed - Find original by expense_id (backend primary key)
-      const original = originalExpenses.find(exp => {
-        const origId = exp.expense_id || exp.id;
-        return origId == expenseId;
-      });
+      // Check if data changed - Use Map for O(1) lookup
+      const original = originalExpensesMap.get(String(expenseId));
       console.log(`[EDIT] Row ${index} original data (found by expense_id ${expenseId}):`, original);
 
       if (original && hasChanges(original, updatedData)) {
@@ -2932,8 +2958,8 @@
     updates.forEach(update => {
       const newBillId = update.data.bill_id?.trim() || null;
       if (newBillId) {
-        // Find original expense to check if bill_id changed
-        const original = originalExpenses.find(exp => String(exp.expense_id || exp.id) === String(update.id));
+        // Use Map for O(1) lookup
+        const original = originalExpensesMap.get(String(update.id));
         const originalBillId = original?.bill_id || null;
 
         // Only validate if bill_id changed
@@ -3148,13 +3174,17 @@
         let successCount = 0;
         let failCount = 0;
 
+        // PERFORMANCE: Build Maps for O(1) lookups in loop
+        const expensesMap = buildExpenseMap(expenses);
+        const originalExpensesMap = buildExpenseMap(originalExpenses);
+
         results.forEach(result => {
           if (result.status === 'fulfilled' && result.value.success) {
             const eid = result.value.expenseId;
             successCount++;
-            const exp = expenses.find(e => (e.expense_id || e.id) === eid);
+            const exp = expensesMap.get(String(eid));
             if (exp) { exp.status = 'review'; exp.auth_status = false; exp.auth_by = null; }
-            const origExp = originalExpenses.find(e => (e.expense_id || e.id) === eid);
+            const origExp = originalExpensesMap.get(String(eid));
             if (origExp) { origExp.status = 'review'; origExp.auth_status = false; origExp.auth_by = null; }
             selectedExpenseIds.delete(eid);
           } else {
@@ -3366,6 +3396,9 @@
       // Initial progress update
       updateButtonProgress();
 
+      // PERFORMANCE: Build Map for O(1) lookups in batch processing
+      const expensesMap = buildExpenseMap(expenses);
+
       // Process expenses in batches
       for (let i = 0; i < expenseIdsArray.length; i += BATCH_SIZE) {
         const batch = expenseIdsArray.slice(i, i + BATCH_SIZE);
@@ -3388,8 +3421,8 @@
             successCount++;
             processedCount++;
 
-            // Update local data immediately
-            const expense = expenses.find(e => String(e.expense_id || e.id) === String(expenseId));
+            // Update local data immediately (using Map for O(1) lookup)
+            const expense = expensesMap.get(String(expenseId));
             if (expense) {
               expense.auth_status = true;
               expense.auth_by = userId;
@@ -8311,6 +8344,8 @@
       th.appendChild(handle);
 
       let startX, startWidth, columnClass;
+      let rafId = null; // For requestAnimationFrame throttling
+      let pendingWidth = null;
 
       handle.addEventListener('mousedown', (e) => {
         e.preventDefault();
@@ -8332,24 +8367,44 @@
 
       function onMouseMove(e) {
         const diff = e.pageX - startX;
-        const newWidth = Math.max(50, startWidth + diff); // Minimum 50px
+        pendingWidth = Math.max(50, startWidth + diff); // Minimum 50px
 
-        // Update all cells in this column
-        if (columnClass) {
-          table.querySelectorAll(`.${columnClass}`).forEach(cell => {
-            cell.style.width = `${newWidth}px`;
-            cell.style.minWidth = `${newWidth}px`;
+        // PERFORMANCE: Use requestAnimationFrame to throttle DOM updates
+        if (!rafId) {
+          rafId = requestAnimationFrame(() => {
+            if (columnClass && pendingWidth !== null) {
+              table.querySelectorAll(`.${columnClass}`).forEach(cell => {
+                cell.style.width = `${pendingWidth}px`;
+                cell.style.minWidth = `${pendingWidth}px`;
+              });
+            }
+            rafId = null;
           });
         }
       }
 
       function onMouseUp() {
+        // Cancel any pending animation frame
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+
+        // Apply final width
+        if (columnClass && pendingWidth !== null) {
+          table.querySelectorAll(`.${columnClass}`).forEach(cell => {
+            cell.style.width = `${pendingWidth}px`;
+            cell.style.minWidth = `${pendingWidth}px`;
+          });
+        }
+
         handle.classList.remove('resizing');
         table.classList.remove('resizing');
 
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
         activeResizeCleanup = null;
+        pendingWidth = null;
 
         // Save column widths to localStorage
         saveColumnWidths();

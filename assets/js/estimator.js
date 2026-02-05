@@ -43,6 +43,21 @@
   const subState = {};    // Subcategory collapse state
   let currentFilter = '';
 
+  // Template Cache - stores snapshots for concept picker
+  let templateCache = {
+    concepts: [],           // Snapshot of concepts from template/DB
+    materials: [],          // Snapshot of materials from template/DB
+    conceptMaterials: [],   // Snapshot of concept_materials junction
+    lastRefreshed: null     // ISO timestamp of last refresh
+  };
+
+  // Add Concept Modal State
+  let addConceptState = {
+    selectedConcept: null,
+    builderItems: [],
+    mode: 'from-template'   // 'from-template' | 'create-new'
+  };
+
   // DOM Elements cache
   const els = {};
 
@@ -58,6 +73,21 @@
     // Cache DOM elements
     cacheElements();
 
+    // Setup template selection screen
+    setupTemplateSelectionScreen();
+
+    // Load templates for selection screen
+    loadTemplateSelectionScreen();
+
+    console.log('[ESTIMATOR] Waiting for template selection...');
+  }
+
+  /**
+   * Continue initialization after template is selected
+   */
+  function continueInitialization() {
+    console.log('[ESTIMATOR] Continuing initialization...');
+
     // Setup event listeners
     setupEventListeners();
 
@@ -66,6 +96,7 @@
     setupColumnsModal();
     setupSaveAsTemplateModal();
     setupTemplatePickerModal();
+    setupAddConceptModal();
 
     // Setup view controls
     setupViewSliders();
@@ -74,19 +105,195 @@
     // Setup auto-save
     setupAutoSave();
 
-    // Try to restore from local storage first
-    const restored = restoreFromLocalStorage();
-
-    // If nothing restored, load initial data
-    if (!restored) {
-      loadEstimatorFromNgm();
-    }
-
     // Load sidebar lists
     loadEstimatesList();
-    loadTemplatesList();
+    loadTemplatesListFromStorage();
 
     console.log('[ESTIMATOR] Initialized');
+  }
+
+  /**
+   * Setup template selection screen event handlers
+   */
+  function setupTemplateSelectionScreen() {
+    // Blank estimate button
+    document.getElementById('start-blank-estimate')?.addEventListener('click', () => {
+      startWithBlankEstimate();
+    });
+  }
+
+  /**
+   * Load templates and recent estimates for selection screen
+   */
+  async function loadTemplateSelectionScreen() {
+    // Load templates from storage
+    await loadTemplatesForSelectionScreen();
+
+    // Load recent estimates
+    await loadRecentEstimatesForSelectionScreen();
+
+    // Hide loading overlay
+    document.getElementById('pageLoadingOverlay')?.classList.add('hidden');
+    document.body.classList.remove('page-loading');
+  }
+
+  /**
+   * Load templates from Supabase Storage for selection screen
+   */
+  async function loadTemplatesForSelectionScreen() {
+    const listEl = document.getElementById('template-selection-list');
+    if (!listEl) return;
+
+    if (!supabaseClient) {
+      listEl.innerHTML = '<div class="template-list-empty">Storage not available</div>';
+      return;
+    }
+
+    try {
+      // Use the shared function to fetch templates
+      const templates = await loadTemplatesListFromStorage();
+
+      if (!templates || templates.length === 0) {
+        listEl.innerHTML = '<div class="template-list-empty">No templates saved yet. Start with a blank estimate and save it as a template.</div>';
+        return;
+      }
+
+      // Render templates in selection screen
+      listEl.innerHTML = templates.map(tpl => `
+        <div class="template-selection-item" data-template-id="${tpl.id}">
+          <div class="item-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+            </svg>
+          </div>
+          <div class="item-content">
+            <div class="item-name">${escapeHtmlBasic(tpl.name)}</div>
+            <div class="item-meta">
+              ${tpl.concepts_count || 0} concepts, ${tpl.materials_count || 0} materials
+              ${tpl.description ? ' - ' + escapeHtmlBasic(tpl.description) : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Add click handlers
+      listEl.querySelectorAll('.template-selection-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const templateId = item.dataset.templateId;
+          startWithTemplate(templateId);
+        });
+      });
+
+    } catch (err) {
+      console.error('[ESTIMATOR] Error loading templates:', err);
+      listEl.innerHTML = '<div class="template-list-empty">Error loading templates</div>';
+    }
+  }
+
+  /**
+   * Load recent estimates for selection screen
+   */
+  async function loadRecentEstimatesForSelectionScreen() {
+    const listEl = document.getElementById('recent-estimates-list');
+    if (!listEl) return;
+
+    // Check localStorage for recent draft
+    const savedDraft = localStorage.getItem(AUTOSAVE.LOCAL_STORAGE_KEY);
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        const savedAt = new Date(draft.savedAt);
+        const hoursSinceSave = (new Date() - savedAt) / (1000 * 60 * 60);
+
+        if (hoursSinceSave < 24 && draft.data) {
+          const projectName = draft.data.project_name || 'Untitled';
+          const timeAgo = formatTimeAgo(savedAt);
+
+          listEl.innerHTML = `
+            <div class="recent-estimate-item" id="continue-draft">
+              <div class="item-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v10l4.5 4.5"></path>
+                  <circle cx="12" cy="12" r="10"></circle>
+                </svg>
+              </div>
+              <div class="item-content">
+                <div class="item-name">${escapeHtmlBasic(projectName)}</div>
+                <div class="item-meta">Draft saved ${timeAgo}</div>
+              </div>
+            </div>
+          `;
+
+          document.getElementById('continue-draft')?.addEventListener('click', () => {
+            continueDraft();
+          });
+          return;
+        }
+      } catch (err) {
+        console.warn('[ESTIMATOR] Error parsing draft:', err);
+      }
+    }
+
+    listEl.innerHTML = '<div class="template-list-empty">No recent work found</div>';
+  }
+
+  /**
+   * Start with a blank estimate
+   */
+  function startWithBlankEstimate() {
+    hideTemplateSelectionScreen();
+    continueInitialization();
+
+    // Create blank estimate
+    createBlankEstimate();
+  }
+
+  /**
+   * Start with a selected template
+   */
+  async function startWithTemplate(templateId) {
+    hideTemplateSelectionScreen();
+    continueInitialization();
+
+    // Show loading in status
+    if (els.statusEl) {
+      els.statusEl.textContent = 'Loading template...';
+    }
+
+    // Load the template
+    await loadTemplate(templateId);
+  }
+
+  /**
+   * Continue with saved draft
+   */
+  function continueDraft() {
+    hideTemplateSelectionScreen();
+    continueInitialization();
+
+    // Restore from localStorage
+    restoreFromLocalStorage();
+  }
+
+  /**
+   * Hide template selection screen and show main app
+   */
+  function hideTemplateSelectionScreen() {
+    document.getElementById('template-selection-screen')?.classList.add('hidden');
+    document.getElementById('main-app-layout')?.style.setProperty('display', '');
+  }
+
+  /**
+   * Basic HTML escape for selection screen (before full init)
+   */
+  function escapeHtmlBasic(text) {
+    if (!text) return '';
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   function initSupabase() {
@@ -344,6 +551,7 @@
     els.btnImportRevit = document.getElementById('btn-import-revit');
     els.btnExport = document.getElementById('btn-export');
     els.btnColumns = document.getElementById('btn-columns');
+    els.btnRefreshCatalog = document.getElementById('btn-refresh-catalog');
     els.btnSave = document.getElementById('btn-save');
     els.btnSaveAsTemplate = document.getElementById('btn-save-as-template');
 
@@ -361,6 +569,7 @@
     els.columnsModal = document.getElementById('columns-modal');
     els.saveAsTemplateModal = document.getElementById('save-as-template-modal');
     els.templatePickerModal = document.getElementById('template-picker-modal');
+    els.addConceptModal = document.getElementById('add-concept-modal');
   }
 
   function setupEventListeners() {
@@ -370,6 +579,7 @@
     els.btnOverhead?.addEventListener('click', handleOverhead);
     els.btnImportRevit?.addEventListener('click', handleImportRevit);
     els.btnExport?.addEventListener('click', handleExport);
+    els.btnRefreshCatalog?.addEventListener('click', handleRefreshCatalog);
     els.btnSave?.addEventListener('click', handleSave);
     els.btnSaveAsTemplate?.addEventListener('click', openSaveAsTemplateModal);
 
@@ -518,6 +728,158 @@
       .getPublicUrl(path);
 
     return data?.publicUrl || '';
+  }
+
+  // ================================
+  // CSV PARSING & TEMPLATE LOADING
+  // ================================
+
+  /**
+   * Parse CSV text into array of objects
+   * @param {string} csvText - CSV content
+   * @returns {Array<object>} Parsed rows as objects
+   */
+  function parseCSV(csvText) {
+    if (!csvText || typeof csvText !== 'string') return [];
+
+    const lines = csvText.trim().split('\n');
+    if (lines.length < 2) return [];
+
+    // Parse header row - handle quoted values
+    const parseCSVLine = (line) => {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim());
+      return result;
+    };
+
+    const headers = parseCSVLine(lines[0]);
+
+    return lines.slice(1).map(line => {
+      if (!line.trim()) return null;
+      const values = parseCSVLine(line);
+      const obj = {};
+      headers.forEach((header, i) => {
+        // Remove surrounding quotes and clean header
+        const cleanHeader = header.replace(/^"|"$/g, '');
+        let value = values[i] || '';
+        value = value.replace(/^"|"$/g, '');
+
+        // Try to parse JSON objects/arrays
+        if ((value.startsWith('{') && value.endsWith('}')) ||
+            (value.startsWith('[') && value.endsWith(']'))) {
+          try {
+            obj[cleanHeader] = JSON.parse(value);
+          } catch {
+            obj[cleanHeader] = value;
+          }
+        } else if (value === 'true') {
+          obj[cleanHeader] = true;
+        } else if (value === 'false') {
+          obj[cleanHeader] = false;
+        } else if (value !== '' && !isNaN(value) && !value.includes('-')) {
+          // Parse numbers but not UUIDs with dashes
+          obj[cleanHeader] = parseFloat(value);
+        } else {
+          obj[cleanHeader] = value;
+        }
+      });
+      return obj;
+    }).filter(Boolean);
+  }
+
+  /**
+   * Load template with all snapshots from storage bucket
+   * @param {string} templateId - Template folder ID
+   * @returns {Promise<{template, conceptsSnapshot, materialsSnapshot, conceptMaterialsSnapshot}>}
+   */
+  async function loadTemplateFromBucket(templateId) {
+    const basePath = templateId;
+
+    console.log(`[ESTIMATOR] Loading template from bucket: ${basePath}`);
+
+    // Load all files in parallel
+    const [templateRes, conceptsRes, materialsRes, cmRes] = await Promise.all([
+      downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/template.ngm`),
+      downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/concepts_snapshot.csv`),
+      downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/materials_snapshot.csv`),
+      downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/concept_materials.csv`)
+    ]);
+
+    // Parse template JSON
+    let template = null;
+    if (templateRes.data) {
+      try {
+        const templateText = await templateRes.data.text();
+        template = JSON.parse(templateText);
+      } catch (err) {
+        console.warn('[ESTIMATOR] Could not parse template.ngm:', err);
+      }
+    }
+
+    // Parse CSVs
+    let conceptsSnapshot = [];
+    let materialsSnapshot = [];
+    let conceptMaterialsSnapshot = [];
+
+    if (conceptsRes.data) {
+      try {
+        const text = await conceptsRes.data.text();
+        conceptsSnapshot = parseCSV(text);
+      } catch (err) {
+        console.warn('[ESTIMATOR] Could not parse concepts_snapshot.csv:', err);
+      }
+    }
+
+    if (materialsRes.data) {
+      try {
+        const text = await materialsRes.data.text();
+        materialsSnapshot = parseCSV(text);
+      } catch (err) {
+        console.warn('[ESTIMATOR] Could not parse materials_snapshot.csv:', err);
+      }
+    }
+
+    if (cmRes.data) {
+      try {
+        const text = await cmRes.data.text();
+        conceptMaterialsSnapshot = parseCSV(text);
+      } catch (err) {
+        console.warn('[ESTIMATOR] Could not parse concept_materials.csv:', err);
+      }
+    }
+
+    console.log(`[ESTIMATOR] Loaded: ${conceptsSnapshot.length} concepts, ${materialsSnapshot.length} materials`);
+
+    return { template, conceptsSnapshot, materialsSnapshot, conceptMaterialsSnapshot };
+  }
+
+  /**
+   * Populate templateCache from loaded snapshots or fresh DB fetch
+   * @param {object} snapshots - Object with concepts, materials, conceptMaterials arrays
+   */
+  function populateTemplateCache(snapshots) {
+    templateCache = {
+      concepts: snapshots.concepts || snapshots.conceptsSnapshot || [],
+      materials: snapshots.materials || snapshots.materialsSnapshot || [],
+      conceptMaterials: snapshots.conceptMaterials || snapshots.conceptMaterialsSnapshot || [],
+      lastRefreshed: new Date().toISOString()
+    };
+
+    console.log(`[ESTIMATOR] Template cache populated: ${templateCache.concepts.length} concepts, ${templateCache.materials.length} materials`);
   }
 
   // ================================
@@ -869,9 +1231,22 @@
       return false;
     }
 
+    if (!supabaseClient) {
+      showFeedback('Storage not available', 'error');
+      return false;
+    }
+
     els.statusEl.textContent = 'Saving template...';
 
     try {
+      // Generate template ID
+      const templateId = templateName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') + '-' + Date.now();
+
+      const basePath = templateId;
+
       // Clear quantities from data (templates don't have quantities)
       const cleanedData = clearQuantitiesFromData(currentEstimateData);
 
@@ -881,7 +1256,20 @@
       projectData['Address'] = '';
       projectData['Date'] = '';
 
-      // Fetch FULL database snapshots (not just used IDs)
+      // Prepare template.ngm JSON
+      const templateJson = {
+        template_id: templateId,
+        template_name: templateName,
+        description: description || '',
+        project_name: templateName,
+        project: projectData,
+        categories: cleanedData.categories || [],
+        overhead: cleanedData.overhead || { percentage: 0, amount: 0 },
+        created_at: new Date().toISOString(),
+        version: '1.0'
+      };
+
+      // Fetch FULL database snapshots
       els.statusEl.textContent = 'Creating full DB snapshots...';
 
       const [materialsResult, conceptsResult, conceptMaterialsResult] = await Promise.all([
@@ -890,40 +1278,70 @@
         fetchAllConceptMaterials()
       ]);
 
-      // Prepare request payload for backend API
-      const requestPayload = {
-        template_name: templateName,
-        description: description || '',
-        project: projectData,
-        categories: cleanedData.categories || [],
-        overhead: cleanedData.overhead || { percentage: 0, amount: 0 },
-        materials_snapshot: materialsResult.data || [],
-        concepts_snapshot: conceptsResult.data || [],
-        concept_materials_snapshot: conceptMaterialsResult.data || []
-      };
+      const materials = materialsResult.data || [];
+      const concepts = conceptsResult.data || [];
+      const conceptMaterials = conceptMaterialsResult.data || [];
 
-      els.statusEl.textContent = 'Uploading template...';
+      els.statusEl.textContent = 'Uploading to storage...';
 
-      // Call backend API to save template
-      const response = await fetch(`${API_BASE}/estimator/templates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(requestPayload)
-      });
+      // Upload all files to Supabase Storage in parallel
+      const uploadResults = await Promise.all([
+        // template.ngm (JSON)
+        uploadToStorage(
+          BUCKETS.TEMPLATES,
+          `${basePath}/template.ngm`,
+          new Blob([JSON.stringify(templateJson, null, 2)], { type: 'application/json' }),
+          { contentType: 'application/json' }
+        ),
+        // concepts_snapshot.csv
+        uploadToStorage(
+          BUCKETS.TEMPLATES,
+          `${basePath}/concepts_snapshot.csv`,
+          new Blob([arrayToCSV(concepts)], { type: 'text/csv' }),
+          { contentType: 'text/csv' }
+        ),
+        // materials_snapshot.csv
+        uploadToStorage(
+          BUCKETS.TEMPLATES,
+          `${basePath}/materials_snapshot.csv`,
+          new Blob([arrayToCSV(materials)], { type: 'text/csv' }),
+          { contentType: 'text/csv' }
+        ),
+        // concept_materials.csv
+        uploadToStorage(
+          BUCKETS.TEMPLATES,
+          `${basePath}/concept_materials.csv`,
+          new Blob([arrayToCSV(conceptMaterials)], { type: 'text/csv' }),
+          { contentType: 'text/csv' }
+        ),
+        // template_meta.json (for listing)
+        uploadToStorage(
+          BUCKETS.TEMPLATES,
+          `${basePath}/template_meta.json`,
+          new Blob([JSON.stringify({
+            id: templateId,
+            name: templateName,
+            description: description || '',
+            created_at: new Date().toISOString(),
+            concepts_count: concepts.length,
+            materials_count: materials.length
+          }, null, 2)], { type: 'application/json' }),
+          { contentType: 'application/json' }
+        )
+      ]);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP ${response.status}`);
+      // Check for errors
+      const errors = uploadResults.filter(r => r.error);
+      if (errors.length > 0) {
+        console.error('[ESTIMATOR] Upload errors:', errors);
+        throw new Error('Failed to upload some template files');
       }
 
-      const result = await response.json();
-
-      showFeedback(`Template "${templateName}" saved with full DB snapshots`, 'success');
+      showFeedback(`Template "${templateName}" saved with ${concepts.length} concepts, ${materials.length} materials`, 'success');
       els.statusEl.textContent = 'Template saved';
 
       // Refresh templates list
-      await loadTemplatesList();
+      await loadTemplatesListFromStorage();
 
       return true;
 
@@ -936,6 +1354,68 @@
   }
 
   /**
+   * Load templates list directly from Supabase Storage bucket
+   */
+  async function loadTemplatesListFromStorage() {
+    try {
+      if (!supabaseClient) {
+        console.warn('[ESTIMATOR] Supabase not available');
+        return [];
+      }
+
+      // List all folders in templates bucket
+      const { data: folders, error } = await supabaseClient.storage
+        .from(BUCKETS.TEMPLATES)
+        .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+
+      if (error) {
+        console.error('[ESTIMATOR] Error listing templates:', error);
+        return [];
+      }
+
+      // Filter to only folders (they have null metadata)
+      const templateFolders = folders.filter(f => f.id === null || !f.metadata);
+
+      // Load meta for each template
+      const templates = [];
+      for (const folder of templateFolders) {
+        try {
+          const { data } = await downloadFromStorage(
+            BUCKETS.TEMPLATES,
+            `${folder.name}/template_meta.json`
+          );
+          if (data) {
+            const text = await data.text();
+            const meta = JSON.parse(text);
+            templates.push({
+              id: folder.name,
+              name: meta.name || folder.name,
+              description: meta.description || '',
+              created_at: meta.created_at,
+              concepts_count: meta.concepts_count || 0,
+              materials_count: meta.materials_count || 0
+            });
+          }
+        } catch (err) {
+          // If no meta, use folder name
+          templates.push({
+            id: folder.name,
+            name: folder.name.replace(/-\d+$/, '').replace(/-/g, ' ')
+          });
+        }
+      }
+
+      // Update sidebar
+      updateTemplatesListUI(templates);
+
+      return templates;
+    } catch (err) {
+      console.error('[ESTIMATOR] Error loading templates from storage:', err);
+      return [];
+    }
+  }
+
+  /**
    * Load a template
    * @param {string} templateId
    */
@@ -943,23 +1423,59 @@
     els.statusEl.textContent = 'Loading template...';
 
     try {
-      // Use backend API to load template
-      const response = await fetch(`${API_BASE}/estimator/templates/${encodeURIComponent(templateId)}`, {
-        method: 'GET',
-        credentials: 'include'
-      });
+      // Try to load from bucket first (with snapshots)
+      let templateData = null;
+      let snapshots = null;
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP ${response.status}`);
+      try {
+        els.statusEl.textContent = 'Loading template from storage...';
+        const bucketResult = await loadTemplateFromBucket(templateId);
+
+        if (bucketResult.template) {
+          templateData = bucketResult.template;
+          snapshots = {
+            concepts: bucketResult.conceptsSnapshot,
+            materials: bucketResult.materialsSnapshot,
+            conceptMaterials: bucketResult.conceptMaterialsSnapshot
+          };
+          console.log('[ESTIMATOR] Template loaded from bucket with snapshots');
+        }
+      } catch (bucketErr) {
+        console.warn('[ESTIMATOR] Bucket load failed, trying API:', bucketErr);
       }
 
-      const templateData = await response.json();
+      // Fallback to backend API if bucket load failed
+      if (!templateData) {
+        els.statusEl.textContent = 'Loading template from API...';
+        const response = await fetch(`${API_BASE}/estimator/templates/${encodeURIComponent(templateId)}`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || `HTTP ${response.status}`);
+        }
+
+        templateData = await response.json();
+
+        // If API returns snapshots, use them
+        if (templateData.materials_snapshot || templateData.concepts_snapshot) {
+          snapshots = {
+            concepts: templateData.concepts_snapshot || [],
+            materials: templateData.materials_snapshot || [],
+            conceptMaterials: templateData.concept_materials_snapshot || []
+          };
+        }
+      }
 
       // Create new estimate from template
       currentEstimateData = {
         ...templateData,
         template_meta: undefined, // Remove template metadata
+        materials_snapshot: undefined, // Don't keep in estimate data
+        concepts_snapshot: undefined,
+        concept_materials_snapshot: undefined,
         created_from_template: templateId,
         created_at: new Date().toISOString()
       };
@@ -967,9 +1483,18 @@
       currentEstimateId = null; // Will be assigned on first save
       currentProjectId = null;
 
+      // Populate template cache if we have snapshots
+      if (snapshots && (snapshots.concepts.length > 0 || snapshots.materials.length > 0)) {
+        populateTemplateCache(snapshots);
+      } else {
+        // Fetch from DB if no snapshots available
+        els.statusEl.textContent = 'Loading catalog from database...';
+        await refreshCatalogFromDB();
+      }
+
       renderEstimate();
       markDirty(); // Trigger auto-save
-      showFeedback('Template loaded - save to create new estimate', 'info');
+      showFeedback(`Template loaded with ${templateCache.concepts.length} concepts`, 'success');
 
       return true;
     } catch (err) {
@@ -981,35 +1506,26 @@
   }
 
   /**
-   * Load list of available templates and update sidebar UI
+   * Refresh catalog (concepts, materials) from database
    */
-  async function loadTemplatesList() {
+  async function refreshCatalogFromDB() {
     try {
-      // Use backend API to list templates
-      const response = await fetch(`${API_BASE}/estimator/templates`, {
-        method: 'GET',
-        credentials: 'include'
+      const [materialsRes, conceptsRes, cmRes] = await Promise.all([
+        fetchAllMaterials(),
+        fetchAllConcepts(),
+        fetchAllConceptMaterials()
+      ]);
+
+      populateTemplateCache({
+        concepts: conceptsRes.data || [],
+        materials: materialsRes.data || [],
+        conceptMaterials: cmRes.data || []
       });
 
-      if (!response.ok) {
-        console.warn('[ESTIMATOR] Could not load templates list');
-        updateTemplatesListUI([]);
-        return [];
-      }
-
-      const result = await response.json();
-      const templates = result.templates || [];
-
-      console.log('[ESTIMATOR] Templates:', templates);
-
-      // Update sidebar
-      updateTemplatesListUI(templates);
-
-      return templates;
+      return true;
     } catch (err) {
-      console.warn('[ESTIMATOR] Error loading templates list:', err);
-      updateTemplatesListUI([]);
-      return [];
+      console.error('[ESTIMATOR] Error refreshing catalog from DB:', err);
+      return false;
     }
   }
 
@@ -1477,6 +1993,17 @@
           // Get image URL
           const imageUrl = getItemImageUrl('concept', item.concept_id, item.custom_image);
 
+          // Generate type badges if line_items exist
+          let typeBadgesHtml = '';
+          if (item.line_items && item.line_items.length > 0) {
+            const types = new Set(item.line_items.map(li => li.type));
+            typeBadgesHtml = '<span class="item-type-indicators">';
+            if (types.has('material')) typeBadgesHtml += '<span class="item-type-indicator mat" title="Contains materials"></span>';
+            if (types.has('labor')) typeBadgesHtml += '<span class="item-type-indicator lab" title="Contains labor"></span>';
+            if (types.has('external')) typeBadgesHtml += '<span class="item-type-indicator ext" title="Contains external services"></span>';
+            typeBadgesHtml += '</span>';
+          }
+
           const trItem = document.createElement('tr');
           trItem.classList.add('item-row');
           trItem.dataset.catIndex = String(indexCat);
@@ -1487,12 +2014,15 @@
             <td class="image-cell col-image">
               ${imageUrl ? `<img src="${imageUrl}" alt="" class="item-thumbnail" onerror="this.style.display='none'">` : '—'}
             </td>
-            <td class="item-name col-name">${name}</td>
+            <td class="item-name col-name">
+              <span class="item-name-text">${name}</span>
+              ${typeBadgesHtml}
+            </td>
             <td class="col-qty">${qty || '—'}</td>
             <td class="col-unit">${unit || '—'}</td>
-            <td class="col-unit-cost">${unitCost !== '' ? unitCost : '—'}</td>
-            <td class="col-subtotal">${subtotalItem !== '' ? subtotalItem : '—'}</td>
-            <td class="col-total">${totalItem !== '' ? totalItem : '—'}</td>
+            <td class="col-unit-cost">${unitCost !== '' ? formatCurrency(unitCost) : '—'}</td>
+            <td class="col-subtotal">${subtotalItem !== '' ? formatCurrency(subtotalItem) : '—'}</td>
+            <td class="col-total">${totalItem !== '' ? formatCurrency(totalItem) : '—'}</td>
           `;
           els.tbody.appendChild(trItem);
         });
@@ -1631,10 +2161,571 @@
     openTemplatePickerModal();
   }
 
+  // ================================
+  // ADD CONCEPT MODAL
+  // ================================
+
   function handleAddConcept() {
-    // TODO: Open concept picker modal
-    if (window.Toast) {
-      Toast.info('Coming Soon', 'Add Concept: Opens concept picker from catalog');
+    // Reset state
+    addConceptState = {
+      selectedConcept: null,
+      builderItems: [],
+      mode: 'from-template'
+    };
+
+    // Ensure we have catalog data
+    if (templateCache.concepts.length === 0) {
+      showFeedback('Loading catalog...', 'info');
+      refreshCatalogFromDB().then(() => {
+        openAddConceptModal();
+      });
+    } else {
+      openAddConceptModal();
+    }
+  }
+
+  function openAddConceptModal() {
+    if (!els.addConceptModal) return;
+
+    // Populate the concept picker table
+    populateConceptPicker();
+
+    // Populate target category dropdown
+    populateTargetCategoryDropdown();
+
+    // Reset form
+    document.getElementById('add-concept-qty').value = '1';
+    document.getElementById('add-concept-save-to-db').checked = false;
+    document.getElementById('add-concept-confirm').disabled = true;
+
+    // Clear preview
+    document.getElementById('concept-preview-content').innerHTML =
+      '<p class="preview-empty">Select a concept from the table to see its details and line items.</p>';
+
+    // Show modal
+    els.addConceptModal.classList.remove('hidden');
+  }
+
+  function closeAddConceptModal() {
+    els.addConceptModal?.classList.add('hidden');
+    addConceptState.selectedConcept = null;
+  }
+
+  function populateConceptPicker(filterText = '') {
+    const tbody = document.getElementById('concept-picker-body');
+    if (!tbody) return;
+
+    const searchTerm = filterText.toLowerCase().trim();
+    const concepts = templateCache.concepts;
+
+    if (concepts.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="table-cell-muted" style="text-align: center; padding: 40px;">
+            No concepts available. Try refreshing the catalog.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    // Filter concepts
+    const filtered = searchTerm
+      ? concepts.filter(c =>
+          (c.code || '').toLowerCase().includes(searchTerm) ||
+          (c.short_description || '').toLowerCase().includes(searchTerm) ||
+          (c.category_name || '').toLowerCase().includes(searchTerm)
+        )
+      : concepts;
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="table-cell-muted" style="text-align: center; padding: 40px;">
+            No concepts match your search.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map(concept => {
+      // Determine types from line items
+      const lineItems = templateCache.conceptMaterials.filter(
+        cm => cm.concept_id === concept.id
+      );
+
+      const types = new Set();
+      lineItems.forEach(li => {
+        const type = li.item_type || li.type || 'material';
+        types.add(type);
+      });
+
+      // Also check builder.items if present
+      if (concept.builder && concept.builder.items) {
+        concept.builder.items.forEach(item => {
+          types.add(item.type || 'material');
+        });
+      }
+
+      let typeBadges = '';
+      if (types.has('material')) typeBadges += '<span class="type-badge type-material">MAT</span>';
+      if (types.has('labor')) typeBadges += '<span class="type-badge type-labor">LAB</span>';
+      if (types.has('external')) typeBadges += '<span class="type-badge type-external">EXT</span>';
+
+      return `
+        <tr data-concept-id="${concept.id}" data-concept='${escapeHtml(JSON.stringify(concept))}'>
+          <td><code style="color: #3ecf8e;">${escapeHtml(concept.code || '')}</code></td>
+          <td>${escapeHtml(concept.short_description || concept.name || '')}</td>
+          <td>${escapeHtml(concept.unit_name || concept.unit || 'EA')}</td>
+          <td>${formatCurrency(concept.calculated_cost || concept.base_cost || 0)}</td>
+          <td><div class="concept-types">${typeBadges || '-'}</div></td>
+        </tr>
+      `;
+    }).join('');
+
+    // Add click handlers
+    tbody.querySelectorAll('tr[data-concept-id]').forEach(row => {
+      row.addEventListener('click', () => selectConceptForAdd(row));
+    });
+  }
+
+  function selectConceptForAdd(row) {
+    // Remove previous selection
+    document.querySelectorAll('#concept-picker-body tr.selected').forEach(r =>
+      r.classList.remove('selected')
+    );
+
+    // Mark as selected
+    row.classList.add('selected');
+
+    // Parse concept data
+    try {
+      const concept = JSON.parse(row.dataset.concept);
+      addConceptState.selectedConcept = concept;
+
+      // Enable confirm button
+      document.getElementById('add-concept-confirm').disabled = false;
+
+      // Show preview
+      showConceptPreview(concept);
+    } catch (err) {
+      console.error('[ESTIMATOR] Error parsing concept:', err);
+    }
+  }
+
+  function showConceptPreview(concept) {
+    const previewEl = document.getElementById('concept-preview-content');
+    if (!previewEl) return;
+
+    // Get line items
+    const lineItems = templateCache.conceptMaterials.filter(
+      cm => cm.concept_id === concept.id
+    );
+
+    // Also include builder items if present
+    let allItems = lineItems.map(li => {
+      const material = templateCache.materials.find(m => m.id === li.material_id);
+      return {
+        type: li.item_type || li.type || 'material',
+        description: li.description || material?.short_description || li.material_id,
+        unit: li.unit_name || material?.unit_name || 'EA',
+        qty: li.quantity || 1,
+        unitCost: li.unit_cost || li.unit_cost_override || material?.price_numeric || 0
+      };
+    });
+
+    // Add builder items if they exist
+    if (concept.builder && concept.builder.items) {
+      concept.builder.items.forEach(item => {
+        if (item.type !== 'material' || !item.materialId) {
+          // Only add non-material items or inline items
+          allItems.push({
+            type: item.type || 'material',
+            description: item.description,
+            unit: item.unit || 'EA',
+            qty: item.qty || 1,
+            unitCost: item.unitCost || item.unit_cost || 0
+          });
+        }
+      });
+    }
+
+    // Build preview HTML
+    const itemsHtml = allItems.length > 0
+      ? allItems.map(item => {
+          const badge = getTypeBadgeHtml(item.type);
+          return `
+            <div class="preview-line-item">
+              ${badge}
+              <span class="item-desc">${escapeHtml(item.description)}</span>
+              <span class="item-qty">${item.qty} ${escapeHtml(item.unit)}</span>
+              <span class="item-cost">${formatCurrency(item.unitCost)}</span>
+            </div>
+          `;
+        }).join('')
+      : '<p class="preview-empty">No line items defined for this concept.</p>';
+
+    previewEl.innerHTML = `
+      <div class="preview-concept-info">
+        <div class="preview-concept-header">
+          <span class="preview-concept-code">${escapeHtml(concept.code)}</span>
+          <span class="preview-concept-name">${escapeHtml(concept.short_description || '')}</span>
+          <span class="preview-concept-cost">${formatCurrency(concept.calculated_cost || concept.base_cost || 0)}</span>
+        </div>
+        <div class="preview-line-items">
+          ${itemsHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  function getTypeBadgeHtml(type) {
+    const badges = {
+      material: '<span class="type-badge type-material">MAT</span>',
+      labor: '<span class="type-badge type-labor">LAB</span>',
+      external: '<span class="type-badge type-external">EXT</span>'
+    };
+    return badges[type] || badges.material;
+  }
+
+  function populateTargetCategoryDropdown() {
+    const select = document.getElementById('add-concept-target-category');
+    if (!select || !currentEstimateData) return;
+
+    // Get existing categories
+    const categories = currentEstimateData.categories || [];
+
+    select.innerHTML = '<option value="">Auto (from concept)</option>';
+
+    categories.forEach(cat => {
+      select.innerHTML += `<option value="${escapeHtml(cat.id)}">${escapeHtml(cat.name)}</option>`;
+    });
+
+    // Add option to create new
+    select.innerHTML += '<option value="__new__">+ Create New Category</option>';
+  }
+
+  async function confirmAddConcept() {
+    if (!addConceptState.selectedConcept) {
+      showFeedback('Please select a concept', 'error');
+      return;
+    }
+
+    const qty = parseFloat(document.getElementById('add-concept-qty').value) || 1;
+    const saveToDb = document.getElementById('add-concept-save-to-db').checked;
+    const concept = addConceptState.selectedConcept;
+
+    // Add to estimate
+    addConceptToEstimate(concept, qty);
+
+    // Optionally save to database
+    if (saveToDb) {
+      await saveConceptToDatabase(concept);
+    }
+
+    closeAddConceptModal();
+  }
+
+  function addConceptToEstimate(concept, qty) {
+    if (!currentEstimateData) {
+      currentEstimateData = {
+        project_name: 'New Estimate',
+        project: {},
+        categories: [],
+        overhead: { percentage: 0, amount: 0 }
+      };
+    }
+
+    // Determine target category
+    const targetCategoryId = document.getElementById('add-concept-target-category')?.value;
+    let targetCategory = null;
+
+    if (targetCategoryId && targetCategoryId !== '' && targetCategoryId !== '__new__') {
+      targetCategory = currentEstimateData.categories.find(c => c.id === targetCategoryId);
+    }
+
+    if (!targetCategory) {
+      // Find or create category based on concept's category
+      const categoryName = concept.category_name || 'General';
+      targetCategory = currentEstimateData.categories.find(
+        c => c.name === categoryName || c.id === concept.category_id
+      );
+
+      if (!targetCategory) {
+        // Create new category
+        targetCategory = {
+          id: concept.category_id || 'CAT-' + Date.now(),
+          name: categoryName,
+          total_cost: 0,
+          subcategories: [{
+            name: 'Items',
+            total_cost: 0,
+            items: []
+          }]
+        };
+        currentEstimateData.categories.push(targetCategory);
+      }
+    }
+
+    // Ensure subcategories exist
+    if (!targetCategory.subcategories || targetCategory.subcategories.length === 0) {
+      targetCategory.subcategories = [{
+        name: 'Items',
+        total_cost: 0,
+        items: []
+      }];
+    }
+
+    // Get line items with their types for badge display
+    const lineItems = templateCache.conceptMaterials
+      .filter(cm => cm.concept_id === concept.id)
+      .map(cm => {
+        const material = templateCache.materials.find(m => m.id === cm.material_id);
+        return {
+          type: cm.item_type || cm.type || 'material',
+          description: cm.description || material?.short_description || cm.material_id,
+          unit: cm.unit_name || material?.unit_name || 'EA',
+          qty: cm.quantity || 1,
+          unitCost: cm.unit_cost || cm.unit_cost_override || material?.price_numeric || 0
+        };
+      });
+
+    // Also add builder items
+    if (concept.builder && concept.builder.items) {
+      concept.builder.items.forEach(item => {
+        if (item.type !== 'material' || !item.materialId) {
+          lineItems.push({
+            type: item.type || 'material',
+            description: item.description,
+            unit: item.unit || 'EA',
+            qty: item.qty || 1,
+            unitCost: item.unitCost || item.unit_cost || 0
+          });
+        }
+      });
+    }
+
+    const unitCost = concept.calculated_cost || concept.base_cost || 0;
+
+    // Create new item
+    const newItem = {
+      id: concept.code + '-' + Date.now(),
+      code: concept.code,
+      name: concept.short_description || concept.name,
+      description: concept.full_description || '',
+      concept_id: concept.id,
+      qty: qty,
+      quantity: qty,
+      unit: concept.unit_name || concept.unit || 'EA',
+      unit_cost: unitCost,
+      base_cost: unitCost,
+      total: qty * unitCost,
+      total_cost: qty * unitCost,
+      line_items: lineItems
+    };
+
+    // Add to first subcategory
+    targetCategory.subcategories[0].items.push(newItem);
+
+    // Recalculate totals
+    recalculateEstimateTotals();
+
+    // Mark dirty and re-render
+    markDirty();
+    renderEstimate();
+
+    showFeedback(`Added "${concept.short_description || concept.code}" (x${qty}) to estimate`, 'success');
+  }
+
+  function recalculateEstimateTotals() {
+    if (!currentEstimateData || !currentEstimateData.categories) return;
+
+    let grandTotal = 0;
+
+    currentEstimateData.categories.forEach(cat => {
+      let categoryTotal = 0;
+
+      cat.subcategories?.forEach(sub => {
+        let subTotal = 0;
+
+        sub.items?.forEach(item => {
+          const itemTotal = (item.qty || item.quantity || 0) * (item.unit_cost || item.base_cost || 0);
+          item.total = itemTotal;
+          item.total_cost = itemTotal;
+          subTotal += itemTotal;
+        });
+
+        sub.total_cost = subTotal;
+        sub.total = subTotal;
+        categoryTotal += subTotal;
+      });
+
+      cat.total_cost = categoryTotal;
+      cat.total = categoryTotal;
+      grandTotal += categoryTotal;
+    });
+
+    // Apply overhead
+    const overheadPct = currentEstimateData.overhead?.percentage || 0;
+    const overheadAmount = grandTotal * (overheadPct / 100);
+    currentEstimateData.overhead.amount = overheadAmount;
+    currentEstimateData.subtotal = grandTotal;
+    currentEstimateData.total = grandTotal + overheadAmount;
+  }
+
+  function setupAddConceptModal() {
+    if (!els.addConceptModal) return;
+
+    // Close button
+    document.getElementById('add-concept-close')?.addEventListener('click', closeAddConceptModal);
+
+    // Cancel button
+    document.getElementById('add-concept-cancel')?.addEventListener('click', closeAddConceptModal);
+
+    // Confirm button
+    document.getElementById('add-concept-confirm')?.addEventListener('click', confirmAddConcept);
+
+    // Search input
+    const searchInput = document.getElementById('concept-picker-search');
+    searchInput?.addEventListener('input', (e) => {
+      populateConceptPicker(e.target.value);
+    });
+
+    // Click backdrop to close
+    els.addConceptModal.addEventListener('click', (e) => {
+      if (e.target === els.addConceptModal) closeAddConceptModal();
+    });
+
+    // Escape to close
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !els.addConceptModal.classList.contains('hidden')) {
+        closeAddConceptModal();
+      }
+    });
+  }
+
+  // Helper to escape HTML
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  /**
+   * Save a concept to the database
+   * Used when user checks "Also save to database" in add concept modal
+   * @param {object} concept - Concept data to save
+   */
+  async function saveConceptToDatabase(concept) {
+    if (!concept) return;
+
+    try {
+      showFeedback('Saving concept to database...', 'info');
+
+      // Prepare concept data for API
+      const conceptData = {
+        code: concept.code,
+        short_description: concept.short_description || concept.name,
+        full_description: concept.full_description || '',
+        category_id: concept.category_id || null,
+        unit_id: concept.unit_id || null,
+        base_cost: concept.calculated_cost || concept.base_cost || 0,
+        calculated_cost: concept.calculated_cost || concept.base_cost || 0,
+        waste_percent: concept.waste_percent || 0,
+        is_active: true
+      };
+
+      // If concept has builder data, include it
+      if (concept.builder) {
+        conceptData.builder = concept.builder;
+      }
+
+      // Check if concept already exists by code
+      let existingConcept = null;
+      try {
+        const checkRes = await fetch(`${API_BASE}/concepts?code=${encodeURIComponent(concept.code)}`, {
+          method: 'GET',
+          credentials: 'include'
+        });
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          if (checkData.data && checkData.data.length > 0) {
+            existingConcept = checkData.data[0];
+          }
+        }
+      } catch (err) {
+        console.warn('[ESTIMATOR] Could not check existing concept:', err);
+      }
+
+      let savedConceptId = null;
+
+      if (existingConcept) {
+        // Update existing concept
+        const updateRes = await fetch(`${API_BASE}/concepts/${existingConcept.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(conceptData)
+        });
+
+        if (!updateRes.ok) {
+          throw new Error('Failed to update concept');
+        }
+
+        savedConceptId = existingConcept.id;
+        showFeedback(`Concept "${concept.code}" updated in database`, 'success');
+      } else {
+        // Create new concept
+        const createRes = await fetch(`${API_BASE}/concepts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(conceptData)
+        });
+
+        if (!createRes.ok) {
+          const errData = await createRes.json().catch(() => ({}));
+          throw new Error(errData.detail || 'Failed to create concept');
+        }
+
+        const createData = await createRes.json();
+        savedConceptId = createData.id || createData.data?.id;
+        showFeedback(`Concept "${concept.code}" saved to database`, 'success');
+      }
+
+      // Save concept materials if we have a valid ID and materials
+      if (savedConceptId) {
+        const materials = templateCache.conceptMaterials.filter(
+          cm => cm.concept_id === concept.id
+        );
+
+        for (const mat of materials) {
+          try {
+            await fetch(`${API_BASE}/concepts/${savedConceptId}/materials`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              credentials: 'include',
+              body: JSON.stringify({
+                material_id: mat.material_id,
+                quantity: mat.quantity || 1,
+                unit_cost_override: mat.unit_cost || mat.unit_cost_override || null,
+                item_type: mat.item_type || mat.type || 'material',
+                description: mat.description || ''
+              })
+            });
+          } catch (err) {
+            console.warn('[ESTIMATOR] Could not save concept material:', err);
+          }
+        }
+      }
+
+      return true;
+    } catch (err) {
+      console.error('[ESTIMATOR] Error saving concept to DB:', err);
+      showFeedback('Error saving concept: ' + err.message, 'error');
+      return false;
     }
   }
 
@@ -1657,6 +2748,80 @@
     if (window.Toast) {
       Toast.info('Coming Soon', 'Export: Choose format (PDF, CSV, .ngm)');
     }
+  }
+
+  /**
+   * Refresh the concepts and materials catalog from the database
+   */
+  async function handleRefreshCatalog() {
+    const confirmRefresh = window.confirm(
+      'This will refresh the concepts and materials catalog from the current database.\n\n' +
+      'This may update prices and availability. Continue?'
+    );
+
+    if (!confirmRefresh) return;
+
+    els.statusEl.textContent = 'Refreshing catalog...';
+
+    try {
+      const success = await refreshCatalogFromDB();
+
+      if (success) {
+        showFeedback(
+          `Catalog refreshed: ${templateCache.concepts.length} concepts, ${templateCache.materials.length} materials`,
+          'success'
+        );
+        els.statusEl.textContent = 'Catalog refreshed';
+
+        // Optionally update template snapshots in storage if this estimate is from a template
+        if (currentEstimateData?.created_from_template) {
+          try {
+            await updateTemplateSnapshots(currentEstimateData.created_from_template);
+            console.log('[ESTIMATOR] Template snapshots updated');
+          } catch (err) {
+            console.warn('[ESTIMATOR] Could not update template snapshots:', err);
+          }
+        }
+      } else {
+        showFeedback('Failed to refresh catalog', 'error');
+        els.statusEl.textContent = 'Refresh failed';
+      }
+    } catch (err) {
+      console.error('[ESTIMATOR] Refresh catalog error:', err);
+      showFeedback('Error refreshing catalog: ' + err.message, 'error');
+      els.statusEl.textContent = 'Refresh failed';
+    }
+  }
+
+  /**
+   * Update template snapshot files in storage
+   * @param {string} templateId
+   */
+  async function updateTemplateSnapshots(templateId) {
+    if (!supabaseClient || !templateId) return;
+
+    const basePath = templateId;
+
+    await Promise.all([
+      uploadToStorage(
+        BUCKETS.TEMPLATES,
+        `${basePath}/materials_snapshot.csv`,
+        new Blob([arrayToCSV(templateCache.materials)], { type: 'text/csv' }),
+        { contentType: 'text/csv' }
+      ),
+      uploadToStorage(
+        BUCKETS.TEMPLATES,
+        `${basePath}/concepts_snapshot.csv`,
+        new Blob([arrayToCSV(templateCache.concepts)], { type: 'text/csv' }),
+        { contentType: 'text/csv' }
+      ),
+      uploadToStorage(
+        BUCKETS.TEMPLATES,
+        `${basePath}/concept_materials.csv`,
+        new Blob([arrayToCSV(templateCache.conceptMaterials)], { type: 'text/csv' }),
+        { contentType: 'text/csv' }
+      )
+    ]);
   }
 
   async function handleSave() {

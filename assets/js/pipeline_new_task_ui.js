@@ -28,11 +28,18 @@
     if (!modal) return;
     modal.classList.add("hidden");
 
-    // Clear people pickers
-    ownerPicker?.clear();
-    collaboratorPicker?.clear();
+    // Destroy people pickers (removes document event listeners)
+    ownerPicker?.destroy?.();
+    collaboratorPicker?.destroy?.();
+    ownerPicker = null;
+    collaboratorPicker = null;
 
-    // Clear catalog pickers
+    // Destroy catalog pickers (removes document event listeners)
+    companyPicker?.destroy?.();
+    projectPicker?.destroy?.();
+    departmentPicker?.destroy?.();
+    typePicker?.destroy?.();
+    priorityPicker?.destroy?.();
     companyPicker = null;
     projectPicker = null;
     departmentPicker = null;

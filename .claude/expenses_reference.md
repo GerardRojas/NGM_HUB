@@ -1,5 +1,7 @@
 # Expenses Module - Architecture Reference
 
+> **Plan de Mejoras:** Ver `.claude/expenses_fixes_plan.md` para diagnostico y plan de optimizacion
+
 ## Files
 - `expenses.html` - Page structure (~1400 lines)
 - `assets/js/expenses.js` - All logic (~10500 lines, 208+ functions)

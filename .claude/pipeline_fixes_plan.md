@@ -3,7 +3,7 @@
 **Creado:** 2026-02-05
 **Estado General:** EN PROGRESO
 **Total Issues:** 39
-**Resueltos:** 3
+**Resueltos:** 6
 
 ---
 
@@ -55,7 +55,7 @@
 - **Test:** Simular latencia alta, verificar que pre-seleccion funcione
 
 ### [P1-06] Manager Picker No Se Limpia Correctamente
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** ALTA
 - **Archivo:** `assets/js/pipeline_edit_task_ui.js`
 - **Lineas:** 68-76 (close function)
@@ -90,7 +90,7 @@
 ## PRIORIDAD 3: MEMORY LEAKS ADICIONALES
 
 ### [P3-01] Pickers en New Task Modal No Llaman destroy()
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** MEDIA
 - **Archivo:** `assets/js/pipeline_new_task_ui.js`
 - **Lineas:** 26-41 (close function)
@@ -99,7 +99,7 @@
 - **Test:** Abrir/cerrar modal 20 veces, monitorear memoria
 
 ### [P3-02] Pickers en Edit Task Modal No Llaman destroy()
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** MEDIA
 - **Archivo:** `assets/js/pipeline_edit_task_ui.js`
 - **Lineas:** 64-77 (close function)
@@ -346,4 +346,7 @@
 | 2026-02-05 | P1-01 | COMPLETADO | Agregado fieldMap para plurales, flag alreadySaved para evitar doble-save |
 | 2026-02-05 | P5-05 | COMPLETADO | Movido MULTI_PERSON_COLS al inicio con otras constantes |
 | 2026-02-05 | P1-05 | COMPLETADO | Reemplazado delays hardcodeados con polling (max 3s, 100ms intervals) |
+| 2026-02-05 | P1-06 | COMPLETADO | Agregado destroy() a managerPicker en close() de edit_task_ui |
+| 2026-02-05 | P3-01 | COMPLETADO | Agregado destroy() a todos los pickers en close() de new_task_ui |
+| 2026-02-05 | P3-02 | COMPLETADO | Agregado destroy() a todos los pickers en close() de edit_task_ui |
 

@@ -159,8 +159,9 @@
   // ================================
   function isValidUrl(string) {
     try {
-      new URL(string);
-      return true;
+      const url = new URL(string);
+      // Only allow http and https protocols (prevents javascript:, data:, etc.)
+      return url.protocol === 'http:' || url.protocol === 'https:';
     } catch (_) {
       return false;
     }

@@ -72,10 +72,20 @@
     currentTask = null;
     currentTaskId = null;
 
-    // Clear pickers
-    ownerPicker?.clear();
-    collaboratorPicker?.clear();
-    managerPicker?.clear();
+    // Destroy people pickers (removes document event listeners)
+    ownerPicker?.destroy?.();
+    collaboratorPicker?.destroy?.();
+    managerPicker?.destroy?.();
+    ownerPicker = null;
+    collaboratorPicker = null;
+    managerPicker = null;
+
+    // Destroy catalog pickers (removes document event listeners)
+    companyPicker?.destroy?.();
+    projectPicker?.destroy?.();
+    departmentPicker?.destroy?.();
+    typePicker?.destroy?.();
+    priorityPicker?.destroy?.();
     companyPicker = null;
     projectPicker = null;
     departmentPicker = null;

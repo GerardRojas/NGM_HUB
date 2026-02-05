@@ -147,6 +147,14 @@
   // Bulk delete state
   let selectedExpenseIds = new Set(); // Set of expense IDs to delete
 
+  // Panel drag handlers (for cleanup)
+  let panelDragHandlers = {
+    element: null,
+    mousedown: null,
+    mousemove: null,
+    mouseup: null
+  };
+
   // ================================
   // PERFORMANCE: Lookup Maps (O(1) access)
   // ================================
@@ -186,6 +194,16 @@
     const parts = dateStr.split('T')[0].split('-');
     if (parts.length !== 3) return dateStr;
     return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])).toLocaleDateString();
+  }
+
+  // ================================
+  // UTILITY: Escape HTML to prevent XSS
+  // ================================
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   // ================================
@@ -1620,11 +1638,30 @@
   }
 
   /**
+   * Cleanup panel drag event listeners
+   */
+  function cleanupPanelDrag() {
+    if (panelDragHandlers.element && panelDragHandlers.mousedown) {
+      panelDragHandlers.element.removeEventListener('mousedown', panelDragHandlers.mousedown);
+    }
+    if (panelDragHandlers.mousemove) {
+      document.removeEventListener('mousemove', panelDragHandlers.mousemove);
+    }
+    if (panelDragHandlers.mouseup) {
+      document.removeEventListener('mouseup', panelDragHandlers.mouseup);
+    }
+    panelDragHandlers = { element: null, mousedown: null, mousemove: null, mouseup: null };
+  }
+
+  /**
    * Initialize draggable functionality for a panel
    */
   function initDraggablePanel(panel) {
     const handle = panel.querySelector('#healthCheckDragHandle');
     if (!handle) return;
+
+    // Cleanup previous listeners to prevent memory leaks
+    cleanupPanelDrag();
 
     let isDragging = false;
     let startX;
@@ -1634,10 +1671,6 @@
     let hasBeenDragged = false;
 
     handle.style.cursor = 'grab';
-
-    handle.addEventListener('mousedown', dragStart);
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('mouseup', dragEnd);
 
     function dragStart(e) {
       // Don't drag if clicking close button
@@ -1701,6 +1734,17 @@
       handle.style.cursor = 'grab';
       panel.style.transition = '';
     }
+
+    // Store references for cleanup
+    panelDragHandlers.element = handle;
+    panelDragHandlers.mousedown = dragStart;
+    panelDragHandlers.mousemove = drag;
+    panelDragHandlers.mouseup = dragEnd;
+
+    // Add listeners
+    handle.addEventListener('mousedown', dragStart);
+    document.addEventListener('mousemove', drag);
+    document.addEventListener('mouseup', dragEnd);
   }
 
   /**
@@ -2099,6 +2143,9 @@
    * Hide the duplicate review panel
    */
   function hideDuplicateReviewPanel() {
+    // Cleanup drag listeners to prevent memory leaks
+    cleanupPanelDrag();
+
     const panel = document.getElementById('duplicateReviewPanel');
     if (panel) {
       panel.style.display = 'none';
@@ -2576,7 +2623,7 @@
         tooltipText = `LIKELY DUPLICATE: Same vendor (${duplicateWarning.vendorName}), amount ($${duplicateWarning.amount?.toFixed(2)}), and date`;
       }
 
-      billDisplayHtml = `<span class="bill-warning-badge bill-warning-${duplicateWarning.type}" title="${tooltipText}">${warningIcon} ${billId}</span>`;
+      billDisplayHtml = `<span class="bill-warning-badge bill-warning-${duplicateWarning.type}" title="${escapeHtml(tooltipText)}">${warningIcon} ${escapeHtml(billId)}</span>`;
       rowWarningClass = ` expense-row-warning expense-row-duplicate-${duplicateWarning.type}`;
     }
 
@@ -3799,49 +3846,14 @@
   // ================================
   // FUZZY MATCHING HELPER
   // ================================
+  // Nota: levenshteinDistance() definida en linea ~893 (usada por calculateStringSimilarity)
 
   /**
-   * Calculate Levenshtein distance between two strings (edit distance)
-   * @param {string} str1 - First string
-   * @param {string} str2 - Second string
-   * @returns {number} - Edit distance
-   */
-  function levenshteinDistance(str1, str2) {
-    const s1 = str1.toLowerCase();
-    const s2 = str2.toLowerCase();
-
-    const costs = [];
-    for (let i = 0; i <= s1.length; i++) {
-      let lastValue = i;
-      for (let j = 0; j <= s2.length; j++) {
-        if (i === 0) {
-          costs[j] = j;
-        } else if (j > 0) {
-          let newValue = costs[j - 1];
-          if (s1.charAt(i - 1) !== s2.charAt(j - 1)) {
-            newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
-          }
-          costs[j - 1] = lastValue;
-          lastValue = newValue;
-        }
-      }
-      if (i > 0) costs[s2.length] = lastValue;
-    }
-    return costs[s2.length];
-  }
-
-  /**
-   * Calculate similarity percentage between two strings
-   * @param {string} str1 - First string
-   * @param {string} str2 - Second string
-   * @returns {number} - Similarity percentage (0-100)
+   * Calculate similarity percentage between two strings (0-100)
+   * Wrapper around calculateStringSimilarity for backwards compatibility
    */
   function calculateSimilarity(str1, str2) {
-    const maxLength = Math.max(str1.length, str2.length);
-    if (maxLength === 0) return 100;
-
-    const distance = levenshteinDistance(str1, str2);
-    return Math.round(((maxLength - distance) / maxLength) * 100);
+    return Math.round(calculateStringSimilarity(str1, str2) * 100);
   }
 
   /**
@@ -8277,9 +8289,15 @@
   // ================================
   // COLUMN RESIZE FUNCTIONALITY
   // ================================
+  // Track active resize handlers for cleanup
+  let activeResizeCleanup = null;
+
   function initColumnResize() {
     const table = document.querySelector('.expenses-table');
     if (!table) return;
+
+    // Remove existing resize handles to prevent duplicates
+    table.querySelectorAll('.col-resize-handle').forEach(handle => handle.remove());
 
     const headerCells = table.querySelectorAll('thead th');
 
@@ -8307,6 +8325,9 @@
 
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
+
+        // Store cleanup function in case mouseup doesn't fire
+        activeResizeCleanup = onMouseUp;
       });
 
       function onMouseMove(e) {
@@ -8328,6 +8349,7 @@
 
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
+        activeResizeCleanup = null;
 
         // Save column widths to localStorage
         saveColumnWidths();
@@ -8337,6 +8359,13 @@
     // Load saved column widths
     loadColumnWidths();
   }
+
+  // Cleanup resize if mouse leaves window during resize
+  window.addEventListener('blur', () => {
+    if (activeResizeCleanup) {
+      activeResizeCleanup();
+    }
+  });
 
   function saveColumnWidths() {
     const table = document.querySelector('.expenses-table');
@@ -9414,10 +9443,10 @@
         listEl.innerHTML = '<span class="no-selection">No expenses selected yet</span>';
       } else {
         listEl.innerHTML = selectedExpenses.map(exp => `
-          <div class="selected-expense-chip" data-expense-id="${exp.id}">
-            <span class="chip-description">${exp.description.substring(0, 30)}${exp.description.length > 30 ? '...' : ''}</span>
+          <div class="selected-expense-chip" data-expense-id="${escapeHtml(exp.id)}">
+            <span class="chip-description">${escapeHtml(exp.description.substring(0, 30))}${exp.description.length > 30 ? '...' : ''}</span>
             <span class="chip-amount">${formatCurrency(exp.amount)}</span>
-            <button class="chip-remove" data-expense-id="${exp.id}" title="Remove">&times;</button>
+            <button class="chip-remove" data-expense-id="${escapeHtml(exp.id)}" title="Remove">&times;</button>
           </div>
         `).join('');
 

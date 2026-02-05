@@ -1,6 +1,6 @@
 // assets/js/team.js
-document.addEventListener("DOMContentLoaded", () => {
-  // 1) Auth / role gate
+document.addEventListener("DOMContentLoaded", async () => {
+  // 1) Auth gate - basic check
   const userRaw = localStorage.getItem("ngmUser");
   if (!userRaw) {
     window.location.href = "login.html";
@@ -18,7 +18,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const role = String(user.role || user.role_id || "").trim();
-  const allowedRoles = new Set(["COO", "CEO", "General Coordinator", "Project Coordinator", "Operation Specialist"]);
 
   // Update topbar user pill (best-effort)
   const userPill = document.getElementById("user-pill");
@@ -27,7 +26,26 @@ document.addEventListener("DOMContentLoaded", () => {
     userPill.textContent = `${name} · ${role || "—"}`;
   }
 
-  if (!allowedRoles.has(role)) {
+  // 2) Permission gate - use DB-based permissions
+  async function checkModulePermission() {
+    // Wait for PermissionsManager to be available and loaded
+    const maxWait = 5000;
+    const start = Date.now();
+
+    while (!window.PermissionsManager || !window.PermissionsManager.permissions) {
+      if (Date.now() - start > maxWait) {
+        console.warn("[TEAM] Timeout waiting for PermissionsManager");
+        return false;
+      }
+      await new Promise(r => setTimeout(r, 100));
+    }
+
+    return window.PermissionsManager.canView("team");
+  }
+
+  const hasAccess = await checkModulePermission();
+  if (!hasAccess) {
+    console.log("[TEAM] Access denied - no permission for team module");
     if (window.Toast) {
       Toast.error('Access Denied', 'You do not have permission to access this page.');
     }

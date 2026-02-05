@@ -116,7 +116,7 @@
     // Use the global fetchPipeline function if available
     if (typeof window.fetchPipeline === 'function') {
       console.log('[PM_REALTIME] Refreshing pipeline...');
-      window.fetchPipeline();
+      window.fetchPipeline().catch(err => console.warn('[Pipeline] Refresh failed:', err));
     } else {
       console.warn('[PM_REALTIME] fetchPipeline not available');
     }

@@ -111,7 +111,15 @@
       return [];
     }
 
-    const cacheKey = catalogType + 's'; // projects, companies, etc.
+    // Proper pluralization for cache keys
+    const pluralMap = {
+      company: 'companies',
+      priority: 'priorities',
+      project: 'projects',
+      department: 'departments',
+      type: 'types'
+    };
+    const cacheKey = pluralMap[catalogType] || (catalogType + 's');
     const cache = catalogCache[cacheKey];
     const now = Date.now();
 

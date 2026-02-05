@@ -3,7 +3,7 @@
 **Creado:** 2026-02-05
 **Estado General:** EN PROGRESO
 **Total Issues:** 39
-**Resueltos:** 15
+**Resueltos:** 18
 
 ---
 
@@ -130,7 +130,7 @@
 - **Test:** Click en celda, luego doble click en otra fila, verificar estado
 
 ### [P4-02] Cache de Usuarios Sin Invalidacion Manual
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** MEDIA
 - **Archivo:** `assets/js/pipeline_people_picker.js`
 - **Lineas:** 12
@@ -139,7 +139,7 @@
 - **Test:** Agregar usuario en otro tab, verificar que aparezca despues de invalidar
 
 ### [P4-03] Cache Key de Catalogo Mal Formado
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** BAJA
 - **Archivo:** `assets/js/pipeline_catalog_picker.js`
 - **Lineas:** 114
@@ -148,7 +148,7 @@
 - **Test:** Verificar que todos los catalogos se cacheen correctamente
 
 ### [P4-04] fetchPipeline Sin Await
-- **Estado:** [ ] PENDIENTE
+- **Estado:** [x] COMPLETADO (2026-02-05)
 - **Severidad:** BAJA
 - **Archivos:** Multiples (links_modal, new_task_ui, automations)
 - **Problema:** window.fetchPipeline() se llama sin await
@@ -358,4 +358,7 @@
 | 2026-02-05 | P6-03 | COMPLETADO | Toast de error cuando fetchCatalog falla sin cache |
 | 2026-02-05 | P7-01 | COMPLETADO | Promise.all() para updates paralelos en links modal |
 | 2026-02-05 | P7-02 | COMPLETADO | try/catch con mensaje de error en renderAutomationsList |
+| 2026-02-05 | P4-02 | COMPLETADO | clearCache() expuesto en window.PM_PeoplePicker |
+| 2026-02-05 | P4-03 | COMPLETADO | pluralMap para cache keys correctos (companies, priorities) |
+| 2026-02-05 | P4-04 | COMPLETADO | .catch() agregado a todas las llamadas a fetchPipeline |
 

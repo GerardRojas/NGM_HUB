@@ -577,6 +577,13 @@
   }
 
   // ================================
+  // Clear users cache (useful when users are added/updated externally)
+  function clearCache() {
+    usersCache = null;
+    cacheTimestamp = 0;
+    console.log('[PeoplePicker] Cache cleared');
+  }
+
   // EXPOSE TO GLOBAL
   // ================================
   window.PeoplePicker = PeoplePicker;
@@ -584,7 +591,8 @@
   window.PM_PeoplePicker = {
     create: createPeoplePicker,
     fetchUsers,
-    colorFromUser
+    colorFromUser,
+    clearCache
   };
 
 })();

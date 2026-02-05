@@ -153,7 +153,7 @@
 
       // Refresh pipeline to show updated links
       if (typeof window.fetchPipeline === 'function') {
-        window.fetchPipeline();
+        window.fetchPipeline().catch(err => console.warn('[Pipeline] Refresh failed:', err));
       }
 
     } catch (err) {

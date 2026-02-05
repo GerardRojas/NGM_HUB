@@ -263,7 +263,7 @@
 
     // Refresh pipeline to show/hide automated tasks
     if (typeof window.fetchPipeline === 'function') {
-      window.fetchPipeline();
+      window.fetchPipeline().catch(err => console.warn('[Pipeline] Refresh failed:', err));
     }
   }
 
@@ -327,7 +327,7 @@
       renderAutomationsList();
 
       if (typeof window.fetchPipeline === 'function') {
-        window.fetchPipeline();
+        window.fetchPipeline().catch(err => console.warn('[Pipeline] Refresh failed:', err));
       }
 
     } catch (err) {

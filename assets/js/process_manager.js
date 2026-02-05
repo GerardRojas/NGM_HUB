@@ -2405,6 +2405,7 @@
             size: nodeData.size || 'medium',
             shape: nodeData.shape,  // Shape is auto-determined in saveModule
             is_implemented: nodeData.isImplemented || false,
+            diagram_id: nodeData.diagram_id || null,
             position: {
                 x: 200 + (existingCount % 3) * 300,
                 y: 200 + Math.floor(existingCount / 3) * 200
@@ -2455,6 +2456,16 @@
             implementedLabel.classList.toggle('live', node.is_implemented === true);
         }
 
+        // Show/hide diagram dropdown based on type and set value
+        const isAlgorithm = node.type === 'algorithm';
+        toggleDiagramDropdownVisibility(isAlgorithm);
+        if (isAlgorithm) {
+            const diagramSelect = document.getElementById('moduleDiagram');
+            if (diagramSelect) {
+                diagramSelect.value = node.diagram_id || '';
+            }
+        }
+
         elements.moduleModal.classList.remove('hidden');
     }
 
@@ -2478,7 +2489,8 @@
             type: nodeData.type,
             size: nodeData.size,
             shape: nodeData.shape,
-            is_implemented: nodeData.isImplemented
+            is_implemented: nodeData.isImplemented,
+            diagram_id: nodeData.diagram_id || null
         };
 
         // Save to Supabase

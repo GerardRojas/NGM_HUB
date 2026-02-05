@@ -18,7 +18,9 @@
       "Bash(git diff:*)",
       "Bash(node -e:*)",
       "Bash(wsl grep -c \"function \" assets/js/estimator.js)",
-      "Read(//c/**)"
+      "Read(//c/**)",
+      "Bash(pip install:*)",
+      "Bash(python:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"

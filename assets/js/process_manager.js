@@ -4030,8 +4030,10 @@
         };
 
         // Render custom modules around the hub (radial layout)
-        const moduleCount = state.customModules.length;
-        state.customModules.forEach((module, index) => {
+        // Filter out the hub module - it's already rendered as the central node above
+        const modulesToRender = state.customModules.filter(m => m.id !== 'hub' && !m.isHub);
+        const moduleCount = modulesToRender.length;
+        modulesToRender.forEach((module, index) => {
             // Position in radial layout around hub
             const angle = (index / Math.max(moduleCount, 1)) * Math.PI * 2 - Math.PI / 2;
             const defaultX = defaultCenterX + Math.cos(angle) * defaultRadius - 110;

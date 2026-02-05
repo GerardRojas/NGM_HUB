@@ -4,6 +4,21 @@
   "use strict";
 
   // ------------------------------------------
+  // SUPABASE CONFIGURATION
+  // ------------------------------------------
+  var supabaseClient = null;
+
+  function initSupabase() {
+    if (supabaseClient) return supabaseClient;
+    var url = window.SUPABASE_URL || window.NGM_CONFIG?.SUPABASE_URL;
+    var key = window.SUPABASE_ANON_KEY || window.NGM_CONFIG?.SUPABASE_ANON_KEY;
+    if (url && key && window.supabase?.createClient) {
+      supabaseClient = window.supabase.createClient(url, key);
+    }
+    return supabaseClient;
+  }
+
+  // ------------------------------------------
   // RULES: allowed stories per ADU type
   // ------------------------------------------
   var STORY_RULES = {
@@ -227,6 +242,12 @@
       appliances: 6500                // fixed (basic package)
     },
 
+    // Price range display settings
+    price_range: {
+      low_percentage: 15,   // % below estimate for low range
+      high_percentage: 15   // % above estimate for high range
+    },
+
     // ------------------------------------------
     // OPTIONAL MEASURABLE FEATURES
     // These are manual inputs for now, later can be calculated
@@ -337,6 +358,126 @@
       }
     ]
   };
+
+  // ------------------------------------------
+  // DEFAULT PRICING (immutable reference copy)
+  // ------------------------------------------
+  var DEFAULT_PRICING_MATRIX = JSON.parse(JSON.stringify(PRICING_MATRIX));
+
+  // Flag to track if pricing was loaded from DB
+  var pricingLoadedFromDB = false;
+
+  // ------------------------------------------
+  // PRICING PERSISTENCE FUNCTIONS (Supabase)
+  // ------------------------------------------
+  async function loadPricingFromSupabase() {
+    try {
+      var client = initSupabase();
+      if (!client) {
+        console.warn("[ADU Calc] Supabase not initialized, using default pricing");
+        return false;
+      }
+
+      var { data, error } = await client
+        .from("adu_pricing_config")
+        .select("pricing_data")
+        .eq("config_key", "main")
+        .single();
+
+      if (error) {
+        console.warn("[ADU Calc] Failed to load pricing from Supabase:", error.message);
+        return false;
+      }
+
+      if (data && data.pricing_data) {
+        deepMergePricing(PRICING_MATRIX, data.pricing_data);
+        pricingLoadedFromDB = true;
+        console.log("[ADU Calc] Loaded custom pricing from Supabase");
+        return true;
+      }
+    } catch (e) {
+      console.warn("[ADU Calc] Error loading pricing:", e);
+    }
+    return false;
+  }
+
+  async function savePricingToSupabase() {
+    try {
+      var client = initSupabase();
+      if (!client) {
+        if (window.Toast) window.Toast.error("Database not connected");
+        return false;
+      }
+
+      // Build the pricing data object to save
+      var pricingData = {
+        base_rates: PRICING_MATRIX.base_rates,
+        stories_multipliers: PRICING_MATRIX.stories_multipliers,
+        foundation_multipliers: PRICING_MATRIX.foundation_multipliers,
+        land_multipliers: PRICING_MATRIX.land_multipliers,
+        additions: PRICING_MATRIX.additions,
+        design_curves: PRICING_MATRIX.design_curves,
+        optional_features: PRICING_MATRIX.optional_features,
+        price_range: PRICING_MATRIX.price_range
+      };
+
+      var { error } = await client
+        .from("adu_pricing_config")
+        .update({
+          pricing_data: pricingData,
+          updated_at: new Date().toISOString()
+        })
+        .eq("config_key", "main");
+
+      if (error) {
+        console.error("[ADU Calc] Failed to save pricing:", error.message);
+        if (window.Toast) window.Toast.error("Failed to save pricing: " + error.message);
+        return false;
+      }
+
+      console.log("[ADU Calc] Saved pricing to Supabase");
+      if (window.Toast) window.Toast.success("Pricing configuration saved");
+      return true;
+    } catch (e) {
+      console.error("[ADU Calc] Error saving pricing:", e);
+      if (window.Toast) window.Toast.error("Failed to save pricing");
+      return false;
+    }
+  }
+
+  async function resetPricingToDefaults() {
+    // Restore from default copy
+    deepMergePricing(PRICING_MATRIX, DEFAULT_PRICING_MATRIX);
+    // Save defaults back to Supabase
+    await savePricingToSupabase();
+    console.log("[ADU Calc] Pricing reset to defaults");
+    if (window.Toast) window.Toast.info("Pricing reset to defaults");
+  }
+
+  function deepMergePricing(target, source) {
+    for (var key in source) {
+      if (source.hasOwnProperty(key)) {
+        if (typeof source[key] === "object" && source[key] !== null && !Array.isArray(source[key])) {
+          if (!target[key]) target[key] = {};
+          deepMergePricing(target[key], source[key]);
+        } else {
+          target[key] = source[key];
+        }
+      }
+    }
+  }
+
+  // Load saved pricing on init (async, will update UI when ready)
+  setTimeout(function() {
+    loadPricingFromSupabase().then(function(loaded) {
+      if (loaded) {
+        // If we already have a calculation, recalculate with new prices
+        if (costEstimate) {
+          calculateCost();
+        }
+      }
+    });
+  }, 100);
 
   // ------------------------------------------
   // STATE
@@ -454,6 +595,22 @@
   var resultsContainer     = document.getElementById("resultsContainer");
   var summaryTags          = document.getElementById("summaryTags");
   var btnReset             = document.getElementById("btnReset");
+
+  // Pricing configuration modal
+  var btnConfigurePricing  = document.getElementById("btnConfigurePricing");
+  var pricingConfigModal   = document.getElementById("pricingConfigModal");
+  var btnClosePricingModal = document.getElementById("btnClosePricingModal");
+  var btnCancelPricing     = document.getElementById("btnCancelPricing");
+  var btnSavePricing       = document.getElementById("btnSavePricing");
+  var btnResetPricingDefaults = document.getElementById("btnResetPricingDefaults");
+  var gridBaseRates        = document.getElementById("gridBaseRates");
+  var rowStoriesMultipliers = document.getElementById("rowStoriesMultipliers");
+  var rowFoundationMultipliers = document.getElementById("rowFoundationMultipliers");
+  var rowLandMultipliers   = document.getElementById("rowLandMultipliers");
+  var rowDesignMultipliers = document.getElementById("rowDesignMultipliers");
+  var rowAdditions         = document.getElementById("rowAdditions");
+  var rowPriceRange        = document.getElementById("rowPriceRange");
+  var gridOptionalFeatures = document.getElementById("gridOptionalFeatures");
 
   // Algorithm visualization panel
   var algoPanel            = document.getElementById("algoPanel");
@@ -1864,6 +2021,45 @@
           + '<span class="adu-cost-per-sqft">$' + d.cost_per_sqft.toLocaleString() + ' / sq ft</span>'
           + '</div>';
 
+    // Price Range Table
+    var priceRange = PRICING_MATRIX.price_range || { low_percentage: 15, high_percentage: 15 };
+    var lowPct = priceRange.low_percentage / 100;
+    var highPct = priceRange.high_percentage / 100;
+    var lowPrice = Math.round(d.total_estimated_cost * (1 - lowPct));
+    var midPrice = d.total_estimated_cost;
+    var highPrice = Math.round(d.total_estimated_cost * (1 + highPct));
+    var lowPricePerSqft = d.sqft > 0 ? Math.round((lowPrice / d.sqft) * 100) / 100 : 0;
+    var midPricePerSqft = d.cost_per_sqft;
+    var highPricePerSqft = d.sqft > 0 ? Math.round((highPrice / d.sqft) * 100) / 100 : 0;
+
+    html += '<div class="adu-price-range-table">'
+          + '<div class="price-range-row">'
+          + '<div class="price-range-cell price-range-low">'
+          + '<span class="price-range-label">Low (-' + priceRange.low_percentage + '%)</span>'
+          + '<span class="price-range-value">$' + lowPrice.toLocaleString() + '</span>'
+          + '</div>'
+          + '<div class="price-range-cell price-range-mid">'
+          + '<span class="price-range-label">Estimate</span>'
+          + '<span class="price-range-value">$' + midPrice.toLocaleString() + '</span>'
+          + '</div>'
+          + '<div class="price-range-cell price-range-high">'
+          + '<span class="price-range-label">High (+' + priceRange.high_percentage + '%)</span>'
+          + '<span class="price-range-value">$' + highPrice.toLocaleString() + '</span>'
+          + '</div>'
+          + '</div>'
+          + '<div class="price-range-row price-range-sqft">'
+          + '<div class="price-range-cell price-range-low">'
+          + '<span class="price-range-sqft-value">$' + lowPricePerSqft.toLocaleString() + '/sqft</span>'
+          + '</div>'
+          + '<div class="price-range-cell price-range-mid">'
+          + '<span class="price-range-sqft-value">$' + midPricePerSqft.toLocaleString() + '/sqft</span>'
+          + '</div>'
+          + '<div class="price-range-cell price-range-high">'
+          + '<span class="price-range-sqft-value">$' + highPricePerSqft.toLocaleString() + '/sqft</span>'
+          + '</div>'
+          + '</div>'
+          + '</div>';
+
     // Warnings (if any)
     if (d.breakdown && d.breakdown.warnings && d.breakdown.warnings.length > 0) {
       html += '<div class="adu-cost-warnings">';
@@ -2948,6 +3144,257 @@
 
       resetScreenshotState();
       refresh();
+    });
+  }
+
+  // ------------------------------------------
+  // PRICING CONFIGURATION MODAL
+  // ------------------------------------------
+  function openPricingModal() {
+    if (!pricingConfigModal) return;
+    renderPricingModal();
+    pricingConfigModal.classList.remove("hidden");
+  }
+
+  function closePricingModal() {
+    if (!pricingConfigModal) return;
+    pricingConfigModal.classList.add("hidden");
+  }
+
+  function renderPricingModal() {
+    // Render Base Rates grid
+    if (gridBaseRates) {
+      var html = '<table class="pricing-table"><thead><tr><th>ADU Type</th>';
+      var constructionTypes = ["stick_build", "energy_efficient", "renovation", "manufactured"];
+      constructionTypes.forEach(function(ct) {
+        html += '<th>' + CONSTRUCTION_LABELS[ct] + '</th>';
+      });
+      html += '</tr></thead><tbody>';
+
+      Object.keys(TYPE_LABELS).forEach(function(aduType) {
+        html += '<tr><td class="pricing-row-label">' + TYPE_LABELS[aduType] + '</td>';
+        constructionTypes.forEach(function(ct) {
+          var value = PRICING_MATRIX.base_rates[aduType]?.[ct];
+          var disabled = value === null ? 'disabled' : '';
+          var displayVal = value === null ? '-' : value;
+          html += '<td><input type="number" class="pricing-input" data-path="base_rates.' + aduType + '.' + ct + '" value="' + (value || '') + '" ' + disabled + ' min="0" step="1" placeholder="' + displayVal + '"></td>';
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      gridBaseRates.innerHTML = html;
+    }
+
+    // Render Stories Multipliers
+    if (rowStoriesMultipliers) {
+      var html = '<div class="pricing-inputs-row">';
+      [1, 2, 3, 4, 5].forEach(function(s) {
+        var val = PRICING_MATRIX.stories_multipliers[s] || 1;
+        html += '<div class="pricing-input-group"><label>' + s + ' Story</label><input type="number" class="pricing-input" data-path="stories_multipliers.' + s + '" value="' + val + '" min="0.1" step="0.01"></div>';
+      });
+      html += '</div>';
+      rowStoriesMultipliers.innerHTML = html;
+    }
+
+    // Render Foundation Multipliers
+    if (rowFoundationMultipliers) {
+      var html = '<div class="pricing-inputs-row">';
+      Object.keys(FOUNDATION_LABELS).forEach(function(f) {
+        var val = PRICING_MATRIX.foundation_multipliers[f] || 1;
+        html += '<div class="pricing-input-group"><label>' + FOUNDATION_LABELS[f] + '</label><input type="number" class="pricing-input" data-path="foundation_multipliers.' + f + '" value="' + val + '" min="0.1" step="0.01"></div>';
+      });
+      html += '</div>';
+      rowFoundationMultipliers.innerHTML = html;
+    }
+
+    // Render Land Multipliers
+    if (rowLandMultipliers) {
+      var html = '<div class="pricing-inputs-row">';
+      Object.keys(LAND_SURFACE_LABELS).forEach(function(l) {
+        var val = PRICING_MATRIX.land_multipliers[l] || 1;
+        html += '<div class="pricing-input-group"><label>' + LAND_SURFACE_LABELS[l] + '</label><input type="number" class="pricing-input" data-path="land_multipliers.' + l + '" value="' + val + '" min="0.1" step="0.01"></div>';
+      });
+      html += '</div>';
+      rowLandMultipliers.innerHTML = html;
+    }
+
+    // Render Design Package Multipliers
+    if (rowDesignMultipliers) {
+      var html = '<div class="pricing-inputs-row">';
+      Object.keys(DESIGN_PACKAGE_LABELS).forEach(function(d) {
+        var val = PRICING_MATRIX.design_curves[d]?.base || 1;
+        html += '<div class="pricing-input-group"><label>' + DESIGN_PACKAGE_LABELS[d] + '</label><input type="number" class="pricing-input" data-path="design_curves.' + d + '.base" value="' + val + '" min="0.1" step="0.01"></div>';
+      });
+      html += '</div>';
+      rowDesignMultipliers.innerHTML = html;
+    }
+
+    // Render Fixed Additions
+    if (rowAdditions) {
+      var additions = PRICING_MATRIX.additions;
+      var additionLabels = {
+        bedroom_cost_first: "First Bedroom ($)",
+        bedroom_cost_additional: "Additional Bedrooms ($)",
+        bathroom_cost_first: "First Bathroom ($)",
+        bathroom_cost_additional: "Additional Bathrooms ($)",
+        plans_permits: "Plans & Permits ($)",
+        solar_panels_per_sqft: "Solar Panels ($/sqft)",
+        fire_sprinklers_per_sqft: "Fire Sprinklers ($/sqft)",
+        appliances: "Appliances ($)"
+      };
+      var html = '<div class="pricing-inputs-row pricing-inputs-wrap">';
+      Object.keys(additionLabels).forEach(function(key) {
+        var val = additions[key] || 0;
+        html += '<div class="pricing-input-group"><label>' + additionLabels[key] + '</label><input type="number" class="pricing-input" data-path="additions.' + key + '" value="' + val + '" min="0" step="1"></div>';
+      });
+      html += '</div>';
+      rowAdditions.innerHTML = html;
+    }
+
+    // Render Price Range Settings
+    if (rowPriceRange) {
+      var priceRange = PRICING_MATRIX.price_range || { low_percentage: 15, high_percentage: 15 };
+      var html = '<div class="pricing-inputs-row">';
+      html += '<div class="pricing-input-group"><label>Low Range (%)</label><input type="number" class="pricing-input" data-path="price_range.low_percentage" value="' + (priceRange.low_percentage || 15) + '" min="0" max="50" step="1"></div>';
+      html += '<div class="pricing-input-group"><label>High Range (%)</label><input type="number" class="pricing-input" data-path="price_range.high_percentage" value="' + (priceRange.high_percentage || 15) + '" min="0" max="50" step="1"></div>';
+      html += '</div>';
+      rowPriceRange.innerHTML = html;
+    }
+
+    // Render Optional Features
+    if (gridOptionalFeatures) {
+      var optFeatures = PRICING_MATRIX.optional_features;
+      var html = '';
+
+      // Retaining Wall
+      html += '<div class="pricing-feature-card"><h5>Retaining Wall</h5><div class="pricing-inputs-row pricing-inputs-wrap">';
+      html += '<div class="pricing-input-group"><label>Cost/Linear Ft ($)</label><input type="number" class="pricing-input" data-path="optional_features.retaining_wall.cost_per_linear_ft" value="' + (optFeatures.retaining_wall?.cost_per_linear_ft || 185) + '" min="0" step="1"></div>';
+      var heightMults = optFeatures.retaining_wall?.height_multiplier || {};
+      ['low', 'medium', 'high', 'extreme'].forEach(function(h) {
+        var label = h.charAt(0).toUpperCase() + h.slice(1) + ' Height Mult';
+        html += '<div class="pricing-input-group"><label>' + label + '</label><input type="number" class="pricing-input" data-path="optional_features.retaining_wall.height_multiplier.' + h + '" value="' + (heightMults[h] || 1) + '" min="0.1" step="0.01"></div>';
+      });
+      html += '</div></div>';
+
+      // Kitchen Linear
+      html += '<div class="pricing-feature-card"><h5>Kitchen Counters/Cabinets ($/Linear Ft)</h5><div class="pricing-inputs-row">';
+      var kitchenLinear = optFeatures.kitchen_linear || {};
+      ['basic', 'standard', 'high_end', 'custom'].forEach(function(tier) {
+        html += '<div class="pricing-input-group"><label>' + DESIGN_PACKAGE_LABELS[tier] + '</label><input type="number" class="pricing-input" data-path="optional_features.kitchen_linear.' + tier + '" value="' + (kitchenLinear[tier] || 0) + '" min="0" step="1"></div>';
+      });
+      html += '</div></div>';
+
+      // Kitchen Island
+      html += '<div class="pricing-feature-card"><h5>Kitchen Island ($)</h5><div class="pricing-inputs-row pricing-inputs-wrap">';
+      var kitchenIsland = optFeatures.kitchen_island || {};
+      ['small', 'medium', 'large', 'custom'].forEach(function(size) {
+        var label = size.charAt(0).toUpperCase() + size.slice(1);
+        html += '<div class="pricing-input-group"><label>' + label + '</label><input type="number" class="pricing-input" data-path="optional_features.kitchen_island.' + size + '" value="' + (kitchenIsland[size] || 0) + '" min="0" step="1"></div>';
+      });
+      html += '<div class="pricing-input-group"><label>+ Plumbing</label><input type="number" class="pricing-input" data-path="optional_features.kitchen_island.plumbing_addon" value="' + (kitchenIsland.plumbing_addon || 0) + '" min="0" step="1"></div>';
+      html += '<div class="pricing-input-group"><label>+ Seating</label><input type="number" class="pricing-input" data-path="optional_features.kitchen_island.seating_addon" value="' + (kitchenIsland.seating_addon || 0) + '" min="0" step="1"></div>';
+      html += '</div></div>';
+
+      // Rooftop Deck
+      html += '<div class="pricing-feature-card"><h5>Rooftop Deck ($/sqft)</h5><div class="pricing-inputs-row">';
+      var rooftopDeck = optFeatures.rooftop_deck || {};
+      ['basic', 'standard', 'premium'].forEach(function(tier) {
+        var label = tier.charAt(0).toUpperCase() + tier.slice(1);
+        html += '<div class="pricing-input-group"><label>' + label + '</label><input type="number" class="pricing-input" data-path="optional_features.rooftop_deck.' + tier + '" value="' + (rooftopDeck[tier] || 0) + '" min="0" step="1"></div>';
+      });
+      html += '<div class="pricing-input-group"><label>Structural ($)</label><input type="number" class="pricing-input" data-path="optional_features.rooftop_deck.structural_addon" value="' + (rooftopDeck.structural_addon || 0) + '" min="0" step="1"></div>';
+      html += '</div></div>';
+
+      // Exterior Deck
+      html += '<div class="pricing-feature-card"><h5>Exterior Deck</h5><div class="pricing-inputs-row pricing-inputs-wrap">';
+      var extDeck = optFeatures.exterior_deck || {};
+      html += '<div class="pricing-input-group"><label>Wood ($/sqft)</label><input type="number" class="pricing-input" data-path="optional_features.exterior_deck.wood" value="' + (extDeck.wood || 0) + '" min="0" step="1"></div>';
+      html += '<div class="pricing-input-group"><label>Composite ($/sqft)</label><input type="number" class="pricing-input" data-path="optional_features.exterior_deck.composite" value="' + (extDeck.composite || 0) + '" min="0" step="1"></div>';
+      html += '<div class="pricing-input-group"><label>Premium ($/sqft)</label><input type="number" class="pricing-input" data-path="optional_features.exterior_deck.premium" value="' + (extDeck.premium || 0) + '" min="0" step="1"></div>';
+      html += '<div class="pricing-input-group"><label>Railing ($/ft)</label><input type="number" class="pricing-input" data-path="optional_features.exterior_deck.railing_per_ft" value="' + (extDeck.railing_per_ft || 0) + '" min="0" step="1"></div>';
+      html += '<div class="pricing-input-group"><label>Stairs ($/step)</label><input type="number" class="pricing-input" data-path="optional_features.exterior_deck.stairs_per_step" value="' + (extDeck.stairs_per_step || 0) + '" min="0" step="1"></div>';
+      html += '<div class="pricing-input-group"><label>Covered ($/sqft)</label><input type="number" class="pricing-input" data-path="optional_features.exterior_deck.covered_addon_per_sqft" value="' + (extDeck.covered_addon_per_sqft || 0) + '" min="0" step="1"></div>';
+      html += '</div></div>';
+
+      // Landscaping
+      html += '<div class="pricing-feature-card"><h5>Landscaping</h5><div class="pricing-inputs-row pricing-inputs-wrap">';
+      var landscape = optFeatures.landscape || {};
+      ['minimal', 'standard', 'enhanced', 'premium'].forEach(function(tier) {
+        var label = tier.charAt(0).toUpperCase() + tier.slice(1) + ' ($/sqft)';
+        html += '<div class="pricing-input-group"><label>' + label + '</label><input type="number" class="pricing-input" data-path="optional_features.landscape.' + tier + '" value="' + (landscape[tier] || 0) + '" min="0" step="1"></div>';
+      });
+      html += '<div class="pricing-input-group"><label>Hardscape ($/sqft)</label><input type="number" class="pricing-input" data-path="optional_features.landscape.hardscape_per_sqft" value="' + (landscape.hardscape_per_sqft || 0) + '" min="0" step="1"></div>';
+      html += '<div class="pricing-input-group"><label>Irrigation ($/sqft)</label><input type="number" class="pricing-input" data-path="optional_features.landscape.irrigation_per_sqft" value="' + (landscape.irrigation_per_sqft || 0) + '" min="0" step="1"></div>';
+      html += '<div class="pricing-input-group"><label>Fence ($/ft)</label><input type="number" class="pricing-input" data-path="optional_features.landscape.fence_per_ft" value="' + (landscape.fence_per_ft || 0) + '" min="0" step="1"></div>';
+      html += '</div></div>';
+
+      gridOptionalFeatures.innerHTML = html;
+    }
+  }
+
+  function collectPricingFromModal() {
+    var inputs = pricingConfigModal.querySelectorAll('.pricing-input[data-path]');
+    inputs.forEach(function(input) {
+      if (input.disabled) return;
+      var path = input.getAttribute('data-path');
+      var value = parseFloat(input.value);
+      if (isNaN(value)) return;
+      setNestedValue(PRICING_MATRIX, path, value);
+    });
+  }
+
+  function setNestedValue(obj, path, value) {
+    var keys = path.split('.');
+    var current = obj;
+    for (var i = 0; i < keys.length - 1; i++) {
+      if (!current[keys[i]]) current[keys[i]] = {};
+      current = current[keys[i]];
+    }
+    current[keys[keys.length - 1]] = value;
+  }
+
+  // Pricing modal event listeners
+  if (btnConfigurePricing) {
+    btnConfigurePricing.addEventListener("click", openPricingModal);
+  }
+
+  if (btnClosePricingModal) {
+    btnClosePricingModal.addEventListener("click", closePricingModal);
+  }
+
+  if (btnCancelPricing) {
+    btnCancelPricing.addEventListener("click", closePricingModal);
+  }
+
+  if (btnSavePricing) {
+    btnSavePricing.addEventListener("click", async function() {
+      collectPricingFromModal();
+      var saved = await savePricingToSupabase();
+      if (saved) {
+        closePricingModal();
+        // Recalculate if we have an estimate
+        if (costEstimate) {
+          calculateCost();
+        }
+      }
+    });
+  }
+
+  if (btnResetPricingDefaults) {
+    btnResetPricingDefaults.addEventListener("click", async function() {
+      if (confirm("Reset all pricing to default values? This cannot be undone.")) {
+        await resetPricingToDefaults();
+        renderPricingModal();
+      }
+    });
+  }
+
+  // Close modal on overlay click
+  if (pricingConfigModal) {
+    pricingConfigModal.addEventListener("click", function(e) {
+      if (e.target === pricingConfigModal) {
+        closePricingModal();
+      }
     });
   }
 

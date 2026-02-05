@@ -2,15 +2,20 @@
 (function () {
   "use strict";
 
-  console.log("[PIPELINE-INTERACTIONS] Script loaded");
+  console.log("[PIPELINE-INTERACTIONS] Script loaded at:", new Date().toISOString());
 
   const wrapper = document.getElementById("pm-groups-wrapper");
   console.log("[PIPELINE-INTERACTIONS] Wrapper element:", wrapper);
+  console.log("[PIPELINE-INTERACTIONS] Wrapper innerHTML length:", wrapper?.innerHTML?.length || 0);
 
   if (!wrapper) {
     console.error("[PIPELINE-INTERACTIONS] ERROR: wrapper not found! Aborting.");
     return;
   }
+
+  // Debug: verify wrapper is correct element
+  console.log("[PIPELINE-INTERACTIONS] Wrapper id:", wrapper.id);
+  console.log("[PIPELINE-INTERACTIONS] Wrapper className:", wrapper.className);
 
   // ================================
   // CONFIGURACIÓN DE COLUMNAS
@@ -895,15 +900,23 @@
   console.log("[PIPELINE-INTERACTIONS] Event listener registered on wrapper");
 
   wrapper.addEventListener("click", (e) => {
-    console.log("[PIPELINE-INTERACTIONS] Click detected:", e.target);
+    console.log("[PIPELINE-INTERACTIONS] Click detected on wrapper");
+    console.log("[PIPELINE-INTERACTIONS] e.target:", e.target);
+    console.log("[PIPELINE-INTERACTIONS] e.target.tagName:", e.target.tagName);
+    console.log("[PIPELINE-INTERACTIONS] e.target.className:", e.target.className);
 
     const td = e.target.closest("td[data-col]");
     if (!td) {
-      console.log("[PIPELINE-INTERACTIONS] No td[data-col] found");
+      console.log("[PIPELINE-INTERACTIONS] No td[data-col] found - checking if inside table");
+      const anyTd = e.target.closest("td");
+      if (anyTd) {
+        console.log("[PIPELINE-INTERACTIONS] Found td without data-col:", anyTd);
+        console.log("[PIPELINE-INTERACTIONS] td attributes:", anyTd.getAttributeNames());
+      }
       return;
     }
 
-    console.log("[PIPELINE-INTERACTIONS] td found:", td.dataset.col);
+    console.log("[PIPELINE-INTERACTIONS] td found with data-col:", td.dataset.col);
 
     // No activar si el click fue en el editor mismo o en los pickers
     if (e.target.closest(".pm-inline-editor") ||
@@ -912,17 +925,23 @@
         e.target.closest(".pm-people-picker") ||
         e.target.closest(".pm-inline-catalog-picker") ||
         e.target.closest(".pm-catalog-dropdown") ||
-        e.target.closest(".pm-catalog-picker")) return;
+        e.target.closest(".pm-catalog-picker")) {
+      console.log("[PIPELINE-INTERACTIONS] Click was on editor/picker, ignoring");
+      return;
+    }
 
     const tr = td.closest("tr[data-task-id], tr.pm-row");
     const taskId = tr?.dataset?.taskId || null;
     const colKey = td.getAttribute("data-col");
 
-    console.log("[PIPELINE-INTERACTIONS] tr:", tr);
+    console.log("[PIPELINE-INTERACTIONS] tr found:", tr);
+    console.log("[PIPELINE-INTERACTIONS] tr.className:", tr?.className);
+    console.log("[PIPELINE-INTERACTIONS] tr.dataset:", tr?.dataset);
     console.log("[PIPELINE-INTERACTIONS] taskId:", taskId, "colKey:", colKey);
 
     if (!taskId || !colKey) {
       console.log("[PIPELINE-INTERACTIONS] Missing taskId or colKey, returning");
+      console.log("[PIPELINE-INTERACTIONS] All tr attributes:", tr?.getAttributeNames?.());
       return;
     }
 
@@ -1037,5 +1056,10 @@
       finished_status: ds.finishedStatusId || '',
     };
   }
+
+  // Final debug log
+  console.log("[PIPELINE-INTERACTIONS] Script fully loaded and initialized!");
+  console.log("[PIPELINE-INTERACTIONS] Wrapper exists:", !!wrapper);
+  console.log("[PIPELINE-INTERACTIONS] Event listener should be active on wrapper");
 
 })();

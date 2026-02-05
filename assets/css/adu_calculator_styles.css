@@ -783,7 +783,127 @@
   display: flex;
   align-items: baseline;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+}
+
+/* ==========================================
+   PRICE RANGE TABLE
+   ========================================== */
+
+.adu-price-range-table {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.price-range-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.price-range-row:first-child {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.price-range-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 12px;
+  text-align: center;
+}
+
+.price-range-cell:not(:last-child) {
+  border-right: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.price-range-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 6px;
+}
+
+.price-range-value {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-range-low .price-range-value {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.price-range-mid {
+  background: rgba(62, 207, 142, 0.08);
+}
+
+.price-range-mid .price-range-label {
+  color: rgba(62, 207, 142, 0.7);
+}
+
+.price-range-mid .price-range-value {
+  color: #3ecf8e;
+  font-size: 24px;
+}
+
+.price-range-high .price-range-value {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Price per sqft row */
+.price-range-row.price-range-sqft {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.price-range-row.price-range-sqft .price-range-cell {
+  padding: 10px 12px;
+}
+
+.price-range-sqft-value {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-range-low .price-range-sqft-value {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.price-range-mid .price-range-sqft-value {
+  color: rgba(62, 207, 142, 0.85);
+}
+
+.price-range-high .price-range-sqft-value {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .price-range-value {
+    font-size: 16px;
+  }
+
+  .price-range-mid .price-range-value {
+    font-size: 18px;
+  }
+
+  .price-range-cell {
+    padding: 12px 8px;
+  }
+
+  .price-range-label {
+    font-size: 9px;
+  }
+
+  .price-range-sqft-value {
+    font-size: 11px;
+  }
 }
 
 .adu-cost-total {
@@ -1817,5 +1937,327 @@
 
   .algo-details-content {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ==========================================
+   PRICING CONFIGURATION MODAL
+   ========================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal-container {
+  background: var(--ngm-bg-card, #18181b);
+  border: 1px solid var(--border-soft, #27272f);
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-container.modal-lg {
+  max-width: 900px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-soft, #27272f);
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #ededed);
+  margin: 0;
+}
+
+.modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-soft, #27272f);
+}
+
+.btn-modal {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.btn-modal-primary {
+  background: #3ecf8e;
+  color: #0a0a0a;
+}
+
+.btn-modal-primary:hover {
+  background: #34d399;
+}
+
+.btn-modal-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-modal-secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Pricing config sections */
+.pricing-config-section {
+  margin-bottom: 28px;
+}
+
+.pricing-config-section:last-child {
+  margin-bottom: 0;
+}
+
+.pricing-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3ecf8e;
+  margin: 0 0 4px 0;
+}
+
+.pricing-section-desc {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0 0 16px 0;
+}
+
+/* Pricing table for base rates */
+.pricing-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.pricing-table thead th {
+  text-align: center;
+  padding: 8px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.5);
+  border-bottom: 1px solid var(--border-soft, #27272f);
+}
+
+.pricing-table thead th:first-child {
+  text-align: left;
+}
+
+.pricing-table tbody td {
+  padding: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.pricing-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.pricing-row-label {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+}
+
+.pricing-table .pricing-input {
+  width: 100%;
+  max-width: 80px;
+}
+
+/* Pricing inputs row */
+.pricing-inputs-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 12px;
+}
+
+.pricing-inputs-row.pricing-inputs-wrap {
+  flex-wrap: wrap;
+}
+
+.pricing-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 90px;
+}
+
+.pricing-input-group label {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+}
+
+.pricing-input {
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 6px;
+  color: var(--text-primary, #ededed);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+  -moz-appearance: textfield;
+}
+
+.pricing-input::-webkit-outer-spin-button,
+.pricing-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.pricing-input:hover:not(:disabled) {
+  border-color: rgba(148, 163, 184, 0.35);
+}
+
+.pricing-input:focus {
+  border-color: rgba(62, 207, 142, 0.6);
+}
+
+.pricing-input:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Optional features cards */
+.pricing-features-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pricing-feature-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.pricing-feature-card h5 {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 12px 0;
+}
+
+/* Configure Pricing button style */
+#btnConfigurePricing {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Responsive for pricing modal */
+@media (max-width: 768px) {
+  .modal-container.modal-lg {
+    max-width: 100%;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  .pricing-table {
+    font-size: 11px;
+  }
+
+  .pricing-table thead th {
+    font-size: 9px;
+    padding: 6px 4px;
+  }
+
+  .pricing-table tbody td {
+    padding: 4px;
+  }
+
+  .pricing-table .pricing-input {
+    max-width: 60px;
+    padding: 6px;
+    font-size: 12px;
+  }
+
+  .pricing-inputs-row {
+    flex-wrap: wrap;
+  }
+
+  .pricing-input-group {
+    min-width: 70px;
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .modal-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .btn-modal {
+    flex: 1;
+    min-width: 100px;
   }
 }

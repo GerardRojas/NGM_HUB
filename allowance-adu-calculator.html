@@ -71,6 +71,13 @@
                                 <h2 style="margin: 0; font-size: 16px; font-weight: 600; color: var(--text-primary);">Allowance ADU Calculator</h2>
                             </div>
                             <div class="toolbar-right">
+                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnConfigurePricing">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px;">
+                                        <circle cx="12" cy="12" r="3"/>
+                                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                                    </svg>
+                                    Configure Pricing
+                                </button>
                                 <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnReset">Reset</button>
                             </div>
                         </div>
@@ -595,6 +602,97 @@
             </main>
         </div>
     </div>
+
+    <!-- Pricing Configuration Modal -->
+    <div class="modal-overlay hidden" id="pricingConfigModal">
+        <div class="modal-container modal-lg">
+            <div class="modal-header">
+                <h3 class="modal-title">Configure Pricing Variables</h3>
+                <button type="button" class="modal-close" id="btnClosePricingModal">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <!-- Base Rates Section -->
+                <div class="pricing-config-section">
+                    <h4 class="pricing-section-title">Base Rates ($/sqft)</h4>
+                    <p class="pricing-section-desc">Cost per square foot by ADU type and construction method</p>
+                    <div class="pricing-grid" id="gridBaseRates">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Stories Multipliers -->
+                <div class="pricing-config-section">
+                    <h4 class="pricing-section-title">Stories Multipliers</h4>
+                    <p class="pricing-section-desc">Multiplier applied based on number of stories</p>
+                    <div class="pricing-row" id="rowStoriesMultipliers">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Foundation Multipliers -->
+                <div class="pricing-config-section">
+                    <h4 class="pricing-section-title">Foundation Multipliers</h4>
+                    <p class="pricing-section-desc">Multiplier applied based on foundation type</p>
+                    <div class="pricing-row" id="rowFoundationMultipliers">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Land Multipliers -->
+                <div class="pricing-config-section">
+                    <h4 class="pricing-section-title">Land Surface Multipliers</h4>
+                    <p class="pricing-section-desc">Multiplier applied based on terrain</p>
+                    <div class="pricing-row" id="rowLandMultipliers">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Design Package Multipliers -->
+                <div class="pricing-config-section">
+                    <h4 class="pricing-section-title">Design Package Multipliers</h4>
+                    <p class="pricing-section-desc">Quality tier cost adjustments</p>
+                    <div class="pricing-row" id="rowDesignMultipliers">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Fixed Additions -->
+                <div class="pricing-config-section">
+                    <h4 class="pricing-section-title">Fixed & Variable Additions</h4>
+                    <p class="pricing-section-desc">Additional costs for rooms and features</p>
+                    <div class="pricing-row" id="rowAdditions">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Price Range Display -->
+                <div class="pricing-config-section">
+                    <h4 class="pricing-section-title">Price Range Display</h4>
+                    <p class="pricing-section-desc">Percentage variation for low/high price estimates</p>
+                    <div class="pricing-row" id="rowPriceRange">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Optional Features -->
+                <div class="pricing-config-section">
+                    <h4 class="pricing-section-title">Optional Feature Costs</h4>
+                    <p class="pricing-section-desc">Costs for optional measurable features</p>
+                    <div class="pricing-features-grid" id="gridOptionalFeatures">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-modal btn-modal-secondary" id="btnResetPricingDefaults">Reset to Defaults</button>
+                <button type="button" class="btn-modal btn-modal-secondary" id="btnCancelPricing">Cancel</button>
+                <button type="button" class="btn-modal btn-modal-primary" id="btnSavePricing">Save Configuration</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Firebase Push Notifications -->
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>

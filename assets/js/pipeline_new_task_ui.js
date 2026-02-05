@@ -6,6 +6,13 @@
   let ownerPicker = null;
   let collaboratorPicker = null;
 
+  // Catalog picker instances
+  let companyPicker = null;
+  let projectPicker = null;
+  let departmentPicker = null;
+  let typePicker = null;
+  let priorityPicker = null;
+
   function open() {
     const modal = qs("newTaskModal");
     if (!modal) return console.warn("[NewTask] newTaskModal not found (partial not loaded?)");
@@ -21,9 +28,16 @@
     if (!modal) return;
     modal.classList.add("hidden");
 
-    // Clear pickers
+    // Clear people pickers
     ownerPicker?.clear();
     collaboratorPicker?.clear();
+
+    // Clear catalog pickers
+    companyPicker = null;
+    projectPicker = null;
+    departmentPicker = null;
+    typePicker = null;
+    priorityPicker = null;
   }
 
   // ================================
@@ -41,27 +55,32 @@
         <div class="pm-form-grid">
           <div class="pm-form-field pm-form-field--full">
             <label class="pm-form-label">Task Description <span class="required">*</span></label>
-            <input id="nt_task" class="pm-form-input" type="text" placeholder="Describe the task…" required />
+            <input id="nt_task" class="pm-form-input" type="text" placeholder="Describe the task..." required />
           </div>
 
           <div class="pm-form-field">
             <label class="pm-form-label">Company <span class="required">*</span></label>
-            <input id="nt_company" class="pm-form-input" type="text" placeholder="e.g. NGM" required />
+            <div id="nt_company_picker"></div>
           </div>
 
           <div class="pm-form-field">
             <label class="pm-form-label">Project</label>
-            <input id="nt_project" class="pm-form-input" type="text" placeholder="Project name" />
+            <div id="nt_project_picker"></div>
           </div>
 
           <div class="pm-form-field">
             <label class="pm-form-label">Department <span class="required">*</span></label>
-            <input id="nt_department" class="pm-form-input" type="text" placeholder="e.g. Construction" required />
+            <div id="nt_department_picker"></div>
           </div>
 
           <div class="pm-form-field">
             <label class="pm-form-label">Type <span class="required">*</span></label>
-            <input id="nt_type" class="pm-form-input" type="text" placeholder="e.g. Admin / Field / Design…" required />
+            <div id="nt_type_picker"></div>
+          </div>
+
+          <div class="pm-form-field">
+            <label class="pm-form-label">Priority</label>
+            <div id="nt_priority_picker"></div>
           </div>
         </div>
       </section>
@@ -115,6 +134,9 @@
 
     // Initialize people pickers
     initPeoplePickers();
+
+    // Initialize catalog pickers
+    initCatalogPickers();
   }
 
   // ================================
@@ -155,29 +177,103 @@
   }
 
   // ================================
+  // Initialize Catalog Pickers
+  // ================================
+  function initCatalogPickers() {
+    // Wait for CatalogPicker to be available
+    if (typeof window.createCatalogPicker !== 'function') {
+      console.warn('[NewTask] CatalogPicker not loaded yet, retrying...');
+      setTimeout(initCatalogPickers, 100);
+      return;
+    }
+
+    // Company picker
+    const companyContainer = qs('nt_company_picker');
+    if (companyContainer) {
+      companyPicker = window.createCatalogPicker(companyContainer, {
+        catalogType: 'company',
+        placeholder: 'Select company...',
+        onChange: (item) => {
+          console.log('[NewTask] Company selected:', item);
+        }
+      });
+    }
+
+    // Project picker
+    const projectContainer = qs('nt_project_picker');
+    if (projectContainer) {
+      projectPicker = window.createCatalogPicker(projectContainer, {
+        catalogType: 'project',
+        placeholder: 'Select project...',
+        onChange: (item) => {
+          console.log('[NewTask] Project selected:', item);
+        }
+      });
+    }
+
+    // Department picker
+    const deptContainer = qs('nt_department_picker');
+    if (deptContainer) {
+      departmentPicker = window.createCatalogPicker(deptContainer, {
+        catalogType: 'department',
+        placeholder: 'Select department...',
+        onChange: (item) => {
+          console.log('[NewTask] Department selected:', item);
+        }
+      });
+    }
+
+    // Type picker
+    const typeContainer = qs('nt_type_picker');
+    if (typeContainer) {
+      typePicker = window.createCatalogPicker(typeContainer, {
+        catalogType: 'type',
+        placeholder: 'Select type...',
+        onChange: (item) => {
+          console.log('[NewTask] Type selected:', item);
+        }
+      });
+    }
+
+    // Priority picker
+    const priorityContainer = qs('nt_priority_picker');
+    if (priorityContainer) {
+      priorityPicker = window.createCatalogPicker(priorityContainer, {
+        catalogType: 'priority',
+        placeholder: 'Select priority...',
+        onChange: (item) => {
+          console.log('[NewTask] Priority selected:', item);
+        }
+      });
+    }
+  }
+
+  // ================================
   // Build + validate payload
   // ================================
   function buildPayloadFromForm() {
     // Get owner from picker
     const ownerUser = ownerPicker?.getValue();
-    const ownerName = ownerUser?.name || '';
-    const ownerId = ownerUser?.id || null;
 
     // Get collaborators from picker
     const collaborators = collaboratorPicker?.getValue() || [];
-    const collaboratorNames = collaboratorPicker?.getNames() || [];
-    const collaboratorIds = collaboratorPicker?.getIds() || [];
+
+    // Get catalog picker values (returns {id, name} or null)
+    const companyItem = companyPicker?.getValue?.() || null;
+    const projectItem = projectPicker?.getValue?.() || null;
+    const departmentItem = departmentPicker?.getValue?.() || null;
+    const typeItem = typePicker?.getValue?.() || null;
+    const priorityItem = priorityPicker?.getValue?.() || null;
 
     const ui = {
       task: qs("nt_task")?.value?.trim() || "",
-      company: qs("nt_company")?.value?.trim() || "",
-      project: qs("nt_project")?.value?.trim() || null,
-      owner: ownerName,
-      owner_id: ownerId,
-      collaborators: collaboratorNames,
-      collaborator_ids: collaboratorIds,
-      type: qs("nt_type")?.value?.trim() || "",
-      department: qs("nt_department")?.value?.trim() || "",
+      company: companyItem,
+      project: projectItem,
+      owner: ownerUser,
+      collaborators: collaborators,
+      type: typeItem,
+      department: departmentItem,
+      priority: priorityItem,
       due: qs("nt_due")?.value || null,
       deadline: qs("nt_deadline")?.value || null,
       notes: qs("nt_notes")?.value?.trim() || null,
@@ -198,17 +294,16 @@
       return null;
     }
 
-    // UI -> backend payload
+    // UI -> backend payload (send IDs, not names)
     return {
       task_description: ui.task,
-      company: ui.company,
-      project: ui.project,
-      owner: ui.owner,
-      owner_id: ui.owner_id,
-      collaborators: ui.collaborators.length > 0 ? ui.collaborators : null,
-      collaborator_ids: ui.collaborator_ids.length > 0 ? ui.collaborator_ids : null,
-      type: ui.type,
-      department: ui.department,
+      company: ui.company?.id || null,
+      project: ui.project?.id || null,
+      owner: ui.owner?.id || null,
+      collaborators: ui.collaborators.length > 0 ? ui.collaborators.map(u => u.id) : null,
+      type: ui.type?.id || null,
+      department: ui.department?.id || null,
+      priority: ui.priority?.id || null,
       due_date: ui.due,
       deadline: ui.deadline,
       task_notes: ui.notes,

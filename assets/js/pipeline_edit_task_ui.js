@@ -14,6 +14,13 @@
   let collaboratorPicker = null;
   let managerPicker = null;
 
+  // Catalog picker instances
+  let companyPicker = null;
+  let projectPicker = null;
+  let departmentPicker = null;
+  let typePicker = null;
+  let priorityPicker = null;
+
   // Status options (same as pipeline groups)
   const STATUS_OPTIONS = [
     { value: 'not started', label: 'Not Started', color: '#facc15' },
@@ -69,6 +76,11 @@
     ownerPicker?.clear();
     collaboratorPicker?.clear();
     managerPicker?.clear();
+    companyPicker = null;
+    projectPicker = null;
+    departmentPicker = null;
+    typePicker = null;
+    priorityPicker = null;
   }
 
   // ================================
@@ -136,22 +148,27 @@
 
           <div class="pm-form-field">
             <label class="pm-form-label">Company</label>
-            <input id="et_company" class="pm-form-input" type="text" value="${escapeHtml(company)}" />
+            <div id="et_company_picker" data-current="${escapeHtml(company)}"></div>
           </div>
 
           <div class="pm-form-field">
             <label class="pm-form-label">Project</label>
-            <input id="et_project" class="pm-form-input" type="text" value="${escapeHtml(project)}" />
+            <div id="et_project_picker" data-current="${escapeHtml(project)}"></div>
           </div>
 
           <div class="pm-form-field">
             <label class="pm-form-label">Department</label>
-            <input id="et_department" class="pm-form-input" type="text" value="${escapeHtml(department)}" />
+            <div id="et_department_picker" data-current="${escapeHtml(department)}"></div>
           </div>
 
           <div class="pm-form-field">
             <label class="pm-form-label">Type</label>
-            <input id="et_type" class="pm-form-input" type="text" value="${escapeHtml(type)}" />
+            <div id="et_type_picker" data-current="${escapeHtml(type)}"></div>
+          </div>
+
+          <div class="pm-form-field">
+            <label class="pm-form-label">Priority</label>
+            <div id="et_priority_picker" data-current="${escapeHtml(t.priority_name || t.priority || '')}"></div>
           </div>
 
           <div class="pm-form-field">
@@ -235,6 +252,9 @@
 
     // Initialize people pickers
     initPeoplePickers(task);
+
+    // Initialize catalog pickers
+    initCatalogPickers(task);
   }
 
   // ================================
@@ -305,6 +325,117 @@
     }
   }
 
+  // ================================
+  // INITIALIZE CATALOG PICKERS
+  // ================================
+  function initCatalogPickers(task) {
+    if (typeof window.createCatalogPicker !== 'function') {
+      console.warn('[EditTask] CatalogPicker not loaded yet, retrying...');
+      setTimeout(() => initCatalogPickers(task), 100);
+      return;
+    }
+
+    const t = task || {};
+
+    // Company picker
+    const companyContainer = qs('et_company_picker');
+    if (companyContainer) {
+      const currentCompany = companyContainer.dataset.current || '';
+      companyPicker = window.createCatalogPicker(companyContainer, {
+        catalogType: 'company',
+        placeholder: 'Select company...',
+        onChange: (item) => {
+          console.log('[EditTask] Company changed:', item);
+        }
+      });
+      if (currentCompany) {
+        preSelectCatalogItem(companyPicker, 'company', currentCompany, t.company_id);
+      }
+    }
+
+    // Project picker
+    const projectContainer = qs('et_project_picker');
+    if (projectContainer) {
+      const currentProject = projectContainer.dataset.current || '';
+      projectPicker = window.createCatalogPicker(projectContainer, {
+        catalogType: 'project',
+        placeholder: 'Select project...',
+        onChange: (item) => {
+          console.log('[EditTask] Project changed:', item);
+        }
+      });
+      if (currentProject) {
+        preSelectCatalogItem(projectPicker, 'project', currentProject, t.project_id);
+      }
+    }
+
+    // Department picker
+    const deptContainer = qs('et_department_picker');
+    if (deptContainer) {
+      const currentDept = deptContainer.dataset.current || '';
+      departmentPicker = window.createCatalogPicker(deptContainer, {
+        catalogType: 'department',
+        placeholder: 'Select department...',
+        onChange: (item) => {
+          console.log('[EditTask] Department changed:', item);
+        }
+      });
+      if (currentDept) {
+        preSelectCatalogItem(departmentPicker, 'department', currentDept, t.department_id);
+      }
+    }
+
+    // Type picker
+    const typeContainer = qs('et_type_picker');
+    if (typeContainer) {
+      const currentType = typeContainer.dataset.current || '';
+      typePicker = window.createCatalogPicker(typeContainer, {
+        catalogType: 'type',
+        placeholder: 'Select type...',
+        onChange: (item) => {
+          console.log('[EditTask] Type changed:', item);
+        }
+      });
+      if (currentType) {
+        preSelectCatalogItem(typePicker, 'type', currentType, t.type_id);
+      }
+    }
+
+    // Priority picker
+    const priorityContainer = qs('et_priority_picker');
+    if (priorityContainer) {
+      const currentPriority = priorityContainer.dataset.current || '';
+      priorityPicker = window.createCatalogPicker(priorityContainer, {
+        catalogType: 'priority',
+        placeholder: 'Select priority...',
+        onChange: (item) => {
+          console.log('[EditTask] Priority changed:', item);
+        }
+      });
+      if (currentPriority) {
+        preSelectCatalogItem(priorityPicker, 'priority', currentPriority, t.priority_id);
+      }
+    }
+  }
+
+  // Pre-select a catalog item in picker by name/id
+  async function preSelectCatalogItem(picker, catalogType, name, id) {
+    if (!picker) return;
+
+    // Wait for items to load
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    if (picker.items && picker.setValue) {
+      const item = picker.items.find(i =>
+        i.id === id ||
+        (i.name && i.name.toLowerCase() === name.toLowerCase())
+      );
+      if (item) {
+        picker.setValue(item);
+      }
+    }
+  }
+
   // Pre-select a user in picker by name/id
   async function preSelectUser(picker, name, id) {
     if (!picker) return;
@@ -356,21 +487,26 @@
     const collaborators = collaboratorPicker?.getValue() || [];
     const managerUser = managerPicker?.getValue();
 
+    // Get catalog picker values (returns {id, name} or null)
+    const companyItem = companyPicker?.getValue?.() || null;
+    const projectItem = projectPicker?.getValue?.() || null;
+    const departmentItem = departmentPicker?.getValue?.() || null;
+    const typeItem = typePicker?.getValue?.() || null;
+    const priorityItem = priorityPicker?.getValue?.() || null;
+
     const payload = {
       task_description: qs('et_task')?.value?.trim() || '',
       task_notes: qs('et_notes')?.value?.trim() || null,
       status: qs('et_status')?.value || 'not started',
-      company: qs('et_company')?.value?.trim() || null,
-      project: qs('et_project')?.value?.trim() || null,
-      department: qs('et_department')?.value?.trim() || null,
-      type: qs('et_type')?.value?.trim() || null,
+      company: companyItem?.id || null,
+      project: projectItem?.id || null,
+      department: departmentItem?.id || null,
+      type: typeItem?.id || null,
+      priority: priorityItem?.id || null,
       estimated_hours: parseFloat(qs('et_estimated_hours')?.value) || null,
-      owner: ownerUser?.name || null,
-      owner_id: ownerUser?.id || null,
-      collaborators: collaborators.length > 0 ? collaborators.map(u => u.name) : null,
-      collaborator_ids: collaborators.length > 0 ? collaborators.map(u => u.id) : null,
-      manager: managerUser?.name || null,
-      manager_id: managerUser?.id || null,
+      owner: ownerUser?.id || null,
+      collaborators: collaborators.length > 0 ? collaborators.map(u => u.id) : null,
+      manager: managerUser?.id || null,
       start_date: qs('et_start_date')?.value || null,
       due_date: qs('et_due')?.value || null,
       deadline: qs('et_deadline')?.value || null,
@@ -388,7 +524,7 @@
       return null;
     }
 
-    if (!payload.owner) {
+    if (!ownerUser) {
       if (window.Toast) {
         Toast.warning('Missing Fields', 'Owner is required.');
       }

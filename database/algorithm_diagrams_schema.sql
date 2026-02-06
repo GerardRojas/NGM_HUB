@@ -205,3 +205,62 @@ SET diagram = '{
     ]
 }'::jsonb
 WHERE codename = 'ATLAS';
+
+-- ============================================
+-- INSERT ARTURITO (AI Assistant)
+-- ============================================
+
+INSERT INTO algorithm_diagrams (name, codename, description, version, spec, diagram) VALUES
+(
+    'ARTURITO AI Assistant',
+    'ARTURITO',
+    'Asistente AI multimodal con NLU, handlers especializados y memoria conversacional',
+    '2.0',
+    '{
+        "flow": [
+            { "id": "input", "type": "input", "label": "user message" },
+            { "id": "slash_check", "type": "decision", "label": "Slash Cmd?", "from": "input" },
+            { "id": "slash_router", "type": "process", "label": "Slash Router", "from": "slash_check", "branch": "Yes" },
+            { "id": "nlu_local", "type": "process", "label": "NLU Local", "from": "slash_check", "branch": "No", "tool": "regex" },
+            { "id": "has_match", "type": "decision", "label": "Match?", "from": "nlu_local" },
+            { "id": "nlu_gpt", "type": "process", "label": "NLU GPT", "from": "has_match", "branch": "No", "tool": "gpt-4o-mini" },
+            { "id": "intent_router", "type": "decision", "label": "Intent?", "from": ["has_match", "nlu_gpt"] },
+            { "id": "assistants", "type": "process", "label": "Assistants API", "from": "intent_router", "branch": "Chat", "tool": "openai-threads" },
+            { "id": "bva_handler", "type": "process", "label": "BVA Handler", "from": "intent_router", "branch": "BVA", "tool": "supabase" },
+            { "id": "copilot", "type": "process", "label": "Copilot", "from": "intent_router", "branch": "Action", "tool": "page-context" },
+            { "id": "response", "type": "output", "label": "bot response", "from": ["slash_router", "assistants", "bva_handler", "copilot"] }
+        ]
+    }'::jsonb,
+    '{
+        "nodes": [
+            { "id": "input", "label": "user message", "x": 300, "y": 40, "type": "input" },
+            { "id": "slash_check", "label": "Slash?", "x": 300, "y": 130, "type": "decision" },
+            { "id": "slash_router", "label": "Slash Router", "x": 480, "y": 130, "type": "process", "tool": "command-map" },
+            { "id": "nlu_local", "label": "NLU Local", "x": 150, "y": 220, "type": "process", "tool": "regex" },
+            { "id": "has_match", "label": "Match?", "x": 150, "y": 310, "type": "decision" },
+            { "id": "nlu_gpt", "label": "NLU GPT", "x": 50, "y": 400, "type": "process", "tool": "gpt-4o-mini" },
+            { "id": "intent_router", "label": "Intent?", "x": 250, "y": 400, "type": "decision" },
+            { "id": "assistants", "label": "Assistants API", "x": 100, "y": 510, "type": "process", "tool": "openai-threads" },
+            { "id": "bva_handler", "label": "BVA Report", "x": 250, "y": 510, "type": "process", "tool": "supabase" },
+            { "id": "copilot", "label": "Copilot", "x": 400, "y": 510, "type": "process", "tool": "page-context" },
+            { "id": "response", "label": "bot response", "x": 300, "y": 620, "type": "output" }
+        ],
+        "edges": [
+            { "from": "input", "to": "slash_check" },
+            { "from": "slash_check", "to": "slash_router", "label": "Yes" },
+            { "from": "slash_check", "to": "nlu_local", "label": "No" },
+            { "from": "nlu_local", "to": "has_match" },
+            { "from": "has_match", "to": "intent_router", "label": "Yes" },
+            { "from": "has_match", "to": "nlu_gpt", "label": "No" },
+            { "from": "nlu_gpt", "to": "intent_router" },
+            { "from": "intent_router", "to": "assistants", "label": "Chat" },
+            { "from": "intent_router", "to": "bva_handler", "label": "BVA" },
+            { "from": "intent_router", "to": "copilot", "label": "Action" },
+            { "from": "slash_router", "to": "response" },
+            { "from": "assistants", "to": "response" },
+            { "from": "bva_handler", "to": "response" },
+            { "from": "copilot", "to": "response" }
+        ]
+    }'::jsonb
+)
+ON CONFLICT DO NOTHING;

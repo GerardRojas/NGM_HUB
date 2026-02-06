@@ -657,6 +657,14 @@
   overflow: hidden;
 }
 
+.art-bva-header {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e5e7eb;
+  font-size: 13px;
+}
+
 .art-bva-row {
   padding: 8px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);

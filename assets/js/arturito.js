@@ -1172,11 +1172,16 @@
       actionButtonsHtml = renderActionButtons(msg) || "";
     }
 
+    // Skip text bubble when a rich card already displays the same data
+    const skipTextBubble = msg.action === "category_query_response"
+      && msg.data && msg.data.accounts && msg.data.accounts.length > 0
+      && actionButtonsHtml;
+
     return `
       <div class="arturito-message ${roleClass} ${errorClass}">
         ${avatarHtml}
         <div class="arturito-message-content">
-          <div class="arturito-message-bubble">${formattedContent}</div>
+          ${skipTextBubble ? "" : `<div class="arturito-message-bubble">${formattedContent}</div>`}
           ${actionButtonsHtml}
           <span class="arturito-message-time">${time}</span>
         </div>
@@ -1231,8 +1236,17 @@
       case "category_query_response":
         if (actionData.accounts && actionData.accounts.length > 0) {
           var groupName = actionData.group_name || "";
+          var projectName = actionData.project_name || "";
           var totals = actionData.group_totals || {};
           var accts = actionData.accounts;
+          // Header with group/account name and project
+          var headerLabel = groupName || (accts.length === 1 ? accts[0].matched_name : "");
+          var headerHtml = headerLabel
+            ? '<div class="art-bva-header">'
+              + '<strong>' + escapeHtml(headerLabel) + '</strong>'
+              + (projectName ? ' in <strong>' + escapeHtml(projectName) + '</strong>' : '')
+              + '</div>'
+            : "";
           var rows = accts.map(function (acc) {
             var bal = acc.balance || 0;
             var balClass = bal < 0 ? "art-bva-negative" : "";
@@ -1242,7 +1256,7 @@
               + '<div class="art-bva-nums">'
               + '<span>Budget: $' + (acc.budget || 0).toLocaleString("en-US", { minimumFractionDigits: 2 }) + '</span>'
               + '<span>Actual: $' + (acc.actual || 0).toLocaleString("en-US", { minimumFractionDigits: 2 }) + '</span>'
-              + '<span class="' + balClass + '">Disp: $' + bal.toLocaleString("en-US", { minimumFractionDigits: 2 }) + '</span>'
+              + '<span class="' + balClass + '">Avail: $' + bal.toLocaleString("en-US", { minimumFractionDigits: 2 }) + '</span>'
               + '</div></div>';
           }).join("");
           var totalBal = totals.balance || 0;
@@ -1256,7 +1270,7 @@
               + '<span class="' + totalClass + '">$' + totalBal.toLocaleString("en-US", { minimumFractionDigits: 2 }) + '</span>'
               + '</div></div>'
             : "";
-          return '<div class="art-bva-card">' + rows + totalRow + '</div>';
+          return '<div class="art-bva-card">' + headerHtml + rows + totalRow + '</div>';
         }
         break;
     }

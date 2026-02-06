@@ -1258,7 +1258,7 @@
           var headerHtml = headerLabel
             ? '<div class="arturito-bva-header">'
               + '<strong>' + escapeHtml(headerLabel) + '</strong>'
-              + (projectName ? ' en <strong>' + escapeHtml(projectName) + '</strong>' : '')
+              + (projectName ? ' in <strong>' + escapeHtml(projectName) + '</strong>' : '')
               + '</div>'
             : "";
           var rows = accts.map(function(acc) {
@@ -1270,7 +1270,7 @@
               + '<div class="arturito-bva-nums">'
               + '<span>Budget: $' + (acc.budget || 0).toLocaleString("en-US", {minimumFractionDigits: 2}) + '</span>'
               + '<span>Actual: $' + (acc.actual || 0).toLocaleString("en-US", {minimumFractionDigits: 2}) + '</span>'
-              + '<span class="' + balClass + '">Disp: $' + bal.toLocaleString("en-US", {minimumFractionDigits: 2}) + '</span>'
+              + '<span class="' + balClass + '">Avail: $' + bal.toLocaleString("en-US", {minimumFractionDigits: 2}) + '</span>'
               + '</div></div>';
           }).join("");
           var totalBal = totals.balance || 0;

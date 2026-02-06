@@ -1133,15 +1133,125 @@
       avatarHtml = `<div class="arturito-message-avatar arturito-message-avatar--bot">A</div>`;
     }
 
+    // Build action buttons if applicable
+    let actionButtonsHtml = "";
+    if (!isUser && msg.action) {
+      actionButtonsHtml = renderActionButtons(msg) || "";
+    }
+
     return `
       <div class="arturito-message ${roleClass} ${errorClass}">
         ${avatarHtml}
         <div class="arturito-message-content">
           <div class="arturito-message-bubble">${formattedContent}</div>
+          ${actionButtonsHtml}
           <span class="arturito-message-time">${time}</span>
         </div>
       </div>
     `;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ACTION BUTTONS (BVA project selection, PDF download, etc.)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function renderActionButtons(msg) {
+    const action = msg.action;
+    const actionData = msg.data || {};
+
+    switch (action) {
+      case "ask_project":
+        if (actionData.projects && actionData.projects.length > 0) {
+          const projectButtons = actionData.projects.slice(0, 6).map(function (p) {
+            return '<button type="button" class="art-action-btn art-project-btn" onclick="ArturitoChat.selectProjectForBVA(\'' + escapeHtml(p.name) + '\')">'
+              + escapeHtml(p.name) + '</button>';
+          }).join("");
+          return '<div class="art-action-btns art-project-grid">' + projectButtons + '</div>';
+        }
+        break;
+
+      case "bva_report_pdf":
+        if (actionData.pdf_url) {
+          var projectName = actionData.project_name || "BVA Report";
+          return '<div class="art-action-btns">'
+            + '<a href="' + escapeHtml(actionData.pdf_url) + '" target="_blank" rel="noopener noreferrer" class="art-action-btn art-action-btn--primary art-pdf-btn">'
+            + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right:6px;flex-shrink:0">'
+            + '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'
+            + '<line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>'
+            + 'Abrir PDF</a>'
+            + '<button type="button" class="art-action-btn" onclick="ArturitoChat.downloadPDF(\'' + escapeHtml(actionData.pdf_url) + '\', \'' + escapeHtml(projectName) + '\')">'
+            + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right:6px;flex-shrink:0">'
+            + '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/>'
+            + '<line x1="12" y1="15" x2="12" y2="3"/></svg>'
+            + 'Descargar</button></div>';
+        }
+        break;
+
+      case "category_query_response":
+        if (actionData.accounts && actionData.accounts.length > 0) {
+          var groupName = actionData.group_name || "";
+          var totals = actionData.group_totals || {};
+          var accts = actionData.accounts;
+          var rows = accts.map(function (acc) {
+            var bal = acc.balance || 0;
+            var balClass = bal < 0 ? "art-bva-negative" : "";
+            var matchMark = acc.is_matched ? " art-bva-matched" : "";
+            return '<div class="art-bva-row' + matchMark + '">'
+              + '<div class="art-bva-account">' + escapeHtml(acc.matched_name) + '</div>'
+              + '<div class="art-bva-nums">'
+              + '<span>Budget: $' + (acc.budget || 0).toLocaleString("en-US", { minimumFractionDigits: 2 }) + '</span>'
+              + '<span>Actual: $' + (acc.actual || 0).toLocaleString("en-US", { minimumFractionDigits: 2 }) + '</span>'
+              + '<span class="' + balClass + '">Disp: $' + bal.toLocaleString("en-US", { minimumFractionDigits: 2 }) + '</span>'
+              + '</div></div>';
+          }).join("");
+          var totalBal = totals.balance || 0;
+          var totalClass = totalBal < 0 ? "art-bva-negative" : "";
+          var totalRow = accts.length > 1
+            ? '<div class="art-bva-total">'
+              + '<div class="art-bva-account">TOTAL' + (groupName ? " " + escapeHtml(groupName) : "") + '</div>'
+              + '<div class="art-bva-nums">'
+              + '<span>$' + (totals.budget || 0).toLocaleString("en-US", { minimumFractionDigits: 2 }) + '</span>'
+              + '<span>$' + (totals.actual || 0).toLocaleString("en-US", { minimumFractionDigits: 2 }) + '</span>'
+              + '<span class="' + totalClass + '">$' + totalBal.toLocaleString("en-US", { minimumFractionDigits: 2 }) + '</span>'
+              + '</div></div>'
+            : "";
+          return '<div class="art-bva-card">' + rows + totalRow + '</div>';
+        }
+        break;
+    }
+    return "";
+  }
+
+  function selectProjectForBVA(projectName) {
+    DOM.chatInput.value = "bva " + projectName;
+    handleInputChange();
+    sendMessage();
+  }
+
+  async function downloadPDF(pdfUrl, projectName) {
+    try {
+      var response = await fetch(pdfUrl);
+      if (!response.ok) throw new Error("Failed to fetch PDF");
+      var blob = await response.blob();
+      var url = window.URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      var date = new Date().toISOString().split("T")[0];
+      var safeName = projectName.replace(/[^a-zA-Z0-9\s-]/g, "").trim();
+      a.download = safeName + "_BVA_" + date + ".pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      if (typeof Toast !== "undefined") {
+        Toast.success("Descarga iniciada", safeName + "_BVA_" + date + ".pdf");
+      }
+    } catch (err) {
+      window.open(pdfUrl, "_blank");
+      if (typeof Toast !== "undefined") {
+        Toast.warning("Descarga alternativa", "El PDF se abrio en una nueva pestana");
+      }
+    }
   }
 
   function getInitials(name) {
@@ -1310,5 +1420,7 @@
       sendMessage();
     },
     getThreadId: () => state.threadId,
+    selectProjectForBVA,
+    downloadPDF,
   };
 })();

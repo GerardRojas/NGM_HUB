@@ -580,6 +580,129 @@
 }
 
 /* -------------------------------------------------------------------
+   Action Buttons (BVA project selection, PDF download, etc.)
+   ------------------------------------------------------------------- */
+
+.art-action-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.art-action-btn {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #e5e7eb;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.art-action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.art-action-btn--primary {
+  background: rgba(62, 207, 142, 0.15);
+  border-color: rgba(62, 207, 142, 0.3);
+  color: #3ecf8e;
+}
+
+.art-action-btn--primary:hover {
+  background: rgba(62, 207, 142, 0.25);
+  border-color: rgba(62, 207, 142, 0.4);
+}
+
+/* Project selection grid */
+.art-project-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.art-project-btn {
+  padding: 10px 12px;
+  font-size: 13px;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.art-project-btn:hover {
+  background: rgba(62, 207, 142, 0.15);
+  border-color: rgba(62, 207, 142, 0.3);
+  color: #3ecf8e;
+}
+
+/* PDF download button */
+.art-pdf-btn svg {
+  flex-shrink: 0;
+}
+
+/* BVA category cards */
+.art-bva-card {
+  margin-top: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.art-bva-row {
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.art-bva-row:last-child {
+  border-bottom: none;
+}
+
+.art-bva-row.art-bva-matched {
+  background: rgba(62, 207, 142, 0.08);
+}
+
+.art-bva-account {
+  font-weight: 600;
+  font-size: 12px;
+  color: #e5e7eb;
+  margin-bottom: 2px;
+}
+
+.art-bva-nums {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.art-bva-nums .art-bva-negative {
+  color: #ef4444;
+}
+
+.art-bva-total {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.art-bva-total .art-bva-account {
+  font-weight: 700;
+}
+
+.art-bva-total .art-bva-nums {
+  font-weight: 600;
+}
+
+/* -------------------------------------------------------------------
    Responsive -- Tablet
    ------------------------------------------------------------------- */
 
@@ -667,6 +790,15 @@
 
   .arturito-messages-list {
     max-width: 100%;
+  }
+
+  .art-project-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .art-bva-nums {
+    flex-direction: column;
+    gap: 2px;
   }
 
   /* Hide topbar elements on mobile */

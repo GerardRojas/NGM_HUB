@@ -72,9 +72,9 @@
         </button>
       </div>
 
-      <div class="sidebar-logo">
+      <a href="dashboard.html" class="sidebar-logo" title="Back to Dashboard">
         <img src="assets/img/logo.png" alt="NGM HUB Logo" class="sidebar-logo-img" />
-      </div>
+      </a>
       <div class="sidebar-title-block">
         <p class="sidebar-title">NGM HUB</p>
       </div>

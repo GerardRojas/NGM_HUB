@@ -323,6 +323,26 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
+.adu-input-hint-inline {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 10px;
+}
+
+.adu-config-toggle-row {
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  border-radius: 8px;
+}
+
+.adu-config-toggle-row .adu-checkbox-inline span {
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 12px;
+}
+
 .adu-text-input-small {
   width: 100px;
   padding-right: 16px;
@@ -931,6 +951,42 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
+.price-range-row.price-range-unit {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.price-range-row.price-range-unit .price-range-cell {
+  padding: 10px 12px;
+}
+
+.price-range-unit-value {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-range-low .price-range-unit-value {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.price-range-mid .price-range-unit-value {
+  color: rgba(62, 207, 142, 0.85);
+}
+
+.price-range-high .price-range-unit-value {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.price-range-total-tag {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.25);
+  margin-top: 2px;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .price-range-value {
@@ -949,7 +1005,8 @@
     font-size: 9px;
   }
 
-  .price-range-sqft-value {
+  .price-range-sqft-value,
+  .price-range-unit-value {
     font-size: 11px;
   }
 }
@@ -964,6 +1021,12 @@
 .adu-cost-per-sqft {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.5);
+}
+
+.adu-cost-per-unit {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: 16px;
 }
 
 .adu-cost-table {

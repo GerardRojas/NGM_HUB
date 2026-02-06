@@ -80,8 +80,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 2) DOM refs
   const board = document.getElementById("team-board");
   const searchInput = document.getElementById("team-search-input");
-  const pageLoadingOverlay = document.getElementById("pageLoadingOverlay");
-
   // View toggle: cards vs orgchart
   let currentView = "cards";
   const btnViewCards = document.getElementById("btn-view-cards");
@@ -112,40 +110,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (btnViewOrgchart) btnViewOrgchart.addEventListener("click", () => setView("orgchart"));
 
   if (!board) return;
-
-  // Page loading with logo wait
-  const MIN_LOADING_TIME = 800;
-  let logoReadyTime = null;
-
-  (function initLogoReady() {
-    if (!pageLoadingOverlay) { logoReadyTime = Date.now(); return; }
-    const logoImg = pageLoadingOverlay.querySelector(".loading-logo");
-    if (!logoImg) { logoReadyTime = Date.now(); return; }
-    if (logoImg.complete && logoImg.naturalWidth > 0) { logoReadyTime = Date.now(); return; }
-    logoImg.addEventListener("load", () => { logoReadyTime = Date.now(); });
-    logoImg.addEventListener("error", () => { logoReadyTime = Date.now(); });
-    setTimeout(() => { if (!logoReadyTime) logoReadyTime = Date.now(); }, 2000);
-  })();
-
-  function hidePageLoading() {
-    const doHide = () => {
-      const now = Date.now();
-      const effectiveStart = logoReadyTime || now;
-      const elapsed = now - effectiveStart;
-      const remaining = Math.max(0, MIN_LOADING_TIME - elapsed);
-      setTimeout(() => {
-        document.body.classList.remove("page-loading");
-        document.body.classList.add("auth-ready");
-        if (pageLoadingOverlay) pageLoadingOverlay.classList.add("hidden");
-      }, remaining);
-    };
-    if (!logoReadyTime) {
-      const check = setInterval(() => { if (logoReadyTime) { clearInterval(check); doHide(); } }, 50);
-      setTimeout(() => { clearInterval(check); doHide(); }, 2500);
-    } else {
-      doHide();
-    }
-  }
 
   // 3) API helpers
   function getApiBase() {

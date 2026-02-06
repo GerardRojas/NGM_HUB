@@ -13,6 +13,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
 
+    <!-- Critical CSS for loading overlay -->
+    <style>
+      body.page-loading { overflow: hidden; }
+      .page-loading-overlay { position: fixed; inset: 0; background: #0d0d0d; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
+      .page-loading-overlay.hidden { display: none; }
+      .page-loading .app-layout { visibility: hidden; }
+      .loading-logo { width: 120px; height: 120px; object-fit: contain; animation: pulse 1.5s ease-in-out infinite; }
+      .loading-text { color: rgba(255,255,255,0.5); font-size: 13px; font-family: system-ui, sans-serif; letter-spacing: 0.05em; }
+      @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+    </style>
+
     <link rel="stylesheet" href="assets/css/styles.css" />
     <link rel="stylesheet" href="assets/css/adu_calculator_styles.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
@@ -24,6 +35,7 @@
     <script src="assets/js/permissions.js" defer></script>
     <script src="assets/js/pills.js" defer></script>
     <script src="assets/js/sidebar.js" defer></script>
+    <script src="assets/js/page-loading.js" defer></script>
     <script src="assets/js/adu_calculator.js" defer></script>
     <script src="assets/js/arturito_widget.js" defer></script>
 </head>
@@ -224,16 +236,26 @@
                                     <span class="adu-param-step" id="stepConfiguration">6</span>
                                     <span class="adu-param-title">Configuration</span>
                                 </div>
-                                <p class="adu-param-subtitle">Number of bedrooms and bathrooms</p>
+                                <p class="adu-param-subtitle" id="configSubtitle">Number of units, bedrooms and bathrooms. Bedrooms and bathrooms are per unit — the calculator will multiply them by the number of units.</p>
                                 <div class="adu-input-row adu-input-row-multi" style="margin-left: 40px;">
                                     <div class="adu-input-field">
-                                        <label class="adu-input-label">Bedrooms</label>
+                                        <label class="adu-input-label">Units</label>
+                                        <input type="number" id="inputUnits" class="adu-text-input adu-text-input-small" placeholder="1" min="1" max="50" step="1" value="1" />
+                                    </div>
+                                    <div class="adu-input-field">
+                                        <label class="adu-input-label" id="labelBedrooms">Bedrooms <span class="adu-input-hint-inline">(per unit)</span></label>
                                         <input type="number" id="inputBedrooms" class="adu-text-input adu-text-input-small" placeholder="0" min="0" max="10" step="1" />
                                     </div>
                                     <div class="adu-input-field">
-                                        <label class="adu-input-label">Bathrooms</label>
+                                        <label class="adu-input-label" id="labelBathrooms">Bathrooms <span class="adu-input-hint-inline">(per unit)</span></label>
                                         <input type="number" id="inputBathrooms" class="adu-text-input adu-text-input-small" placeholder="0" min="0" max="10" step="1" />
                                     </div>
+                                </div>
+                                <div class="adu-config-toggle-row hidden" id="configModeRow" style="margin-left: 40px; margin-top: 8px;">
+                                    <label class="adu-checkbox-inline">
+                                        <input type="checkbox" id="chkTotalMode" />
+                                        <span>Mixed configurations — enter total bedrooms/bathrooms instead of per unit</span>
+                                    </label>
                                 </div>
                             </div>
 
@@ -670,6 +692,15 @@
                     <h4 class="pricing-section-title">Price Range Display</h4>
                     <p class="pricing-section-desc">Percentage variation for low/high price estimates</p>
                     <div class="pricing-row" id="rowPriceRange">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Floor Plan Analysis Modifiers -->
+                <div class="pricing-config-section">
+                    <h4 class="pricing-section-title">Floor Plan Analysis Modifiers</h4>
+                    <p class="pricing-section-desc">Multiplier ranges for AI-detected architectural coefficients (score 0 = low mult, score 1 = high mult)</p>
+                    <div id="rowFloorPlanModifiers">
                         <!-- Rendered by JS -->
                     </div>
                 </div>

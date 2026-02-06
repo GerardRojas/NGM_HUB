@@ -21,8 +21,6 @@
   const API_BASE = window.API_BASE || window.NGM_CONFIG?.API_BASE || "http://localhost:3000";
   const SUPABASE_URL = window.SUPABASE_URL || window.NGM_CONFIG?.SUPABASE_URL || "";
   const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || window.NGM_CONFIG?.SUPABASE_ANON_KEY || "";
-  const MIN_LOADING_TIME = 800;
-
   // Helper function to get auth headers with JWT token
   function getAuthHeaders() {
     const token = localStorage.getItem("ngmToken");
@@ -40,46 +38,6 @@
       credentials: "include",
       headers,
     });
-  }
-
-  // Page loading with logo wait
-  let logoReadyTime = null;
-
-  (function initLogoReady() {
-    const overlay = document.getElementById("pageLoadingOverlay");
-    if (!overlay) { logoReadyTime = Date.now(); return; }
-    const logoImg = overlay.querySelector(".loading-logo");
-    if (!logoImg) { logoReadyTime = Date.now(); return; }
-    if (logoImg.complete && logoImg.naturalWidth > 0) { logoReadyTime = Date.now(); return; }
-    logoImg.addEventListener("load", () => { logoReadyTime = Date.now(); });
-    logoImg.addEventListener("error", () => { logoReadyTime = Date.now(); });
-    setTimeout(() => { if (!logoReadyTime) logoReadyTime = Date.now(); }, 2000);
-  })();
-
-  function hidePageLoading() {
-    const doHide = () => {
-      const now = Date.now();
-      const effectiveStart = logoReadyTime || now;
-      const elapsed = now - effectiveStart;
-      const remaining = Math.max(0, MIN_LOADING_TIME - elapsed);
-
-      setTimeout(() => {
-        const overlay = document.getElementById("pageLoadingOverlay");
-        if (overlay) {
-          overlay.classList.add("hidden");
-          setTimeout(() => { overlay.style.display = "none"; }, 300);
-        }
-        document.body.classList.remove("page-loading");
-        document.body.classList.add("auth-ready");
-      }, remaining);
-    };
-
-    if (!logoReadyTime) {
-      const check = setInterval(() => { if (logoReadyTime) { clearInterval(check); doHide(); } }, 50);
-      setTimeout(() => { clearInterval(check); doHide(); }, 2500);
-    } else {
-      doHide();
-    }
   }
 
   const state = {
@@ -2680,121 +2638,87 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // MOBILE KEYBOARD DETECTION
+  // MOBILE KEYBOARD HANDLING (unified handler for iOS + Android)
   // ─────────────────────────────────────────────────────────────────────────
   function setupMobileKeyboardDetection() {
-    // Only run on mobile devices
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     if (!isMobile) return;
 
-    const pageElement = document.querySelector('.page-messages');
     const chatArea = document.querySelector('.msg-chat-area');
-    const inputArea = document.querySelector('.msg-input-area');
     const messagesContainer = DOM.messagesList?.parentElement;
 
-    let initialViewportHeight = window.visualViewport?.height || window.innerHeight;
+    let initialHeight = window.visualViewport?.height || window.innerHeight;
     let keyboardOpen = false;
+    let rafId = null;
 
-    // Use Visual Viewport API if available (better for iOS)
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleViewportResize);
-      window.visualViewport.addEventListener('scroll', handleViewportScroll);
+      window.visualViewport.addEventListener('resize', onViewportResize);
+
+      // Recalibrate on orientation change
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+          initialHeight = window.visualViewport.height;
+          if (keyboardOpen) handleKeyboardClose();
+        }, 400);
+      });
     } else {
-      // Fallback for older browsers
-      window.addEventListener('resize', handleWindowResize);
+      // Fallback: detect via focus/blur
+      DOM.messageInput?.addEventListener('focus', () => {
+        setTimeout(() => { if (!keyboardOpen) handleKeyboardOpen(); }, 300);
+      });
+      DOM.messageInput?.addEventListener('blur', () => {
+        setTimeout(() => { if (keyboardOpen) handleKeyboardClose(); }, 200);
+      });
     }
 
-    // Also detect via focus/blur on input
-    DOM.messageInput?.addEventListener('focus', () => {
-      setTimeout(() => {
-        if (!keyboardOpen) {
-          handleKeyboardOpen();
-        }
-      }, 300);
-    });
+    function onViewportResize() {
+      // Debounce via rAF - only process last resize per frame
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const currentHeight = window.visualViewport.height;
+        const heightDiff = initialHeight - currentHeight;
 
-    DOM.messageInput?.addEventListener('blur', () => {
-      setTimeout(() => {
-        if (keyboardOpen) {
+        if (heightDiff > 150 && !keyboardOpen) {
+          handleKeyboardOpen();
+        } else if (heightDiff < 100 && keyboardOpen) {
           handleKeyboardClose();
         }
-      }, 100);
-    });
 
-    function handleViewportResize() {
-      const currentHeight = window.visualViewport.height;
-      const heightDiff = initialViewportHeight - currentHeight;
-
-      // Keyboard is likely open if viewport height decreased significantly (> 150px)
-      if (heightDiff > 150 && !keyboardOpen) {
-        handleKeyboardOpen();
-        // Adjust chat area height
-        if (chatArea) {
-          chatArea.style.height = `${currentHeight}px`;
+        // Adjust chat area to visual viewport while keyboard is visible
+        if (keyboardOpen && chatArea && window.innerWidth <= 768) {
+          chatArea.style.height = currentHeight + 'px';
         }
-      } else if (heightDiff < 100 && keyboardOpen) {
-        handleKeyboardClose();
-        // Reset chat area height
-        if (chatArea) {
-          chatArea.style.height = '';
-        }
-      }
-
-      // Keep input visible above keyboard
-      if (keyboardOpen && inputArea) {
-        inputArea.style.bottom = '0';
-        inputArea.style.position = 'sticky';
-      }
-    }
-
-    function handleViewportScroll() {
-      // Keep content in view when viewport scrolls
-      if (keyboardOpen && window.visualViewport) {
-        const offsetTop = window.visualViewport.offsetTop;
-        if (chatArea) {
-          chatArea.style.transform = `translateY(${offsetTop}px)`;
-        }
-      }
-    }
-
-    function handleWindowResize() {
-      const currentHeight = window.innerHeight;
-      const heightDiff = initialViewportHeight - currentHeight;
-
-      if (heightDiff > 150 && !keyboardOpen) {
-        handleKeyboardOpen();
-      } else if (heightDiff < 100 && keyboardOpen) {
-        handleKeyboardClose();
-      }
+      });
     }
 
     function handleKeyboardOpen() {
       keyboardOpen = true;
-      pageElement?.classList.add('keyboard-open');
       document.body.classList.add('keyboard-open');
 
-      // Scroll to bottom to show latest messages
+      // Scroll messages to bottom after keyboard settles
       setTimeout(() => {
         if (messagesContainer) {
           messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
-      }, 100);
-
-      console.log('[Messages] Keyboard opened');
+      }, 150);
     }
 
     function handleKeyboardClose() {
       keyboardOpen = false;
-      pageElement?.classList.remove('keyboard-open');
       document.body.classList.remove('keyboard-open');
 
-      // Reset any transform
       if (chatArea) {
-        chatArea.style.transform = '';
         chatArea.style.height = '';
       }
+    }
 
-      console.log('[Messages] Keyboard closed');
+    // Allow message scrolling while keyboard is open
+    if (messagesContainer) {
+      messagesContainer.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+      }, { passive: true });
     }
   }
 

@@ -12,8 +12,6 @@
     'use strict';
 
     const API_BASE = window.API_BASE || "https://ngm-fastapi.onrender.com";
-    const PAGE_LOAD_START = Date.now();
-    const MIN_LOADING_TIME = 800;
 
     // ================================
     // Data Structures
@@ -1759,28 +1757,18 @@
         // Returns true if will navigate to a non-tree view (navigation handles its own centering)
         const willNavigate = handleURLNavigation();
 
-        // Hide loading overlay only after centering is complete
-        const elapsed = Date.now() - PAGE_LOAD_START;
-        const remaining = Math.max(0, MIN_LOADING_TIME - elapsed);
-
         // Use requestAnimationFrame to ensure layout is calculated before centering
         // Then hide loading overlay after centering completes
-        setTimeout(() => {
+        requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    // Only center if not navigating via URL
-                    // Navigation functions handle their own centering after render
-                    if (!willNavigate) {
-                        centerCanvas();
-                    }
-                    // Now hide loading overlay
-                    document.body.classList.remove('page-loading');
-                    document.body.classList.add('auth-ready');
-                    const overlay = document.getElementById('pageLoadingOverlay');
-                    if (overlay) overlay.classList.add('hidden');
-                });
+                // Only center if not navigating via URL
+                // Navigation functions handle their own centering after render
+                if (!willNavigate) {
+                    centerCanvas();
+                }
+                hidePageLoading();
             });
-        }, remaining);
+        });
     }
 
     function loadCurrentUser() {
@@ -1872,12 +1860,12 @@
 
         // Algorithm diagram badge events (event delegation)
         document.addEventListener('mouseenter', (e) => {
-            if (e.target.closest('.algorithm-diagram-badge')) {
+            if (e.target instanceof Element && e.target.closest('.algorithm-diagram-badge')) {
                 handleDiagramBadgeMouseEnter(e);
             }
         }, true);
         document.addEventListener('mouseleave', (e) => {
-            if (e.target.closest('.algorithm-diagram-badge')) {
+            if (e.target instanceof Element && e.target.closest('.algorithm-diagram-badge')) {
                 handleDiagramBadgeMouseLeave(e);
             }
         }, true);
@@ -2242,7 +2230,7 @@
         // Navigate to the target module's detail view
         navigateToDetail(module.id);
 
-        // After a short delay to allow render, highlight and scroll to the target node
+        // After a short delay to allow render, highlight and center canvas on the target node
         setTimeout(() => {
             const targetEl = document.querySelector(`[data-node-id="${targetNodeId}"]`);
             if (targetEl) {
@@ -2252,12 +2240,33 @@
                     targetEl.classList.remove('link-target-highlight');
                 }, 2000);
 
-                // Scroll into view
-                targetEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+                // Pan canvas to center on the target node
+                centerOnNode(targetEl);
             }
         }, 300);
 
         showToast(`Navigated to ${module.name}`, 'success');
+    }
+
+    /**
+     * Center the canvas on a specific node element
+     */
+    function centerOnNode(nodeEl) {
+        if (!elements.canvasContainer || !elements.canvasGrid) return;
+
+        const containerRect = elements.canvasContainer.getBoundingClientRect();
+        const containerWidth = containerRect.width;
+        const containerHeight = containerRect.height;
+
+        // Get node center position relative to canvasGrid
+        const nodeX = nodeEl.offsetLeft + (nodeEl.offsetWidth / 2);
+        const nodeY = nodeEl.offsetTop + (nodeEl.offsetHeight / 2);
+
+        state.canvas.scale = 0.85;
+        state.canvas.offsetX = (containerWidth / 2) - (nodeX * state.canvas.scale);
+        state.canvas.offsetY = (containerHeight / 2) - (nodeY * state.canvas.scale);
+
+        applyCanvasTransform();
     }
 
     // ================================

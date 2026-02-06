@@ -82,8 +82,7 @@
     cacheElements();
 
     // Hide loading overlay and show main app directly (no template selection screen)
-    document.getElementById('pageLoadingOverlay')?.classList.add('hidden');
-    document.body.classList.remove('page-loading');
+    hidePageLoading();
     document.getElementById('template-selection-screen')?.classList.add('hidden');
     document.getElementById('main-app-layout')?.style.setProperty('display', '');
 
@@ -451,6 +450,38 @@
     document.getElementById('project-info-btn')?.addEventListener('click', openProjectModal);
 
     // Note: beforeunload is handled by auto-save system to persist changes
+
+    // Inline qty editing via delegation on tbody
+    els.tbody?.addEventListener('change', (e) => {
+      if (!e.target.classList.contains('inline-qty-input')) return;
+      const catIdx = parseInt(e.target.dataset.cat, 10);
+      const subIdx = parseInt(e.target.dataset.sub, 10);
+      const itemIdx = parseInt(e.target.dataset.item, 10);
+      const newQty = parseFloat(e.target.value) || 0;
+
+      const item = currentEstimateData?.categories?.[catIdx]
+        ?.subcategories?.[subIdx]?.items?.[itemIdx];
+      if (!item) return;
+
+      item.qty = newQty;
+      item.quantity = newQty;
+      recalculateEstimateTotals();
+      markDirty();
+
+      // Update subtotal/total cells in same row without full re-render
+      const tr = e.target.closest('tr');
+      if (tr) {
+        const cells = tr.querySelectorAll('td');
+        const unitCost = item.unit_cost ?? item.base_cost ?? 0;
+        const total = newQty * unitCost;
+        // col-subtotal is index 6, col-total is index 7
+        if (cells[6]) cells[6].textContent = formatCurrency(total);
+        if (cells[7]) cells[7].textContent = formatCurrency(total);
+      }
+
+      // Update sidebar summary
+      renderEstimateSummary();
+    });
   }
 
   // ================================
@@ -1756,6 +1787,20 @@
     }
   }
 
+  function renderEstimateSummary() {
+    if (!currentEstimateData) return;
+    const categories = Array.isArray(currentEstimateData.categories) ? currentEstimateData.categories : [];
+    let subtotal = 0;
+    categories.forEach(cat => {
+      if (typeof cat.total_cost === 'number') subtotal += cat.total_cost;
+    });
+    const overheadAmount = currentEstimateData.overhead?.amount || 0;
+    const totalWithOH = subtotal + overheadAmount;
+    if (els.summarySubtotal) els.summarySubtotal.textContent = formatCurrency(subtotal);
+    if (els.summaryTotal) els.summaryTotal.textContent = formatCurrency(totalWithOH);
+    if (els.summaryOverhead) els.summaryOverhead.textContent = overheadAmount ? formatCurrency(overheadAmount) : '--';
+  }
+
   function renderTable(categories) {
     if (!els.tbody) return;
 
@@ -1868,6 +1913,7 @@
             if (types.has('material')) typeBadgesHtml += '<span class="item-type-indicator mat" title="Contains materials"></span>';
             if (types.has('labor')) typeBadgesHtml += '<span class="item-type-indicator lab" title="Contains labor"></span>';
             if (types.has('external')) typeBadgesHtml += '<span class="item-type-indicator ext" title="Contains external services"></span>';
+            if (types.has('percent')) typeBadgesHtml += '<span class="item-type-indicator pct" title="Contains percentage items"></span>';
             typeBadgesHtml += '</span>';
           }
 
@@ -1876,6 +1922,7 @@
           trItem.dataset.catIndex = String(indexCat);
           trItem.dataset.subIndex = String(indexSub);
           trItem.style.display = (groupState[indexCat] && subState[subKey]) ? '' : 'none';
+          trItem.dataset.itemIndex = String(itemIdx);
           trItem.innerHTML = `
             <td class="category-accnum col-code">${code}</td>
             <td class="image-cell col-image">
@@ -1885,7 +1932,10 @@
               <span class="item-name-text">${name}</span>
               ${typeBadgesHtml}
             </td>
-            <td class="col-qty">${qty || '—'}</td>
+            <td class="col-qty">
+              <input type="number" class="inline-qty-input" value="${qty || 0}" min="0" step="any"
+                data-cat="${indexCat}" data-sub="${indexSub}" data-item="${itemIdx}">
+            </td>
             <td class="col-unit">${unit || '—'}</td>
             <td class="col-unit-cost">${unitCost !== '' ? formatCurrency(unitCost) : '—'}</td>
             <td class="col-subtotal">${subtotalItem !== '' ? formatCurrency(subtotalItem) : '—'}</td>
@@ -2131,7 +2181,11 @@
       // Also check builder.items if present
       if (concept.builder && concept.builder.items) {
         concept.builder.items.forEach(item => {
-          types.add(item.type || 'material');
+          if (item.isPercent) {
+            types.add('percent');
+          } else {
+            types.add(item.type || 'material');
+          }
         });
       }
 
@@ -2139,6 +2193,7 @@
       if (types.has('material')) typeBadges += '<span class="type-badge type-material">MAT</span>';
       if (types.has('labor')) typeBadges += '<span class="type-badge type-labor">LAB</span>';
       if (types.has('external')) typeBadges += '<span class="type-badge type-external">EXT</span>';
+      if (types.has('percent')) typeBadges += '<span class="type-badge type-percent">%</span>';
 
       return `
         <tr data-concept-id="${concept.id}" data-concept='${escapeHtml(JSON.stringify(concept))}'>
@@ -2358,10 +2413,24 @@
         };
       });
 
-    // Also add builder items
+    // Also add builder items (custom materials, labor, external, percent)
     if (concept.builder && concept.builder.items) {
       concept.builder.items.forEach(item => {
-        if (item.type !== 'material' || !item.materialId) {
+        // Skip DB-origin materials (already loaded from concept_materials above)
+        if (item.origin === 'db' && !item.isPercent) return;
+
+        if (item.isPercent) {
+          lineItems.push({
+            type: 'percent',
+            description: item.description,
+            unit: item.unit || '(%)',
+            qty: 1,
+            unitCost: 0,
+            isPercent: true,
+            appliesTo: item.appliesTo,
+            percentValue: item.percentValue
+          });
+        } else {
           lineItems.push({
             type: item.type || 'material',
             description: item.description,

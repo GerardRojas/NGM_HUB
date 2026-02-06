@@ -13,6 +13,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
 
+    <!-- Critical CSS for loading overlay -->
+    <style>
+      body.page-loading { overflow: hidden; }
+      .page-loading-overlay { position: fixed; inset: 0; background: #0d0d0d; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
+      .page-loading-overlay.hidden { display: none; }
+      .page-loading .app-layout { visibility: hidden; }
+      .loading-logo { width: 120px; height: 120px; object-fit: contain; animation: pulse 1.5s ease-in-out infinite; }
+      .loading-text { color: rgba(255,255,255,0.5); font-size: 13px; font-family: system-ui, sans-serif; letter-spacing: 0.05em; }
+      @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+    </style>
+
     <link rel="stylesheet" href="assets/css/styles.css" />
     <link rel="stylesheet" href="assets/css/expenses_styles.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
@@ -259,8 +270,8 @@
 
         /* Concept Builder Styles */
         .modal-xl {
-            max-width: 1200px;
-            width: 95%;
+            width: min(1600px, 96%);
+            max-width: none;
         }
         .builder-toolbar {
             display: flex;
@@ -333,7 +344,7 @@
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 16px;
-            max-height: 350px;
+            max-height: 50vh;
             overflow-y: auto;
         }
         .builder-table {
@@ -437,6 +448,7 @@
         .category-summary-item--material .category-summary-icon { color: #60a5fa; }
         .category-summary-item--labor .category-summary-icon { color: #fbbf24; }
         .category-summary-item--external .category-summary-icon { color: #a855f7; }
+        .category-summary-item--percent .category-summary-icon { color: #22c55e; }
 
         /* Builder table ID column */
         .builder-table .item-id {
@@ -712,7 +724,7 @@
         .modal-body {
             padding: 24px;
             overflow-y: auto;
-            max-height: 70vh;
+            max-height: 82vh;
         }
 
         .modal-footer {
@@ -1112,6 +1124,7 @@
     <script src="assets/js/sidebar.js" defer></script>
     <!-- Supabase for image uploads -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="assets/js/page-loading.js" defer></script>
     <script src="assets/js/estimator_database.js" defer></script>
     <script src="assets/js/arturito_widget.js" defer></script>
 </head>
@@ -1471,6 +1484,11 @@
                         <span class="category-summary-label">External</span>
                         <span class="category-summary-value" id="summaryExternal">0.00</span>
                     </div>
+                    <div class="category-summary-item category-summary-item--percent">
+                        <span class="category-summary-icon">%</span>
+                        <span class="category-summary-label">Percent</span>
+                        <span class="category-summary-value" id="summaryPercent">0.00</span>
+                    </div>
                 </div>
 
                 <!-- Builder Toolbar -->
@@ -1693,6 +1711,49 @@
             <div class="modal-footer">
                 <button type="button" class="btn-modal-secondary" id="btnCancelPercentItem">Cancel</button>
                 <button type="button" class="btn-modal-primary" id="btnConfirmPercentItem">Add Percentage</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Percentage Picker Modal (from Database) -->
+    <div id="percentPickerModal" class="modal-backdrop hidden">
+        <div class="modal" style="max-width: 700px; width: 95%;">
+            <div class="modal-header">
+                <div class="modal-title">Select Percentage Item</div>
+                <button type="button" class="modal-close-btn" id="btnClosePercentPicker">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="picker-search">
+                    <input type="text" id="percentPickerSearch" class="form-input" placeholder="Search percentage items..." />
+                </div>
+
+                <div class="picker-table-container" style="max-height: 300px; overflow-y: auto;">
+                    <table class="picker-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 100px;">Code</th>
+                                <th>Description</th>
+                                <th style="width: 100px;">Applies To</th>
+                                <th style="width: 90px;">Default %</th>
+                            </tr>
+                        </thead>
+                        <tbody id="percentPickerTableBody">
+                            <!-- Items rendered by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="margin-top: 16px; display: flex; align-items: center; gap: 16px;">
+                    <label class="form-label" style="margin: 0;">Override %:</label>
+                    <input type="number" id="percentPickerOverrideValue" class="form-input" value="" min="0" max="100" step="0.1" style="width: 120px;" placeholder="Use default" />
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="btnCancelPercentPicker">Cancel</button>
+                <button type="button" class="btn-builder" id="btnAddCustomPercent" style="margin-left: auto;">+ Custom</button>
+                <button type="button" class="btn-modal-primary" id="btnConfirmPercentPicker">Add Selected</button>
             </div>
         </div>
     </div>

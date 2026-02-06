@@ -48,14 +48,6 @@
     els.pageLoadingOverlay = document.getElementById('pageLoadingOverlay');
   }
 
-  function hidePageLoading() {
-    document.body.classList.remove('page-loading');
-    document.body.classList.add('auth-ready');
-    if (els.pageLoadingOverlay) {
-      els.pageLoadingOverlay.classList.add('hidden');
-    }
-  }
-
   // ================================
   // AUTH
   // ================================

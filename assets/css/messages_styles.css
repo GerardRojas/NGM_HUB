@@ -1920,71 +1920,23 @@
     font-size: 16px;
   }
 
-  /* Fix for iOS keyboard - use visual viewport */
-  .page-messages .main-area {
-    height: 100%;
-    height: -webkit-fill-available;
-  }
-
-  .messages-layout {
-    height: 100%;
-    height: -webkit-fill-available;
-  }
-
-  /* Ensure input area stays visible above keyboard */
-  .msg-input-area {
-    position: sticky;
-    bottom: 0;
-    /* Prevent input from being hidden by keyboard */
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-  }
-
-  /* Messages container should shrink when keyboard appears */
+  /* Smooth momentum scrolling for messages */
   .msg-messages-container {
-    flex: 1;
-    min-height: 0;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
 
   @media (max-width: 768px) {
-    /* Prevent iOS from showing form navigation toolbar */
+    /* Prevent iOS form toolbar */
     .msg-input {
       -webkit-appearance: none;
       appearance: none;
-      background-clip: padding-box;
-      -webkit-background-clip: padding-box;
-      -webkit-user-select: text;
-      user-select: text;
     }
 
-    .page-messages .msg-chat-area {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-    }
-
-    /* Ensure input area stays visible above keyboard */
+    /* GPU layer for smoother keyboard transitions */
     .msg-input-area {
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-    }
-
-    /* Force GPU acceleration for smoother scrolling */
-    .msg-input-row {
       transform: translateZ(0);
       -webkit-transform: translateZ(0);
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-    }
-
-    /* Prevent input from being hidden by keyboard toolbar */
-    .msg-input:focus {
-      position: relative;
-      z-index: 1000;
     }
   }
 }
@@ -2995,131 +2947,37 @@
 }
 
 /* ==========================================
-   Global Mobile Keyboard State
+   Mobile Keyboard State
+   The JS handler sets chatArea.style.height to visualViewport.height,
+   which is the only reliable way to size the layout with keyboard visible.
+   CSS just needs to ensure flex children cooperate.
    ========================================== */
 
-/* Prevent body scroll when keyboard is open on mobile */
 @media (max-width: 768px) {
+  /* Prevent body scroll when keyboard is open */
   body.keyboard-open,
   html.keyboard-open {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    touch-action: none;
-  }
-
-  body.keyboard-open .app-layout,
-  html.keyboard-open .app-layout {
-    position: fixed;
-    width: 100%;
-    height: 100%;
     overflow: hidden;
   }
-}
 
-/* ==========================================
-   iOS Keyboard Open State
-   ========================================== */
-
-@media (max-width: 768px) {
-  /* When keyboard is open, adjust layout using visual viewport */
-  .page-messages.keyboard-open .msg-chat-area {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    /* Use visual viewport height when keyboard is open */
-    height: 100vh;
-    height: 100dvh; /* Dynamic viewport height - adjusts with keyboard */
-  }
-
-  .page-messages.keyboard-open .msg-chat-header {
-    flex-shrink: 0;
-    position: relative;
-    z-index: 10;
-  }
-
+  /* Messages container cooperates with flex */
   .page-messages.keyboard-open .msg-messages-container {
     flex: 1;
     min-height: 0;
-    max-height: none;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    /* Ensure messages take available space */
-    height: 100%;
   }
 
+  /* Input area stays at bottom */
   .page-messages.keyboard-open .msg-input-area {
     flex-shrink: 0;
-    position: sticky;
-    bottom: 0;
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    z-index: 100;
-    background: #1a1a1a;
-    /* Ensure input stays at bottom of visual viewport */
-    margin-top: auto;
+    padding-bottom: 8px;
   }
 
-  .page-messages.keyboard-open .msg-input-row {
-    position: relative;
-    z-index: 101;
-  }
-
-  /* Hide bottom nav when keyboard is open */
-  .page-messages.keyboard-open .msg-bottom-nav {
-    display: none !important;
-  }
-
-  /* Hide FAB when keyboard is open */
+  /* Hide bottom nav and FAB when keyboard is open */
+  .page-messages.keyboard-open .msg-bottom-nav,
   .page-messages.keyboard-open .msg-fab-new-chat {
     display: none !important;
-  }
-
-  /* Hide any overflow that might cause the weird input display */
-  .page-messages.keyboard-open {
-    overflow: hidden;
-    position: fixed;
-    width: 100%;
-    height: 100dvh; /* Use dynamic viewport height */
-  }
-
-  /* Ensure html/body don't cause extra scrolling */
-  html.keyboard-open,
-  body.keyboard-open {
-    height: 100dvh;
-    overflow: hidden;
-  }
-}
-
-/* ==========================================
-   Visual Viewport Keyboard Adjustments (iOS/Android)
-   ========================================== */
-
-/* Support for browsers with Visual Viewport API */
-@supports (height: 100svh) {
-  @media (max-width: 768px) {
-    .page-messages.keyboard-open .msg-chat-area {
-      height: 100svh; /* Small viewport height - excludes keyboard */
-    }
-
-    .page-messages.keyboard-open {
-      height: 100svh;
-    }
-  }
-}
-
-/* Fallback for interactive-widget viewport behavior */
-@media (max-width: 768px) {
-  /* When input is focused, use flexible height */
-  .msg-input:focus ~ .msg-messages-container,
-  .msg-input-area:focus-within ~ .msg-messages-container {
-    flex: 1;
-    overflow-y: auto;
   }
 
   /* Ensure input never goes off screen */
@@ -3129,11 +2987,6 @@
     flex-shrink: 0;
     background: #1a1a1a;
     z-index: 50;
-  }
-
-  /* iOS-specific: Use env() for safe areas */
-  .page-messages.keyboard-open .msg-input-area {
-    padding-bottom: max(4px, env(safe-area-inset-bottom));
   }
 }
 

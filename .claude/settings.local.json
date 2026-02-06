@@ -24,7 +24,13 @@
       "Bash(ls:*)",
       "Bash(dir:*)",
       "Bash(grep:*)",
-      "Bash(cmd /c \"claude --version\")"
+      "Bash(cmd /c \"claude --version\")",
+      "WebFetch(domain:ngm-fastapi.onrender.com)",
+      "Bash(for f in *.html)",
+      "Bash(do:*)",
+      "Bash(done)",
+      "Bash(for f in *.sql)",
+      "Bash(for:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"

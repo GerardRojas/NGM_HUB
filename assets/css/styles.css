@@ -135,6 +135,8 @@ button {
     display: flex;
     justify-content: center;
     margin-bottom: 16px;
+    text-decoration: none;
+    cursor: pointer;
 }
 
 .sidebar-logo img {
@@ -807,11 +809,12 @@ button {
    NGM LOGO LOADING ANIMATION SYSTEM
    ========================================== */
 
-/* Base loading logo class - shimmer effect */
+/* Base loading logo class - pulse effect */
 .loading-logo {
     display: inline-block;
     position: relative;
-    animation: logoShimmer 2s ease-in-out infinite;
+    object-fit: contain;
+    animation: pulse 1.5s ease-in-out infinite;
 }
 
 /* Size variants */
@@ -846,19 +849,15 @@ button {
     height: 96px;
 }
 
-/* Shimmer animation - progressive fade */
-@keyframes logoShimmer {
-    0% {
-        opacity: 1;
-        filter: brightness(1);
+/* Pulse animation - consistent across all pages */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.4;
+        transform: scale(1);
     }
     50% {
-        opacity: 0.5;
-        filter: brightness(0.6);
-    }
-    100% {
         opacity: 1;
-        filter: brightness(1);
+        transform: scale(1.05);
     }
 }
 

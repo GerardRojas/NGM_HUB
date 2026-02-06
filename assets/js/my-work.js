@@ -9,8 +9,6 @@
     'use strict';
 
     const API_BASE = window.API_BASE || "https://ngm-fastapi.onrender.com";
-    const PAGE_LOAD_START = Date.now();
-    const MIN_LOADING_TIME = 800;
 
     // ================================
     // State
@@ -94,15 +92,8 @@
         updateStats();
         centerCanvas();
 
-        // Hide loading overlay with minimum display time
-        const elapsed = Date.now() - PAGE_LOAD_START;
-        const remaining = Math.max(0, MIN_LOADING_TIME - elapsed);
-        setTimeout(() => {
-            document.body.classList.remove('page-loading');
-            document.body.classList.add('auth-ready');
-            const overlay = document.getElementById('pageLoadingOverlay');
-            if (overlay) overlay.classList.add('hidden');
-        }, remaining);
+        // Hide loading overlay
+        hidePageLoading();
     }
 
     function loadCurrentUser() {

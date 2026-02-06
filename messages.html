@@ -379,6 +379,8 @@
                     autocapitalize="sentences"
                     spellcheck="false"
                     data-form-type="other"
+                  inputmode="text"
+                  enterkeyhint="send"
                   ></textarea>
                   <!-- Mention suggestions dropdown -->
                   <div class="msg-mention-dropdown" id="mentionDropdown" style="display: none;">
@@ -427,6 +429,8 @@
                 autocorrect="off"
                 autocapitalize="sentences"
                 spellcheck="false"
+                inputmode="text"
+                enterkeyhint="send"
                 data-form-type="other"
               ></textarea>
               <button type="button" class="msg-btn-send" id="btnSendThreadReply" disabled>
@@ -617,6 +621,7 @@
   <script src="assets/js/pipeline_people_picker.js"></script>
 
   <!-- Messages module -->
+  <script src="assets/js/page-loading.js" defer></script>
   <script src="assets/js/messages.js" defer></script>
   <script src="assets/js/arturito_widget.js" defer></script>
 
@@ -836,143 +841,6 @@
         window.closeMobileChat = closeMobileChat;
 
         setUserAvatar();
-
-        // iOS Keyboard handling
-        initIOSKeyboardHandling();
-      }
-
-      // Handle iOS virtual keyboard
-      function initIOSKeyboardHandling() {
-        // Detect iOS
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-        if (!isIOS) return;
-
-        const messageInput = document.getElementById('messageInput');
-        const inputArea = document.getElementById('messageInputArea');
-        const messagesContainer = document.getElementById('messagesContainer');
-        const chatArea = document.querySelector('.msg-chat-area');
-
-        if (!messageInput || !inputArea) return;
-
-        // Use visualViewport API for better keyboard detection
-        if (window.visualViewport) {
-          let initialHeight = window.visualViewport.height;
-          let keyboardVisible = false;
-
-          function handleViewportResize() {
-            const viewportHeight = window.visualViewport.height;
-            const viewportTop = window.visualViewport.offsetTop;
-            const heightDiff = initialHeight - viewportHeight;
-
-            // Keyboard is likely visible if height decreased significantly
-            if (heightDiff > 150) {
-              if (!keyboardVisible) {
-                keyboardVisible = true;
-                document.body.classList.add('keyboard-open');
-                document.documentElement.classList.add('keyboard-open');
-              }
-
-              // On mobile, adjust the entire layout
-              if (window.innerWidth <= 768) {
-                // Adjust chat area height to match visual viewport
-                if (chatArea) {
-                  chatArea.style.height = viewportHeight + 'px';
-                  chatArea.style.maxHeight = viewportHeight + 'px';
-                }
-
-                // Ensure messages container can scroll properly
-                if (messagesContainer) {
-                  messagesContainer.style.flex = '1';
-                  messagesContainer.style.minHeight = '0';
-                  messagesContainer.style.overflowY = 'auto';
-                }
-
-                // Keep input area at bottom
-                if (inputArea) {
-                  inputArea.style.position = 'relative';
-                  inputArea.style.zIndex = '100';
-                }
-              }
-
-              // Scroll to bottom after keyboard is open
-              requestAnimationFrame(function() {
-                if (messagesContainer) {
-                  messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                }
-              });
-
-            } else if (keyboardVisible) {
-              keyboardVisible = false;
-              document.body.classList.remove('keyboard-open');
-              document.documentElement.classList.remove('keyboard-open');
-
-              // Reset styles on mobile
-              if (window.innerWidth <= 768) {
-                if (chatArea) {
-                  chatArea.style.height = '';
-                  chatArea.style.maxHeight = '';
-                }
-                if (messagesContainer) {
-                  messagesContainer.style.flex = '';
-                  messagesContainer.style.minHeight = '';
-                  messagesContainer.style.overflowY = '';
-                }
-                if (inputArea) {
-                  inputArea.style.position = '';
-                  inputArea.style.zIndex = '';
-                }
-              }
-            }
-          }
-
-          window.visualViewport.addEventListener('resize', handleViewportResize);
-          window.visualViewport.addEventListener('scroll', handleViewportResize);
-
-          // Update initial height on orientation change
-          window.addEventListener('orientationchange', function() {
-            setTimeout(function() {
-              initialHeight = window.visualViewport.height;
-              keyboardVisible = false;
-              document.body.classList.remove('keyboard-open');
-              document.documentElement.classList.remove('keyboard-open');
-
-              // Reset all styles
-              if (chatArea) {
-                chatArea.style.height = '';
-                chatArea.style.maxHeight = '';
-              }
-            }, 500);
-          });
-        }
-
-        // Focus handler - scroll to bottom when focusing input
-        messageInput.addEventListener('focus', function(e) {
-          // Prevent default scroll behavior
-          e.preventDefault();
-
-          // Let the keyboard animate in first
-          setTimeout(function() {
-            if (messagesContainer) {
-              messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
-          }, 300);
-        }, { passive: false });
-
-        // Blur handler - ensure input stays visible
-        messageInput.addEventListener('blur', function() {
-          setTimeout(function() {
-            window.scrollTo(0, 0);
-          }, 100);
-        });
-
-        // Prevent body scroll when touching messages area
-        if (messagesContainer) {
-          messagesContainer.addEventListener('touchmove', function(e) {
-            e.stopPropagation();
-          }, { passive: true });
-        }
       }
 
       // Initialize when DOM is ready

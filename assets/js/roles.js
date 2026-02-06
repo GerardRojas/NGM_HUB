@@ -82,12 +82,14 @@
 
       renderPermissionsMatrix();
       showContent();
+      hidePageLoading();
 
     } catch (err) {
       console.error('[ROLES] Error loading data:', err);
       if (window.Toast) {
         Toast.error('Load Failed', 'Error loading data.', { details: err.message });
       }
+      hidePageLoading();
     }
   }
 

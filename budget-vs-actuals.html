@@ -17,6 +17,17 @@
       rel="stylesheet"
     >
 
+    <!-- Critical CSS for loading overlay -->
+    <style>
+      body.page-loading { overflow: hidden; }
+      .page-loading-overlay { position: fixed; inset: 0; background: #0d0d0d; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
+      .page-loading-overlay.hidden { display: none; }
+      .page-loading .app-layout { visibility: hidden; }
+      .loading-logo { width: 120px; height: 120px; object-fit: contain; animation: pulse 1.5s ease-in-out infinite; }
+      .loading-text { color: rgba(255,255,255,0.5); font-size: 13px; font-family: system-ui, sans-serif; letter-spacing: 0.05em; }
+      @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+    </style>
+
     <link rel="stylesheet" href="assets/css/styles.css" />
     <link rel="stylesheet" href="assets/css/expenses_styles.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
@@ -194,6 +205,7 @@
         </div>
     </div>
 
+    <script src="assets/js/page-loading.js" defer></script>
     <script src="assets/js/budget-vs-actuals.js" defer></script>
     <script src="assets/js/arturito_widget.js" defer></script>
 

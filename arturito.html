@@ -188,6 +188,8 @@
                 autocorrect="off"
                 autocapitalize="sentences"
                 spellcheck="false"
+                inputmode="text"
+                enterkeyhint="send"
                 data-form-type="other"
               ></textarea>
               <button type="button" class="arturito-btn-send" id="btnSend" title="Send" disabled>
@@ -203,15 +205,13 @@
   </div>
 
   <!-- Arturito module -->
+  <script src="assets/js/page-loading.js" defer></script>
   <script src="assets/js/arturito.js" defer></script>
   <script>
-    // Initialize topbar pills and iOS handling on DOM ready
+    // Initialize topbar pills on DOM ready
     // Loading overlay is controlled by arturito.js after data loads
     document.addEventListener('DOMContentLoaded', function() {
       if (window.initTopbarPills) window.initTopbarPills();
-
-      // Initialize iOS keyboard handling
-      initIOSKeyboardHandling();
 
       // Show settings button only for CEO/COO
       showSettingsButtonIfAllowed();
@@ -233,149 +233,6 @@
         }
       } catch (e) {
         console.error('[ARTURITO] Error checking role for settings:', e);
-      }
-    }
-
-    // Handle iOS virtual keyboard
-    function initIOSKeyboardHandling() {
-      // Detect iOS
-      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-      if (!isIOS) return;
-
-      var chatInput = document.getElementById('chatInput');
-      var messagesContainer = document.getElementById('arturitoMessages');
-      var mainArea = document.querySelector('.page-arturito .main-area');
-      var inputArea = document.getElementById('inputArea');
-      var chatCard = document.querySelector('.arturito-chat-card');
-
-      if (!chatInput) return;
-
-      // Use visualViewport API for better keyboard detection
-      if (window.visualViewport) {
-        var initialHeight = window.visualViewport.height;
-        var keyboardVisible = false;
-
-        function handleViewportResize() {
-          var viewportHeight = window.visualViewport.height;
-          var viewportTop = window.visualViewport.offsetTop;
-          var heightDiff = initialHeight - viewportHeight;
-
-          // Keyboard is likely visible if height decreased significantly
-          if (heightDiff > 150) {
-            if (!keyboardVisible) {
-              keyboardVisible = true;
-              document.body.classList.add('keyboard-open');
-              document.documentElement.classList.add('keyboard-open');
-            }
-
-            // On mobile, adjust the entire layout
-            if (window.innerWidth <= 768) {
-              // Fix the chat card to viewport height and position
-              if (chatCard) {
-                chatCard.style.position = 'fixed';
-                chatCard.style.top = viewportTop + 'px';
-                chatCard.style.left = '0';
-                chatCard.style.right = '0';
-                chatCard.style.height = viewportHeight + 'px';
-                chatCard.style.maxHeight = viewportHeight + 'px';
-              }
-
-              // Ensure messages container can scroll properly
-              if (messagesContainer) {
-                messagesContainer.style.flex = '1';
-                messagesContainer.style.minHeight = '0';
-                messagesContainer.style.overflowY = 'auto';
-              }
-
-              // Keep input area at bottom
-              if (inputArea) {
-                inputArea.style.position = 'relative';
-                inputArea.style.zIndex = '100';
-              }
-            }
-
-            // Scroll to bottom after keyboard is open
-            requestAnimationFrame(function() {
-              if (messagesContainer) {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-              }
-            });
-
-          } else if (keyboardVisible) {
-            keyboardVisible = false;
-            document.body.classList.remove('keyboard-open');
-            document.documentElement.classList.remove('keyboard-open');
-
-            // Reset styles on mobile
-            if (window.innerWidth <= 768) {
-              if (chatCard) {
-                chatCard.style.position = '';
-                chatCard.style.top = '';
-                chatCard.style.left = '';
-                chatCard.style.right = '';
-                chatCard.style.height = '';
-                chatCard.style.maxHeight = '';
-              }
-              if (messagesContainer) {
-                messagesContainer.style.flex = '';
-                messagesContainer.style.minHeight = '';
-                messagesContainer.style.overflowY = '';
-              }
-              if (inputArea) {
-                inputArea.style.position = '';
-                inputArea.style.zIndex = '';
-              }
-            }
-          }
-        }
-
-        window.visualViewport.addEventListener('resize', handleViewportResize);
-        window.visualViewport.addEventListener('scroll', handleViewportResize);
-
-        // Update initial height on orientation change
-        window.addEventListener('orientationchange', function() {
-          setTimeout(function() {
-            initialHeight = window.visualViewport.height;
-            keyboardVisible = false;
-            document.body.classList.remove('keyboard-open');
-            document.documentElement.classList.remove('keyboard-open');
-
-            // Reset all styles
-            if (chatCard) {
-              chatCard.style.height = '';
-              chatCard.style.maxHeight = '';
-            }
-          }, 500);
-        });
-      }
-
-      // Focus handler - scroll to bottom when focusing input
-      chatInput.addEventListener('focus', function(e) {
-        // Prevent default scroll behavior
-        e.preventDefault();
-
-        // Let the keyboard animate in first
-        setTimeout(function() {
-          if (messagesContainer) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-          }
-        }, 300);
-      }, { passive: false });
-
-      // Blur handler - ensure input stays visible
-      chatInput.addEventListener('blur', function() {
-        setTimeout(function() {
-          window.scrollTo(0, 0);
-        }, 100);
-      });
-
-      // Prevent body scroll when touching messages area
-      if (messagesContainer) {
-        messagesContainer.addEventListener('touchmove', function(e) {
-          e.stopPropagation();
-        }, { passive: true });
       }
     }
   </script>

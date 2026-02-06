@@ -11,18 +11,6 @@
 @media (max-width: 768px) {
   body.keyboard-open,
   html.keyboard-open {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    touch-action: none;
-  }
-
-  body.keyboard-open .app-layout,
-  html.keyboard-open .app-layout {
-    position: fixed;
-    width: 100%;
-    height: 100%;
     overflow: hidden;
   }
 }
@@ -736,7 +724,7 @@
   }
 
   .page-arturito.keyboard-open .arturito-input-area {
-    padding-bottom: 4px;
+    padding-bottom: 8px;
   }
 }
 
@@ -747,138 +735,40 @@
 /* iOS specific fixes - only on mobile */
 @supports (-webkit-touch-callout: none) {
   @media (max-width: 768px) {
-    .page-arturito .main-area {
-      height: 100%;
-      height: -webkit-fill-available;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-    }
-
-    .arturito-main {
-      height: 100%;
-      height: -webkit-fill-available;
-    }
-
-    .arturito-chat-card {
-      height: 100%;
-      height: -webkit-fill-available;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* Ensure input area stays visible above keyboard */
-    .arturito-input-area {
-      position: relative;
-      transform: translateZ(0);
-      -webkit-transform: translateZ(0);
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-    }
-
-    /* Messages container should shrink when keyboard appears */
+    /* Smooth momentum scrolling for messages */
     .arturito-messages {
-      flex: 1;
-      min-height: 0;
       -webkit-overflow-scrolling: touch;
       overscroll-behavior: contain;
     }
 
-    /* Prevent iOS from showing form navigation toolbar */
+    /* Prevent iOS zoom on input focus (font-size >= 16px handles this) */
     .arturito-input {
       -webkit-appearance: none;
       appearance: none;
-      background-clip: padding-box;
-      -webkit-background-clip: padding-box;
     }
 
-    /* Force GPU acceleration for smoother scrolling */
-    .arturito-input-container {
+    /* GPU layer for smoother keyboard transitions */
+    .arturito-input-area {
       transform: translateZ(0);
       -webkit-transform: translateZ(0);
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
     }
   }
 }
 
-/* Keyboard open state - Mobile only */
+/* Keyboard open state - Mobile only
+   The JS handler sets mainArea.style.height to visualViewport.height,
+   which is the only reliable way to size the layout with keyboard visible.
+   CSS just needs to ensure flex children cooperate. */
 @media (max-width: 768px) {
-  .page-arturito.keyboard-open .main-area {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    overflow: hidden;
-    height: 100vh;
-    height: 100dvh; /* Dynamic viewport height - adjusts with keyboard */
-  }
-
-  .page-arturito.keyboard-open .arturito-main {
-    height: 100%;
-  }
-
-  .page-arturito.keyboard-open .arturito-chat-card {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .page-arturito.keyboard-open .arturito-card-header {
-    flex-shrink: 0;
-  }
-
   .page-arturito.keyboard-open .arturito-messages {
     flex: 1;
     min-height: 0;
-    max-height: none;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
 
   .page-arturito.keyboard-open .arturito-input-area {
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-bottom: 8px;
     flex-shrink: 0;
-    position: sticky;
-    bottom: 0;
-    z-index: 100;
-    background: #0f0f0f;
-    overflow: hidden;
-  }
-
-  .page-arturito.keyboard-open .arturito-input-container {
-    position: relative;
-    z-index: 101;
-  }
-
-  /* Hide any overflow that might cause the weird input display */
-  .page-arturito.keyboard-open {
-    overflow: hidden;
-    position: fixed;
-    width: 100%;
-    height: 100dvh;
-  }
-
-  /* Ensure html/body don't cause extra scrolling */
-  html.keyboard-open,
-  body.keyboard-open {
-    height: 100dvh;
-    overflow: hidden;
-  }
-}
-
-/* Support for small viewport height (excludes keyboard) */
-@supports (height: 100svh) {
-  @media (max-width: 768px) {
-    .page-arturito.keyboard-open .main-area {
-      height: 100svh;
-    }
-
-    .page-arturito.keyboard-open {
-      height: 100svh;
-    }
   }
 }

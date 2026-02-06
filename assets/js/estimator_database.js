@@ -29,10 +29,13 @@ const state = {
     // Concept Builder State
     builder: {
         items: [],           // Array of builder items
-        wastePercent: 0,     // Waste percentage for materials
+        wastePercent: 0,     // Waste percentage for materials (legacy)
         activeFilters: new Set(['material', 'labor', 'inline']), // Active type filters
         selectedPickerMaterial: null // Currently selected material in picker
     },
+
+    // Percentage Items from DB (cached)
+    percentageItems: [],
 
     // Image Upload State
     materialImageFile: null,      // File object for material image
@@ -153,6 +156,7 @@ const DOM = {
     summaryMaterials: document.getElementById('summaryMaterials'),
     summaryLabor: document.getElementById('summaryLabor'),
     summaryExternal: document.getElementById('summaryExternal'),
+    summaryPercent: document.getElementById('summaryPercent'),
 
     // Material Picker Modal
     materialPickerModal: document.getElementById('materialPickerModal'),
@@ -192,6 +196,16 @@ const DOM = {
     percentItemDesc: document.getElementById('percentItemDesc'),
     percentItemValue: document.getElementById('percentItemValue'),
 
+    // Percentage Picker Modal
+    percentPickerModal: document.getElementById('percentPickerModal'),
+    btnClosePercentPicker: document.getElementById('btnClosePercentPicker'),
+    btnCancelPercentPicker: document.getElementById('btnCancelPercentPicker'),
+    btnConfirmPercentPicker: document.getElementById('btnConfirmPercentPicker'),
+    btnAddCustomPercent: document.getElementById('btnAddCustomPercent'),
+    percentPickerSearch: document.getElementById('percentPickerSearch'),
+    percentPickerTableBody: document.getElementById('percentPickerTableBody'),
+    percentPickerOverrideValue: document.getElementById('percentPickerOverrideValue'),
+
     // Column Manager Modal
     columnManagerModal: document.getElementById('columnManagerModal'),
     btnColumnManager: document.getElementById('btnColumnManager'),
@@ -206,13 +220,14 @@ const DOM = {
 // API Calls
 // ========================================
 const API = {
-    async fetchMaterials(page = 1, search = '', categoryId = '') {
+    async fetchMaterials(page = 1, search = '', categoryId = '', unitId = '') {
         const params = new URLSearchParams({
             page: page.toString(),
             page_size: state.pagination.pageSize.toString()
         });
         if (search) params.append('search', search);
         if (categoryId) params.append('category_id', categoryId);
+        if (unitId) params.append('unit_id', unitId);
 
         const response = await fetch(`${API_BASE}/materials?${params}`);
         if (!response.ok) throw new Error('Failed to fetch materials');
@@ -321,6 +336,19 @@ const API = {
     async getConcept(id) {
         const response = await fetch(`${API_BASE}/concepts/${id}`);
         if (!response.ok) throw new Error('Failed to fetch concept');
+        return response.json();
+    },
+
+    // Percentage Items
+    async fetchPercentageItems() {
+        const response = await fetch(`${API_BASE}/percentage-items`);
+        if (!response.ok) throw new Error('Failed to fetch percentage items');
+        return response.json();
+    },
+
+    async fetchStandardPercentageItems() {
+        const response = await fetch(`${API_BASE}/percentage-items/standard`);
+        if (!response.ok) throw new Error('Failed to fetch standard percentage items');
         return response.json();
     }
 };
@@ -531,7 +559,8 @@ async function loadData() {
             const result = await API.fetchMaterials(
                 state.pagination.page,
                 state.filters.search,
-                state.filters.category_id
+                state.filters.category_id,
+                state.filters.unit_id
             );
             state.materials = result.data || [];
             // Map API snake_case to JS camelCase
@@ -856,9 +885,54 @@ window.confirmDeleteMaterial = async function(id) {
 };
 
 // ========================================
+// Standard Percentage Items (WASTE, etc.)
+// ========================================
+async function ensureStandardPercentageItems() {
+    try {
+        // Fetch percentage items from DB if not cached
+        if (state.percentageItems.length === 0) {
+            const result = await API.fetchPercentageItems();
+            state.percentageItems = result.data || [];
+        }
+
+        const standardItems = state.percentageItems.filter(pi => pi.is_standard);
+
+        standardItems.forEach(stdItem => {
+            // Check if this standard item already exists in builder
+            const existing = state.builder.items.find(
+                bi => bi.isPercent && bi.code === stdItem.code
+            );
+
+            if (!existing) {
+                const unitLabel = stdItem.applies_to === 'material' ? '(%)mat'
+                    : stdItem.applies_to === 'labor' ? '(%)lab' : '(%)tot';
+
+                state.builder.items.push({
+                    id: generateItemId(),
+                    code: stdItem.code,
+                    type: 'material',
+                    description: stdItem.description,
+                    unit: unitLabel,
+                    qty: 1,
+                    unitCost: 0,
+                    image: '',
+                    origin: 'standard',
+                    isPercent: true,
+                    appliesTo: stdItem.applies_to,
+                    percentValue: stdItem.default_value || 0,
+                    isStandard: true
+                });
+            }
+        });
+    } catch (e) {
+        console.error('[BUILDER] Error loading standard percentage items:', e);
+    }
+}
+
+// ========================================
 // Concept Builder Modal
 // ========================================
-function openConceptModal(concept = null) {
+async function openConceptModal(concept = null) {
     state.editingId = concept ? concept.id : null;
 
     // Reset image state
@@ -891,6 +965,7 @@ function openConceptModal(concept = null) {
         concept.materials.forEach(m => {
             state.builder.items.push({
                 id: generateItemId(),
+                code: m.material_id || '',
                 type: 'material',
                 materialId: m.material_id,
                 description: m.material_name || m.material_id,
@@ -898,28 +973,39 @@ function openConceptModal(concept = null) {
                 qty: parseFloat(m.quantity) || 1,
                 unitCost: parseFloat(m.unit_cost_override || m.material_price) || 0,
                 image: m.material_image || '',
-                origin: 'db'
+                origin: 'db',
+                isPercent: false
             });
         });
     }
 
-    // Load inline items from builder snapshot if exists
+    // Load ALL non-DB items from builder snapshot (custom materials, labor, external, percent)
     if (concept?.builder?.items) {
         concept.builder.items.forEach(item => {
-            if (item.type !== 'material') {
-                state.builder.items.push({
-                    id: generateItemId(),
-                    type: item.type,
-                    description: item.description,
-                    unit: item.unit,
-                    qty: parseFloat(item.qty) || 1,
-                    unitCost: parseFloat(item.unit_cost) || 0,
-                    image: item.image || '',
-                    origin: 'custom'
-                });
-            }
+            // Skip DB-origin materials (already loaded from concept.materials above)
+            if (item.origin === 'db' && !item.isPercent) return;
+
+            state.builder.items.push({
+                id: generateItemId(),
+                code: item.code || '',
+                type: item.type,
+                materialId: item.materialId || null,
+                description: item.description,
+                unit: item.unit,
+                qty: parseFloat(item.qty) || 1,
+                unitCost: parseFloat(item.unit_cost) || 0,
+                image: item.image || '',
+                origin: item.origin || 'custom',
+                isPercent: item.isPercent || false,
+                appliesTo: item.appliesTo || null,
+                percentValue: item.percentValue != null ? parseFloat(item.percentValue) : null,
+                isStandard: item.isStandard || false
+            });
         });
     }
+
+    // Ensure standard percentage items (WASTE) are always present
+    await ensureStandardPercentageItems();
 
     // Reset filters UI (if filter buttons exist)
     if (DOM.filterMaterial) DOM.filterMaterial.classList.add('active');
@@ -1081,6 +1167,11 @@ function renderBuilderTable() {
             total = (item.qty || 0) * (item.unitCost || 0);
         }
 
+        // Delete button or STD label
+        const deleteCell = item.isStandard
+            ? '<span style="color: #6b7280; font-size: 10px; font-weight: 600; letter-spacing: 0.05em;">STD</span>'
+            : `<button class="btn-action btn-action-danger" onclick="removeBuilderItem('${item.id}')" title="Remove">X</button>`;
+
         // Build row HTML
         if (item.isPercent) {
             tr.innerHTML = `
@@ -1093,9 +1184,7 @@ function renderBuilderTable() {
                 </td>
                 <td style="color: #6b7280;">-</td>
                 <td style="color: #22c55e; font-weight: 500;">${formatCurrency(total)}</td>
-                <td>
-                    <button class="btn-action btn-action-danger" onclick="removeBuilderItem('${item.id}')" title="Remove">X</button>
-                </td>
+                <td>${deleteCell}</td>
             `;
         } else {
             tr.innerHTML = `
@@ -1110,9 +1199,7 @@ function renderBuilderTable() {
                     <input type="number" class="builder-input item-cost" value="${item.unitCost.toFixed(2)}" min="0" step="0.01" data-item-id="${item.id}" />
                 </td>
                 <td style="color: #3ecf8e; font-weight: 500;">${formatCurrency(total)}</td>
-                <td>
-                    <button class="btn-action btn-action-danger" onclick="removeBuilderItem('${item.id}')" title="Remove">X</button>
-                </td>
+                <td>${deleteCell}</td>
             `;
         }
 
@@ -1168,6 +1255,11 @@ function onBuilderItemChange(e) {
 }
 
 window.removeBuilderItem = function(itemId) {
+    const item = state.builder.items.find(i => i.id === itemId);
+    if (item && item.isStandard) {
+        showToast('Standard items cannot be removed', 'error');
+        return;
+    }
     state.builder.items = state.builder.items.filter(i => i.id !== itemId);
     renderBuilderTable();
     updateBuilderSummary();
@@ -1180,6 +1272,7 @@ function updateBuilderSummary() {
     let materialTotal = 0;
     let laborTotal = 0;
     let externalTotal = 0;
+    let percentTotal = 0;
 
     // First pass: calculate base totals (non-percent items)
     state.builder.items.forEach(item => {
@@ -1190,21 +1283,20 @@ function updateBuilderSummary() {
         else if (item.type === 'external') externalTotal += total;
     });
 
-    // Second pass: calculate percent items and add to appropriate category
+    // Second pass: calculate percent items separately
     state.builder.items.forEach(item => {
         if (!item.isPercent) return;
         const baseAmount = calculatePercentBase(item.appliesTo);
-        const percentTotal = baseAmount * (item.percentValue / 100);
-        // Percent items typically add to material cost (like waste)
-        materialTotal += percentTotal;
+        percentTotal += baseAmount * (item.percentValue / 100);
     });
 
-    const grandTotal = materialTotal + laborTotal + externalTotal;
+    const grandTotal = materialTotal + laborTotal + externalTotal + percentTotal;
 
     // Update summary header display
     if (DOM.summaryMaterials) DOM.summaryMaterials.textContent = formatCurrency(materialTotal).replace('$', '');
     if (DOM.summaryLabor) DOM.summaryLabor.textContent = formatCurrency(laborTotal).replace('$', '');
     if (DOM.summaryExternal) DOM.summaryExternal.textContent = formatCurrency(externalTotal).replace('$', '');
+    if (DOM.summaryPercent) DOM.summaryPercent.textContent = formatCurrency(percentTotal).replace('$', '');
     if (DOM.summaryTotal) DOM.summaryTotal.textContent = formatCurrency(grandTotal).replace('$', '');
 }
 
@@ -1499,13 +1591,144 @@ function confirmPercentItem() {
         origin: 'custom',
         isPercent: true,
         appliesTo: appliesTo,
-        percentValue: percentValue
+        percentValue: percentValue,
+        isStandard: false
     });
 
     closePercentItemModal();
     renderBuilderTable();
     updateBuilderSummary();
     showToast('Percentage item added', 'success');
+}
+
+// ========================================
+// Percentage Picker Modal (from Database)
+// ========================================
+let pickerPercentageItems = [];
+let selectedPickerPercentItem = null;
+
+async function openPercentPickerModal() {
+    selectedPickerPercentItem = null;
+    if (DOM.percentPickerSearch) DOM.percentPickerSearch.value = '';
+    if (DOM.percentPickerOverrideValue) DOM.percentPickerOverrideValue.value = '';
+
+    try {
+        // Fetch if not cached
+        if (state.percentageItems.length === 0) {
+            const result = await API.fetchPercentageItems();
+            state.percentageItems = result.data || [];
+        }
+        // Filter out items already in the builder
+        const existingCodes = new Set(
+            state.builder.items.filter(i => i.isPercent).map(i => i.code)
+        );
+        pickerPercentageItems = state.percentageItems.filter(
+            pi => pi.is_active && !existingCodes.has(pi.code)
+        );
+        renderPercentPickerTable(pickerPercentageItems);
+    } catch (e) {
+        showToast('Error loading percentage items', 'error');
+        console.error('[PERCENT PICKER]', e);
+    }
+
+    if (DOM.percentPickerModal) DOM.percentPickerModal.classList.remove('hidden');
+}
+
+function closePercentPickerModal() {
+    if (DOM.percentPickerModal) DOM.percentPickerModal.classList.add('hidden');
+    selectedPickerPercentItem = null;
+}
+
+function renderPercentPickerTable(items) {
+    const tbody = DOM.percentPickerTableBody;
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #6b7280; padding: 20px;">No percentage items available</td></tr>';
+        return;
+    }
+
+    items.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.dataset.percentId = item.id;
+        tr.style.cursor = 'pointer';
+        tr.onclick = () => selectPickerPercentItem(item);
+
+        const appliesLabel = item.applies_to === 'material' ? '(%)mat'
+            : item.applies_to === 'labor' ? '(%)lab' : '(%)tot';
+
+        tr.innerHTML = `
+            <td><code style="font-size: 12px; color: #9ca3af;">${escapeHtml(item.code)}</code></td>
+            <td>${escapeHtml(item.description)}</td>
+            <td><span class="type-badge type-percent">${appliesLabel}</span></td>
+            <td>${item.default_value}%</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function selectPickerPercentItem(item) {
+    selectedPickerPercentItem = item;
+    if (DOM.percentPickerTableBody) {
+        DOM.percentPickerTableBody.querySelectorAll('tr').forEach(tr => {
+            tr.classList.toggle('selected', tr.dataset.percentId === item.id);
+        });
+    }
+    // Pre-fill override placeholder
+    if (DOM.percentPickerOverrideValue) {
+        DOM.percentPickerOverrideValue.placeholder = item.default_value + '%';
+    }
+}
+
+function confirmPercentPicker() {
+    if (!selectedPickerPercentItem) {
+        showToast('Select a percentage item first', 'error');
+        return;
+    }
+
+    const pi = selectedPickerPercentItem;
+    const overrideVal = DOM.percentPickerOverrideValue ? DOM.percentPickerOverrideValue.value : '';
+    const percentValue = overrideVal !== '' ? parseFloat(overrideVal) : pi.default_value;
+
+    const unitLabel = pi.applies_to === 'material' ? '(%)mat'
+        : pi.applies_to === 'labor' ? '(%)lab' : '(%)tot';
+
+    // Check for duplicate code
+    if (isItemIdDuplicate(pi.code)) {
+        showToast('This percentage item is already in the concept', 'error');
+        return;
+    }
+
+    state.builder.items.push({
+        id: generateItemId(),
+        code: pi.code,
+        type: 'material',
+        description: pi.description,
+        unit: unitLabel,
+        qty: 1,
+        unitCost: 0,
+        image: '',
+        origin: 'percentage_db',
+        isPercent: true,
+        appliesTo: pi.applies_to,
+        percentValue: percentValue,
+        isStandard: pi.is_standard || false
+    });
+
+    closePercentPickerModal();
+    renderBuilderTable();
+    updateBuilderSummary();
+    showToast('Percentage item added', 'success');
+}
+
+function filterPercentPickerTable() {
+    const search = (DOM.percentPickerSearch ? DOM.percentPickerSearch.value : '').toLowerCase();
+    const filtered = pickerPercentageItems.filter(pi => {
+        return pi.code.toLowerCase().includes(search)
+            || pi.description.toLowerCase().includes(search);
+    });
+    renderPercentPickerTable(filtered);
 }
 
 // ========================================
@@ -1528,38 +1751,53 @@ async function saveConcept() {
     const builderItems = [];
 
     state.builder.items.forEach(item => {
-        const total = (item.qty || 0) * (item.unitCost || 0);
-
-        if (item.type === 'material') {
-            materialTotal += total;
-            // Only add to concept_materials if it's from the database (has materialId)
-            if (item.origin === 'db' && item.materialId) {
-                materials.push({
-                    material_id: item.materialId,
-                    quantity: item.qty,
-                    unit_cost_override: item.unitCost
-                });
-            }
-        } else if (item.type === 'labor') {
-            laborTotal += total;
+        if (item.isPercent) {
+            // Percent items: skip from base totals, handled in second pass
         } else {
-            inlineTotal += total;
+            const total = (item.qty || 0) * (item.unitCost || 0);
+            if (item.type === 'material') {
+                materialTotal += total;
+                // Only add to concept_materials if it's from the database (has materialId)
+                if (item.origin === 'db' && item.materialId) {
+                    materials.push({
+                        material_id: item.materialId,
+                        quantity: item.qty,
+                        unit_cost_override: item.unitCost
+                    });
+                }
+            } else if (item.type === 'labor') {
+                laborTotal += total;
+            } else {
+                inlineTotal += total;
+            }
         }
 
+        // Save ALL fields for proper persistence
         builderItems.push({
+            code: item.code || '',
             type: item.type,
             description: item.description,
             unit: item.unit,
             qty: item.qty,
             unit_cost: item.unitCost,
             image: item.image || '',
-            origin: item.origin
+            origin: item.origin,
+            materialId: item.materialId || null,
+            isPercent: item.isPercent || false,
+            appliesTo: item.appliesTo || null,
+            percentValue: item.percentValue ?? null,
+            isStandard: item.isStandard || false
         });
     });
 
-    const wastePercent = parseFloat(DOM.conceptWastePercent.value) || 0;
-    const wasteAmount = materialTotal * (wastePercent / 100);
-    const grandTotal = materialTotal + laborTotal + inlineTotal + wasteAmount;
+    // Calculate percent items contribution
+    let percentTotal = 0;
+    state.builder.items.forEach(item => {
+        if (!item.isPercent) return;
+        const baseAmount = calculatePercentBase(item.appliesTo);
+        percentTotal += baseAmount * (item.percentValue / 100);
+    });
+    const grandTotal = materialTotal + laborTotal + inlineTotal + percentTotal;
 
     const data = {
         code: code,
@@ -1569,7 +1807,7 @@ async function saveConcept() {
         unit_id: DOM.conceptUnit.value || null,
         image: state.conceptImageUrl || null,
         base_cost: grandTotal,
-        waste_percent: wastePercent,
+        waste_percent: 0,
         calculated_cost: grandTotal,
         builder: {
             items: builderItems,
@@ -1577,7 +1815,7 @@ async function saveConcept() {
                 materials: materialTotal,
                 labor: laborTotal,
                 inline: inlineTotal,
-                waste: wasteAmount,
+                percent: percentTotal,
                 total: grandTotal
             }
         }
@@ -1839,6 +2077,12 @@ function setupEventListeners() {
         loadData();
     });
 
+    DOM.filterUnit.addEventListener('change', (e) => {
+        state.filters.unit_id = e.target.value;
+        state.pagination.page = 1;
+        loadData();
+    });
+
     DOM.btnClearFilters.addEventListener('click', () => {
         state.filters = { search: '', category_id: '', unit_id: '' };
         DOM.globalSearch.value = '';
@@ -1882,11 +2126,12 @@ function setupEventListeners() {
     // Builder toolbar buttons
     DOM.btnAddFromDB.addEventListener('click', openMaterialPicker);
     DOM.btnAddInline.addEventListener('click', openInlineItemModal);
-    if (DOM.btnAddPercent) DOM.btnAddPercent.addEventListener('click', openPercentItemModal);
+    if (DOM.btnAddPercent) DOM.btnAddPercent.addEventListener('click', openPercentPickerModal);
     DOM.btnClearAllItems.addEventListener('click', () => {
-        if (state.builder.items.length === 0) return;
-        if (!confirm('Clear all items?')) return;
-        state.builder.items = [];
+        const removable = state.builder.items.filter(i => !i.isStandard);
+        if (removable.length === 0) return;
+        if (!confirm('Clear all items? (Standard items will be kept)')) return;
+        state.builder.items = state.builder.items.filter(i => i.isStandard);
         renderBuilderTable();
         updateBuilderSummary();
     });
@@ -1920,6 +2165,31 @@ function setupEventListeners() {
     if (DOM.percentItemModal) {
         DOM.percentItemModal.addEventListener('click', (e) => {
             if (e.target === DOM.percentItemModal) closePercentItemModal();
+        });
+    }
+
+    // Percentage Picker Modal (from Database)
+    if (DOM.btnClosePercentPicker) DOM.btnClosePercentPicker.addEventListener('click', closePercentPickerModal);
+    if (DOM.btnCancelPercentPicker) DOM.btnCancelPercentPicker.addEventListener('click', closePercentPickerModal);
+    if (DOM.btnConfirmPercentPicker) DOM.btnConfirmPercentPicker.addEventListener('click', confirmPercentPicker);
+    if (DOM.btnAddCustomPercent) {
+        DOM.btnAddCustomPercent.addEventListener('click', () => {
+            closePercentPickerModal();
+            openPercentItemModal();
+        });
+    }
+    if (DOM.percentPickerModal) {
+        DOM.percentPickerModal.addEventListener('click', (e) => {
+            if (e.target === DOM.percentPickerModal) closePercentPickerModal();
+        });
+    }
+
+    // Percent picker search
+    let percentPickerSearchTimeout;
+    if (DOM.percentPickerSearch) {
+        DOM.percentPickerSearch.addEventListener('input', () => {
+            clearTimeout(percentPickerSearchTimeout);
+            percentPickerSearchTimeout = setTimeout(filterPercentPickerTable, 200);
         });
     }
 
@@ -2000,10 +2270,7 @@ async function init() {
     await loadData();
 
     // Remove loading state
-    document.body.classList.remove('page-loading');
-    document.body.classList.add('auth-ready');
-    const overlay = document.getElementById('pageLoadingOverlay');
-    if (overlay) overlay.classList.add('hidden');
+    hidePageLoading();
 }
 
 // ========================================

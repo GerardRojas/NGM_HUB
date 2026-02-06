@@ -282,17 +282,11 @@
         </div>
     </div>
 
+    <script src="assets/js/page-loading.js" defer></script>
     <script src="assets/js/operation-manager.js" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             if (window.initTopbarPills) window.initTopbarPills();
-
-            // Hide loading overlay
-            setTimeout(function() {
-                document.body.classList.remove('page-loading');
-                var overlay = document.getElementById('pageLoadingOverlay');
-                if (overlay) overlay.style.display = 'none';
-            }, 500);
         });
     </script>
 </body>

@@ -390,6 +390,13 @@
       // Position dropdown using fixed positioning for table cell overflow
       this.positionDropdown();
 
+      // Move dropdown to document.body to escape table stacking contexts.
+      // position:fixed dropdowns inside elements with z-index create a stacking
+      // context that prevents click events from reaching the dropdown items.
+      if (this.dropdown.parentElement !== document.body) {
+        document.body.appendChild(this.dropdown);
+      }
+
       // Add scroll listener to reposition dropdown when table scrolls
       this._scrollContainer = this.container.closest('.pm-group-body') || this.container.closest('[style*="overflow"]');
       if (this._scrollContainer) {
@@ -422,7 +429,9 @@
       // Use fixed positioning to escape overflow containers
       this.dropdown.style.position = 'fixed';
       this.dropdown.style.left = `${triggerRect.left}px`;
+      this.dropdown.style.right = 'auto';
       this.dropdown.style.width = `${Math.max(triggerRect.width, 220)}px`;
+      this.dropdown.style.zIndex = '99999';
 
       if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
         // Position below
@@ -442,6 +451,13 @@
       this.dropdown.classList.remove('is-open');
       this.searchQuery = '';
       this.searchInput.value = '';
+
+      // Move dropdown back from body to picker container
+      const pickerEl = this.container.querySelector('.pm-catalog-picker');
+      if (pickerEl && this.dropdown.parentElement === document.body) {
+        pickerEl.appendChild(this.dropdown);
+      }
+
       // Remove scroll listeners
       if (this._scrollContainer && this._onScroll) {
         this._scrollContainer.removeEventListener('scroll', this._onScroll);
@@ -457,7 +473,9 @@
       this.dropdown.style.top = '';
       this.dropdown.style.bottom = '';
       this.dropdown.style.left = '';
+      this.dropdown.style.right = '';
       this.dropdown.style.width = '';
+      this.dropdown.style.zIndex = '';
     }
 
     async loadItems() {
@@ -620,6 +638,10 @@
       // Close dropdown first to clean up positioning styles
       if (this.isOpen) {
         this.close();
+      }
+      // Remove dropdown from body if it's still there (edge case)
+      if (this.dropdown && this.dropdown.parentElement === document.body) {
+        this.dropdown.remove();
       }
       // Remove document event listeners to prevent memory leaks and interference
       if (this._onDocumentClick) {

@@ -15,8 +15,6 @@
   const API_BASE = window.API_BASE || "http://127.0.0.1:8000";
   const STORAGE_KEY = "arturito_conversation";
   const SESSION_ID = `web_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-  const PAGE_LOAD_START = Date.now();
-  const MIN_LOADING_TIME = 800;
 
   // ─────────────────────────────────────────────────────────────────────────
   // MODULE KNOWLEDGE BASE
@@ -725,16 +723,9 @@
     updateContextStats();
     renderMessages();
 
-    // Remove loading state (with minimum display time)
-    const elapsed = Date.now() - PAGE_LOAD_START;
-    const remaining = Math.max(0, MIN_LOADING_TIME - elapsed);
-    setTimeout(() => {
-      document.body.classList.remove("page-loading");
-      document.body.classList.add("auth-ready");
-      const overlay = document.getElementById("pageLoadingOverlay");
-      if (overlay) overlay.style.display = "none";
-      console.log("[Arturito] Ready!");
-    }, remaining);
+    // Remove loading state
+    hidePageLoading();
+    console.log("[Arturito] Ready!");
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -849,80 +840,87 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // MOBILE KEYBOARD DETECTION
+  // MOBILE KEYBOARD HANDLING (unified handler for iOS + Android)
   // ─────────────────────────────────────────────────────────────────────────
   function setupMobileKeyboardDetection() {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     if (!isMobile) return;
 
-    const pageElement = document.querySelector('.page-arturito');
-    const mainArea = document.querySelector('.main-area');
+    const mainArea = document.querySelector('.page-arturito .main-area');
     const messagesContainer = DOM.messagesContainer;
 
-    let initialViewportHeight = window.visualViewport?.height || window.innerHeight;
+    let initialHeight = window.visualViewport?.height || window.innerHeight;
     let keyboardOpen = false;
+    let rafId = null;
 
-    // Use Visual Viewport API if available
     if (window.visualViewport) {
-      window.visualViewport.addEventListener('resize', handleViewportResize);
-    } else {
-      // Fallback for older browsers
-      DOM.chatInput?.addEventListener('focus', () => {
-        setTimeout(() => {
-          if (!keyboardOpen) handleKeyboardOpen();
-        }, 300);
-      });
+      window.visualViewport.addEventListener('resize', onViewportResize);
 
-      DOM.chatInput?.addEventListener('blur', () => {
+      // Recalibrate on orientation change
+      window.addEventListener('orientationchange', () => {
         setTimeout(() => {
+          initialHeight = window.visualViewport.height;
           if (keyboardOpen) handleKeyboardClose();
-        }, 100);
+        }, 400);
+      });
+    } else {
+      // Fallback: detect via focus/blur
+      DOM.chatInput?.addEventListener('focus', () => {
+        setTimeout(() => { if (!keyboardOpen) handleKeyboardOpen(); }, 300);
+      });
+      DOM.chatInput?.addEventListener('blur', () => {
+        setTimeout(() => { if (keyboardOpen) handleKeyboardClose(); }, 200);
       });
     }
 
-    function handleViewportResize() {
-      const currentHeight = window.visualViewport.height;
-      const heightDiff = initialViewportHeight - currentHeight;
+    function onViewportResize() {
+      // Debounce via rAF - only process last resize per frame
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const currentHeight = window.visualViewport.height;
+        const heightDiff = initialHeight - currentHeight;
 
-      if (heightDiff > 150 && !keyboardOpen) {
-        handleKeyboardOpen();
-        // Adjust main area height
-        if (mainArea) {
-          mainArea.style.height = `${currentHeight}px`;
+        if (heightDiff > 150 && !keyboardOpen) {
+          handleKeyboardOpen();
+        } else if (heightDiff < 100 && keyboardOpen) {
+          handleKeyboardClose();
         }
-      } else if (heightDiff < 100 && keyboardOpen) {
-        handleKeyboardClose();
-        if (mainArea) {
-          mainArea.style.height = '';
+
+        // Adjust main area to visual viewport while keyboard is visible
+        if (keyboardOpen && mainArea && window.innerWidth <= 768) {
+          mainArea.style.height = currentHeight + 'px';
         }
-      }
+      });
     }
 
     function handleKeyboardOpen() {
       keyboardOpen = true;
-      pageElement?.classList.add('keyboard-open');
       document.body.classList.add('keyboard-open');
 
-      // Scroll to bottom
+      // Scroll messages to bottom after keyboard settles
       setTimeout(() => {
         if (messagesContainer) {
           messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
-      }, 100);
-
-      console.log('[Arturito] Keyboard opened');
+      }, 150);
     }
 
     function handleKeyboardClose() {
       keyboardOpen = false;
-      pageElement?.classList.remove('keyboard-open');
       document.body.classList.remove('keyboard-open');
 
       if (mainArea) {
         mainArea.style.height = '';
       }
+    }
 
-      console.log('[Arturito] Keyboard closed');
+    // Allow message scrolling while keyboard is open
+    if (messagesContainer) {
+      messagesContainer.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+      }, { passive: true });
     }
   }
 
@@ -1194,12 +1192,26 @@
   // CLEAR CHAT (with Assistants API)
   // ─────────────────────────────────────────────────────────────────────────
 
+  // Track pending clear so double-tap confirms
+  let _clearPending = false;
+  let _clearTimer = null;
+
   async function clearChat() {
     if (state.messages.length === 0) return;
 
-    if (!confirm("¿Estás seguro de que quieres limpiar la conversación?")) {
+    // First tap: show toast hint, second tap within 3s confirms
+    if (!_clearPending) {
+      _clearPending = true;
+      if (window.Toast) {
+        window.Toast.info("Tap again to clear conversation");
+      }
+      _clearTimer = setTimeout(() => { _clearPending = false; }, 3000);
       return;
     }
+
+    // Second tap: confirmed
+    _clearPending = false;
+    if (_clearTimer) clearTimeout(_clearTimer);
 
     try {
       // Call API to clear thread and get new one
@@ -1223,8 +1235,8 @@
     renderMessages();
     updateContextStats();
 
-    if (typeof showToast === "function") {
-      showToast("Conversación limpiada", "success");
+    if (window.Toast) {
+      window.Toast.success("Conversation cleared");
     }
   }
 

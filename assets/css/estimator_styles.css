@@ -1162,6 +1162,10 @@
     background: #a855f7;
 }
 
+.item-type-indicator.pct {
+    background: #22c55e;
+}
+
 /* Item name with indicators */
 .item-name {
     display: flex;
@@ -1171,6 +1175,38 @@
 
 .item-name-text {
     flex: 1;
+}
+
+/* Inline quantity input */
+.inline-qty-input {
+    width: 100%;
+    padding: 4px 6px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    font-size: 13px;
+    text-align: center;
+    color: #374151;
+    transition: border-color 0.15s, background 0.15s;
+    -moz-appearance: textfield;
+}
+
+.inline-qty-input::-webkit-inner-spin-button,
+.inline-qty-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.inline-qty-input:hover {
+    border-color: #d1d5db;
+    background: #f9fafb;
+}
+
+.inline-qty-input:focus {
+    outline: none;
+    border-color: #3ecf8e;
+    background: #fff;
+    box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
 }
 
 /* ==========================================

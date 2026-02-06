@@ -145,13 +145,14 @@
 
     // ------------------------------------------
     // DESIGN CURVES (non-linear quality scaling)
-    // Quality index drives exponential cost increase
+    // Each base value represents the direct cost factor for that quality tier
+    // These are applied additively (not multiplicatively) with other factors
     // ------------------------------------------
     design_curves: {
-      basic:    { base: 0.85, quality_index: 1 },
+      basic:    { base: 0.88, quality_index: 1 },
       standard: { base: 1.00, quality_index: 2 },
-      high_end: { base: 1.28, quality_index: 3 },
-      custom:   { base: 1.65, quality_index: 4 }
+      high_end: { base: 1.30, quality_index: 3 },
+      custom:   { base: 1.55, quality_index: 4 }
     },
 
     // ------------------------------------------
@@ -228,6 +229,17 @@
     land_multipliers: {
       flat_land: 1.0,
       hill_side: 1.28
+    },
+
+    // Floor plan analysis modifiers (from screenshot AI analysis)
+    // Each maps a 0-1 score to a multiplier range [low_mult, high_mult]
+    // Score 0 = simple/efficient (low_mult), Score 1 = complex/dense (high_mult)
+    // Score 0.5 ~ neutral (midpoint between low and high)
+    floor_plan_modifiers: {
+      wall_density:          { low_mult: 0.97, high_mult: 1.06, weight: 0.35 },
+      perimeter_complexity:  { low_mult: 0.98, high_mult: 1.05, weight: 0.25 },
+      plumbing_spread:       { low_mult: 0.98, high_mult: 1.04, weight: 0.20 },
+      circulation:           { low_mult: 0.98, high_mult: 1.03, weight: 0.20 }
     },
 
     // Fixed/semi-fixed additions
@@ -418,7 +430,8 @@
         additions: PRICING_MATRIX.additions,
         design_curves: PRICING_MATRIX.design_curves,
         optional_features: PRICING_MATRIX.optional_features,
-        price_range: PRICING_MATRIX.price_range
+        price_range: PRICING_MATRIX.price_range,
+        floor_plan_modifiers: PRICING_MATRIX.floor_plan_modifiers
       };
 
       var { error } = await client
@@ -487,6 +500,8 @@
   var selectedConstruction = null;
   var enteredSqft          = null;
   var selectedDesignPackage = null;
+  var enteredUnits         = 1;
+  var totalMode            = false;  // false = per unit (default), true = totals entered directly
   var enteredBedrooms      = null;
   var enteredBathrooms     = null;
   var selectedFoundation   = null;
@@ -546,6 +561,7 @@
   var analysisResults   = { floor1: null, floor2: null };
   var analysisLoading   = { floor1: false, floor2: false };
   var screenshotSkipped = false;
+  var floorPlanScores = null; // { wall_density, perimeter_complexity, plumbing_spread, circulation } each 0-1
 
   // Cost estimate state
   var costEstimate = null;
@@ -571,6 +587,12 @@
   var selectDesignPackage  = document.getElementById("selectDesignPackage");
   var sectionConfiguration = document.getElementById("sectionConfiguration");
   var stepConfiguration    = document.getElementById("stepConfiguration");
+  var inputUnits           = document.getElementById("inputUnits");
+  var chkTotalMode         = document.getElementById("chkTotalMode");
+  var configModeRow        = document.getElementById("configModeRow");
+  var configSubtitle       = document.getElementById("configSubtitle");
+  var labelBedrooms        = document.getElementById("labelBedrooms");
+  var labelBathrooms       = document.getElementById("labelBathrooms");
   var inputBedrooms        = document.getElementById("inputBedrooms");
   var inputBathrooms       = document.getElementById("inputBathrooms");
   var sectionFoundation    = document.getElementById("sectionFoundation");
@@ -612,6 +634,7 @@
   var rowAdditions         = document.getElementById("rowAdditions");
   var rowPriceRange        = document.getElementById("rowPriceRange");
   var gridOptionalFeatures = document.getElementById("gridOptionalFeatures");
+  var rowFloorPlanModifiers = document.getElementById("rowFloorPlanModifiers");
 
   // Algorithm visualization panel
   var algoPanel            = document.getElementById("algoPanel");
@@ -694,6 +717,34 @@
     if (allowed.length === 1) {
       selectedStories = allowed[0];
       selectCard(gridStories, "stories", String(selectedStories));
+    }
+  }
+
+  // ------------------------------------------
+  // CONFIG MODE UI (per-unit vs total)
+  // ------------------------------------------
+
+  function updateConfigModeUI() {
+    var showToggle = enteredUnits > 1;
+    if (configModeRow) {
+      configModeRow.classList.toggle("hidden", !showToggle);
+    }
+    // Reset total mode when units go back to 1
+    if (enteredUnits <= 1 && totalMode) {
+      totalMode = false;
+      if (chkTotalMode) chkTotalMode.checked = false;
+    }
+    // Update labels
+    var hint = totalMode ? "(total)" : "(per unit)";
+    if (labelBedrooms) labelBedrooms.innerHTML = 'Bedrooms <span class="adu-input-hint-inline">' + hint + '</span>';
+    if (labelBathrooms) labelBathrooms.innerHTML = 'Bathrooms <span class="adu-input-hint-inline">' + hint + '</span>';
+    // Update subtitle
+    if (configSubtitle) {
+      if (totalMode) {
+        configSubtitle.textContent = "Number of units, bedrooms and bathrooms. Mixed configuration mode — enter the total bedrooms and bathrooms across all units.";
+      } else {
+        configSubtitle.textContent = "Number of units, bedrooms and bathrooms. Bedrooms and bathrooms are per unit — the calculator will multiply them by the number of units.";
+      }
     }
   }
 
@@ -826,9 +877,12 @@
     }
 
     if (enteredBedrooms !== null && enteredBathrooms !== null) {
+      var configStr = enteredBedrooms + ' bd / ' + enteredBathrooms + ' ba';
+      if (totalMode && enteredUnits > 1) configStr += ' total, ' + enteredUnits + ' units';
+      else if (enteredUnits > 1) configStr += ' x ' + enteredUnits + ' units';
       html += '<span class="adu-summary-tag">'
             + '<span class="tag-key">Config:</span> '
-            + enteredBedrooms + ' bd / ' + enteredBathrooms + ' ba'
+            + configStr
             + '</span>';
     }
 
@@ -1085,6 +1139,7 @@
     })
     .then(function (result) {
       analysisResults[floorKey] = result.data;
+      computeFloorPlanScores();
       analysisLoading[floorKey] = false;
 
       if (result.warning && window.Toast) {
@@ -1192,6 +1247,26 @@
         html += '</div>';
       }
 
+      // Floor plan architectural coefficients (if present)
+      var fpKeys = ["wall_density_score", "perimeter_complexity_score", "plumbing_spread_score", "circulation_score"];
+      var fpLabels = {
+        wall_density_score: "Wall Density",
+        perimeter_complexity_score: "Perimeter Complexity",
+        plumbing_spread_score: "Plumbing Spread",
+        circulation_score: "Circulation"
+      };
+      var hasFpScores = fpKeys.some(function(k) { return typeof data[k] === "number"; });
+      if (hasFpScores) {
+        html += '<div class="adu-analysis-card-title" style="margin-top:12px">Architectural Coefficients</div>';
+        html += '<div class="adu-analysis-grid">';
+        fpKeys.forEach(function(k) {
+          if (typeof data[k] === "number") {
+            html += renderAnalysisItem(fpLabels[k], (data[k] * 100).toFixed(0) + "%");
+          }
+        });
+        html += '</div>';
+      }
+
       html += '</div>';
     });
 
@@ -1203,6 +1278,87 @@
          + '<span class="item-label">' + label + '</span>'
          + '<span class="item-value">' + value + '</span>'
          + '</div>';
+  }
+
+  // ------------------------------------------
+  // FLOOR PLAN ANALYSIS COEFFICIENTS
+  // ------------------------------------------
+
+  /**
+   * Parse architectural coefficient scores from analysis results.
+   * Averages floor1/floor2 scores when both are available.
+   */
+  function computeFloorPlanScores() {
+    var f1 = analysisResults.floor1;
+    var f2 = analysisResults.floor2;
+    if (!f1 && !f2) { floorPlanScores = null; return; }
+
+    var keys = ["wall_density", "perimeter_complexity", "plumbing_spread", "circulation"];
+    var scores = {};
+
+    keys.forEach(function(key) {
+      var vals = [];
+      if (f1 && typeof f1[key + "_score"] === "number") vals.push(f1[key + "_score"]);
+      if (f2 && typeof f2[key + "_score"] === "number") vals.push(f2[key + "_score"]);
+      scores[key] = vals.length > 0 ? vals.reduce(function(a, b) { return a + b; }, 0) / vals.length : null;
+    });
+
+    var hasAny = keys.some(function(k) { return scores[k] !== null; });
+    floorPlanScores = hasAny ? scores : null;
+  }
+
+  /**
+   * Calculate weighted floor plan modifier from AI-detected scores.
+   * Maps each 0-1 score to its [low_mult, high_mult] range, then computes
+   * a weighted average adjustment. Returns modifier object compatible with
+   * the additive combinedMultiplier formula.
+   */
+  function getFloorPlanModifier() {
+    var result = { modifier: 1.0, label: "No floor plan data", details: [], scores: null };
+    if (!floorPlanScores) return result;
+
+    var PM = PRICING_MATRIX.floor_plan_modifiers;
+    if (!PM) return result;
+
+    var details = [];
+    var totalAdjustment = 0;
+    var totalWeight = 0;
+
+    var labels = {
+      wall_density: "Wall Density",
+      perimeter_complexity: "Perimeter Complexity",
+      plumbing_spread: "Plumbing Spread",
+      circulation: "Circulation Efficiency"
+    };
+
+    ["wall_density", "perimeter_complexity", "plumbing_spread", "circulation"].forEach(function(key) {
+      var score = floorPlanScores[key];
+      var config = PM[key];
+      if (score === null || score === undefined || !config) return;
+
+      var mult = config.low_mult + (config.high_mult - config.low_mult) * score;
+      var weight = config.weight || 0.25;
+      totalAdjustment += (mult - 1) * weight;
+      totalWeight += weight;
+
+      details.push({
+        key: key,
+        label: labels[key],
+        score: score,
+        mult: Math.round(mult * 1000) / 1000,
+        weight: weight
+      });
+    });
+
+    if (totalWeight > 0) {
+      var normalizedAdj = totalAdjustment / totalWeight;
+      result.modifier = Math.round((1 + normalizedAdj) * 1000) / 1000;
+      result.label = result.modifier >= 1.01 ? "Complex layout" : (result.modifier <= 0.99 ? "Efficient layout" : "Typical layout");
+      result.details = details;
+      result.scores = floorPlanScores;
+    }
+
+    return result;
   }
 
   // ------------------------------------------
@@ -1273,12 +1429,13 @@
         } else if (rule.type === "warning") {
           results.warnings.push(rule);
           if (rule.cost_adjustment) {
-            results.totalAdjustment *= rule.cost_adjustment;
+            // Additive: each rule adds its premium independently
+            results.totalAdjustment += (rule.cost_adjustment - 1);
           }
         } else if (rule.type === "adjustment") {
           results.adjustments.push(rule);
           if (rule.cost_adjustment) {
-            results.totalAdjustment *= rule.cost_adjustment;
+            results.totalAdjustment += (rule.cost_adjustment - 1);
           }
         }
       }
@@ -1361,19 +1518,16 @@
   }
 
   /**
-   * Get design multiplier using non-linear curve
-   * Higher quality tiers have exponential cost increase
+   * Get design multiplier from base value directly
+   * Each tier has a calibrated cost factor (no exponential formula)
    */
   function getDesignCurveMultiplier(designPackage) {
     var curves = PRICING_MATRIX.design_curves;
     var curve = curves[designPackage];
 
-    if (!curve) return { modifier: 1.0, label: "Standard" };
+    if (!curve) return { modifier: 1.0, label: "Standard", quality_index: 2 };
 
-    // Use quality index for non-linear scaling
-    // Formula: base + (quality_index^1.4 - 1) * 0.12
-    var nonLinearBonus = Math.pow(curve.quality_index, 1.4) - 1;
-    var modifier = curve.base + (nonLinearBonus * 0.08);
+    var modifier = curve.base;
 
     var label = DESIGN_PACKAGE_LABELS[designPackage];
     if (modifier !== 1) {
@@ -1404,7 +1558,8 @@
       });
 
       if (matches) {
-        result.modifier *= interaction.adjustment;
+        // Additive: each interaction adds its premium independently
+        result.modifier += (interaction.adjustment - 1);
         result.applied.push({
           id: interaction.id,
           adjustment: interaction.adjustment,
@@ -1505,7 +1660,8 @@
    * Calculate cost of optional measurable features
    * Returns breakdown with itemized costs
    */
-  function calculateOptionalFeaturesCost(features, designPackage) {
+  function calculateOptionalFeaturesCost(features, designPackage, numUnits) {
+    var units = numUnits || 1;
     var config = PRICING_MATRIX.optional_features;
     var result = {
       total: 0,
@@ -1544,13 +1700,14 @@
       var klTier = designPackage || "standard";
       var klCostPerFt = klConfig.cost_per_linear_ft[klTier] || klConfig.cost_per_linear_ft.standard;
 
-      var klCost = klLinearFt * klCostPerFt;
+      var klCostPerUnit = klLinearFt * klCostPerFt;
+      var klCost = klCostPerUnit * units;
       result.total += klCost;
       result.items.push({
         feature: "Kitchen Counters/Cabinets",
-        description: klLinearFt + " linear ft (" + DESIGN_PACKAGE_LABELS[klTier] + " tier)",
+        description: klLinearFt + " linear ft (" + DESIGN_PACKAGE_LABELS[klTier] + " tier)" + (units > 1 ? " x " + units + " units" : ""),
         cost: klCost,
-        breakdown: klLinearFt + " ft x $" + klCostPerFt
+        breakdown: klLinearFt + " ft x $" + klCostPerFt + (units > 1 ? " x " + units : "")
       });
       result.has_features = true;
     }
@@ -1573,15 +1730,17 @@
       }
 
       if (kiTotalCost > 0) {
-        result.total += kiTotalCost;
+        var kiTotalWithUnits = kiTotalCost * units;
+        result.total += kiTotalWithUnits;
         var kiDesc = kiSize.charAt(0).toUpperCase() + kiSize.slice(1) + " island";
         if (kiExtras.length > 0) kiDesc += " (" + kiExtras.join(", ") + ")";
+        if (units > 1) kiDesc += " x " + units + " units";
 
         result.items.push({
           feature: "Kitchen Island",
           description: kiDesc,
-          cost: kiTotalCost,
-          breakdown: "$" + kiBaseCost.toLocaleString() + " base" + (kiExtras.length > 0 ? " + extras" : "")
+          cost: kiTotalWithUnits,
+          breakdown: "$" + kiBaseCost.toLocaleString() + " base" + (kiExtras.length > 0 ? " + extras" : "") + (units > 1 ? " x " + units : "")
         });
         result.has_features = true;
       }
@@ -1791,8 +1950,28 @@
       });
     }
 
-    // Combined multiplier (before cross-interactions and rules)
-    var combinedMultiplier = storiesMult * designCurve.modifier * foundationMult * landMult * densityMod.modifier;
+    // 7b. Floor plan modifier (from screenshot AI analysis)
+    var floorPlanMod = getFloorPlanModifier();
+
+    if (floorPlanMod.modifier !== 1.0 && floorPlanMod.details.length > 0) {
+      breakdown.items.push({
+        category: "Floor Plan Analysis",
+        description: floorPlanMod.label,
+        modifier: floorPlanMod.modifier,
+        note: floorPlanMod.details.map(function(d) { return d.label + ": " + (d.score * 100).toFixed(0) + "%"; }).join(", ")
+      });
+    }
+
+    // ADDITIVE MODEL: each factor contributes its premium independently over the base cost
+    // Formula: combinedMultiplier = 1 + (stories-1) + (design-1) + (foundation-1) + (land-1) + (density-1) + (floorPlan-1) + ...
+    // This prevents unrealistic exponential compounding of multipliers
+    var combinedMultiplier = 1
+      + (storiesMult - 1)
+      + (designCurve.modifier - 1)
+      + (foundationMult - 1)
+      + (landMult - 1)
+      + (densityMod.modifier - 1)
+      + (floorPlanMod.modifier - 1);
 
     // 8. Check cross-variable interactions
     var crossMod = getCrossInteractionMultiplier({
@@ -1812,7 +1991,8 @@
         modifier: crossMod.modifier,
         note: "+" + Math.round((crossMod.modifier - 1) * 100) + "% (" + crossMod.applied.length + " interactions)"
       });
-      combinedMultiplier *= crossMod.modifier;
+      // Additive: add the cross-interaction premium
+      combinedMultiplier += (crossMod.modifier - 1);
     }
 
     // 9. Check compatibility rules
@@ -1838,8 +2018,12 @@
         modifier: ruleCheck.totalAdjustment,
         note: "+" + Math.round((ruleCheck.totalAdjustment - 1) * 100) + "% (compatibility)"
       });
-      combinedMultiplier *= ruleCheck.totalAdjustment;
+      // Additive: add the rule adjustment premium
+      combinedMultiplier += (ruleCheck.totalAdjustment - 1);
     }
+
+    // Safety floor: combined multiplier should never go below 0.60
+    combinedMultiplier = Math.max(0.60, combinedMultiplier);
 
     // Multiplied subtotal
     var multipliedCost = baseCost * combinedMultiplier;
@@ -1854,15 +2038,22 @@
     // 10. Add fixed/variable additions with non-linear bedroom/bathroom costs
     var additionsCost = 0;
     var adds = PM.additions;
+    var units = enteredUnits || 1;
+    // In total mode, bedrooms/bathrooms are already totals — unit multiplier only applies to appliances/kitchen
+    var configMultiplier = totalMode ? 1 : units;
 
     // Bedrooms (non-linear: first costs more)
     var bedroomCalc = calculateBedroomCost(enteredBedrooms);
     if (bedroomCalc.cost > 0) {
-      additionsCost += bedroomCalc.cost;
+      var totalBedroomCost = bedroomCalc.cost * configMultiplier;
+      additionsCost += totalBedroomCost;
+      var bedDesc = bedroomCalc.breakdown;
+      if (configMultiplier > 1) bedDesc += " x " + configMultiplier + " units";
+      else if (totalMode && units > 1) bedDesc += " (total)";
       breakdown.items.push({
         category: "Bedrooms",
-        description: bedroomCalc.breakdown,
-        cost: bedroomCalc.cost,
+        description: bedDesc,
+        cost: totalBedroomCost,
         note: enteredBedrooms === 0 ? "Studio layout" : "Framing/finishing"
       });
     }
@@ -1870,11 +2061,15 @@
     // Bathrooms (non-linear: first costs more for main plumbing)
     var bathroomCalc = calculateBathroomCost(enteredBathrooms);
     if (bathroomCalc.cost > 0) {
-      additionsCost += bathroomCalc.cost;
+      var totalBathroomCost = bathroomCalc.cost * configMultiplier;
+      additionsCost += totalBathroomCost;
+      var bathDesc = bathroomCalc.breakdown;
+      if (configMultiplier > 1) bathDesc += " x " + configMultiplier + " units";
+      else if (totalMode && units > 1) bathDesc += " (total)";
       breakdown.items.push({
         category: "Bathrooms",
-        description: bathroomCalc.breakdown,
-        cost: bathroomCalc.cost,
+        description: bathDesc,
+        cost: totalBathroomCost,
         note: "Plumbing/fixtures"
       });
     }
@@ -1913,17 +2108,18 @@
     }
 
     if (additionalOptions.appliances) {
-      additionsCost += adds.appliances;
+      var totalAppliancesCost = adds.appliances * units;
+      additionsCost += totalAppliancesCost;
       breakdown.items.push({
         category: "Appliances",
-        description: "Basic appliance package",
-        cost: adds.appliances,
+        description: "Basic appliance package" + (units > 1 ? " x " + units + " units" : ""),
+        cost: totalAppliancesCost,
         note: "Refrigerator, range, etc."
       });
     }
 
     // 10b. Optional measurable features
-    var optionalFeaturesCost = calculateOptionalFeaturesCost(optionalFeatures, selectedDesignPackage);
+    var optionalFeaturesCost = calculateOptionalFeaturesCost(optionalFeatures, selectedDesignPackage, units);
     if (optionalFeaturesCost.has_features) {
       additionsCost += optionalFeaturesCost.total;
 
@@ -1943,16 +2139,20 @@
     var costPerSqft = totalCost / enteredSqft;
 
     // Build final estimate object with enhanced metadata
+    var costPerUnit = units > 1 ? Math.round(totalCost / units) : null;
     var estimate = {
       total_estimated_cost: Math.round(totalCost),
       cost_per_sqft: Math.round(costPerSqft),
+      cost_per_unit: costPerUnit,
       base_rate: baseRate,
       adjusted_rate: adjustedRate,
       sqft: enteredSqft,
+      units: units,
       combined_multiplier: combinedMultiplier,
       efficiency_factor: efficiencyMod.modifier,
       density_factor: densityMod.modifier,
       cross_interaction_factor: crossMod.modifier,
+      floor_plan_modifier: floorPlanMod.modifier,
       optional_features_total: optionalFeaturesCost.total,
       optional_features_count: optionalFeaturesCost.items.length,
       breakdown: breakdown,
@@ -2046,6 +2246,7 @@
     html += '<div class="adu-cost-header">'
           + '<span class="adu-cost-total">$' + d.total_estimated_cost.toLocaleString() + '</span>'
           + '<span class="adu-cost-per-sqft">$' + d.cost_per_sqft.toLocaleString() + ' / sq ft</span>'
+          + (d.cost_per_unit ? '<span class="adu-cost-per-unit">$' + d.cost_per_unit.toLocaleString() + ' / unit</span>' : '')
           + '</div>';
 
     // Price Range Table
@@ -2058,20 +2259,28 @@
     var lowPricePerSqft = d.sqft > 0 ? Math.round((lowPrice / d.sqft) * 100) / 100 : 0;
     var midPricePerSqft = d.cost_per_sqft;
     var highPricePerSqft = d.sqft > 0 ? Math.round((highPrice / d.sqft) * 100) / 100 : 0;
+    var showPerUnit = d.units > 1;
+    var lowPricePerUnit = showPerUnit ? Math.round(lowPrice / d.units) : 0;
+    var midPricePerUnit = showPerUnit ? Math.round(midPrice / d.units) : 0;
+    var highPricePerUnit = showPerUnit ? Math.round(highPrice / d.units) : 0;
 
+    var totalTag = showPerUnit ? '<span class="price-range-total-tag">total</span>' : '';
     html += '<div class="adu-price-range-table">'
           + '<div class="price-range-row">'
           + '<div class="price-range-cell price-range-low">'
           + '<span class="price-range-label">Low (-' + priceRange.low_percentage + '%)</span>'
           + '<span class="price-range-value">$' + lowPrice.toLocaleString() + '</span>'
+          + totalTag
           + '</div>'
           + '<div class="price-range-cell price-range-mid">'
           + '<span class="price-range-label">Estimate</span>'
           + '<span class="price-range-value">$' + midPrice.toLocaleString() + '</span>'
+          + totalTag
           + '</div>'
           + '<div class="price-range-cell price-range-high">'
           + '<span class="price-range-label">High (+' + priceRange.high_percentage + '%)</span>'
           + '<span class="price-range-value">$' + highPrice.toLocaleString() + '</span>'
+          + totalTag
           + '</div>'
           + '</div>'
           + '<div class="price-range-row price-range-sqft">'
@@ -2085,6 +2294,19 @@
           + '<span class="price-range-sqft-value">$' + highPricePerSqft.toLocaleString() + '/sqft</span>'
           + '</div>'
           + '</div>'
+          + (showPerUnit
+            ? '<div class="price-range-row price-range-unit">'
+            + '<div class="price-range-cell price-range-low">'
+            + '<span class="price-range-unit-value">$' + lowPricePerUnit.toLocaleString() + '/unit</span>'
+            + '</div>'
+            + '<div class="price-range-cell price-range-mid">'
+            + '<span class="price-range-unit-value">$' + midPricePerUnit.toLocaleString() + '/unit</span>'
+            + '</div>'
+            + '<div class="price-range-cell price-range-high">'
+            + '<span class="price-range-unit-value">$' + highPricePerUnit.toLocaleString() + '/unit</span>'
+            + '</div>'
+            + '</div>'
+            : '')
           + '</div>';
 
     // Warnings (if any)
@@ -2244,6 +2466,9 @@
     { id: "density", label: "Dens", x: 540, y: 300, layer: 3, type: "modifier", weight: 0.4 },
     { id: "config", label: "Bed/Ba", x: 650, y: 300, layer: 3, type: "input", weight: 0.3 },
 
+    // Layer 3.5: Floor plan analysis (from screenshot AI)
+    { id: "floorplan", label: "FPlan", x: 660, y: 350, layer: 3, type: "modifier", weight: 0.35 },
+
     // Layer 4: Combined calculations
     { id: "multiplier", label: "Mult", x: 260, y: 400, layer: 4, type: "calc", weight: 0.9 },
     { id: "rules", label: "Rules", x: 400, y: 400, layer: 4, type: "modifier", weight: 0.4 },
@@ -2296,6 +2521,9 @@
     { from: "adu_type", to: "cross", label: "combo" },
     { from: "construction", to: "cross", label: "combo" },
     { from: "cross", to: "multiplier", label: "cross adj" },
+
+    // Floor plan analysis
+    { from: "floorplan", to: "multiplier", label: "plan adj" },
 
     // Additions
     { from: "config", to: "additions", label: "costs" },
@@ -2403,6 +2631,15 @@
           }
         }
         break;
+      case "floorplan":
+        var fpMod = getFloorPlanModifier();
+        if (floorPlanScores && fpMod.details.length > 0) {
+          status.active = true;
+          status.modifier = fpMod.modifier;
+          status.value = "x" + fpMod.modifier.toFixed(2);
+          status.status = fpMod.modifier > 1.01 ? "penalty" : (fpMod.modifier < 0.99 ? "discount" : "active");
+        }
+        break;
       case "foundation":
         status.active = !!selectedFoundation;
         status.value = selectedFoundation ? FOUNDATION_LABELS[selectedFoundation] : null;
@@ -2485,12 +2722,12 @@
 
   // Calculate node radius based on weight (dynamic based on modifier impact)
   function getNodeRadius(node, status) {
-    var minRadius = 12;
-    var maxRadius = 40;
+    var minRadius = 6;
+    var maxRadius = 42;
     var weight = node.weight || 0.5;
 
-    // Apply exponential curve for more contrast (low weights get smaller)
-    var scaledWeight = Math.pow(weight, 1.5);
+    // Apply steep exponential curve for high contrast (low weights become much smaller)
+    var scaledWeight = Math.pow(weight, 2.2);
 
     // Increase radius if node has significant modifier (active impact)
     if (status.modifier && status.modifier !== 1) {
@@ -2509,7 +2746,7 @@
   function renderAlgorithmGraph() {
     if (!algoGraphContainer) return;
 
-    var width = 760;
+    var width = 780;
     var height = 640;
 
     var svg = '<svg class="algo-graph-svg" viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="xMidYMid meet">';
@@ -2570,8 +2807,10 @@
       // Circle
       svg += '<circle class="algo-node-circle" r="' + radius + '"/>';
 
-      // Label inside circle
-      svg += '<text class="algo-node-label" y="1">' + node.label + '</text>';
+      // Label inside circle (scale font for small bubbles)
+      var fontSize = radius < 12 ? 8 : (radius < 18 ? 9 : 10);
+      var fontStyle = fontSize < 10 ? ' style="font-size:' + fontSize + 'px"' : '';
+      svg += '<text class="algo-node-label"' + fontStyle + ' y="1">' + node.label + '</text>';
 
       // Value below circle (if has value)
       if (status.value) {
@@ -2648,6 +2887,7 @@
     multiplier: { control: "Combined from all inputs", tip: "Reduce individual modifiers to lower this" },
     rules: { control: "Auto-validated", tip: "Some combinations trigger warnings or adjustments" },
     cross: { control: "Auto-calculated", tip: "Certain input combinations add extra costs" },
+    floorplan: { control: "Screenshot analysis (auto)", tip: "Upload floor plan screenshots for AI to analyze wall density, plumbing layout, and circulation efficiency" },
     options: { control: "Interior options checkboxes", tip: "Uncheck options to reduce cost" },
     opt_features: { control: "Site features checkboxes", tip: "Deck, landscape, etc. are optional" },
     additions: { control: "Sum of optional costs", tip: "Reduce by unchecking optional features" },
@@ -2754,6 +2994,18 @@
           }
         }
         break;
+      case "floorplan":
+        var fpDetail = getFloorPlanModifier();
+        if (fpDetail.details.length > 0) {
+          html += '<div class="details-section">Coefficient Breakdown</div>';
+          fpDetail.details.forEach(function(d) {
+            var scoreClass = d.mult > 1.01 ? "val-penalty" : (d.mult < 0.99 ? "val-discount" : "");
+            html += '<div class="details-row"><span class="details-label">' + d.label + '</span><span class="details-value ' + scoreClass + '">x' + d.mult.toFixed(3) + ' (score: ' + (d.score * 100).toFixed(0) + '%, weight: ' + (d.weight * 100).toFixed(0) + '%)</span></div>';
+          });
+        } else {
+          html += '<div class="details-row"><span class="details-value inactive-val">No floor plan data — upload screenshots for analysis</span></div>';
+        }
+        break;
     }
 
     // Show adjustment hints
@@ -2805,6 +3057,7 @@
     analysisResults   = { floor1: null, floor2: null };
     analysisLoading   = { floor1: false, floor2: false };
     screenshotSkipped = false;
+    floorPlanScores   = null;
     costEstimate      = null;
     costLoading       = false;
     hasFirstCalculation = false;  // Require new first calculation
@@ -2897,8 +3150,25 @@
   }
 
   // ------------------------------------------
-  // EVENT: Configuration (Bedrooms & Bathrooms)
+  // EVENT: Configuration (Units, Bedrooms & Bathrooms)
   // ------------------------------------------
+  if (inputUnits) {
+    inputUnits.addEventListener("input", function () {
+      var val = parseInt(inputUnits.value, 10);
+      enteredUnits = (!isNaN(val) && val >= 1) ? val : 1;
+      updateConfigModeUI();
+      refresh();
+    });
+  }
+
+  if (chkTotalMode) {
+    chkTotalMode.addEventListener("change", function () {
+      totalMode = chkTotalMode.checked;
+      updateConfigModeUI();
+      refresh();
+    });
+  }
+
   if (inputBedrooms) {
     inputBedrooms.addEventListener("input", function () {
       var val = parseInt(inputBedrooms.value, 10);
@@ -3146,6 +3416,8 @@
       enteredSqft = null;
       selectedDesignPackage = null;
       hasFirstCalculation = false;  // Reset auto-recalculation flag
+      enteredUnits = 1;
+      totalMode = false;
       enteredBedrooms = null;
       enteredBathrooms = null;
       selectedFoundation = null;
@@ -3170,6 +3442,9 @@
 
       // Reset new fields
       if (selectDesignPackage) selectDesignPackage.value = "";
+      if (inputUnits) inputUnits.value = "1";
+      if (chkTotalMode) chkTotalMode.checked = false;
+      if (configModeRow) configModeRow.classList.add("hidden");
       if (inputBedrooms) inputBedrooms.value = "";
       if (inputBathrooms) inputBathrooms.value = "";
       if (selectFoundation) selectFoundation.value = "";
@@ -3354,6 +3629,28 @@
       rowPriceRange.innerHTML = html;
     }
 
+    // Render Floor Plan Modifier Settings
+    if (rowFloorPlanModifiers) {
+      var fpMods = PRICING_MATRIX.floor_plan_modifiers || {};
+      var fpLabels = {
+        wall_density: "Wall Density",
+        perimeter_complexity: "Perimeter Complexity",
+        plumbing_spread: "Plumbing Spread",
+        circulation: "Circulation"
+      };
+      var fpHtml = '';
+      Object.keys(fpLabels).forEach(function(key) {
+        var config = fpMods[key] || { low_mult: 1.0, high_mult: 1.0, weight: 0.25 };
+        fpHtml += '<div class="pricing-inputs-row" style="margin-bottom:8px;">';
+        fpHtml += '<div class="pricing-input-group" style="min-width:120px;flex:0 0 120px;"><label>' + fpLabels[key] + '</label></div>';
+        fpHtml += '<div class="pricing-input-group"><label>Low Mult</label><input type="number" class="pricing-input" data-path="floor_plan_modifiers.' + key + '.low_mult" value="' + config.low_mult + '" min="0.8" max="1.0" step="0.01"></div>';
+        fpHtml += '<div class="pricing-input-group"><label>High Mult</label><input type="number" class="pricing-input" data-path="floor_plan_modifiers.' + key + '.high_mult" value="' + config.high_mult + '" min="1.0" max="1.2" step="0.01"></div>';
+        fpHtml += '<div class="pricing-input-group"><label>Weight</label><input type="number" class="pricing-input" data-path="floor_plan_modifiers.' + key + '.weight" value="' + config.weight + '" min="0" max="1" step="0.05"></div>';
+        fpHtml += '</div>';
+      });
+      rowFloorPlanModifiers.innerHTML = fpHtml;
+    }
+
     // Render Optional Features
     if (gridOptionalFeatures) {
       var optFeatures = PRICING_MATRIX.optional_features;
@@ -3521,7 +3818,5 @@
   refresh();
 
   // Hide loading overlay
-  document.body.classList.remove('page-loading');
-  var overlay = document.getElementById('pageLoadingOverlay');
-  if (overlay) overlay.classList.add('hidden');
+  hidePageLoading();
 })();

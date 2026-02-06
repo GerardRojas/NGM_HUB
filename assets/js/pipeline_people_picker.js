@@ -5,22 +5,6 @@
 
   console.log('[PeoplePicker] Script loaded');
 
-  // TEMPORARY: Global click debugger to trace all clicks
-  document.addEventListener('click', (e) => {
-    // Only log if click is near a picker dropdown
-    if (e.target.closest('.pm-people-dropdown') || e.target.closest('.pm-catalog-dropdown') ||
-        e.target.closest('.pm-people-item') || e.target.closest('.pm-catalog-item')) {
-      console.log('[GLOBAL-CLICK-DEBUG] ========== CLICK CAPTURED ==========');
-      console.log('[GLOBAL-CLICK-DEBUG] target:', e.target);
-      console.log('[GLOBAL-CLICK-DEBUG] target.tagName:', e.target.tagName);
-      console.log('[GLOBAL-CLICK-DEBUG] target.className:', e.target.className);
-      console.log('[GLOBAL-CLICK-DEBUG] closest .pm-people-item:', e.target.closest('.pm-people-item'));
-      console.log('[GLOBAL-CLICK-DEBUG] closest .pm-catalog-item:', e.target.closest('.pm-catalog-item'));
-      console.log('[GLOBAL-CLICK-DEBUG] event phase:', e.eventPhase);
-      console.log('[GLOBAL-CLICK-DEBUG] ========================================');
-    }
-  }, true); // capture phase to see it first
-
   // ================================
   // CONFIGURATION
   // ================================
@@ -363,6 +347,13 @@
       // Position dropdown using fixed positioning for table cell overflow
       this.positionDropdown();
 
+      // Move dropdown to document.body to escape table stacking contexts.
+      // position:fixed dropdowns inside elements with z-index create a stacking
+      // context that prevents click events from reaching the dropdown items.
+      if (this.dropdown.parentElement !== document.body) {
+        document.body.appendChild(this.dropdown);
+      }
+
       // Add scroll listener to reposition dropdown when table scrolls
       this._scrollContainer = this.container.closest('.pm-group-body') || this.container.closest('[style*="overflow"]');
       if (this._scrollContainer) {
@@ -395,7 +386,9 @@
       // Use fixed positioning to escape overflow containers
       this.dropdown.style.position = 'fixed';
       this.dropdown.style.left = `${triggerRect.left}px`;
+      this.dropdown.style.right = 'auto';
       this.dropdown.style.width = `${Math.max(triggerRect.width, 260)}px`;
+      this.dropdown.style.zIndex = '99999';
 
       if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
         // Position below
@@ -421,13 +414,19 @@
 
     close() {
       console.log('[PeoplePicker] close() called');
-      console.trace('[PeoplePicker] close() stack trace');
       this.isOpen = false;
       if (activeDropdown === this) activeDropdown = null;
       this.trigger.classList.remove('is-open');
       this.dropdown.classList.remove('is-open');
       this.searchQuery = '';
       this.searchInput.value = '';
+
+      // Move dropdown back from body to picker container
+      const pickerEl = this.container.querySelector('.pm-people-picker');
+      if (pickerEl && this.dropdown.parentElement === document.body) {
+        pickerEl.appendChild(this.dropdown);
+      }
+
       // Remove scroll listeners
       if (this._scrollContainer && this._onScroll) {
         this._scrollContainer.removeEventListener('scroll', this._onScroll);
@@ -443,7 +442,9 @@
       this.dropdown.style.top = '';
       this.dropdown.style.bottom = '';
       this.dropdown.style.left = '';
+      this.dropdown.style.right = '';
       this.dropdown.style.width = '';
+      this.dropdown.style.zIndex = '';
     }
 
     async loadUsers() {
@@ -631,6 +632,10 @@
       // Close dropdown first to clean up positioning styles
       if (this.isOpen) {
         this.close();
+      }
+      // Remove dropdown from body if it's still there (edge case)
+      if (this.dropdown && this.dropdown.parentElement === document.body) {
+        this.dropdown.remove();
       }
       // Remove document event listeners to prevent memory leaks and interference
       if (this._onDocumentClick) {

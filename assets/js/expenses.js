@@ -3638,21 +3638,21 @@
   }
 
   /**
-   * Updates the running total bar (always visible when rows exist)
+   * Updates the running total in the table footer (always visible when rows exist)
    */
   function updateRunningTotalBar() {
-    const bar = document.getElementById('modalRunningTotalBar');
+    const footer = document.getElementById('modalTotalFooter');
     const valueEl = document.getElementById('modalRunningTotalValue');
-    if (!bar || !valueEl) return;
+    if (!footer || !valueEl) return;
 
     const total = calculateModalRunningTotal();
     const rowCount = els.expenseRowsBody?.querySelectorAll('tr[data-row-index]')?.length || 0;
 
     if (rowCount > 0) {
-      bar.style.display = '';
+      footer.style.display = '';
       valueEl.textContent = `$${total.toFixed(2)}`;
     } else {
-      bar.style.display = 'none';
+      footer.style.display = 'none';
     }
   }
 
@@ -3717,15 +3717,15 @@
       apiCalcEl.className = 'scan-validation-card-value' + (invoiceMatchesApi ? '' : ' value-mismatch');
     }
 
-    // Also color the running total bar
-    const bar = document.getElementById('modalRunningTotalBar');
-    if (bar) {
+    // Also color the table footer total
+    const totalCell = document.getElementById('modalRunningTotalValue');
+    if (totalCell) {
       if (modalMatchesInvoice) {
-        bar.classList.remove('total-mismatch');
-        bar.classList.add('total-match');
+        totalCell.classList.remove('total-mismatch');
+        totalCell.classList.add('total-match');
       } else {
-        bar.classList.remove('total-match');
-        bar.classList.add('total-mismatch');
+        totalCell.classList.remove('total-match');
+        totalCell.classList.add('total-mismatch');
       }
     }
 

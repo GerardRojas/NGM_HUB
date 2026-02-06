@@ -29,18 +29,19 @@
           <tbody id="expenseRowsBody">
             <!-- Rows rendered by JS -->
           </tbody>
+          <tfoot id="modalTotalFooter" style="display: none;">
+            <tr class="modal-total-row">
+              <td colspan="7" class="modal-total-label">Total:</td>
+              <td class="modal-total-amount" id="modalRunningTotalValue">$0.00</td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
         </table>
 
         <div class="add-row-container">
           <button type="button" class="btn-add-row" id="btnAddExpenseRow">
             <span>+</span> Add Row
           </button>
-        </div>
-
-        <!-- Running total always visible below table -->
-        <div class="modal-running-total" id="modalRunningTotalBar">
-          <span class="modal-running-total-label">Items Total:</span>
-          <span class="modal-running-total-value" id="modalRunningTotalValue">$0.00</span>
         </div>
       </div>
 

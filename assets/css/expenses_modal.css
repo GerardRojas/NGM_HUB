@@ -3024,45 +3024,36 @@ input[type="number"].form-input {
 }
 
 /* ========================================
-   Modal Running Total Bar (always visible)
+   Modal Table Footer Total
    ======================================== */
 
-.modal-running-total {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  margin-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+.modal-total-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.modal-running-total-label {
-  font-size: 13px;
+.modal-total-label {
+  text-align: right;
+  font-size: 12px;
+  font-weight: 600;
   color: #9ca3af;
-  font-weight: 500;
+  padding: 8px 8px 8px 0;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
 }
 
-.modal-running-total-value {
-  font-size: 16px;
+.modal-total-amount {
+  font-size: 14px;
   font-weight: 700;
   color: #e5e7eb;
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  padding: 8px 4px;
 }
 
-.modal-running-total.total-match {
-  border-top-color: rgba(34, 197, 94, 0.3);
-}
-
-.modal-running-total.total-match .modal-running-total-value {
+.modal-total-amount.total-match {
   color: #4ade80;
 }
 
-.modal-running-total.total-mismatch {
-  border-top-color: rgba(239, 68, 68, 0.4);
-}
-
-.modal-running-total.total-mismatch .modal-running-total-value {
+.modal-total-amount.total-mismatch {
   color: #f87171;
 }
 

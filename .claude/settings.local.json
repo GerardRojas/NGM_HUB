@@ -23,7 +23,8 @@
       "Bash(python:*)",
       "Bash(ls:*)",
       "Bash(dir:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(cmd /c \"claude --version\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"

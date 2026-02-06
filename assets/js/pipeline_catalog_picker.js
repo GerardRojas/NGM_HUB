@@ -298,15 +298,24 @@
 
       // Select item from list
       this.list.addEventListener('click', (e) => {
+        console.log('[CatalogPicker] ========== LIST CLICK ==========');
         console.log('[CatalogPicker] List click detected!');
         console.log('[CatalogPicker] Click target:', e.target);
+        console.log('[CatalogPicker] Click target tagName:', e.target.tagName);
+        console.log('[CatalogPicker] Click target className:', e.target.className);
+        console.log('[CatalogPicker] Click target outerHTML:', e.target.outerHTML?.substring(0, 200));
         const itemEl = e.target.closest('.pm-catalog-item');
-        console.log('[CatalogPicker] Found item:', itemEl);
+        console.log('[CatalogPicker] Found .pm-catalog-item:', itemEl);
         if (itemEl) {
           const itemId = itemEl.dataset.itemId;
-          console.log('[CatalogPicker] itemId:', itemId);
+          console.log('[CatalogPicker] itemId from dataset:', itemId);
+          console.log('[CatalogPicker] Calling selectItem...');
           this.selectItem(itemId);
+        } else {
+          console.log('[CatalogPicker] No .pm-catalog-item found from target');
+          console.log('[CatalogPicker] All items in list:', this.list.querySelectorAll('.pm-catalog-item').length);
         }
+        console.log('[CatalogPicker] ========== LIST CLICK END ==========');
       });
 
       // Remove chip (clear selection)

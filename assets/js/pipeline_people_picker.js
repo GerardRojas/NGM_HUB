@@ -5,6 +5,22 @@
 
   console.log('[PeoplePicker] Script loaded');
 
+  // TEMPORARY: Global click debugger to trace all clicks
+  document.addEventListener('click', (e) => {
+    // Only log if click is near a picker dropdown
+    if (e.target.closest('.pm-people-dropdown') || e.target.closest('.pm-catalog-dropdown') ||
+        e.target.closest('.pm-people-item') || e.target.closest('.pm-catalog-item')) {
+      console.log('[GLOBAL-CLICK-DEBUG] ========== CLICK CAPTURED ==========');
+      console.log('[GLOBAL-CLICK-DEBUG] target:', e.target);
+      console.log('[GLOBAL-CLICK-DEBUG] target.tagName:', e.target.tagName);
+      console.log('[GLOBAL-CLICK-DEBUG] target.className:', e.target.className);
+      console.log('[GLOBAL-CLICK-DEBUG] closest .pm-people-item:', e.target.closest('.pm-people-item'));
+      console.log('[GLOBAL-CLICK-DEBUG] closest .pm-catalog-item:', e.target.closest('.pm-catalog-item'));
+      console.log('[GLOBAL-CLICK-DEBUG] event phase:', e.eventPhase);
+      console.log('[GLOBAL-CLICK-DEBUG] ========================================');
+    }
+  }, true); // capture phase to see it first
+
   // ================================
   // CONFIGURATION
   // ================================
@@ -247,26 +263,36 @@
 
       // Prevent dropdown close when clicking inside
       this.dropdown.addEventListener('click', (e) => {
+        console.log('[PeoplePicker] ========== DROPDOWN CLICK ==========');
         console.log('[PeoplePicker] Dropdown click event!');
         console.log('[PeoplePicker] Dropdown click target:', e.target);
+        console.log('[PeoplePicker] Dropdown click target.tagName:', e.target.tagName);
+        console.log('[PeoplePicker] Dropdown click target.className:', e.target.className);
+        console.log('[PeoplePicker] Is target inside list?', this.list.contains(e.target));
+        console.log('[PeoplePicker] ========== DROPDOWN CLICK END ==========');
         e.stopPropagation();
       });
 
       // Select user from list
       this.list.addEventListener('click', (e) => {
+        console.log('[PeoplePicker] ========== LIST CLICK ==========');
         console.log('[PeoplePicker] List click detected!');
         console.log('[PeoplePicker] Click target:', e.target);
         console.log('[PeoplePicker] Click target tagName:', e.target.tagName);
         console.log('[PeoplePicker] Click target className:', e.target.className);
+        console.log('[PeoplePicker] Click target outerHTML:', e.target.outerHTML?.substring(0, 200));
         const item = e.target.closest('.pm-people-item');
-        console.log('[PeoplePicker] Found item:', item);
+        console.log('[PeoplePicker] Found .pm-people-item:', item);
         if (item) {
           const userId = item.dataset.userId;
-          console.log('[PeoplePicker] userId:', userId);
+          console.log('[PeoplePicker] userId from dataset:', userId);
+          console.log('[PeoplePicker] Calling toggleUser...');
           this.toggleUser(userId);
         } else {
           console.log('[PeoplePicker] No .pm-people-item found from target');
+          console.log('[PeoplePicker] All items in list:', this.list.querySelectorAll('.pm-people-item').length);
         }
+        console.log('[PeoplePicker] ========== LIST CLICK END ==========');
       });
 
       // Remove chip
@@ -380,6 +406,17 @@
         this.dropdown.style.bottom = `${viewportHeight - triggerRect.top + 4}px`;
         this.dropdown.style.top = 'auto';
       }
+
+      // Debug: log dropdown position and dimensions
+      const dropdownRect = this.dropdown.getBoundingClientRect();
+      console.log('[PeoplePicker] Dropdown positioned:', {
+        top: this.dropdown.style.top,
+        left: this.dropdown.style.left,
+        width: this.dropdown.style.width,
+        dropdownRect: dropdownRect,
+        zIndex: getComputedStyle(this.dropdown).zIndex,
+        pointerEvents: getComputedStyle(this.dropdown).pointerEvents
+      });
     }
 
     close() {
@@ -449,6 +486,17 @@
       this.list.innerHTML = filtered.map(user =>
         renderUserItem(user, selectedIds.has(user.id))
       ).join('');
+
+      // Debug: verify items rendered and their pointer-events
+      const items = this.list.querySelectorAll('.pm-people-item');
+      console.log('[PeoplePicker] renderList - items count:', items.length);
+      if (items.length > 0) {
+        const firstItem = items[0];
+        const itemStyle = getComputedStyle(firstItem);
+        console.log('[PeoplePicker] First item pointer-events:', itemStyle.pointerEvents);
+        console.log('[PeoplePicker] First item cursor:', itemStyle.cursor);
+        console.log('[PeoplePicker] First item data-user-id:', firstItem.dataset.userId);
+      }
     }
 
     toggleUser(userId) {

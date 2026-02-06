@@ -3628,13 +3628,22 @@
    */
   function calculateModalRunningTotal() {
     const amountInputs = els.expenseRowsBody?.querySelectorAll('.exp-input[data-field="Amount"]');
-    if (!amountInputs) return 0;
+    console.log('[MODAL TOTAL] expenseRowsBody:', els.expenseRowsBody);
+    console.log('[MODAL TOTAL] amountInputs found:', amountInputs?.length || 0);
+
+    if (!amountInputs || amountInputs.length === 0) {
+      console.log('[MODAL TOTAL] No amount inputs found, returning 0');
+      return 0;
+    }
 
     let total = 0;
-    amountInputs.forEach(input => {
+    amountInputs.forEach((input, i) => {
       const value = parseFloat(input.value) || 0;
+      console.log(`[MODAL TOTAL] Input ${i}: value="${input.value}" -> parsed=${value}`);
       total += value;
     });
+
+    console.log('[MODAL TOTAL] Final total:', total);
     return total;
   }
 
@@ -4626,8 +4635,14 @@
 
       // Perform 3-way validation BEFORE clearing state (only for scanned receipts)
       let threeWayValidation = null;
+      console.log('[EXPENSES] 3-way validation check - isScannedReceiptMode:', isScannedReceiptMode);
+      console.log('[EXPENSES] 3-way validation check - scannedReceiptValidation:', scannedReceiptValidation);
+
       if (isScannedReceiptMode && scannedReceiptValidation) {
+        // Calculate modal total from current inputs (before modal closes)
         const modalTotal = calculateModalRunningTotal();
+        console.log('[EXPENSES] 3-way validation - modalTotal calculated:', modalTotal);
+
         const invoiceTotal = scannedReceiptValidation.invoiceTotal || 0;
         const apiSum = scannedReceiptValidation.apiCalculatedSum || 0;
         const tolerance = 0.02; // 2 cents tolerance
@@ -4645,7 +4660,9 @@
           wasScannedReceipt: true
         };
 
-        console.log('[EXPENSES] 3-way validation:', threeWayValidation);
+        console.log('[EXPENSES] 3-way validation result:', threeWayValidation);
+      } else {
+        console.log('[EXPENSES] 3-way validation SKIPPED - not in scanned receipt mode or no validation data');
       }
 
       // Clear scanned receipt state
@@ -5889,6 +5906,7 @@
       selectedBillStatus = 'closed'; // Default to closed for scanned receipts
       updateScannedReceiptModeUI();
       updateBillStatusSection(); // Show bill status section with 'closed' pre-selected
+      updateScanValidationSection(); // Show validation section with running totals
 
       els.scanReceiptProgressFill.style.width = '100%';
 

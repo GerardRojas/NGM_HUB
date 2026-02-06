@@ -18,18 +18,30 @@
    Full Layout - Subtle gradient background
    ------------------------------------------------------------------- */
 
+/* Lock viewport -- no scroll */
+.page-arturito .app-layout {
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .page-arturito .main-area {
   background: #0d0d0d;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
 .arturito-main {
+  flex: 1;
+  min-height: 0;
   padding: 0;
-  height: calc(100vh - 60px);
   max-width: none;
+  width: 100%;
+  margin-inline: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   /* Subtle gradient -- barely perceptible radial glow */
   background:
     radial-gradient(ellipse at 50% 0%, rgba(62, 207, 142, 0.025) 0%, transparent 60%),

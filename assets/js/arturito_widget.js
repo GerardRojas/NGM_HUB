@@ -997,7 +997,14 @@
       }
 
       // â”€â”€ STEP 5: Forward to /web-chat for conversation â”€â”€â”€â”€â”€â”€â”€â”€
-      const chatText = result.overrideText || content;
+      let chatText = result.overrideText || content;
+
+      // If a BVA project was selected by button (with ID), send the ID
+      // for direct resolution instead of relying on name-based fuzzy matching
+      if (state._bvaProjectId) {
+        chatText = "bva " + state._bvaProjectId;
+        state._bvaProjectId = null;
+      }
 
       const response = await fetch(`${API_BASE}/arturito/web-chat`, {
         method: "POST",
@@ -1273,7 +1280,7 @@
           const projectButtons = actionData.projects.slice(0, 6).map(p =>
             `<button type="button"
                     class="arturito-widget-action-btn-inline arturito-widget-project-btn"
-                    onclick="ArturitoWidget.selectProjectForBVA('${escapeHtml(p.name)}')">
+                    onclick="ArturitoWidget.selectProjectForBVA('${escapeHtml(p.name)}', '${escapeHtml(String(p.id || ''))}')">
               ${escapeHtml(p.name)}
             </button>`
           ).join("");
@@ -1841,9 +1848,13 @@
    * Called when user clicks on a project button after asking for BVA without project
    * @param {string} projectName - Name of the project to generate BVA for
    */
-  function selectProjectForBVA(projectName) {
+  function selectProjectForBVA(projectName, projectId) {
     // Set input and let sendMessage handle the full flow
     DOM.input.value = `bva ${projectName}`;
+    // When we have the project ID, send it to the API for direct resolution
+    if (projectId) {
+      state._bvaProjectId = projectId;
+    }
     sendMessage();
   }
 

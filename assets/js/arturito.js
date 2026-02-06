@@ -1019,10 +1019,18 @@
     state.isLoading = true;
     DOM.typingIndicator.style.display = "flex";
 
+    // If a BVA project was selected by button (with ID), send the ID
+    // for direct resolution instead of relying on name-based fuzzy matching
+    let apiText = content;
+    if (state._bvaProjectId) {
+      apiText = "bva " + state._bvaProjectId;
+      state._bvaProjectId = null;
+    }
+
     try {
       // Send to API with thread_id (Assistants API)
       const payload = {
-        text: content,
+        text: apiText,
         user_name: state.currentUser?.user_name,
         user_email: state.currentUser?.email,
         user_role: state.currentUser?.user_role,
@@ -1192,7 +1200,7 @@
       case "ask_project":
         if (actionData.projects && actionData.projects.length > 0) {
           const projectButtons = actionData.projects.slice(0, 6).map(function (p) {
-            return '<button type="button" class="art-action-btn art-project-btn" onclick="ArturitoChat.selectProjectForBVA(\'' + escapeHtml(p.name) + '\')">'
+            return '<button type="button" class="art-action-btn art-project-btn" onclick="ArturitoChat.selectProjectForBVA(\'' + escapeHtml(p.name) + '\', \'' + escapeHtml(String(p.id || '')) + '\')">'
               + escapeHtml(p.name) + '</button>';
           }).join("");
           return '<div class="art-action-btns art-project-grid">' + projectButtons + '</div>';
@@ -1251,9 +1259,14 @@
     return "";
   }
 
-  function selectProjectForBVA(projectName) {
+  function selectProjectForBVA(projectName, projectId) {
     DOM.chatInput.value = "bva " + projectName;
     handleInputChange();
+    // When we have the project ID, send it to the API for direct resolution
+    // (avoids NLU re-parsing and fuzzy name matching issues)
+    if (projectId) {
+      state._bvaProjectId = projectId;
+    }
     sendMessage();
   }
 

@@ -3790,6 +3790,21 @@ body.page-process-manager {
     animation: flowDash 0.8s linear infinite;
 }
 
+/* Detail view draft connections - gray, static (no animation) */
+.detail-connection.module-draft {
+    stroke: #6b7280 !important;
+    stroke-dasharray: 6 4;
+    animation: none !important;
+    opacity: 0.6;
+}
+
+/* Detail view live connections - green, animated */
+.detail-connection.module-implemented {
+    stroke: #3ecf8e !important;
+    stroke-dasharray: 8 4;
+    animation: flowDash 0.8s linear infinite !important;
+}
+
 /* Connecting mode - show visual feedback */
 .canvas-container.connecting-mode {
     cursor: crosshair;

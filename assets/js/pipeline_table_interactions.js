@@ -292,7 +292,9 @@
   // ACTUALIZAR DISPLAY DE CELDA
   // ================================
   function updateCellDisplay(td, colKey, value) {
+    console.log("[PIPELINE-INTERACTIONS] updateCellDisplay called:", { colKey, value, td });
     const div = td.querySelector("div") || td;
+    console.log("[PIPELINE-INTERACTIONS] updateCellDisplay - target div:", div);
 
     if (PERSON_COLS.includes(colKey)) {
       // Check if multi-person column (collaborator, manager)
@@ -320,6 +322,7 @@
     } else {
       div.textContent = value || "-";
     }
+    console.log("[PIPELINE-INTERACTIONS] updateCellDisplay DONE - div.innerHTML:", div.innerHTML?.substring(0, 100));
   }
 
   function restoreCellContent(td, colKey, originalValue) {
@@ -543,7 +546,10 @@
       multiple: isMultiple,
       placeholder: isMultiple ? "Add people..." : "Select person...",
       onChange: (users) => {
-        console.log("[PIPELINE-INTERACTIONS] PeoplePicker onChange:", users);
+        console.log("[PIPELINE-INTERACTIONS] ========== PeoplePicker onChange FIRED ==========");
+        console.log("[PIPELINE-INTERACTIONS] onChange users:", users);
+        console.log("[PIPELINE-INTERACTIONS] onChange activeEditor:", activeEditor);
+        console.log("[PIPELINE-INTERACTIONS] onChange activeEditor.td === td:", activeEditor?.td === td);
         selectedUsers = users || [];
 
         if (isMultiple) {
@@ -551,16 +557,21 @@
           const userIds = selectedUsers.map(u => u.id);
           const userNames = selectedUsers.map(u => u.name).join(", ");
           selectedValue = userNames || null;
+          console.log("[PIPELINE-INTERACTIONS] Multi-select - userIds:", userIds, "userNames:", userNames);
 
           // Use plural field name for backend (collaborators, managers)
           const pluralField = colKey + "s"; // collaborator -> collaborators, manager -> managers
 
           if (activeEditor && activeEditor.td === td) {
+            console.log("[PIPELINE-INTERACTIONS] Saving multi-select to backend...");
             saveFieldToBackend(taskId, pluralField, userIds, td);
             activeEditor.originalValue = userNames;
             activeEditor.alreadySaved = true; // Mark as saved to prevent double-save in closeActiveEditor
+            console.log("[PIPELINE-INTERACTIONS] Updating cell display with:", userNames);
             updateCellDisplay(td, colKey, userNames);
             // Don't close immediately for multi-select - user clicks away to close
+          } else {
+            console.warn("[PIPELINE-INTERACTIONS] Cannot save - activeEditor mismatch or null");
           }
         } else {
           // For single select: existing behavior
@@ -568,15 +579,22 @@
           const userId = user ? user.id : null;
           const userName = user ? user.name : null;
           selectedValue = userName;
+          console.log("[PIPELINE-INTERACTIONS] Single select - userId:", userId, "userName:", userName);
 
           if (activeEditor && activeEditor.td === td) {
+            console.log("[PIPELINE-INTERACTIONS] Saving single select to backend...");
             saveFieldToBackend(taskId, colKey, userId, td);
             activeEditor.originalValue = userName;
             activeEditor.alreadySaved = true; // Mark as saved to prevent double-save in closeActiveEditor
+            console.log("[PIPELINE-INTERACTIONS] Updating cell display with:", userName);
             updateCellDisplay(td, colKey, userName);
+            console.log("[PIPELINE-INTERACTIONS] Closing editor (already saved)...");
             closeActiveEditor(false); // false = don't save again
+          } else {
+            console.warn("[PIPELINE-INTERACTIONS] Cannot save - activeEditor mismatch or null");
           }
         }
+        console.log("[PIPELINE-INTERACTIONS] ========== PeoplePicker onChange END ==========");
       }
     });
 
@@ -693,22 +711,32 @@
       catalogType: colKey,
       placeholder: `Select ${colKey}...`,
       onChange: (item) => {
-        console.log("[PIPELINE-INTERACTIONS] CatalogPicker onChange:", item);
+        console.log("[PIPELINE-INTERACTIONS] ========== CatalogPicker onChange FIRED ==========");
+        console.log("[PIPELINE-INTERACTIONS] onChange item:", item);
+        console.log("[PIPELINE-INTERACTIONS] onChange activeEditor:", activeEditor);
+        console.log("[PIPELINE-INTERACTIONS] onChange activeEditor.td === td:", activeEditor?.td === td);
         // Store both ID (for backend) and name (for display)
         const valueId = item ? item.id : null;
         const valueName = item ? item.name : null;
         selectedValue = valueName; // For display
+        console.log("[PIPELINE-INTERACTIONS] valueId:", valueId, "valueName:", valueName);
 
         // Guardar inmediatamente al seleccionar (send ID to backend)
         if (activeEditor && activeEditor.td === td) {
+          console.log("[PIPELINE-INTERACTIONS] Saving catalog to backend...");
           saveFieldToBackend(taskId, colKey, valueId, td);
           // Update originalValue with the name for display restoration
           activeEditor.originalValue = valueName;
           activeEditor.alreadySaved = true; // Mark as saved to prevent double-save
+          console.log("[PIPELINE-INTERACTIONS] Updating cell display with:", valueName);
           // Update cell display with the name
           updateCellDisplay(td, colKey, valueName);
+          console.log("[PIPELINE-INTERACTIONS] Closing editor (already saved)...");
           closeActiveEditor(false); // false porque ya guardamos
+        } else {
+          console.warn("[PIPELINE-INTERACTIONS] Cannot save - activeEditor mismatch or null");
         }
+        console.log("[PIPELINE-INTERACTIONS] ========== CatalogPicker onChange END ==========");
       }
     });
 

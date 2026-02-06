@@ -37,6 +37,23 @@
           </button>
         </div>
       </div>
+
+      <!-- Running Total Section (visible in scan mode) -->
+      <div id="scanValidationSection" class="scan-validation-section hidden">
+        <div class="scan-validation-row">
+          <span class="scan-validation-label">Modal Sum:</span>
+          <span class="scan-validation-value" id="modalRunningTotal">$0.00</span>
+        </div>
+        <div class="scan-validation-row">
+          <span class="scan-validation-label">Invoice Total:</span>
+          <span class="scan-validation-value" id="invoiceTotalDisplay">$0.00</span>
+        </div>
+        <div class="scan-validation-row">
+          <span class="scan-validation-label">API Calculated:</span>
+          <span class="scan-validation-value" id="apiCalculatedDisplay">$0.00</span>
+        </div>
+        <div class="scan-validation-status" id="scanValidationStatus"></div>
+      </div>
     </div>
 
     <div class="modal-footer">

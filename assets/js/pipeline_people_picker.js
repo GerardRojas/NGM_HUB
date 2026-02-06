@@ -452,7 +452,9 @@
     }
 
     toggleUser(userId) {
+      console.log('[PeoplePicker] ========== toggleUser() START ==========');
       console.log('[PeoplePicker] toggleUser() called with id:', userId);
+      console.log('[PeoplePicker] this.users:', this.users);
       const existingIndex = this.selectedUsers.findIndex(u => u.id === userId);
       console.log('[PeoplePicker] Existing index:', existingIndex);
 
@@ -473,13 +475,16 @@
             console.log('[PeoplePicker] Multi select - adding');
             this.selectedUsers.push(user);
           }
+        } else {
+          console.error('[PeoplePicker] ERROR: User not found in this.users for id:', userId);
         }
       }
 
       this.renderSelected();
       this.renderList();
-      console.log('[PeoplePicker] Emitting change, selected:', this.selectedUsers);
+      console.log('[PeoplePicker] About to emit change, selectedUsers:', this.selectedUsers);
       this.emitChange();
+      console.log('[PeoplePicker] ========== toggleUser() END ==========');
 
       // Close if single select
       if (!this.multiple) {

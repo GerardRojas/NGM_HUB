@@ -435,7 +435,6 @@ function renderConceptsTable() {
             <td>${escapeHtml(con.subcategory_name || '-')}</td>
             <td>${escapeHtml(con.unit_name || '-')}</td>
             <td>${formatCurrency(con.calculated_cost || con.base_cost || 0)}</td>
-            <td><span style="color: #3ecf8e;">${con.materials_count || 0}</span></td>
             <td>
                 <button class="btn-action" onclick="editConcept('${con.id}')">Edit</button>
                 <button class="btn-action btn-action-danger" onclick="confirmDeleteConcept('${con.id}')">Del</button>
@@ -603,16 +602,17 @@ async function loadLookups() {
 // Tab Switching
 // ========================================
 function switchTab(tab) {
+    console.log('[TABS] Switching to tab:', tab);
     state.activeTab = tab;
     state.pagination.page = 1;
 
     // Update tab buttons
-    DOM.tabMaterials.classList.toggle('tab-btn-active', tab === 'materials');
-    DOM.tabConcepts.classList.toggle('tab-btn-active', tab === 'concepts');
+    if (DOM.tabMaterials) DOM.tabMaterials.classList.toggle('tab-btn-active', tab === 'materials');
+    if (DOM.tabConcepts) DOM.tabConcepts.classList.toggle('tab-btn-active', tab === 'concepts');
 
     // Update button text
-    DOM.btnAddNew.textContent = tab === 'materials' ? '+ Add Material' : '+ Add Concept';
-    DOM.btnAddFromEmpty.textContent = tab === 'materials' ? '+ Add First Material' : '+ Add First Concept';
+    if (DOM.btnAddNew) DOM.btnAddNew.textContent = tab === 'materials' ? '+ Add Material' : '+ Add Concept';
+    if (DOM.btnAddFromEmpty) DOM.btnAddFromEmpty.textContent = tab === 'materials' ? '+ Add First Material' : '+ Add First Concept';
 
     loadData();
 }
@@ -1797,8 +1797,12 @@ function resetColumnVisibility() {
 // ========================================
 function setupEventListeners() {
     // Tabs
-    DOM.tabMaterials.addEventListener('click', () => switchTab('materials'));
-    DOM.tabConcepts.addEventListener('click', () => switchTab('concepts'));
+    if (DOM.tabMaterials) {
+        DOM.tabMaterials.addEventListener('click', () => switchTab('materials'));
+    }
+    if (DOM.tabConcepts) {
+        DOM.tabConcepts.addEventListener('click', () => switchTab('concepts'));
+    }
 
     // Add buttons
     DOM.btnAddNew.addEventListener('click', () => {

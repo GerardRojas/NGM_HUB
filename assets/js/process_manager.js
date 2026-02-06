@@ -3661,18 +3661,13 @@
                 redrawDetailConnections(module, subProcessNodes, freshRects);
             });
 
-            // Double-click to edit
-            nodeEl.addEventListener('dblclick', (e) => {
-                e.stopPropagation();
-                // Milestone and Decision types open notepad
-                if (node.type === 'milestone' || node.type === 'decision') {
-                    // For sub-process nodes, we'd need a different approach
-                    // For now, open edit modal
+            // Double-click to edit (except link nodes which have their own navigation handler)
+            if (node.type !== 'link') {
+                nodeEl.addEventListener('dblclick', (e) => {
+                    e.stopPropagation();
                     window.processManager?.editSubProcessNode?.(module.id, node.id);
-                } else {
-                    window.processManager?.editSubProcessNode?.(module.id, node.id);
-                }
-            });
+                });
+            }
 
             // Right-click context menu
             nodeEl.addEventListener('contextmenu', (e) => {
@@ -3983,6 +3978,13 @@
 
             if (!sourceRect || !targetRect) return;
 
+            // Determine if connection should be draft (gray static) or live (green animated)
+            const sourceNode = subProcessNodes.find(n => n.id === conn.source);
+            const targetNode = subProcessNodes.find(n => n.id === conn.target);
+            const bothLive = sourceNode?.is_implemented && targetNode?.is_implemented;
+            const isDraft = !bothLive;
+            const connectionColor = isDraft ? '#6b7280' : '#3ecf8e';
+
             // Use port-based routing when port data is available, fall back to auto-routing
             let points;
             if (conn.sourcePort && conn.targetPort) {
@@ -4031,12 +4033,13 @@
                 }
             }
 
-            // Create path element
+            // Create path element with appropriate class for draft/live styling
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('class', 'detail-connection');
+            const statusClass = isDraft ? 'module-draft' : 'module-implemented';
+            path.setAttribute('class', `detail-connection ${statusClass}`);
             path.setAttribute('d', d);
             path.setAttribute('fill', 'none');
-            path.setAttribute('stroke', '#3ecf8e');
+            path.setAttribute('stroke', connectionColor);
             path.setAttribute('stroke-width', '2');
             path.setAttribute('data-source', conn.source);
             path.setAttribute('data-target', conn.target);

@@ -59,6 +59,7 @@
   let scannedReceiptTotal = null;   // Total from scanned receipt (for expected_total)
   let isScannedReceiptMode = false; // When true, blocks adding rows and marks bill as closed on save
   let selectedBillStatus = 'open';  // Status to use when saving bill (open, closed, split)
+  let scannedReceiptValidation = null; // Stores API validation data for 3-way validation
 
   // CSV Import State
   let csvParsedData = {
@@ -3553,9 +3554,11 @@
     scannedReceiptBillId = null;
     scannedReceiptVendorId = null;
     scannedReceiptTotal = null;
+    scannedReceiptValidation = null; // Clear validation data
     isScannedReceiptMode = false;
     selectedBillStatus = 'open'; // Reset to default
     updateScannedReceiptModeUI(); // Reset UI
+    updateScanValidationSection(); // Reset validation section
     updateBillStatusSection(); // Reset bill status UI
   }
 
@@ -3602,6 +3605,7 @@
         document.getElementById('btnUnlockScannedMode')?.addEventListener('click', () => {
           isScannedReceiptMode = false;
           updateScannedReceiptModeUI();
+          updateScanValidationSection(); // Hide validation section when unlocked
         });
       }
     } else {
@@ -3615,6 +3619,107 @@
       if (scannedIndicator) {
         scannedIndicator.remove();
       }
+    }
+  }
+
+  /**
+   * Calculates the running total from all amount inputs in the modal
+   * @returns {number} Sum of all amounts in the modal
+   */
+  function calculateModalRunningTotal() {
+    const amountInputs = els.expenseRowsBody?.querySelectorAll('.exp-input[data-field="Amount"]');
+    if (!amountInputs) return 0;
+
+    let total = 0;
+    amountInputs.forEach(input => {
+      const value = parseFloat(input.value) || 0;
+      total += value;
+    });
+    return total;
+  }
+
+  /**
+   * Updates the scan validation section with current totals
+   * Shows/hides based on isScannedReceiptMode
+   */
+  function updateScanValidationSection() {
+    const section = document.getElementById('scanValidationSection');
+    const modalTotalEl = document.getElementById('modalRunningTotal');
+    const invoiceTotalEl = document.getElementById('invoiceTotalDisplay');
+    const apiCalcEl = document.getElementById('apiCalculatedDisplay');
+    const statusEl = document.getElementById('scanValidationStatus');
+
+    if (!section) return;
+
+    if (!isScannedReceiptMode || !scannedReceiptValidation) {
+      section.classList.add('hidden');
+      return;
+    }
+
+    // Show section
+    section.classList.remove('hidden');
+
+    // Calculate and display modal total
+    const modalTotal = calculateModalRunningTotal();
+    if (modalTotalEl) {
+      modalTotalEl.textContent = `$${modalTotal.toFixed(2)}`;
+    }
+
+    // Display invoice total
+    if (invoiceTotalEl) {
+      invoiceTotalEl.textContent = `$${(scannedReceiptValidation.invoiceTotal || 0).toFixed(2)}`;
+    }
+
+    // Display API calculated sum
+    if (apiCalcEl) {
+      apiCalcEl.textContent = `$${(scannedReceiptValidation.apiCalculatedSum || 0).toFixed(2)}`;
+    }
+
+    // Check if all three match (with tolerance for floating point)
+    const invoiceTotal = scannedReceiptValidation.invoiceTotal || 0;
+    const apiSum = scannedReceiptValidation.apiCalculatedSum || 0;
+    const tolerance = 0.02; // 2 cents tolerance
+
+    const allMatch =
+      Math.abs(modalTotal - invoiceTotal) <= tolerance &&
+      Math.abs(modalTotal - apiSum) <= tolerance &&
+      Math.abs(invoiceTotal - apiSum) <= tolerance;
+
+    if (statusEl) {
+      if (allMatch) {
+        statusEl.className = 'scan-validation-status status-match';
+        statusEl.textContent = 'All totals match!';
+      } else {
+        statusEl.className = 'scan-validation-status status-mismatch';
+        const diff = Math.abs(modalTotal - invoiceTotal);
+        statusEl.textContent = `Mismatch detected: Modal differs by $${diff.toFixed(2)}`;
+      }
+    }
+  }
+
+  /**
+   * Attaches event listeners to amount inputs to update running total
+   */
+  function attachAmountChangeListeners() {
+    const amountInputs = els.expenseRowsBody?.querySelectorAll('.exp-input[data-field="Amount"]');
+    if (!amountInputs) return;
+
+    amountInputs.forEach(input => {
+      // Remove existing listener to avoid duplicates
+      input.removeEventListener('input', handleAmountChange);
+      input.removeEventListener('blur', handleAmountChange);
+      // Add listeners
+      input.addEventListener('input', handleAmountChange);
+      input.addEventListener('blur', handleAmountChange);
+    });
+  }
+
+  /**
+   * Handler for amount input changes - updates validation section
+   */
+  function handleAmountChange() {
+    if (isScannedReceiptMode) {
+      updateScanValidationSection();
     }
   }
 
@@ -4519,11 +4624,36 @@
 
       console.log('[EXPENSES] All expenses saved successfully');
 
+      // Perform 3-way validation BEFORE clearing state (only for scanned receipts)
+      let threeWayValidation = null;
+      if (isScannedReceiptMode && scannedReceiptValidation) {
+        const modalTotal = calculateModalRunningTotal();
+        const invoiceTotal = scannedReceiptValidation.invoiceTotal || 0;
+        const apiSum = scannedReceiptValidation.apiCalculatedSum || 0;
+        const tolerance = 0.02; // 2 cents tolerance
+
+        const allMatch =
+          Math.abs(modalTotal - invoiceTotal) <= tolerance &&
+          Math.abs(modalTotal - apiSum) <= tolerance &&
+          Math.abs(invoiceTotal - apiSum) <= tolerance;
+
+        threeWayValidation = {
+          modalTotal,
+          invoiceTotal,
+          apiSum,
+          allMatch,
+          wasScannedReceipt: true
+        };
+
+        console.log('[EXPENSES] 3-way validation:', threeWayValidation);
+      }
+
       // Clear scanned receipt state
       scannedReceiptFile = null;
       scannedReceiptBillId = null;
       scannedReceiptVendorId = null;
       scannedReceiptTotal = null;
+      scannedReceiptValidation = null;
       isScannedReceiptMode = false;
       selectedBillStatus = 'open'; // Reset to default
 
@@ -4534,7 +4664,7 @@
 
       closeAddExpenseModal();
 
-      // Build success message, including any receipt upload failures
+      // Build success message, including validation and any receipt upload failures
       if (window.Toast) {
         if (failedReceiptUploads.length > 0) {
           const failDetails = failedReceiptUploads.map(fail => {
@@ -4544,6 +4674,22 @@
             return `Expense ${fail.id}: ${fail.error}`;
           }).join('\n');
           Toast.warning('Saved with Warnings', `${expensesToSave.length} expense(s) saved. ${failedReceiptUploads.length} receipt(s) failed to upload.`, { details: failDetails });
+        } else if (threeWayValidation) {
+          // Show 3-way validation results for scanned receipts
+          const v = threeWayValidation;
+          let validationDetails = '3-Way Validation:\n';
+          validationDetails += `  Invoice Total:  $${v.invoiceTotal.toFixed(2)}\n`;
+          validationDetails += `  API Calculated: $${v.apiSum.toFixed(2)}\n`;
+          validationDetails += `  Modal Sum:      $${v.modalTotal.toFixed(2)}\n\n`;
+
+          if (v.allMatch) {
+            validationDetails += 'All totals match!';
+            Toast.success('Expenses Saved', `${expensesToSave.length} expense(s) saved successfully!`, { details: validationDetails, persistent: true });
+          } else {
+            const diff = Math.abs(v.modalTotal - v.invoiceTotal);
+            validationDetails += `WARNING: Modal differs from invoice by $${diff.toFixed(2)}`;
+            Toast.warning('Saved with Validation Warning', `${expensesToSave.length} expense(s) saved but totals do not match.`, { details: validationDetails, persistent: true });
+          }
         } else {
           Toast.success('Expenses Saved', `${expensesToSave.length} expense(s) saved successfully!`);
         }
@@ -5720,6 +5866,14 @@
         console.log('[SCAN RECEIPT] Extracted bill_id:', scannedReceiptBillId);
         console.log('[SCAN RECEIPT] Extracted vendor_id:', scannedReceiptVendorId);
         console.log('[SCAN RECEIPT] Extracted total:', scannedReceiptTotal);
+
+        // Store validation data for 3-way validation at save time
+        scannedReceiptValidation = {
+          invoiceTotal: result.data.validation?.invoice_total || scannedReceiptTotal,
+          apiCalculatedSum: result.data.validation?.calculated_sum || scannedReceiptTotal,
+          validationPassed: result.data.validation?.validation_passed !== false
+        };
+        console.log('[SCAN RECEIPT] Stored validation data:', scannedReceiptValidation);
       }
 
       // Close scan modal
@@ -5865,16 +6019,16 @@
         console.log('[POPULATE] ⚠ No description in expense data');
       }
 
-      // Populate amount (include tax if present)
+      // Populate amount (amount from API already includes tax)
       if (expense.amount) {
         const amountInput = row.querySelector('[data-field="Amount"]');
         console.log('[POPULATE] Looking for amount input, found:', !!amountInput);
         if (amountInput) {
-          // Add tax_included to amount if present
-          const taxAmount = expense.tax_included || 0;
-          const totalAmount = parseFloat(expense.amount) + parseFloat(taxAmount);
-          amountInput.value = totalAmount.toFixed(2);
-          console.log('[POPULATE] ✓ Set amount:', expense.amount, '+ tax:', taxAmount, '= total:', totalAmount.toFixed(2));
+          // Note: expense.amount already includes tax (it's the final_amount from API)
+          // tax_included is informational only, don't add it again
+          const finalAmount = parseFloat(expense.amount);
+          amountInput.value = finalAmount.toFixed(2);
+          console.log('[POPULATE] ✓ Set amount:', finalAmount.toFixed(2), '(tax already included:', expense.tax_included || 0, ')');
         } else {
           console.warn('[POPULATE] ❌ Amount input not found!');
         }
@@ -6018,6 +6172,12 @@
         console.log('[POPULATE] ⚠ No payment input found or no payment_methods in metadata');
       }
     }
+
+    // After populating all expenses, update validation section and attach listeners
+    console.log('[POPULATE] ========================================');
+    console.log('[POPULATE] END populateExpensesFromScan - Updating validation section');
+    attachAmountChangeListeners();
+    updateScanValidationSection();
   }
 
   // ================================

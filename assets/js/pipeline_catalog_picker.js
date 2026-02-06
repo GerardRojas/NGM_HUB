@@ -498,7 +498,9 @@
     }
 
     selectItem(itemId) {
+      console.log('[CatalogPicker] ========== selectItem() START ==========');
       console.log('[CatalogPicker] selectItem() called with id:', itemId);
+      console.log('[CatalogPicker] this.items:', this.items);
       const item = this.items.find(i => String(i.id) === String(itemId));
       console.log('[CatalogPicker] Found item:', item);
 
@@ -511,13 +513,17 @@
           console.log('[CatalogPicker] Selecting item:', item.name);
           this.selectedItem = item;
         }
+      } else {
+        console.error('[CatalogPicker] ERROR: Item not found in this.items for id:', itemId);
       }
 
       this.renderSelected();
       this.renderList();
-      console.log('[CatalogPicker] Emitting change...');
+      console.log('[CatalogPicker] About to emit change, selectedItem:', this.selectedItem);
       this.emitChange();
+      console.log('[CatalogPicker] Closing picker...');
       this.close();
+      console.log('[CatalogPicker] ========== selectItem() END ==========');
     }
 
     renderSelected() {

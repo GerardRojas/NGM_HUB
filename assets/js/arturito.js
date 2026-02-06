@@ -672,6 +672,7 @@
     threadId: null,      // OpenAI Assistants thread ID
     isLoading: false,
     sessionId: SESSION_ID,
+    debug: false,        // Toggle with ArturitoChat.debug(true)
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1020,6 +1021,23 @@
 
     try {
       // Send to API with thread_id (Assistants API)
+      const payload = {
+        text: content,
+        user_name: state.currentUser?.user_name,
+        user_email: state.currentUser?.email,
+        user_role: state.currentUser?.user_role,
+        session_id: state.sessionId,
+        thread_id: state.threadId,
+        current_page: "arturito.html",
+      };
+
+      if (state.debug) {
+        console.group("[Arturito DEBUG] Request");
+        console.log("URL:", `${API_BASE}/arturito/web-chat`);
+        console.log("payload:", payload);
+        console.groupEnd();
+      }
+
       const response = await fetch(`${API_BASE}/arturito/web-chat`, {
         method: "POST",
         headers: {
@@ -1027,15 +1045,7 @@
           ...getAuthHeaders(),
         },
         credentials: "include",
-        body: JSON.stringify({
-          text: content,
-          user_name: state.currentUser?.user_name,
-          user_email: state.currentUser?.email,
-          user_role: state.currentUser?.user_role,
-          session_id: state.sessionId,
-          thread_id: state.threadId,
-          current_page: "arturito.html",
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -1043,6 +1053,17 @@
       }
 
       const data = await response.json();
+
+      // DEBUG: log full API response
+      if (state.debug) {
+        console.group("[Arturito DEBUG] API Response");
+        console.log("text:", data.text);
+        console.log("action:", data.action);
+        console.log("data:", JSON.stringify(data.data, null, 2));
+        console.log("thread_id:", data.thread_id);
+        console.log("full response:", data);
+        console.groupEnd();
+      }
 
       // Save thread_id from response for future messages
       if (data.thread_id) {
@@ -1158,6 +1179,14 @@
   function renderActionButtons(msg) {
     const action = msg.action;
     const actionData = msg.data || {};
+
+    if (state.debug) {
+      console.group("[Arturito DEBUG] renderActionButtons");
+      console.log("action:", action);
+      console.log("actionData:", actionData);
+      console.log("msg.data:", msg.data);
+      console.groupEnd();
+    }
 
     switch (action) {
       case "ask_project":
@@ -1420,6 +1449,7 @@
       sendMessage();
     },
     getThreadId: () => state.threadId,
+    debug: (on) => { state.debug = on !== false; console.log("[Arturito] Debug mode:", state.debug); },
     selectProjectForBVA,
     downloadPDF,
   };

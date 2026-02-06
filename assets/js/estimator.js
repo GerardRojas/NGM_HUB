@@ -25,6 +25,14 @@
     ENABLED: true
   };
 
+  // ================================
+  // AUTH HELPERS
+  // ================================
+  function getAuthHeaders() {
+    const token = localStorage.getItem('ngmToken');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  }
+
   // State
   let supabaseClient = null;
   let currentEstimateData = null;
@@ -81,6 +89,11 @@
 
     // Continue with full initialization
     continueInitialization();
+
+    // Initialize topbar pills (environment, server status, user)
+    if (typeof window.initTopbarPills === 'function') {
+      window.initTopbarPills();
+    }
 
     // Load default template from bucket or start blank
     loadDefaultTemplate();
@@ -302,7 +315,7 @@
 
       const response = await fetch(`${API_BASE}/estimator/estimates`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         credentials: 'include',
         body: JSON.stringify(requestPayload)
       });
@@ -788,7 +801,7 @@
       // 4. Call backend API to save estimate
       const response = await fetch(`${API_BASE}/estimator/estimates`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         credentials: 'include',
         body: JSON.stringify(requestPayload)
       });
@@ -861,6 +874,7 @@
       // Use backend API to list estimates
       const response = await fetch(`${API_BASE}/estimator/estimates`, {
         method: 'GET',
+        headers: { ...getAuthHeaders() },
         credentials: 'include'
       });
 
@@ -938,6 +952,7 @@
       // Use backend API to load estimate
       const response = await fetch(`${API_BASE}/estimator/estimates/${encodeURIComponent(estimateId)}`, {
         method: 'GET',
+        headers: { ...getAuthHeaders() },
         credentials: 'include'
       });
 
@@ -1300,6 +1315,7 @@
         els.statusEl.textContent = 'Loading template from API...';
         const response = await fetch(`${API_BASE}/estimator/templates/${encodeURIComponent(templateId)}`, {
           method: 'GET',
+          headers: { ...getAuthHeaders() },
           credentials: 'include'
         });
 
@@ -1397,15 +1413,15 @@
     }
 
     templatesList.innerHTML = templates.map(tpl => {
-      // Extract readable name from template ID (remove timestamp)
-      const displayName = tpl.name
+      // Extract readable name from template name or ID (remove timestamp)
+      const displayName = (tpl.name || tpl.id || 'Untitled')
         .replace(/-\d{13}$/, '') // Remove timestamp
         .replace(/-/g, ' ')     // Replace dashes with spaces
         .replace(/\b\w/g, l => l.toUpperCase()); // Title case
 
       return `
         <li class="estimator-file estimator-file--template"
-            data-template-id="${tpl.name}"
+            data-template-id="${tpl.id}"
             title="Click to load template: ${displayName}">
           ${displayName}
         </li>
@@ -2498,6 +2514,7 @@
       try {
         const checkRes = await fetch(`${API_BASE}/concepts?code=${encodeURIComponent(concept.code)}`, {
           method: 'GET',
+          headers: { ...getAuthHeaders() },
           credentials: 'include'
         });
         if (checkRes.ok) {
@@ -2516,7 +2533,7 @@
         // Update existing concept
         const updateRes = await fetch(`${API_BASE}/concepts/${existingConcept.id}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
           credentials: 'include',
           body: JSON.stringify(conceptData)
         });
@@ -2531,7 +2548,7 @@
         // Create new concept
         const createRes = await fetch(`${API_BASE}/concepts`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
           credentials: 'include',
           body: JSON.stringify(conceptData)
         });
@@ -2556,7 +2573,7 @@
           try {
             await fetch(`${API_BASE}/concepts/${savedConceptId}/materials`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
               credentials: 'include',
               body: JSON.stringify({
                 material_id: mat.material_id,
@@ -3014,6 +3031,7 @@
       // Fetch templates from backend API
       const response = await fetch(`${API_BASE}/estimator/templates`, {
         method: 'GET',
+        headers: { ...getAuthHeaders() },
         credentials: 'include'
       });
 
@@ -3097,7 +3115,10 @@
     els.statusEl.textContent = 'Fetching /estimator/base-structure...';
 
     try {
-      const res = await fetch(`${API_BASE}/estimator/base-structure`);
+      const res = await fetch(`${API_BASE}/estimator/base-structure`, {
+        headers: { ...getAuthHeaders() },
+        credentials: 'include'
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data = await res.json();

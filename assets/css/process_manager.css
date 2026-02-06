@@ -7007,3 +7007,86 @@ body.page-process-manager {
         gap: 10px;
     }
 }
+
+/* ================================
+   Link Node Configuration
+   ================================ */
+
+#moduleLinkGroup {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #1f1f1f;
+}
+
+#moduleLinkGroup .form-row {
+    display: flex;
+    gap: 16px;
+}
+
+#moduleLinkGroup .form-row .form-group {
+    flex: 1;
+}
+
+#moduleLinkGroup .form-help {
+    margin-top: 8px;
+    color: #6b7280;
+    font-size: 12px;
+}
+
+#moduleLinkTarget optgroup {
+    color: #9ca3af;
+    font-weight: 600;
+    background: #1a1a1a;
+}
+
+#moduleLinkTarget option {
+    color: #e5e7eb;
+    background: #111111;
+    padding: 4px 8px;
+}
+
+/* Link target highlight animation when navigating */
+.flow-node.link-target-highlight {
+    animation: linkTargetPulse 0.5s ease-out 4;
+    z-index: 100;
+}
+
+@keyframes linkTargetPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(244, 114, 182, 0.7);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 20px 10px rgba(244, 114, 182, 0.3);
+        transform: scale(1.02);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(244, 114, 182, 0);
+        transform: scale(1);
+    }
+}
+
+/* Link connection indicator on node */
+.flow-node.type-link.has-target::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 10px;
+    height: 10px;
+    background: #3ecf8e;
+    border-radius: 50%;
+    border: 2px solid #0d0d0d;
+}
+
+.flow-node.type-link:not(.has-target)::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 10px;
+    height: 10px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 2px solid #0d0d0d;
+}

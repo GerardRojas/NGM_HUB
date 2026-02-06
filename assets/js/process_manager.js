@@ -1984,15 +1984,22 @@
         if (btnSave) btnSave.addEventListener('click', saveModule);
         if (btnDelete) btnDelete.addEventListener('click', confirmDeleteModule);
 
-        // Auto-select small size for algorithm type + show/hide diagram dropdown
+        // Auto-select small size for algorithm type + show/hide diagram/link dropdowns
         if (typeSelect && sizeSelect) {
             typeSelect.addEventListener('change', (e) => {
-                const isAlgorithm = e.target.value === 'algorithm';
+                const selectedType = e.target.value;
+                const isAlgorithm = selectedType === 'algorithm';
+                const isLink = selectedType === 'link';
+
                 if (isAlgorithm) {
                     sizeSelect.value = 'small';
                 }
+
                 // Show/hide diagram dropdown
                 toggleDiagramDropdownVisibility(isAlgorithm);
+
+                // Show/hide link fields
+                toggleLinkFieldsVisibility(isLink);
             });
         }
 
@@ -2070,6 +2077,190 @@
     }
 
     // ================================
+    // Link Node Helpers
+    // ================================
+
+    /**
+     * Get all link nodes from all modules with their parent module info
+     * @returns {Array} Array of {node, moduleId, moduleName}
+     */
+    function getAllLinkNodes() {
+        const linkNodes = [];
+
+        state.customModules.forEach(module => {
+            if (!module.subProcessNodes) return;
+
+            module.subProcessNodes.forEach(node => {
+                if (node.type === 'link') {
+                    linkNodes.push({
+                        node: node,
+                        moduleId: module.id,
+                        moduleName: module.name
+                    });
+                }
+            });
+        });
+
+        return linkNodes;
+    }
+
+    /**
+     * Toggle visibility of link configuration fields
+     */
+    function toggleLinkFieldsVisibility(show) {
+        const linkGroup = document.getElementById('moduleLinkGroup');
+        if (linkGroup) {
+            linkGroup.classList.toggle('hidden', !show);
+            if (show) {
+                populateLinkTargetDropdown();
+            }
+        }
+    }
+
+    /**
+     * Populate the link target dropdown with available link nodes
+     * Excludes the current node being edited and nodes in the same module
+     */
+    function populateLinkTargetDropdown(excludeNodeId = null, excludeModuleId = null) {
+        const select = document.getElementById('moduleLinkTarget');
+        if (!select) return;
+
+        // Keep first option
+        select.innerHTML = '<option value="">-- Select target link --</option>';
+
+        const allLinks = getAllLinkNodes();
+
+        // Group links by module
+        const linksByModule = {};
+        allLinks.forEach(({ node, moduleId, moduleName }) => {
+            // Skip the current node and nodes in the same module
+            if (node.id === excludeNodeId) return;
+            if (moduleId === excludeModuleId) return;
+
+            if (!linksByModule[moduleId]) {
+                linksByModule[moduleId] = {
+                    moduleName: moduleName,
+                    links: []
+                };
+            }
+            linksByModule[moduleId].links.push(node);
+        });
+
+        // Add optgroups for each module
+        Object.entries(linksByModule).forEach(([moduleId, { moduleName, links }]) => {
+            if (links.length === 0) return;
+
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = moduleName;
+
+            links.forEach(node => {
+                const option = document.createElement('option');
+                option.value = node.id;
+                const directionLabel = node.direction === 'incoming' ? '[IN]' : '[OUT]';
+                option.textContent = `${directionLabel} ${node.name}`;
+                optgroup.appendChild(option);
+            });
+
+            select.appendChild(optgroup);
+        });
+    }
+
+    /**
+     * Find the parent module of a link node by node ID
+     * @param {string} nodeId - The ID of the node to find
+     * @returns {Object|null} {module, node} or null if not found
+     */
+    function findLinkNodeParent(nodeId) {
+        for (const module of state.customModules) {
+            if (!module.subProcessNodes) continue;
+
+            const node = module.subProcessNodes.find(n => n.id === nodeId);
+            if (node) {
+                return { module, node };
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Sync bidirectional link - when A links to B, B should link back to A
+     * @param {string} sourceNodeId - The node being saved
+     * @param {string} targetNodeId - The target node to link back
+     * @param {string} sourceModuleId - The module containing the source node
+     */
+    function syncBidirectionalLink(sourceNodeId, targetNodeId, sourceModuleId) {
+        if (!targetNodeId) return;
+
+        const result = findLinkNodeParent(targetNodeId);
+        if (!result) return;
+
+        const { module: targetModule, node: targetNode } = result;
+
+        // Only update if target is a link node and doesn't already point to source
+        if (targetNode.type === 'link' && targetNode.link_target_id !== sourceNodeId) {
+            targetNode.link_target_id = sourceNodeId;
+            // Set opposite direction
+            targetNode.direction = targetNode.direction === 'incoming' ? 'incoming' : 'outgoing';
+
+            console.log('[LINK] Synced bidirectional link:', targetNodeId, '->', sourceNodeId);
+        }
+    }
+
+    /**
+     * Remove bidirectional link from old target when link changes
+     * @param {string} oldTargetId - The old target node ID
+     * @param {string} sourceNodeId - The source node ID to remove
+     */
+    function removeBidirectionalLink(oldTargetId, sourceNodeId) {
+        if (!oldTargetId) return;
+
+        const result = findLinkNodeParent(oldTargetId);
+        if (!result) return;
+
+        const { module: targetModule, node: targetNode } = result;
+
+        // Only remove if target still points to source
+        if (targetNode.type === 'link' && targetNode.link_target_id === sourceNodeId) {
+            targetNode.link_target_id = null;
+            console.log('[LINK] Removed bidirectional link from:', oldTargetId);
+        }
+    }
+
+    /**
+     * Navigate to a link's target subprocess
+     * @param {string} targetNodeId - The ID of the target link node
+     */
+    function navigateToLinkTarget(targetNodeId) {
+        const result = findLinkNodeParent(targetNodeId);
+        if (!result) {
+            showToast('Target link not found', 'error');
+            return;
+        }
+
+        const { module, node } = result;
+
+        // Navigate to the target module's detail view
+        navigateToDetail(module.id);
+
+        // After a short delay to allow render, highlight and scroll to the target node
+        setTimeout(() => {
+            const targetEl = document.querySelector(`[data-node-id="${targetNodeId}"]`);
+            if (targetEl) {
+                // Add a highlight animation
+                targetEl.classList.add('link-target-highlight');
+                setTimeout(() => {
+                    targetEl.classList.remove('link-target-highlight');
+                }, 2000);
+
+                // Scroll into view
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            }
+        }, 300);
+
+        showToast(`Navigated to ${module.name}`, 'success');
+    }
+
+    // ================================
     // Module Modal Functions
     // ================================
     function openAddModuleModal(linkedModuleId = null) {
@@ -2105,6 +2296,9 @@
 
         // Hide diagram dropdown (default type is 'step')
         toggleDiagramDropdownVisibility(false);
+
+        // Hide link fields (default type is 'step')
+        toggleLinkFieldsVisibility(false);
 
         elements.moduleModal.classList.remove('hidden');
     }
@@ -2149,6 +2343,9 @@
                 diagramSelect.value = module.diagram_id || '';
             }
         }
+
+        // Hide link fields for main modules (links are only for subprocess nodes)
+        toggleLinkFieldsVisibility(false);
 
         elements.moduleModal.classList.remove('hidden');
     }
@@ -2384,6 +2581,9 @@
         // Hide diagram dropdown (default type is 'step')
         toggleDiagramDropdownVisibility(false);
 
+        // Hide link fields (default type is 'step')
+        toggleLinkFieldsVisibility(false);
+
         elements.moduleModal.classList.remove('hidden');
     }
 
@@ -2409,6 +2609,9 @@
             shape: nodeData.shape,  // Shape is auto-determined in saveModule
             is_implemented: nodeData.isImplemented || false,
             diagram_id: nodeData.diagram_id || null,
+            // Link node fields
+            direction: nodeData.direction || null,
+            link_target_id: nodeData.link_target_id || null,
             position: {
                 x: 200 + (existingCount % 3) * 300,
                 y: 200 + Math.floor(existingCount / 3) * 200
@@ -2469,6 +2672,23 @@
             }
         }
 
+        // Show/hide link fields based on type and set values
+        const isLink = node.type === 'link';
+        toggleLinkFieldsVisibility(isLink);
+        if (isLink) {
+            // Populate dropdown excluding current node and current module
+            populateLinkTargetDropdown(nodeId, parentModuleId);
+
+            const directionSelect = document.getElementById('moduleLinkDirection');
+            const targetSelect = document.getElementById('moduleLinkTarget');
+            if (directionSelect) {
+                directionSelect.value = node.direction || 'outgoing';
+            }
+            if (targetSelect) {
+                targetSelect.value = node.link_target_id || '';
+            }
+        }
+
         elements.moduleModal.classList.remove('hidden');
     }
 
@@ -2493,7 +2713,10 @@
             size: nodeData.size,
             shape: nodeData.shape,
             is_implemented: nodeData.isImplemented,
-            diagram_id: nodeData.diagram_id || null
+            diagram_id: nodeData.diagram_id || null,
+            // Link node fields
+            direction: nodeData.direction || null,
+            link_target_id: nodeData.link_target_id || null
         };
 
         // Save to Supabase
@@ -2505,6 +2728,14 @@
     function deleteSubProcessNode(parentModuleId, nodeId) {
         const parentModule = getCustomModule(parentModuleId);
         if (!parentModule || !parentModule.subProcessNodes) return;
+
+        // Get the node before deleting to check for bidirectional link
+        const nodeToDelete = parentModule.subProcessNodes.find(n => n.id === nodeId);
+
+        // Remove bidirectional link if this is a link node with a target
+        if (nodeToDelete?.type === 'link' && nodeToDelete.link_target_id) {
+            removeBidirectionalLink(nodeToDelete.link_target_id, nodeId);
+        }
 
         parentModule.subProcessNodes = parentModule.subProcessNodes.filter(n => n.id !== nodeId);
 
@@ -2565,6 +2796,14 @@
             moduleData.diagram_id = diagramSelect?.value || null;
         }
 
+        // Add link fields for link type
+        if (moduleType === 'link') {
+            const directionSelect = document.getElementById('moduleLinkDirection');
+            const targetSelect = document.getElementById('moduleLinkTarget');
+            moduleData.direction = directionSelect?.value || 'outgoing';
+            moduleData.link_target_id = targetSelect?.value || null;
+        }
+
         if (!moduleData.name) {
             showToast('Module name is required', 'error');
             return;
@@ -2574,13 +2813,41 @@
         if (isAddingSubProcessNode && linkedModuleId) {
             const parentModule = getCustomModule(linkedModuleId);
             if (parentModule) {
+                let savedNodeId = editId;
+
                 if (editId) {
+                    // Get old link target before updating (to remove old bidirectional link)
+                    const existingNode = parentModule.subProcessNodes?.find(n => n.id === editId);
+                    const oldTargetId = existingNode?.link_target_id;
+
                     // Update existing sub-process node
                     updateSubProcessNode(linkedModuleId, editId, moduleData);
+
+                    // Handle bidirectional link sync for link nodes
+                    if (moduleType === 'link') {
+                        // Remove old bidirectional link if target changed
+                        if (oldTargetId && oldTargetId !== moduleData.link_target_id) {
+                            removeBidirectionalLink(oldTargetId, editId);
+                        }
+                        // Sync new bidirectional link
+                        if (moduleData.link_target_id) {
+                            syncBidirectionalLink(editId, moduleData.link_target_id, linkedModuleId);
+                            saveCustomModules(); // Save again after sync
+                        }
+                    }
+
                     showToast('Step updated', 'success');
                 } else {
                     // Add new sub-process node
-                    saveSubProcessNode(parentModule, moduleData);
+                    const newNode = saveSubProcessNode(parentModule, moduleData);
+                    savedNodeId = newNode.id;
+
+                    // Sync bidirectional link for new link nodes
+                    if (moduleType === 'link' && moduleData.link_target_id) {
+                        syncBidirectionalLink(savedNodeId, moduleData.link_target_id, linkedModuleId);
+                        saveCustomModules(); // Save again after sync
+                    }
+
                     showToast('Step added', 'success');
                 }
 
@@ -7454,6 +7721,10 @@
         if (node.type === 'draft' && node.is_implemented) {
             el.classList.add('is-implemented');
         }
+        // Add has-target class for link nodes with configured target
+        if (node.type === 'link' && (node.link_target_id || node.link_to)) {
+            el.classList.add('has-target');
+        }
         el.style.left = `${x}px`;
         el.style.top = `${y}px`;
         el.dataset.nodeId = node.id;
@@ -7662,12 +7933,21 @@
         }
 
         // Add click handler for link nodes
-        if (node.type === 'link' && node.link_to) {
+        if (node.type === 'link') {
             el.addEventListener('dblclick', () => {
-                if (PROCESS_FLOWCHARTS[node.link_to.process]) {
+                // First check for dynamic link (link_target_id to another subprocess node)
+                if (node.link_target_id) {
+                    navigateToLinkTarget(node.link_target_id);
+                    return;
+                }
+
+                // Fallback to legacy static link_to (for PROCESS_FLOWCHARTS)
+                if (node.link_to && PROCESS_FLOWCHARTS[node.link_to.process]) {
                     navigateToFlowchart(node.link_to.process);
-                } else {
+                } else if (node.link_to) {
                     showToast(`Proceso "${node.link_to.process}" no disponible aun`, 'info');
+                } else {
+                    showToast('Link no configurado - edita el nodo para conectarlo', 'info');
                 }
             });
         }

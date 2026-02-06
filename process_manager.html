@@ -526,6 +526,25 @@
                         </select>
                         <p class="form-help">Select a pre-built diagram to visualize this algorithm's flow.</p>
                     </div>
+                    <!-- Link Configuration (shown only for link type) -->
+                    <div class="form-group hidden" id="moduleLinkGroup">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="moduleLinkDirection">Direction</label>
+                                <select id="moduleLinkDirection" class="form-select">
+                                    <option value="outgoing">Outgoing (goes to another process)</option>
+                                    <option value="incoming">Incoming (comes from another process)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="moduleLinkTarget">Link To</label>
+                                <select id="moduleLinkTarget" class="form-select">
+                                    <option value="">-- Select target link --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p class="form-help">Connect this link node to another link node in a different subprocess. Double-click to navigate.</p>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">

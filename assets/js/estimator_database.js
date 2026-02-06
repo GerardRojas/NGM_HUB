@@ -921,10 +921,10 @@ function openConceptModal(concept = null) {
         });
     }
 
-    // Reset filters UI
-    DOM.filterMaterial.classList.add('active');
-    DOM.filterLabor.classList.add('active');
-    DOM.filterInline.classList.add('active');
+    // Reset filters UI (if filter buttons exist)
+    if (DOM.filterMaterial) DOM.filterMaterial.classList.add('active');
+    if (DOM.filterLabor) DOM.filterLabor.classList.add('active');
+    if (DOM.filterInline) DOM.filterInline.classList.add('active');
 
     renderBuilderTable();
     updateBuilderSummary();
@@ -1222,13 +1222,15 @@ function toggleTypeFilter(type) {
         state.builder.activeFilters.add(type);
     }
 
-    // Update UI
+    // Update UI (if filter buttons exist)
     const btnMap = {
         material: DOM.filterMaterial,
         labor: DOM.filterLabor,
         inline: DOM.filterInline
     };
-    btnMap[type].classList.toggle('active', state.builder.activeFilters.has(type));
+    if (btnMap[type]) {
+        btnMap[type].classList.toggle('active', state.builder.activeFilters.has(type));
+    }
 
     renderBuilderTable();
 }

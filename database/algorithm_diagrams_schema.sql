@@ -76,33 +76,28 @@ INSERT INTO algorithm_diagrams (name, codename, description, version, spec, diag
     '{
         "nodes": [
             { "id": "input", "label": "Image/PDF", "x": 250, "y": 40, "type": "input" },
-            { "id": "format", "label": "Format?", "x": 250, "y": 110, "type": "decision" },
-            { "id": "try_text", "label": "Text Extract", "x": 150, "y": 190, "type": "process", "tool": "pdfplumber" },
-            { "id": "ocr", "label": "OCR Vision", "x": 350, "y": 190, "type": "process", "tool": "gpt-4o-vision" },
-            { "id": "has_text", "label": "Has Text?", "x": 150, "y": 280, "type": "decision" },
-            { "id": "text_ok", "label": "Text Ready", "x": 70, "y": 370, "type": "process" },
-            { "id": "ocr_fallback", "label": "OCR Fallback", "x": 230, "y": 370, "type": "process", "tool": "gpt-4o-vision" },
-            { "id": "mode", "label": "Mode?", "x": 250, "y": 460, "type": "decision" },
-            { "id": "fast", "label": "Fast Parse", "x": 140, "y": 550, "type": "process", "tool": "gpt-4o-mini" },
-            { "id": "heavy", "label": "Deep Parse", "x": 360, "y": 550, "type": "process", "tool": "gpt-4o" },
-            { "id": "parse", "label": "Extract Fields", "x": 250, "y": 640, "type": "process", "tool": "json-schema" },
-            { "id": "output", "label": "structured data", "x": 250, "y": 720, "type": "output" }
+            { "id": "mode", "label": "Mode?", "x": 250, "y": 130, "type": "decision" },
+            { "id": "try_text", "label": "Text Extract", "x": 100, "y": 230, "type": "process", "tool": "pdfplumber" },
+            { "id": "heavy_ocr", "label": "Vision OCR", "x": 400, "y": 230, "type": "process", "tool": "gpt-4o" },
+            { "id": "has_text", "label": "Has Text?", "x": 100, "y": 330, "type": "decision" },
+            { "id": "fast_parse", "label": "Fast Parse", "x": 30, "y": 430, "type": "process", "tool": "gpt-4o-mini" },
+            { "id": "ocr_fallback", "label": "OCR Fallback", "x": 170, "y": 430, "type": "process", "tool": "gpt-4o-mini" },
+            { "id": "heavy_parse", "label": "Deep Parse", "x": 400, "y": 330, "type": "process", "tool": "gpt-4o" },
+            { "id": "validate", "label": "Validate", "x": 250, "y": 530, "type": "process", "tool": "json-schema" },
+            { "id": "output", "label": "structured data", "x": 250, "y": 620, "type": "output" }
         ],
         "edges": [
-            { "from": "input", "to": "format" },
-            { "from": "format", "to": "try_text", "label": "PDF" },
-            { "from": "format", "to": "ocr", "label": "Image" },
+            { "from": "input", "to": "mode" },
+            { "from": "mode", "to": "try_text", "label": "Fast" },
+            { "from": "mode", "to": "heavy_ocr", "label": "Heavy" },
             { "from": "try_text", "to": "has_text" },
-            { "from": "has_text", "to": "text_ok", "label": "Yes" },
+            { "from": "has_text", "to": "fast_parse", "label": "Yes" },
             { "from": "has_text", "to": "ocr_fallback", "label": "No" },
-            { "from": "text_ok", "to": "mode" },
-            { "from": "ocr_fallback", "to": "mode" },
-            { "from": "ocr", "to": "mode" },
-            { "from": "mode", "to": "fast", "label": "Fast" },
-            { "from": "mode", "to": "heavy", "label": "Heavy" },
-            { "from": "fast", "to": "parse" },
-            { "from": "heavy", "to": "parse" },
-            { "from": "parse", "to": "output" }
+            { "from": "heavy_ocr", "to": "heavy_parse" },
+            { "from": "fast_parse", "to": "validate" },
+            { "from": "ocr_fallback", "to": "validate" },
+            { "from": "heavy_parse", "to": "validate" },
+            { "from": "validate", "to": "output" }
         ]
     }'::jsonb
 ),
@@ -160,33 +155,28 @@ UPDATE algorithm_diagrams
 SET diagram = '{
     "nodes": [
         { "id": "input", "label": "Image/PDF", "x": 250, "y": 40, "type": "input" },
-        { "id": "format", "label": "Format?", "x": 250, "y": 110, "type": "decision" },
-        { "id": "try_text", "label": "Text Extract", "x": 150, "y": 190, "type": "process", "tool": "pdfplumber" },
-        { "id": "ocr", "label": "OCR Vision", "x": 350, "y": 190, "type": "process", "tool": "gpt-4o-vision" },
-        { "id": "has_text", "label": "Has Text?", "x": 150, "y": 280, "type": "decision" },
-        { "id": "text_ok", "label": "Text Ready", "x": 70, "y": 370, "type": "process" },
-        { "id": "ocr_fallback", "label": "OCR Fallback", "x": 230, "y": 370, "type": "process", "tool": "gpt-4o-vision" },
-        { "id": "mode", "label": "Mode?", "x": 250, "y": 460, "type": "decision" },
-        { "id": "fast", "label": "Fast Parse", "x": 140, "y": 550, "type": "process", "tool": "gpt-4o-mini" },
-        { "id": "heavy", "label": "Deep Parse", "x": 360, "y": 550, "type": "process", "tool": "gpt-4o" },
-        { "id": "parse", "label": "Extract Fields", "x": 250, "y": 640, "type": "process", "tool": "json-schema" },
-        { "id": "output", "label": "structured data", "x": 250, "y": 720, "type": "output" }
+        { "id": "mode", "label": "Mode?", "x": 250, "y": 130, "type": "decision" },
+        { "id": "try_text", "label": "Text Extract", "x": 100, "y": 230, "type": "process", "tool": "pdfplumber" },
+        { "id": "heavy_ocr", "label": "Vision OCR", "x": 400, "y": 230, "type": "process", "tool": "gpt-4o" },
+        { "id": "has_text", "label": "Has Text?", "x": 100, "y": 330, "type": "decision" },
+        { "id": "fast_parse", "label": "Fast Parse", "x": 30, "y": 430, "type": "process", "tool": "gpt-4o-mini" },
+        { "id": "ocr_fallback", "label": "OCR Fallback", "x": 170, "y": 430, "type": "process", "tool": "gpt-4o-mini" },
+        { "id": "heavy_parse", "label": "Deep Parse", "x": 400, "y": 330, "type": "process", "tool": "gpt-4o" },
+        { "id": "validate", "label": "Validate", "x": 250, "y": 530, "type": "process", "tool": "json-schema" },
+        { "id": "output", "label": "structured data", "x": 250, "y": 620, "type": "output" }
     ],
     "edges": [
-        { "from": "input", "to": "format" },
-        { "from": "format", "to": "try_text", "label": "PDF" },
-        { "from": "format", "to": "ocr", "label": "Image" },
+        { "from": "input", "to": "mode" },
+        { "from": "mode", "to": "try_text", "label": "Fast" },
+        { "from": "mode", "to": "heavy_ocr", "label": "Heavy" },
         { "from": "try_text", "to": "has_text" },
-        { "from": "has_text", "to": "text_ok", "label": "Yes" },
+        { "from": "has_text", "to": "fast_parse", "label": "Yes" },
         { "from": "has_text", "to": "ocr_fallback", "label": "No" },
-        { "from": "text_ok", "to": "mode" },
-        { "from": "ocr_fallback", "to": "mode" },
-        { "from": "ocr", "to": "mode" },
-        { "from": "mode", "to": "fast", "label": "Fast" },
-        { "from": "mode", "to": "heavy", "label": "Heavy" },
-        { "from": "fast", "to": "parse" },
-        { "from": "heavy", "to": "parse" },
-        { "from": "parse", "to": "output" }
+        { "from": "heavy_ocr", "to": "heavy_parse" },
+        { "from": "fast_parse", "to": "validate" },
+        { "from": "ocr_fallback", "to": "validate" },
+        { "from": "heavy_parse", "to": "validate" },
+        { "from": "validate", "to": "output" }
     ]
 }'::jsonb
 WHERE codename = 'IRIS';

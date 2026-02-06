@@ -8506,8 +8506,8 @@
             if (!fromNode || !toNode) return;
 
             // Calculate edge points based on node type
-            const fromRadius = fromNode.type === 'decision' ? 28 : (fromNode.type === 'input' || fromNode.type === 'output' ? 22 : 20);
-            const toRadius = toNode.type === 'decision' ? 28 : (toNode.type === 'input' || toNode.type === 'output' ? 22 : 20);
+            const fromRadius = fromNode.type === 'decision' ? 28 : (fromNode.type === 'input' || fromNode.type === 'output' ? 34 : 22);
+            const toRadius = toNode.type === 'decision' ? 28 : (toNode.type === 'input' || toNode.type === 'output' ? 34 : 22);
 
             const y1 = fromNode.y + fromRadius;
             const y2 = toNode.y - toRadius;
@@ -8566,8 +8566,8 @@
                 const size = mini ? 20 : 25;
                 svg += `<polygon class="diagram-node-shape" points="0,${-size} ${size + 5},0 0,${size} ${-(size + 5)},0"/>`;
             } else if (node.type === 'input' || node.type === 'output') {
-                // Circle for input/output (algorithm style)
-                const r = mini ? 18 : 22;
+                // Circle for input/output (algorithm style) - larger
+                const r = mini ? 22 : 32;
                 svg += `<circle class="diagram-node-shape" cx="0" cy="0" r="${r}"/>`;
             } else {
                 // Rounded rectangle for process - taller if has tool
@@ -8577,9 +8577,9 @@
             }
 
             // Main label - adjust y position if has tool
-            const fontSize = mini ? 7 : 10;
+            const fontSize = mini ? 7 : 11;
             const label = node.label;
-            const maxLen = (node.type === 'input' || node.type === 'output') ? (mini ? 8 : 12) : (mini ? 10 : 16);
+            const maxLen = (node.type === 'input' || node.type === 'output') ? (mini ? 10 : 16) : (mini ? 10 : 16);
             const displayLabel = label.length > maxLen ? label.substring(0, maxLen - 1) + '..' : label;
             const labelY = hasTool ? -4 : (mini ? 3 : 4);
             svg += `<text class="diagram-node-label" y="${labelY}" style="font-size:${fontSize}px">${escapeHtml(displayLabel)}</text>`;

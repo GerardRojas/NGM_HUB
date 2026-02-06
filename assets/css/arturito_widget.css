@@ -569,6 +569,14 @@
   font-size: 11px;
 }
 
+.arturito-bva-header {
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e5e7eb;
+  font-size: 12px;
+}
+
 .arturito-bva-row {
   padding: 6px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);

@@ -1127,11 +1127,16 @@
       actionButtonsHtml = renderActionButtons(msg);
     }
 
+    // For category_query_response with card data, skip the text bubble to avoid duplication
+    const skipTextBubble = msg.action === "category_query_response"
+      && msg.actionData && msg.actionData.accounts && msg.actionData.accounts.length > 0
+      && actionButtonsHtml;
+
     return `
       <div class="arturito-widget-msg ${roleClass} ${errorClass}">
         ${avatarHtml}
         <div class="arturito-widget-msg-content">
-          <div class="arturito-widget-msg-bubble">${formattedContent}</div>
+          ${skipTextBubble ? "" : `<div class="arturito-widget-msg-bubble">${formattedContent}</div>`}
           ${actionButtonsHtml}
         </div>
       </div>
@@ -1245,8 +1250,17 @@
         // Render group card with per-account BVA data
         if (actionData.accounts && actionData.accounts.length > 0) {
           var groupName = actionData.group_name || "";
+          var projectName = actionData.project_name || "";
           var totals = actionData.group_totals || {};
           var accts = actionData.accounts;
+          // Header with group/account name and project
+          var headerLabel = groupName || (accts.length === 1 ? accts[0].matched_name : "");
+          var headerHtml = headerLabel
+            ? '<div class="arturito-bva-header">'
+              + '<strong>' + escapeHtml(headerLabel) + '</strong>'
+              + (projectName ? ' en <strong>' + escapeHtml(projectName) + '</strong>' : '')
+              + '</div>'
+            : "";
           var rows = accts.map(function(acc) {
             var bal = acc.balance || 0;
             var balClass = bal < 0 ? "arturito-bva-negative" : "";
@@ -1270,7 +1284,7 @@
               + '<span class="' + totalClass + '">$' + totalBal.toLocaleString("en-US", {minimumFractionDigits: 2}) + '</span>'
               + '</div></div>'
             : "";
-          return '<div class="arturito-bva-card">' + rows + totalRow + '</div>';
+          return '<div class="arturito-bva-card">' + headerHtml + rows + totalRow + '</div>';
         }
         break;
 

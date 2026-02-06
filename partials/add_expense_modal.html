@@ -36,21 +36,30 @@
             <span>+</span> Add Row
           </button>
         </div>
+
+        <!-- Running total always visible below table -->
+        <div class="modal-running-total" id="modalRunningTotalBar">
+          <span class="modal-running-total-label">Items Total:</span>
+          <span class="modal-running-total-value" id="modalRunningTotalValue">$0.00</span>
+        </div>
       </div>
 
-      <!-- Running Total Section (visible in scan mode) -->
+      <!-- Scan Validation Section (visible in scan mode) -->
       <div id="scanValidationSection" class="scan-validation-section hidden">
-        <div class="scan-validation-row">
-          <span class="scan-validation-label">Modal Sum:</span>
-          <span class="scan-validation-value" id="modalRunningTotal">$0.00</span>
-        </div>
-        <div class="scan-validation-row">
-          <span class="scan-validation-label">Invoice Total:</span>
-          <span class="scan-validation-value" id="invoiceTotalDisplay">$0.00</span>
-        </div>
-        <div class="scan-validation-row">
-          <span class="scan-validation-label">API Calculated:</span>
-          <span class="scan-validation-value" id="apiCalculatedDisplay">$0.00</span>
+        <div class="scan-validation-header">Scan Validation</div>
+        <div class="scan-validation-grid">
+          <div class="scan-validation-card">
+            <span class="scan-validation-card-label">Items Sum</span>
+            <span class="scan-validation-card-value" id="modalRunningTotal">$0.00</span>
+          </div>
+          <div class="scan-validation-card">
+            <span class="scan-validation-card-label">Invoice Total</span>
+            <span class="scan-validation-card-value" id="invoiceTotalDisplay">$0.00</span>
+          </div>
+          <div class="scan-validation-card">
+            <span class="scan-validation-card-label">AI Calculated</span>
+            <span class="scan-validation-card-value" id="apiCalculatedDisplay">$0.00</span>
+          </div>
         </div>
         <div class="scan-validation-status" id="scanValidationStatus"></div>
       </div>

@@ -3024,14 +3024,57 @@ input[type="number"].form-input {
 }
 
 /* ========================================
-   Scan Validation Section (Running Total)
+   Modal Running Total Bar (always visible)
+   ======================================== */
+
+.modal-running-total {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  margin-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-running-total-label {
+  font-size: 13px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.modal-running-total-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e5e7eb;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.modal-running-total.total-match {
+  border-top-color: rgba(34, 197, 94, 0.3);
+}
+
+.modal-running-total.total-match .modal-running-total-value {
+  color: #4ade80;
+}
+
+.modal-running-total.total-mismatch {
+  border-top-color: rgba(239, 68, 68, 0.4);
+}
+
+.modal-running-total.total-mismatch .modal-running-total-value {
+  color: #f87171;
+}
+
+/* ========================================
+   Scan Validation Section
    ======================================== */
 
 .scan-validation-section {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(139, 92, 246, 0.08));
+  border: 1px solid rgba(59, 130, 246, 0.25);
   border-radius: 8px;
-  padding: 12px 16px;
+  padding: 14px 16px;
   margin-top: 16px;
 }
 
@@ -3039,29 +3082,49 @@ input[type="number"].form-input {
   display: none;
 }
 
-.scan-validation-row {
+.scan-validation-header {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #8b9cf7;
+  margin-bottom: 10px;
+}
+
+.scan-validation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.scan-validation-card {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   align-items: center;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  gap: 4px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.scan-validation-row:last-of-type {
-  border-bottom: none;
-}
-
-.scan-validation-label {
-  font-size: 12px;
+.scan-validation-card-label {
+  font-size: 10px;
   color: #9ca3af;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 
-.scan-validation-value {
-  font-size: 14px;
-  font-weight: 600;
+.scan-validation-card-value {
+  font-size: 15px;
+  font-weight: 700;
   color: #e5e7eb;
   font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+}
+
+.scan-validation-card-value.value-mismatch {
+  color: #f87171;
 }
 
 .scan-validation-status {

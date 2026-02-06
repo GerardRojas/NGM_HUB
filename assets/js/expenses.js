@@ -3628,23 +3628,32 @@
    */
   function calculateModalRunningTotal() {
     const amountInputs = els.expenseRowsBody?.querySelectorAll('.exp-input[data-field="Amount"]');
-    console.log('[MODAL TOTAL] expenseRowsBody:', els.expenseRowsBody);
-    console.log('[MODAL TOTAL] amountInputs found:', amountInputs?.length || 0);
-
-    if (!amountInputs || amountInputs.length === 0) {
-      console.log('[MODAL TOTAL] No amount inputs found, returning 0');
-      return 0;
-    }
+    if (!amountInputs || amountInputs.length === 0) return 0;
 
     let total = 0;
-    amountInputs.forEach((input, i) => {
-      const value = parseFloat(input.value) || 0;
-      console.log(`[MODAL TOTAL] Input ${i}: value="${input.value}" -> parsed=${value}`);
-      total += value;
+    amountInputs.forEach(input => {
+      total += parseFloat(input.value) || 0;
     });
-
-    console.log('[MODAL TOTAL] Final total:', total);
     return total;
+  }
+
+  /**
+   * Updates the running total bar (always visible when rows exist)
+   */
+  function updateRunningTotalBar() {
+    const bar = document.getElementById('modalRunningTotalBar');
+    const valueEl = document.getElementById('modalRunningTotalValue');
+    if (!bar || !valueEl) return;
+
+    const total = calculateModalRunningTotal();
+    const rowCount = els.expenseRowsBody?.querySelectorAll('tr[data-row-index]')?.length || 0;
+
+    if (rowCount > 0) {
+      bar.style.display = '';
+      valueEl.textContent = `$${total.toFixed(2)}`;
+    } else {
+      bar.style.display = 'none';
+    }
   }
 
   /**
@@ -3657,6 +3666,9 @@
     const invoiceTotalEl = document.getElementById('invoiceTotalDisplay');
     const apiCalcEl = document.getElementById('apiCalculatedDisplay');
     const statusEl = document.getElementById('scanValidationStatus');
+
+    // Always update the running total bar
+    updateRunningTotalBar();
 
     if (!section) return;
 
@@ -3675,33 +3687,62 @@
     }
 
     // Display invoice total
+    const invoiceTotal = scannedReceiptValidation.invoiceTotal || 0;
     if (invoiceTotalEl) {
-      invoiceTotalEl.textContent = `$${(scannedReceiptValidation.invoiceTotal || 0).toFixed(2)}`;
+      invoiceTotalEl.textContent = `$${invoiceTotal.toFixed(2)}`;
     }
 
     // Display API calculated sum
+    const apiSum = scannedReceiptValidation.apiCalculatedSum || 0;
     if (apiCalcEl) {
-      apiCalcEl.textContent = `$${(scannedReceiptValidation.apiCalculatedSum || 0).toFixed(2)}`;
+      apiCalcEl.textContent = `$${apiSum.toFixed(2)}`;
     }
 
     // Check if all three match (with tolerance for floating point)
-    const invoiceTotal = scannedReceiptValidation.invoiceTotal || 0;
-    const apiSum = scannedReceiptValidation.apiCalculatedSum || 0;
     const tolerance = 0.02; // 2 cents tolerance
 
-    const allMatch =
-      Math.abs(modalTotal - invoiceTotal) <= tolerance &&
-      Math.abs(modalTotal - apiSum) <= tolerance &&
-      Math.abs(invoiceTotal - apiSum) <= tolerance;
+    const modalMatchesInvoice = Math.abs(modalTotal - invoiceTotal) <= tolerance;
+    const modalMatchesApi = Math.abs(modalTotal - apiSum) <= tolerance;
+    const invoiceMatchesApi = Math.abs(invoiceTotal - apiSum) <= tolerance;
+    const allMatch = modalMatchesInvoice && modalMatchesApi && invoiceMatchesApi;
+
+    // Color the individual cards based on match
+    if (modalTotalEl) {
+      modalTotalEl.className = 'scan-validation-card-value' + (modalMatchesInvoice ? '' : ' value-mismatch');
+    }
+    if (invoiceTotalEl) {
+      invoiceTotalEl.className = 'scan-validation-card-value';
+    }
+    if (apiCalcEl) {
+      apiCalcEl.className = 'scan-validation-card-value' + (invoiceMatchesApi ? '' : ' value-mismatch');
+    }
+
+    // Also color the running total bar
+    const bar = document.getElementById('modalRunningTotalBar');
+    if (bar) {
+      if (modalMatchesInvoice) {
+        bar.classList.remove('total-mismatch');
+        bar.classList.add('total-match');
+      } else {
+        bar.classList.remove('total-match');
+        bar.classList.add('total-mismatch');
+      }
+    }
 
     if (statusEl) {
       if (allMatch) {
         statusEl.className = 'scan-validation-status status-match';
-        statusEl.textContent = 'All totals match!';
+        statusEl.textContent = 'All totals match';
       } else {
         statusEl.className = 'scan-validation-status status-mismatch';
         const diff = Math.abs(modalTotal - invoiceTotal);
-        statusEl.textContent = `Mismatch detected: Modal differs by $${diff.toFixed(2)}`;
+        if (!modalMatchesInvoice) {
+          statusEl.textContent = `RED FLAG: Items sum ($${modalTotal.toFixed(2)}) differs from invoice total ($${invoiceTotal.toFixed(2)}) by $${diff.toFixed(2)}`;
+        } else if (!invoiceMatchesApi) {
+          statusEl.textContent = `Warning: AI calculated sum ($${apiSum.toFixed(2)}) differs from invoice total ($${invoiceTotal.toFixed(2)})`;
+        } else {
+          statusEl.textContent = `Mismatch detected between totals`;
+        }
       }
     }
   }
@@ -3724,9 +3765,10 @@
   }
 
   /**
-   * Handler for amount input changes - updates validation section
+   * Handler for amount input changes - updates running total and validation
    */
   function handleAmountChange() {
+    updateRunningTotalBar();
     if (isScannedReceiptMode) {
       updateScanValidationSection();
     }
@@ -3920,18 +3962,22 @@
       }
     });
 
-    // Add simple decimal formatting for amount input
+    // Add simple decimal formatting and running total update for amount input
     const amountInput = row.querySelector('.exp-input--amount');
     if (amountInput) {
       amountInput.addEventListener('blur', (e) => {
         const value = e.target.value.trim();
         if (value && !isNaN(value)) {
-          // Format to 2 decimal places
           const numValue = parseFloat(value);
           e.target.value = numValue.toFixed(2);
         }
       });
+      amountInput.addEventListener('input', handleAmountChange);
+      amountInput.addEventListener('blur', handleAmountChange);
     }
+
+    // Update running total bar after adding row
+    updateRunningTotalBar();
   }
 
   function buildModalSelectHtml(field, options, valueKey, textKey) {
@@ -3977,6 +4023,7 @@
       row.remove();
     }
     updateAutoCategorizeButton();
+    handleAmountChange();
   }
 
   function updateAutoCategorizeButton() {

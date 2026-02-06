@@ -121,26 +121,25 @@ INSERT INTO algorithm_diagrams (name, codename, description, version, spec, diag
     }'::jsonb,
     '{
         "nodes": [
-            { "id": "input", "label": "Expense Data", "x": 200, "y": 40, "type": "input" },
-            { "id": "context", "label": "Load Context", "x": 200, "y": 130, "type": "process", "tool": "supabase-rpc" },
-            { "id": "mode", "label": "Mode?", "x": 200, "y": 220, "type": "decision" },
-            { "id": "standard", "label": "Standard", "x": 90, "y": 320, "type": "process", "tool": "gpt-4o-mini" },
-            { "id": "deep", "label": "Deep Analysis", "x": 310, "y": 320, "type": "process", "tool": "gpt-4o" },
-            { "id": "match", "label": "Match History", "x": 200, "y": 420, "type": "process", "tool": "vector-search" },
-            { "id": "confidence", "label": "Confidence?", "x": 200, "y": 510, "type": "decision" },
-            { "id": "output", "label": "category", "x": 110, "y": 600, "type": "output" },
-            { "id": "suggestions", "label": "suggestions[]", "x": 290, "y": 600, "type": "output" }
+            { "id": "input", "label": "expenses + stage", "x": 200, "y": 40, "type": "input" },
+            { "id": "load_accounts", "label": "Load Accounts", "x": 200, "y": 130, "type": "process", "tool": "supabase" },
+            { "id": "build_prompt", "label": "Build Prompt", "x": 200, "y": 220, "type": "process", "tool": "context-builder" },
+            { "id": "gpt", "label": "Analyze", "x": 200, "y": 310, "type": "process", "tool": "gpt-4o" },
+            { "id": "parse", "label": "Parse JSON", "x": 200, "y": 400, "type": "process", "tool": "regex" },
+            { "id": "validate", "label": "Validate", "x": 200, "y": 490, "type": "process", "tool": "json-schema" },
+            { "id": "confidence", "label": "Confidence?", "x": 200, "y": 580, "type": "decision" },
+            { "id": "apply", "label": "categorization", "x": 100, "y": 670, "type": "output" },
+            { "id": "warning", "label": "warning + suggest", "x": 300, "y": 670, "type": "output" }
         ],
         "edges": [
-            { "from": "input", "to": "context" },
-            { "from": "context", "to": "mode" },
-            { "from": "mode", "to": "standard", "label": "Standard" },
-            { "from": "mode", "to": "deep", "label": "Deep" },
-            { "from": "standard", "to": "match" },
-            { "from": "deep", "to": "match" },
-            { "from": "match", "to": "confidence" },
-            { "from": "confidence", "to": "output", "label": ">70%" },
-            { "from": "confidence", "to": "suggestions", "label": "<70%" }
+            { "from": "input", "to": "load_accounts" },
+            { "from": "load_accounts", "to": "build_prompt" },
+            { "from": "build_prompt", "to": "gpt" },
+            { "from": "gpt", "to": "parse" },
+            { "from": "parse", "to": "validate" },
+            { "from": "validate", "to": "confidence" },
+            { "from": "confidence", "to": "apply", "label": ">60%" },
+            { "from": "confidence", "to": "warning", "label": "<60%" }
         ]
     }'::jsonb
 )
@@ -184,26 +183,25 @@ WHERE codename = 'IRIS';
 UPDATE algorithm_diagrams
 SET diagram = '{
     "nodes": [
-        { "id": "input", "label": "Expense Data", "x": 200, "y": 40, "type": "input" },
-        { "id": "context", "label": "Load Context", "x": 200, "y": 130, "type": "process", "tool": "supabase-rpc" },
-        { "id": "mode", "label": "Mode?", "x": 200, "y": 220, "type": "decision" },
-        { "id": "standard", "label": "Standard", "x": 90, "y": 320, "type": "process", "tool": "gpt-4o-mini" },
-        { "id": "deep", "label": "Deep Analysis", "x": 310, "y": 320, "type": "process", "tool": "gpt-4o" },
-        { "id": "match", "label": "Match History", "x": 200, "y": 420, "type": "process", "tool": "vector-search" },
-        { "id": "confidence", "label": "Confidence?", "x": 200, "y": 510, "type": "decision" },
-        { "id": "output", "label": "category", "x": 110, "y": 600, "type": "output" },
-        { "id": "suggestions", "label": "suggestions[]", "x": 290, "y": 600, "type": "output" }
+        { "id": "input", "label": "expenses + stage", "x": 200, "y": 40, "type": "input" },
+        { "id": "load_accounts", "label": "Load Accounts", "x": 200, "y": 130, "type": "process", "tool": "supabase" },
+        { "id": "build_prompt", "label": "Build Prompt", "x": 200, "y": 220, "type": "process", "tool": "context-builder" },
+        { "id": "gpt", "label": "Analyze", "x": 200, "y": 310, "type": "process", "tool": "gpt-4o" },
+        { "id": "parse", "label": "Parse JSON", "x": 200, "y": 400, "type": "process", "tool": "regex" },
+        { "id": "validate", "label": "Validate", "x": 200, "y": 490, "type": "process", "tool": "json-schema" },
+        { "id": "confidence", "label": "Confidence?", "x": 200, "y": 580, "type": "decision" },
+        { "id": "apply", "label": "categorization", "x": 100, "y": 670, "type": "output" },
+        { "id": "warning", "label": "warning + suggest", "x": 300, "y": 670, "type": "output" }
     ],
     "edges": [
-        { "from": "input", "to": "context" },
-        { "from": "context", "to": "mode" },
-        { "from": "mode", "to": "standard", "label": "Standard" },
-        { "from": "mode", "to": "deep", "label": "Deep" },
-        { "from": "standard", "to": "match" },
-        { "from": "deep", "to": "match" },
-        { "from": "match", "to": "confidence" },
-        { "from": "confidence", "to": "output", "label": ">70%" },
-        { "from": "confidence", "to": "suggestions", "label": "<70%" }
+        { "from": "input", "to": "load_accounts" },
+        { "from": "load_accounts", "to": "build_prompt" },
+        { "from": "build_prompt", "to": "gpt" },
+        { "from": "gpt", "to": "parse" },
+        { "from": "parse", "to": "validate" },
+        { "from": "validate", "to": "confidence" },
+        { "from": "confidence", "to": "apply", "label": ">60%" },
+        { "from": "confidence", "to": "warning", "label": "<60%" }
     ]
 }'::jsonb
 WHERE codename = 'ATLAS';

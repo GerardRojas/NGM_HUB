@@ -32,6 +32,7 @@ Aplicacion web para gestion de proyectos, presupuestos, equipos y gastos.
 
 ### Frontend
 - NO usar emojis en el codigo del frontend (HTML, CSS, JS)
+- Todo texto visible al usuario (botones, labels, mensajes, placeholders) debe estar en **ingles**
 - Mantener consistencia con el estilo existente
 - Los archivos JS deben ir en `assets/js/`
 - Los archivos CSS deben ir en `assets/css/`

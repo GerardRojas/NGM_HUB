@@ -866,6 +866,7 @@
 
     if (window.visualViewport) {
       window.visualViewport.addEventListener('resize', onViewportResize);
+      window.visualViewport.addEventListener('scroll', onViewportResize);
 
       // Recalibrate on orientation change
       window.addEventListener('orientationchange', () => {
@@ -899,8 +900,10 @@
         }
 
         // Adjust main area to visual viewport while keyboard is visible
+        // offsetTop accounts for iOS Safari scrolling the layout viewport
         if (keyboardOpen && mainArea && window.innerWidth <= 768) {
           mainArea.style.height = currentHeight + 'px';
+          mainArea.style.top = window.visualViewport.offsetTop + 'px';
         }
       });
     }
@@ -923,6 +926,7 @@
 
       if (mainArea) {
         mainArea.style.height = '';
+        mainArea.style.top = '';
       }
     }
 

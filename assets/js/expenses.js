@@ -5794,6 +5794,68 @@
     return div.innerHTML;
   }
 
+  // Helper: calls /expenses/parse-receipt and returns parsed result or throws
+  // correctionContext: optional object with {invoice_total, calculated_sum, items} for pass 2
+  async function callParseReceiptAPI(file, model, authToken, apiBase, correctionContext) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('model', model);
+    if (correctionContext) {
+      formData.append('correction_context', JSON.stringify(correctionContext));
+    }
+
+    const response = await fetch(`${apiBase}/expenses/parse-receipt`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${authToken}` },
+      body: formData
+    });
+
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      let errorMessage = `Failed to parse receipt (HTTP ${response.status})`;
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.detail || errorData.message || errorMessage;
+      } catch {
+        if (responseText && responseText.length < 200) {
+          errorMessage = responseText;
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseErr) {
+      console.error('[SCAN RECEIPT] Invalid JSON response:', responseText.substring(0, 500));
+      throw new Error('Server returned invalid JSON response');
+    }
+
+    if (!result || typeof result !== 'object') {
+      throw new Error('Server returned unexpected response format');
+    }
+    if (!result.success) {
+      throw new Error(result.error || result.message || 'Receipt parsing failed');
+    }
+    if (!result.data || !result.data.expenses || !Array.isArray(result.data.expenses)) {
+      throw new Error('Server response missing expenses data');
+    }
+
+    return result;
+  }
+
+  // Helper: calculates how close items sum is to invoice total (lower = better)
+  function getValidationDiscrepancy(result) {
+    const validation = result.data?.validation;
+    if (!validation) return Infinity;
+    if (validation.validation_passed) return 0;
+    const invoiceTotal = validation.invoice_total || 0;
+    const calculatedSum = validation.calculated_sum || 0;
+    return Math.abs(invoiceTotal - calculatedSum);
+  }
+
   async function handleScanReceiptFile(file) {
     if (!file) return;
 
@@ -5825,84 +5887,59 @@
       els.scanReceiptProgressText.textContent = 'Uploading receipt...';
       els.scanReceiptProgressFill.style.width = '30%';
 
-      // Create FormData
-      const formData = new FormData();
-      formData.append('file', file);
-
       // Get selected model (fast or heavy)
       const selectedModel = document.querySelector('input[name="scanModel"]:checked')?.value || 'fast';
-      formData.append('model', selectedModel);
-
-      // Call backend to parse receipt
-      // BACKEND NOTE: The OpenAI prompt should extract and return the following fields for each expense:
-      // - date: Transaction date (YYYY-MM-DD format)
-      // - bill_id (or invoice_number): The invoice/bill number from the receipt
-      // - description: Line item description
-      // - amount: Amount in decimal format
-      // - vendor: Vendor name
-      // - category/transaction_type: Expense category
-      els.scanReceiptProgressText.textContent = 'Analyzing...';
-      els.scanReceiptProgressFill.style.width = '60%';
 
       const authToken = getAuthToken();
-      if (!authToken) return; // getAuthToken redirects to login if missing
+      if (!authToken) return;
 
-      const response = await fetch(`${apiBase}/expenses/parse-receipt`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: formData
-      });
+      // --- Pass 1: initial analysis ---
+      els.scanReceiptProgressText.textContent = 'Analyzing receipt...';
+      els.scanReceiptProgressFill.style.width = '50%';
 
-      // Read response text first to handle both JSON and non-JSON errors
-      const responseText = await response.text();
+      let result = await callParseReceiptAPI(file, selectedModel, authToken, apiBase);
+      let usedRetry = false;
 
-      if (!response.ok) {
-        let errorMessage = `Failed to parse receipt (HTTP ${response.status})`;
+      console.log('[SCAN RECEIPT] Pass 1 result:', result.data?.validation);
+
+      // --- Pass 2: automatic correction if items sum does not match invoice total ---
+      const pass1ValidationFailed = result.data?.validation?.validation_passed === false;
+      if (pass1ValidationFailed) {
+        console.log('[SCAN RECEIPT] Validation failed on pass 1, launching correction pass...');
+
+        els.scanReceiptProgressText.textContent = 'Totals mismatch detected. Analyzing again...';
+        els.scanReceiptProgressFill.style.width = '60%';
+
+        // Build correction context from pass 1 results so GPT knows what to fix
+        const correctionCtx = {
+          invoice_total: result.data.validation?.invoice_total || 0,
+          calculated_sum: result.data.validation?.calculated_sum || 0,
+          items: result.data.expenses.map(exp => ({
+            description: exp.description,
+            amount: exp.amount,
+            tax_included: exp.tax_included || 0
+          }))
+        };
+
         try {
-          const errorData = JSON.parse(responseText);
-          errorMessage = errorData.detail || errorData.message || errorMessage;
-        } catch {
-          // Response wasn't JSON, use the text directly if short
-          if (responseText && responseText.length < 200) {
-            errorMessage = responseText;
+          const pass2Result = await callParseReceiptAPI(file, 'heavy', authToken, apiBase, correctionCtx);
+          console.log('[SCAN RECEIPT] Pass 2 (correction) result:', pass2Result.data?.validation);
+
+          // Pick the better result: prefer the one that validates, or the one with smaller discrepancy
+          const pass1Disc = getValidationDiscrepancy(result);
+          const pass2Disc = getValidationDiscrepancy(pass2Result);
+
+          if (pass2Result.data?.validation?.validation_passed || pass2Disc < pass1Disc) {
+            result = pass2Result;
+            usedRetry = true;
+            console.log('[SCAN RECEIPT] Using pass 2 result (better validation)');
+          } else {
+            console.log('[SCAN RECEIPT] Keeping pass 1 result (pass 2 was not better)');
           }
+        } catch (retryErr) {
+          console.warn('[SCAN RECEIPT] Pass 2 failed, using pass 1 result:', retryErr.message);
         }
-        throw new Error(errorMessage);
       }
-
-      // Parse successful response
-      let result;
-      try {
-        result = JSON.parse(responseText);
-      } catch (parseErr) {
-        console.error('[SCAN RECEIPT] Invalid JSON response:', responseText.substring(0, 500));
-        throw new Error('Server returned invalid JSON response');
-      }
-
-      // Validate response structure
-      if (!result || typeof result !== 'object') {
-        console.error('[SCAN RECEIPT] Response is not an object:', result);
-        throw new Error('Server returned unexpected response format');
-      }
-
-      if (!result.success) {
-        throw new Error(result.error || result.message || 'Receipt parsing failed');
-      }
-
-      if (!result.data || !result.data.expenses || !Array.isArray(result.data.expenses)) {
-        console.error('[SCAN RECEIPT] Missing expenses array in response:', result);
-        throw new Error('Server response missing expenses data');
-      }
-      console.log('[SCAN RECEIPT] ========================================');
-      console.log('[SCAN RECEIPT] FULL RESPONSE:');
-      console.log('[SCAN RECEIPT] ========================================');
-      console.log(JSON.stringify(result, null, 2));
-      console.log('[SCAN RECEIPT] ========================================');
-      console.log('[SCAN RECEIPT] result.data:', result.data);
-      console.log('[SCAN RECEIPT] result.data.expenses:', result.data?.expenses);
-      console.log('[SCAN RECEIPT] ========================================');
 
       els.scanReceiptProgressText.textContent = 'Populating expense rows...';
       els.scanReceiptProgressFill.style.width = '90%';
@@ -5965,7 +6002,9 @@
         const method = result.extraction_method || 'unknown';
         const execTime = result.execution_time_seconds || 0;
         const methodLabel = method === 'pdfplumber' ? 'Text Extract' : method === 'vision_direct' ? 'Vision (Heavy)' : 'Vision';
-        details += `Method: ${methodLabel} | Time: ${execTime}s\n\n`;
+        details += `Method: ${methodLabel} | Time: ${execTime}s`;
+        if (usedRetry) details += ' (2nd pass)';
+        details += '\n\n';
 
         // Show validation info
         if (result.data?.validation) {
@@ -5986,8 +6025,12 @@
         }
 
         const validationPassed = result.data?.validation?.validation_passed !== false;
-        if (validationPassed) {
+        if (validationPassed && usedRetry) {
+          Toast.success('Receipt Scanned', `Scanned ${result.count} expense(s). Totals matched on 2nd pass.`, { details: details || null, persistent: true });
+        } else if (validationPassed) {
           Toast.success('Receipt Scanned', `Successfully scanned ${result.count} expense(s) in ${execTime}s!`, { details: details || null, persistent: true });
+        } else if (usedRetry) {
+          Toast.warning('Receipt Scanned', `Scanned ${result.count} expense(s). Totals still don't match after 2nd pass - please review amounts.`, { details, persistent: true });
         } else {
           Toast.warning('Receipt Scanned', `Scanned ${result.count} expense(s) but totals do not match.`, { details, persistent: true });
         }

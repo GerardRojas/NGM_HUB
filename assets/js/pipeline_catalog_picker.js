@@ -92,7 +92,6 @@
   };
 
   async function fetchCatalog(catalogType) {
-    console.log('[CatalogPicker] fetchCatalog called:', catalogType);
     const config = CATALOG_CONFIG[catalogType];
     if (!config) {
       console.error('[CatalogPicker] Unknown catalog type:', catalogType);
@@ -206,7 +205,6 @@
   // ================================
   class CatalogPicker {
     constructor(container, options = {}) {
-      console.log('[CatalogPicker] Constructor called with options:', options);
       this.container = typeof container === 'string'
         ? document.querySelector(container)
         : container;
@@ -216,23 +214,18 @@
         return;
       }
 
-      // Options
       this.catalogType = options.catalogType || 'project';
       this.placeholder = options.placeholder || CATALOG_CONFIG[this.catalogType]?.placeholder || 'Select...';
       this.onChange = options.onChange || null;
       this.allowClear = options.allowClear !== false;
 
-      // State
       this.selectedItem = null;
       this.isOpen = false;
       this.searchQuery = '';
       this.items = [];
 
-      console.log('[CatalogPicker] Building UI for type:', this.catalogType);
-      // Build UI
       this.render();
       this.bindEvents();
-      console.log('[CatalogPicker] Instance created successfully');
     }
 
     render() {
@@ -298,24 +291,10 @@
 
       // Select item from list
       this.list.addEventListener('click', (e) => {
-        console.log('[CatalogPicker] ========== LIST CLICK ==========');
-        console.log('[CatalogPicker] List click detected!');
-        console.log('[CatalogPicker] Click target:', e.target);
-        console.log('[CatalogPicker] Click target tagName:', e.target.tagName);
-        console.log('[CatalogPicker] Click target className:', e.target.className);
-        console.log('[CatalogPicker] Click target outerHTML:', e.target.outerHTML?.substring(0, 200));
         const itemEl = e.target.closest('.pm-catalog-item');
-        console.log('[CatalogPicker] Found .pm-catalog-item:', itemEl);
         if (itemEl) {
-          const itemId = itemEl.dataset.itemId;
-          console.log('[CatalogPicker] itemId from dataset:', itemId);
-          console.log('[CatalogPicker] Calling selectItem...');
-          this.selectItem(itemId);
-        } else {
-          console.log('[CatalogPicker] No .pm-catalog-item found from target');
-          console.log('[CatalogPicker] All items in list:', this.list.querySelectorAll('.pm-catalog-item').length);
+          this.selectItem(itemEl.dataset.itemId);
         }
-        console.log('[CatalogPicker] ========== LIST CLICK END ==========');
       });
 
       // Remove chip (clear selection)
@@ -328,25 +307,10 @@
       });
 
       // Close on outside click - store reference for cleanup
-      // Use _openingLock to prevent the original click from closing the picker
       this._openingLock = false;
       this._onDocumentClick = (e) => {
-        console.log('[CatalogPicker] Document click handler:', {
-          isOpen: this.isOpen,
-          openingLock: this._openingLock,
-          target: e.target,
-          targetClass: e.target.className,
-          containerContains: this.container.contains(e.target),
-          dropdownContains: this.dropdown.contains(e.target)
-        });
-        // Ignore clicks while opening (the original click that triggered open)
-        if (this._openingLock) {
-          console.log('[CatalogPicker] Ignoring click - opening lock active');
-          return;
-        }
-        // Also check if click is inside dropdown (which may be positioned outside container due to fixed)
+        if (this._openingLock) return;
         if (this.isOpen && !this.container.contains(e.target) && !this.dropdown.contains(e.target)) {
-          console.log('[CatalogPicker] Closing - click outside container and dropdown');
           this.close();
         }
       };
@@ -362,7 +326,6 @@
     }
 
     async toggle() {
-      console.log('[CatalogPicker] toggle() called, isOpen:', this.isOpen);
       if (this.isOpen) {
         this.close();
       } else {
@@ -371,7 +334,6 @@
     }
 
     async open() {
-      console.log('[CatalogPicker] open() called for type:', this.catalogType);
       // Close any other open dropdown
       if (activeDropdown && activeDropdown !== this) {
         activeDropdown.close();
@@ -385,14 +347,11 @@
       activeDropdown = this;
       this.trigger.classList.add('is-open');
       this.dropdown.classList.add('is-open');
-      console.log('[CatalogPicker] Dropdown classes added, positioning...');
 
       // Position dropdown using fixed positioning for table cell overflow
       this.positionDropdown();
 
-      // Move dropdown to document.body to escape table stacking contexts.
-      // position:fixed dropdowns inside elements with z-index create a stacking
-      // context that prevents click events from reaching the dropdown items.
+      // Move dropdown to document.body to escape table stacking contexts
       if (this.dropdown.parentElement !== document.body) {
         document.body.appendChild(this.dropdown);
       }
@@ -403,14 +362,11 @@
         this._onScroll = () => this.positionDropdown();
         this._scrollContainer.addEventListener('scroll', this._onScroll, { passive: true });
       }
-      // Also listen to window scroll
       this._onWindowScroll = () => this.positionDropdown();
       window.addEventListener('scroll', this._onWindowScroll, { passive: true });
 
       // Load items if not cached
-      console.log('[CatalogPicker] Loading items...');
       await this.loadItems();
-      console.log('[CatalogPicker] Items loaded, count:', this.items?.length);
 
       // Focus search
       setTimeout(() => this.searchInput.focus(), 50);
@@ -479,20 +435,16 @@
     }
 
     async loadItems() {
-      console.log('[CatalogPicker] loadItems() called');
       this.list.innerHTML = '<div class="pm-catalog-loading">Loading...</div>';
 
       const items = await fetchCatalog(this.catalogType);
-      console.log('[CatalogPicker] fetchCatalog returned:', items?.length, 'items');
 
       if (!items.length) {
-        console.log('[CatalogPicker] No items found');
         this.list.innerHTML = '<div class="pm-catalog-empty">No items found</div>';
         return;
       }
 
       this.items = items;
-      console.log('[CatalogPicker] Rendering list with', items.length, 'items');
       this.renderList();
     }
 
@@ -525,32 +477,21 @@
     }
 
     selectItem(itemId) {
-      console.log('[CatalogPicker] ========== selectItem() START ==========');
-      console.log('[CatalogPicker] selectItem() called with id:', itemId);
-      console.log('[CatalogPicker] this.items:', this.items);
       const item = this.items.find(i => String(i.id) === String(itemId));
-      console.log('[CatalogPicker] Found item:', item);
 
       if (item) {
         // If clicking the same item, deselect (toggle behavior)
-        if (this.selectedItem?.id === item.id) {
-          console.log('[CatalogPicker] Deselecting item (toggle)');
+        if (this.selectedItem && String(this.selectedItem.id) === String(item.id)) {
           this.selectedItem = null;
         } else {
-          console.log('[CatalogPicker] Selecting item:', item.name);
           this.selectedItem = item;
         }
-      } else {
-        console.error('[CatalogPicker] ERROR: Item not found in this.items for id:', itemId);
       }
 
       this.renderSelected();
       this.renderList();
-      console.log('[CatalogPicker] About to emit change, selectedItem:', this.selectedItem);
       this.emitChange();
-      console.log('[CatalogPicker] Closing picker...');
       this.close();
-      console.log('[CatalogPicker] ========== selectItem() END ==========');
     }
 
     renderSelected() {
@@ -634,7 +575,6 @@
     }
 
     destroy() {
-      console.log('[CatalogPicker] destroy() called');
       // Close dropdown first to clean up positioning styles
       if (this.isOpen) {
         this.close();

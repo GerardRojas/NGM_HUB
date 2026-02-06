@@ -1234,6 +1234,39 @@
         }
         break;
 
+      case "category_query_response":
+        // Render group card with per-account BVA data
+        if (actionData.accounts && actionData.accounts.length > 0) {
+          var groupName = actionData.group_name || "";
+          var totals = actionData.group_totals || {};
+          var accts = actionData.accounts;
+          var rows = accts.map(function(acc) {
+            var bal = acc.balance || 0;
+            var balClass = bal < 0 ? "arturito-bva-negative" : "";
+            var matchMark = acc.is_matched ? " arturito-bva-matched" : "";
+            return '<div class="arturito-bva-row' + matchMark + '">'
+              + '<div class="arturito-bva-account">' + escapeHtml(acc.matched_name) + '</div>'
+              + '<div class="arturito-bva-nums">'
+              + '<span>Budget: $' + (acc.budget || 0).toLocaleString("en-US", {minimumFractionDigits: 2}) + '</span>'
+              + '<span>Actual: $' + (acc.actual || 0).toLocaleString("en-US", {minimumFractionDigits: 2}) + '</span>'
+              + '<span class="' + balClass + '">Disp: $' + bal.toLocaleString("en-US", {minimumFractionDigits: 2}) + '</span>'
+              + '</div></div>';
+          }).join("");
+          var totalBal = totals.balance || 0;
+          var totalClass = totalBal < 0 ? "arturito-bva-negative" : "";
+          var totalRow = accts.length > 1
+            ? '<div class="arturito-bva-total">'
+              + '<div class="arturito-bva-account">TOTAL' + (groupName ? " " + escapeHtml(groupName) : "") + '</div>'
+              + '<div class="arturito-bva-nums">'
+              + '<span>$' + (totals.budget || 0).toLocaleString("en-US", {minimumFractionDigits: 2}) + '</span>'
+              + '<span>$' + (totals.actual || 0).toLocaleString("en-US", {minimumFractionDigits: 2}) + '</span>'
+              + '<span class="' + totalClass + '">$' + totalBal.toLocaleString("en-US", {minimumFractionDigits: 2}) + '</span>'
+              + '</div></div>'
+            : "";
+          return '<div class="arturito-bva-card">' + rows + totalRow + '</div>';
+        }
+        break;
+
       case "ask_project":
         // Show clickable project buttons when user asks for BVA without specifying project
         if (actionData.projects && actionData.projects.length > 0) {
@@ -1527,7 +1560,7 @@
     if (!text) return "";
     const div = document.createElement("div");
     div.textContent = text;
-    return div.innerHTML;
+    return div.innerHTML.replace(/'/g, "&#39;");
   }
 
   function formatMessageContent(content) {
@@ -1539,10 +1572,13 @@
     formatted = formatted.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
     formatted = formatted.replace(/\*(.+?)\*/g, "<strong>$1</strong>");
 
-    // Markdown links [text](url) - convert to clickable links
+    // Markdown links [text](url) - convert to clickable links (only http/https)
     formatted = formatted.replace(
       /\[([^\]]+)\]\(([^)]+)\)/g,
-      '<a href="$2" target="_blank" rel="noopener noreferrer" class="arturito-widget-link">$1</a>'
+      function(_match, linkText, url) {
+        if (!/^https?:\/\//i.test(url)) return linkText;
+        return '<a href="' + url + '" target="_blank" rel="noopener noreferrer" class="arturito-widget-link">' + linkText + '</a>';
+      }
     );
 
     // Line breaks
@@ -1806,23 +1842,8 @@
    * @param {string} projectName - Name of the project to generate BVA for
    */
   function selectProjectForBVA(projectName) {
-    // Simulate user typing "bva [project]"
-    const message = `bva ${projectName}`;
-
-    // Add as user message
-    const userMsg = {
-      id: `msg_${Date.now()}`,
-      role: "user",
-      content: message,
-      timestamp: new Date().toISOString(),
-    };
-    state.messages.push(userMsg);
-    saveConversation();
-    renderMessages();
-    scrollToBottom();
-
-    // Set the input and send
-    DOM.input.value = message;
+    // Set input and let sendMessage handle the full flow
+    DOM.input.value = `bva ${projectName}`;
     sendMessage();
   }
 

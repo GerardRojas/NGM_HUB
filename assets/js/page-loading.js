@@ -162,6 +162,7 @@
   window.pageLoading = {
     hide: hidePageLoading,
     show: showPageLoading,
+    markManual: function() { manualHideCalled = true; },
     MIN_TIME: MIN_LOADING_TIME,
     getElapsed: () => Date.now() - PAGE_LOAD_START
   };

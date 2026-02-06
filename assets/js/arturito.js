@@ -12,9 +12,15 @@
   // CONFIGURATION
   // ─────────────────────────────────────────────────────────────────────────
 
-  const API_BASE = window.API_BASE || "http://127.0.0.1:8000";
+  const API_BASE = window.NGM_CONFIG?.API_BASE || window.API_BASE || "http://127.0.0.1:8000";
   const STORAGE_KEY = "arturito_conversation";
   const SESSION_ID = `web_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+  // Auth helper
+  function getAuthHeaders() {
+    const token = localStorage.getItem("ngmToken");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
 
   // ─────────────────────────────────────────────────────────────────────────
   // MODULE KNOWLEDGE BASE
@@ -754,7 +760,10 @@
       }
 
       // Fallback to API call if not in localStorage
-      const res = await fetch(`${API_BASE}/auth/me`, { credentials: "include" });
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        credentials: "include",
+        headers: { ...getAuthHeaders() },
+      });
       if (!res.ok) throw new Error("Failed to load user");
       const data = await res.json();
       state.currentUser = normalizeUser(data.user || data);
@@ -1013,15 +1022,19 @@
       // Send to API with thread_id (Assistants API)
       const response = await fetch(`${API_BASE}/arturito/web-chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
         credentials: "include",
         body: JSON.stringify({
           text: content,
           user_name: state.currentUser?.user_name,
           user_email: state.currentUser?.email,
+          user_role: state.currentUser?.user_role,
           session_id: state.sessionId,
-          thread_id: state.threadId,  // Send existing thread ID if we have one
-          module_knowledge: getModuleKnowledgeContext(),  // Include module help knowledge
+          thread_id: state.threadId,
+          current_page: "arturito.html",
         }),
       });
 
@@ -1218,6 +1231,7 @@
       const response = await fetch(`${API_BASE}/arturito/clear-thread?session_id=${state.sessionId}`, {
         method: "POST",
         credentials: "include",
+        headers: { ...getAuthHeaders() },
       });
 
       if (response.ok) {
@@ -1270,7 +1284,7 @@
   function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text;
-    return div.innerHTML;
+    return div.innerHTML.replace(/'/g, "&#39;");
   }
 
   function formatTime(dateStr) {

@@ -2,27 +2,18 @@
 (function () {
   "use strict";
 
-  console.log("[PIPELINE-INTERACTIONS] Script loaded at:", new Date().toISOString());
-
   const wrapper = document.getElementById("pm-groups-wrapper");
-  console.log("[PIPELINE-INTERACTIONS] Wrapper element:", wrapper);
-  console.log("[PIPELINE-INTERACTIONS] Wrapper innerHTML length:", wrapper?.innerHTML?.length || 0);
 
   if (!wrapper) {
-    console.error("[PIPELINE-INTERACTIONS] ERROR: wrapper not found! Aborting.");
+    console.error("[PIPELINE-INTERACTIONS] wrapper not found, aborting.");
     return;
   }
 
   // Prevent double initialization (fixes memory leak from duplicate listeners)
   if (wrapper._pipelineInteractionsInitialized) {
-    console.log("[PIPELINE-INTERACTIONS] Already initialized, skipping.");
     return;
   }
   wrapper._pipelineInteractionsInitialized = true;
-
-  // Debug: verify wrapper is correct element
-  console.log("[PIPELINE-INTERACTIONS] Wrapper id:", wrapper.id);
-  console.log("[PIPELINE-INTERACTIONS] Wrapper className:", wrapper.className);
 
   // ================================
   // CONFIGURACIÓN DE COLUMNAS
@@ -56,6 +47,12 @@
   // ================================
   // CACHE DE USUARIOS Y CATÁLOGOS
   // ================================
+  // Auth helper - matches pattern used by other modules
+  function getAuthHeaders() {
+    const token = localStorage.getItem("ngmToken");
+    return token ? { Authorization: "Bearer " + token } : {};
+  }
+
   let usersCache = null;
   let catalogsCache = {
     projects: null,
@@ -137,40 +134,33 @@
 
   function closeActiveEditor(save = false) {
     if (!activeEditor) return;
-    console.log("[PIPELINE-INTERACTIONS] closeActiveEditor called, save:", save);
 
     const { element, td, taskId, colKey, originalValue, type, alreadySaved } = activeEditor;
 
     // Don't save again if picker already saved via onChange
-    let savedNewValue = null;
     if (save && !alreadySaved) {
       const newValue = getEditorValue(element, type);
       // Normalize empty values: treat null, undefined, and '' as equivalent (no change)
       const normalizedNew = (newValue === null || newValue === undefined || newValue === '') ? '' : newValue;
       const normalizedOrig = (originalValue === null || originalValue === undefined || originalValue === '') ? '' : originalValue;
       const hasRealChange = normalizedNew !== normalizedOrig;
-      console.log("[PIPELINE-INTERACTIONS] closeActiveEditor comparing values:", { colKey, newValue, originalValue, normalizedNew, normalizedOrig, hasRealChange });
       if (hasRealChange) {
-        savedNewValue = newValue;
         // Update cell display immediately with new value (optimistic update)
-        // This ensures user sees the new value before PATCH completes
         updateCellDisplay(td, colKey, newValue);
         saveFieldToBackend(taskId, colKey, newValue, td);
       } else {
-        console.log("[PIPELINE-INTERACTIONS] No real change detected (empty values normalized), not saving");
         // Restore original content since no change
         restoreCellContent(td, colKey, originalValue);
       }
     }
 
-    // Restaurar contenido original si explicitly cancelled (Escape key) or picker closed without selection
+    // Restore original content if explicitly cancelled (Escape key) or picker closed without selection
     if (!save && !alreadySaved) {
       restoreCellContent(td, colKey, originalValue);
     }
 
     // Destroy picker instances to clean up event listeners
     if (element._picker && typeof element._picker.destroy === 'function') {
-      console.log("[PIPELINE-INTERACTIONS] Destroying picker instance");
       element._picker.destroy();
     }
 
@@ -219,7 +209,6 @@
   // GUARDAR EN BACKEND
   // ================================
   async function saveFieldToBackend(taskId, colKey, newValue, td) {
-    console.log("[PIPELINE-INTERACTIONS] saveFieldToBackend called:", { taskId, colKey, newValue });
     const apiBase = window.API_BASE || "";
 
     // Mapear columna UI -> campo backend
@@ -253,7 +242,10 @@
     try {
       const res = await fetch(`${apiBase}/pipeline/tasks/${taskId}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
+        },
         credentials: "include",
         body: JSON.stringify(payload),
       });
@@ -292,9 +284,7 @@
   // ACTUALIZAR DISPLAY DE CELDA
   // ================================
   function updateCellDisplay(td, colKey, value) {
-    console.log("[PIPELINE-INTERACTIONS] updateCellDisplay called:", { colKey, value, td });
     const div = td.querySelector("div") || td;
-    console.log("[PIPELINE-INTERACTIONS] updateCellDisplay - target div:", div);
 
     if (PERSON_COLS.includes(colKey)) {
       // Check if multi-person column (collaborator, manager)
@@ -322,7 +312,6 @@
     } else {
       div.textContent = value || "-";
     }
-    console.log("[PIPELINE-INTERACTIONS] updateCellDisplay DONE - div.innerHTML:", div.innerHTML?.substring(0, 100));
   }
 
   function restoreCellContent(td, colKey, originalValue) {
@@ -520,125 +509,82 @@
 
   // Dropdown de personas - Monday.com style using PeoplePicker
   async function createPersonDropdown(td, colKey, currentValue, taskId) {
-    console.log("[PIPELINE-INTERACTIONS] createPersonDropdown called:", { colKey, currentValue, taskId });
-
-    // Crear contenedor para el PeoplePicker
     const container = document.createElement("div");
     container.className = "pm-inline-people-picker";
 
-    // Check if this column supports multiple people
     const isMultiple = MULTI_PERSON_COLS.includes(colKey);
-
-    // Variable para almacenar el valor seleccionado
     let selectedValue = null;
     let selectedUsers = [];
 
-    // Verificar que PeoplePicker esté disponible
-    console.log("[PIPELINE-INTERACTIONS] window.PeoplePicker:", typeof window.PeoplePicker);
     if (typeof window.PeoplePicker !== "function") {
       console.warn("[PIPELINE] PeoplePicker not loaded, using fallback");
       return createPersonDropdownFallback(td, colKey, currentValue);
     }
 
-    // Crear instancia del PeoplePicker
-    console.log("[PIPELINE-INTERACTIONS] Creating PeoplePicker instance...");
     const picker = new window.PeoplePicker(container, {
       multiple: isMultiple,
       placeholder: isMultiple ? "Add people..." : "Select person...",
       onChange: (users) => {
-        console.log("[PIPELINE-INTERACTIONS] ========== PeoplePicker onChange FIRED ==========");
-        console.log("[PIPELINE-INTERACTIONS] onChange users:", users);
-        console.log("[PIPELINE-INTERACTIONS] onChange activeEditor:", activeEditor);
-        console.log("[PIPELINE-INTERACTIONS] onChange activeEditor.td === td:", activeEditor?.td === td);
         selectedUsers = users || [];
 
         if (isMultiple) {
-          // For multi-select: send array of IDs using plural field name
           const userIds = selectedUsers.map(u => u.id);
           const userNames = selectedUsers.map(u => u.name).join(", ");
           selectedValue = userNames || null;
-          console.log("[PIPELINE-INTERACTIONS] Multi-select - userIds:", userIds, "userNames:", userNames);
-
-          // Use plural field name for backend (collaborators, managers)
-          const pluralField = colKey + "s"; // collaborator -> collaborators, manager -> managers
+          const pluralField = colKey + "s";
 
           if (activeEditor && activeEditor.td === td) {
-            console.log("[PIPELINE-INTERACTIONS] Saving multi-select to backend...");
             saveFieldToBackend(taskId, pluralField, userIds, td);
             activeEditor.originalValue = userNames;
-            activeEditor.alreadySaved = true; // Mark as saved to prevent double-save in closeActiveEditor
-            console.log("[PIPELINE-INTERACTIONS] Updating cell display with:", userNames);
+            activeEditor.alreadySaved = true;
             updateCellDisplay(td, colKey, userNames);
-            // Don't close immediately for multi-select - user clicks away to close
-          } else {
-            console.warn("[PIPELINE-INTERACTIONS] Cannot save - activeEditor mismatch or null");
           }
         } else {
-          // For single select: existing behavior
           const user = users[0] || null;
           const userId = user ? user.id : null;
           const userName = user ? user.name : null;
           selectedValue = userName;
-          console.log("[PIPELINE-INTERACTIONS] Single select - userId:", userId, "userName:", userName);
 
           if (activeEditor && activeEditor.td === td) {
-            console.log("[PIPELINE-INTERACTIONS] Saving single select to backend...");
             saveFieldToBackend(taskId, colKey, userId, td);
             activeEditor.originalValue = userName;
-            activeEditor.alreadySaved = true; // Mark as saved to prevent double-save in closeActiveEditor
-            console.log("[PIPELINE-INTERACTIONS] Updating cell display with:", userName);
+            activeEditor.alreadySaved = true;
             updateCellDisplay(td, colKey, userName);
-            console.log("[PIPELINE-INTERACTIONS] Closing editor (already saved)...");
-            closeActiveEditor(false); // false = don't save again
-          } else {
-            console.warn("[PIPELINE-INTERACTIONS] Cannot save - activeEditor mismatch or null");
+            closeActiveEditor(false);
           }
         }
-        console.log("[PIPELINE-INTERACTIONS] ========== PeoplePicker onChange END ==========");
       }
     });
 
-    // Pre-seleccionar usuarios actuales
+    // Pre-select current users
     if (currentValue && currentValue !== "-") {
       setTimeout(async () => {
         const users = await window.PM_PeoplePicker?.fetchUsers?.() || [];
 
         if (isMultiple && currentValue.includes(",")) {
-          // Parse comma-separated names for multi-select
           const names = currentValue.split(",").map(n => n.trim());
           const matchedUsers = users.filter(u => names.includes(u.name));
           if (matchedUsers.length > 0 && picker.setValue) {
             picker.setValue(matchedUsers);
           }
         } else {
-          // Single user
           const currentUser = users.find(u => u.name === currentValue);
           if (currentUser && picker.setValue) {
             picker.setValue([currentUser]);
           }
         }
 
-        if (picker.open) {
-          picker.open();
-        }
+        if (picker.open) picker.open();
       }, 50);
     } else {
       setTimeout(() => {
-        console.log("[PIPELINE-INTERACTIONS] Opening PeoplePicker...");
-        if (picker.open) {
-          picker.open();
-          console.log("[PIPELINE-INTERACTIONS] PeoplePicker opened");
-        } else {
-          console.warn("[PIPELINE-INTERACTIONS] picker.open is not a function");
-        }
+        if (picker.open) picker.open();
       }, 50);
     }
 
-    // Guardar referencia al picker para poder cerrarlo
     container._picker = picker;
     container._getValue = () => selectedValue;
 
-    console.log("[PIPELINE-INTERACTIONS] PeoplePicker container created:", container);
     return container;
   }
 
@@ -689,89 +635,52 @@
 
   // Dropdown de catálogos - Monday.com style using CatalogPicker
   async function createCatalogDropdown(td, colKey, currentValue, taskId) {
-    console.log("[PIPELINE-INTERACTIONS] createCatalogDropdown called:", { colKey, currentValue, taskId });
-
-    // Crear contenedor para el CatalogPicker
     const container = document.createElement("div");
     container.className = "pm-inline-catalog-picker";
-
-    // Variable para almacenar el valor seleccionado
     let selectedValue = null;
 
-    // Verificar que CatalogPicker esté disponible
-    console.log("[PIPELINE-INTERACTIONS] window.CatalogPicker:", typeof window.CatalogPicker);
     if (typeof window.CatalogPicker !== "function") {
       console.warn("[PIPELINE] CatalogPicker not loaded, using fallback");
       return createCatalogDropdownFallback(td, colKey, currentValue);
     }
 
-    // Crear instancia del CatalogPicker
-    console.log("[PIPELINE-INTERACTIONS] Creating CatalogPicker instance...");
     const picker = new window.CatalogPicker(container, {
       catalogType: colKey,
       placeholder: `Select ${colKey}...`,
       onChange: (item) => {
-        console.log("[PIPELINE-INTERACTIONS] ========== CatalogPicker onChange FIRED ==========");
-        console.log("[PIPELINE-INTERACTIONS] onChange item:", item);
-        console.log("[PIPELINE-INTERACTIONS] onChange activeEditor:", activeEditor);
-        console.log("[PIPELINE-INTERACTIONS] onChange activeEditor.td === td:", activeEditor?.td === td);
-        // Store both ID (for backend) and name (for display)
         const valueId = item ? item.id : null;
         const valueName = item ? item.name : null;
-        selectedValue = valueName; // For display
-        console.log("[PIPELINE-INTERACTIONS] valueId:", valueId, "valueName:", valueName);
+        selectedValue = valueName;
 
-        // Guardar inmediatamente al seleccionar (send ID to backend)
         if (activeEditor && activeEditor.td === td) {
-          console.log("[PIPELINE-INTERACTIONS] Saving catalog to backend...");
           saveFieldToBackend(taskId, colKey, valueId, td);
-          // Update originalValue with the name for display restoration
           activeEditor.originalValue = valueName;
-          activeEditor.alreadySaved = true; // Mark as saved to prevent double-save
-          console.log("[PIPELINE-INTERACTIONS] Updating cell display with:", valueName);
-          // Update cell display with the name
+          activeEditor.alreadySaved = true;
           updateCellDisplay(td, colKey, valueName);
-          console.log("[PIPELINE-INTERACTIONS] Closing editor (already saved)...");
-          closeActiveEditor(false); // false porque ya guardamos
-        } else {
-          console.warn("[PIPELINE-INTERACTIONS] Cannot save - activeEditor mismatch or null");
+          closeActiveEditor(false);
         }
-        console.log("[PIPELINE-INTERACTIONS] ========== CatalogPicker onChange END ==========");
       }
     });
 
-    // Pre-seleccionar el valor actual si existe
+    // Pre-select current value
     if (currentValue && currentValue !== "-") {
       setTimeout(async () => {
-        // Esperar a que el picker cargue los items
         const items = await window.PM_CatalogPicker?.fetchCatalog?.(colKey) || [];
         const currentItem = items.find(i => i.name === currentValue);
         if (currentItem && picker.setValue) {
           picker.setValue(currentItem);
         }
-        // Abrir el dropdown automáticamente
-        if (picker.open) {
-          picker.open();
-        }
+        if (picker.open) picker.open();
       }, 50);
     } else {
-      // Abrir el dropdown automáticamente
       setTimeout(() => {
-        console.log("[PIPELINE-INTERACTIONS] Opening CatalogPicker...");
-        if (picker.open) {
-          picker.open();
-          console.log("[PIPELINE-INTERACTIONS] CatalogPicker opened");
-        } else {
-          console.warn("[PIPELINE-INTERACTIONS] picker.open is not a function");
-        }
+        if (picker.open) picker.open();
       }, 50);
     }
 
-    // Guardar referencia al picker para poder cerrarlo
     container._picker = picker;
     container._getValue = () => selectedValue;
 
-    console.log("[PIPELINE-INTERACTIONS] CatalogPicker container created:", container);
     return container;
   }
 
@@ -875,8 +784,6 @@
   // CLICK EN CELDA
   // ================================
   async function handleCellClick(td, tr, colKey, taskId) {
-    console.log("[PIPELINE-INTERACTIONS] handleCellClick called:", { colKey, taskId });
-
     // Si ya hay un editor activo, cerrarlo primero
     if (activeEditor) {
       if (activeEditor.td === td) return; // Click en el mismo editor
@@ -884,48 +791,31 @@
     }
 
     // Verificar si es columna de solo lectura
-    if (READONLY_COLS.includes(colKey)) {
-      console.log("[PIPELINE] Read-only column:", colKey);
-      return;
-    }
+    if (READONLY_COLS.includes(colKey)) return;
 
     const currentValue = getCurrentCellValue(td, colKey);
     let editor;
     let editorType;
 
-    // Crear editor según tipo de columna
-    console.log("[PIPELINE-INTERACTIONS] Checking column type for:", colKey);
-    console.log("[PIPELINE-INTERACTIONS] PERSON_COLS:", PERSON_COLS, "includes:", PERSON_COLS.includes(colKey));
-    console.log("[PIPELINE-INTERACTIONS] CATALOG_COLS:", CATALOG_COLS, "includes:", CATALOG_COLS.includes(colKey));
-    console.log("[PIPELINE-INTERACTIONS] DATE_COLS:", DATE_COLS, "includes:", DATE_COLS.includes(colKey));
-
+    // Crear editor segun tipo de columna
     if (PERSON_COLS.includes(colKey)) {
-      console.log("[PIPELINE-INTERACTIONS] Creating person dropdown");
       editor = await createPersonDropdown(td, colKey, currentValue, taskId);
       editorType = "person-dropdown";
     } else if (CATALOG_COLS.includes(colKey)) {
-      console.log("[PIPELINE-INTERACTIONS] Creating catalog dropdown");
       editor = await createCatalogDropdown(td, colKey, currentValue, taskId);
       editorType = "catalog-dropdown";
     } else if (NUMBER_COLS.includes(colKey)) {
-      console.log("[PIPELINE-INTERACTIONS] Creating number editor");
       editor = createNumberEditor(td, colKey, currentValue);
       editorType = "number";
     } else if (DATE_COLS.includes(colKey)) {
-      console.log("[PIPELINE-INTERACTIONS] Creating date editor");
       editor = createDateEditor(td, colKey, currentValue);
       editorType = "date";
     } else if (TEXT_COLS.includes(colKey)) {
-      console.log("[PIPELINE-INTERACTIONS] Creating text editor");
       editor = createTextEditor(td, colKey, currentValue);
       editorType = "text";
     } else {
-      // Columna no soportada para edición
-      console.log("[PIPELINE] Column not editable:", colKey);
       return;
     }
-
-    console.log("[PIPELINE-INTERACTIONS] Editor created:", editorType, editor);
 
     // Guardar estado
     activeEditor = {
@@ -977,26 +867,9 @@
   // ================================
   // EVENT LISTENER PRINCIPAL
   // ================================
-  console.log("[PIPELINE-INTERACTIONS] Event listener registered on wrapper");
-
   wrapper.addEventListener("click", (e) => {
-    console.log("[PIPELINE-INTERACTIONS] Click detected on wrapper");
-    console.log("[PIPELINE-INTERACTIONS] e.target:", e.target);
-    console.log("[PIPELINE-INTERACTIONS] e.target.tagName:", e.target.tagName);
-    console.log("[PIPELINE-INTERACTIONS] e.target.className:", e.target.className);
-
     const td = e.target.closest("td[data-col]");
-    if (!td) {
-      console.log("[PIPELINE-INTERACTIONS] No td[data-col] found - checking if inside table");
-      const anyTd = e.target.closest("td");
-      if (anyTd) {
-        console.log("[PIPELINE-INTERACTIONS] Found td without data-col:", anyTd);
-        console.log("[PIPELINE-INTERACTIONS] td attributes:", anyTd.getAttributeNames());
-      }
-      return;
-    }
-
-    console.log("[PIPELINE-INTERACTIONS] td found with data-col:", td.dataset.col);
+    if (!td) return;
 
     // No activar si el click fue en el editor mismo o en los pickers
     if (e.target.closest(".pm-inline-editor") ||
@@ -1006,7 +879,6 @@
         e.target.closest(".pm-inline-catalog-picker") ||
         e.target.closest(".pm-catalog-dropdown") ||
         e.target.closest(".pm-catalog-picker")) {
-      console.log("[PIPELINE-INTERACTIONS] Click was on editor/picker, ignoring");
       return;
     }
 
@@ -1014,16 +886,7 @@
     const taskId = tr?.dataset?.taskId || null;
     const colKey = td.getAttribute("data-col");
 
-    console.log("[PIPELINE-INTERACTIONS] tr found:", tr);
-    console.log("[PIPELINE-INTERACTIONS] tr.className:", tr?.className);
-    console.log("[PIPELINE-INTERACTIONS] tr.dataset:", tr?.dataset);
-    console.log("[PIPELINE-INTERACTIONS] taskId:", taskId, "colKey:", colKey);
-
-    if (!taskId || !colKey) {
-      console.log("[PIPELINE-INTERACTIONS] Missing taskId or colKey, returning");
-      console.log("[PIPELINE-INTERACTIONS] All tr attributes:", tr?.getAttributeNames?.());
-      return;
-    }
+    if (!taskId || !colKey) return;
 
     // Special handling for links column - open modal
     if (colKey === "links") {
@@ -1159,12 +1022,10 @@
     console.log("[PIPELINE-INTERACTIONS] Destroyed - document listeners removed");
   }
 
-  // Expose destroy function for SPA navigation cleanup
-  window.PM_TableInteractions = { destroy };
-
-  // Final debug log
-  console.log("[PIPELINE-INTERACTIONS] Script fully loaded and initialized!");
-  console.log("[PIPELINE-INTERACTIONS] Wrapper exists:", !!wrapper);
-  console.log("[PIPELINE-INTERACTIONS] Event listener should be active on wrapper");
+  // Expose public API for SPA navigation and cross-module coordination
+  window.PM_TableInteractions = {
+    destroy,
+    closeActiveEditor: () => closeActiveEditor(true)
+  };
 
 })();

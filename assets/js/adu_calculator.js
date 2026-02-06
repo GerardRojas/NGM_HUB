@@ -4,19 +4,8 @@
   "use strict";
 
   // ------------------------------------------
-  // SUPABASE CONFIGURATION
+  // (Supabase config removed — pricing config now persisted via backend API)
   // ------------------------------------------
-  var supabaseClient = null;
-
-  function initSupabase() {
-    if (supabaseClient) return supabaseClient;
-    var url = window.SUPABASE_URL || window.NGM_CONFIG?.SUPABASE_URL;
-    var key = window.SUPABASE_ANON_KEY || window.NGM_CONFIG?.SUPABASE_ANON_KEY;
-    if (url && key && window.supabase?.createClient) {
-      supabaseClient = window.supabase.createClient(url, key);
-    }
-    return supabaseClient;
-  }
 
   // ------------------------------------------
   // RULES: allowed stories per ADU type
@@ -380,31 +369,31 @@
   var pricingLoadedFromDB = false;
 
   // ------------------------------------------
-  // PRICING PERSISTENCE FUNCTIONS (Supabase)
+  // PRICING PERSISTENCE FUNCTIONS (Backend API)
   // ------------------------------------------
-  async function loadPricingFromSupabase() {
+  async function loadPricingFromAPI() {
     try {
-      var client = initSupabase();
-      if (!client) {
-        console.warn("[ADU Calc] Supabase not initialized, using default pricing");
+      var base = getApiBase();
+      if (!base) {
+        console.warn("[ADU Calc] API base not configured, using default pricing");
         return false;
       }
 
-      var { data, error } = await client
-        .from("adu_pricing_config")
-        .select("pricing_data")
-        .eq("config_key", "main")
-        .single();
+      var resp = await fetch(base + "/adu-calculator/pricing-config", {
+        method: "GET",
+        headers: Object.assign({ "Content-Type": "application/json" }, getAuthHeaders())
+      });
 
-      if (error) {
-        console.warn("[ADU Calc] Failed to load pricing from Supabase:", error.message);
+      if (!resp.ok) {
+        console.warn("[ADU Calc] Failed to load pricing from API:", resp.status);
         return false;
       }
 
-      if (data && data.pricing_data) {
-        deepMergePricing(PRICING_MATRIX, data.pricing_data);
+      var result = await resp.json();
+      if (result && result.data) {
+        deepMergePricing(PRICING_MATRIX, result.data);
         pricingLoadedFromDB = true;
-        console.log("[ADU Calc] Loaded custom pricing from Supabase");
+        console.log("[ADU Calc] Loaded custom pricing from API");
         return true;
       }
     } catch (e) {
@@ -413,15 +402,14 @@
     return false;
   }
 
-  async function savePricingToSupabase() {
+  async function savePricingToAPI() {
     try {
-      var client = initSupabase();
-      if (!client) {
-        if (window.Toast) window.Toast.error("Database not connected");
+      var base = getApiBase();
+      if (!base) {
+        if (window.Toast) window.Toast.error("API not configured");
         return false;
       }
 
-      // Build the pricing data object to save
       var pricingData = {
         base_rates: PRICING_MATRIX.base_rates,
         stories_multipliers: PRICING_MATRIX.stories_multipliers,
@@ -434,21 +422,21 @@
         floor_plan_modifiers: PRICING_MATRIX.floor_plan_modifiers
       };
 
-      var { error } = await client
-        .from("adu_pricing_config")
-        .update({
-          pricing_data: pricingData,
-          updated_at: new Date().toISOString()
-        })
-        .eq("config_key", "main");
+      var resp = await fetch(base + "/adu-calculator/pricing-config", {
+        method: "PUT",
+        headers: Object.assign({ "Content-Type": "application/json" }, getAuthHeaders()),
+        body: JSON.stringify({ pricing_data: pricingData })
+      });
 
-      if (error) {
-        console.error("[ADU Calc] Failed to save pricing:", error.message);
-        if (window.Toast) window.Toast.error("Failed to save pricing: " + error.message);
+      if (!resp.ok) {
+        var errText = "";
+        try { var errJson = await resp.json(); errText = errJson.detail || resp.statusText; } catch (_) { errText = resp.statusText; }
+        console.error("[ADU Calc] Failed to save pricing:", errText);
+        if (window.Toast) window.Toast.error("Failed to save pricing: " + errText);
         return false;
       }
 
-      console.log("[ADU Calc] Saved pricing to Supabase");
+      console.log("[ADU Calc] Saved pricing to API");
       if (window.Toast) window.Toast.success("Pricing configuration saved");
       return true;
     } catch (e) {
@@ -459,10 +447,8 @@
   }
 
   async function resetPricingToDefaults() {
-    // Restore from default copy
     deepMergePricing(PRICING_MATRIX, DEFAULT_PRICING_MATRIX);
-    // Save defaults back to Supabase
-    await savePricingToSupabase();
+    await savePricingToAPI();
     console.log("[ADU Calc] Pricing reset to defaults");
     if (window.Toast) window.Toast.info("Pricing reset to defaults");
   }
@@ -482,9 +468,8 @@
 
   // Load saved pricing on init (async, will update UI when ready)
   setTimeout(function() {
-    loadPricingFromSupabase().then(function(loaded) {
+    loadPricingFromAPI().then(function(loaded) {
       if (loaded) {
-        // If we already have a calculation, recalculate with new prices
         if (costEstimate) {
           calculateCost();
         }
@@ -2264,23 +2249,22 @@
     var midPricePerUnit = showPerUnit ? Math.round(midPrice / d.units) : 0;
     var highPricePerUnit = showPerUnit ? Math.round(highPrice / d.units) : 0;
 
-    var totalTag = showPerUnit ? '<span class="price-range-total-tag">total</span>' : '';
     html += '<div class="adu-price-range-table">'
           + '<div class="price-range-row">'
           + '<div class="price-range-cell price-range-low">'
           + '<span class="price-range-label">Low (-' + priceRange.low_percentage + '%)</span>'
           + '<span class="price-range-value">$' + lowPrice.toLocaleString() + '</span>'
-          + totalTag
+          + '<span class="price-range-metric-label">Building Total</span>'
           + '</div>'
           + '<div class="price-range-cell price-range-mid">'
           + '<span class="price-range-label">Estimate</span>'
           + '<span class="price-range-value">$' + midPrice.toLocaleString() + '</span>'
-          + totalTag
+          + '<span class="price-range-metric-label">Building Total</span>'
           + '</div>'
           + '<div class="price-range-cell price-range-high">'
           + '<span class="price-range-label">High (+' + priceRange.high_percentage + '%)</span>'
           + '<span class="price-range-value">$' + highPrice.toLocaleString() + '</span>'
-          + totalTag
+          + '<span class="price-range-metric-label">Building Total</span>'
           + '</div>'
           + '</div>'
           + '<div class="price-range-row price-range-sqft">'
@@ -3759,7 +3743,7 @@
   if (btnSavePricing) {
     btnSavePricing.addEventListener("click", async function() {
       collectPricingFromModal();
-      var saved = await savePricingToSupabase();
+      var saved = await savePricingToAPI();
       if (saved) {
         closePricingModal();
         // Recalculate if we have an estimate

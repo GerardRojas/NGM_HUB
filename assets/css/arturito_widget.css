@@ -558,6 +558,65 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+   BVA Category Card (Consulta Especifica)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.arturito-bva-card {
+  margin-top: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 11px;
+}
+
+.arturito-bva-row {
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.arturito-bva-row:last-child {
+  border-bottom: none;
+}
+
+.arturito-bva-row.arturito-bva-matched {
+  background: rgba(62, 207, 142, 0.08);
+  border-left: 2px solid #3ecf8e;
+}
+
+.arturito-bva-account {
+  font-weight: 600;
+  color: #e5e7eb;
+  margin-bottom: 2px;
+}
+
+.arturito-bva-nums {
+  display: flex;
+  gap: 12px;
+  color: #9ca3af;
+  font-size: 10px;
+}
+
+.arturito-bva-nums .arturito-bva-negative {
+  color: #ef4444;
+}
+
+.arturito-bva-total {
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.arturito-bva-total .arturito-bva-account {
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.arturito-bva-total .arturito-bva-nums {
+  font-weight: 600;
+  color: #d1d5db;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
    Responsive
    ───────────────────────────────────────────────────────────────────────────── */
 

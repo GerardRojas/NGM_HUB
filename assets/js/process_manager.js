@@ -1731,6 +1731,11 @@
     // Initialization
     // ================================
     async function init() {
+        // Signal page-loading.js that this page handles hide manually
+        // Prevents auto-hide from firing before API data is loaded
+        if (window.pageLoading && window.pageLoading.markManual) {
+            window.pageLoading.markManual();
+        }
         cacheElements();
         loadCurrentUser();
         // Load all persisted state from Supabase (with localStorage fallback)

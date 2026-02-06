@@ -78,8 +78,13 @@ const DOM = {
     tabMaterials: document.getElementById('tabMaterials'),
     tabConcepts: document.getElementById('tabConcepts'),
 
+    // Skeleton Loading
+    skeletonMaterials: document.getElementById('skeletonMaterials'),
+    skeletonMaterialsBody: document.getElementById('skeletonMaterialsBody'),
+    skeletonConcepts: document.getElementById('skeletonConcepts'),
+    skeletonConceptsBody: document.getElementById('skeletonConceptsBody'),
+
     // States
-    loadingState: document.getElementById('databaseLoadingState'),
     emptyState: document.getElementById('databaseEmptyState'),
     emptyStateMessage: document.getElementById('emptyStateMessage'),
 
@@ -94,6 +99,7 @@ const DOM = {
     btnAddFromEmpty: document.getElementById('btnAddFromEmpty'),
     btnImport: document.getElementById('btnImport'),
     btnExport: document.getElementById('btnExport'),
+    csvFileInput: document.getElementById('csvFileInput'),
     btnClearFilters: document.getElementById('btnClearFilters'),
     globalSearch: document.getElementById('globalSearch'),
     filterCategory: document.getElementById('filterCategory'),
@@ -369,16 +375,62 @@ function getUnitName(unitId) {
 // ========================================
 // Render Functions
 // ========================================
+function buildSkeletonRows(colWidths, rowCount) {
+    let html = '';
+    for (let r = 0; r < rowCount; r++) {
+        html += '<tr>';
+        for (let c = 0; c < colWidths.length; c++) {
+            html += `<td><div class="skeleton-cell ${colWidths[c]}"></div></td>`;
+        }
+        html += '</tr>';
+    }
+    return html;
+}
+
+const SKELETON_MATERIALS_COLS = [
+    'skeleton-cell--image',   // Image
+    'skeleton-cell--short',   // Code
+    'skeleton-cell--long',    // Name
+    'skeleton-cell--medium',  // Category
+    'skeleton-cell--medium',  // Brand
+    'skeleton-cell--medium',  // Vendor
+    'skeleton-cell--short',   // Unit
+    'skeleton-cell--amount',  // Unit Cost
+    'skeleton-cell--short',   // Tax %
+    'skeleton-cell--amount',  // w/ Tax
+    'skeleton-cell--short'    // Actions
+];
+
+const SKELETON_CONCEPTS_COLS = [
+    'skeleton-cell--short',   // Code
+    'skeleton-cell--long',    // Name
+    'skeleton-cell--medium',  // Category
+    'skeleton-cell--medium',  // Subcategory
+    'skeleton-cell--short',   // Unit
+    'skeleton-cell--amount',  // Base Cost
+    'skeleton-cell--short'    // Actions
+];
+
 function showLoading() {
-    DOM.loadingState.style.display = 'flex';
     DOM.emptyState.style.display = 'none';
     DOM.materialsContent.style.display = 'none';
     DOM.conceptsContent.style.display = 'none';
     DOM.paginationContainer.style.display = 'none';
+
+    if (state.activeTab === 'materials') {
+        DOM.skeletonMaterialsBody.innerHTML = buildSkeletonRows(SKELETON_MATERIALS_COLS, 12);
+        DOM.skeletonMaterials.style.display = 'block';
+        DOM.skeletonConcepts.style.display = 'none';
+    } else {
+        DOM.skeletonConceptsBody.innerHTML = buildSkeletonRows(SKELETON_CONCEPTS_COLS, 12);
+        DOM.skeletonConcepts.style.display = 'block';
+        DOM.skeletonMaterials.style.display = 'none';
+    }
 }
 
 function showEmpty(message) {
-    DOM.loadingState.style.display = 'none';
+    DOM.skeletonMaterials.style.display = 'none';
+    DOM.skeletonConcepts.style.display = 'none';
     DOM.emptyState.style.display = 'flex';
     DOM.emptyStateMessage.textContent = message;
     DOM.materialsContent.style.display = 'none';
@@ -387,7 +439,8 @@ function showEmpty(message) {
 }
 
 function showContent() {
-    DOM.loadingState.style.display = 'none';
+    DOM.skeletonMaterials.style.display = 'none';
+    DOM.skeletonConcepts.style.display = 'none';
     DOM.emptyState.style.display = 'none';
 
     if (state.activeTab === 'materials') {
@@ -2083,6 +2136,15 @@ function setupEventListeners() {
         loadData();
     });
 
+    // Export & Import
+    if (DOM.btnExport) DOM.btnExport.addEventListener('click', exportToCSV);
+    if (DOM.btnImport) DOM.btnImport.addEventListener('click', triggerImportCSV);
+    if (DOM.csvFileInput) {
+        DOM.csvFileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) handleCSVImport(e.target.files[0]);
+        });
+    }
+
     DOM.btnClearFilters.addEventListener('click', () => {
         state.filters = { search: '', category_id: '', unit_id: '' };
         DOM.globalSearch.value = '';
@@ -2254,6 +2316,328 @@ function setupEventListeners() {
             if (e.target === DOM.columnManagerModal) closeColumnManager();
         });
     }
+}
+
+// ========================================
+// Export CSV
+// ========================================
+async function exportToCSV() {
+    const tab = state.activeTab;
+    const btnExport = DOM.btnExport;
+    const originalText = btnExport.textContent;
+    btnExport.disabled = true;
+    btnExport.textContent = 'Exporting...';
+
+    try {
+        if (tab === 'materials') {
+            // Fetch ALL materials (paginate through all pages)
+            let allMaterials = [];
+            let page = 1;
+            const pageSize = 200;
+            let totalPages = 1;
+
+            while (page <= totalPages) {
+                const params = new URLSearchParams({ page: page.toString(), page_size: pageSize.toString() });
+                if (state.filters.search) params.append('search', state.filters.search);
+                if (state.filters.category_id) params.append('category_id', state.filters.category_id);
+                if (state.filters.unit_id) params.append('unit_id', state.filters.unit_id);
+
+                const response = await fetch(`${API_BASE}/materials?${params}`);
+                if (!response.ok) throw new Error('Failed to fetch materials for export');
+                const result = await response.json();
+                allMaterials = allMaterials.concat(result.data || []);
+                totalPages = result.pagination?.total_pages || 1;
+                page++;
+            }
+
+            if (!allMaterials.length) {
+                showToast('No materials to export', 'warning');
+                return;
+            }
+
+            const headers = ['Code', 'Name', 'Description', 'Brand', 'Category', 'Vendor', 'Unit', 'Unit Cost', 'Tax %', 'SKU', 'Image URL', 'Link'];
+            const rows = allMaterials.map(m => [
+                m.ID || '',
+                m.short_description || '',
+                m.full_description || '',
+                m.brand || '',
+                m.category_name || '',
+                m.vendor_name || '',
+                m.unit_name || '',
+                m.price_numeric || '',
+                m.tax_percent || '',
+                m.sku || '',
+                m.image || '',
+                m.link || ''
+            ]);
+
+            downloadCSV(headers, rows, 'materials_export.csv');
+            showToast(`Exported ${allMaterials.length} materials`, 'success');
+
+        } else {
+            // Fetch ALL concepts
+            let allConcepts = [];
+            let page = 1;
+            const pageSize = 200;
+            let totalPages = 1;
+
+            while (page <= totalPages) {
+                const params = new URLSearchParams({ page: page.toString(), page_size: pageSize.toString() });
+                if (state.filters.search) params.append('search', state.filters.search);
+                if (state.filters.category_id) params.append('category_id', state.filters.category_id);
+
+                const response = await fetch(`${API_BASE}/concepts?${params}`);
+                if (!response.ok) throw new Error('Failed to fetch concepts for export');
+                const result = await response.json();
+                allConcepts = allConcepts.concat(result.data || []);
+                totalPages = result.pagination?.total_pages || 1;
+                page++;
+            }
+
+            if (!allConcepts.length) {
+                showToast('No concepts to export', 'warning');
+                return;
+            }
+
+            const headers = ['Code', 'Name', 'Description', 'Category', 'Subcategory', 'Unit', 'Base Cost', 'Labor Cost', 'Total Cost'];
+            const rows = allConcepts.map(c => [
+                c.code || '',
+                c.short_description || '',
+                c.full_description || '',
+                c.category_name || '',
+                c.subcategory_name || '',
+                c.unit_name || '',
+                c.base_cost || '',
+                c.labor_cost || '',
+                c.total_cost || ''
+            ]);
+
+            downloadCSV(headers, rows, 'concepts_export.csv');
+            showToast(`Exported ${allConcepts.length} concepts`, 'success');
+        }
+    } catch (error) {
+        console.error('Export error:', error);
+        showToast('Error exporting: ' + error.message, 'error');
+    } finally {
+        btnExport.disabled = false;
+        btnExport.textContent = originalText;
+    }
+}
+
+function downloadCSV(headers, rows, filename) {
+    const escapeCsvField = (field) => {
+        const str = String(field ?? '');
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return '"' + str.replace(/"/g, '""') + '"';
+        }
+        return str;
+    };
+
+    const csvContent = [
+        headers.map(escapeCsvField).join(','),
+        ...rows.map(row => row.map(escapeCsvField).join(','))
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ========================================
+// Import CSV
+// ========================================
+function triggerImportCSV() {
+    if (state.activeTab !== 'materials') {
+        showToast('CSV import is only available for Materials', 'warning');
+        return;
+    }
+    DOM.csvFileInput.click();
+}
+
+async function handleCSVImport(file) {
+    if (!file || !file.name.endsWith('.csv')) {
+        showToast('Please select a valid CSV file', 'error');
+        return;
+    }
+
+    const btnImport = DOM.btnImport;
+    const originalText = btnImport.textContent;
+    btnImport.disabled = true;
+    btnImport.textContent = 'Reading...';
+
+    try {
+        const text = await file.text();
+        const rows = parseCSV(text);
+
+        if (rows.length < 2) {
+            showToast('CSV file is empty or has no data rows', 'warning');
+            return;
+        }
+
+        const headers = rows[0].map(h => h.trim().toLowerCase());
+        const dataRows = rows.slice(1).filter(row => row.some(cell => cell.trim()));
+
+        if (!dataRows.length) {
+            showToast('No data rows found in CSV', 'warning');
+            return;
+        }
+
+        // Map CSV columns to API fields
+        const colMap = {
+            'code': 'ID', 'id': 'ID',
+            'name': 'short_description', 'short description': 'short_description', 'short_description': 'short_description',
+            'description': 'full_description', 'full description': 'full_description', 'full_description': 'full_description',
+            'brand': 'brand',
+            'sku': 'sku',
+            'unit cost': 'price_numeric', 'unitcost': 'price_numeric', 'price': 'price_numeric', 'price_numeric': 'price_numeric',
+            'image': 'image', 'image url': 'image',
+            'link': 'link'
+        };
+
+        // Build category and unit lookup maps (name -> id)
+        const categoryMap = {};
+        state.categories.forEach(c => {
+            categoryMap[c.name.toLowerCase()] = c.id;
+        });
+
+        const unitMap = {};
+        state.units.forEach(u => {
+            unitMap[u.unit_name.toLowerCase()] = u.id_unit;
+        });
+
+        const materials = [];
+        const errors = [];
+
+        dataRows.forEach((row, idx) => {
+            const material = {};
+            headers.forEach((header, colIdx) => {
+                const apiField = colMap[header];
+                if (apiField && row[colIdx] !== undefined) {
+                    let value = row[colIdx].trim();
+                    if (apiField === 'price_numeric') {
+                        value = parseFloat(value.replace(/[,$]/g, '')) || null;
+                    }
+                    if (value !== '' && value !== null) {
+                        material[apiField] = value;
+                    }
+                }
+
+                // Handle category by name
+                if ((header === 'category' || header === 'category_name') && row[colIdx]) {
+                    const catName = row[colIdx].trim().toLowerCase();
+                    if (categoryMap[catName]) {
+                        material.category_id = categoryMap[catName];
+                    }
+                }
+
+                // Handle unit by name
+                if ((header === 'unit' || header === 'unit_name') && row[colIdx]) {
+                    const unitName = row[colIdx].trim().toLowerCase();
+                    if (unitMap[unitName]) {
+                        material.unit_id = unitMap[unitName];
+                    }
+                }
+            });
+
+            if (!material.ID) {
+                errors.push(`Row ${idx + 2}: Missing required Code/ID`);
+                return;
+            }
+
+            materials.push(material);
+        });
+
+        if (!materials.length) {
+            showToast('No valid materials found. ' + (errors.length ? errors[0] : ''), 'error');
+            return;
+        }
+
+        // Confirm with user
+        const msg = `Import ${materials.length} materials?` +
+            (errors.length ? `\n${errors.length} rows skipped (missing Code).` : '');
+        if (!confirm(msg)) return;
+
+        btnImport.textContent = 'Importing...';
+
+        // Send to bulk endpoint
+        const response = await fetch(`${API_BASE}/materials/bulk`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(materials)
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Bulk import failed');
+        }
+
+        const result = await response.json();
+        showToast(`Imported ${result.count || materials.length} materials`, 'success');
+
+        // Reload data
+        state.pagination.page = 1;
+        await loadData();
+
+    } catch (error) {
+        console.error('Import error:', error);
+        showToast('Error importing CSV: ' + error.message, 'error');
+    } finally {
+        btnImport.disabled = false;
+        btnImport.textContent = originalText;
+        DOM.csvFileInput.value = '';
+    }
+}
+
+function parseCSV(text) {
+    const rows = [];
+    let current = [];
+    let field = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const next = text[i + 1];
+
+        if (inQuotes) {
+            if (char === '"' && next === '"') {
+                field += '"';
+                i++;
+            } else if (char === '"') {
+                inQuotes = false;
+            } else {
+                field += char;
+            }
+        } else {
+            if (char === '"') {
+                inQuotes = true;
+            } else if (char === ',') {
+                current.push(field);
+                field = '';
+            } else if (char === '\n' || (char === '\r' && next === '\n')) {
+                current.push(field);
+                field = '';
+                if (current.length > 1 || current[0] !== '') {
+                    rows.push(current);
+                }
+                current = [];
+                if (char === '\r') i++;
+            } else {
+                field += char;
+            }
+        }
+    }
+
+    // Last field/row
+    current.push(field);
+    if (current.length > 1 || current[0] !== '') {
+        rows.push(current);
+    }
+
+    return rows;
 }
 
 // ========================================

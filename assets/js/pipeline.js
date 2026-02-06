@@ -1216,6 +1216,10 @@
     // Remove rows for tasks that no longer exist
     existingRowsMap.forEach((row, taskId) => {
       if (!newTaskIds.has(taskId)) {
+        // Close active editor if it's on this row (prevents orphaned state)
+        if (row.querySelector('.pm-cell-editing')) {
+          window.PM_TableInteractions?.closeActiveEditor?.();
+        }
         if (row.parentNode === tbody) {
           tbody.removeChild(row);
           removedCount++;
@@ -1236,6 +1240,10 @@
     VISIBLE_COLUMNS.forEach((col, colIndex) => {
       const td = tr.children[colIndex];
       if (!td) return;
+
+      // Skip cells with active inline editors to avoid destroying them mid-edit.
+      // The editor's close handler will update the cell when done.
+      if (td.classList.contains("pm-cell-editing")) return;
 
       const html = Renderers.getCellValue(task, col.key);
       const div = td.querySelector("div");

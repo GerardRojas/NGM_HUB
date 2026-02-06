@@ -61,9 +61,19 @@
             border-radius: 8px;
         }
 
-        /* Prevent table container visual jumps during loading */
-        .expenses-table-container {
-            min-height: 500px;
+        /* Skeleton rows match real table row height */
+        #skeletonMaterials .skeleton-table td {
+            padding: 10px 14px;
+            height: 60px;
+            box-sizing: border-box;
+        }
+        #skeletonConcepts .skeleton-table td {
+            padding: 10px 14px;
+        }
+        .skeleton-cell--image {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
         }
 
         /* Tab Buttons */
@@ -1217,12 +1227,49 @@
                             </div>
                         </div>
 
+                        <!-- Hidden CSV file input -->
+                        <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+
                         <!-- Table Container -->
                         <div class="expenses-table-container">
-                            <!-- Loading State -->
-                            <div id="databaseLoadingState" class="expenses-loading-state">
-                                <img src="assets/img/white_icon.png" class="loading-logo loading-logo-lg" alt="Loading">
-                                <span class="loading-text">Loading database...</span>
+                            <!-- Skeleton Loading: Materials -->
+                            <div id="skeletonMaterials" style="display: none;">
+                                <table class="skeleton-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 60px;">Image</th>
+                                            <th style="width: 100px;">Code</th>
+                                            <th>Name</th>
+                                            <th>Category</th>
+                                            <th>Brand</th>
+                                            <th>Vendor</th>
+                                            <th style="width: 80px;">Unit</th>
+                                            <th style="width: 110px;">Unit Cost</th>
+                                            <th style="width: 70px;">Tax %</th>
+                                            <th style="width: 110px;">w/ Tax</th>
+                                            <th style="width: 80px;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="skeletonMaterialsBody"></tbody>
+                                </table>
+                            </div>
+
+                            <!-- Skeleton Loading: Concepts -->
+                            <div id="skeletonConcepts" style="display: none;">
+                                <table class="skeleton-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 100px;">Code</th>
+                                            <th>Name</th>
+                                            <th>Category</th>
+                                            <th>Subcategory</th>
+                                            <th style="width: 80px;">Unit</th>
+                                            <th style="width: 120px;">Base Cost</th>
+                                            <th style="width: 80px;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="skeletonConceptsBody"></tbody>
+                                </table>
                             </div>
 
                             <!-- Empty State -->

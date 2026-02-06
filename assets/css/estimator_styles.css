@@ -621,6 +621,31 @@
     transform: translateY(-1px);
 }
 
+/* Boton primario del toolbar: mismo estilo pill que los secondary */
+.estimator-page .estimator-toolbar .btn-primary {
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 12px;
+
+    background: #3ecf8e;
+    border: 1px solid #3ecf8e;
+    color: #000;
+    font-weight: 600;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    transition: all 0.18s ease;
+}
+
+.estimator-page .estimator-toolbar .btn-primary:hover {
+    background: #34b87a;
+    border-color: #34b87a;
+    transform: translateY(-1px);
+}
+
 /* Meta-texto: estado / categorías / rows cargados */
 .estimator-page #estimator-status.table-lock-label {
     font-size: 11px;

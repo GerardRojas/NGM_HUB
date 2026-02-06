@@ -54,18 +54,15 @@
   }
 
   async function fetchUsers() {
-    console.log('[PeoplePicker] fetchUsers() called');
     const now = Date.now();
 
     // Return cached data if still valid
     if (usersCache && (now - cacheTimestamp) < CACHE_TTL) {
-      console.log('[PeoplePicker] Returning cached users:', usersCache.length);
       return usersCache;
     }
 
     try {
       const apiBase = window.API_BASE || '';
-      console.log('[PeoplePicker] Fetching from:', `${apiBase}/team/users`);
       const res = await fetch(`${apiBase}/team/users`, {
         credentials: 'include',
         headers: {
@@ -74,11 +71,9 @@
         }
       });
 
-      console.log('[PeoplePicker] Response status:', res.status);
       if (!res.ok) throw new Error(`Failed to load users: ${res.status}`);
 
       const data = await res.json();
-      console.log('[PeoplePicker] Raw data:', data);
       usersCache = Array.isArray(data) ? data : (data.users || data.data || []);
       cacheTimestamp = now;
 
@@ -93,7 +88,6 @@
         status: u.status?.name || u.user_status_name || ''
       }));
 
-      console.log('[PeoplePicker] Normalized users count:', usersCache.length);
       return usersCache;
     } catch (err) {
       console.error('[PeoplePicker] Error fetching users:', err);
@@ -156,7 +150,6 @@
   // ================================
   class PeoplePicker {
     constructor(container, options = {}) {
-      console.log('[PeoplePicker] Constructor called with options:', options);
       this.container = typeof container === 'string'
         ? document.querySelector(container)
         : container;
@@ -166,22 +159,17 @@
         return;
       }
 
-      // Options
-      this.multiple = options.multiple !== false; // Default: true (multi-select)
+      this.multiple = options.multiple !== false;
       this.placeholder = options.placeholder || 'Select people...';
       this.onChange = options.onChange || null;
-      this.maxDisplay = options.maxDisplay || 3; // Max avatars to show before "+N"
+      this.maxDisplay = options.maxDisplay || 3;
 
-      // State
       this.selectedUsers = [];
       this.isOpen = false;
       this.searchQuery = '';
 
-      console.log('[PeoplePicker] Building UI, multiple:', this.multiple);
-      // Build UI
       this.render();
       this.bindEvents();
-      console.log('[PeoplePicker] Instance created successfully');
     }
 
     render() {
@@ -247,36 +235,15 @@
 
       // Prevent dropdown close when clicking inside
       this.dropdown.addEventListener('click', (e) => {
-        console.log('[PeoplePicker] ========== DROPDOWN CLICK ==========');
-        console.log('[PeoplePicker] Dropdown click event!');
-        console.log('[PeoplePicker] Dropdown click target:', e.target);
-        console.log('[PeoplePicker] Dropdown click target.tagName:', e.target.tagName);
-        console.log('[PeoplePicker] Dropdown click target.className:', e.target.className);
-        console.log('[PeoplePicker] Is target inside list?', this.list.contains(e.target));
-        console.log('[PeoplePicker] ========== DROPDOWN CLICK END ==========');
         e.stopPropagation();
       });
 
       // Select user from list
       this.list.addEventListener('click', (e) => {
-        console.log('[PeoplePicker] ========== LIST CLICK ==========');
-        console.log('[PeoplePicker] List click detected!');
-        console.log('[PeoplePicker] Click target:', e.target);
-        console.log('[PeoplePicker] Click target tagName:', e.target.tagName);
-        console.log('[PeoplePicker] Click target className:', e.target.className);
-        console.log('[PeoplePicker] Click target outerHTML:', e.target.outerHTML?.substring(0, 200));
         const item = e.target.closest('.pm-people-item');
-        console.log('[PeoplePicker] Found .pm-people-item:', item);
         if (item) {
-          const userId = item.dataset.userId;
-          console.log('[PeoplePicker] userId from dataset:', userId);
-          console.log('[PeoplePicker] Calling toggleUser...');
-          this.toggleUser(userId);
-        } else {
-          console.log('[PeoplePicker] No .pm-people-item found from target');
-          console.log('[PeoplePicker] All items in list:', this.list.querySelectorAll('.pm-people-item').length);
+          this.toggleUser(item.dataset.userId);
         }
-        console.log('[PeoplePicker] ========== LIST CLICK END ==========');
       });
 
       // Remove chip
@@ -284,26 +251,15 @@
         const removeBtn = e.target.closest('.pm-people-chip-remove');
         if (removeBtn) {
           e.stopPropagation();
-          const userId = removeBtn.dataset.userId;
-          this.removeUser(userId);
+          this.removeUser(removeBtn.dataset.userId);
         }
       });
 
       // Close on outside click - store reference for cleanup
-      // Use _openingLock to prevent the original click from closing the picker
       this._openingLock = false;
       this._onDocumentClick = (e) => {
-        // Ignore clicks while opening (the original click that triggered open)
-        if (this._openingLock) {
-          console.log('[PeoplePicker] Ignoring click during opening');
-          return;
-        }
-        console.log('[PeoplePicker] Document click, isOpen:', this.isOpen, 'target:', e.target);
-        console.log('[PeoplePicker] container.contains(target):', this.container.contains(e.target));
-        console.log('[PeoplePicker] dropdown.contains(target):', this.dropdown.contains(e.target));
-        // Also check if click is inside dropdown (which may be positioned outside container due to fixed)
+        if (this._openingLock) return;
         if (this.isOpen && !this.container.contains(e.target) && !this.dropdown.contains(e.target)) {
-          console.log('[PeoplePicker] Closing due to outside click');
           this.close();
         }
       };
@@ -319,7 +275,6 @@
     }
 
     async toggle() {
-      console.log('[PeoplePicker] toggle() called, isOpen:', this.isOpen);
       if (this.isOpen) {
         this.close();
       } else {
@@ -328,7 +283,6 @@
     }
 
     async open() {
-      console.log('[PeoplePicker] open() called');
       // Close any other open dropdown
       if (activeDropdown && activeDropdown !== this) {
         activeDropdown.close();
@@ -342,14 +296,11 @@
       activeDropdown = this;
       this.trigger.classList.add('is-open');
       this.dropdown.classList.add('is-open');
-      console.log('[PeoplePicker] Dropdown classes added, positioning...');
 
       // Position dropdown using fixed positioning for table cell overflow
       this.positionDropdown();
 
-      // Move dropdown to document.body to escape table stacking contexts.
-      // position:fixed dropdowns inside elements with z-index create a stacking
-      // context that prevents click events from reaching the dropdown items.
+      // Move dropdown to document.body to escape table stacking contexts
       if (this.dropdown.parentElement !== document.body) {
         document.body.appendChild(this.dropdown);
       }
@@ -360,30 +311,24 @@
         this._onScroll = () => this.positionDropdown();
         this._scrollContainer.addEventListener('scroll', this._onScroll, { passive: true });
       }
-      // Also listen to window scroll
       this._onWindowScroll = () => this.positionDropdown();
       window.addEventListener('scroll', this._onWindowScroll, { passive: true });
 
       // Load users if not cached
-      console.log('[PeoplePicker] Loading users...');
       await this.loadUsers();
-      console.log('[PeoplePicker] Users loaded, count:', this.users?.length);
 
       // Focus search
       setTimeout(() => this.searchInput.focus(), 50);
     }
 
     positionDropdown() {
-      // Get trigger position in viewport
       const triggerRect = this.trigger.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
-      const dropdownHeight = 320; // max-height from CSS
+      const dropdownHeight = 320;
 
-      // Position dropdown below trigger, or above if not enough space
       const spaceBelow = viewportHeight - triggerRect.bottom;
       const spaceAbove = triggerRect.top;
 
-      // Use fixed positioning to escape overflow containers
       this.dropdown.style.position = 'fixed';
       this.dropdown.style.left = `${triggerRect.left}px`;
       this.dropdown.style.right = 'auto';
@@ -391,29 +336,15 @@
       this.dropdown.style.zIndex = '99999';
 
       if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
-        // Position below
         this.dropdown.style.top = `${triggerRect.bottom + 4}px`;
         this.dropdown.style.bottom = 'auto';
       } else {
-        // Position above
         this.dropdown.style.bottom = `${viewportHeight - triggerRect.top + 4}px`;
         this.dropdown.style.top = 'auto';
       }
-
-      // Debug: log dropdown position and dimensions
-      const dropdownRect = this.dropdown.getBoundingClientRect();
-      console.log('[PeoplePicker] Dropdown positioned:', {
-        top: this.dropdown.style.top,
-        left: this.dropdown.style.left,
-        width: this.dropdown.style.width,
-        dropdownRect: dropdownRect,
-        zIndex: getComputedStyle(this.dropdown).zIndex,
-        pointerEvents: getComputedStyle(this.dropdown).pointerEvents
-      });
     }
 
     close() {
-      console.log('[PeoplePicker] close() called');
       this.isOpen = false;
       if (activeDropdown === this) activeDropdown = null;
       this.trigger.classList.remove('is-open');
@@ -448,20 +379,16 @@
     }
 
     async loadUsers() {
-      console.log('[PeoplePicker] loadUsers() instance method called');
       this.list.innerHTML = '<div class="pm-people-loading">Loading...</div>';
 
       const users = await fetchUsers();
-      console.log('[PeoplePicker] fetchUsers returned:', users?.length, 'users');
 
       if (!users.length) {
-        console.log('[PeoplePicker] No users found');
         this.list.innerHTML = '<div class="pm-people-empty">No users found</div>';
         return;
       }
 
       this.users = users;
-      console.log('[PeoplePicker] Rendering list...');
       this.renderList();
     }
 
@@ -482,58 +409,37 @@
         return;
       }
 
-      const selectedIds = new Set(this.selectedUsers.map(u => u.id));
+      const selectedIds = new Set(this.selectedUsers.map(u => String(u.id)));
 
       this.list.innerHTML = filtered.map(user =>
-        renderUserItem(user, selectedIds.has(user.id))
+        renderUserItem(user, selectedIds.has(String(user.id)))
       ).join('');
-
-      // Debug: verify items rendered and their pointer-events
-      const items = this.list.querySelectorAll('.pm-people-item');
-      console.log('[PeoplePicker] renderList - items count:', items.length);
-      if (items.length > 0) {
-        const firstItem = items[0];
-        const itemStyle = getComputedStyle(firstItem);
-        console.log('[PeoplePicker] First item pointer-events:', itemStyle.pointerEvents);
-        console.log('[PeoplePicker] First item cursor:', itemStyle.cursor);
-        console.log('[PeoplePicker] First item data-user-id:', firstItem.dataset.userId);
-      }
     }
 
     toggleUser(userId) {
-      console.log('[PeoplePicker] ========== toggleUser() START ==========');
-      console.log('[PeoplePicker] toggleUser() called with id:', userId);
-      console.log('[PeoplePicker] this.users:', this.users);
-      const existingIndex = this.selectedUsers.findIndex(u => u.id === userId);
-      console.log('[PeoplePicker] Existing index:', existingIndex);
+      // Use String() for comparison - dataset values are always strings but
+      // user IDs from API may be numbers, causing strict === to fail
+      const uid = String(userId);
+      const existingIndex = this.selectedUsers.findIndex(u => String(u.id) === uid);
 
       if (existingIndex >= 0) {
-        // Remove
-        console.log('[PeoplePicker] Removing user');
         this.selectedUsers.splice(existingIndex, 1);
       } else {
-        // Add
-        const user = this.users.find(u => u.id === userId);
-        console.log('[PeoplePicker] Found user:', user);
+        const user = this.users.find(u => String(u.id) === uid);
         if (user) {
           if (!this.multiple) {
-            // Single select: replace
-            console.log('[PeoplePicker] Single select - replacing');
             this.selectedUsers = [user];
           } else {
-            console.log('[PeoplePicker] Multi select - adding');
             this.selectedUsers.push(user);
           }
         } else {
-          console.error('[PeoplePicker] ERROR: User not found in this.users for id:', userId);
+          console.error('[PeoplePicker] User not found for id:', userId);
         }
       }
 
       this.renderSelected();
       this.renderList();
-      console.log('[PeoplePicker] About to emit change, selectedUsers:', this.selectedUsers);
       this.emitChange();
-      console.log('[PeoplePicker] ========== toggleUser() END ==========');
 
       // Close if single select
       if (!this.multiple) {
@@ -542,7 +448,8 @@
     }
 
     removeUser(userId) {
-      this.selectedUsers = this.selectedUsers.filter(u => u.id !== userId);
+      const uid = String(userId);
+      this.selectedUsers = this.selectedUsers.filter(u => String(u.id) !== uid);
       this.renderSelected();
       this.renderList();
       this.emitChange();
@@ -616,8 +523,8 @@
 
     setValueByIds(ids) {
       if (!this.users) return;
-      const idSet = new Set(Array.isArray(ids) ? ids : [ids]);
-      this.selectedUsers = this.users.filter(u => idSet.has(u.id));
+      const idSet = new Set((Array.isArray(ids) ? ids : [ids]).map(String));
+      this.selectedUsers = this.users.filter(u => idSet.has(String(u.id)));
       this.renderSelected();
     }
 
@@ -628,7 +535,6 @@
     }
 
     destroy() {
-      console.log('[PeoplePicker] destroy() called');
       // Close dropdown first to clean up positioning styles
       if (this.isOpen) {
         this.close();

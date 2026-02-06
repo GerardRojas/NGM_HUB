@@ -8557,6 +8557,10 @@
             const nodeClass = `diagram-node node-${node.type}`;
             svg += `<g class="${nodeClass}" data-node="${node.id}" transform="translate(${node.x}, ${node.y})">`;
 
+            // Check if node has a tool/tech specified
+            const hasTool = node.tool && !mini;
+            const nodeHeight = hasTool ? 42 : 34;
+
             if (node.type === 'decision') {
                 // Diamond for decision - slightly smaller
                 const size = mini ? 20 : 25;
@@ -8566,19 +8570,24 @@
                 const r = mini ? 18 : 22;
                 svg += `<circle class="diagram-node-shape" cx="0" cy="0" r="${r}"/>`;
             } else {
-                // Rounded rectangle for process
-                const w = mini ? 70 : 90;
-                const h = mini ? 28 : 34;
+                // Rounded rectangle for process - taller if has tool
+                const w = mini ? 70 : 100;
+                const h = mini ? 28 : nodeHeight;
                 svg += `<rect class="diagram-node-shape" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" rx="4"/>`;
             }
 
-            // Label
+            // Main label - adjust y position if has tool
             const fontSize = mini ? 7 : 10;
             const label = node.label;
-            // For circles, may need to truncate more
-            const maxLen = (node.type === 'input' || node.type === 'output') ? (mini ? 8 : 12) : (mini ? 10 : 14);
+            const maxLen = (node.type === 'input' || node.type === 'output') ? (mini ? 8 : 12) : (mini ? 10 : 16);
             const displayLabel = label.length > maxLen ? label.substring(0, maxLen - 1) + '..' : label;
-            svg += `<text class="diagram-node-label" y="${mini ? 3 : 4}" style="font-size:${fontSize}px">${escapeHtml(displayLabel)}</text>`;
+            const labelY = hasTool ? -4 : (mini ? 3 : 4);
+            svg += `<text class="diagram-node-label" y="${labelY}" style="font-size:${fontSize}px">${escapeHtml(displayLabel)}</text>`;
+
+            // Tool/tech label (smaller, below main label)
+            if (hasTool) {
+                svg += `<text class="diagram-tool-label" y="12" style="font-size:8px">${escapeHtml(node.tool)}</text>`;
+            }
 
             svg += '</g>';
         });

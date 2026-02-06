@@ -6868,6 +6868,16 @@ body.page-process-manager {
     letter-spacing: -0.2px;
 }
 
+/* Tool/tech label - smaller, accent color */
+.diagram-tool-label {
+    fill: rgba(147, 197, 253, 0.9);
+    text-anchor: middle;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-weight: 400;
+    font-size: 8px;
+    letter-spacing: 0.2px;
+}
+
 /* Panel de detalles del diagrama */
 .diagram-node-details {
     width: 240px;

@@ -77,16 +77,16 @@ INSERT INTO algorithm_diagrams (name, codename, description, version, spec, diag
         "nodes": [
             { "id": "input", "label": "Image/PDF", "x": 250, "y": 40, "type": "input" },
             { "id": "format", "label": "Format?", "x": 250, "y": 110, "type": "decision" },
-            { "id": "try_text", "label": "Try Text Extract", "x": 150, "y": 180, "type": "process" },
-            { "id": "ocr", "label": "OCR Vision", "x": 350, "y": 180, "type": "process" },
-            { "id": "has_text", "label": "Has Text?", "x": 150, "y": 250, "type": "decision" },
-            { "id": "text_ok", "label": "Text Ready", "x": 80, "y": 320, "type": "process" },
-            { "id": "ocr_fallback", "label": "OCR Fallback", "x": 220, "y": 320, "type": "process" },
-            { "id": "mode", "label": "Mode?", "x": 250, "y": 390, "type": "decision" },
-            { "id": "fast", "label": "GPT-4o-mini", "x": 150, "y": 460, "type": "process" },
-            { "id": "heavy", "label": "GPT-4o", "x": 350, "y": 460, "type": "process" },
-            { "id": "parse", "label": "Parse Fields", "x": 250, "y": 530, "type": "process" },
-            { "id": "output", "label": "vendor, amount, date", "x": 250, "y": 600, "type": "output" }
+            { "id": "try_text", "label": "Text Extract", "x": 150, "y": 190, "type": "process", "tool": "pdfplumber" },
+            { "id": "ocr", "label": "OCR Vision", "x": 350, "y": 190, "type": "process", "tool": "gpt-4o-vision" },
+            { "id": "has_text", "label": "Has Text?", "x": 150, "y": 280, "type": "decision" },
+            { "id": "text_ok", "label": "Text Ready", "x": 70, "y": 370, "type": "process" },
+            { "id": "ocr_fallback", "label": "OCR Fallback", "x": 230, "y": 370, "type": "process", "tool": "gpt-4o-vision" },
+            { "id": "mode", "label": "Mode?", "x": 250, "y": 460, "type": "decision" },
+            { "id": "fast", "label": "Fast Parse", "x": 140, "y": 550, "type": "process", "tool": "gpt-4o-mini" },
+            { "id": "heavy", "label": "Deep Parse", "x": 360, "y": 550, "type": "process", "tool": "gpt-4o" },
+            { "id": "parse", "label": "Extract Fields", "x": 250, "y": 640, "type": "process", "tool": "json-schema" },
+            { "id": "output", "label": "structured data", "x": 250, "y": 720, "type": "output" }
         ],
         "edges": [
             { "from": "input", "to": "format" },
@@ -127,14 +127,14 @@ INSERT INTO algorithm_diagrams (name, codename, description, version, spec, diag
     '{
         "nodes": [
             { "id": "input", "label": "Expense Data", "x": 200, "y": 40, "type": "input" },
-            { "id": "context", "label": "Load Context", "x": 200, "y": 110, "type": "process" },
-            { "id": "mode", "label": "Mode?", "x": 200, "y": 180, "type": "decision" },
-            { "id": "standard", "label": "GPT-4o-mini", "x": 100, "y": 260, "type": "process" },
-            { "id": "deep", "label": "GPT-4o", "x": 300, "y": 260, "type": "process" },
-            { "id": "match", "label": "Match History", "x": 200, "y": 340, "type": "process" },
-            { "id": "confidence", "label": "Confidence?", "x": 200, "y": 410, "type": "decision" },
-            { "id": "output", "label": "category", "x": 120, "y": 480, "type": "output" },
-            { "id": "suggestions", "label": "suggestions[]", "x": 280, "y": 480, "type": "output" }
+            { "id": "context", "label": "Load Context", "x": 200, "y": 130, "type": "process", "tool": "supabase-rpc" },
+            { "id": "mode", "label": "Mode?", "x": 200, "y": 220, "type": "decision" },
+            { "id": "standard", "label": "Standard", "x": 90, "y": 320, "type": "process", "tool": "gpt-4o-mini" },
+            { "id": "deep", "label": "Deep Analysis", "x": 310, "y": 320, "type": "process", "tool": "gpt-4o" },
+            { "id": "match", "label": "Match History", "x": 200, "y": 420, "type": "process", "tool": "vector-search" },
+            { "id": "confidence", "label": "Confidence?", "x": 200, "y": 510, "type": "decision" },
+            { "id": "output", "label": "category", "x": 110, "y": 600, "type": "output" },
+            { "id": "suggestions", "label": "suggestions[]", "x": 290, "y": 600, "type": "output" }
         ],
         "edges": [
             { "from": "input", "to": "context" },
@@ -150,3 +150,70 @@ INSERT INTO algorithm_diagrams (name, codename, description, version, spec, diag
     }'::jsonb
 )
 ON CONFLICT DO NOTHING;
+
+-- ============================================
+-- UPDATE para agregar tools a diagramas existentes
+-- Ejecutar si ya tienes IRIS/ATLAS sin tools
+-- ============================================
+
+UPDATE algorithm_diagrams
+SET diagram = '{
+    "nodes": [
+        { "id": "input", "label": "Image/PDF", "x": 250, "y": 40, "type": "input" },
+        { "id": "format", "label": "Format?", "x": 250, "y": 110, "type": "decision" },
+        { "id": "try_text", "label": "Text Extract", "x": 150, "y": 190, "type": "process", "tool": "pdfplumber" },
+        { "id": "ocr", "label": "OCR Vision", "x": 350, "y": 190, "type": "process", "tool": "gpt-4o-vision" },
+        { "id": "has_text", "label": "Has Text?", "x": 150, "y": 280, "type": "decision" },
+        { "id": "text_ok", "label": "Text Ready", "x": 70, "y": 370, "type": "process" },
+        { "id": "ocr_fallback", "label": "OCR Fallback", "x": 230, "y": 370, "type": "process", "tool": "gpt-4o-vision" },
+        { "id": "mode", "label": "Mode?", "x": 250, "y": 460, "type": "decision" },
+        { "id": "fast", "label": "Fast Parse", "x": 140, "y": 550, "type": "process", "tool": "gpt-4o-mini" },
+        { "id": "heavy", "label": "Deep Parse", "x": 360, "y": 550, "type": "process", "tool": "gpt-4o" },
+        { "id": "parse", "label": "Extract Fields", "x": 250, "y": 640, "type": "process", "tool": "json-schema" },
+        { "id": "output", "label": "structured data", "x": 250, "y": 720, "type": "output" }
+    ],
+    "edges": [
+        { "from": "input", "to": "format" },
+        { "from": "format", "to": "try_text", "label": "PDF" },
+        { "from": "format", "to": "ocr", "label": "Image" },
+        { "from": "try_text", "to": "has_text" },
+        { "from": "has_text", "to": "text_ok", "label": "Yes" },
+        { "from": "has_text", "to": "ocr_fallback", "label": "No" },
+        { "from": "text_ok", "to": "mode" },
+        { "from": "ocr_fallback", "to": "mode" },
+        { "from": "ocr", "to": "mode" },
+        { "from": "mode", "to": "fast", "label": "Fast" },
+        { "from": "mode", "to": "heavy", "label": "Heavy" },
+        { "from": "fast", "to": "parse" },
+        { "from": "heavy", "to": "parse" },
+        { "from": "parse", "to": "output" }
+    ]
+}'::jsonb
+WHERE codename = 'IRIS';
+
+UPDATE algorithm_diagrams
+SET diagram = '{
+    "nodes": [
+        { "id": "input", "label": "Expense Data", "x": 200, "y": 40, "type": "input" },
+        { "id": "context", "label": "Load Context", "x": 200, "y": 130, "type": "process", "tool": "supabase-rpc" },
+        { "id": "mode", "label": "Mode?", "x": 200, "y": 220, "type": "decision" },
+        { "id": "standard", "label": "Standard", "x": 90, "y": 320, "type": "process", "tool": "gpt-4o-mini" },
+        { "id": "deep", "label": "Deep Analysis", "x": 310, "y": 320, "type": "process", "tool": "gpt-4o" },
+        { "id": "match", "label": "Match History", "x": 200, "y": 420, "type": "process", "tool": "vector-search" },
+        { "id": "confidence", "label": "Confidence?", "x": 200, "y": 510, "type": "decision" },
+        { "id": "output", "label": "category", "x": 110, "y": 600, "type": "output" },
+        { "id": "suggestions", "label": "suggestions[]", "x": 290, "y": 600, "type": "output" }
+    ],
+    "edges": [
+        { "from": "input", "to": "context" },
+        { "from": "context", "to": "mode" },
+        { "from": "mode", "to": "standard", "label": "Standard" },
+        { "from": "mode", "to": "deep", "label": "Deep" },
+        { "from": "standard", "to": "match" },
+        { "from": "deep", "to": "match" },
+        { "from": "match", "to": "confidence" },
+        { "from": "confidence", "to": "output", "label": ">70%" },
+        { "from": "confidence", "to": "suggestions", "label": "<70%" }
+    ]
+}'::jsonb
+WHERE codename = 'ATLAS';

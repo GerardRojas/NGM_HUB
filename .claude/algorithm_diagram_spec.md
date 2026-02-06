@@ -33,7 +33,8 @@ const spec = {
     type: 'process',         // Tipo de nodo (required)
     label: 'Step Name',      // Texto a mostrar (required)
     from: 'previous_id',     // ID del paso anterior (optional)
-    branch: 'Label'          // Label del edge si viene de decision (optional)
+    branch: 'Label',         // Label del edge si viene de decision (optional)
+    tool: 'library-name'     // Herramienta/tecnologia usada (optional)
 }
 ```
 
@@ -41,10 +42,23 @@ const spec = {
 
 | Type | Descripcion | Forma Visual |
 |------|-------------|--------------|
-| `input` | Entrada del algoritmo | Rectangulo redondeado (verde) |
+| `input` | Entrada del algoritmo | Circulo (verde) |
 | `process` | Paso de procesamiento | Rectangulo (azul) |
 | `decision` | Punto de decision/branch | Diamante (amarillo) |
-| `output` | Salida del algoritmo | Rectangulo redondeado (morado) |
+| `output` | Salida del algoritmo | Circulo (morado) |
+
+### Propiedad `tool`
+
+Especifica la herramienta, libreria o tecnologia usada en ese paso. Se muestra debajo del label principal en color azul claro.
+
+Ejemplos comunes:
+- `pdfplumber` - Extraccion de texto de PDFs
+- `gpt-4o-vision` - OCR con vision AI
+- `gpt-4o-mini` - Modelo rapido
+- `gpt-4o` - Modelo completo
+- `supabase-rpc` - Llamada a funcion de DB
+- `vector-search` - Busqueda semantica
+- `json-schema` - Validacion de estructura
 
 ### Propiedad `from`
 

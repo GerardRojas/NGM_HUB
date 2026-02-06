@@ -19,6 +19,42 @@
     <link rel="stylesheet" href="assets/css/arturito_widget.css" />
 
     <style>
+        /* Custom Scrollbar - Dark Theme */
+        .modal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+        .modal-body::-webkit-scrollbar-track {
+            background: #18181b;
+            border-radius: 4px;
+        }
+        .modal-body::-webkit-scrollbar-thumb {
+            background: #3f3f46;
+            border-radius: 4px;
+        }
+        .modal-body::-webkit-scrollbar-thumb:hover {
+            background: #52525b;
+        }
+
+        /* Concept Image - Large */
+        .concept-image-large {
+            height: 160px;
+        }
+        .concept-image-large .image-drop-zone {
+            height: 100%;
+            padding: 16px;
+        }
+        .concept-image-large img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        /* Prevent table container visual jumps during loading */
+        .expenses-table-container {
+            min-height: 500px;
+        }
+
         /* Tab Buttons */
         .database-tabs {
             display: flex;
@@ -1369,52 +1405,50 @@
             </div>
 
             <div class="modal-body">
-                <!-- Basic Info Row -->
-                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
-                    <!-- Concept Image -->
-                    <div style="flex-shrink: 0; width: 120px;">
-                        <label class="form-label">Image</label>
+                <!-- Compact Info Row -->
+                <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                    <!-- Concept Image - Larger -->
+                    <div style="flex-shrink: 0; width: 160px;">
                         <input type="file" id="conceptImageInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display: none;" />
                         <input type="hidden" id="conceptImage" />
-                        <div id="conceptImageContainer" class="image-upload-container">
+                        <div id="conceptImageContainer" class="image-upload-container concept-image-large">
                             <!-- Drop zone or preview rendered by JS -->
                         </div>
                     </div>
-                    <!-- Form Fields -->
-                    <div class="modal-form-grid" style="flex: 1;">
-                        <div class="form-field">
-                            <label class="form-label" for="conceptCode">Code *</label>
-                            <input type="text" id="conceptCode" class="form-input" placeholder="e.g., CON-001" required />
+                    <!-- Form Fields - Compact Grid -->
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="display: grid; grid-template-columns: 140px 1fr; gap: 8px;">
+                            <div class="form-field" style="margin-bottom: 0;">
+                                <label class="form-label" for="conceptCode" style="margin-bottom: 2px; font-size: 11px;">Code *</label>
+                                <input type="text" id="conceptCode" class="form-input" style="padding: 6px 10px; font-size: 13px;" placeholder="CON-001" required />
+                            </div>
+                            <div class="form-field" style="margin-bottom: 0;">
+                                <label class="form-label" for="conceptName" style="margin-bottom: 2px; font-size: 11px;">Name *</label>
+                                <input type="text" id="conceptName" class="form-input" style="padding: 6px 10px; font-size: 13px;" placeholder="Concept name" required />
+                            </div>
                         </div>
-                        <div class="form-field">
-                            <label class="form-label" for="conceptName">Name *</label>
-                            <input type="text" id="conceptName" class="form-input" placeholder="Concept name" required />
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <div class="form-field" style="margin-bottom: 0;">
+                                <label class="form-label" for="conceptCategory" style="margin-bottom: 2px; font-size: 11px;">Category</label>
+                                <select id="conceptCategory" class="form-select" style="padding: 6px 10px; font-size: 13px;">
+                                    <option value="">Select category...</option>
+                                </select>
+                            </div>
+                            <div class="form-field" style="margin-bottom: 0;">
+                                <label class="form-label" for="conceptUnit" style="margin-bottom: 2px; font-size: 11px;">Unit *</label>
+                                <select id="conceptUnit" class="form-select" style="padding: 6px 10px; font-size: 13px;" required>
+                                    <option value="">Select unit...</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="form-field">
-                            <label class="form-label" for="conceptCategory">Category</label>
-                            <select id="conceptCategory" class="form-select">
-                                <option value="">Select category...</option>
-                            </select>
-                        </div>
-                        <div class="form-field">
-                            <label class="form-label" for="conceptUnit">Unit *</label>
-                            <select id="conceptUnit" class="form-select" required>
-                                <option value="">Select unit...</option>
-                            </select>
+                        <div class="form-field" style="margin-bottom: 0;">
+                            <label class="form-label" for="conceptDescription" style="margin-bottom: 2px; font-size: 11px;">Description</label>
+                            <textarea id="conceptDescription" class="form-textarea" rows="2" style="padding: 6px 10px; font-size: 13px; resize: none;" placeholder="Concept description..."></textarea>
                         </div>
                     </div>
                 </div>
-
-                <div style="display: flex; gap: 16px; margin-bottom: 16px;">
-                    <div class="form-field" style="flex: 1;">
-                        <label class="form-label" for="conceptDescription">Description</label>
-                        <textarea id="conceptDescription" class="form-textarea" rows="2" placeholder="Concept description..."></textarea>
-                    </div>
-                    <div class="form-field" style="width: 120px;">
-                        <label class="form-label" for="conceptWastePercent">Waste %</label>
-                        <input type="number" id="conceptWastePercent" class="form-input" placeholder="0" min="0" max="100" step="0.1" value="0" />
-                    </div>
-                </div>
+                <!-- Hidden waste field for backwards compatibility -->
+                <input type="hidden" id="conceptWastePercent" value="0" />
 
                 <!-- Category Summary Header - Opus style -->
                 <div class="category-summary-header">

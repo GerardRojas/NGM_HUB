@@ -955,15 +955,12 @@ function renderConceptImageUI() {
 
     if (previewUrl) {
         container.innerHTML = `
-            <div style="width: 100px; height: 100px; border-radius: 8px; overflow: hidden; background: #27272a; position: relative;">
+            <div style="width: 160px; height: 160px; border-radius: 8px; overflow: hidden; background: #27272a; position: relative;">
                 <img src="${escapeHtml(previewUrl)}" style="width: 100%; height: 100%; object-fit: cover;" alt="Preview" onerror="this.style.display='none'" />
-                <div style="position: absolute; bottom: 4px; right: 4px; display: flex; gap: 2px;">
-                    <button type="button" id="btnReplaceConceptImage" style="width: 24px; height: 24px; border-radius: 4px; background: rgba(59,130,246,0.8); border: none; color: white; font-size: 11px; cursor: pointer;" title="Replace">R</button>
-                    <button type="button" id="btnDeleteConceptImage" style="width: 24px; height: 24px; border-radius: 4px; background: rgba(248,113,113,0.8); border: none; color: white; font-size: 11px; cursor: pointer;" title="Delete">X</button>
+                <div style="position: absolute; bottom: 6px; right: 6px; display: flex; gap: 4px;">
+                    <button type="button" id="btnReplaceConceptImage" style="width: 28px; height: 28px; border-radius: 6px; background: rgba(59,130,246,0.85); border: none; color: white; font-size: 12px; cursor: pointer;" title="Replace">R</button>
+                    <button type="button" id="btnDeleteConceptImage" style="width: 28px; height: 28px; border-radius: 6px; background: rgba(248,113,113,0.85); border: none; color: white; font-size: 12px; cursor: pointer;" title="Delete">X</button>
                 </div>
-            </div>
-            <div style="font-size: 10px; color: #9ca3af; margin-top: 4px; text-align: center;">
-                ${state.conceptImageFile ? 'Ready' : 'Saved'}
             </div>
         `;
 
@@ -983,11 +980,11 @@ function renderConceptImageUI() {
             renderConceptImageUI();
         });
     } else {
-        // Show drop zone (compact)
+        // Show drop zone (larger)
         container.innerHTML = `
-            <div id="conceptImageDropZone" style="width: 100px; height: 100px; border: 2px dashed rgba(148,163,184,0.3); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; background: rgba(255,255,255,0.02);">
-                <div style="font-size: 24px; opacity: 0.5;">+</div>
-                <div style="font-size: 10px; color: #9ca3af; text-align: center;">Click or<br>drop image</div>
+            <div id="conceptImageDropZone" style="width: 160px; height: 160px; border: 2px dashed rgba(148,163,184,0.3); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s ease; background: rgba(255,255,255,0.02);">
+                <div style="font-size: 32px; opacity: 0.5;">+</div>
+                <div style="font-size: 11px; color: #9ca3af; text-align: center; margin-top: 4px;">Click or drop<br>image here</div>
             </div>
         `;
 
@@ -1535,11 +1532,14 @@ async function saveConcept() {
 
         if (item.type === 'material') {
             materialTotal += total;
-            materials.push({
-                material_id: item.materialId,
-                quantity: item.qty,
-                unit_cost_override: item.unitCost
-            });
+            // Only add to concept_materials if it's from the database (has materialId)
+            if (item.origin === 'db' && item.materialId) {
+                materials.push({
+                    material_id: item.materialId,
+                    quantity: item.qty,
+                    unit_cost_override: item.unitCost
+                });
+            }
         } else if (item.type === 'labor') {
             laborTotal += total;
         } else {

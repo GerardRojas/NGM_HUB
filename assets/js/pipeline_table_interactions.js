@@ -142,17 +142,28 @@
     const { element, td, taskId, colKey, originalValue, type, alreadySaved } = activeEditor;
 
     // Don't save again if picker already saved via onChange
+    let savedNewValue = null;
     if (save && !alreadySaved) {
       const newValue = getEditorValue(element, type);
-      console.log("[PIPELINE-INTERACTIONS] closeActiveEditor comparing values:", { colKey, newValue, originalValue, different: newValue !== originalValue });
-      if (newValue !== originalValue) {
+      // Normalize empty values: treat null, undefined, and '' as equivalent (no change)
+      const normalizedNew = (newValue === null || newValue === undefined || newValue === '') ? '' : newValue;
+      const normalizedOrig = (originalValue === null || originalValue === undefined || originalValue === '') ? '' : originalValue;
+      const hasRealChange = normalizedNew !== normalizedOrig;
+      console.log("[PIPELINE-INTERACTIONS] closeActiveEditor comparing values:", { colKey, newValue, originalValue, normalizedNew, normalizedOrig, hasRealChange });
+      if (hasRealChange) {
+        savedNewValue = newValue;
+        // Update cell display immediately with new value (optimistic update)
+        // This ensures user sees the new value before PATCH completes
+        updateCellDisplay(td, colKey, newValue);
         saveFieldToBackend(taskId, colKey, newValue, td);
       } else {
-        console.log("[PIPELINE-INTERACTIONS] No change detected, not saving");
+        console.log("[PIPELINE-INTERACTIONS] No real change detected (empty values normalized), not saving");
+        // Restore original content since no change
+        restoreCellContent(td, colKey, originalValue);
       }
     }
 
-    // Restaurar contenido original si no se guardó (and wasn't already saved by picker)
+    // Restaurar contenido original si explicitly cancelled (Escape key) or picker closed without selection
     if (!save && !alreadySaved) {
       restoreCellContent(td, colKey, originalValue);
     }

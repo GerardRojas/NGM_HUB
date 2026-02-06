@@ -116,7 +116,34 @@
   // UPDATE UI
   // ================================
 
+  let refreshDebounceTimer = null;
+  const REFRESH_DEBOUNCE_MS = 500; // Wait 500ms after last change before refreshing
+
   function refreshPipeline() {
+    // Check if there's an active inline editor - don't refresh while user is editing
+    // This prevents destroying the editor mid-edit
+    const hasActiveEditor = document.querySelector('.pm-cell-editing');
+    if (hasActiveEditor) {
+      console.log('[PM_REALTIME] Active editor detected, deferring refresh...');
+      // Schedule refresh for when editor closes (debounced)
+      clearTimeout(refreshDebounceTimer);
+      refreshDebounceTimer = setTimeout(() => {
+        // Re-check - editor might still be active
+        if (!document.querySelector('.pm-cell-editing')) {
+          doRefresh();
+        } else {
+          console.log('[PM_REALTIME] Editor still active, skipping refresh');
+        }
+      }, REFRESH_DEBOUNCE_MS);
+      return;
+    }
+
+    // Debounce rapid changes (e.g., multiple realtime events in quick succession)
+    clearTimeout(refreshDebounceTimer);
+    refreshDebounceTimer = setTimeout(doRefresh, REFRESH_DEBOUNCE_MS);
+  }
+
+  function doRefresh() {
     // Use the global fetchPipeline function if available
     if (typeof window.fetchPipeline === 'function') {
       console.log('[PM_REALTIME] Refreshing pipeline (force)...');

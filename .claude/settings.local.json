@@ -20,7 +20,10 @@
       "Bash(wsl grep -c \"function \" assets/js/estimator.js)",
       "Read(//c/**)",
       "Bash(pip install:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(grep:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"

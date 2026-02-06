@@ -91,13 +91,17 @@
 
       case 'UPDATE':
         console.log('[PM_REALTIME] Task updated:', newRecord?.task_id);
-        // Check if status changed
-        if (oldRecord?.task_status !== newRecord?.task_status) {
+        // Check if status changed (handle undefined values properly)
+        const oldStatus = oldRecord?.task_status ?? null;
+        const newStatus = newRecord?.task_status ?? null;
+        if (oldStatus !== newStatus) {
           console.log('[PM_REALTIME] Status changed, refreshing pipeline');
           refreshPipeline();
         } else {
-          // For other updates, try to update just the task row
-          updateTaskInPlace(newRecord);
+          // For other updates (owner, dates, etc), also refresh to get updated data
+          // We can't update in-place because we don't have the full user object (name, photo, color)
+          console.log('[PM_REALTIME] Field updated, refreshing pipeline');
+          refreshPipeline();
         }
         break;
 
@@ -115,8 +119,9 @@
   function refreshPipeline() {
     // Use the global fetchPipeline function if available
     if (typeof window.fetchPipeline === 'function') {
-      console.log('[PM_REALTIME] Refreshing pipeline...');
-      window.fetchPipeline().catch(err => console.warn('[Pipeline] Refresh failed:', err));
+      console.log('[PM_REALTIME] Refreshing pipeline (force)...');
+      // Force refresh to bypass cache and get fresh data from API
+      window.fetchPipeline({ forceRefresh: true }).catch(err => console.warn('[Pipeline] Refresh failed:', err));
     } else {
       console.warn('[PM_REALTIME] fetchPipeline not available');
     }

@@ -5742,6 +5742,12 @@
       if (window.Toast) {
         let details = '';
 
+        // Show extraction method and time
+        const method = result.extraction_method || 'unknown';
+        const execTime = result.execution_time_seconds || 0;
+        const methodLabel = method === 'pdfplumber' ? 'Text Extract' : method === 'vision_direct' ? 'Vision (Heavy)' : 'Vision';
+        details += `Method: ${methodLabel} | Time: ${execTime}s\n\n`;
+
         // Show validation info
         if (result.data?.validation) {
           const v = result.data.validation;
@@ -5762,7 +5768,7 @@
 
         const validationPassed = result.data?.validation?.validation_passed !== false;
         if (validationPassed) {
-          Toast.success('Receipt Scanned', `Successfully scanned ${result.count} expense(s) from receipt!`, { details: details || null, persistent: true });
+          Toast.success('Receipt Scanned', `Successfully scanned ${result.count} expense(s) in ${execTime}s!`, { details: details || null, persistent: true });
         } else {
           Toast.warning('Receipt Scanned', `Scanned ${result.count} expense(s) but totals do not match.`, { details, persistent: true });
         }

@@ -73,13 +73,48 @@
     // Cache DOM elements
     cacheElements();
 
-    // Setup template selection screen
-    setupTemplateSelectionScreen();
+    // Hide loading overlay and show main app directly (no template selection screen)
+    document.getElementById('pageLoadingOverlay')?.classList.add('hidden');
+    document.body.classList.remove('page-loading');
+    document.getElementById('template-selection-screen')?.classList.add('hidden');
+    document.getElementById('main-app-layout')?.style.setProperty('display', '');
 
-    // Load templates for selection screen
-    loadTemplateSelectionScreen();
+    // Continue with full initialization
+    continueInitialization();
 
-    console.log('[ESTIMATOR] Waiting for template selection...');
+    // Load default template from bucket or start blank
+    loadDefaultTemplate();
+
+    console.log('[ESTIMATOR] Initialized');
+  }
+
+  /**
+   * Load default template from bucket, or create blank estimate if none available
+   */
+  async function loadDefaultTemplate() {
+    if (els.statusEl) {
+      els.statusEl.textContent = 'Loading default template...';
+    }
+
+    try {
+      // Get list of templates from bucket
+      const templates = await loadTemplatesListFromStorage();
+
+      if (templates && templates.length > 0) {
+        // Load the first template available
+        const defaultTemplate = templates[0];
+        console.log('[ESTIMATOR] Loading default template:', defaultTemplate.name);
+        await loadTemplate(defaultTemplate.id);
+      } else {
+        // No templates available, start with blank
+        console.log('[ESTIMATOR] No templates found, starting blank');
+        createBlankEstimate();
+      }
+    } catch (err) {
+      console.error('[ESTIMATOR] Error loading default template:', err);
+      // Fallback to blank estimate
+      createBlankEstimate();
+    }
   }
 
   /**
@@ -110,190 +145,6 @@
     loadTemplatesListFromStorage();
 
     console.log('[ESTIMATOR] Initialized');
-  }
-
-  /**
-   * Setup template selection screen event handlers
-   */
-  function setupTemplateSelectionScreen() {
-    // Blank estimate button
-    document.getElementById('start-blank-estimate')?.addEventListener('click', () => {
-      startWithBlankEstimate();
-    });
-  }
-
-  /**
-   * Load templates and recent estimates for selection screen
-   */
-  async function loadTemplateSelectionScreen() {
-    // Load templates from storage
-    await loadTemplatesForSelectionScreen();
-
-    // Load recent estimates
-    await loadRecentEstimatesForSelectionScreen();
-
-    // Hide loading overlay
-    document.getElementById('pageLoadingOverlay')?.classList.add('hidden');
-    document.body.classList.remove('page-loading');
-  }
-
-  /**
-   * Load templates from Supabase Storage for selection screen
-   */
-  async function loadTemplatesForSelectionScreen() {
-    const listEl = document.getElementById('template-selection-list');
-    if (!listEl) return;
-
-    if (!supabaseClient) {
-      listEl.innerHTML = '<div class="template-list-empty">Storage not available</div>';
-      return;
-    }
-
-    try {
-      // Use the shared function to fetch templates
-      const templates = await loadTemplatesListFromStorage();
-
-      if (!templates || templates.length === 0) {
-        listEl.innerHTML = '<div class="template-list-empty">No templates saved yet. Start with a blank estimate and save it as a template.</div>';
-        return;
-      }
-
-      // Render templates in selection screen
-      listEl.innerHTML = templates.map(tpl => `
-        <div class="template-selection-item" data-template-id="${tpl.id}">
-          <div class="item-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-            </svg>
-          </div>
-          <div class="item-content">
-            <div class="item-name">${escapeHtmlBasic(tpl.name)}</div>
-            <div class="item-meta">
-              ${tpl.concepts_count || 0} concepts, ${tpl.materials_count || 0} materials
-              ${tpl.description ? ' - ' + escapeHtmlBasic(tpl.description) : ''}
-            </div>
-          </div>
-        </div>
-      `).join('');
-
-      // Add click handlers
-      listEl.querySelectorAll('.template-selection-item').forEach(item => {
-        item.addEventListener('click', () => {
-          const templateId = item.dataset.templateId;
-          startWithTemplate(templateId);
-        });
-      });
-
-    } catch (err) {
-      console.error('[ESTIMATOR] Error loading templates:', err);
-      listEl.innerHTML = '<div class="template-list-empty">Error loading templates</div>';
-    }
-  }
-
-  /**
-   * Load recent estimates for selection screen
-   */
-  async function loadRecentEstimatesForSelectionScreen() {
-    const listEl = document.getElementById('recent-estimates-list');
-    if (!listEl) return;
-
-    // Check localStorage for recent draft
-    const savedDraft = localStorage.getItem(AUTOSAVE.LOCAL_STORAGE_KEY);
-    if (savedDraft) {
-      try {
-        const draft = JSON.parse(savedDraft);
-        const savedAt = new Date(draft.savedAt);
-        const hoursSinceSave = (new Date() - savedAt) / (1000 * 60 * 60);
-
-        if (hoursSinceSave < 24 && draft.data) {
-          const projectName = draft.data.project_name || 'Untitled';
-          const timeAgo = formatTimeAgo(savedAt);
-
-          listEl.innerHTML = `
-            <div class="recent-estimate-item" id="continue-draft">
-              <div class="item-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 2v10l4.5 4.5"></path>
-                  <circle cx="12" cy="12" r="10"></circle>
-                </svg>
-              </div>
-              <div class="item-content">
-                <div class="item-name">${escapeHtmlBasic(projectName)}</div>
-                <div class="item-meta">Draft saved ${timeAgo}</div>
-              </div>
-            </div>
-          `;
-
-          document.getElementById('continue-draft')?.addEventListener('click', () => {
-            continueDraft();
-          });
-          return;
-        }
-      } catch (err) {
-        console.warn('[ESTIMATOR] Error parsing draft:', err);
-      }
-    }
-
-    listEl.innerHTML = '<div class="template-list-empty">No recent work found</div>';
-  }
-
-  /**
-   * Start with a blank estimate
-   */
-  function startWithBlankEstimate() {
-    hideTemplateSelectionScreen();
-    continueInitialization();
-
-    // Create blank estimate
-    createBlankEstimate();
-  }
-
-  /**
-   * Start with a selected template
-   */
-  async function startWithTemplate(templateId) {
-    hideTemplateSelectionScreen();
-    continueInitialization();
-
-    // Show loading in status
-    if (els.statusEl) {
-      els.statusEl.textContent = 'Loading template...';
-    }
-
-    // Load the template
-    await loadTemplate(templateId);
-  }
-
-  /**
-   * Continue with saved draft
-   */
-  function continueDraft() {
-    hideTemplateSelectionScreen();
-    continueInitialization();
-
-    // Restore from localStorage
-    restoreFromLocalStorage();
-  }
-
-  /**
-   * Hide template selection screen and show main app
-   */
-  function hideTemplateSelectionScreen() {
-    document.getElementById('template-selection-screen')?.classList.add('hidden');
-    document.getElementById('main-app-layout')?.style.setProperty('display', '');
-  }
-
-  /**
-   * Basic HTML escape for selection screen (before full init)
-   */
-  function escapeHtmlBasic(text) {
-    if (!text) return '';
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
   }
 
   function initSupabase() {

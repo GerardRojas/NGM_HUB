@@ -761,23 +761,35 @@
   // Smart Re-rendering: Track existing DOM elements
   const groupElementsMap = new Map(); // Maps groupKey -> DOM element
 
+  // Invalidate pipeline cache (called by realtime when updates are detected)
+  function invalidatePipelineCache() {
+    try {
+      localStorage.removeItem(CACHE_KEYS.PIPELINE_DATA);
+      console.log("[PIPELINE] Cache invalidated");
+    } catch (e) {
+      console.warn("[PIPELINE] Cache invalidation failed:", e);
+    }
+  }
+
   // Expose fetchPipeline and renderGroups to window for modal refresh
   window.fetchPipeline = fetchPipeline;
   window.renderGroups = renderGroups;
+  window.invalidatePipelineCache = invalidatePipelineCache;
 
-  async function fetchPipeline() {
+  async function fetchPipeline(options = {}) {
+    const { forceRefresh = false } = options;
     const startTime = performance.now();
 
     try {
       // Fallback if API_BASE is not defined yet
       const apiBase = window.API_BASE || "https://ngm-fastapi.onrender.com";
 
-      console.log("[PIPELINE] fetchPipeline called");
+      console.log("[PIPELINE] fetchPipeline called", forceRefresh ? "(forced)" : "");
 
       // =============================================
-      // PHASE 1: Load from cache INSTANTLY
+      // PHASE 1: Load from cache INSTANTLY (unless forced)
       // =============================================
-      const cachedData = loadFromCache(CACHE_KEYS.PIPELINE_DATA);
+      const cachedData = forceRefresh ? null : loadFromCache(CACHE_KEYS.PIPELINE_DATA);
       let renderedFromCache = false;
 
       if (cachedData && Array.isArray(cachedData) && cachedData.length > 0) {
@@ -791,8 +803,8 @@
         const cacheTime = performance.now() - startTime;
         console.log(`[PIPELINE] Rendered from cache in ${cacheTime.toFixed(0)}ms`);
 
-        // If cache is still fresh, skip API call
-        if (isCacheFresh(CACHE_KEYS.PIPELINE_DATA)) {
+        // If cache is still fresh and not forced, skip API call
+        if (!forceRefresh && isCacheFresh(CACHE_KEYS.PIPELINE_DATA)) {
           console.log("[PIPELINE] Cache is fresh, skipping API call");
           return;
         }

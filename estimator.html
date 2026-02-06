@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1a1a1a" />
     <title>NGM HUB — Estimator Suite</title>
-    <link rel="icon" type="image/png" href="assets/img/greenblack_icon_192.png" />
+    <link rel="icon" type="image/png" href="assets/img/greenblack_icon.png" />
     <link rel="manifest" href="manifest.json" />
-    <link rel="apple-touch-icon" href="assets/img/greenblack_icon_192.png" />
+    <link rel="apple-touch-icon" href="assets/img/greenblack_icon.png" />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -55,60 +55,7 @@
         <span class="loading-text">Loading...</span>
     </div>
 
-    <!-- Template Selection Screen (shown at startup) -->
-    <div id="template-selection-screen" class="template-selection-screen">
-        <div class="template-selection-container">
-            <div class="template-selection-header">
-                <img src="assets/img/white_icon.png" alt="NGM" class="selection-logo">
-                <h1>NGM Estimator Suite</h1>
-                <p>Select a template to start working</p>
-            </div>
-
-            <div class="template-selection-content">
-                <!-- Create New Section -->
-                <div class="selection-section">
-                    <h3>Start Fresh</h3>
-                    <button type="button" class="template-selection-card template-selection-new" id="start-blank-estimate">
-                        <div class="card-icon">
-                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                <line x1="12" y1="8" x2="12" y2="16"></line>
-                                <line x1="8" y1="12" x2="16" y2="12"></line>
-                            </svg>
-                        </div>
-                        <div class="card-content">
-                            <div class="card-title">Blank Estimate</div>
-                            <div class="card-desc">Start from scratch with an empty estimate</div>
-                        </div>
-                    </button>
-                </div>
-
-                <!-- Available Templates Section -->
-                <div class="selection-section">
-                    <h3>Or choose a template</h3>
-                    <div class="template-selection-list" id="template-selection-list">
-                        <div class="template-list-loading">
-                            <span class="spinner"></span>
-                            Loading templates...
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Estimates Section -->
-                <div class="selection-section">
-                    <h3>Continue working</h3>
-                    <div class="recent-estimates-list" id="recent-estimates-list">
-                        <div class="template-list-loading">
-                            <span class="spinner"></span>
-                            Loading recent estimates...
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="app-layout" style="display: none;" id="main-app-layout">
+    <div class="app-layout" id="main-app-layout">
         <!-- SIDEBAR -->
         <aside class="sidebar estimator-sidebar">
             <div class="sidebar-logo">

@@ -442,7 +442,6 @@
     els.btnOverhead?.addEventListener('click', handleOverhead);
     els.btnImportRevit?.addEventListener('click', handleImportRevit);
     els.btnExport?.addEventListener('click', handleExport);
-    els.btnRefreshCatalog?.addEventListener('click', handleRefreshCatalog);
     els.btnSave?.addEventListener('click', handleSave);
     els.btnSaveAsTemplate?.addEventListener('click', openSaveAsTemplateModal);
 
@@ -2070,12 +2069,11 @@
   // ================================
 
   function handleNewEstimate() {
-    if (isDirty && saveStatus === 'pending') {
+    if (isDirty) {
       const shouldProceed = window.confirm('You have unsaved changes. Create new estimate anyway?');
       if (!shouldProceed) return;
     }
-    // Open template picker modal instead of creating blank immediately
-    openTemplatePickerModal();
+    createBlankEstimate();
   }
 
   // ================================
@@ -2804,7 +2802,7 @@
         }
       });
       if (saveBtn) saveBtn.disabled = !enabled;
-      if (manageBtn) manageBtn.textContent = enabled ? '✔ Done editing' : '✏️ Manage info';
+      if (manageBtn) manageBtn.textContent = enabled ? 'Done editing' : 'Manage info';
     }
 
     function populateForm() {

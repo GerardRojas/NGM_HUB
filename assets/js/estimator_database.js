@@ -78,12 +78,6 @@ const DOM = {
     tabMaterials: document.getElementById('tabMaterials'),
     tabConcepts: document.getElementById('tabConcepts'),
 
-    // Skeleton Loading
-    skeletonMaterials: document.getElementById('skeletonMaterials'),
-    skeletonMaterialsBody: document.getElementById('skeletonMaterialsBody'),
-    skeletonConcepts: document.getElementById('skeletonConcepts'),
-    skeletonConceptsBody: document.getElementById('skeletonConceptsBody'),
-
     // States
     emptyState: document.getElementById('databaseEmptyState'),
     emptyStateMessage: document.getElementById('emptyStateMessage'),
@@ -375,72 +369,25 @@ function getUnitName(unitId) {
 // ========================================
 // Render Functions
 // ========================================
-function buildSkeletonRows(colWidths, rowCount) {
-    let html = '';
-    for (let r = 0; r < rowCount; r++) {
-        html += '<tr>';
-        for (let c = 0; c < colWidths.length; c++) {
-            html += `<td><div class="skeleton-cell ${colWidths[c]}"></div></td>`;
-        }
-        html += '</tr>';
-    }
-    return html;
-}
-
-const SKELETON_MATERIALS_COLS = [
-    'skeleton-cell--image',   // Image
-    'skeleton-cell--short',   // Code
-    'skeleton-cell--long',    // Name
-    'skeleton-cell--medium',  // Category
-    'skeleton-cell--medium',  // Brand
-    'skeleton-cell--medium',  // Vendor
-    'skeleton-cell--short',   // Unit
-    'skeleton-cell--amount',  // Unit Cost
-    'skeleton-cell--short',   // Tax %
-    'skeleton-cell--amount',  // w/ Tax
-    'skeleton-cell--short'    // Actions
-];
-
-const SKELETON_CONCEPTS_COLS = [
-    'skeleton-cell--short',   // Code
-    'skeleton-cell--long',    // Name
-    'skeleton-cell--medium',  // Category
-    'skeleton-cell--medium',  // Subcategory
-    'skeleton-cell--short',   // Unit
-    'skeleton-cell--amount',  // Base Cost
-    'skeleton-cell--short'    // Actions
-];
-
 function showLoading() {
-    DOM.emptyState.style.display = 'none';
     DOM.materialsContent.style.display = 'none';
     DOM.conceptsContent.style.display = 'none';
     DOM.paginationContainer.style.display = 'none';
-
-    if (state.activeTab === 'materials') {
-        DOM.skeletonMaterialsBody.innerHTML = buildSkeletonRows(SKELETON_MATERIALS_COLS, 12);
-        DOM.skeletonMaterials.style.display = 'block';
-        DOM.skeletonConcepts.style.display = 'none';
-    } else {
-        DOM.skeletonConceptsBody.innerHTML = buildSkeletonRows(SKELETON_CONCEPTS_COLS, 12);
-        DOM.skeletonConcepts.style.display = 'block';
-        DOM.skeletonMaterials.style.display = 'none';
-    }
+    DOM.btnAddFromEmpty.style.display = 'none';
+    DOM.emptyState.style.display = 'flex';
+    DOM.emptyStateMessage.textContent = 'Loading...';
 }
 
 function showEmpty(message) {
-    DOM.skeletonMaterials.style.display = 'none';
-    DOM.skeletonConcepts.style.display = 'none';
     DOM.emptyState.style.display = 'flex';
     DOM.emptyStateMessage.textContent = message;
+    DOM.btnAddFromEmpty.style.display = '';
     DOM.materialsContent.style.display = 'none';
     DOM.conceptsContent.style.display = 'none';
     DOM.paginationContainer.style.display = 'none';
 }
 
 function showContent() {
-    DOM.skeletonMaterials.style.display = 'none';
-    DOM.skeletonConcepts.style.display = 'none';
     DOM.emptyState.style.display = 'none';
 
     if (state.activeTab === 'materials') {

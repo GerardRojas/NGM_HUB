@@ -1241,51 +1241,11 @@
 
                         <!-- Table Container -->
                         <div class="expenses-table-container">
-                            <!-- Skeleton Loading: Materials -->
-                            <div id="skeletonMaterials" style="display: none;">
-                                <table class="skeleton-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 60px;">Image</th>
-                                            <th style="width: 100px;">Code</th>
-                                            <th>Name</th>
-                                            <th>Category</th>
-                                            <th>Brand</th>
-                                            <th>Vendor</th>
-                                            <th style="width: 80px;">Unit</th>
-                                            <th style="width: 110px;">Unit Cost</th>
-                                            <th style="width: 70px;">Tax %</th>
-                                            <th style="width: 110px;">w/ Tax</th>
-                                            <th style="width: 80px;">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="skeletonMaterialsBody"></tbody>
-                                </table>
-                            </div>
-
-                            <!-- Skeleton Loading: Concepts -->
-                            <div id="skeletonConcepts" style="display: none;">
-                                <table class="skeleton-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 100px;">Code</th>
-                                            <th>Name</th>
-                                            <th>Category</th>
-                                            <th>Subcategory</th>
-                                            <th style="width: 80px;">Unit</th>
-                                            <th style="width: 120px;">Base Cost</th>
-                                            <th style="width: 80px;">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="skeletonConceptsBody"></tbody>
-                                </table>
-                            </div>
-
                             <!-- Empty State -->
-                            <div id="databaseEmptyState" class="expenses-loading-state" style="display: none;">
-                                <img src="assets/img/white_icon.png" class="loading-logo loading-logo-lg" style="opacity: 0.3;" alt="Empty">
-                                <span class="loading-text" id="emptyStateMessage">No materials found</span>
-                                <button type="button" id="btnAddFromEmpty" class="btn-toolbar btn-toolbar-primary" style="margin-top: 16px;">
+                            <div id="databaseEmptyState" class="expenses-empty-state" style="display: none;">
+                                <img src="assets/img/white_icon.png" class="expenses-empty-logo" alt="">
+                                <span class="expenses-empty-text" id="emptyStateMessage">No materials found</span>
+                                <button type="button" id="btnAddFromEmpty" class="btn-toolbar btn-toolbar-primary" style="margin-top: 16px; display: none;">
                                     + Add First Material
                                 </button>
                             </div>

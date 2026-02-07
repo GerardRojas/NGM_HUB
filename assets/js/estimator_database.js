@@ -13,6 +13,7 @@ const state = {
     classes: [],
     units: [],
     vendors: [],
+    accounts: [],
     pagination: {
         page: 1,
         pageSize: 50,
@@ -129,7 +130,6 @@ const DOM = {
     conceptModalTitle: document.getElementById('conceptModalTitle'),
     conceptCode: document.getElementById('conceptCode'),
     conceptName: document.getElementById('conceptName'),
-    conceptCategory: document.getElementById('conceptCategory'),
     conceptUnit: document.getElementById('conceptUnit'),
     conceptDescription: document.getElementById('conceptDescription'),
     conceptImage: document.getElementById('conceptImage'),
@@ -256,6 +256,12 @@ const API = {
     async fetchUnits() {
         const response = await fetch(`${API_BASE}/units`);
         if (!response.ok) throw new Error('Failed to fetch units');
+        return response.json();
+    },
+
+    async fetchAccounts() {
+        const response = await fetch(`${API_BASE}/accounts`);
+        if (!response.ok) throw new Error('Failed to fetch accounts');
         return response.json();
     },
 
@@ -493,21 +499,13 @@ function populateCategoryFilter() {
         select.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
     });
 
-    // Also populate modal selects
+    // Also populate material modal category select
     const materialCat = DOM.materialCategory;
-    const conceptCat = DOM.conceptCategory;
 
     if (materialCat) {
         materialCat.innerHTML = '<option value="">Select category...</option>';
         state.categories.forEach(cat => {
             materialCat.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
-        });
-    }
-
-    if (conceptCat) {
-        conceptCat.innerHTML = '<option value="">Select category...</option>';
-        state.categories.forEach(cat => {
-            conceptCat.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
         });
     }
 }
@@ -551,8 +549,8 @@ function populateUnitFilter() {
 // ========================================
 // Data Loading
 // ========================================
-async function loadData() {
-    showLoading();
+async function loadData(silent = false) {
+    if (!silent) showLoading();
 
     try {
         if (state.activeTab === 'materials') {
@@ -602,23 +600,18 @@ async function loadData() {
 
 async function loadLookups() {
     try {
-        console.log('[LOOKUPS] Fetching categories and units...');
-        const [categoriesRes, unitsRes] = await Promise.all([
+        console.log('[LOOKUPS] Fetching categories, units and accounts...');
+        const [categoriesRes, unitsRes, accountsRes] = await Promise.all([
             API.fetchCategories(),
-            API.fetchUnits()
+            API.fetchUnits(),
+            API.fetchAccounts()
         ]);
-
-        console.log('[LOOKUPS] Categories response:', categoriesRes);
-        console.log('[LOOKUPS] Units response:', unitsRes);
 
         state.categories = categoriesRes.data || [];
         state.units = unitsRes.data || [];
+        state.accounts = accountsRes.data || [];
 
-        console.log('[LOOKUPS] state.categories:', state.categories.length, 'items');
-        console.log('[LOOKUPS] state.units:', state.units.length, 'items');
-        if (state.units.length > 0) {
-            console.log('[LOOKUPS] First unit:', state.units[0]);
-        }
+        console.log('[LOOKUPS] Loaded:', state.categories.length, 'categories,', state.units.length, 'units,', state.accounts.length, 'accounts');
 
         populateCategoryFilter();
         populateUnitFilter();
@@ -820,7 +813,7 @@ async function saveMaterial() {
         }
 
         closeMaterialModal();
-        loadData();
+        loadData(true);
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -878,7 +871,7 @@ window.confirmDeleteMaterial = async function(id) {
     try {
         await API.deleteMaterial(id);
         showToast('Material deleted', 'success');
-        loadData();
+        loadData(true);
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -920,7 +913,8 @@ async function ensureStandardPercentageItems() {
                     isPercent: true,
                     appliesTo: stdItem.applies_to,
                     percentValue: stdItem.default_value || 0,
-                    isStandard: true
+                    isStandard: true,
+                    accountId: null
                 });
             }
         });
@@ -943,7 +937,6 @@ async function openConceptModal(concept = null) {
     DOM.conceptModalTitle.textContent = concept ? 'Edit Concept' : 'New Concept';
     DOM.conceptCode.value = concept?.code || '';
     DOM.conceptName.value = concept?.short_description || '';
-    DOM.conceptCategory.value = concept?.category_id || '';
     DOM.conceptUnit.value = concept?.unit_id || '';
     DOM.conceptDescription.value = concept?.full_description || '';
 
@@ -974,7 +967,8 @@ async function openConceptModal(concept = null) {
                 unitCost: parseFloat(m.unit_cost_override || m.material_price) || 0,
                 image: m.material_image || '',
                 origin: 'db',
-                isPercent: false
+                isPercent: false,
+                accountId: null
             });
         });
     }
@@ -982,8 +976,14 @@ async function openConceptModal(concept = null) {
     // Load ALL non-DB items from builder snapshot (custom materials, labor, external, percent)
     if (concept?.builder?.items) {
         concept.builder.items.forEach(item => {
-            // Skip DB-origin materials (already loaded from concept.materials above)
-            if (item.origin === 'db' && !item.isPercent) return;
+            // For DB-origin materials: only restore accountId (rest already loaded above)
+            if (item.origin === 'db' && !item.isPercent) {
+                if (item.accountId) {
+                    const existing = state.builder.items.find(i => i.code === item.code && i.origin === 'db');
+                    if (existing) existing.accountId = item.accountId;
+                }
+                return;
+            }
 
             state.builder.items.push({
                 id: generateItemId(),
@@ -999,7 +999,8 @@ async function openConceptModal(concept = null) {
                 isPercent: item.isPercent || false,
                 appliesTo: item.appliesTo || null,
                 percentValue: item.percentValue != null ? parseFloat(item.percentValue) : null,
-                isStandard: item.isStandard || false
+                isStandard: item.isStandard || false,
+                accountId: item.accountId || null
             });
         });
     }
@@ -1144,6 +1145,12 @@ function renderBuilderTable() {
     empty.style.display = 'none';
     tbody.innerHTML = '';
 
+    // Build account options HTML once (reused per row)
+    let accountOptionsHtml = '<option value="">--</option>';
+    state.accounts.forEach(acc => {
+        accountOptionsHtml += `<option value="${acc.account_id}">${escapeHtml(acc.Name)}</option>`;
+    });
+
     state.builder.items.forEach((item, index) => {
         const tr = document.createElement('tr');
         tr.dataset.itemId = item.id;
@@ -1175,6 +1182,9 @@ function renderBuilderTable() {
         // Row number cell
         const rowNum = `<td style="text-align: center; color: rgba(255,255,255,0.25); font-size: 11px; user-select: none;">${index + 1}</td>`;
 
+        // Account dropdown cell
+        const accountCell = `<td><select class="builder-select item-account" data-item-id="${item.id}">${accountOptionsHtml}</select></td>`;
+
         // Build row HTML
         if (item.isPercent) {
             tr.innerHTML = `
@@ -1188,6 +1198,7 @@ function renderBuilderTable() {
                 </td>
                 <td style="color: #6b7280;">-</td>
                 <td style="text-align: right; color: #22c55e; font-weight: 500;">${formatCurrency(total)}</td>
+                ${accountCell}
                 <td>${deleteCell}</td>
             `;
         } else {
@@ -1204,11 +1215,18 @@ function renderBuilderTable() {
                     <input type="number" class="builder-input item-cost" value="${item.unitCost.toFixed(2)}" min="0" step="0.01" data-item-id="${item.id}" />
                 </td>
                 <td style="text-align: right; color: #3ecf8e; font-weight: 500;">${formatCurrency(total)}</td>
+                ${accountCell}
                 <td>${deleteCell}</td>
             `;
         }
 
         tbody.appendChild(tr);
+
+        // Set selected account value after appending (so DOM element exists)
+        if (item.accountId) {
+            const select = tr.querySelector('.item-account');
+            if (select) select.value = item.accountId;
+        }
     });
 
     // Attach input handlers
@@ -1220,6 +1238,9 @@ function renderBuilderTable() {
     });
     tbody.querySelectorAll('.item-percent-value').forEach(input => {
         input.addEventListener('change', onBuilderPercentChange);
+    });
+    tbody.querySelectorAll('.item-account').forEach(select => {
+        select.addEventListener('change', onBuilderAccountChange);
     });
 }
 
@@ -1257,6 +1278,13 @@ function onBuilderItemChange(e) {
 
     renderBuilderTable();
     updateBuilderSummary();
+}
+
+function onBuilderAccountChange(e) {
+    const itemId = e.target.dataset.itemId;
+    const item = state.builder.items.find(i => i.id === itemId);
+    if (!item) return;
+    item.accountId = e.target.value || null;
 }
 
 window.removeBuilderItem = function(itemId) {
@@ -1333,26 +1361,103 @@ function toggleTypeFilter(type) {
 // Material Picker Modal
 // ========================================
 let pickerMaterials = [];
+const pickerState = {
+    page: 1,
+    pageSize: 50,
+    total: 0,
+    totalPages: 0,
+    loading: false,
+    search: '',
+    categoryId: '',
+    hasMore: true
+};
+
+async function loadPickerMaterials(append = false) {
+    if (pickerState.loading) return;
+    pickerState.loading = true;
+
+    const container = document.querySelector('.picker-table-container');
+    const countEl = document.getElementById('pickerResultsCount');
+
+    if (!append) {
+        DOM.pickerTableBody.innerHTML = '<tr class="picker-loading-row"><td colspan="4" style="text-align:center;padding:24px;color:#6b7280;">Loading...</td></tr>';
+    } else {
+        const loadingRow = document.createElement('tr');
+        loadingRow.className = 'picker-loading-row';
+        loadingRow.innerHTML = '<td colspan="4" style="text-align:center;padding:12px;color:#6b7280;">Loading more...</td>';
+        DOM.pickerTableBody.appendChild(loadingRow);
+    }
+
+    try {
+        const result = await API.fetchMaterials(pickerState.page, pickerState.search, pickerState.categoryId);
+        const materials = result.data || [];
+        pickerState.total = result.pagination?.total || 0;
+        pickerState.totalPages = result.pagination?.total_pages || 0;
+        pickerState.hasMore = pickerState.page < pickerState.totalPages;
+
+        // Remove loading rows
+        DOM.pickerTableBody.querySelectorAll('.picker-loading-row').forEach(r => r.remove());
+
+        if (!append) {
+            pickerMaterials = materials;
+            DOM.pickerTableBody.innerHTML = '';
+        } else {
+            pickerMaterials = pickerMaterials.concat(materials);
+        }
+
+        if (pickerMaterials.length === 0 && !append) {
+            DOM.pickerTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#6b7280;">No materials found</td></tr>';
+        } else {
+            materials.forEach(mat => appendPickerRow(mat));
+        }
+
+        // Update count
+        if (countEl) {
+            countEl.textContent = `Showing ${pickerMaterials.length} of ${pickerState.total}`;
+        }
+    } catch (error) {
+        DOM.pickerTableBody.querySelectorAll('.picker-loading-row').forEach(r => r.remove());
+        if (!append) {
+            DOM.pickerTableBody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:#ef4444;">Error loading materials</td></tr>';
+        }
+    } finally {
+        pickerState.loading = false;
+    }
+}
 
 async function openMaterialPicker() {
     state.builder.selectedPickerMaterial = null;
     DOM.pickerQuantity.value = 1;
     DOM.pickerSearch.value = '';
 
+    // Reset picker state
+    pickerState.page = 1;
+    pickerState.search = '';
+    pickerState.categoryId = '';
+    pickerState.hasMore = true;
+    pickerMaterials = [];
+
+    // Reset category filter
+    const catFilter = document.getElementById('pickerCategoryFilter');
+    if (catFilter) {
+        catFilter.value = '';
+        // Populate categories if not yet done
+        if (catFilter.options.length <= 1) {
+            (state.categories || []).forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat.id;
+                opt.textContent = cat.name;
+                catFilter.appendChild(opt);
+            });
+        }
+    }
+
     // Reset preview
     DOM.pickerPreviewImage.innerHTML = '<span style="color: #6b7280;">No selection</span>';
     DOM.pickerPreviewInfo.innerHTML = '<h4>Select a material</h4><p>Click on a material in the table to see details</p>';
 
-    // Load materials for picker
-    try {
-        const result = await API.fetchMaterials(1, '', '');
-        pickerMaterials = result.data || [];
-        renderPickerTable(pickerMaterials);
-    } catch (error) {
-        showToast('Error loading materials', 'error');
-    }
-
     DOM.materialPickerModal.classList.remove('hidden');
+    await loadPickerMaterials(false);
 }
 
 function closeMaterialPicker() {
@@ -1360,24 +1465,19 @@ function closeMaterialPicker() {
     state.builder.selectedPickerMaterial = null;
 }
 
-function renderPickerTable(materials) {
-    const tbody = DOM.pickerTableBody;
-    tbody.innerHTML = '';
+function appendPickerRow(mat) {
+    const tr = document.createElement('tr');
+    tr.dataset.materialId = mat.ID;
+    tr.onclick = () => selectPickerMaterial(mat);
 
-    materials.forEach(mat => {
-        const tr = document.createElement('tr');
-        tr.dataset.materialId = mat.ID;
-        tr.onclick = () => selectPickerMaterial(mat);
+    tr.innerHTML = `
+        <td><code style="font-size: 11px; color: #9ca3af;">${escapeHtml(mat.ID || '')}</code></td>
+        <td>${escapeHtml(mat.short_description || '-')}</td>
+        <td>${escapeHtml(mat.unit_name || '-')}</td>
+        <td>${formatCurrency(mat.price_numeric || 0)}</td>
+    `;
 
-        tr.innerHTML = `
-            <td><code style="font-size: 11px; color: #9ca3af;">${escapeHtml(mat.ID || '')}</code></td>
-            <td>${escapeHtml(mat.short_description || '-')}</td>
-            <td>${escapeHtml(mat.unit_name || '-')}</td>
-            <td>${formatCurrency(mat.price_numeric || 0)}</td>
-        `;
-
-        tbody.appendChild(tr);
-    });
+    DOM.pickerTableBody.appendChild(tr);
 }
 
 function selectPickerMaterial(mat) {
@@ -1396,22 +1496,45 @@ function selectPickerMaterial(mat) {
         DOM.pickerPreviewImage.innerHTML = '<span style="color: #6b7280;">No image</span>';
     }
 
+    const detailLines = [];
+    if (mat.full_description) detailLines.push(`<p>${escapeHtml(mat.full_description)}</p>`);
+    if (mat.category_name) detailLines.push(`<p>Category: ${escapeHtml(mat.category_name)}</p>`);
+    if (mat.brand) detailLines.push(`<p>Brand: ${escapeHtml(mat.brand)}</p>`);
+    detailLines.push(`<p>Unit: ${escapeHtml(mat.unit_name || '-')}</p>`);
+    detailLines.push(`<p class="price">${formatCurrency(mat.price_numeric || 0)}</p>`);
+
     DOM.pickerPreviewInfo.innerHTML = `
         <h4>${escapeHtml(mat.short_description || mat.ID)}</h4>
-        <p>${escapeHtml(mat.full_description || '')}</p>
-        <p>Unit: ${escapeHtml(mat.unit_name || '-')}</p>
-        <p class="price">${formatCurrency(mat.price_numeric || 0)}</p>
+        ${detailLines.join('')}
     `;
 }
 
 function filterPickerMaterials() {
-    const search = (DOM.pickerSearch.value || '').toLowerCase();
-    const filtered = pickerMaterials.filter(mat => {
-        const desc = (mat.short_description || '').toLowerCase();
-        const id = (mat.ID || '').toLowerCase();
-        return desc.includes(search) || id.includes(search);
-    });
-    renderPickerTable(filtered);
+    pickerState.search = (DOM.pickerSearch.value || '').trim();
+    pickerState.page = 1;
+    pickerState.hasMore = true;
+    pickerMaterials = [];
+    loadPickerMaterials(false);
+}
+
+function filterPickerByCategory() {
+    const catFilter = document.getElementById('pickerCategoryFilter');
+    pickerState.categoryId = catFilter ? catFilter.value : '';
+    pickerState.page = 1;
+    pickerState.hasMore = true;
+    pickerMaterials = [];
+    loadPickerMaterials(false);
+}
+
+function handlePickerScroll(e) {
+    const container = e.target;
+    const threshold = 80;
+    if (container.scrollTop + container.clientHeight >= container.scrollHeight - threshold) {
+        if (!pickerState.loading && pickerState.hasMore) {
+            pickerState.page++;
+            loadPickerMaterials(true);
+        }
+    }
 }
 
 function confirmMaterialPicker() {
@@ -1442,7 +1565,8 @@ function confirmMaterialPicker() {
         unitCost: parseFloat(mat.price_numeric) || 0,
         image: mat.image || mat.Image || '',
         origin: 'db',
-        isPercent: false
+        isPercent: false,
+        accountId: null
     });
 
     closeMaterialPicker();
@@ -1521,7 +1645,8 @@ function confirmInlineItem() {
         unitCost: unitCost,
         image: '',
         origin: 'custom',
-        isPercent: false
+        isPercent: false,
+        accountId: null
     });
 
     closeInlineItemModal();
@@ -1587,7 +1712,7 @@ function confirmPercentItem() {
     state.builder.items.push({
         id: generateItemId(),
         code: itemId,
-        type: 'material', // Percent items typically affect material cost
+        type: 'material',
         description: desc,
         unit: unitLabel,
         qty: 1,
@@ -1597,7 +1722,8 @@ function confirmPercentItem() {
         isPercent: true,
         appliesTo: appliesTo,
         percentValue: percentValue,
-        isStandard: false
+        isStandard: false,
+        accountId: null
     });
 
     closePercentItemModal();
@@ -1718,7 +1844,8 @@ function confirmPercentPicker() {
         isPercent: true,
         appliesTo: pi.applies_to,
         percentValue: percentValue,
-        isStandard: pi.is_standard || false
+        isStandard: pi.is_standard || false,
+        accountId: null
     });
 
     closePercentPickerModal();
@@ -1791,7 +1918,8 @@ async function saveConcept() {
             isPercent: item.isPercent || false,
             appliesTo: item.appliesTo || null,
             percentValue: item.percentValue ?? null,
-            isStandard: item.isStandard || false
+            isStandard: item.isStandard || false,
+            accountId: item.accountId || null
         });
     });
 
@@ -1808,7 +1936,7 @@ async function saveConcept() {
         code: code,
         short_description: name,
         full_description: DOM.conceptDescription.value.trim(),
-        category_id: DOM.conceptCategory.value || null,
+        category_id: null,
         unit_id: DOM.conceptUnit.value || null,
         image: state.conceptImageUrl || null,
         base_cost: grandTotal,
@@ -1863,7 +1991,7 @@ async function saveConcept() {
         }
 
         closeConceptModal();
-        loadData();
+        loadData(true);
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -1871,12 +1999,10 @@ async function saveConcept() {
 
 window.editConcept = async function(id) {
     try {
-        showLoading();
         const concept = await API.getConcept(id);
         openConceptModal(concept);
     } catch (error) {
         showToast('Error loading concept', 'error');
-        showContent();
     }
 };
 
@@ -1886,7 +2012,7 @@ window.confirmDeleteConcept = async function(id) {
     try {
         await API.deleteConcept(id);
         showToast('Concept deleted', 'success');
-        loadData();
+        loadData(true);
     } catch (error) {
         showToast(error.message, 'error');
     }
@@ -2215,12 +2341,20 @@ function setupEventListeners() {
         if (e.target === DOM.materialPickerModal) closeMaterialPicker();
     });
 
-    // Picker search
+    // Picker search (server-side)
     let pickerSearchTimeout;
     DOM.pickerSearch.addEventListener('input', () => {
         clearTimeout(pickerSearchTimeout);
-        pickerSearchTimeout = setTimeout(filterPickerMaterials, 200);
+        pickerSearchTimeout = setTimeout(filterPickerMaterials, 350);
     });
+
+    // Picker category filter
+    const pickerCatFilter = document.getElementById('pickerCategoryFilter');
+    if (pickerCatFilter) pickerCatFilter.addEventListener('change', filterPickerByCategory);
+
+    // Picker infinite scroll
+    const pickerTableContainer = document.querySelector('.picker-table-container');
+    if (pickerTableContainer) pickerTableContainer.addEventListener('scroll', handlePickerScroll);
 
     // Inline Item Modal
     DOM.btnCloseInlineItem.addEventListener('click', closeInlineItemModal);

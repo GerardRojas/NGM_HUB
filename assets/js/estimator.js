@@ -705,12 +705,12 @@
 
     console.log(`[ESTIMATOR] Loading template from bucket: ${basePath}`);
 
-    // Load all files in parallel
+    // Load template.ngm + try JSON snapshots first
     const [templateRes, conceptsRes, materialsRes, cmRes] = await Promise.all([
       downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/template.ngm`),
-      downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/concepts_snapshot.csv`),
-      downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/materials_snapshot.csv`),
-      downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/concept_materials.csv`)
+      downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/concepts_snapshot.json`),
+      downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/materials_snapshot.json`),
+      downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/concept_materials_snapshot.json`)
     ]);
 
     // Parse template JSON
@@ -724,7 +724,7 @@
       }
     }
 
-    // Parse CSVs
+    // Parse JSON snapshots
     let conceptsSnapshot = [];
     let materialsSnapshot = [];
     let conceptMaterialsSnapshot = [];
@@ -732,27 +732,47 @@
     if (conceptsRes.data) {
       try {
         const text = await conceptsRes.data.text();
-        conceptsSnapshot = parseCSV(text);
+        conceptsSnapshot = JSON.parse(text);
       } catch (err) {
-        console.warn('[ESTIMATOR] Could not parse concepts_snapshot.csv:', err);
+        console.warn('[ESTIMATOR] Could not parse concepts_snapshot.json:', err);
       }
     }
 
     if (materialsRes.data) {
       try {
         const text = await materialsRes.data.text();
-        materialsSnapshot = parseCSV(text);
+        materialsSnapshot = JSON.parse(text);
       } catch (err) {
-        console.warn('[ESTIMATOR] Could not parse materials_snapshot.csv:', err);
+        console.warn('[ESTIMATOR] Could not parse materials_snapshot.json:', err);
       }
     }
 
     if (cmRes.data) {
       try {
         const text = await cmRes.data.text();
-        conceptMaterialsSnapshot = parseCSV(text);
+        conceptMaterialsSnapshot = JSON.parse(text);
       } catch (err) {
-        console.warn('[ESTIMATOR] Could not parse concept_materials.csv:', err);
+        console.warn('[ESTIMATOR] Could not parse concept_materials_snapshot.json:', err);
+      }
+    }
+
+    // Fallback: try legacy CSV files if JSON snapshots were empty
+    if (conceptsSnapshot.length === 0 && materialsSnapshot.length === 0) {
+      console.log('[ESTIMATOR] No JSON snapshots found, trying legacy CSV...');
+      const [csvConcepts, csvMaterials, csvCm] = await Promise.all([
+        downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/concepts_snapshot.csv`),
+        downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/materials_snapshot.csv`),
+        downloadFromStorage(BUCKETS.TEMPLATES, `${basePath}/concept_materials.csv`)
+      ]);
+
+      if (csvConcepts.data) {
+        try { conceptsSnapshot = parseCSV(await csvConcepts.data.text()); } catch (e) { /* ignore */ }
+      }
+      if (csvMaterials.data) {
+        try { materialsSnapshot = parseCSV(await csvMaterials.data.text()); } catch (e) { /* ignore */ }
+      }
+      if (csvCm.data) {
+        try { conceptMaterialsSnapshot = parseCSV(await csvCm.data.text()); } catch (e) { /* ignore */ }
       }
     }
 
@@ -782,10 +802,10 @@
 
   /**
    * Save current estimate to storage with folder structure:
-   * - {projectId}/{estimateId}/estimate.ngm (JSON file)
-   * - {projectId}/{estimateId}/materials_snapshot.csv
-   * - {projectId}/{estimateId}/concepts_snapshot.csv
-   * - {projectId}/{estimateId}/concept_materials_snapshot.csv
+   * - {estimateId}/estimate.ngm (JSON file)
+   * - {estimateId}/materials_snapshot.json
+   * - {estimateId}/concepts_snapshot.json
+   * - {estimateId}/concept_materials_snapshot.json
    */
   async function saveEstimate() {
     if (!currentEstimateData) {
@@ -1114,9 +1134,9 @@
   /**
    * Save current estimate as a template with snapshots:
    * - {templateId}/template.ngm (JSON file with quantities cleared)
-   * - {templateId}/materials_snapshot.csv (FULL materials DB)
-   * - {templateId}/concepts_snapshot.csv (FULL concepts DB)
-   * - {templateId}/concept_materials_snapshot.csv (FULL concept_materials)
+   * - {templateId}/materials_snapshot.json (FULL materials DB)
+   * - {templateId}/concepts_snapshot.json (FULL concepts DB)
+   * - {templateId}/concept_materials_snapshot.json (FULL concept_materials)
    *
    * @param {string} templateName - Name for the template
    * @param {string} description - Template description
@@ -1189,26 +1209,26 @@
           new Blob([JSON.stringify(templateJson, null, 2)], { type: 'application/json' }),
           { contentType: 'application/json' }
         ),
-        // concepts_snapshot.csv
+        // concepts_snapshot.json
         uploadToStorage(
           BUCKETS.TEMPLATES,
-          `${basePath}/concepts_snapshot.csv`,
-          new Blob([arrayToCSV(concepts)], { type: 'text/csv' }),
-          { contentType: 'text/csv' }
+          `${basePath}/concepts_snapshot.json`,
+          new Blob([JSON.stringify(concepts)], { type: 'application/json' }),
+          { contentType: 'application/json' }
         ),
-        // materials_snapshot.csv
+        // materials_snapshot.json
         uploadToStorage(
           BUCKETS.TEMPLATES,
-          `${basePath}/materials_snapshot.csv`,
-          new Blob([arrayToCSV(materials)], { type: 'text/csv' }),
-          { contentType: 'text/csv' }
+          `${basePath}/materials_snapshot.json`,
+          new Blob([JSON.stringify(materials)], { type: 'application/json' }),
+          { contentType: 'application/json' }
         ),
-        // concept_materials.csv
+        // concept_materials_snapshot.json
         uploadToStorage(
           BUCKETS.TEMPLATES,
-          `${basePath}/concept_materials.csv`,
-          new Blob([arrayToCSV(conceptMaterials)], { type: 'text/csv' }),
-          { contentType: 'text/csv' }
+          `${basePath}/concept_materials_snapshot.json`,
+          new Blob([JSON.stringify(conceptMaterials)], { type: 'application/json' }),
+          { contentType: 'application/json' }
         ),
         // template_meta.json (for listing)
         uploadToStorage(
@@ -1568,56 +1588,6 @@
     }
   }
 
-  // ================================
-  // CSV UTILITIES
-  // ================================
-
-  /**
-   * Convert an array of objects to CSV string
-   * @param {Array<object>} data - Array of objects to convert
-   * @returns {string} CSV formatted string
-   */
-  function arrayToCSV(data) {
-    if (!data || data.length === 0) return '';
-
-    // Get all unique keys from all objects
-    const allKeys = new Set();
-    data.forEach(row => {
-      Object.keys(row).forEach(key => allKeys.add(key));
-    });
-    const headers = Array.from(allKeys);
-
-    // Create header row
-    const csvRows = [headers.map(h => escapeCSV(h)).join(',')];
-
-    // Create data rows
-    data.forEach(row => {
-      const values = headers.map(header => {
-        const val = row[header];
-        if (val === null || val === undefined) return '';
-        if (typeof val === 'object') return escapeCSV(JSON.stringify(val));
-        return escapeCSV(String(val));
-      });
-      csvRows.push(values.join(','));
-    });
-
-    return csvRows.join('\n');
-  }
-
-  /**
-   * Escape a value for CSV format
-   * @param {string} value - Value to escape
-   * @returns {string} Escaped value
-   */
-  function escapeCSV(value) {
-    if (value === null || value === undefined) return '';
-    const str = String(value);
-    // If contains comma, newline, or quote, wrap in quotes and escape inner quotes
-    if (str.includes(',') || str.includes('\n') || str.includes('"')) {
-      return '"' + str.replace(/"/g, '""') + '"';
-    }
-    return str;
-  }
 
   /**
    * Extract all concept and material IDs used in current estimate
@@ -2740,21 +2710,21 @@
     await Promise.all([
       uploadToStorage(
         BUCKETS.TEMPLATES,
-        `${basePath}/materials_snapshot.csv`,
-        new Blob([arrayToCSV(templateCache.materials)], { type: 'text/csv' }),
-        { contentType: 'text/csv' }
+        `${basePath}/materials_snapshot.json`,
+        new Blob([JSON.stringify(templateCache.materials)], { type: 'application/json' }),
+        { contentType: 'application/json' }
       ),
       uploadToStorage(
         BUCKETS.TEMPLATES,
-        `${basePath}/concepts_snapshot.csv`,
-        new Blob([arrayToCSV(templateCache.concepts)], { type: 'text/csv' }),
-        { contentType: 'text/csv' }
+        `${basePath}/concepts_snapshot.json`,
+        new Blob([JSON.stringify(templateCache.concepts)], { type: 'application/json' }),
+        { contentType: 'application/json' }
       ),
       uploadToStorage(
         BUCKETS.TEMPLATES,
-        `${basePath}/concept_materials.csv`,
-        new Blob([arrayToCSV(templateCache.conceptMaterials)], { type: 'text/csv' }),
-        { contentType: 'text/csv' }
+        `${basePath}/concept_materials_snapshot.json`,
+        new Blob([JSON.stringify(templateCache.conceptMaterials)], { type: 'application/json' }),
+        { contentType: 'application/json' }
       )
     ]);
   }

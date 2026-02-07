@@ -1430,16 +1430,93 @@
   }
 
   /**
-   * Creates empty row when no tasks
+   * Creates an input row for empty groups so users can quickly add a task
    */
   function createEmptyRow() {
     const emptyRow = document.createElement("tr");
-    emptyRow.className = "pm-empty-row";
-    emptyRow.innerHTML = `
-      <td colspan="${VISIBLE_COLUMNS.length}" class="pm-empty-cell">
-        <div>No tasks in this group for the current filters.</div>
-      </td>
-    `;
+    emptyRow.className = "pm-empty-row pm-input-row";
+
+    // First cell has the input, rest are empty placeholders
+    emptyRow.innerHTML = VISIBLE_COLUMNS.map((col, i) => {
+      if (i === 0) {
+        return `
+          <td data-col="${col.key}" class="pm-input-cell">
+            <div>
+              <input type="text" class="pm-inline-new-task"
+                     placeholder="+ New task..."
+                     autocomplete="off" />
+            </div>
+          </td>`;
+      }
+      return `<td data-col="${col.key}"><div class="pm-input-cell-empty"></div></td>`;
+    }).join("");
+
+    // Bind input behavior
+    const input = emptyRow.querySelector(".pm-inline-new-task");
+    if (input) {
+      input.addEventListener("keydown", async (e) => {
+        if (e.key !== "Enter") return;
+        e.preventDefault();
+
+        const description = input.value.trim();
+        if (!description) return;
+
+        // Get group status from parent .pm-group element
+        const groupElem = input.closest(".pm-group");
+        const groupKey = groupElem?.dataset?.groupKey || "not started";
+
+        // Disable input while saving
+        input.disabled = true;
+        input.value = "Creating...";
+
+        try {
+          const apiBase = window.API_BASE || "";
+          const token = localStorage.getItem("ngmToken");
+          const headers = { "Content-Type": "application/json" };
+          if (token) headers["Authorization"] = "Bearer " + token;
+
+          const res = await fetch(`${apiBase}/pipeline/tasks`, {
+            method: "POST",
+            headers,
+            credentials: "include",
+            body: JSON.stringify({
+              task_description: description,
+              status: groupKey,
+            }),
+          });
+
+          if (!res.ok) {
+            throw new Error(`Server error (${res.status})`);
+          }
+
+          if (window.Toast) {
+            Toast.success("Task Created", "Task added successfully!");
+          }
+
+          // Refresh pipeline
+          if (typeof window.fetchPipeline === "function") {
+            window.fetchPipeline().catch(() => {});
+          }
+        } catch (err) {
+          console.error("[Pipeline] Quick-add failed:", err);
+          if (window.Toast) {
+            Toast.error("Create Failed", err.message);
+          }
+          // Restore input on failure
+          input.disabled = false;
+          input.value = description;
+        }
+      });
+
+      // Focus styling
+      input.addEventListener("focus", () => {
+        emptyRow.classList.add("pm-input-row--active");
+      });
+      input.addEventListener("blur", () => {
+        emptyRow.classList.remove("pm-input-row--active");
+      });
+    }
+
     return emptyRow;
   }
 

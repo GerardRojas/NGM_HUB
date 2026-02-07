@@ -1070,7 +1070,8 @@
         e.target.closest(".pm-catalog-picker") ||
         e.target.closest(".pm-inline-badge-picker") ||
         e.target.closest(".pm-badge-dropdown") ||
-        e.target.closest(".pm-badge-picker")) {
+        e.target.closest(".pm-badge-picker") ||
+        e.target.closest(".pm-input-row")) {
       return;
     }
 

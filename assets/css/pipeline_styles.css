@@ -478,6 +478,54 @@
     opacity: 0.7;
 }
 
+/* Input row for empty groups */
+.pm-input-row td {
+    padding: 6px 8px;
+    text-align: left;
+    font-style: normal;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.pm-input-row .pm-input-cell div {
+    opacity: 1;
+}
+
+.pm-inline-new-task {
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    padding: 6px 8px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.pm-inline-new-task::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.5;
+}
+
+.pm-inline-new-task:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.pm-inline-new-task:focus {
+    border-color: var(--pm-group-accent, rgba(255, 255, 255, 0.2));
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+}
+
+.pm-input-row--active td:first-child {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.pm-input-cell-empty {
+    min-height: 28px;
+}
+
 /* ============================================
    🔧 ALINEACIÓN DE COLUMNAS EN TABLA
    ============================================ */

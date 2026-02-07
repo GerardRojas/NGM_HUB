@@ -259,7 +259,7 @@
                                 </div>
                             </div>
 
-                            <div class="adu-section-divider"></div>
+                            <div class="adu-section-divider" id="dividerFoundation"></div>
 
                             <!-- STEP 7: Foundation Type -->
                             <div class="adu-param-section locked" id="sectionFoundation">
@@ -280,7 +280,7 @@
                                 </div>
                             </div>
 
-                            <div class="adu-section-divider"></div>
+                            <div class="adu-section-divider" id="dividerLandSurface"></div>
 
                             <!-- STEP 8: Land Surface -->
                             <div class="adu-param-section locked" id="sectionLandSurface">
@@ -556,8 +556,12 @@
                                     <!-- Populated by JS after GPT analysis -->
                                 </div>
 
+                                <div class="adu-fp-sliders" id="floorPlanSliders" style="margin-left: 40px;">
+                                    <!-- Rendered by JS when section unlocks -->
+                                </div>
+
                                 <div class="adu-screenshot-actions" style="margin-left: 40px; margin-top: 12px;">
-                                    <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnSkipScreenshot">Skip - Calculate Without</button>
+                                    <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnSkipScreenshot">Calculate Estimate</button>
                                     <button type="button" class="btn-toolbar btn-toolbar-primary hidden" id="btnAnalyzeAll">Analyze Floor Plan(s)</button>
                                 </div>
                             </div>

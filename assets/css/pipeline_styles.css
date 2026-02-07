@@ -1112,6 +1112,11 @@
   flex-direction: row;
 }
 
+/* Single person: center in cell */
+.pm-people-single {
+  justify-content: center;
+}
+
 .pm-avatar-stacked {
   width: 26px;
   height: 26px;
@@ -1197,9 +1202,114 @@
 .pm-group .table td[data-col="company"]:active,
 .pm-group .table td[data-col="department"]:active,
 .pm-group .table td[data-col="type"]:active,
-.pm-group .table td[data-col="priority"]:active {
+.pm-group .table td[data-col="priority"]:active,
+.pm-group .table td[data-col="status"]:active {
   background: rgba(255, 255, 255, 0.06);
   transform: scale(0.99);
+}
+
+/* =========================================================
+   PIPELINE - Badge Picker (Status, reusable)
+   ========================================================= */
+
+/* Badge pill in cell and dropdown */
+.pm-badge-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  line-height: 1.4;
+  color: #fff;
+  letter-spacing: 0.2px;
+}
+
+/* Badge picker trigger */
+.pm-badge-picker {
+  position: relative;
+}
+
+.pm-badge-trigger {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+}
+
+.pm-badge-placeholder {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+}
+
+/* Badge dropdown */
+.pm-badge-dropdown {
+  display: none;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.pm-badge-dropdown.is-open {
+  display: block;
+}
+
+.pm-badge-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.1s;
+  margin-bottom: 2px;
+}
+
+.pm-badge-option:last-child {
+  margin-bottom: 0;
+}
+
+.pm-badge-option:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pm-badge-option .pm-badge-pill {
+  flex: 1;
+  text-align: center;
+}
+
+.pm-badge-check {
+  display: none;
+  width: 16px;
+  height: 16px;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.pm-badge-option.is-selected .pm-badge-check {
+  display: block;
+}
+
+.pm-badge-option.is-selected .pm-badge-check::before {
+  content: "\2713";
+  color: #3ecf8e;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Badge dropdown scrollbar */
+.pm-badge-dropdown::-webkit-scrollbar { width: 6px; }
+.pm-badge-dropdown::-webkit-scrollbar-track { background: transparent; }
+.pm-badge-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+.pm-badge-dropdown::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 /* =========================================================
@@ -1531,11 +1641,169 @@ textarea.pm-inline-editor {
   max-height: 120px;
 }
 
-/* Date input editor */
+/* Date input editor (hidden, used as value holder) */
 .pm-inline-editor--date {
   padding: 5px 8px;
   min-width: 130px;
   color-scheme: dark;
+}
+
+/* ==========================================
+   CUSTOM DATE PICKER
+   ========================================== */
+
+.pm-datepicker {
+  width: 260px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  padding: 12px;
+  font-family: inherit;
+  user-select: none;
+}
+
+/* Header: arrows + month/year */
+.pm-datepicker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pm-datepicker-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.02em;
+}
+
+.pm-datepicker-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.pm-datepicker-nav:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #2a2a2a;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Day-of-week labels */
+.pm-datepicker-dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  margin-bottom: 4px;
+}
+.pm-datepicker-dow span {
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 0;
+}
+
+/* Calendar grid */
+.pm-datepicker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.pm-datepicker-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0 auto;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+.pm-datepicker-day:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.pm-datepicker-day--outside {
+  color: rgba(255, 255, 255, 0.2);
+}
+.pm-datepicker-day--outside:hover {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pm-datepicker-day--today {
+  border: 1px solid rgba(62, 207, 142, 0.5);
+  color: #3ecf8e;
+  font-weight: 600;
+}
+
+.pm-datepicker-day--selected {
+  background: #3ecf8e !important;
+  color: #000 !important;
+  font-weight: 600;
+}
+.pm-datepicker-day--selected:hover {
+  background: #34b87d !important;
+}
+
+/* Footer: Today + Clear */
+.pm-datepicker-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #222;
+}
+
+.pm-datepicker-btn {
+  padding: 5px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.pm-datepicker-btn--today {
+  background: rgba(62, 207, 142, 0.12);
+  color: #3ecf8e;
+}
+.pm-datepicker-btn--today:hover {
+  background: rgba(62, 207, 142, 0.22);
+}
+
+.pm-datepicker-btn--clear {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.5);
+}
+.pm-datepicker-btn--clear:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+/* Trigger text inside the cell while picker is open */
+.pm-datepicker-trigger {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
 }
 
 /* Select/Dropdown editor - Monday.com style */
@@ -2963,6 +3231,96 @@ textarea.pm-inline-editor {
 #linksModal .modal--sm {
   width: 480px;
   max-width: 95vw;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+#linksModal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: #111111;
+  border-bottom: 1px solid #1f1f1f;
+}
+
+#linksModal .modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ngm-text-main, #ededed);
+}
+
+#linksModal .modal-btn {
+  background: transparent;
+  border: none;
+  color: var(--ngm-text-muted, #666);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+#linksModal .modal-btn:hover {
+  color: var(--ngm-text-main, #ededed);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+#linksModal .modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px 20px;
+}
+
+#linksModal .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px 18px;
+  border-top: 1px solid #1f1f1f;
+  background: #111111;
+}
+
+#linksModal .modal-footer .btn-secondary,
+#linksModal .modal-footer .btn-primary {
+  appearance: none;
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+#linksModal .modal-footer .btn-secondary {
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  color: var(--text-primary, #ededed);
+}
+#linksModal .modal-footer .btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #3a3a3a;
+}
+
+#linksModal .modal-footer .btn-primary {
+  background: #3ecf8e;
+  border: 1px solid #3ecf8e;
+  color: #000;
+  font-weight: 600;
+}
+#linksModal .modal-footer .btn-primary:hover {
+  background: #34b87d;
+  border-color: #34b87d;
+}
+
+#linksModal .modal-footer .btn-secondary:active,
+#linksModal .modal-footer .btn-primary:active {
+  transform: translateY(1px);
 }
 
 .pm-links-form {

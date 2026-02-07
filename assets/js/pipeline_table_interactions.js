@@ -44,6 +44,21 @@
   // Columnas de solo lectura
   const READONLY_COLS = ["links", "finished"];
 
+  // Columns with badge-style picker (colored pills)
+  const BADGE_COLS = ["status"];
+
+  // Status options for badge picker (colors match STATUS_CONFIG in pipeline.js)
+  const STATUS_OPTIONS = [
+    { id: "not started", name: "Not Started", color: "#facc15" },
+    { id: "working on it", name: "Working On It", color: "#3b82f6" },
+    { id: "awaiting approval", name: "Awaiting Approval", color: "#fb923c" },
+    { id: "good to go", name: "Good To Go", color: "#10b981" },
+    { id: "correction", name: "Correction", color: "#f87171" },
+    { id: "resubmittal needed", name: "Resubmittal Needed", color: "#eab308" },
+    { id: "done", name: "Done", color: "#22c55e" },
+    { id: "delayed", name: "Delayed", color: "#a855f7" },
+  ];
+
   // ================================
   // CACHE DE USUARIOS Y CATÁLOGOS
   // ================================
@@ -195,6 +210,12 @@
       }
       return element.value || null;
     }
+    if (type === "date") {
+      if (typeof element._getValue === "function") {
+        return element._getValue();
+      }
+      return element.value?.trim() || null;
+    }
     if (type === "number") {
       const numValue = parseFloat(element.value);
       if (!isNaN(numValue) && numValue >= 0) {
@@ -208,7 +229,7 @@
   // ================================
   // GUARDAR EN BACKEND
   // ================================
-  async function saveFieldToBackend(taskId, colKey, newValue, td) {
+  async function saveFieldToBackend(taskId, colKey, newValue, td, options = {}) {
     const apiBase = window.API_BASE || "";
 
     // Mapear columna UI -> campo backend
@@ -229,8 +250,9 @@
       deadline: "deadline",
       time_start: "time_start",
       time_finish: "time_finish",
-      est: "estimated_hours",          // was missing
-      priority: "priority",            // was missing
+      est: "estimated_hours",
+      priority: "priority",
+      status: "status",
     };
 
     const backendField = fieldMap[colKey] || colKey;
@@ -255,11 +277,18 @@
         throw new Error(`Server error (${res.status}): ${errText}`);
       }
 
-      // Actualizar celda con nuevo valor
-      updateCellDisplay(td, colKey, newValue);
+      // Actualizar celda con nuevo valor (skip if picker already updated)
+      if (!options.skipDisplayUpdate) {
+        updateCellDisplay(td, colKey, newValue);
+      }
       td.classList.remove("pm-cell-saving");
       td.classList.add("pm-cell-saved");
       setTimeout(() => td.classList.remove("pm-cell-saved"), 1500);
+
+      // Post-save callback (e.g., refresh pipeline after status change)
+      if (typeof options.onSuccess === 'function') {
+        options.onSuccess();
+      }
 
       // Actualizar dataset del row
       const tr = td.closest("tr");
@@ -287,16 +316,16 @@
     const div = td.querySelector("div") || td;
 
     if (PERSON_COLS.includes(colKey)) {
-      // Check if multi-person column (collaborator, manager)
-      if (MULTI_PERSON_COLS.includes(colKey) && value && value.includes(",")) {
-        // Render multiple people
+      // value can be: user object, array of user objects, or comma-separated name string
+      if (MULTI_PERSON_COLS.includes(colKey)) {
         div.innerHTML = renderMultiplePeopleHtml(value);
       } else {
-        // Render single person
         div.innerHTML = renderPersonHtml(value || "-");
       }
+    } else if (BADGE_COLS.includes(colKey)) {
+      // value can be: badge item object {id, name, color} or a string
+      div.innerHTML = renderBadgeHtml(colKey, value);
     } else if (NUMBER_COLS.includes(colKey)) {
-      // Formatear como horas
       if (value !== null && value !== undefined && value !== "" && value !== "-") {
         const numValue = parseFloat(value);
         if (!isNaN(numValue)) {
@@ -308,7 +337,9 @@
         div.textContent = "-";
       }
     } else if (DATE_COLS.includes(colKey)) {
-      div.textContent = value || "-";
+      div.textContent = (value && window.PM_DatePicker)
+        ? window.PM_DatePicker.formatDate(value)
+        : (value || "-");
     } else {
       div.textContent = value || "-";
     }
@@ -320,13 +351,20 @@
 
   // ================================
   // RENDERIZAR PERSONA (AVATAR + NOMBRE)
-  // Ring style: transparent background, colored border (like Team Management)
-  // Color formula matches Team Management: hsl(hue 70% 45%)
+  // Accepts string OR user object {name, color} from PeoplePicker
+  // Uses DB avatar_color when available for consistency with Team/Companies pages
   // ================================
-  function renderPersonHtml(name) {
-    const raw = String(name || "").trim();
+  function renderPersonHtml(personOrName) {
+    let raw, color;
 
-    // Empty/placeholder state - show gray avatar
+    if (personOrName && typeof personOrName === 'object') {
+      raw = String(personOrName.name || '').trim();
+      color = personOrName.color || null;
+    } else {
+      raw = String(personOrName || '').trim();
+      color = null;
+    }
+
     if (!raw || raw === "-") {
       return `
         <span class="pm-person pm-person--empty" title="Click to assign">
@@ -337,8 +375,11 @@
 
     const safeName = escapeHtml(raw);
     const initial = raw[0]?.toUpperCase() || "?";
-    const hue = hashStringToHue(raw.toLowerCase());
-    const color = `hsl(${hue} 70% 45%)`;
+
+    if (!color) {
+      const hue = hashStringToHue(raw.toLowerCase());
+      color = `hsl(${hue} 70% 45%)`;
+    }
 
     return `
       <span class="pm-person" title="${safeName}">
@@ -349,37 +390,49 @@
   }
 
   // Render multiple people as stacked avatars (inline version)
-  // Color formula matches Team Management: hsl(hue 70% 45%)
-  function renderMultiplePeopleHtml(namesStr) {
-    if (!namesStr || namesStr === "-") {
-      return `
-        <span class="pm-person pm-person--empty" title="Click to assign">
-          <span class="pm-avatar pm-avatar--placeholder"></span>
-        </span>
-      `;
+  // Accepts array of user objects [{name, color}] OR comma-separated name string
+  function renderMultiplePeopleHtml(usersOrStr) {
+    let people;
+
+    if (Array.isArray(usersOrStr)) {
+      people = usersOrStr.map(u => ({
+        name: String(u.name || '').trim(),
+        color: u.color || null
+      })).filter(p => p.name);
+    } else {
+      const str = String(usersOrStr || '').trim();
+      if (!str || str === '-') {
+        return `
+          <span class="pm-person pm-person--empty" title="Click to assign">
+            <span class="pm-avatar pm-avatar--placeholder"></span>
+          </span>
+        `;
+      }
+      people = str.split(',').map(n => ({ name: n.trim(), color: null })).filter(p => p.name);
     }
 
-    // Parse comma-separated names
-    const names = namesStr.split(",").map(n => n.trim()).filter(n => n);
-
-    if (names.length === 0) {
+    if (!people.length) {
       return `<span class="pm-person-empty">-</span>`;
     }
 
+    const allNames = people.map(p => p.name).join(', ');
     const maxDisplay = 3;
-    const displayNames = names.slice(0, maxDisplay);
-    const overflow = names.length - maxDisplay;
+    const displayPeople = people.slice(0, maxDisplay);
+    const overflow = people.length - maxDisplay;
 
-    let html = `<span class="pm-people-stack" title="${escapeHtml(namesStr)}">`;
+    let html = `<span class="pm-people-stack" title="${escapeHtml(allNames)}">`;
 
-    displayNames.forEach((name, index) => {
-      const initial = (name || "?")[0]?.toUpperCase() || "?";
-      const hue = hashStringToHue(name.toLowerCase());
-      const color = `hsl(${hue} 70% 45%)`;
-      const zIndex = displayNames.length - index;
+    displayPeople.forEach((person, index) => {
+      const initial = (person.name || '?')[0]?.toUpperCase() || '?';
+      let color = person.color;
+      if (!color) {
+        const hue = hashStringToHue(person.name.toLowerCase());
+        color = `hsl(${hue} 70% 45%)`;
+      }
+      const zIndex = displayPeople.length - index;
 
       html += `
-        <span class="pm-avatar pm-avatar-stacked" style="color: ${color}; border-color: ${color}; z-index: ${zIndex};" title="${escapeHtml(name)}">
+        <span class="pm-avatar pm-avatar-stacked" style="color: ${color}; border-color: ${color}; z-index: ${zIndex};" title="${escapeHtml(person.name)}">
           ${escapeHtml(initial)}
         </span>
       `;
@@ -400,6 +453,29 @@
     for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
     return h % 360;
   });
+
+  // Render a colored badge pill for status-type columns
+  function renderBadgeHtml(colKey, value) {
+    let name, color;
+
+    if (value && typeof value === 'object') {
+      name = value.name || '';
+      color = value.color || null;
+    } else {
+      name = String(value || '').trim();
+    }
+
+    if (!name || name === '-') return '-';
+
+    // Look up color from known options
+    if (!color) {
+      const options = colKey === 'status' ? STATUS_OPTIONS : [];
+      const match = options.find(o => o.id === name.toLowerCase() || o.name.toLowerCase() === name.toLowerCase());
+      color = match ? match.color : '#3e4042';
+    }
+
+    return `<span class="pm-badge-pill" style="background: ${color};">${escapeHtml(name)}</span>`;
+  }
 
   // ================================
   // CREAR EDITORES
@@ -437,40 +513,74 @@
     return element;
   }
 
-  // Editor de fecha
+  // Editor de fecha (custom date picker)
   function createDateEditor(td, colKey, currentValue) {
+    // Hidden input to hold the value for getEditorValue()
     const element = document.createElement("input");
+    element.type = "hidden";
     element.className = "pm-inline-editor pm-inline-editor--date";
-    element.type = "date";
 
-    // Convertir valor actual a formato YYYY-MM-DD
-    let originalValue = '';
+    // Normalize current value to YYYY-MM-DD
+    let normalizedValue = '';
     if (currentValue && currentValue !== "-") {
-      const dateStr = currentValue.split("T")[0];
-      element.value = dateStr;
-      originalValue = dateStr;
+      // Could be ISO string or already YYYY-MM-DD or human-readable (e.g. "Jan 15")
+      const str = String(currentValue);
+      if (str.includes("T")) {
+        normalizedValue = str.split("T")[0];
+      } else if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        normalizedValue = str;
+      } else {
+        // Try to recover from formatted display (e.g. "Jan 15" or "Jan 15, 2024")
+        normalizedValue = reverseFormatDate(str) || '';
+      }
     }
+    element.value = normalizedValue;
 
-    element.addEventListener("blur", () => {
-      // Only save if value actually changed
-      const hasChanged = element.value !== originalValue;
-      setTimeout(() => closeActiveEditor(hasChanged), 100);
-    });
+    // Show display text while picker is open
+    const display = document.createElement("span");
+    display.className = "pm-datepicker-trigger";
+    display.textContent = normalizedValue
+      ? (window.PM_DatePicker ? window.PM_DatePicker.formatDate(normalizedValue) : normalizedValue)
+      : "Select date...";
 
-    element.addEventListener("change", () => {
-      // Only save if value actually changed
-      const hasChanged = element.value !== originalValue;
-      closeActiveEditor(hasChanged);
-    });
+    const wrapper = document.createElement("div");
+    wrapper.style.display = "flex";
+    wrapper.style.alignItems = "center";
+    wrapper.appendChild(display);
+    wrapper.appendChild(element);
 
-    element.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
+    // Create the picker popup
+    const picker = window.PM_DatePicker.create(
+      td,
+      normalizedValue,
+      // onSelect
+      (ymd) => {
+        element.value = ymd || '';
+        closeActiveEditor(true);
+      },
+      // onClose (no selection)
+      () => {
         closeActiveEditor(false);
       }
-    });
+    );
 
-    return element;
+    // Attach picker reference for cleanup in closeActiveEditor
+    wrapper._picker = picker;
+    wrapper._getValue = () => element.value || null;
+
+    return wrapper;
+  }
+
+  // Try to convert "Jan 15" or "Jan 15, 2024" back to YYYY-MM-DD
+  function reverseFormatDate(str) {
+    const months = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
+    const match = str.match(/^(\w{3})\s+(\d{1,2})(?:,\s*(\d{4}))?$/);
+    if (!match) return null;
+    const m = months[match[1]];
+    if (m === undefined) return null;
+    const d = parseInt(match[2], 10);
+    const y = match[3] ? parseInt(match[3], 10) : new Date().getFullYear();
+    return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
   }
 
   // Editor de número (horas)
@@ -534,10 +644,11 @@
           const pluralField = colKey + "s";
 
           if (activeEditor && activeEditor.td === td) {
-            saveFieldToBackend(taskId, pluralField, userIds, td);
+            saveFieldToBackend(taskId, pluralField, userIds, td, { skipDisplayUpdate: true });
             activeEditor.originalValue = userNames;
             activeEditor.alreadySaved = true;
-            updateCellDisplay(td, colKey, userNames);
+            // Pass user objects (with .color from DB) for consistent avatar colors
+            updateCellDisplay(td, colKey, selectedUsers);
           }
         } else {
           const user = users[0] || null;
@@ -546,10 +657,11 @@
           selectedValue = userName;
 
           if (activeEditor && activeEditor.td === td) {
-            saveFieldToBackend(taskId, colKey, userId, td);
+            saveFieldToBackend(taskId, colKey, userId, td, { skipDisplayUpdate: true });
             activeEditor.originalValue = userName;
             activeEditor.alreadySaved = true;
-            updateCellDisplay(td, colKey, userName);
+            // Pass user object (with .color from DB) for consistent avatar color
+            updateCellDisplay(td, colKey, user || "-");
             closeActiveEditor(false);
           }
         }
@@ -653,7 +765,9 @@
         selectedValue = valueName;
 
         if (activeEditor && activeEditor.td === td) {
-          saveFieldToBackend(taskId, colKey, valueId, td);
+          // skipDisplayUpdate: picker already shows the name, saveFieldToBackend
+          // would overwrite it with the raw ID causing a flash
+          saveFieldToBackend(taskId, colKey, valueId, td, { skipDisplayUpdate: true });
           activeEditor.originalValue = valueName;
           activeEditor.alreadySaved = true;
           updateCellDisplay(td, colKey, valueName);
@@ -761,10 +875,72 @@
     return element;
   }
 
+  // Badge dropdown for status and similar columns
+  async function createBadgeDropdown(td, colKey, currentValue, taskId) {
+    const container = document.createElement("div");
+    container.className = "pm-inline-badge-picker";
+    let selectedValue = null;
+
+    const items = colKey === 'status' ? STATUS_OPTIONS : [];
+
+    if (typeof window.BadgePicker !== "function") {
+      console.warn("[PIPELINE] BadgePicker not loaded");
+      return null;
+    }
+
+    const picker = new window.BadgePicker(container, {
+      items: items,
+      placeholder: `Select ${colKey}...`,
+      onChange: (item) => {
+        const statusName = item ? item.name.toLowerCase() : null;
+        selectedValue = statusName;
+
+        if (activeEditor && activeEditor.td === td) {
+          saveFieldToBackend(taskId, colKey, statusName, td, {
+            skipDisplayUpdate: true,
+            onSuccess: () => {
+              if (colKey === 'status') {
+                window.fetchPipeline?.({ forceRefresh: true });
+              }
+            }
+          });
+          activeEditor.originalValue = item ? item.name : '';
+          activeEditor.alreadySaved = true;
+          updateCellDisplay(td, colKey, item || '-');
+          closeActiveEditor(false);
+        }
+      }
+    });
+
+    if (currentValue && currentValue !== '-') {
+      picker.setValueByName(currentValue);
+    }
+
+    setTimeout(() => {
+      if (picker.open) picker.open();
+    }, 50);
+
+    container._picker = picker;
+    container._getValue = () => selectedValue;
+
+    return container;
+  }
+
   // ================================
   // OBTENER VALOR ACTUAL DE CELDA
   // ================================
   function getCurrentCellValue(td, colKey) {
+    // For date columns, read raw value from row dataset (not formatted display)
+    if (DATE_COLS.includes(colKey)) {
+      const tr = td.closest("tr");
+      if (tr) {
+        const dsMap = { due: "dueDate", start: "startDate", deadline: "deadline" };
+        const dsKey = dsMap[colKey];
+        const raw = dsKey ? tr.dataset[dsKey] : null;
+        if (raw) return raw.includes("T") ? raw.split("T")[0] : raw;
+      }
+    }
+
     // Intentar obtener del texto visible
     const div = td.querySelector("div");
     let textContent = "";
@@ -773,6 +949,16 @@
       // Para personas, buscar el nombre en .pm-person-name
       const nameEl = td.querySelector(".pm-person-name");
       textContent = nameEl?.textContent?.trim() || "";
+    } else if (BADGE_COLS.includes(colKey)) {
+      // For badge columns, read from .pm-badge-pill or dataset
+      const badge = td.querySelector(".pm-badge-pill");
+      if (badge) {
+        textContent = badge.textContent?.trim() || "";
+      } else {
+        // Fallback: read from row dataset
+        const tr = td.closest("tr");
+        textContent = tr?.dataset?.status || "";
+      }
     } else {
       textContent = div?.textContent?.trim() || td.textContent?.trim() || "";
     }
@@ -801,6 +987,9 @@
     if (PERSON_COLS.includes(colKey)) {
       editor = await createPersonDropdown(td, colKey, currentValue, taskId);
       editorType = "person-dropdown";
+    } else if (BADGE_COLS.includes(colKey)) {
+      editor = await createBadgeDropdown(td, colKey, currentValue, taskId);
+      editorType = "badge-dropdown";
     } else if (CATALOG_COLS.includes(colKey)) {
       editor = await createCatalogDropdown(td, colKey, currentValue, taskId);
       editorType = "catalog-dropdown";
@@ -838,7 +1027,7 @@
     }
 
     // Focus (only for input/select/textarea, not for picker containers)
-    if (editorType !== "person-dropdown" && editorType !== "catalog-dropdown" && editor.focus) {
+    if (editorType !== "person-dropdown" && editorType !== "catalog-dropdown" && editorType !== "badge-dropdown" && editor.focus) {
       editor.focus();
       if (editor.select && editorType === "text") {
         editor.select();
@@ -847,7 +1036,7 @@
 
     // Marcar celda como editando (different styles for text vs picker)
     // Text fields get blue edit background, pickers behave like buttons
-    const isPickerType = editorType === "person-dropdown" || editorType === "catalog-dropdown";
+    const isPickerType = editorType === "person-dropdown" || editorType === "catalog-dropdown" || editorType === "badge-dropdown";
     td.classList.add("pm-cell-editing");
     td.classList.add(isPickerType ? "pm-cell-editing--picker" : "pm-cell-editing--text");
 
@@ -878,7 +1067,10 @@
         e.target.closest(".pm-people-picker") ||
         e.target.closest(".pm-inline-catalog-picker") ||
         e.target.closest(".pm-catalog-dropdown") ||
-        e.target.closest(".pm-catalog-picker")) {
+        e.target.closest(".pm-catalog-picker") ||
+        e.target.closest(".pm-inline-badge-picker") ||
+        e.target.closest(".pm-badge-dropdown") ||
+        e.target.closest(".pm-badge-picker")) {
       return;
     }
 
@@ -923,7 +1115,9 @@
     if (e.target.closest(".pm-people-dropdown") ||
         e.target.closest(".pm-people-picker") ||
         e.target.closest(".pm-catalog-dropdown") ||
-        e.target.closest(".pm-catalog-picker")) return;
+        e.target.closest(".pm-catalog-picker") ||
+        e.target.closest(".pm-badge-dropdown") ||
+        e.target.closest(".pm-badge-picker")) return;
     if (!wrapper.contains(e.target)) {
       closeActiveEditor(true);
     }

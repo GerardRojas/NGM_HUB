@@ -2234,6 +2234,7 @@ select.edit-input option {
 .col-status {
   text-align: center;
   vertical-align: middle;
+  overflow: visible;
 }
 
 .col-status .status-badge {

@@ -72,9 +72,11 @@
     formatMaybeDate(v) {
       if (!v) return "-";
       const s = String(v);
-      // Convert ISO date (2025-12-07T06:21:42.156005Z) to short format (2025-12-07)
-      if (s.includes("T")) return s.split("T")[0];
-      return s;
+      // Normalize ISO to YYYY-MM-DD first
+      const ymd = s.includes("T") ? s.split("T")[0] : s;
+      // Use date picker's formatter if available for human-friendly display
+      if (window.PM_DatePicker) return window.PM_DatePicker.formatDate(ymd);
+      return ymd;
     }
   };
 
@@ -155,7 +157,8 @@
       // Build all names for tooltip
       const allNames = people.map(p => p.name || p.username || "Unknown").join(", ");
 
-      let html = `<span class="pm-people-stack" title="${Utils.escapeHtml(allNames)}">`;
+      const singleClass = people.length === 1 ? " pm-people-single" : "";
+      let html = `<span class="pm-people-stack${singleClass}" title="${Utils.escapeHtml(allNames)}">`;
 
       displayPeople.forEach((person, index) => {
         const name = person.name || person.username || "";
@@ -268,6 +271,14 @@
 
         case "type":
           return Utils.escapeHtml(t.type || "-");
+
+        case "status": {
+          const statusName = (t.status?.name || t.status_name || t.status || '').trim();
+          if (!statusName) return '-';
+          const lowerStatus = statusName.toLowerCase();
+          const color = STATUS_CONFIG.getAccentColor(lowerStatus);
+          return `<span class="pm-badge-pill" style="background: ${color};">${Utils.escapeHtml(statusName)}</span>`;
+        }
 
         case "time_start":
           return Utils.escapeHtml(t.time_start || "-");
@@ -544,6 +555,7 @@
     { key: "company", label: "Company" },
     { key: "department", label: "Department" },
     { key: "type", label: "Type" },
+    { key: "status", label: "Status" },
     { key: "time_start", label: "Time Start", hidden: true },  // Backend only
     { key: "time_finish", label: "Time Finish", hidden: true }, // Backend only
     { key: "start", label: "Start" },
@@ -1558,7 +1570,9 @@
     const status = t.status?.name || t.status_name || t.status || '';
     if (status) tr.dataset.status = String(status).toLowerCase();
 
-    // Store deadline
+    // Store due_date and deadline
+    const dueDate = t.due_date || t.due || null;
+    if (dueDate) tr.dataset.dueDate = String(dueDate);
     if (t.deadline) tr.dataset.deadline = String(t.deadline);
 
     // Store automation data

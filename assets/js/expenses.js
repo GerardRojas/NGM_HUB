@@ -3706,15 +3706,21 @@
     const invoiceMatchesApi = Math.abs(invoiceTotal - apiSum) <= tolerance;
     const allMatch = modalMatchesInvoice && modalMatchesApi && invoiceMatchesApi;
 
-    // Color the individual cards based on match
+    // Color the individual values based on match
     if (modalTotalEl) {
-      modalTotalEl.className = 'scan-validation-card-value' + (modalMatchesInvoice ? '' : ' value-mismatch');
+      modalTotalEl.className = 'scan-val-value' + (modalMatchesInvoice ? '' : ' value-mismatch');
     }
     if (invoiceTotalEl) {
-      invoiceTotalEl.className = 'scan-validation-card-value';
+      invoiceTotalEl.className = 'scan-val-value';
     }
     if (apiCalcEl) {
-      apiCalcEl.className = 'scan-validation-card-value' + (invoiceMatchesApi ? '' : ' value-mismatch');
+      apiCalcEl.className = 'scan-val-value' + (invoiceMatchesApi ? '' : ' value-mismatch');
+    }
+
+    // Update the status dot
+    const dotEl = document.getElementById('scanValidationDot');
+    if (dotEl) {
+      dotEl.className = 'scan-val-dot ' + (allMatch ? 'dot-match' : 'dot-mismatch');
     }
 
     // Also color the table footer total
@@ -3731,17 +3737,17 @@
 
     if (statusEl) {
       if (allMatch) {
-        statusEl.className = 'scan-validation-status status-match';
-        statusEl.textContent = 'All totals match';
+        statusEl.className = 'scan-val-msg status-match';
+        statusEl.textContent = 'Match';
       } else {
-        statusEl.className = 'scan-validation-status status-mismatch';
+        statusEl.className = 'scan-val-msg status-mismatch';
         const diff = Math.abs(modalTotal - invoiceTotal);
         if (!modalMatchesInvoice) {
-          statusEl.textContent = `RED FLAG: Items sum ($${modalTotal.toFixed(2)}) differs from invoice total ($${invoiceTotal.toFixed(2)}) by $${diff.toFixed(2)}`;
+          statusEl.textContent = `Diff $${diff.toFixed(2)}`;
         } else if (!invoiceMatchesApi) {
-          statusEl.textContent = `Warning: AI calculated sum ($${apiSum.toFixed(2)}) differs from invoice total ($${invoiceTotal.toFixed(2)})`;
+          statusEl.textContent = `AI diff`;
         } else {
-          statusEl.textContent = `Mismatch detected between totals`;
+          statusEl.textContent = `Mismatch`;
         }
       }
     }

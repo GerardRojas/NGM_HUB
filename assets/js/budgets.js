@@ -311,6 +311,22 @@
   }
 
   // ================================
+  // SEARCH FILTERING
+  // ================================
+  function filterBudgetsTable(term) {
+    if (!els.budgetsTableBody) return;
+    const rows = els.budgetsTableBody.querySelectorAll('tr[data-budget-id]');
+    rows.forEach(row => {
+      if (!term) {
+        row.style.display = '';
+        return;
+      }
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(term) ? '' : 'none';
+    });
+  }
+
+  // ================================
   // IMPORT CSV MODAL
   // ================================
   function openImportModal() {
@@ -1071,11 +1087,10 @@
     // Confirm import button
     els.btnConfirmImport?.addEventListener('click', importCSV);
 
-    // Global search (placeholder for now)
+    // Global search - realtime filtering
     els.globalSearch?.addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase();
-      console.log('[BUDGETS] Search term:', term);
-      // TODO: Implement search filtering
+      const term = e.target.value.toLowerCase().trim();
+      filterBudgetsTable(term);
     });
   }
 

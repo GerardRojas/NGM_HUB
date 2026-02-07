@@ -5,6 +5,11 @@
 
   const qs = (id) => document.getElementById(id);
 
+  function getAuthHeaders() {
+    const token = localStorage.getItem("ngmToken");
+    return token ? { Authorization: "Bearer " + token } : {};
+  }
+
   // Current task being edited
   let currentTaskId = null;
   let currentDocsLink = null;
@@ -120,7 +125,7 @@
         updates.push(
           fetch(`${apiBase}/pipeline/tasks/${currentTaskId}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             credentials: 'include',
             body: JSON.stringify({ docs_link: docsLink }),
           })
@@ -132,7 +137,7 @@
         updates.push(
           fetch(`${apiBase}/pipeline/tasks/${currentTaskId}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             credentials: 'include',
             body: JSON.stringify({ result_link: resultLink }),
           })

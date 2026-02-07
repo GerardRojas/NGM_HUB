@@ -1447,7 +1447,9 @@
 
   function scrollToBottom() {
     if (DOM.messagesContainer) {
-      DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
+      requestAnimationFrame(function () {
+        DOM.messagesContainer.scrollTop = DOM.messagesContainer.scrollHeight;
+      });
     }
   }
 

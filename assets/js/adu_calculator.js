@@ -580,9 +580,11 @@
   var labelBathrooms       = document.getElementById("labelBathrooms");
   var inputBedrooms        = document.getElementById("inputBedrooms");
   var inputBathrooms       = document.getElementById("inputBathrooms");
+  var dividerFoundation    = document.getElementById("dividerFoundation");
   var sectionFoundation    = document.getElementById("sectionFoundation");
   var stepFoundation       = document.getElementById("stepFoundation");
   var selectFoundation     = document.getElementById("selectFoundation");
+  var dividerLandSurface   = document.getElementById("dividerLandSurface");
   var sectionLandSurface   = document.getElementById("sectionLandSurface");
   var stepLandSurface      = document.getElementById("stepLandSurface");
   var selectLandSurface    = document.getElementById("selectLandSurface");
@@ -598,6 +600,7 @@
   var analysisResultsDiv   = document.getElementById("analysisResults");
   var btnSkipScreenshot    = document.getElementById("btnSkipScreenshot");
   var btnAnalyzeAll        = document.getElementById("btnAnalyzeAll");
+  var floorPlanSlidersDiv  = document.getElementById("floorPlanSliders");
   var sectionResults       = document.getElementById("sectionResults");
   var stepResults          = document.getElementById("stepResults");
   var resultsContainer     = document.getElementById("resultsContainer");
@@ -705,6 +708,29 @@
     }
   }
 
+  function updateConstructionAvailability() {
+    if (!selectedType) return;
+    var rates = PRICING_MATRIX.base_rates[selectedType];
+    if (!rates) return;
+
+    gridConstruction.querySelectorAll(".adu-option-card").forEach(function (card) {
+      var ct = card.dataset.construction;
+      var isAllowed = rates[ct] !== null && rates[ct] !== undefined;
+      card.classList.toggle("disabled", !isAllowed);
+      if (!isAllowed && card.classList.contains("selected")) {
+        card.classList.remove("selected");
+        selectedConstruction = null;
+      }
+    });
+
+    // Auto-select if only 1 option available
+    var availableCards = gridConstruction.querySelectorAll(".adu-option-card:not(.disabled)");
+    if (availableCards.length === 1) {
+      selectedConstruction = availableCards[0].dataset.construction;
+      selectCard(gridConstruction, "construction", selectedConstruction);
+    }
+  }
+
   // ------------------------------------------
   // CONFIG MODE UI (per-unit vs total)
   // ------------------------------------------
@@ -763,15 +789,43 @@
     // Step 6: Configuration (bedrooms & bathrooms)
     var configDone = (enteredBedrooms !== null && enteredBedrooms >= 0) && (enteredBathrooms !== null && enteredBathrooms >= 0);
     stepConfiguration.classList.toggle("completed", configDone);
-    sectionFoundation.classList.toggle("locked", !configDone);
+
+    // Studio skips foundation (always slab_on_grade)
+    var skipFoundation = selectedType === "studio";
+    if (skipFoundation && configDone) {
+      selectedFoundation = "slab_on_grade";
+      if (selectFoundation) selectFoundation.value = "slab_on_grade";
+    }
+
+    // Garage conversion: force reinforced_foundation, skip foundation UI
+    var forceReinforced = selectedType === "garage_conversion";
+    if (forceReinforced && configDone) {
+      selectedFoundation = "reinforced_foundation";
+      if (selectFoundation) selectFoundation.value = "reinforced_foundation";
+    }
+
+    var hideFoundation = skipFoundation || forceReinforced;
+    sectionFoundation.classList.toggle("locked", !configDone || hideFoundation);
+    sectionFoundation.style.display = hideFoundation ? "none" : "";
+    if (dividerFoundation) dividerFoundation.style.display = hideFoundation ? "none" : "";
 
     // Step 7: Foundation
-    var foundationDone = !!selectedFoundation;
+    var foundationDone = hideFoundation ? configDone : !!selectedFoundation;
     stepFoundation.classList.toggle("completed", foundationDone);
-    sectionLandSurface.classList.toggle("locked", !foundationDone);
+
+    // Garage conversion: skip land surface (existing structure, always flat_land)
+    var skipLand = selectedType === "garage_conversion";
+    if (skipLand && foundationDone) {
+      selectedLandSurface = "flat_land";
+      if (selectLandSurface) selectLandSurface.value = "flat_land";
+    }
+
+    sectionLandSurface.classList.toggle("locked", !foundationDone || skipLand);
+    sectionLandSurface.style.display = skipLand ? "none" : "";
+    if (dividerLandSurface) dividerLandSurface.style.display = skipLand ? "none" : "";
 
     // Step 8: Land Surface
-    var landDone = !!selectedLandSurface;
+    var landDone = skipLand ? foundationDone : !!selectedLandSurface;
     stepLandSurface.classList.toggle("completed", landDone);
     sectionAdditionalOptions.classList.toggle("locked", !landDone);
 
@@ -792,9 +846,10 @@
     sectionResults.classList.toggle("locked", !costEstimate);
     stepResults.classList.toggle("completed", !!costEstimate);
 
-    // Render upload zones when screenshot section is unlocked
+    // Render upload zones and sliders when screenshot section is unlocked
     if (landDone) {
       renderUploadZones();
+      renderFloorPlanSliders();
     }
 
     // Show/hide buttons
@@ -927,7 +982,23 @@
   // ------------------------------------------
 
   function refresh() {
+    // Studio type has no bedrooms — force to 0 and disable input
+    if (selectedType === "studio") {
+      enteredBedrooms = 0;
+      if (inputBedrooms) {
+        inputBedrooms.value = "0";
+        inputBedrooms.disabled = true;
+        inputBedrooms.closest(".adu-input-field").classList.add("adu-field-disabled");
+      }
+    } else {
+      if (inputBedrooms) {
+        inputBedrooms.disabled = false;
+        inputBedrooms.closest(".adu-input-field").classList.remove("adu-field-disabled");
+      }
+    }
+
     updateStoryAvailability();
+    updateConstructionAvailability();
     updateSections();
     updateSummary();
 
@@ -1125,6 +1196,7 @@
     .then(function (result) {
       analysisResults[floorKey] = result.data;
       computeFloorPlanScores();
+      syncSlidersFromScores();
       analysisLoading[floorKey] = false;
 
       if (result.warning && window.Toast) {
@@ -1263,6 +1335,115 @@
          + '<span class="item-label">' + label + '</span>'
          + '<span class="item-value">' + value + '</span>'
          + '</div>';
+  }
+
+  // ------------------------------------------
+  // FLOOR PLAN COEFFICIENT SLIDERS
+  // ------------------------------------------
+
+  var fpSliderConfig = [
+    { key: "wall_density",         label: "Wall Density",           hint: "More interior walls = higher framing/drywall cost" },
+    { key: "perimeter_complexity", label: "Perimeter Complexity",   hint: "Irregular footprint = more exterior finish cost" },
+    { key: "plumbing_spread",     label: "Plumbing Spread",        hint: "Bathrooms/kitchen far apart = longer pipe runs" },
+    { key: "circulation",         label: "Circulation Efficiency",  hint: "Hallways & stairs vs usable living space" }
+  ];
+
+  var fpSlidersRendered = false;
+
+  function renderFloorPlanSliders() {
+    if (!floorPlanSlidersDiv || fpSlidersRendered) return;
+    fpSlidersRendered = true;
+
+    // Initialize scores at neutral (0.5) if not set by analysis
+    if (!floorPlanScores) {
+      floorPlanScores = {};
+      fpSliderConfig.forEach(function (s) { floorPlanScores[s.key] = 0.5; });
+    }
+
+    var PM = PRICING_MATRIX.floor_plan_modifiers || {};
+
+    var html = '<div class="adu-fp-sliders-title">Architectural Coefficients</div>';
+    html += '<div class="adu-fp-sliders-grid">';
+
+    fpSliderConfig.forEach(function (s) {
+      var score = floorPlanScores[s.key] !== null && floorPlanScores[s.key] !== undefined ? floorPlanScores[s.key] : 0.5;
+      var config = PM[s.key] || { low_mult: 0.97, high_mult: 1.06 };
+      var mult = config.low_mult + (config.high_mult - config.low_mult) * score;
+
+      html += '<div class="adu-fp-slider-card">'
+            + '<div class="adu-fp-slider-header">'
+            + '<span class="adu-fp-slider-label">' + s.label + '</span>'
+            + '<span class="adu-fp-slider-value" id="fpVal_' + s.key + '">' + Math.round(score * 100) + '%</span>'
+            + '</div>'
+            + '<div class="adu-fp-slider-hint">' + s.hint + '</div>'
+            + '<div class="adu-fp-slider-track">'
+            + '<input type="range" min="0" max="1" step="0.05" value="' + score + '" data-fp-key="' + s.key + '" />'
+            + '</div>'
+            + '<div class="adu-fp-slider-mult">'
+            + '<span>x' + config.low_mult.toFixed(2) + '</span>'
+            + '<span id="fpMult_' + s.key + '">x' + mult.toFixed(3) + '</span>'
+            + '<span>x' + config.high_mult.toFixed(2) + '</span>'
+            + '</div>'
+            + '</div>';
+    });
+
+    html += '</div>';
+    floorPlanSlidersDiv.innerHTML = html;
+
+    // Bind slider events
+    floorPlanSlidersDiv.querySelectorAll('input[type="range"]').forEach(function (slider) {
+      slider.addEventListener("input", function () {
+        var key = slider.dataset.fpKey;
+        var val = parseFloat(slider.value);
+        floorPlanScores[key] = val;
+
+        // Update value display
+        var valEl = document.getElementById("fpVal_" + key);
+        if (valEl) valEl.textContent = Math.round(val * 100) + "%";
+
+        // Update multiplier display
+        var config = (PRICING_MATRIX.floor_plan_modifiers || {})[key] || { low_mult: 0.97, high_mult: 1.06 };
+        var mult = config.low_mult + (config.high_mult - config.low_mult) * val;
+        var multEl = document.getElementById("fpMult_" + key);
+        if (multEl) multEl.textContent = "x" + mult.toFixed(3);
+
+        refresh();
+      });
+    });
+  }
+
+  /**
+   * Sync slider positions from floorPlanScores (e.g. after GPT analysis).
+   */
+  function syncSlidersFromScores() {
+    if (!floorPlanSlidersDiv || !floorPlanScores) return;
+
+    var PM = PRICING_MATRIX.floor_plan_modifiers || {};
+
+    fpSliderConfig.forEach(function (s) {
+      var score = floorPlanScores[s.key];
+      if (score === null || score === undefined) return;
+
+      var slider = floorPlanSlidersDiv.querySelector('input[data-fp-key="' + s.key + '"]');
+      if (slider) slider.value = score;
+
+      var valEl = document.getElementById("fpVal_" + s.key);
+      if (valEl) valEl.textContent = Math.round(score * 100) + "%";
+
+      var config = PM[s.key] || { low_mult: 0.97, high_mult: 1.06 };
+      var mult = config.low_mult + (config.high_mult - config.low_mult) * score;
+      var multEl = document.getElementById("fpMult_" + s.key);
+      if (multEl) multEl.textContent = "x" + mult.toFixed(3);
+    });
+  }
+
+  /**
+   * Reset sliders to neutral (0.5).
+   */
+  function resetFloorPlanSliders() {
+    fpSlidersRendered = false;
+    if (floorPlanSlidersDiv) floorPlanSlidersDiv.innerHTML = "";
+    floorPlanScores = null;
   }
 
   // ------------------------------------------
@@ -2227,14 +2408,7 @@
     var d = costEstimate;
     var html = '';
 
-    // Header with total
-    html += '<div class="adu-cost-header">'
-          + '<span class="adu-cost-total">$' + d.total_estimated_cost.toLocaleString() + '</span>'
-          + '<span class="adu-cost-per-sqft">$' + d.cost_per_sqft.toLocaleString() + ' / sq ft</span>'
-          + (d.cost_per_unit ? '<span class="adu-cost-per-unit">$' + d.cost_per_unit.toLocaleString() + ' / unit</span>' : '')
-          + '</div>';
-
-    // Price Range Table
+    // Price range calculations
     var priceRange = PRICING_MATRIX.price_range || { low_percentage: 15, high_percentage: 15 };
     var lowPct = priceRange.low_percentage / 100;
     var highPct = priceRange.high_percentage / 100;
@@ -2249,45 +2423,43 @@
     var midPricePerUnit = showPerUnit ? Math.round(midPrice / d.units) : 0;
     var highPricePerUnit = showPerUnit ? Math.round(highPrice / d.units) : 0;
 
-    html += '<div class="adu-price-range-table">'
-          + '<div class="price-range-row">'
-          + '<div class="price-range-cell price-range-low">'
-          + '<span class="price-range-label">Low (-' + priceRange.low_percentage + '%)</span>'
-          + '<span class="price-range-value">$' + lowPrice.toLocaleString() + '</span>'
-          + '<span class="price-range-metric-label">Building Total</span>'
+    // Hero — Project Total with 3-column allowance range
+    html += '<div class="adu-cost-hero">'
+          + '<div class="cost-hero-row">'
+          + '<div class="cost-hero-col cost-hero-low">'
+          + '<span class="cost-hero-label">Low (-' + priceRange.low_percentage + '%)</span>'
+          + '<span class="cost-hero-value">$' + lowPrice.toLocaleString() + '</span>'
           + '</div>'
-          + '<div class="price-range-cell price-range-mid">'
-          + '<span class="price-range-label">Estimate</span>'
-          + '<span class="price-range-value">$' + midPrice.toLocaleString() + '</span>'
-          + '<span class="price-range-metric-label">Building Total</span>'
+          + '<div class="cost-hero-col cost-hero-mid">'
+          + '<span class="cost-hero-label">Project Total</span>'
+          + '<span class="cost-hero-value">$' + midPrice.toLocaleString() + '</span>'
           + '</div>'
-          + '<div class="price-range-cell price-range-high">'
-          + '<span class="price-range-label">High (+' + priceRange.high_percentage + '%)</span>'
-          + '<span class="price-range-value">$' + highPrice.toLocaleString() + '</span>'
-          + '<span class="price-range-metric-label">Building Total</span>'
+          + '<div class="cost-hero-col cost-hero-high">'
+          + '<span class="cost-hero-label">High (+' + priceRange.high_percentage + '%)</span>'
+          + '<span class="cost-hero-value">$' + highPrice.toLocaleString() + '</span>'
           + '</div>'
           + '</div>'
-          + '<div class="price-range-row price-range-sqft">'
-          + '<div class="price-range-cell price-range-low">'
-          + '<span class="price-range-sqft-value">$' + lowPricePerSqft.toLocaleString() + '/sqft</span>'
+          + '<div class="cost-hero-row cost-hero-metrics">'
+          + '<div class="cost-hero-col cost-hero-low">'
+          + '<span class="cost-hero-metric">$' + lowPricePerSqft.toLocaleString() + '/sqft</span>'
           + '</div>'
-          + '<div class="price-range-cell price-range-mid">'
-          + '<span class="price-range-sqft-value">$' + midPricePerSqft.toLocaleString() + '/sqft</span>'
+          + '<div class="cost-hero-col cost-hero-mid">'
+          + '<span class="cost-hero-metric">$' + midPricePerSqft.toLocaleString() + '/sqft</span>'
           + '</div>'
-          + '<div class="price-range-cell price-range-high">'
-          + '<span class="price-range-sqft-value">$' + highPricePerSqft.toLocaleString() + '/sqft</span>'
+          + '<div class="cost-hero-col cost-hero-high">'
+          + '<span class="cost-hero-metric">$' + highPricePerSqft.toLocaleString() + '/sqft</span>'
           + '</div>'
           + '</div>'
           + (showPerUnit
-            ? '<div class="price-range-row price-range-unit">'
-            + '<div class="price-range-cell price-range-low">'
-            + '<span class="price-range-unit-value">$' + lowPricePerUnit.toLocaleString() + '/unit</span>'
+            ? '<div class="cost-hero-row cost-hero-metrics">'
+            + '<div class="cost-hero-col cost-hero-low">'
+            + '<span class="cost-hero-metric">$' + lowPricePerUnit.toLocaleString() + '/unit</span>'
             + '</div>'
-            + '<div class="price-range-cell price-range-mid">'
-            + '<span class="price-range-unit-value">$' + midPricePerUnit.toLocaleString() + '/unit</span>'
+            + '<div class="cost-hero-col cost-hero-mid">'
+            + '<span class="cost-hero-metric">$' + midPricePerUnit.toLocaleString() + '/unit</span>'
             + '</div>'
-            + '<div class="price-range-cell price-range-high">'
-            + '<span class="price-range-unit-value">$' + highPricePerUnit.toLocaleString() + '/unit</span>'
+            + '<div class="cost-hero-col cost-hero-high">'
+            + '<span class="cost-hero-metric">$' + highPricePerUnit.toLocaleString() + '/unit</span>'
             + '</div>'
             + '</div>'
             : '')
@@ -3049,6 +3221,7 @@
     screenshotUploads.innerHTML = "";
     analysisResultsDiv.classList.add("hidden");
     analysisResultsDiv.innerHTML = "";
+    resetFloorPlanSliders();
     resultsContainer.innerHTML = "";
   }
 
@@ -3068,6 +3241,10 @@
     if (prevType !== selectedType) {
       selectedStories = null;
       selectedConstruction = null;
+      selectedFoundation = null;
+      selectedLandSurface = null;
+      if (selectFoundation) selectFoundation.value = "";
+      if (selectLandSurface) selectLandSurface.value = "";
       enteredSqft = null;
       gridStories.querySelectorAll(".adu-option-card").forEach(function (c) {
         c.classList.remove("selected");

@@ -131,13 +131,24 @@
       let items = Array.isArray(data) ? data : (data.data || data[cacheKey] || []);
 
       // Normalize items
-      items = items.map(item => ({
-        id: item[config.idKey] || item.id,
-        name: item[config.nameKey] || item.name || 'Unknown',
-        code: item.code || item.project_code || null,
-        color: item.color || `hsl(${stableHueFromString(item[config.nameKey] || item.name)} 60% 50%)`,
-        raw: item // Keep original data
-      }));
+      items = items.map(item => {
+        // Use avatar_color (DB hue 0-360) for consistent colors with Team/Companies pages
+        const ac = Number(item.avatar_color);
+        let color;
+        if (Number.isFinite(ac) && ac >= 0 && ac <= 360) {
+          color = `hsl(${ac} 70% 45%)`;
+        } else {
+          color = item.color || `hsl(${stableHueFromString(item[config.nameKey] || item.name)} 70% 45%)`;
+        }
+
+        return {
+          id: item[config.idKey] || item.id,
+          name: item[config.nameKey] || item.name || 'Unknown',
+          code: item.code || item.project_code || null,
+          color: color,
+          raw: item
+        };
+      });
 
       // Update cache
       catalogCache[cacheKey] = { data: items, timestamp: now };

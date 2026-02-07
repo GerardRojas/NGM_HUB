@@ -827,7 +827,7 @@
       chip.addEventListener("click", () => {
         const suggestion = chip.dataset.suggestion;
         if (suggestion) {
-          DOM.chatInput.value = suggestion;
+          DOM.chatInput.textContent = suggestion;
           handleInputChange();
           sendMessage();
         }
@@ -838,7 +838,7 @@
       action.addEventListener("click", () => {
         const actionText = action.dataset.action;
         if (actionText) {
-          DOM.chatInput.value = actionText;
+          DOM.chatInput.textContent = actionText;
           handleInputChange();
           sendMessage();
         }
@@ -939,11 +939,8 @@
   }
 
   function handleInputChange() {
-    const value = DOM.chatInput.value.trim();
+    const value = DOM.chatInput.textContent.trim();
     DOM.btnSend.disabled = !value;
-
-    DOM.chatInput.style.height = "auto";
-    DOM.chatInput.style.height = Math.min(DOM.chatInput.scrollHeight, 150) + "px";
   }
 
   function handleInputKeydown(e) {
@@ -960,7 +957,7 @@
   // ─────────────────────────────────────────────────────────────────────────
 
   async function sendMessage() {
-    const content = DOM.chatInput.value.trim();
+    const content = DOM.chatInput.textContent.trim();
     if (!content || state.isLoading) return;
 
     if (DOM.welcomeMessage) {
@@ -982,8 +979,7 @@
     scrollToBottom();
 
     // Clear input
-    DOM.chatInput.value = "";
-    DOM.chatInput.style.height = "auto";
+    DOM.chatInput.textContent = "";
     DOM.btnSend.disabled = true;
 
     // Check if this is a "what can you do" type query - handle locally
@@ -1278,7 +1274,7 @@
   }
 
   function selectProjectForBVA(projectName, projectId) {
-    DOM.chatInput.value = "bva " + projectName;
+    DOM.chatInput.textContent = "bva " + projectName;
     handleInputChange();
     // When we have the project ID, send it to the API for direct resolution
     // (avoids NLU re-parsing and fuzzy name matching issues)
@@ -1477,7 +1473,7 @@
     getState: () => state,
     clearChat,
     sendMessage: (text) => {
-      DOM.chatInput.value = text;
+      DOM.chatInput.textContent = text;
       handleInputChange();
       sendMessage();
     },

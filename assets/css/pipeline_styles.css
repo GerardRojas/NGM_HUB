@@ -1177,6 +1177,13 @@
   text-overflow: ellipsis;
 }
 
+/* Columns that need full visible content (no truncation) */
+.pm-group .table td[data-col="status"] > div,
+.pm-group .table td[data-col="priority"] > div {
+  overflow: visible;
+  text-overflow: clip;
+}
+
 .pm-group .table td > div {
   max-width: 100%;
 }

@@ -543,10 +543,13 @@
   color: #e5e7eb;
   font-size: 14px;
   font-family: inherit;
-  resize: none;
   min-height: 20px;
   max-height: 150px;
   line-height: 1.5;
+  overflow-y: auto;
+  word-break: break-word;
+  white-space: pre-wrap;
+  -webkit-user-modify: read-write-plaintext-only;
 }
 
 .arturito-input:focus {
@@ -558,6 +561,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.arturito-input:empty::before {
+  content: attr(data-placeholder);
+  color: #6b7280;
+  pointer-events: none;
+}
+
 .arturito-input::selection {
   background: rgba(62, 207, 142, 0.3);
 }
@@ -565,10 +574,6 @@
 .arturito-input-area,
 .arturito-input-container {
   -webkit-tap-highlight-color: transparent;
-}
-
-.arturito-input::placeholder {
-  color: #6b7280;
 }
 
 .arturito-btn-send {

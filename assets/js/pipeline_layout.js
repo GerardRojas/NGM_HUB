@@ -7,6 +7,10 @@
     owner: 120,
     collaborator: 120,
     manager: 120,
+    status: 150,      // Status badges need full width ("Not Started", "Working on it", etc.)
+    project: 150,
+    company: 140,
+    start: 120,
   };
 
   // Columnas flexibles: todas las que NO están en FIXED_COLS
@@ -18,6 +22,14 @@
     if (!slider) return;
 
     const KEY = "pmTableWidth";
+    const VERSION_KEY = "pmTableWidth_v";
+    const CURRENT_VERSION = 2; // Bump this to reset saved widths when layout changes
+
+    // If layout version changed, discard old saved width
+    if (Number(localStorage.getItem(VERSION_KEY)) !== CURRENT_VERSION) {
+      localStorage.removeItem(KEY);
+      localStorage.setItem(VERSION_KEY, String(CURRENT_VERSION));
+    }
 
     function clamp(n, min, max) {
       return Math.max(min, Math.min(max, n));
@@ -123,7 +135,7 @@
     const maxAllowed = Number(slider.max) || 2500;
 
     // Cargar valor guardado o default
-    const savedRaw = Number(localStorage.getItem(KEY) || slider.value || 1400);
+    const savedRaw = Number(localStorage.getItem(KEY) || slider.value || 1800);
     const saved = clamp(savedRaw, minAllowed, maxAllowed);
 
     slider.value = String(saved);
@@ -133,7 +145,7 @@
 
     // Evento del slider
     slider.addEventListener("input", () => {
-      const pxRaw = Number(slider.value) || 1400;
+      const pxRaw = Number(slider.value) || 1800;
       const px = clamp(pxRaw, minAllowed, maxAllowed);
 
       if (String(px) !== slider.value) slider.value = String(px);

@@ -691,12 +691,15 @@
         <!-- Input -->
         <div class="arturito-widget-input-area">
           <div class="arturito-widget-input-row">
-            <textarea
+            <div
               id="arturito-widget-input"
               class="arturito-widget-input"
-              placeholder="Ask Arturito..."
-              rows="1"
-            ></textarea>
+              contenteditable="true"
+              role="textbox"
+              data-placeholder="Ask Arturito..."
+              inputmode="text"
+              enterkeyhint="send"
+            ></div>
             <button type="button" class="arturito-widget-send-btn" id="arturito-widget-send" disabled>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
@@ -908,12 +911,8 @@
   }
 
   function handleInputChange() {
-    const value = DOM.input.value.trim();
+    const value = DOM.input.textContent.trim();
     DOM.sendBtn.disabled = !value;
-
-    // Auto-resize
-    DOM.input.style.height = "auto";
-    DOM.input.style.height = Math.min(DOM.input.scrollHeight, 100) + "px";
   }
 
   function handleInputKeydown(e) {
@@ -934,7 +933,7 @@
 
 
   async function sendMessage() {
-    const content = DOM.input.value.trim();
+    const content = DOM.input.textContent.trim();
     if (!content || state.isLoading) return;
 
     // Hide welcome
@@ -956,8 +955,7 @@
     scrollToBottom();
 
     // Clear input early
-    DOM.input.value = "";
-    DOM.input.style.height = "auto";
+    DOM.input.textContent = "";
     DOM.sendBtn.disabled = true;
 
     // â”€â”€ STEP 1: Capabilities query â€” handle locally â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -1864,7 +1862,7 @@
    */
   function selectProjectForBVA(projectName, projectId) {
     // Set input and let sendMessage handle the full flow
-    DOM.input.value = `bva ${projectName}`;
+    DOM.input.textContent = `bva ${projectName}`;
     // When we have the project ID, send it to the API for direct resolution
     if (projectId) {
       state._bvaProjectId = projectId;

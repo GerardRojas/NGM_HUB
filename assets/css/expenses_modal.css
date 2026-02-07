@@ -2808,7 +2808,7 @@ input[type="number"].form-input {
   border-color: rgba(251, 146, 60, 0.6);
 }
 
-.status-badge {
+.expense-status-btn .status-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;

@@ -1197,7 +1197,7 @@ function renderBuilderTable() {
     empty.style.display = 'none';
     tbody.innerHTML = '';
 
-    state.builder.items.forEach(item => {
+    state.builder.items.forEach((item, index) => {
         const tr = document.createElement('tr');
         tr.dataset.itemId = item.id;
 
@@ -1225,9 +1225,13 @@ function renderBuilderTable() {
             ? '<span style="color: #6b7280; font-size: 10px; font-weight: 600; letter-spacing: 0.05em;">STD</span>'
             : `<button class="btn-action btn-action-danger" onclick="removeBuilderItem('${item.id}')" title="Remove">X</button>`;
 
+        // Row number cell
+        const rowNum = `<td style="text-align: center; color: rgba(255,255,255,0.25); font-size: 11px; user-select: none;">${index + 1}</td>`;
+
         // Build row HTML
         if (item.isPercent) {
             tr.innerHTML = `
+                ${rowNum}
                 <td><span class="item-id">${escapeHtml(item.code || item.id)}</span></td>
                 <td><span class="type-badge ${typeClass}">${typeLabel}</span></td>
                 <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.description)}">${escapeHtml(item.description)}</td>
@@ -1236,11 +1240,12 @@ function renderBuilderTable() {
                     <input type="number" class="builder-input item-percent-value" value="${item.percentValue}" min="0" max="100" step="0.1" data-item-id="${item.id}" style="width: 70px;" />%
                 </td>
                 <td style="color: #6b7280;">-</td>
-                <td style="color: #22c55e; font-weight: 500;">${formatCurrency(total)}</td>
+                <td style="text-align: right; color: #22c55e; font-weight: 500;">${formatCurrency(total)}</td>
                 <td>${deleteCell}</td>
             `;
         } else {
             tr.innerHTML = `
+                ${rowNum}
                 <td><span class="item-id">${escapeHtml(item.code || item.id)}</span></td>
                 <td><span class="type-badge ${typeClass}">${typeLabel}</span></td>
                 <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.description)}">${escapeHtml(item.description)}</td>
@@ -1251,7 +1256,7 @@ function renderBuilderTable() {
                 <td>
                     <input type="number" class="builder-input item-cost" value="${item.unitCost.toFixed(2)}" min="0" step="0.01" data-item-id="${item.id}" />
                 </td>
-                <td style="color: #3ecf8e; font-weight: 500;">${formatCurrency(total)}</td>
+                <td style="text-align: right; color: #3ecf8e; font-weight: 500;">${formatCurrency(total)}</td>
                 <td>${deleteCell}</td>
             `;
         }

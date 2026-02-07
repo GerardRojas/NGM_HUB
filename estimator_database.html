@@ -349,9 +349,9 @@
             color: #3ecf8e;
         }
         .builder-table-container {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid #1f1f1f;
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.015);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
             overflow: hidden;
             margin-bottom: 16px;
             max-height: 50vh;
@@ -360,31 +360,39 @@
         .builder-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 14px;
+            font-size: 13px;
         }
         .builder-table thead {
             position: sticky;
             top: 0;
-            background: #111111;
+            background: rgba(255, 255, 255, 0.04);
             z-index: 1;
         }
         .builder-table th {
-            padding: 12px 14px;
+            padding: 8px 12px;
             text-align: left;
             font-weight: 600;
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: rgba(255, 255, 255, 0.5);
-            border-bottom: 1px solid #1f1f1f;
+            color: rgba(255, 255, 255, 0.45);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .builder-table th:last-child {
+            border-right: none;
         }
         .builder-table td {
-            padding: 10px 14px;
-            border-bottom: 1px solid #1f1f1f;
-            color: rgba(255, 255, 255, 0.9);
+            padding: 7px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            border-right: 1px solid rgba(255, 255, 255, 0.04);
+            color: rgba(255, 255, 255, 0.85);
         }
-        .builder-table tr:hover {
-            background: rgba(255,255,255,0.03);
+        .builder-table td:last-child {
+            border-right: none;
+        }
+        .builder-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.025);
         }
         .builder-table .type-badge {
             padding: 4px 10px;
@@ -476,19 +484,19 @@
             border-color: #ef4444 !important;
         }
         .builder-input {
-            padding: 8px 10px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid #2a2a2a;
-            border-radius: 6px;
-            color: rgba(255, 255, 255, 0.9);
+            padding: 5px 8px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 3px;
+            color: rgba(255, 255, 255, 0.85);
             font-size: 13px;
             width: 80px;
-            transition: border-color 0.15s ease;
+            transition: border-color 0.15s ease, background 0.15s ease;
         }
         .builder-input:focus {
             outline: none;
-            border-color: #3ecf8e;
-            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(62, 207, 142, 0.5);
+            background: rgba(255, 255, 255, 0.04);
         }
         /* Inline Item Modal - Type selector */
         .type-selector {
@@ -564,10 +572,11 @@
             color: #22c55e;
         }
         .builder-empty {
-            padding: 40px;
+            padding: 32px;
             text-align: center;
-            color: #6b7280;
+            color: rgba(255, 255, 255, 0.25);
             font-style: italic;
+            font-size: 13px;
         }
         .builder-item-img {
             width: 36px;
@@ -1563,14 +1572,15 @@
                     <table class="builder-table" id="builderTable">
                         <thead>
                             <tr>
+                                <th style="width: 36px; text-align: center;">#</th>
                                 <th style="width: 100px;">ID</th>
-                                <th style="width: 90px;">Type</th>
+                                <th style="width: 80px;">Type</th>
                                 <th>Description</th>
-                                <th style="width: 80px;">Unit</th>
+                                <th style="width: 70px;">Unit</th>
                                 <th style="width: 90px;">Qty</th>
-                                <th style="width: 110px;">Unit Cost</th>
-                                <th style="width: 110px;">Total</th>
-                                <th style="width: 50px;"></th>
+                                <th style="width: 100px;">Unit Cost</th>
+                                <th style="width: 100px; text-align: right;">Total</th>
+                                <th style="width: 42px;"></th>
                             </tr>
                         </thead>
                         <tbody id="builderTableBody">

@@ -2070,9 +2070,9 @@
   // ================================
 
   function handleNewEstimate() {
-    if (isDirty) {
-      const confirm = window.confirm('You have unsaved changes. Create new estimate anyway?');
-      if (!confirm) return;
+    if (isDirty && saveStatus === 'pending') {
+      const shouldProceed = window.confirm('You have unsaved changes. Create new estimate anyway?');
+      if (!shouldProceed) return;
     }
     // Open template picker modal instead of creating blank immediately
     openTemplatePickerModal();

@@ -1592,7 +1592,7 @@
     if (!state.currentChannel) return;
 
     const messageData = {
-      content: `📄 **Receipt:** ${fileName}`,
+      content: `**Receipt:** ${fileName}`,
       channel_type: state.currentChannel.type,
       user_id: state.currentUser?.user_id,
       reply_to_id: null,

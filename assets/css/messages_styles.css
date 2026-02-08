@@ -2441,6 +2441,62 @@
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
+/* Duplicate - amber */
+.msg-receipt-status--duplicate {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* ========================================
+   Bot Message Styling (Arturito agent)
+   ======================================== */
+
+.msg-message--bot {
+  background: rgba(245, 158, 11, 0.04);
+  border-left: 3px solid hsl(35, 70%, 45%);
+  border-radius: 0 8px 8px 0;
+  padding-left: 12px;
+  margin-left: -12px;
+}
+
+.msg-message-avatar--bot {
+  background: hsl(35, 70%, 45%);
+  color: #fff !important;
+  border-color: hsl(35, 70%, 45%) !important;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.msg-message--bot .msg-message-author {
+  color: hsl(35, 70%, 55%);
+  font-weight: 600;
+}
+
+.msg-message--bot .msg-message-author::after {
+  content: "BOT";
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-radius: 3px;
+  background: rgba(245, 158, 11, 0.15);
+  color: hsl(35, 70%, 55%);
+  vertical-align: middle;
+  line-height: 14px;
+}
+
+.msg-message--bot .msg-message-body {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Hide action buttons (react/reply/thread) on bot messages */
+.msg-message--bot .msg-message-actions {
+  display: none;
+}
+
 /* Receipt attachment styling */
 .msg-attachment--receipt {
   position: relative;

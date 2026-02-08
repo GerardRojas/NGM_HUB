@@ -3191,7 +3191,7 @@
     loadEstimatesList,
     saveAsTemplate,
     loadTemplate,
-    loadTemplatesList,
+    loadTemplatesList: loadTemplatesListFromStorage,
     createBlankEstimate,
     getItemImageUrl,
     uploadItemImage,

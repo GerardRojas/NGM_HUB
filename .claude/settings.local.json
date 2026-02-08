@@ -30,7 +30,8 @@
       "Bash(do:*)",
       "Bash(done)",
       "Bash(for f in *.sql)",
-      "Bash(for:*)"
+      "Bash(for:*)",
+      "Bash(psql:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"

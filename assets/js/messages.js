@@ -961,11 +961,14 @@
     `;
   }
 
+  const ARTURITO_BOT_USER_ID = "00000000-0000-0000-0000-000000000001";
+
   function renderMessage(msg, isSending = false) {
+    const isBot = msg.user_id === ARTURITO_BOT_USER_ID || msg.metadata?.agent_message;
     const user = state.users.find((u) => u.user_id === msg.user_id) || { user_name: msg.user_name };
-    const userName = user.user_name || msg.user_name || "Unknown";
-    const avatarColor = getAvatarColor(user);
-    const initials = getInitials(userName);
+    const userName = isBot ? "Arturito" : (user.user_name || msg.user_name || "Unknown");
+    const avatarColor = isBot ? "hsl(35, 70%, 45%)" : getAvatarColor(user);
+    const initials = isBot ? "A" : getInitials(userName);
     const time = formatTime(msg.created_at);
     const content = formatMessageContent(msg.content);
     const hasAttachments = msg.attachments && msg.attachments.length > 0;
@@ -977,13 +980,14 @@
     const classes = ['msg-message'];
     if (isOwnMessage) classes.push('msg-message--own');
     if (isSending) classes.push('msg-message--sending');
+    if (isBot) classes.push('msg-message--bot');
 
     // Check for receipt status tag
     const receiptStatusTag = renderReceiptStatusTag(msg);
 
     return `
       <div class="${classes.join(' ')}" data-message-id="${msg.id}">
-        <div class="msg-message-avatar" style="color: ${avatarColor}; border-color: ${avatarColor}">
+        <div class="msg-message-avatar ${isBot ? 'msg-message-avatar--bot' : ''}" style="color: ${avatarColor}; border-color: ${avatarColor}">
           ${initials}
         </div>
         <div class="msg-message-content">
@@ -1025,6 +1029,7 @@
       processing: { label: 'Processing', class: 'msg-receipt-status--processing', icon: '⚙️' },
       ready: { label: 'Ready', class: 'msg-receipt-status--ready', icon: '✅' },
       linked: { label: 'Done', class: 'msg-receipt-status--linked', icon: '✓' },
+      duplicate: { label: 'Duplicate', class: 'msg-receipt-status--duplicate', icon: '!' },
       error: { label: 'Error', class: 'msg-receipt-status--error', icon: '⚠️' }
     };
 
@@ -1656,22 +1661,25 @@
     updateReceiptStatusInMessages(receiptId, 'processing');
 
     try {
-      const response = await authFetch(`${API_BASE}/pending-receipts/${receiptId}/process`, {
+      const response = await authFetch(`${API_BASE}/pending-receipts/${receiptId}/agent-process`, {
         method: "POST",
       });
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        updateReceiptStatusInMessages(receiptId, 'error');
+        const isDuplicate = error.detail && error.detail.includes("Duplicate");
+        updateReceiptStatusInMessages(receiptId, isDuplicate ? 'duplicate' : 'error');
         throw new Error(error.detail || "Processing failed");
       }
 
       const result = await response.json();
 
       if (result.success) {
-        // Update message status to "ready"
         updateReceiptStatusInMessages(receiptId, 'ready');
         showToast("Receipt processed and ready!", "success");
+      } else if (result.status === "duplicate") {
+        updateReceiptStatusInMessages(receiptId, 'duplicate');
+        showToast("Duplicate receipt detected", "warning");
       }
     } catch (err) {
       console.error("[Messages] Receipt processing error:", err);
@@ -1705,6 +1713,7 @@
         'msg-receipt-status--processing',
         'msg-receipt-status--ready',
         'msg-receipt-status--linked',
+        'msg-receipt-status--duplicate',
         'msg-receipt-status--error'
       );
       // Add new status class
@@ -1716,6 +1725,7 @@
         processing: { label: 'Processing', icon: '⚙️' },
         ready: { label: 'Ready', icon: '✅' },
         linked: { label: 'Done', icon: '✓' },
+        duplicate: { label: 'Duplicate', icon: '!' },
         error: { label: 'Error', icon: '⚠️' }
       };
       const config = statusConfig[newStatus] || statusConfig.pending;

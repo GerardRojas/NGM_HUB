@@ -3296,10 +3296,31 @@
     `;
 
     try {
-      // Load directly from Supabase bucket (more reliable than backend API)
-      console.log('[ESTIMATOR] Calling loadTemplatesListFromStorage...');
-      const templates = await loadTemplatesListFromStorage();
-      console.log('[ESTIMATOR] Templates returned:', templates);
+      // Load via backend API (has service role key to list bucket)
+      console.log('[ESTIMATOR] Fetching templates from API...');
+      let templates = [];
+      try {
+        const response = await fetch(`${API_BASE}/estimator/templates`, {
+          method: 'GET',
+          headers: { ...getAuthHeaders() },
+          credentials: 'include'
+        });
+        console.log('[ESTIMATOR] API response status:', response.status);
+        if (response.ok) {
+          const result = await response.json();
+          templates = result.templates || [];
+          console.log('[ESTIMATOR] API returned templates:', templates);
+        }
+      } catch (apiErr) {
+        console.warn('[ESTIMATOR] API fetch failed:', apiErr);
+      }
+
+      // Fallback: try Supabase bucket directly
+      if (templates.length === 0) {
+        console.log('[ESTIMATOR] API returned 0, trying bucket directly...');
+        templates = await loadTemplatesListFromStorage();
+        console.log('[ESTIMATOR] Bucket returned:', templates);
+      }
 
       if (!templates || templates.length === 0) {
         listEl.innerHTML = `

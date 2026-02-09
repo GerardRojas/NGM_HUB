@@ -3261,26 +3261,10 @@
     `;
 
     try {
-      // Fetch templates from backend API
-      const response = await fetch(`${API_BASE}/estimator/templates`, {
-        method: 'GET',
-        headers: { ...getAuthHeaders() },
-        credentials: 'include'
-      });
+      // Load directly from Supabase bucket (more reliable than backend API)
+      const templates = await loadTemplatesListFromStorage();
 
-      if (!response.ok) {
-        listEl.innerHTML = `
-          <div class="template-picker-empty">
-            Could not load templates. You can still create a blank estimate.
-          </div>
-        `;
-        return;
-      }
-
-      const result = await response.json();
-      const templates = result.templates || [];
-
-      if (templates.length === 0) {
+      if (!templates || templates.length === 0) {
         listEl.innerHTML = `
           <div class="template-picker-empty">
             No templates available yet. Create one by saving an estimate as a template.
@@ -3291,11 +3275,10 @@
 
       // Render templates
       listEl.innerHTML = templates.map(tpl => {
-        // Extract readable name from template ID (remove timestamp)
         const displayName = (tpl.name || tpl.id)
-          .replace(/-\d{13}$/, '') // Remove timestamp
-          .replace(/-/g, ' ')     // Replace dashes with spaces
-          .replace(/\b\w/g, l => l.toUpperCase()); // Title case
+          .replace(/-\d{13}$/, '')
+          .replace(/-/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
 
         return `
           <div class="template-picker-item" data-template-id="${tpl.id || tpl.name}">
@@ -3307,7 +3290,7 @@
             </div>
             <div class="template-picker-item-content">
               <div class="template-picker-item-name">${displayName}</div>
-              <div class="template-picker-item-meta">Template</div>
+              <div class="template-picker-item-meta">${tpl.description || 'Template'}</div>
             </div>
           </div>
         `;

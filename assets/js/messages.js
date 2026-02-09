@@ -1275,6 +1275,9 @@
         const error = await response.json().catch(() => ({}));
         console.error("[Messages] Check action error:", error);
       }
+
+      // Fetch bot response messages
+      _fetchBotMessages();
     } catch (err) {
       console.error("[Messages] Check action fetch error:", err);
     }
@@ -1314,8 +1317,58 @@
         const error = await response.json().catch(() => ({}));
         console.error("[Messages] Duplicate action error:", error);
       }
+
+      // Fetch bot response messages
+      _fetchBotMessages();
     } catch (err) {
       console.error("[Messages] Duplicate action fetch error:", err);
+    }
+  }
+
+  /**
+   * Fetch recent messages to pick up bot responses.
+   * Polling fallback for when Supabase Realtime doesn't deliver.
+   */
+  async function _fetchBotMessages() {
+    if (!state.currentChannel) return;
+
+    // Small delay to let the backend finish inserting the bot message
+    await new Promise(r => setTimeout(r, 1500));
+
+    try {
+      const ch = state.currentChannel;
+      const fresh = await loadMessages(ch.type, ch.id, ch.projectId);
+
+      // Merge new messages that we don't already have
+      let added = 0;
+      for (const msg of fresh) {
+        const exists = state.messages.some(m => m.id === msg.id);
+        if (!exists) {
+          state.messages.push(msg);
+          added++;
+        }
+      }
+
+      if (added > 0) {
+        console.log(`[Messages] Fetched ${added} new bot message(s)`);
+        // Sort by created_at
+        state.messages.sort((a, b) =>
+          new Date(a.created_at) - new Date(b.created_at)
+        );
+        renderMessages(true);
+
+        // Update flow state from bot messages
+        for (const msg of fresh) {
+          if (msg.metadata?.check_flow_active && msg.metadata?.check_flow_state) {
+            state.activeCheckFlow = { receiptId: msg.metadata.pending_receipt_id, state: msg.metadata.check_flow_state };
+          }
+          if (msg.metadata?.duplicate_flow_active && msg.metadata?.duplicate_flow_state === 'awaiting_confirmation') {
+            state.activeDuplicateFlow = { receiptId: msg.metadata.pending_receipt_id };
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[Messages] Bot message fetch error:", err);
     }
   }
 
@@ -1976,6 +2029,10 @@
         hideReceiptProgress(receiptId, 5000);
         showToast("Duplicate receipt detected", "warning");
       }
+
+      // Fetch bot messages that were posted during processing
+      // (Realtime may not deliver them reliably)
+      _fetchBotMessages();
     } catch (err) {
       console.error("[Messages] Receipt processing error:", err);
       showToast(`Failed to process receipt: ${err.message}`, "error");
@@ -2026,6 +2083,9 @@
         if (actionsEl) actionsEl.innerHTML = '<span class="msg-bot-actions-dismissed">Processed</span>';
         showToast("Receipt processed and ready!", "success");
       }
+
+      // Fetch bot messages posted during processing
+      _fetchBotMessages();
     } catch (err) {
       console.error("[Messages] Force process error:", err);
       showReceiptProgress(receiptId, fileName, 'error');

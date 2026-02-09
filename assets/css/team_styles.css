@@ -301,6 +301,95 @@
 }
 
 /* ===========================
+   AI AGENT BADGE
+   =========================== */
+
+.team-agent-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #000;
+  background: linear-gradient(135deg, #a78bfa, #818cf8);
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ===========================
+   EXTERNAL USER BADGE
+   =========================== */
+
+.team-external-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #000;
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ===========================
+   EXTERNAL USERS SECTION
+   =========================== */
+
+.team-external-section {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.team-external-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.team-external-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.team-external-subtitle {
+  margin: 3px 0 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.team-external-header .btn-primary {
+  background: #3ecf8e;
+  border-color: #3ecf8e;
+  color: #000;
+  font-weight: 600;
+  border: 1px solid #3ecf8e;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.team-external-header .btn-primary:hover {
+  background: #34b87d;
+  border-color: #34b87d;
+}
+
+/* ===========================
    RESPONSIVE
    =========================== */
 
@@ -316,6 +405,11 @@
   }
 
   .team-section .section-header-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .team-external-header {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -372,7 +466,8 @@
 }
 
 /* Grid overrides */
-#team-board .team-cards {
+#team-board .team-cards,
+#external-board .team-cards {
   display: grid;
   gap: 16px;
   justify-content: start;
@@ -380,13 +475,15 @@
   align-items: start;
 }
 
-#team-board .team-card {
+#team-board .team-card,
+#external-board .team-card {
   width: 280px;
   border-radius: 8px;
   position: relative;
   z-index: 1;
 }
 
-#team-board .team-card-actions {
+#team-board .team-card-actions,
+#external-board .team-card-actions {
   margin-top: auto;
 }

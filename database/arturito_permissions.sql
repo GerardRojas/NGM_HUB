@@ -32,8 +32,8 @@ INSERT INTO role_permissions (rol_id, module_key, module_name, module_url, can_v
 SELECT
     r.rol_id,
     'arturito_settings' AS module_key,
-    'Arturito Settings' AS module_name,
-    'arturito-settings.html' AS module_url,
+    'Agent Settings' AS module_name,
+    'agents-settings.html' AS module_url,
     TRUE AS can_view,
     TRUE AS can_edit,
     TRUE AS can_delete

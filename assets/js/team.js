@@ -79,6 +79,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // 2) DOM refs
   const board = document.getElementById("team-board");
+  const externalSection = document.getElementById("external-section");
+  const externalBoard = document.getElementById("external-board");
   const searchInput = document.getElementById("team-search-input");
   // View toggle: cards vs orgchart
   let currentView = "cards";
@@ -91,13 +93,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (btnViewCards) btnViewCards.classList.toggle("active", view === "cards");
     if (btnViewOrgchart) btnViewOrgchart.classList.toggle("active", view === "orgchart");
 
+    // Show external section in cards view, hide in orgchart
+    if (externalSection) {
+      externalSection.style.display = (view === "cards") ? "" : "none";
+    }
+
     if (view === "orgchart") {
+      const internalUsers = usersStore.filter(u => !u.is_external);
       if (window.TeamOrgChart) {
         if (!orgchartInitialized) {
-          await window.TeamOrgChart.init(usersStore);
+          await window.TeamOrgChart.init(internalUsers);
           orgchartInitialized = true;
         } else {
-          window.TeamOrgChart.refresh(usersStore);
+          window.TeamOrgChart.refresh(internalUsers);
         }
         window.TeamOrgChart.show();
       }
@@ -201,6 +209,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     return {
       ...u,
+      is_external: !!u.is_external,
       user_role_name: roleName,
       user_seniority_name: seniorityName,
       user_status_name: statusName,
@@ -224,10 +233,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     return Math.max(1, Math.floor((availablePx + gap) / (cardW + gap)));
   }
 
-  function getBoardWidth() {
+  function getBoardWidth(targetBoard) {
+    const b = targetBoard || board;
     return (
-      board.clientWidth ||
-      board.parentElement?.clientWidth ||
+      b.clientWidth ||
+      b.parentElement?.clientWidth ||
       document.documentElement.clientWidth ||
       window.innerWidth ||
       0
@@ -255,9 +265,44 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  // -- AI Agents (injected into usersStore alongside real users)
+  const AI_AGENT_IDS = new Set([
+    "00000000-0000-0000-0000-000000000001",
+    "00000000-0000-0000-0000-000000000002",
+  ]);
+
+  const AI_AGENTS = [
+    {
+      user_id: "00000000-0000-0000-0000-000000000001",
+      user_name: "Arturito",
+      avatar_color: 145,
+      _isAgent: true,
+      role: { name: "AI Assistant" },
+      seniority: { name: "-" },
+      status: { name: "Active" },
+    },
+    {
+      user_id: "00000000-0000-0000-0000-000000000002",
+      user_name: "Daneel",
+      avatar_color: 210,
+      _isAgent: true,
+      role: { name: "Budget Monitor" },
+      seniority: { name: "-" },
+      status: { name: "Active" },
+    },
+  ];
+
+  function mergeAgents(apiUsers) {
+    // Filter out agent IDs from API results (in case bot user leaks from DB)
+    const filtered = apiUsers.filter(u => !AI_AGENT_IDS.has(u.user_id));
+    // Append agents at the end
+    return [...filtered, ...AI_AGENTS.map(adaptUser)];
+  }
+
   // 8) Render grid
-  function render(list) {
-    board.innerHTML = "";
+  function render(list, targetBoard) {
+    const target = targetBoard || board;
+    target.innerHTML = "";
 
     const wrap = document.createElement("div");
     wrap.className = "team-cards";
@@ -268,7 +313,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const cardW = 280;
     const gap = 18;
 
-    const available = Math.max(320, getBoardWidth() - 24);
+    const available = Math.max(320, getBoardWidth(target) - 24);
     const maxCols = computeMaxCols(available, cardW, gap);
     const cols = Math.min(colsWanted, maxCols);
 
@@ -277,6 +322,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     wrap.style.justifyContent = "start";
 
     list.forEach((u) => {
+      const isAgent = !!u._isAgent;
+
       const stack = document.createElement("div");
       stack.className = "team-card-stack";
 
@@ -313,6 +360,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         ? `<img src="${escapeHtml(u.user_photo)}" alt="${safeName}" />`
         : `${initials}`;
 
+      const isExternal = !!u.is_external;
+
+      // AI badge for agents, EXT badge for external, status pill for internal
+      const badgeHtml = isAgent
+        ? `<span class="team-agent-badge">AI</span>`
+        : isExternal
+        ? `<span class="team-external-badge">EXT</span>`
+        : `<span class="team-status-pill ${statusClass}" title="Status">${safeStatus}</span>`;
+
+      // Agents don't get edit/delete buttons
+      const actionsHtml = isAgent ? "" : `
+          <div class="team-card-actions">
+            <button class="team-action-btn" data-action="edit" data-id="${escapeHtml(u.user_id)}">Edit</button>
+            <button class="team-action-btn" data-action="delete" data-id="${escapeHtml(u.user_id)}">Delete</button>
+          </div>`;
+
       card.innerHTML = `
         <div class="team-avatar" style="color:${bg}; border-color:${bg};" title="${safeName}">
           ${avatarHtml}
@@ -321,7 +384,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         <div class="team-card-main">
           <div class="team-head">
             <p class="team-name" title="${safeName}">${safeName}</p>
-            <span class="team-status-pill ${statusClass}" title="Status">${safeStatus}</span>
+            ${badgeHtml}
           </div>
 
           <div class="team-fields">
@@ -350,11 +413,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               <span class="team-field-value">${safeAddr}</span>
             </div>
           </div>
-
-          <div class="team-card-actions">
-            <button class="team-action-btn" data-action="edit" data-id="${escapeHtml(u.user_id)}">Edit</button>
-            <button class="team-action-btn" data-action="delete" data-id="${escapeHtml(u.user_id)}">Delete</button>
-          </div>
+          ${actionsHtml}
         </div>
       `;
 
@@ -363,12 +422,25 @@ document.addEventListener("DOMContentLoaded", async () => {
       wrap.appendChild(stack);
     });
 
-    board.appendChild(wrap);
+    target.appendChild(wrap);
   }
 
   function rerender() {
-    const list = filterUsers(searchInput?.value || "");
-    render(list);
+    const allFiltered = filterUsers(searchInput?.value || "");
+
+    const internal = allFiltered.filter(u => !u.is_external);
+    const external = allFiltered.filter(u => u.is_external);
+
+    render(internal, board);
+
+    if (externalBoard) {
+      render(external, externalBoard);
+    }
+
+    // Show external section in cards view, hide in orgchart
+    if (externalSection) {
+      externalSection.style.display = (currentView === "cards") ? "" : "none";
+    }
   }
 
   // 9) Load from API
@@ -376,11 +448,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const currentQ = keepQuery ? (searchInput?.value || "") : "";
     try {
       const data = await fetchTeamUsers("");
-      usersStore = Array.isArray(data) ? data.map(adaptUser) : [];
+      const apiUsers = Array.isArray(data) ? data.map(adaptUser) : [];
+      usersStore = mergeAgents(apiUsers);
       if (keepQuery && searchInput) searchInput.value = currentQ;
       rerender();
       if (orgchartInitialized && window.TeamOrgChart) {
-        window.TeamOrgChart.refresh(usersStore);
+        window.TeamOrgChart.refresh(usersStore.filter(u => !u.is_external));
       }
       if (isInitialLoad) hidePageLoading();
     } catch (err) {
@@ -392,8 +465,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // 10) Actions
-  board.addEventListener("click", async (e) => {
+  // 10) Actions (shared handler for both internal and external boards)
+  async function handleCardAction(e) {
     const btn = e.target.closest("button[data-action]");
     if (!btn) return;
 
@@ -439,7 +512,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
     }
-  });
+  }
+
+  board.addEventListener("click", handleCardAction);
+  if (externalBoard) externalBoard.addEventListener("click", handleCardAction);
 
   // 11) Search
   let searchT = null;
@@ -453,6 +529,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("btn-add-user")?.addEventListener("click", () => {
     window.TeamUserModal?.open({
       mode: "create",
+      onSaved: async () => {
+        await loadUsersFromApi({ keepQuery: true });
+      },
+    });
+  });
+
+  document.getElementById("btn-add-external-user")?.addEventListener("click", () => {
+    window.TeamUserModal?.open({
+      mode: "create",
+      user: { is_external: true },
       onSaved: async () => {
         await loadUsersFromApi({ keepQuery: true });
       },

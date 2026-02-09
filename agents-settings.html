@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1a1a1a" />
-    <title>NGM HUB — Arturito Control Panel</title>
+    <title>NGM HUB — Agent Settings</title>
     <link rel="icon" type="image/png" href="assets/img/arturito_icon.png" />
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="assets/img/greenblack_icon.png" />
@@ -699,6 +699,80 @@
             font-size: 14px; font-weight: 600; color: #22c55e;
             min-width: 40px; text-align: right;
         }
+
+        /* ====== Recipient Multi-Select Picker ====== */
+        .recipient-picker { position: relative; }
+        .recipient-picker-input {
+            display: flex; flex-wrap: wrap; gap: 6px; min-height: 42px;
+            padding: 8px 12px; background: #0a0a0b; border: 1px solid #27272f;
+            border-radius: 6px; cursor: text; align-items: center;
+            transition: border-color 0.2s;
+        }
+        .recipient-picker-input:focus-within { border-color: #8b5cf6; }
+        .recipient-picker-input .search-field {
+            border: none; background: transparent; color: #e5e7eb;
+            font-size: 13px; outline: none; flex: 1; min-width: 120px;
+        }
+        .recipient-picker-input .search-field::placeholder { color: #6b7280; }
+
+        /* Chips */
+        .recipient-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 16px; font-size: 12px;
+            font-weight: 500; white-space: nowrap; max-width: 200px;
+        }
+        .recipient-chip.role-chip {
+            background: rgba(139, 92, 246, 0.2); color: #a78bfa;
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+        .recipient-chip.user-chip {
+            background: rgba(59, 130, 246, 0.15); color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+        .recipient-chip .chip-remove {
+            cursor: pointer; font-size: 14px; line-height: 1;
+            opacity: 0.7; transition: opacity 0.15s;
+        }
+        .recipient-chip .chip-remove:hover { opacity: 1; }
+        .chip-avatar {
+            width: 18px; height: 18px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; font-weight: 600; color: white; flex-shrink: 0;
+        }
+
+        /* Dropdown */
+        .recipient-dropdown {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: #18181b; border: 1px solid #3f3f46;
+            border-radius: 6px; margin-top: 4px; max-height: 280px;
+            overflow-y: auto; z-index: 100; display: none;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        .recipient-dropdown.is-open { display: block; }
+        .recipient-dropdown-group-label {
+            font-size: 11px; font-weight: 600; color: #6b7280;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            padding: 10px 12px 4px; user-select: none;
+        }
+        .recipient-dropdown-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 12px; cursor: pointer; transition: background 0.15s;
+            font-size: 13px; color: #d1d5db;
+        }
+        .recipient-dropdown-item:hover { background: #27272f; }
+        .recipient-dropdown-item.is-selected { background: rgba(139, 92, 246, 0.1); }
+        .recipient-dropdown-item .item-check {
+            width: 16px; height: 16px; border: 1px solid #4b5563;
+            border-radius: 3px; display: flex; align-items: center;
+            justify-content: center; flex-shrink: 0; font-size: 10px;
+            transition: all 0.15s;
+        }
+        .recipient-dropdown-item.is-selected .item-check {
+            background: #8b5cf6; border-color: #8b5cf6; color: white;
+        }
+        .recipient-dropdown-empty {
+            padding: 16px; text-align: center; color: #6b7280; font-size: 13px;
+        }
     </style>
     <script src="assets/js/page-loading.js" defer></script>
 </head>
@@ -732,7 +806,7 @@
                         <div class="ngm-brand-icon-small"><img src="assets/img/white_icon.png" alt="NGM"></div>
                         <div class="ngm-brand-text">
                             <span class="ngm-brand-org">Next Generation Management</span>
-                            <span class="ngm-brand-context">NGM Hub · Arturito Control Panel</span>
+                            <span class="ngm-brand-context">NGM Hub · Agent Settings</span>
                         </div>
                     </div>
                 </div>
@@ -754,8 +828,8 @@
                     <section class="data-section">
                         <div class="expenses-toolbar">
                             <div class="toolbar-left">
-                                <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Arturito Control Panel</h2>
-                                <p style="font-size: 13px; color: #6b7280; margin: 4px 0 0 0;">Configure AI assistant permissions and capabilities</p>
+                                <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Agent Settings</h2>
+                                <p style="font-size: 13px; color: #6b7280; margin: 4px 0 0 0;">Configure AI agents, permissions, and capabilities</p>
                             </div>
                             <div class="toolbar-right">
                                 <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnResetDefaults">Reset to Defaults</button>
@@ -839,6 +913,69 @@
                                         </p>
                                     </div>
 
+                                    <!-- Scope of Work -->
+                                    <div class="permission-card" style="margin-top: 20px;">
+                                        <div class="permission-card-header">
+                                            <h3 class="permission-card-title">Scope of Work</h3>
+                                        </div>
+                                        <div class="module-tree">
+                                            <div class="module-group">
+                                                <div class="module-name"><span>1</span> Receipt Upload & Storage</div>
+                                                <div class="module-functions">
+                                                    <div class="function-item enabled">Receives receipt images and PDFs from project channels</div>
+                                                    <div class="function-item enabled">Stores files in the pending-expenses storage bucket</div>
+                                                    <div class="function-item enabled">Computes file hash for duplicate tracking</div>
+                                                </div>
+                                            </div>
+                                            <div class="module-group">
+                                                <div class="module-name"><span>2</span> OCR Extraction</div>
+                                                <div class="module-functions">
+                                                    <div class="function-item enabled">Analyzes receipt images using OpenAI Vision</div>
+                                                    <div class="function-item enabled">Extracts vendor name, amount, and date</div>
+                                                    <div class="function-item enabled">Supports image and PDF file formats</div>
+                                                </div>
+                                            </div>
+                                            <div class="module-group">
+                                                <div class="module-name"><span>3</span> Duplicate Detection</div>
+                                                <div class="module-functions">
+                                                    <div class="function-item enabled">Checks file hash against existing receipts (exact match)</div>
+                                                    <div class="function-item enabled">Checks data duplicates by vendor + amount + date</div>
+                                                    <div class="function-item enabled">Prompts user for confirmation when duplicate found</div>
+                                                </div>
+                                            </div>
+                                            <div class="module-group">
+                                                <div class="module-name"><span>4</span> Auto-Categorization</div>
+                                                <div class="module-functions">
+                                                    <div class="function-item enabled">Categorizes expenses using GPT with construction stage context</div>
+                                                    <div class="function-item enabled">Detects multi-category receipts and suggests splits</div>
+                                                    <div class="function-item enabled">Returns confidence score for each categorization</div>
+                                                </div>
+                                            </div>
+                                            <div class="module-group">
+                                                <div class="module-name"><span>5</span> Check Detection</div>
+                                                <div class="module-functions">
+                                                    <div class="function-item enabled">Identifies check images via filename heuristics</div>
+                                                    <div class="function-item enabled">Routes checks through a separate review flow</div>
+                                                </div>
+                                            </div>
+                                            <div class="module-group">
+                                                <div class="module-name"><span>6</span> Expense Creation</div>
+                                                <div class="module-functions">
+                                                    <div class="function-item enabled">Auto-creates expense entries from approved receipts</div>
+                                                    <div class="function-item enabled">Supports single and split expense creation</div>
+                                                    <div class="function-item enabled">Links receipts to existing expenses when matched</div>
+                                                </div>
+                                            </div>
+                                            <div class="module-group">
+                                                <div class="module-name"><span>7</span> Status Reporting</div>
+                                                <div class="module-functions">
+                                                    <div class="function-item enabled">Posts summary messages to project Receipts channel</div>
+                                                    <div class="function-item enabled">Notifies on duplicates, errors, and successful processing</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <!-- Agent Stats Row 1 -->
                                     <div class="stats-row" style="margin-top: 20px;">
                                         <div class="stat-card">
@@ -916,6 +1053,148 @@
                                                     <input type="checkbox" id="cfgAutoSkipDuplicates">
                                                     <span class="toggle-slider"></span>
                                                 </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ====== Daneel (Budget Monitor) Section ====== -->
+                                <div class="analytics-section" style="margin-top: 40px;" id="daneelSection">
+                                    <div class="section-header">
+                                        <h3 style="font-size: 16px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">
+                                            Daneel - Budget Monitor
+                                        </h3>
+                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">
+                                            AI agent that monitors project budgets and posts alerts to accounting channels
+                                        </p>
+                                    </div>
+
+                                    <!-- Scope of Work -->
+                                    <div class="permission-card" style="margin-top: 20px;">
+                                        <div class="permission-card-header">
+                                            <h3 class="permission-card-title">Scope of Work</h3>
+                                        </div>
+                                        <div class="module-tree">
+                                            <div class="module-group">
+                                                <div class="module-name"><span>1</span> Budget Threshold Monitoring</div>
+                                                <div class="module-functions">
+                                                    <div class="function-item enabled">Monitors project spending vs allocated budgets</div>
+                                                    <div class="function-item enabled">Warning alert at configurable threshold (default 80%)</div>
+                                                    <div class="function-item enabled">Critical alert at configurable threshold (default 95%)</div>
+                                                    <div class="function-item enabled">Overspend detection when expenses exceed budget</div>
+                                                </div>
+                                            </div>
+                                            <div class="module-group">
+                                                <div class="module-name"><span>2</span> Expense Anomaly Detection</div>
+                                                <div class="module-functions">
+                                                    <div class="function-item enabled">Identifies unusual spending patterns per category</div>
+                                                    <div class="function-item enabled">Flags expenses with no assigned budget</div>
+                                                    <div class="function-item enabled">Detects sudden spikes in category spending</div>
+                                                </div>
+                                            </div>
+                                            <div class="module-group">
+                                                <div class="module-name"><span>3</span> Department Mentions</div>
+                                                <div class="module-functions">
+                                                    <div class="function-item enabled">Mentions relevant roles/users when posting alerts</div>
+                                                    <div class="function-item enabled">Configurable recipient list per alert type</div>
+                                                </div>
+                                            </div>
+                                            <div class="module-group">
+                                                <div class="module-name"><span>4</span> Channel Alerts</div>
+                                                <div class="module-functions">
+                                                    <div class="function-item enabled">Posts messages to project accounting channels</div>
+                                                    <div class="function-item enabled">Includes @mentions for configured recipients</div>
+                                                    <div class="function-item enabled">Supports warning, critical, and overspend alert types</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Daneel Configuration -->
+                                    <div class="permission-card" style="margin-top: 20px;">
+                                        <div class="permission-card-header">
+                                            <h3 class="permission-card-title">Agent Configuration</h3>
+                                        </div>
+                                        <div class="agent-config-list">
+                                            <!-- Enable/Disable Daneel -->
+                                            <div class="agent-config-item">
+                                                <div class="agent-config-info">
+                                                    <span class="agent-config-name">Enable Daneel</span>
+                                                    <span class="agent-config-desc">Master toggle for all budget monitoring and alert posting</span>
+                                                </div>
+                                                <label class="toggle-switch">
+                                                    <input type="checkbox" id="daneelEnabled" checked>
+                                                    <span class="toggle-slider"></span>
+                                                </label>
+                                            </div>
+
+                                            <!-- Warning threshold -->
+                                            <div class="agent-config-item">
+                                                <div class="agent-config-info">
+                                                    <span class="agent-config-name">Warning threshold</span>
+                                                    <span class="agent-config-desc">Alert when a category reaches this % of its budget</span>
+                                                </div>
+                                                <div class="agent-config-control">
+                                                    <input type="range" id="daneelWarningThreshold" min="50" max="95" step="5" value="80" class="confidence-slider">
+                                                    <span class="confidence-value" id="daneelWarningThresholdValue">80%</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Critical threshold -->
+                                            <div class="agent-config-item">
+                                                <div class="agent-config-info">
+                                                    <span class="agent-config-name">Critical threshold</span>
+                                                    <span class="agent-config-desc">Escalate to critical alert at this % of budget</span>
+                                                </div>
+                                                <div class="agent-config-control">
+                                                    <input type="range" id="daneelCriticalThreshold" min="85" max="100" step="5" value="95" class="confidence-slider">
+                                                    <span class="confidence-value" id="daneelCriticalThresholdValue">95%</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Overspend alerts -->
+                                            <div class="agent-config-item">
+                                                <div class="agent-config-info">
+                                                    <span class="agent-config-name">Overspend alerts</span>
+                                                    <span class="agent-config-desc">Post alert when expenses exceed the allocated budget</span>
+                                                </div>
+                                                <label class="toggle-switch">
+                                                    <input type="checkbox" id="daneelOverspendAlert" checked>
+                                                    <span class="toggle-slider"></span>
+                                                </label>
+                                            </div>
+
+                                            <!-- No budget alerts -->
+                                            <div class="agent-config-item">
+                                                <div class="agent-config-info">
+                                                    <span class="agent-config-name">No-budget alerts</span>
+                                                    <span class="agent-config-desc">Alert when expenses are posted to categories without a budget</span>
+                                                </div>
+                                                <label class="toggle-switch">
+                                                    <input type="checkbox" id="daneelNoBudgetAlert" checked>
+                                                    <span class="toggle-slider"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Alert Recipients -->
+                                    <div class="permission-card" style="margin-top: 20px;">
+                                        <div class="permission-card-header">
+                                            <h3 class="permission-card-title">Alert Recipients</h3>
+                                            <span style="font-size: 12px; color: #6b7280;" id="daneelRecipientCount">0 selected</span>
+                                        </div>
+                                        <p style="font-size: 13px; color: #6b7280; margin: 0 0 16px 0;">
+                                            Select roles or individual users who will be @mentioned in Daneel alert messages.
+                                            Selecting a role includes all current users with that role.
+                                        </p>
+                                        <div class="recipient-picker" id="daneelRecipientPicker">
+                                            <div class="recipient-picker-input" id="daneelPickerInput">
+                                                <input type="text" class="search-field" id="daneelRecipientSearch"
+                                                       placeholder="Search roles or users..." autocomplete="off">
+                                            </div>
+                                            <div class="recipient-dropdown" id="daneelRecipientDropdown">
+                                                <!-- Populated by JS -->
                                             </div>
                                         </div>
                                     </div>
@@ -1430,12 +1709,337 @@
             loadAgentConfig();
         }
 
+        // ====== Daneel Budget Monitor ======
+
+        var _daneelRecipients = { roles: [], users: [] };
+        var _allRoles = [];
+        var _allUsers = [];
+
+        async function loadDaneelConfig() {
+            try {
+                var resp = await fetch(API_BASE + '/budget-alerts/settings', {
+                    headers: _agentAuthHeaders()
+                });
+                if (!resp.ok) return;
+                var result = await resp.json();
+                var config = result.data || result || {};
+
+                document.getElementById('daneelEnabled').checked = config.is_enabled !== false;
+
+                var warnVal = config.warning_threshold || 80;
+                document.getElementById('daneelWarningThreshold').value = warnVal;
+                document.getElementById('daneelWarningThresholdValue').textContent = warnVal + '%';
+
+                var critVal = config.critical_threshold || 95;
+                document.getElementById('daneelCriticalThreshold').value = critVal;
+                document.getElementById('daneelCriticalThresholdValue').textContent = critVal + '%';
+
+                document.getElementById('daneelOverspendAlert').checked = config.overspend_alert !== false;
+                document.getElementById('daneelNoBudgetAlert').checked = config.no_budget_alert !== false;
+            } catch (e) {
+                console.error('[Daneel] Config load error:', e);
+            }
+        }
+
+        async function saveDaneelConfig(key, value) {
+            try {
+                var body = {};
+                body[key] = value;
+                await fetch(API_BASE + '/budget-alerts/settings', {
+                    method: 'PUT',
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
+                    body: JSON.stringify(body)
+                });
+            } catch (e) {
+                console.error('[Daneel] Config save error:', e);
+            }
+        }
+
+        // ====== Recipient Picker ======
+
+        async function loadRecipientOptions() {
+            try {
+                var results = await Promise.all([
+                    fetch(API_BASE + '/team/rols', { headers: _agentAuthHeaders() }),
+                    fetch(API_BASE + '/team/users', { headers: _agentAuthHeaders() })
+                ]);
+                if (results[0].ok) {
+                    var rolesData = await results[0].json();
+                    _allRoles = Array.isArray(rolesData) ? rolesData : (rolesData.data || []);
+                }
+                if (results[1].ok) {
+                    var usersData = await results[1].json();
+                    var allUsers = Array.isArray(usersData) ? usersData : (usersData.data || []);
+                    _allUsers = allUsers.filter(function(u) {
+                        return u.user_id !== '00000000-0000-0000-0000-000000000001'
+                            && u.user_id !== '00000000-0000-0000-0000-000000000002';
+                    });
+                }
+            } catch (e) {
+                console.error('[Daneel] Error loading recipient options:', e);
+            }
+        }
+
+        async function saveDaneelRecipients() {
+            try {
+                var payload = {
+                    daneel_alert_recipients: JSON.stringify({
+                        roles: _daneelRecipients.roles,
+                        users: _daneelRecipients.users
+                    })
+                };
+                await fetch(API_BASE + '/pending-receipts/agent-config', {
+                    method: 'PATCH',
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
+                    body: JSON.stringify(payload)
+                });
+            } catch (e) {
+                console.error('[Daneel] Error saving recipients:', e);
+            }
+        }
+
+        async function loadDaneelRecipientsSaved() {
+            try {
+                var resp = await fetch(API_BASE + '/pending-receipts/agent-config', {
+                    headers: _agentAuthHeaders()
+                });
+                if (!resp.ok) return;
+                var config = await resp.json();
+                var raw = config.daneel_alert_recipients;
+                if (raw) {
+                    var parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                    _daneelRecipients.roles = parsed.roles || [];
+                    _daneelRecipients.users = parsed.users || [];
+                }
+            } catch (e) {
+                console.error('[Daneel] Error loading saved recipients:', e);
+            }
+        }
+
+        function _escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderRecipientChips() {
+            var container = document.getElementById('daneelPickerInput');
+            var searchInput = document.getElementById('daneelRecipientSearch');
+
+            container.querySelectorAll('.recipient-chip').forEach(function(c) { c.remove(); });
+
+            _daneelRecipients.roles.forEach(function(roleId) {
+                var role = _allRoles.find(function(r) {
+                    return String(r.rol_id || r.id) === String(roleId);
+                });
+                if (!role) return;
+                var roleName = role.rol_name || role.name || '';
+                var chip = document.createElement('span');
+                chip.className = 'recipient-chip role-chip';
+                chip.innerHTML = 'All ' + _escapeHtml(roleName) + 's'
+                    + ' <span class="chip-remove" data-type="role" data-id="' + roleId + '">&times;</span>';
+                container.insertBefore(chip, searchInput);
+            });
+
+            _daneelRecipients.users.forEach(function(userId) {
+                var user = _allUsers.find(function(u) { return u.user_id === userId; });
+                if (!user) return;
+                var hue = user.avatar_color || 200;
+                var initials = (user.user_name || '?').charAt(0).toUpperCase();
+                var chip = document.createElement('span');
+                chip.className = 'recipient-chip user-chip';
+                chip.innerHTML =
+                    '<span class="chip-avatar" style="background:hsl(' + hue + ' 70% 45%)">' + initials + '</span>'
+                    + _escapeHtml(user.user_name)
+                    + ' <span class="chip-remove" data-type="user" data-id="' + userId + '">&times;</span>';
+                container.insertBefore(chip, searchInput);
+            });
+
+            var total = _daneelRecipients.roles.length + _daneelRecipients.users.length;
+            document.getElementById('daneelRecipientCount').textContent = total + ' selected';
+        }
+
+        function renderRecipientDropdown(filter) {
+            var dropdown = document.getElementById('daneelRecipientDropdown');
+            dropdown.innerHTML = '';
+            var query = (filter || '').toLowerCase();
+
+            // Roles group
+            var filteredRoles = _allRoles.filter(function(r) {
+                var name = r.rol_name || r.name || '';
+                return !query || name.toLowerCase().indexOf(query) >= 0;
+            });
+            if (filteredRoles.length > 0) {
+                var groupLabel = document.createElement('div');
+                groupLabel.className = 'recipient-dropdown-group-label';
+                groupLabel.textContent = 'Roles';
+                dropdown.appendChild(groupLabel);
+
+                filteredRoles.forEach(function(role) {
+                    var roleId = String(role.rol_id || role.id);
+                    var roleName = role.rol_name || role.name || '';
+                    var isSelected = _daneelRecipients.roles.indexOf(roleId) >= 0;
+                    var item = document.createElement('div');
+                    item.className = 'recipient-dropdown-item' + (isSelected ? ' is-selected' : '');
+                    item.dataset.type = 'role';
+                    item.dataset.id = roleId;
+                    item.innerHTML =
+                        '<span class="item-check">' + (isSelected ? '&#10003;' : '') + '</span>'
+                        + '<span style="color:#a78bfa;font-weight:500;">All ' + _escapeHtml(roleName) + 's</span>';
+                    dropdown.appendChild(item);
+                });
+            }
+
+            // Users group
+            var filteredUsers = _allUsers.filter(function(u) {
+                return !query || (u.user_name || '').toLowerCase().indexOf(query) >= 0;
+            });
+            if (filteredUsers.length > 0) {
+                var groupLabel2 = document.createElement('div');
+                groupLabel2.className = 'recipient-dropdown-group-label';
+                groupLabel2.textContent = 'Team Members';
+                dropdown.appendChild(groupLabel2);
+
+                filteredUsers.forEach(function(user) {
+                    var isSelected = _daneelRecipients.users.indexOf(user.user_id) >= 0;
+                    var hue = user.avatar_color || 200;
+                    var initials = (user.user_name || '?').charAt(0).toUpperCase();
+                    var roleName = user.role ? (user.role.name || '') : '';
+                    var item = document.createElement('div');
+                    item.className = 'recipient-dropdown-item' + (isSelected ? ' is-selected' : '');
+                    item.dataset.type = 'user';
+                    item.dataset.id = user.user_id;
+                    item.innerHTML =
+                        '<span class="item-check">' + (isSelected ? '&#10003;' : '') + '</span>'
+                        + '<span class="chip-avatar" style="background:hsl(' + hue + ' 70% 45%)">' + initials + '</span>'
+                        + '<span>' + _escapeHtml(user.user_name) + '</span>'
+                        + (roleName ? '<span style="font-size:11px;color:#6b7280;margin-left:auto;">' + _escapeHtml(roleName) + '</span>' : '');
+                    dropdown.appendChild(item);
+                });
+            }
+
+            if (filteredRoles.length === 0 && filteredUsers.length === 0) {
+                dropdown.innerHTML = '<div class="recipient-dropdown-empty">No results found</div>';
+            }
+        }
+
+        function initDaneelRecipientPicker() {
+            var searchInput = document.getElementById('daneelRecipientSearch');
+            var pickerInput = document.getElementById('daneelPickerInput');
+            var dropdown = document.getElementById('daneelRecipientDropdown');
+
+            searchInput.addEventListener('focus', function() {
+                renderRecipientDropdown(searchInput.value);
+                dropdown.classList.add('is-open');
+            });
+
+            searchInput.addEventListener('input', function() {
+                renderRecipientDropdown(searchInput.value);
+                if (!dropdown.classList.contains('is-open')) {
+                    dropdown.classList.add('is-open');
+                }
+            });
+
+            dropdown.addEventListener('click', function(e) {
+                var item = e.target.closest('.recipient-dropdown-item');
+                if (!item) return;
+
+                var type = item.dataset.type;
+                var id = item.dataset.id;
+
+                if (type === 'role') {
+                    var idx = _daneelRecipients.roles.indexOf(id);
+                    if (idx >= 0) {
+                        _daneelRecipients.roles.splice(idx, 1);
+                    } else {
+                        _daneelRecipients.roles.push(id);
+                    }
+                } else if (type === 'user') {
+                    var idx2 = _daneelRecipients.users.indexOf(id);
+                    if (idx2 >= 0) {
+                        _daneelRecipients.users.splice(idx2, 1);
+                    } else {
+                        _daneelRecipients.users.push(id);
+                    }
+                }
+
+                renderRecipientChips();
+                renderRecipientDropdown(searchInput.value);
+                saveDaneelRecipients();
+            });
+
+            pickerInput.addEventListener('click', function(e) {
+                var removeBtn = e.target.closest('.chip-remove');
+                if (!removeBtn) {
+                    searchInput.focus();
+                    return;
+                }
+
+                var type = removeBtn.dataset.type;
+                var id = removeBtn.dataset.id;
+
+                if (type === 'role') {
+                    _daneelRecipients.roles = _daneelRecipients.roles.filter(function(r) { return r !== id; });
+                } else {
+                    _daneelRecipients.users = _daneelRecipients.users.filter(function(u) { return u !== id; });
+                }
+
+                renderRecipientChips();
+                if (dropdown.classList.contains('is-open')) {
+                    renderRecipientDropdown(searchInput.value);
+                }
+                saveDaneelRecipients();
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('#daneelRecipientPicker')) {
+                    dropdown.classList.remove('is-open');
+                }
+            });
+        }
+
+        function initDaneel() {
+            // Config toggles
+            document.getElementById('daneelEnabled').addEventListener('change', function(e) {
+                saveDaneelConfig('is_enabled', e.target.checked);
+            });
+            document.getElementById('daneelWarningThreshold').addEventListener('input', function(e) {
+                document.getElementById('daneelWarningThresholdValue').textContent = e.target.value + '%';
+            });
+            document.getElementById('daneelWarningThreshold').addEventListener('change', function(e) {
+                saveDaneelConfig('warning_threshold', parseInt(e.target.value));
+            });
+            document.getElementById('daneelCriticalThreshold').addEventListener('input', function(e) {
+                document.getElementById('daneelCriticalThresholdValue').textContent = e.target.value + '%';
+            });
+            document.getElementById('daneelCriticalThreshold').addEventListener('change', function(e) {
+                saveDaneelConfig('critical_threshold', parseInt(e.target.value));
+            });
+            document.getElementById('daneelOverspendAlert').addEventListener('change', function(e) {
+                saveDaneelConfig('overspend_alert', e.target.checked);
+            });
+            document.getElementById('daneelNoBudgetAlert').addEventListener('change', function(e) {
+                saveDaneelConfig('no_budget_alert', e.target.checked);
+            });
+
+            loadDaneelConfig();
+
+            // Load recipient picker data, then saved selections, then render
+            loadRecipientOptions().then(function() {
+                return loadDaneelRecipientsSaved();
+            }).then(function() {
+                renderRecipientChips();
+                initDaneelRecipientPicker();
+            });
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             if (!checkAccess()) return;
 
             loadPermissions();
             initAgentManager();
+            initDaneel();
 
             // Reset button
             document.getElementById('btnResetDefaults').addEventListener('click', resetToDefaults);

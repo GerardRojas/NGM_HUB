@@ -296,13 +296,18 @@
           return Utils.escapeHtml(v != null ? v : "-");
         }
 
-        case "priority":
-          return Utils.escapeHtml(
+        case "priority": {
+          const prioName = (
             (t.priority && (t.priority.priority_name || t.priority.priority_id)) ||
             t.priority_name ||
             t.priority ||
-            "-"
-          );
+            ''
+          ).trim();
+          if (!prioName) return '-';
+          const PRIO_COLORS = { critical: "#ef4444", high: "#f97316", medium: "#eab308", low: "#3b82f6" };
+          const prioColor = PRIO_COLORS[prioName.toLowerCase()] || '#6b7280';
+          return `<span class="pm-badge-pill" style="background: ${prioColor};">${Utils.escapeHtml(prioName)}</span>`;
+        }
 
         case "finished":
           return Utils.escapeHtml(

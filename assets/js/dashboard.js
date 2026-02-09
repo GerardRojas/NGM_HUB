@@ -337,6 +337,8 @@ async function loadMyWorkTasks(user) {
           timeStart: task.time_start,
           statusName: task.status_name,
           userRole: userRole, // owner, collaborator, or manager
+          dueDate: task.due_date || task.deadline || null,
+          priorityName: task.priority_name || null,
         });
       });
     }
@@ -344,6 +346,19 @@ async function loadMyWorkTasks(user) {
   } catch (err) {
     console.error("[Dashboard] Failed to load My Work tasks:", err);
   }
+
+  // Sort: working first, then by priority (high > medium > low), then by due date
+  const priorityWeight = { urgent: 0, high: 1, critical: 1, medium: 2, low: 3 };
+  tasks.sort((a, b) => {
+    if (a.isWorking && !b.isWorking) return -1;
+    if (!a.isWorking && b.isWorking) return 1;
+    const pa = priorityWeight[(a.priorityName || "").toLowerCase()] ?? 99;
+    const pb = priorityWeight[(b.priorityName || "").toLowerCase()] ?? 99;
+    if (pa !== pb) return pa - pb;
+    const da = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+    const db = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+    return da - db;
+  });
 
   // Hide loading
   loadingEl.style.display = "none";
@@ -399,10 +414,16 @@ function renderMyWorkTasks(tasks) {
       actionHtml = `<a href="${task.link}" class="task-action-btn">${task.actionText}</a>`;
     }
 
-    // Status badge for pipeline tasks
+    // Status badge for pipeline tasks (always visible with color coding)
     let statusBadge = "";
-    if (task.type === "pipeline_task" && task.statusName && !task.isStartable && !task.isWorking) {
-      statusBadge = `<span class="task-status-badge">${escapeHtml(task.statusName)}</span>`;
+    if (task.type === "pipeline_task" && task.statusName) {
+      const sLower = task.statusName.toLowerCase();
+      let statusMod = "";
+      if (sLower === "not started") statusMod = " task-status-badge--not-started";
+      else if (sLower === "working on it") statusMod = " task-status-badge--working";
+      else if (sLower.includes("review")) statusMod = " task-status-badge--review";
+      else if (sLower === "stuck") statusMod = " task-status-badge--stuck";
+      statusBadge = `<span class="task-status-badge${statusMod}">${escapeHtml(task.statusName)}</span>`;
     }
 
     // Role badge for collaborators and managers
@@ -410,6 +431,38 @@ function renderMyWorkTasks(tasks) {
     if (task.type === "pipeline_task" && task.userRole && task.userRole !== "owner") {
       const roleLabel = task.userRole === "collaborator" ? "Collaborator" : "Manager";
       roleBadge = `<span class="task-role-badge task-role-${task.userRole}">${roleLabel}</span>`;
+    }
+
+    // Priority pill
+    let priorityPill = "";
+    if (task.type === "pipeline_task" && task.priorityName) {
+      const pLower = task.priorityName.toLowerCase();
+      let prioClass = "task-priority-default";
+      if (pLower === "high" || pLower === "urgent" || pLower === "critical") {
+        prioClass = "task-priority-high";
+      } else if (pLower === "medium") {
+        prioClass = "task-priority-medium";
+      } else if (pLower === "low") {
+        prioClass = "task-priority-low";
+      }
+      priorityPill = `<span class="task-priority-pill ${prioClass}">${escapeHtml(task.priorityName)}</span>`;
+    }
+
+    // Due date display
+    let dueDateHtml = "";
+    if (task.type === "pipeline_task" && task.dueDate) {
+      const dueDate = new Date(task.dueDate + "T00:00:00");
+      const now = new Date();
+      const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+      const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const isOverdue = dueDateOnly < todayOnly;
+      const isToday = dueDateOnly.getTime() === todayOnly.getTime();
+      const dateLabel = dueDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      let dueCssClass = "task-due-date";
+      if (isOverdue) dueCssClass += " task-due-overdue";
+      else if (isToday) dueCssClass += " task-due-today";
+      const prefix = isOverdue ? "Overdue: " : (isToday ? "Today: " : "Due: ");
+      dueDateHtml = `<span class="${dueCssClass}">${prefix}${dateLabel}</span>`;
     }
 
     return `
@@ -421,7 +474,9 @@ function renderMyWorkTasks(tasks) {
           <div class="my-work-task-title">${escapeHtml(task.title)} ${statusBadge} ${roleBadge}</div>
           <div class="my-work-task-meta">
             <span class="task-meta-module">${escapeHtml(task.module)}</span>
-            ${task.subtitle ? `<span class="task-meta-separator">·</span><span class="task-meta-project">${escapeHtml(task.subtitle)}</span>` : ''}
+            ${task.subtitle ? `<span class="task-meta-separator">&middot;</span><span class="task-meta-project">${escapeHtml(task.subtitle)}</span>` : ''}
+            ${priorityPill ? `<span class="task-meta-separator">&middot;</span>${priorityPill}` : ''}
+            ${dueDateHtml ? `<span class="task-meta-separator">&middot;</span>${dueDateHtml}` : ''}
           </div>
         </div>
         <div class="my-work-task-action">

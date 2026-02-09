@@ -57,6 +57,7 @@
     renderDebounceTimer: null,
     activeCheckFlow: null, // { receiptId, state } when a check flow conversation is active
     activeDuplicateFlow: null, // { receiptId } when a duplicate confirmation is active
+    activeReceiptFlow: null, // { receiptId, state } when a receipt split flow is active
   };
 
   // Debounced render to prevent rapid re-renders causing flicker
@@ -80,6 +81,7 @@
     PROJECT_RECEIPTS: "project_receipts",
     CUSTOM: "custom",
     DIRECT: "direct",
+    GROUP: "group",
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -137,6 +139,7 @@
   function cacheDOMReferences() {
     // Channels sidebar
     DOM.projectChannels = document.getElementById("projectChannels");
+    DOM.groupChannels = document.getElementById("groupChannels");
     DOM.directMessages = document.getElementById("directMessages");
     DOM.customChannels = document.getElementById("customChannels");
     DOM.channelSearchInput = document.getElementById("channelSearchInput");
@@ -235,6 +238,11 @@
       ]);
 
       console.log(`[Messages] Parallel API fetch completed in ${(performance.now() - fetchStart).toFixed(0)}ms`);
+
+      // Ensure required group channels exist (auto-create Payroll etc.)
+      await ensureGroupChannels();
+      // Update cache with any newly created groups
+      saveToCache(CACHE_KEYS.CHANNELS, state.channels);
 
       // PHASE 3: Update UI only if data changed (avoid unnecessary re-renders)
       const dataChanged = !cachedUser || !cachedUsers || !cachedProjects ||
@@ -374,6 +382,7 @@
   // ─────────────────────────────────────────────────────────────────────────
   function renderChannels() {
     renderProjectChannels();
+    renderGroups();
     renderDirectMessages();
     renderCustomChannels();
   }
@@ -508,7 +517,7 @@
 
   function initSectionCollapsedStates() {
     // Apply saved collapsed states on init
-    ["projects", "direct", "custom"].forEach(sectionName => {
+    ["projects", "groups", "direct", "custom"].forEach(sectionName => {
       const isCollapsed = getSectionCollapsedState(sectionName);
       if (isCollapsed) {
         const sectionHeader = document.querySelector(`.msg-channel-section-header[data-section="${sectionName}"]`);
@@ -727,6 +736,86 @@
     DOM.customChannels.innerHTML = html;
   }
 
+  function renderGroups() {
+    if (!DOM.groupChannels) return;
+
+    const groupChannels = state.channels.filter(
+      (c) => c.type === CHANNEL_TYPES.GROUP
+    );
+
+    if (groupChannels.length === 0) {
+      DOM.groupChannels.innerHTML = `
+        <div class="msg-channel-empty">No groups yet</div>
+      `;
+      return;
+    }
+
+    let html = "";
+    groupChannels.forEach((channel) => {
+      const channelColor = getCustomChannelColor(channel.id || channel.name);
+      const initials = getChannelInitials(channel.name);
+
+      html += `
+        <button type="button" class="msg-channel-item msg-group-item"
+                data-channel-id="${channel.id}"
+                data-channel-type="${CHANNEL_TYPES.GROUP}">
+          <span class="msg-dm-avatar" style="color: ${channelColor}; border-color: ${channelColor}">
+            ${initials}
+          </span>
+          <span class="msg-channel-name">${escapeHtml(channel.name)}</span>
+          ${channel.unread_count ? `<span class="msg-unread-badge">${channel.unread_count}</span>` : ""}
+        </button>
+      `;
+    });
+
+    DOM.groupChannels.innerHTML = html;
+  }
+
+  // Ensure required group channels exist (auto-create if missing)
+  const REQUIRED_GROUPS = ["Payroll"];
+
+  async function ensureGroupChannels() {
+    const existingGroups = state.channels.filter(
+      (c) => c.type === CHANNEL_TYPES.GROUP
+    );
+    const existingNames = existingGroups.map((g) => g.name);
+
+    for (const groupName of REQUIRED_GROUPS) {
+      if (existingNames.includes(groupName)) continue;
+
+      try {
+        const memberIds = state.users.map((u) => u.user_id || u.id).filter(Boolean);
+
+        const res = await authFetch(`${API_BASE}/messages/channels`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "group",
+            name: groupName,
+            description: `${groupName} group channel`,
+            member_ids: memberIds,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const channel = data.channel;
+          if (channel && !data.existing) {
+            state.channels.push(channel);
+          } else if (channel && data.existing) {
+            // Channel already exists in DB but wasn't in our channels list
+            if (!state.channels.find((c) => c.id === channel.id)) {
+              state.channels.push(channel);
+            }
+          }
+          console.log(`[Messages] Group "${groupName}" ensured`);
+        }
+      } catch (err) {
+        console.warn(`[Messages] Failed to ensure group "${groupName}":`, err);
+      }
+    }
+  }
+
   // Get color for custom channel based on name/id
   function getCustomChannelColor(channelIdentifier) {
     const hue = stableHueFromString(channelIdentifier);
@@ -796,9 +885,10 @@
 
     state.messages = messages;
 
-    // Scan loaded messages for active flows (check flow / duplicate flow)
+    // Scan loaded messages for active flows (check flow / duplicate flow / receipt flow)
     state.activeCheckFlow = null;
     state.activeDuplicateFlow = null;
+    state.activeReceiptFlow = null;
     for (const msg of messages) {
       if (msg.metadata?.check_flow_active && msg.metadata?.check_flow_state) {
         state.activeCheckFlow = { receiptId: msg.metadata.pending_receipt_id, state: msg.metadata.check_flow_state };
@@ -809,6 +899,11 @@
         state.activeDuplicateFlow = { receiptId: msg.metadata.pending_receipt_id };
       } else if (msg.metadata?.duplicate_flow_state === 'confirmed' || msg.metadata?.duplicate_flow_state === 'skipped') {
         state.activeDuplicateFlow = null;
+      }
+      if (msg.metadata?.receipt_flow_active && msg.metadata?.receipt_flow_state) {
+        state.activeReceiptFlow = { receiptId: msg.metadata.pending_receipt_id, state: msg.metadata.receipt_flow_state };
+      } else if (msg.metadata?.receipt_flow_state === 'completed' || msg.metadata?.receipt_flow_state === 'cancelled') {
+        state.activeReceiptFlow = null;
       }
     }
 
@@ -1042,11 +1137,14 @@
       if (flowState === 'check_detected') {
         botActions = `
           <div class="msg-bot-actions" data-receipt-id="${receiptId}">
-            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="check-confirm-yes" data-receipt-id="${receiptId}">
-              Yes, it is a check
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="check-confirm-material" data-receipt-id="${receiptId}">
+              Material
+            </button>
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="check-confirm-labor" data-receipt-id="${receiptId}">
+              Labor
             </button>
             <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="check-confirm-no" data-receipt-id="${receiptId}">
-              No, process as receipt
+              Not a check
             </button>
           </div>
         `;
@@ -1076,6 +1174,37 @@
         botActions = `
           <div class="msg-bot-actions msg-bot-actions--hint" data-receipt-id="${receiptId}">
             <span class="msg-bot-input-hint">Type your response in the chat input below</span>
+          </div>
+        `;
+      }
+    }
+
+    // Receipt flow action buttons
+    if (isBot && msg.metadata?.receipt_flow_active) {
+      const receiptId = msg.metadata.pending_receipt_id;
+      const flowState = msg.metadata.receipt_flow_state;
+
+      if (flowState === 'awaiting_project_decision') {
+        botActions = `
+          <div class="msg-bot-actions" data-receipt-id="${receiptId}">
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="receipt-single-project" data-receipt-id="${receiptId}">
+              Only this project
+            </button>
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="receipt-split-projects" data-receipt-id="${receiptId}">
+              Split across projects
+            </button>
+          </div>
+        `;
+      } else if (flowState === 'awaiting_split_details') {
+        botActions = `
+          <div class="msg-bot-actions" data-receipt-id="${receiptId}">
+            <span class="msg-bot-input-hint">Type each item as: [amount] [description]</span>
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="receipt-split-done" data-receipt-id="${receiptId}">
+              Done
+            </button>
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="receipt-cancel" data-receipt-id="${receiptId}">
+              Cancel
+            </button>
           </div>
         `;
       }
@@ -1128,7 +1257,8 @@
       linked: { label: 'Done', class: 'msg-receipt-status--linked', icon: '✓' },
       duplicate: { label: 'Duplicate', class: 'msg-receipt-status--duplicate', icon: '!' },
       error: { label: 'Error', class: 'msg-receipt-status--error', icon: '⚠️' },
-      check_review: { label: 'Check', class: 'msg-receipt-status--check', icon: '?' }
+      check_review: { label: 'Check', class: 'msg-receipt-status--check', icon: '?' },
+      split: { label: 'Split', class: 'msg-receipt-status--split', icon: '/' }
     };
 
     const config = statusConfig[status] || statusConfig.pending;
@@ -1237,7 +1367,7 @@
   // SENDING MESSAGES
   // ─────────────────────────────────────────────────────────────────────────
   function _getCheckFlowAction(content) {
-    if (!state.activeCheckFlow || !isReceiptsChannel()) return null;
+    if (!state.activeCheckFlow || (!isReceiptsChannel() && !isPayrollChannel())) return null;
 
     const flowState = state.activeCheckFlow.state;
     const textInputStates = {
@@ -1325,6 +1455,42 @@
     }
   }
 
+  // ── Receipt flow helpers ──
+  function _getReceiptFlowAction(content) {
+    if (!state.activeReceiptFlow || !isReceiptsChannel()) return null;
+    if (state.activeReceiptFlow.state === 'awaiting_split_details') {
+      return content.toLowerCase().trim() === 'done'
+        ? { receiptId: state.activeReceiptFlow.receiptId, action: 'split_done' }
+        : { receiptId: state.activeReceiptFlow.receiptId, action: 'submit_split_line' };
+    }
+    return null;
+  }
+
+  async function _forwardToReceiptAction(receiptId, action, text) {
+    try {
+      const body = { action: action, user_id: state.currentUser?.user_id };
+      if (text != null) body.payload = { text: text };
+
+      const response = await authFetch(
+        `${API_BASE}/pending-receipts/${receiptId}/receipt-action`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        console.error("[Messages] Receipt action error:", error);
+      }
+
+      _fetchBotMessages();
+    } catch (err) {
+      console.error("[Messages] Receipt action fetch error:", err);
+    }
+  }
+
   /**
    * Fetch recent messages to pick up bot responses.
    * Polling fallback for when Supabase Realtime doesn't deliver.
@@ -1365,6 +1531,11 @@
           if (msg.metadata?.duplicate_flow_active && msg.metadata?.duplicate_flow_state === 'awaiting_confirmation') {
             state.activeDuplicateFlow = { receiptId: msg.metadata.pending_receipt_id };
           }
+          if (msg.metadata?.receipt_flow_active && msg.metadata?.receipt_flow_state) {
+            state.activeReceiptFlow = { receiptId: msg.metadata.pending_receipt_id, state: msg.metadata.receipt_flow_state };
+          } else if (msg.metadata?.receipt_flow_state === 'completed' || msg.metadata?.receipt_flow_state === 'cancelled') {
+            state.activeReceiptFlow = null;
+          }
         }
       }
     } catch (err) {
@@ -1382,6 +1553,9 @@
 
     // Check if this message is a response to an active duplicate flow
     const duplicateFlowAction = _getDuplicateFlowAction(content);
+
+    // Check if this message is a response to an active receipt flow
+    const receiptFlowAction = _getReceiptFlowAction(content);
 
     const messageData = {
       content: content,
@@ -1441,6 +1615,11 @@
       if (duplicateFlowAction) {
         _forwardToDuplicateAction(duplicateFlowAction.receiptId, duplicateFlowAction.action);
         state.activeDuplicateFlow = null;
+      }
+
+      // Forward to receipt-action endpoint if this was a receipt flow response
+      if (receiptFlowAction) {
+        _forwardToReceiptAction(receiptFlowAction.receiptId, receiptFlowAction.action, content);
       }
     } catch (err) {
       console.error("[Messages] Send error:", err);
@@ -1728,6 +1907,11 @@
    */
   function isReceiptsChannel() {
     return state.currentChannel?.type === "project_receipts";
+  }
+
+  function isPayrollChannel() {
+    return state.currentChannel?.type === "group" &&
+           state.currentChannel?.name === "Payroll";
   }
 
   /**
@@ -3094,6 +3278,23 @@
 
     // Message actions
     DOM.messagesList?.addEventListener("click", (e) => {
+      // Intercept internal channel links (e.g. "Go to Payroll")
+      const channelLink = e.target.closest("a[href*='messages.html?channel=']");
+      if (channelLink) {
+        e.preventDefault();
+        try {
+          const url = new URL(channelLink.href, window.location.origin);
+          const channelId = url.searchParams.get("channel");
+          if (channelId) {
+            const ch = state.channels.find(c => c.id === channelId);
+            selectChannel(ch?.type || "group", channelId, null, ch?.name || "Payroll");
+          }
+        } catch (err) {
+          console.error("[Messages] Channel link navigation error:", err);
+        }
+        return;
+      }
+
       const action = e.target.closest("[data-action]")?.dataset.action;
       const messageId = e.target.closest("[data-message-id]")?.dataset.messageId;
 
@@ -3135,14 +3336,19 @@
         return;
       }
 
-      // Check flow button actions
-      if (action === "check-confirm-yes" || action === "check-confirm-no") {
+      // Check flow button actions (material / labor / not a check)
+      if (["check-confirm-material", "check-confirm-labor", "check-confirm-no"].includes(action)) {
         const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
         const actionsEl = e.target.closest(".msg-bot-actions");
         if (receiptId && actionsEl) {
-          actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Processing...</span>';
-          const checkAction = action === "check-confirm-yes" ? "confirm_check" : "deny_check";
-          _forwardToCheckAction(receiptId, checkAction, null);
+          const actionMap = {
+            "check-confirm-material": "confirm_material",
+            "check-confirm-labor": "confirm_labor",
+            "check-confirm-no": "deny_check",
+          };
+          const label = action === "check-confirm-labor" ? "Routing to Payroll..." : "Processing...";
+          actionsEl.innerHTML = `<span class="msg-bot-actions-loading">${label}</span>`;
+          _forwardToCheckAction(receiptId, actionMap[action], null);
         }
         return;
       }
@@ -3175,6 +3381,48 @@
           actionsEl.innerHTML = '<span class="msg-bot-actions-dismissed">Cancelled</span>';
           _forwardToCheckAction(receiptId, "cancel", null);
           state.activeCheckFlow = null;
+        }
+        return;
+      }
+
+      // Receipt flow button actions
+      if (action === "receipt-single-project") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Creating expense...</span>';
+          _forwardToReceiptAction(receiptId, "single_project", null);
+        }
+        return;
+      }
+
+      if (action === "receipt-split-projects") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Processing...</span>';
+          _forwardToReceiptAction(receiptId, "split_projects", null);
+        }
+        return;
+      }
+
+      if (action === "receipt-split-done") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Creating expenses...</span>';
+          _forwardToReceiptAction(receiptId, "split_done", null);
+        }
+        return;
+      }
+
+      if (action === "receipt-cancel") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-dismissed">Cancelled</span>';
+          _forwardToReceiptAction(receiptId, "cancel", null);
+          state.activeReceiptFlow = null;
         }
         return;
       }

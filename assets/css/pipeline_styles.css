@@ -3768,3 +3768,53 @@ td[data-col="links"]:hover {
   background: rgba(var(--auto-color-rgb, 99, 102, 241), 0.15);
   color: var(--auto-color, #818cf8);
 }
+
+/* ==========================================
+   CONTEXT MENU (right-click on task rows)
+   ========================================== */
+
+.pm-context-menu {
+  position: fixed;
+  z-index: 99999;
+  min-width: 180px;
+  background: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 4px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+.pm-context-menu.hidden {
+  display: none;
+}
+
+.pm-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  color: #e5e7eb;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.12s;
+  text-align: left;
+}
+
+.pm-context-menu-item:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.pm-context-menu-item--danger:hover {
+  background: rgba(239,68,68,0.12);
+  color: #ef4444;
+}
+
+.pm-context-menu-item svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}

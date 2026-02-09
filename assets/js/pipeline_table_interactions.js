@@ -36,7 +36,7 @@
   const DATE_COLS = ["due", "start", "deadline"];
 
   // Columnas con dropdown de catálogos
-  const CATALOG_COLS = ["project", "company", "department", "type", "priority"];
+  const CATALOG_COLS = ["project", "company", "department", "type"];
 
   // Columnas numéricas (horas)
   const NUMBER_COLS = ["est"];
@@ -45,7 +45,7 @@
   const READONLY_COLS = ["links", "finished"];
 
   // Columns with badge-style picker (colored pills)
-  const BADGE_COLS = ["status"];
+  const BADGE_COLS = ["status", "priority"];
 
   // Status options for badge picker (colors match STATUS_CONFIG in pipeline.js)
   const STATUS_OPTIONS = [
@@ -58,6 +58,13 @@
     { id: "done", name: "Done", color: "#22c55e" },
     { id: "delayed", name: "Delayed", color: "#a855f7" },
   ];
+
+  const PRIORITY_COLORS = {
+    "critical": "#ef4444",
+    "high": "#f97316",
+    "medium": "#eab308",
+    "low": "#3b82f6",
+  };
 
   // ================================
   // CACHE DE USUARIOS Y CATÁLOGOS
@@ -469,9 +476,13 @@
 
     // Look up color from known options
     if (!color) {
-      const options = colKey === 'status' ? STATUS_OPTIONS : [];
-      const match = options.find(o => o.id === name.toLowerCase() || o.name.toLowerCase() === name.toLowerCase());
-      color = match ? match.color : '#3e4042';
+      if (colKey === 'priority') {
+        color = PRIORITY_COLORS[name.toLowerCase()] || '#6b7280';
+      } else {
+        const options = colKey === 'status' ? STATUS_OPTIONS : [];
+        const match = options.find(o => o.id === name.toLowerCase() || o.name.toLowerCase() === name.toLowerCase());
+        color = match ? match.color : '#3e4042';
+      }
     }
 
     return `<span class="pm-badge-pill" style="background: ${color};">${escapeHtml(name)}</span>`;
@@ -835,11 +846,6 @@
         valueKey = "type_id";
         textKey = "type_name";
         break;
-      case "priority":
-        catalogData = catalogsCache.priorities || [];
-        valueKey = "priority_id";
-        textKey = "priority";
-        break;
     }
 
     // Agregar opciones
@@ -881,7 +887,19 @@
     container.className = "pm-inline-badge-picker";
     let selectedValue = null;
 
-    const items = colKey === 'status' ? STATUS_OPTIONS : [];
+    let items;
+    if (colKey === 'status') {
+      items = STATUS_OPTIONS;
+    } else if (colKey === 'priority') {
+      await loadCatalogs();
+      items = (catalogsCache.priorities || []).map(p => ({
+        id: p.priority.toLowerCase(),
+        name: p.priority,
+        color: PRIORITY_COLORS[p.priority.toLowerCase()] || '#6b7280'
+      }));
+    } else {
+      items = [];
+    }
 
     if (typeof window.BadgePicker !== "function") {
       console.warn("[PIPELINE] BadgePicker not loaded");
@@ -892,11 +910,11 @@
       items: items,
       placeholder: `Select ${colKey}...`,
       onChange: (item) => {
-        const statusName = item ? item.name.toLowerCase() : null;
-        selectedValue = statusName;
+        const valueName = item ? item.name.toLowerCase() : null;
+        selectedValue = valueName;
 
         if (activeEditor && activeEditor.td === td) {
-          saveFieldToBackend(taskId, colKey, statusName, td, {
+          saveFieldToBackend(taskId, colKey, valueName, td, {
             skipDisplayUpdate: true,
             onSuccess: () => {
               if (colKey === 'status') {
@@ -1159,6 +1177,93 @@
       console.warn("[PIPELINE] PM_EditTask not loaded");
     }
   });
+
+  // ================================
+  // CONTEXT MENU (right-click on task rows)
+  // ================================
+  const ctxMenu = document.getElementById("pm-context-menu");
+  let ctxTaskId = null;
+  let ctxRow = null;
+
+  wrapper.addEventListener("contextmenu", (e) => {
+    const tr = e.target.closest("tr.pm-row[data-task-id]");
+    if (!tr || !ctxMenu) return;
+
+    e.preventDefault();
+
+    // Close active editor if any
+    if (activeEditor) closeActiveEditor(false);
+
+    ctxTaskId = tr.dataset.taskId;
+    ctxRow = tr;
+
+    // Position at cursor
+    ctxMenu.classList.remove("hidden");
+    ctxMenu.style.left = e.clientX + "px";
+    ctxMenu.style.top = e.clientY + "px";
+
+    // Keep within viewport
+    requestAnimationFrame(() => {
+      const rect = ctxMenu.getBoundingClientRect();
+      if (rect.right > window.innerWidth) {
+        ctxMenu.style.left = (e.clientX - rect.width) + "px";
+      }
+      if (rect.bottom > window.innerHeight) {
+        ctxMenu.style.top = (e.clientY - rect.height) + "px";
+      }
+    });
+  });
+
+  function hideContextMenu() {
+    if (ctxMenu) ctxMenu.classList.add("hidden");
+    ctxTaskId = null;
+    ctxRow = null;
+  }
+
+  // Handle menu actions
+  ctxMenu?.addEventListener("click", (e) => {
+    const action = e.target.closest("[data-action]")?.dataset.action;
+    if (!action) return;
+
+    const taskId = ctxTaskId;
+    hideContextMenu();
+
+    if (action === "delete-task" && taskId) {
+      deleteTaskById(taskId);
+    }
+  });
+
+  // Hide on click outside or Escape
+  document.addEventListener("click", (e) => {
+    if (ctxMenu && !ctxMenu.contains(e.target)) hideContextMenu();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && ctxMenu && !ctxMenu.classList.contains("hidden")) {
+      hideContextMenu();
+    }
+  });
+
+  async function deleteTaskById(taskId) {
+    const confirmed = confirm("Are you sure you want to delete this task? This action cannot be undone.");
+    if (!confirmed) return;
+
+    const apiBase = window.API_BASE || "";
+    try {
+      const res = await fetch(`${apiBase}/pipeline/tasks/${taskId}`, {
+        method: "DELETE",
+        headers: { ...getAuthHeaders() },
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error(`Server error (${res.status})`);
+
+      if (window.Toast) Toast.success("Task Deleted", "Task removed successfully.");
+      window.fetchPipeline?.({ forceRefresh: true });
+    } catch (err) {
+      console.error("[PIPELINE] Delete task failed:", err);
+      if (window.Toast) Toast.error("Delete Failed", err.message);
+    }
+  }
 
   /**
    * Build task object from row dataset attributes

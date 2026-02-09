@@ -178,7 +178,14 @@
 
     const title = qs("teamUserModalTitle");
     const btnDelete = qs("btnDeleteTeamUser");
-    if (title) title.textContent = state.mode === "edit" ? "Edit Team Member" : "New Team Member";
+    const isExternal = !!state.user?.is_external;
+    if (title) {
+      if (state.mode === "edit") {
+        title.textContent = isExternal ? "Edit External User" : "Edit Team Member";
+      } else {
+        title.textContent = isExternal ? "New External User" : "New Team Member";
+      }
+    }
     if (btnDelete) btnDelete.classList.toggle("hidden", state.mode !== "edit");
 
     const u = state.user || {};
@@ -305,6 +312,7 @@
 
     const payload = {
       user_name: name,
+      is_external: !!state.user?.is_external,
       role_id: qs("tu_role")?.value || null,
       seniority_id: qs("tu_seniority")?.value || null,
       status_id: qs("tu_status")?.value || null,

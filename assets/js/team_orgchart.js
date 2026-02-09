@@ -627,8 +627,9 @@
     // Create nodes
     // ================================
     function createNodeEl(u) {
+        const isAgent = !!u._isAgent;
         const div = document.createElement('div');
-        div.className = 'orgchart-node';
+        div.className = 'orgchart-node' + (isAgent ? ' orgchart-node--agent' : '');
         div.setAttribute('data-user-id', u.user_id);
 
         const roleName = u.user_role_name || u.role?.name || '-';
@@ -643,11 +644,15 @@
             ? `<img src="${escapeHtml(u.user_photo)}" alt="${safeName}" />`
             : initial;
 
+        const badgeHtml = isAgent
+            ? `<span class="team-agent-badge" style="font-size:9px;padding:1px 6px;margin-left:6px;">AI</span>`
+            : `<span class="orgchart-node-status ${statusActive ? 'is-active' : ''}" title="${escapeHtml(statusName)}"></span>`;
+
         div.innerHTML = `
             <div class="orgchart-node-avatar" style="color:${color}; border-color:${color};">${avatarInner}</div>
             <div class="orgchart-node-name" title="${safeName}">
                 ${safeName}
-                <span class="orgchart-node-status ${statusActive ? 'is-active' : ''}" title="${escapeHtml(statusName)}"></span>
+                ${badgeHtml}
             </div>
             <div class="orgchart-node-role">${escapeHtml(roleName)}</div>
             ${seniorityName && seniorityName !== '-' ? `<div class="orgchart-node-seniority">${escapeHtml(seniorityName)}</div>` : ''}
@@ -662,20 +667,22 @@
         div.style.left = pos.x + 'px';
         div.style.top = pos.y + 'px';
 
-        // Double-click to edit user
-        div.addEventListener('dblclick', e => {
-            if (e.target.closest('.orgchart-port')) return;
-            e.preventDefault();
-            e.stopPropagation();
-            openUserEdit(u);
-        });
+        if (!isAgent) {
+            // Double-click to edit user
+            div.addEventListener('dblclick', e => {
+                if (e.target.closest('.orgchart-port')) return;
+                e.preventDefault();
+                e.stopPropagation();
+                openUserEdit(u);
+            });
 
-        // Right-click context menu on node
-        div.addEventListener('contextmenu', e => {
-            e.preventDefault();
-            e.stopPropagation();
-            showNodeContextMenu(e.clientX, e.clientY, u);
-        });
+            // Right-click context menu on node
+            div.addEventListener('contextmenu', e => {
+                e.preventDefault();
+                e.stopPropagation();
+                showNodeContextMenu(e.clientX, e.clientY, u);
+            });
+        }
 
         return div;
     }

@@ -207,6 +207,21 @@
                 </div>
               </div>
 
+              <!-- Groups section -->
+              <div class="msg-channel-section" id="sectionGroups">
+                <div class="msg-channel-section-header" data-section="groups">
+                  <span class="msg-section-chevron">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
+                  <span class="msg-section-title">Groups</span>
+                </div>
+                <div class="msg-channel-section-content" id="groupChannels">
+                  <!-- Rendered by JS -->
+                </div>
+              </div>
+
               <!-- Direct Messages section -->
               <div class="msg-channel-section" id="sectionDirect">
                 <div class="msg-channel-section-header" data-section="direct">
@@ -770,7 +785,7 @@
                 }
                 // Filter to show only project channels
                 document.querySelectorAll('.msg-channel-section').forEach(function(section) {
-                  if (section.id === 'sectionProjects' || section.id === 'sectionCustom') {
+                  if (section.id === 'sectionProjects' || section.id === 'sectionGroups' || section.id === 'sectionCustom') {
                     section.style.display = '';
                   } else {
                     section.style.display = 'none';

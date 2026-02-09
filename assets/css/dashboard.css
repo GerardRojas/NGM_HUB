@@ -245,8 +245,15 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 14px 0;
+    padding: 14px 20px;
+    margin: 0 -20px;
     border-bottom: 1px solid #1f1f1f;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.my-work-task:hover {
+    background: rgba(255, 255, 255, 0.02);
 }
 
 .my-work-task:last-child {
@@ -628,6 +635,17 @@
     .mention-text {
         font-size: 12px;
     }
+
+    /* Task meta wraps on smaller screens */
+    .my-work-task-meta {
+        flex-wrap: wrap;
+    }
+
+    .my-work-task {
+        margin: 0 -12px;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
 }
 
 @media (max-width: 480px) {
@@ -646,6 +664,19 @@
 
     .mention-card {
         padding: 10px;
+    }
+
+    .my-work-task {
+        margin: 0 -10px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    /* Working actions stack vertically on tiny screens */
+    .task-working-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
     }
 }
 
@@ -820,6 +851,84 @@
     border-radius: 6px;
     font-size: 12px;
     color: #60a5fa;
+}
+
+/* Priority pills */
+.task-priority-pill {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.task-priority-high {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+}
+
+.task-priority-medium {
+    background: rgba(251, 191, 36, 0.15);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    color: #fbbf24;
+}
+
+.task-priority-low {
+    background: rgba(62, 207, 142, 0.15);
+    border: 1px solid rgba(62, 207, 142, 0.3);
+    color: #3ecf8e;
+}
+
+.task-priority-default {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #888888;
+}
+
+/* Due date display */
+.task-due-date {
+    font-size: 11px;
+    font-weight: 400;
+    color: #888888;
+    white-space: nowrap;
+}
+
+.task-due-today {
+    color: #fbbf24;
+}
+
+.task-due-overdue {
+    color: #ef4444;
+    font-weight: 500;
+}
+
+/* Status badge color variants */
+.task-status-badge--not-started {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #888888;
+}
+
+.task-status-badge--working {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+}
+
+.task-status-badge--review {
+    background: rgba(251, 146, 60, 0.15);
+    border-color: rgba(251, 146, 60, 0.3);
+    color: #fb923c;
+}
+
+.task-status-badge--stuck {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
 }
 
 /* Send to Review button */

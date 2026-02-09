@@ -2,7 +2,7 @@
 
 ## Files (~6800 lines total)
 - `arturito.html` - Full-page chat interface (~389 lines)
-- `arturito-settings.html` - Admin settings + analytics (~1235 lines)
+- `agents-settings.html` - Agent settings (Arturito permissions, Receipt Agent, Daneel, analytics)
 - `assets/js/arturito.js` - Core chat logic (~1279 lines)
 - `assets/js/arturito_widget.js` - Floating widget + copilot (~2080 lines)
 - `assets/js/arturito_analytics.js` - Error/command analytics (~236 lines)
@@ -75,7 +75,7 @@ Built-in help docs (bilingual EN/ES) covering all modules:
 - Projects (creation, budgeting, team assignment)
 - Vendors, Accounts, Estimator Suite, Team, Messages
 
-## Settings & Analytics (arturito-settings.html + arturito_analytics.js)
+## Settings & Analytics (agents-settings.html + arturito_analytics.js)
 
 ### Access Control
 - Restricted to CEO, COO, KD COO roles

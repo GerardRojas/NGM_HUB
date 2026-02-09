@@ -1278,11 +1278,13 @@
    * Load templates list directly from Supabase Storage bucket
    */
   async function loadTemplatesListFromStorage() {
+    console.log('[ESTIMATOR] loadTemplatesListFromStorage called');
     try {
       if (!supabaseClient) {
-        console.warn('[ESTIMATOR] Supabase not available');
+        console.error('[ESTIMATOR] supabaseClient is NULL - Supabase not initialized');
         return [];
       }
+      console.log('[ESTIMATOR] Supabase client OK, listing bucket:', BUCKETS.TEMPLATES);
 
       // List all items in templates bucket root
       const { data: items, error } = await supabaseClient.storage
@@ -1290,33 +1292,37 @@
         .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
       if (error) {
-        console.error('[ESTIMATOR] Error listing templates:', error);
+        console.error('[ESTIMATOR] Bucket list error:', error);
         return [];
       }
 
-      console.log('[ESTIMATOR] Bucket items:', items);
+      console.log('[ESTIMATOR] Raw bucket items:', JSON.stringify(items, null, 2));
 
-      // Filter to only folders: they have no metadata, or id is null, or name has no extension
+      // Filter to only folders: name has no extension (no dot)
       const templateFolders = (items || []).filter(f => {
         const name = f.name || '';
         if (!name) return false;
-        // Skip files (have extensions)
         if (name.includes('.')) return false;
         return true;
       });
 
-      console.log('[ESTIMATOR] Template folders found:', templateFolders.map(f => f.name));
+      console.log('[ESTIMATOR] Folders after filter:', templateFolders.map(f => f.name));
 
       // Load meta for each template
       const templates = [];
       for (const folder of templateFolders) {
+        console.log('[ESTIMATOR] Processing folder:', folder.name);
         try {
-          const { data } = await downloadFromStorage(
+          const metaPath = `${folder.name}/template_meta.json`;
+          console.log('[ESTIMATOR] Downloading:', metaPath);
+          const { data, error: dlErr } = await downloadFromStorage(
             BUCKETS.TEMPLATES,
-            `${folder.name}/template_meta.json`
+            metaPath
           );
+          console.log('[ESTIMATOR] Meta download result - data:', !!data, 'error:', dlErr);
           if (data) {
             const text = await data.text();
+            console.log('[ESTIMATOR] Meta content:', text.substring(0, 200));
             const meta = JSON.parse(text);
             templates.push({
               id: folder.name,
@@ -1327,14 +1333,14 @@
               materials_count: meta.materials_count || 0
             });
           } else {
-            // No meta file, use folder name
+            console.log('[ESTIMATOR] No meta file, using folder name');
             templates.push({
               id: folder.name,
               name: folder.name.replace(/-\d+$/, '').replace(/-/g, ' ')
             });
           }
         } catch (err) {
-          // If error loading meta, still list the template
+          console.warn('[ESTIMATOR] Error loading meta for', folder.name, err);
           templates.push({
             id: folder.name,
             name: folder.name.replace(/-\d+$/, '').replace(/-/g, ' ')
@@ -1342,6 +1348,7 @@
         }
       }
 
+      console.log('[ESTIMATOR] Final templates list:', templates);
       return templates;
     } catch (err) {
       console.error('[ESTIMATOR] Error loading templates from storage:', err);
@@ -1354,6 +1361,7 @@
    * @param {string} templateId
    */
   async function loadTemplate(templateId) {
+    console.log('[ESTIMATOR] loadTemplate called with id:', templateId);
     els.statusEl.textContent = 'Loading template...';
 
     try {
@@ -1364,6 +1372,12 @@
       try {
         els.statusEl.textContent = 'Loading template from storage...';
         const bucketResult = await loadTemplateFromBucket(templateId);
+        console.log('[ESTIMATOR] loadTemplateFromBucket result:', {
+          hasTemplate: !!bucketResult.template,
+          templateKeys: bucketResult.template ? Object.keys(bucketResult.template) : [],
+          conceptsCount: bucketResult.conceptsSnapshot?.length,
+          materialsCount: bucketResult.materialsSnapshot?.length
+        });
 
         if (bucketResult.template) {
           templateData = bucketResult.template;
@@ -2062,10 +2076,12 @@
   // ================================
 
   function handleNewEstimate() {
+    console.log('[ESTIMATOR] handleNewEstimate called, isDirty:', isDirty);
     if (isDirty) {
       const shouldProceed = window.confirm('You have unsaved changes. Create new estimate anyway?');
       if (!shouldProceed) return;
     }
+    console.log('[ESTIMATOR] Opening template picker modal...');
     openTemplatePickerModal();
   }
 
@@ -3241,14 +3257,16 @@
   }
 
   async function openTemplatePickerModal() {
+    console.log('[ESTIMATOR] openTemplatePickerModal, modal element:', els.templatePickerModal);
     if (!els.templatePickerModal) {
-      // Fallback to blank estimate if modal not found
+      console.warn('[ESTIMATOR] Template picker modal NOT FOUND in DOM, falling back to blank');
       createBlankEstimate();
       return;
     }
 
     // Show modal
     els.templatePickerModal.classList.remove('hidden');
+    console.log('[ESTIMATOR] Modal shown, loading templates...');
 
     // Load templates list into the picker
     await loadTemplatesForPicker();
@@ -3262,8 +3280,12 @@
    * Load templates specifically for the picker modal
    */
   async function loadTemplatesForPicker() {
+    console.log('[ESTIMATOR] loadTemplatesForPicker called');
     const listEl = document.getElementById('template-picker-list');
-    if (!listEl) return;
+    if (!listEl) {
+      console.warn('[ESTIMATOR] template-picker-list element not found');
+      return;
+    }
 
     // Show loading state
     listEl.innerHTML = `
@@ -3275,7 +3297,9 @@
 
     try {
       // Load directly from Supabase bucket (more reliable than backend API)
+      console.log('[ESTIMATOR] Calling loadTemplatesListFromStorage...');
       const templates = await loadTemplatesListFromStorage();
+      console.log('[ESTIMATOR] Templates returned:', templates);
 
       if (!templates || templates.length === 0) {
         listEl.innerHTML = `

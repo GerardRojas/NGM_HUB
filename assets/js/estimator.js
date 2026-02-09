@@ -922,12 +922,14 @@
   async function loadEstimatesList() {
     try {
       // Use backend API to list estimates
+      console.log('[ESTIMATOR] Fetching estimates list from API...');
       const response = await fetch(`${API_BASE}/estimator/estimates`, {
         method: 'GET',
         headers: { ...getAuthHeaders() },
         credentials: 'include'
       });
 
+      console.log('[ESTIMATOR] Estimates API response:', response.status);
       if (!response.ok) {
         console.warn('[ESTIMATOR] Could not load estimates list');
         updateEstimatesListUI([]);
@@ -936,6 +938,7 @@
 
       const result = await response.json();
       const estimates = result.estimates || [];
+      console.log('[ESTIMATOR] Estimates found:', estimates.length, estimates);
 
       // Update sidebar
       updateEstimatesListUI(estimates);

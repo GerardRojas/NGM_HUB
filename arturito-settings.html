@@ -649,6 +649,56 @@
       .loading-logo { width: 160px; height: 160px; object-fit: contain; animation: pulse 1.5s ease-in-out infinite; }
       .loading-text { color: rgba(255,255,255,0.5); font-size: 13px; font-family: system-ui, sans-serif; letter-spacing: 0.05em; }
       @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+
+        /* Agent Config */
+        .agent-config-list { display: flex; flex-direction: column; gap: 0; }
+        .agent-config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid #27272f;
+        }
+        .agent-config-item:last-child { border-bottom: none; }
+        .agent-config-info { flex: 1; min-width: 0; padding-right: 24px; }
+        .agent-config-name { font-size: 14px; font-weight: 500; color: #e5e7eb; display: block; }
+        .agent-config-desc { font-size: 12px; color: #6b7280; margin-top: 2px; display: block; }
+        .agent-config-control { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+
+        /* Toggle Switch */
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider {
+            position: absolute; inset: 0; cursor: pointer; border-radius: 24px;
+            background: #3f3f46; transition: background 0.2s;
+        }
+        .toggle-slider::before {
+            content: ""; position: absolute; width: 18px; height: 18px;
+            left: 3px; bottom: 3px; border-radius: 50%;
+            background: #fff; transition: transform 0.2s;
+        }
+        .toggle-switch input:checked + .toggle-slider { background: #22c55e; }
+        .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+        /* Confidence Slider */
+        .confidence-slider {
+            -webkit-appearance: none; appearance: none;
+            width: 120px; height: 6px; border-radius: 3px;
+            background: #3f3f46; outline: none;
+        }
+        .confidence-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none;
+            width: 16px; height: 16px; border-radius: 50%;
+            background: #22c55e; cursor: pointer;
+        }
+        .confidence-slider::-moz-range-thumb {
+            width: 16px; height: 16px; border-radius: 50%;
+            background: #22c55e; cursor: pointer; border: none;
+        }
+        .confidence-value {
+            font-size: 14px; font-weight: 600; color: #22c55e;
+            min-width: 40px; text-align: right;
+        }
     </style>
     <script src="assets/js/page-loading.js" defer></script>
 </head>
@@ -776,6 +826,99 @@
                                 <!-- Permissions by Category -->
                                 <div class="arturito-settings-grid" id="permissionsContainer">
                                     <!-- Permissions cards will be rendered here -->
+                                </div>
+
+                                <!-- ====== Agent Manager Section ====== -->
+                                <div class="analytics-section" style="margin-top: 40px;" id="agentManagerSection">
+                                    <div class="section-header">
+                                        <h3 style="font-size: 16px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">
+                                            Receipt Agent
+                                        </h3>
+                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">
+                                            Arturito receipt processing stats and configuration
+                                        </p>
+                                    </div>
+
+                                    <!-- Agent Stats Row 1 -->
+                                    <div class="stats-row" style="margin-top: 20px;">
+                                        <div class="stat-card">
+                                            <span class="stat-label">Total Processed</span>
+                                            <span class="stat-value" id="agentStatTotal">-</span>
+                                        </div>
+                                        <div class="stat-card">
+                                            <span class="stat-label">Expenses Created</span>
+                                            <span class="stat-value enabled" id="agentStatLinked">-</span>
+                                        </div>
+                                        <div class="stat-card">
+                                            <span class="stat-label">Success Rate</span>
+                                            <span class="stat-value" id="agentStatSuccessRate">-</span>
+                                        </div>
+                                        <div class="stat-card">
+                                            <span class="stat-label">Avg Confidence</span>
+                                            <span class="stat-value" id="agentStatConfidence">-</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Agent Stats Row 2 -->
+                                    <div class="stats-row">
+                                        <div class="stat-card">
+                                            <span class="stat-label">Pending Review</span>
+                                            <span class="stat-value" id="agentStatPending">-</span>
+                                        </div>
+                                        <div class="stat-card">
+                                            <span class="stat-label">Errors</span>
+                                            <span class="stat-value disabled" id="agentStatErrors">-</span>
+                                        </div>
+                                        <div class="stat-card">
+                                            <span class="stat-label">Duplicates Caught</span>
+                                            <span class="stat-value" id="agentStatDuplicates">-</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Agent Configuration -->
+                                    <div class="permission-card" style="margin-top: 20px;">
+                                        <div class="permission-card-header">
+                                            <h3 class="permission-card-title">Agent Configuration</h3>
+                                        </div>
+
+                                        <div class="agent-config-list">
+                                            <!-- Auto-create expenses -->
+                                            <div class="agent-config-item">
+                                                <div class="agent-config-info">
+                                                    <span class="agent-config-name">Auto-create expenses</span>
+                                                    <span class="agent-config-desc">Automatically create expense records after scanning receipts</span>
+                                                </div>
+                                                <label class="toggle-switch">
+                                                    <input type="checkbox" id="cfgAutoCreate" checked>
+                                                    <span class="toggle-slider"></span>
+                                                </label>
+                                            </div>
+
+                                            <!-- Minimum confidence -->
+                                            <div class="agent-config-item">
+                                                <div class="agent-config-info">
+                                                    <span class="agent-config-name">Minimum confidence threshold</span>
+                                                    <span class="agent-config-desc">Only auto-create if categorization confidence is above this %</span>
+                                                </div>
+                                                <div class="agent-config-control">
+                                                    <input type="range" id="cfgMinConfidence" min="50" max="95" step="5" value="70" class="confidence-slider">
+                                                    <span class="confidence-value" id="cfgMinConfidenceValue">70%</span>
+                                                </div>
+                                            </div>
+
+                                            <!-- Auto-skip duplicates -->
+                                            <div class="agent-config-item">
+                                                <div class="agent-config-info">
+                                                    <span class="agent-config-name">Auto-skip exact duplicates</span>
+                                                    <span class="agent-config-desc">Automatically reject receipts with matching file hash (no confirmation prompt)</span>
+                                                </div>
+                                                <label class="toggle-switch">
+                                                    <input type="checkbox" id="cfgAutoSkipDuplicates">
+                                                    <span class="toggle-slider"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Command Analytics Section -->
@@ -1210,11 +1353,89 @@
             }
         }
 
+        // ====== Agent Manager ======
+
+        function _agentAuthHeaders() {
+            var token = localStorage.getItem('ngmToken');
+            return token ? { 'Authorization': 'Bearer ' + token } : {};
+        }
+
+        async function loadAgentStats() {
+            try {
+                var resp = await fetch(API_BASE + '/pending-receipts/agent-stats', {
+                    headers: _agentAuthHeaders()
+                });
+                if (!resp.ok) return;
+                var stats = await resp.json();
+
+                document.getElementById('agentStatTotal').textContent = stats.total_processed;
+                document.getElementById('agentStatLinked').textContent = stats.expenses_created;
+                document.getElementById('agentStatSuccessRate').textContent = stats.success_rate + '%';
+                document.getElementById('agentStatConfidence').textContent = stats.avg_confidence + '%';
+                document.getElementById('agentStatPending').textContent = stats.pending_review;
+                document.getElementById('agentStatErrors').textContent = stats.errors;
+                document.getElementById('agentStatDuplicates').textContent = stats.duplicates_caught;
+            } catch (e) {
+                console.error('[AgentManager] Stats error:', e);
+            }
+        }
+
+        async function loadAgentConfig() {
+            try {
+                var resp = await fetch(API_BASE + '/pending-receipts/agent-config', {
+                    headers: _agentAuthHeaders()
+                });
+                if (!resp.ok) return;
+                var config = await resp.json();
+
+                document.getElementById('cfgAutoCreate').checked = config.auto_create_expense !== false;
+                var minConf = config.min_confidence || 70;
+                document.getElementById('cfgMinConfidence').value = minConf;
+                document.getElementById('cfgMinConfidenceValue').textContent = minConf + '%';
+                document.getElementById('cfgAutoSkipDuplicates').checked = config.auto_skip_duplicates === true;
+            } catch (e) {
+                console.error('[AgentManager] Config load error:', e);
+            }
+        }
+
+        async function saveAgentConfig(key, value) {
+            try {
+                var body = {};
+                body[key] = value;
+                await fetch(API_BASE + '/pending-receipts/agent-config', {
+                    method: 'PATCH',
+                    headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
+                    body: JSON.stringify(body)
+                });
+            } catch (e) {
+                console.error('[AgentManager] Config save error:', e);
+            }
+        }
+
+        function initAgentManager() {
+            document.getElementById('cfgAutoCreate').addEventListener('change', function(e) {
+                saveAgentConfig('auto_create_expense', e.target.checked);
+            });
+            document.getElementById('cfgMinConfidence').addEventListener('input', function(e) {
+                document.getElementById('cfgMinConfidenceValue').textContent = e.target.value + '%';
+            });
+            document.getElementById('cfgMinConfidence').addEventListener('change', function(e) {
+                saveAgentConfig('min_confidence', parseInt(e.target.value));
+            });
+            document.getElementById('cfgAutoSkipDuplicates').addEventListener('change', function(e) {
+                saveAgentConfig('auto_skip_duplicates', e.target.checked);
+            });
+
+            loadAgentStats();
+            loadAgentConfig();
+        }
+
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             if (!checkAccess()) return;
 
             loadPermissions();
+            initAgentManager();
 
             // Reset button
             document.getElementById('btnResetDefaults').addEventListener('click', resetToDefaults);

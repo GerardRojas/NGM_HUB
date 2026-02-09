@@ -2448,6 +2448,13 @@
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
+/* Check - amber */
+.msg-receipt-status--check {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
 /* ========================================
    Bot Message Styling (Arturito agent)
    ======================================== */
@@ -2497,6 +2504,63 @@
   display: none;
 }
 
+/* Bot action buttons (Process Anyway / Skip) */
+.msg-bot-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.msg-bot-action-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+}
+
+.msg-bot-action-btn--primary {
+  background: hsl(35, 70%, 45%);
+  color: #fff;
+}
+
+.msg-bot-action-btn--primary:hover {
+  background: hsl(35, 70%, 50%);
+}
+
+.msg-bot-action-btn--secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.msg-bot-action-btn--secondary:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.msg-bot-actions-dismissed,
+.msg-bot-actions-loading {
+  font-size: 11px;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 4px 0;
+}
+
+/* Check flow hint text (for text-input states) */
+.msg-bot-actions--hint {
+  opacity: 0.7;
+}
+
+.msg-bot-input-hint {
+  font-size: 11px;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 4px 0;
+}
+
 /* Receipt attachment styling */
 .msg-attachment--receipt {
   position: relative;
@@ -2529,6 +2593,145 @@
 .msg-attachment--receipt:hover .msg-attachment-view {
   opacity: 1;
 }
+
+/* ==========================================
+   RECEIPT UPLOAD PROGRESS TRACKER
+   Persistent progress card during upload/processing
+   ========================================== */
+
+.msg-receipt-progress-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 24px 8px;
+  pointer-events: none;
+}
+
+.msg-receipt-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  pointer-events: auto;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.msg-receipt-progress--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.msg-receipt-progress--hiding {
+  animation: receiptProgressFadeOut 0.3s ease forwards;
+}
+
+@keyframes receiptProgressFadeOut {
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.msg-receipt-progress-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.msg-receipt-progress-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+}
+
+.msg-receipt-progress-step {
+  font-size: 11px;
+  font-weight: 600;
+  color: #60a5fa;
+  white-space: nowrap;
+  transition: color 0.3s ease;
+}
+
+/* Step colors */
+.msg-receipt-progress--done .msg-receipt-progress-step {
+  color: #3ecf8e;
+}
+
+.msg-receipt-progress--error .msg-receipt-progress-step {
+  color: #f87171;
+}
+
+.msg-receipt-progress--duplicate .msg-receipt-progress-step {
+  color: #f59e0b;
+}
+
+/* Progress bar */
+.msg-receipt-progress-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.msg-receipt-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.5s ease, background-color 0.3s ease;
+  width: 0;
+}
+
+.msg-receipt-progress-fill--blue {
+  background: #60a5fa;
+}
+
+.msg-receipt-progress-fill--green {
+  background: #3ecf8e;
+}
+
+.msg-receipt-progress-fill--amber {
+  background: #f59e0b;
+}
+
+.msg-receipt-progress-fill--red {
+  background: #f87171;
+}
+
+/* Animated stripes for in-progress steps */
+.msg-receipt-progress-fill--animated {
+  background-image: linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.15) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.15) 75%,
+    transparent 75%
+  );
+  background-size: 20px 20px;
+  animation: receiptProgressStripes 0.8s linear infinite;
+}
+
+@keyframes receiptProgressStripes {
+  from { background-position: 0 0; }
+  to { background-position: 20px 0; }
+}
+
 
 /* ==========================================
    MOBILE GOOGLE CHAT-LIKE LAYOUT
@@ -2852,6 +3055,23 @@
   /* Hide header action buttons on mobile for cleaner look */
   .msg-chat-header-actions .msg-btn-icon#btnToggleThread {
     display: none;
+  }
+
+  /* Receipt progress tracker - mobile */
+  .msg-receipt-progress-container {
+    padding: 6px 12px;
+  }
+
+  .msg-receipt-progress {
+    padding: 8px 12px;
+  }
+
+  .msg-receipt-progress-name {
+    font-size: 13px;
+  }
+
+  .msg-receipt-progress-step {
+    font-size: 12px;
   }
 
   /* ========== BOTTOM NAVIGATION ========== */

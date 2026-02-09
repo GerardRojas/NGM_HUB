@@ -824,6 +824,176 @@
 }
 
 /* ==========================================
+   OVERHEAD MODAL
+   ========================================== */
+
+.overhead-modal-content {
+    width: min(520px, 90vw);
+}
+
+.overhead-summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 6px;
+    margin-bottom: 12px;
+}
+
+.overhead-summary-label {
+    font-size: 13px;
+    color: #9ca3af;
+}
+
+.overhead-summary-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+.overhead-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+}
+
+.overhead-table thead th {
+    font-size: 11px;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 8px;
+    border-bottom: 1px solid #2a2a2a;
+    text-align: left;
+}
+
+.overhead-table tbody tr {
+    border-bottom: 1px solid #1a1a1a;
+}
+
+.overhead-table tbody tr.oh-row-disabled {
+    opacity: 0.4;
+}
+
+.overhead-table td {
+    padding: 6px 8px;
+    vertical-align: middle;
+}
+
+.oh-col-toggle { width: 36px; text-align: center; }
+.oh-col-name   { width: auto; }
+.oh-col-pct    { width: 72px; }
+.oh-col-amount { width: 100px; text-align: right; }
+.oh-col-actions { width: 36px; text-align: center; }
+
+.oh-toggle {
+    width: 16px;
+    height: 16px;
+    accent-color: #3ecf8e;
+    cursor: pointer;
+}
+
+.oh-name-input,
+.oh-pct-input {
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #e5e7eb;
+    font-size: 13px;
+    padding: 4px 6px;
+    transition: border-color 0.15s;
+}
+
+.oh-name-input:hover,
+.oh-pct-input:hover,
+.oh-name-input:focus,
+.oh-pct-input:focus {
+    border-color: #3a3a3a;
+    outline: none;
+}
+
+.oh-pct-input {
+    text-align: right;
+}
+
+.oh-amount-cell {
+    font-size: 13px;
+    color: #9ca3af;
+    text-align: right;
+}
+
+.oh-delete-btn {
+    background: transparent;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1;
+    transition: color 0.15s, background 0.15s;
+}
+
+.oh-delete-btn:hover {
+    color: #ef4444;
+    background: rgba(239,68,68,0.1);
+}
+
+.overhead-add-line-btn {
+    background: transparent;
+    border: 1px dashed #2a2a2a;
+    color: #6b7280;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+    margin-bottom: 12px;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.overhead-add-line-btn:hover {
+    border-color: #3ecf8e;
+    color: #3ecf8e;
+}
+
+.overhead-total-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    background: rgba(62,207,142,0.06);
+    border: 1px solid rgba(62,207,142,0.15);
+    border-radius: 6px;
+    margin-bottom: 16px;
+    gap: 12px;
+}
+
+.overhead-total-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e5e7eb;
+    flex: 1;
+}
+
+.overhead-total-pct {
+    font-size: 13px;
+    font-weight: 600;
+    color: #3ecf8e;
+}
+
+.overhead-total-amount {
+    font-size: 14px;
+    font-weight: 700;
+    color: #3ecf8e;
+    min-width: 100px;
+    text-align: right;
+}
+
+/* ==========================================
    SAVE CONTROLS (toolbar)
    ========================================== */
 
@@ -1262,7 +1432,7 @@
 .concept-picker-table-wrapper {
     border: 1px solid var(--border-soft, #2a2a2a);
     border-radius: 8px;
-    max-height: 250px;
+    max-height: 380px;
     overflow-y: auto;
     background: rgba(0, 0, 0, 0.2);
 }

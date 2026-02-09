@@ -94,37 +94,35 @@
       window.initTopbarPills();
     }
 
-    // Load default template from bucket or start blank
-    loadDefaultTemplate();
+    // Load last estimate or show empty state
+    loadLastEstimateOrEmpty();
 
     console.log('[ESTIMATOR] Initialized');
   }
 
   /**
-   * Load default template from bucket, or create blank estimate if none available
+   * Load last saved estimate, or show empty state if none exist
    */
-  async function loadDefaultTemplate() {
+  async function loadLastEstimateOrEmpty() {
     if (els.statusEl) {
-      els.statusEl.textContent = 'Loading default template...';
+      els.statusEl.textContent = 'Loading estimates...';
     }
 
     try {
-      // Get list of templates from bucket
-      const templates = await loadTemplatesListFromStorage();
+      const estimates = await loadEstimatesList();
 
-      if (templates && templates.length > 0) {
-        // Load the first template available
-        const defaultTemplate = templates[0];
-        console.log('[ESTIMATOR] Loading default template:', defaultTemplate.name);
-        await loadTemplate(defaultTemplate.id);
+      if (estimates && estimates.length > 0) {
+        // Load the most recent estimate
+        const latest = estimates[0];
+        console.log('[ESTIMATOR] Loading last estimate:', latest.name || latest.id);
+        await loadEstimate(latest.id || latest.name);
       } else {
-        // No templates available, start with blank
-        console.log('[ESTIMATOR] No templates found, starting blank');
+        // No saved estimates - show empty state
+        console.log('[ESTIMATOR] No estimates found, showing empty state');
         createBlankEstimate();
       }
     } catch (err) {
-      console.error('[ESTIMATOR] Error loading default template:', err);
-      // Fallback to blank estimate
+      console.error('[ESTIMATOR] Error loading estimates:', err);
       createBlankEstimate();
     }
   }
@@ -141,6 +139,7 @@
     // Setup modals
     setupProjectInfoModal();
     setupColumnsModal();
+    setupOverheadModal();
     setupSaveAsTemplateModal();
     setupTemplatePickerModal();
     setupAddConceptModal();
@@ -430,6 +429,7 @@
     // Modals
     els.projectModal = document.getElementById('project-modal');
     els.columnsModal = document.getElementById('columns-modal');
+    els.overheadModal = document.getElementById('overhead-modal');
     els.saveAsTemplateModal = document.getElementById('save-as-template-modal');
     els.templatePickerModal = document.getElementById('template-picker-modal');
     els.addConceptModal = document.getElementById('add-concept-modal');
@@ -1016,6 +1016,11 @@
       currentProjectId = currentEstimateData.project_id || null;
       isDirty = false;
 
+      // Migrate old overhead format if needed
+      if (!currentEstimateData.overhead || !Array.isArray(currentEstimateData.overhead.items)) {
+        currentEstimateData.overhead = getDefaultOverhead();
+      }
+
       renderEstimate();
       showFeedback('Estimate loaded', 'success');
 
@@ -1399,6 +1404,11 @@
 
       currentEstimateId = null; // Will be assigned on first save
       currentProjectId = null;
+
+      // Ensure overhead has new items format
+      if (!currentEstimateData.overhead || !Array.isArray(currentEstimateData.overhead.items)) {
+        currentEstimateData.overhead = getDefaultOverhead();
+      }
 
       // Populate template cache if we have snapshots
       if (snapshots && (snapshots.concepts.length > 0 || snapshots.materials.length > 0)) {
@@ -2043,7 +2053,7 @@
       const shouldProceed = window.confirm('You have unsaved changes. Create new estimate anyway?');
       if (!shouldProceed) return;
     }
-    createBlankEstimate();
+    openTemplatePickerModal();
   }
 
   // ================================
@@ -2470,9 +2480,19 @@
       grandTotal += categoryTotal;
     });
 
-    // Apply overhead
-    const overheadPct = currentEstimateData.overhead?.percentage || 0;
+    // Apply overhead (additive: each line % applied to same base subtotal)
+    let overheadPct = 0;
+    if (Array.isArray(currentEstimateData.overhead?.items)) {
+      overheadPct = currentEstimateData.overhead.items
+        .filter(i => i.enabled)
+        .reduce((sum, i) => sum + (i.percentage || 0), 0);
+      currentEstimateData.overhead.totalPercentage = overheadPct;
+    } else {
+      // Backward compat: old single-percentage format
+      overheadPct = currentEstimateData.overhead?.percentage || 0;
+    }
     const overheadAmount = grandTotal * (overheadPct / 100);
+    if (!currentEstimateData.overhead) currentEstimateData.overhead = {};
     currentEstimateData.overhead.amount = overheadAmount;
     currentEstimateData.subtotal = grandTotal;
     currentEstimateData.total = grandTotal + overheadAmount;
@@ -2634,11 +2654,182 @@
     }
   }
 
+  // ================================
+  // OVERHEAD MODAL
+  // ================================
+
+  const DEFAULT_OVERHEAD_ITEMS = [
+    { name: 'Profit', percentage: 25, enabled: true },
+    { name: 'Referral Fee', percentage: 7, enabled: true },
+    { name: 'Base Materials', percentage: 3, enabled: true },
+    { name: 'Finish Details', percentage: 1.5, enabled: true },
+    { name: 'Pad', percentage: 5, enabled: true }
+  ];
+
+  // Temporary working copy while modal is open
+  let overheadWorkingItems = [];
+
+  function getDefaultOverhead() {
+    return {
+      items: DEFAULT_OVERHEAD_ITEMS.map(i => ({ ...i })),
+      totalPercentage: 0,
+      amount: 0
+    };
+  }
+
   function handleOverhead() {
-    // TODO: Open overhead configuration modal
-    if (window.Toast) {
-      Toast.info('Coming Soon', 'Overhead: Configure overhead percentage/amount');
+    openOverheadModal();
+  }
+
+  function setupOverheadModal() {
+    const modal = els.overheadModal;
+    if (!modal) return;
+
+    document.getElementById('overhead-close-btn')?.addEventListener('click', closeOverheadModal);
+    document.getElementById('overhead-cancel-btn')?.addEventListener('click', closeOverheadModal);
+    document.getElementById('overhead-save-btn')?.addEventListener('click', saveOverheadFromModal);
+    document.getElementById('overhead-add-line')?.addEventListener('click', addOverheadLine);
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeOverheadModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+        closeOverheadModal();
+      }
+    });
+  }
+
+  function openOverheadModal() {
+    if (!els.overheadModal) return;
+
+    // Ensure overhead structure exists
+    if (!currentEstimateData.overhead || !Array.isArray(currentEstimateData.overhead.items)) {
+      currentEstimateData.overhead = getDefaultOverhead();
     }
+
+    // Create working copy
+    overheadWorkingItems = currentEstimateData.overhead.items.map(i => ({ ...i }));
+
+    renderOverheadTable();
+    els.overheadModal.classList.remove('hidden');
+  }
+
+  function closeOverheadModal() {
+    els.overheadModal?.classList.add('hidden');
+    overheadWorkingItems = [];
+  }
+
+  function renderOverheadTable() {
+    const tbody = document.getElementById('overhead-table-body');
+    if (!tbody) return;
+
+    // Compute base subtotal
+    const categories = Array.isArray(currentEstimateData?.categories) ? currentEstimateData.categories : [];
+    let baseSubtotal = 0;
+    categories.forEach(cat => {
+      if (typeof cat.total_cost === 'number') baseSubtotal += cat.total_cost;
+    });
+
+    const baseEl = document.getElementById('overhead-base-subtotal');
+    if (baseEl) baseEl.textContent = formatCurrency(baseSubtotal);
+
+    tbody.innerHTML = '';
+
+    let totalPct = 0;
+    let totalAmount = 0;
+
+    overheadWorkingItems.forEach((item, idx) => {
+      const amount = item.enabled ? baseSubtotal * (item.percentage || 0) / 100 : 0;
+      if (item.enabled) totalPct += (item.percentage || 0);
+      totalAmount += amount;
+
+      const tr = document.createElement('tr');
+      if (!item.enabled) tr.classList.add('oh-row-disabled');
+      tr.innerHTML = `
+        <td class="oh-col-toggle">
+          <input type="checkbox" class="oh-toggle" data-idx="${idx}" ${item.enabled ? 'checked' : ''}>
+        </td>
+        <td class="oh-col-name">
+          <input type="text" class="oh-name-input" data-idx="${idx}" value="${item.name || ''}" placeholder="Item name">
+        </td>
+        <td class="oh-col-pct">
+          <input type="number" class="oh-pct-input" data-idx="${idx}" value="${item.percentage || 0}" min="0" max="100" step="0.1">
+        </td>
+        <td class="oh-amount-cell">${item.enabled ? formatCurrency(amount) : '--'}</td>
+        <td class="oh-col-actions">
+          <button type="button" class="oh-delete-btn" data-idx="${idx}" title="Remove">&times;</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    // Update totals
+    const totalPctEl = document.getElementById('overhead-total-pct');
+    const totalAmountEl = document.getElementById('overhead-total-amount');
+    if (totalPctEl) totalPctEl.textContent = totalPct.toFixed(1) + '%';
+    if (totalAmountEl) totalAmountEl.textContent = formatCurrency(totalAmount);
+
+    // Wire events
+    tbody.querySelectorAll('.oh-toggle').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const i = parseInt(e.target.dataset.idx, 10);
+        overheadWorkingItems[i].enabled = e.target.checked;
+        renderOverheadTable();
+      });
+    });
+
+    tbody.querySelectorAll('.oh-name-input').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const i = parseInt(e.target.dataset.idx, 10);
+        overheadWorkingItems[i].name = e.target.value;
+      });
+    });
+
+    tbody.querySelectorAll('.oh-pct-input').forEach(inp => {
+      inp.addEventListener('change', (e) => {
+        const i = parseInt(e.target.dataset.idx, 10);
+        overheadWorkingItems[i].percentage = parseFloat(e.target.value) || 0;
+        renderOverheadTable();
+      });
+    });
+
+    tbody.querySelectorAll('.oh-delete-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const i = parseInt(e.target.dataset.idx, 10);
+        overheadWorkingItems.splice(i, 1);
+        renderOverheadTable();
+      });
+    });
+  }
+
+  function addOverheadLine() {
+    overheadWorkingItems.push({ name: '', percentage: 0, enabled: true });
+    renderOverheadTable();
+    // Focus the new name input
+    const lastInput = document.querySelector('#overhead-table-body tr:last-child .oh-name-input');
+    lastInput?.focus();
+  }
+
+  function saveOverheadFromModal() {
+    // Compute totals
+    let totalPct = 0;
+    overheadWorkingItems.forEach(item => {
+      if (item.enabled) totalPct += (item.percentage || 0);
+    });
+
+    currentEstimateData.overhead = {
+      items: overheadWorkingItems.map(i => ({ ...i })),
+      totalPercentage: totalPct,
+      amount: 0 // will be computed by recalculate
+    };
+
+    recalculateEstimateTotals();
+    renderEstimateSummary();
+    markDirty();
+    closeOverheadModal();
+    showFeedback('Overhead updated', 'success');
   }
 
   function handleImportRevit() {
@@ -2828,7 +3019,13 @@
 
       markDirty();
       renderEstimate();
+      renderEstimateSummary();
       closeProjectModal();
+
+      // For new estimates, sync to backend immediately
+      if (!currentEstimateId) {
+        syncToBackend();
+      }
     });
 
     modal.addEventListener('click', (e) => {
@@ -2873,20 +3070,18 @@
         'Date': new Date().toISOString().split('T')[0]
       },
       categories: [],
-      overhead: { percentage: 0, amount: 0 },
+      overhead: getDefaultOverhead(),
       created_at: new Date().toISOString(),
       version: '1.0'
     };
 
     currentProjectId = null;
     currentEstimateId = null;
+    isDirty = false;
 
     renderEstimate();
-    markDirty(); // Trigger auto-save
-    showFeedback('New estimate created - fill project info and save', 'info');
-
-    // Open project modal in edit mode
-    openProjectModal(true);
+    renderEstimateSummary();
+    showFeedback('New estimate created', 'info');
   }
 
   // ================================
@@ -3016,6 +3211,7 @@
     blankOption?.addEventListener('click', () => {
       closeTemplatePickerModal();
       createBlankEstimate();
+      openProjectModal(true);
     });
 
     // Click backdrop to close
@@ -3123,6 +3319,8 @@
           const templateId = item.dataset.templateId;
           closeTemplatePickerModal();
           await loadTemplate(templateId);
+          // Open project modal so user fills info for the new estimate
+          openProjectModal(true);
         });
       });
     } catch (err) {

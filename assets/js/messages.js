@@ -55,6 +55,7 @@
     typingSubscription: null,
     lastTypingBroadcast: 0,
     renderDebounceTimer: null,
+    activeCheckFlow: null, // { receiptId, state } when a check flow conversation is active
   };
 
   // Debounced render to prevent rapid re-renders causing flicker
@@ -985,6 +986,69 @@
     // Check for receipt status tag
     const receiptStatusTag = renderReceiptStatusTag(msg);
 
+    // Bot action buttons (e.g. "Process Anyway" for duplicate receipts)
+    let botActions = '';
+    if (isBot && msg.metadata?.allow_force_process && msg.metadata?.receipt_status === 'duplicate') {
+      const receiptId = msg.metadata.pending_receipt_id;
+      botActions = `
+        <div class="msg-bot-actions" data-receipt-id="${receiptId}">
+          <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="force-process" data-receipt-id="${receiptId}">
+            Process Anyway
+          </button>
+          <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="dismiss-duplicate" data-receipt-id="${receiptId}">
+            Skip
+          </button>
+        </div>
+      `;
+    }
+
+    // Check flow action buttons
+    if (isBot && msg.metadata?.check_flow_active) {
+      const receiptId = msg.metadata.pending_receipt_id;
+      const flowState = msg.metadata.check_flow_state;
+
+      if (flowState === 'check_detected') {
+        botActions = `
+          <div class="msg-bot-actions" data-receipt-id="${receiptId}">
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="check-confirm-yes" data-receipt-id="${receiptId}">
+              Yes, it is a check
+            </button>
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="check-confirm-no" data-receipt-id="${receiptId}">
+              No, process as receipt
+            </button>
+          </div>
+        `;
+      } else if (flowState === 'awaiting_split_decision') {
+        botActions = `
+          <div class="msg-bot-actions" data-receipt-id="${receiptId}">
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="check-split-yes" data-receipt-id="${receiptId}">
+              Yes, split it
+            </button>
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="check-split-no" data-receipt-id="${receiptId}">
+              No, single project
+            </button>
+          </div>
+        `;
+      } else if (flowState === 'awaiting_category_confirm') {
+        botActions = `
+          <div class="msg-bot-actions" data-receipt-id="${receiptId}">
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="check-category-confirm" data-receipt-id="${receiptId}">
+              Confirm
+            </button>
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="check-cancel" data-receipt-id="${receiptId}">
+              Cancel
+            </button>
+          </div>
+        `;
+      } else if (['awaiting_amount', 'awaiting_description', 'awaiting_split_details'].includes(flowState)) {
+        botActions = `
+          <div class="msg-bot-actions msg-bot-actions--hint" data-receipt-id="${receiptId}">
+            <span class="msg-bot-input-hint">Type your response in the chat input below</span>
+          </div>
+        `;
+      }
+    }
+
     return `
       <div class="${classes.join(' ')}" data-message-id="${msg.id}">
         <div class="msg-message-avatar ${isBot ? 'msg-message-avatar--bot' : ''}" style="color: ${avatarColor}; border-color: ${avatarColor}">
@@ -999,6 +1063,7 @@
           <div class="msg-message-body">
             ${content}
           </div>
+          ${botActions}
           ${hasAttachments ? renderAttachments(msg.attachments, msg) : ""}
           ${hasReactions ? renderReactions(msg.reactions, msg.id) : ""}
           <div class="msg-message-actions">
@@ -1030,7 +1095,8 @@
       ready: { label: 'Ready', class: 'msg-receipt-status--ready', icon: '✅' },
       linked: { label: 'Done', class: 'msg-receipt-status--linked', icon: '✓' },
       duplicate: { label: 'Duplicate', class: 'msg-receipt-status--duplicate', icon: '!' },
-      error: { label: 'Error', class: 'msg-receipt-status--error', icon: '⚠️' }
+      error: { label: 'Error', class: 'msg-receipt-status--error', icon: '⚠️' },
+      check_review: { label: 'Check', class: 'msg-receipt-status--check', icon: '?' }
     };
 
     const config = statusConfig[status] || statusConfig.pending;
@@ -1111,9 +1177,21 @@
       return match;
     });
 
-    // Parse URLs
+    // Parse markdown links [text](url) - must come before plain URL parsing
     formatted = formatted.replace(
-      /(https?:\/\/[^\s]+)/g,
+      /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener">$1</a>'
+    );
+
+    // Parse bold **text**
+    formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+    // Parse italic *text* (but not inside **)
+    formatted = formatted.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+
+    // Parse plain URLs (skip URLs already in href attributes)
+    formatted = formatted.replace(
+      /(?<!")(https?:\/\/[^\s<]+)/g,
       '<a href="$1" target="_blank" rel="noopener">$1</a>'
     );
 
@@ -1126,10 +1204,57 @@
   // ─────────────────────────────────────────────────────────────────────────
   // SENDING MESSAGES
   // ─────────────────────────────────────────────────────────────────────────
+  function _getCheckFlowAction(content) {
+    if (!state.activeCheckFlow || !isReceiptsChannel()) return null;
+
+    const flowState = state.activeCheckFlow.state;
+    const textInputStates = {
+      'awaiting_amount': 'submit_amount',
+      'awaiting_description': 'submit_description',
+      'awaiting_split_details': content.toLowerCase().trim() === 'done'
+        ? 'split_done'
+        : 'submit_split_line',
+    };
+
+    if (textInputStates[flowState]) {
+      return {
+        receiptId: state.activeCheckFlow.receiptId,
+        action: textInputStates[flowState],
+      };
+    }
+    return null;
+  }
+
+  async function _forwardToCheckAction(receiptId, action, text) {
+    try {
+      const body = { action: action, user_id: state.currentUser?.user_id };
+      if (text != null) body.payload = { text: text };
+
+      const response = await authFetch(
+        `${API_BASE}/pending-receipts/${receiptId}/check-action`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        console.error("[Messages] Check action error:", error);
+      }
+    } catch (err) {
+      console.error("[Messages] Check action fetch error:", err);
+    }
+  }
+
   async function sendMessage() {
     const content = DOM.messageInput.value.trim();
     if (!content && state.attachments.length === 0) return;
     if (!state.currentChannel) return;
+
+    // Check if this message is a response to an active check flow
+    const checkFlowAction = _getCheckFlowAction(content);
 
     const messageData = {
       content: content,
@@ -1178,6 +1303,11 @@
       if (tempIndex !== -1) {
         state.messages[tempIndex] = data.message || data;
         renderMessages();
+      }
+
+      // Forward to check-action endpoint if this was a check flow response
+      if (checkFlowAction) {
+        _forwardToCheckAction(checkFlowAction.receiptId, checkFlowAction.action, content);
       }
     } catch (err) {
       console.error("[Messages] Send error:", err);
@@ -1560,8 +1690,9 @@
         continue;
       }
 
-      // Show uploading indicator
-      showToast(`Uploading receipt: ${file.name}...`, "info");
+      // Use temp ID for progress until we get real receipt ID
+      const tempProgressId = `temp-${Date.now()}`;
+      showReceiptProgress(tempProgressId, file.name, 'uploading');
 
       try {
         const result = await uploadReceiptToPending(file);
@@ -1569,16 +1700,30 @@
         if (result.success) {
           const receipt = result.data;
 
+          // Switch progress card to real receipt ID
+          const container = document.querySelector('.msg-receipt-progress-container');
+          if (container) {
+            const tempCard = container.querySelector(`[data-progress-receipt="${tempProgressId}"]`);
+            if (tempCard) {
+              tempCard.setAttribute('data-progress-receipt', receipt.id);
+              // Transfer cosmetic timer key
+              if (receiptProgressTimers[tempProgressId]) {
+                receiptProgressTimers[receipt.id] = receiptProgressTimers[tempProgressId];
+                delete receiptProgressTimers[tempProgressId];
+              }
+            }
+          }
+
           // Send a message with receipt metadata for status tracking
           await sendReceiptMessage(receipt, file.name);
 
-          showToast(`Receipt uploaded successfully!`, "success");
-
-          // Auto-process the receipt
+          // Auto-process the receipt (progress updates happen inside)
           await processReceiptNow(receipt.id, file.name);
         }
       } catch (err) {
         console.error("[Messages] Receipt upload error:", err);
+        showReceiptProgress(tempProgressId, file.name, 'error');
+        hideReceiptProgress(tempProgressId, 6000);
         showToast(`Failed to upload ${file.name}: ${err.message}`, "error");
       }
     }
@@ -1592,7 +1737,7 @@
     if (!state.currentChannel) return;
 
     const messageData = {
-      content: `**Receipt:** ${fileName}`,
+      content: `**Receipt:** [${fileName}](${receipt.file_url})`,
       channel_type: state.currentChannel.type,
       user_id: state.currentUser?.user_id,
       reply_to_id: null,
@@ -1655,10 +1800,9 @@
    * Process a receipt using OCR (calls the process endpoint)
    */
   async function processReceiptNow(receiptId, fileName) {
-    showToast(`Processing receipt: ${fileName}...`, "info");
-
-    // Update message status to "processing"
+    // Update message status + progress tracker
     updateReceiptStatusInMessages(receiptId, 'processing');
+    showReceiptProgress(receiptId, fileName, 'scanning');
 
     try {
       const response = await authFetch(`${API_BASE}/pending-receipts/${receiptId}/agent-process`, {
@@ -1668,21 +1812,85 @@
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
         const isDuplicate = error.detail && error.detail.includes("Duplicate");
-        updateReceiptStatusInMessages(receiptId, isDuplicate ? 'duplicate' : 'error');
+        const status = isDuplicate ? 'duplicate' : 'error';
+        updateReceiptStatusInMessages(receiptId, status);
+        showReceiptProgress(receiptId, fileName, status);
+        hideReceiptProgress(receiptId, isDuplicate ? 5000 : 6000);
         throw new Error(error.detail || "Processing failed");
+      }
+
+      const result = await response.json();
+
+      if (result.status === "check_review") {
+        updateReceiptStatusInMessages(receiptId, 'check_review');
+        showReceiptProgress(receiptId, fileName, 'check_review');
+        hideReceiptProgress(receiptId, 5000);
+      } else if (result.success) {
+        updateReceiptStatusInMessages(receiptId, 'ready');
+        showReceiptProgress(receiptId, fileName, 'ready');
+        hideReceiptProgress(receiptId, 4000);
+        showToast("Receipt processed and ready!", "success");
+      } else if (result.status === "duplicate") {
+        updateReceiptStatusInMessages(receiptId, 'duplicate');
+        showReceiptProgress(receiptId, fileName, 'duplicate');
+        hideReceiptProgress(receiptId, 5000);
+        showToast("Duplicate receipt detected", "warning");
+      }
+    } catch (err) {
+      console.error("[Messages] Receipt processing error:", err);
+      showToast(`Failed to process receipt: ${err.message}`, "error");
+    }
+  }
+
+  /**
+   * Force-process a duplicate receipt (user clicked "Process Anyway")
+   */
+  async function handleForceProcessReceipt(receiptId, actionsEl) {
+    // Replace buttons with loading state
+    if (actionsEl) {
+      actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Processing...</span>';
+    }
+
+    // Find filename from existing messages
+    let fileName = 'receipt';
+    state.messages.forEach(msg => {
+      if (msg.metadata?.pending_receipt_id === receiptId && msg.attachments?.length) {
+        fileName = msg.attachments[0].name || fileName;
+      }
+    });
+
+    showReceiptProgress(receiptId, fileName, 'scanning');
+    updateReceiptStatusInMessages(receiptId, 'processing');
+
+    try {
+      const response = await authFetch(`${API_BASE}/pending-receipts/${receiptId}/agent-process?force=true`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        updateReceiptStatusInMessages(receiptId, 'error');
+        showReceiptProgress(receiptId, fileName, 'error');
+        hideReceiptProgress(receiptId, 6000);
+        if (actionsEl) actionsEl.innerHTML = '<span class="msg-bot-actions-dismissed">Failed</span>';
+        showToast(`Processing failed: ${error.detail || 'Unknown error'}`, "error");
+        return;
       }
 
       const result = await response.json();
 
       if (result.success) {
         updateReceiptStatusInMessages(receiptId, 'ready');
+        showReceiptProgress(receiptId, fileName, 'ready');
+        hideReceiptProgress(receiptId, 4000);
+        if (actionsEl) actionsEl.innerHTML = '<span class="msg-bot-actions-dismissed">Processed</span>';
         showToast("Receipt processed and ready!", "success");
-      } else if (result.status === "duplicate") {
-        updateReceiptStatusInMessages(receiptId, 'duplicate');
-        showToast("Duplicate receipt detected", "warning");
       }
     } catch (err) {
-      console.error("[Messages] Receipt processing error:", err);
+      console.error("[Messages] Force process error:", err);
+      showReceiptProgress(receiptId, fileName, 'error');
+      hideReceiptProgress(receiptId, 6000);
+      if (actionsEl) actionsEl.innerHTML = '<span class="msg-bot-actions-dismissed">Failed</span>';
       showToast(`Failed to process receipt: ${err.message}`, "error");
     }
   }
@@ -1734,6 +1942,126 @@
       if (labelEl) labelEl.textContent = config.label;
       if (iconEl) iconEl.textContent = config.icon;
     });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // RECEIPT UPLOAD PROGRESS TRACKER
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const receiptProgressTimers = {};
+
+  const RECEIPT_PROGRESS_STEPS = {
+    uploading:    { label: 'Uploading...',              width: 15,  color: 'blue' },
+    scanning:     { label: 'Scanning receipt...',       width: 45,  color: 'blue' },
+    categorizing: { label: 'Categorizing...',           width: 75,  color: 'blue' },
+    ready:        { label: 'Done - Ready for review',   width: 100, color: 'green' },
+    duplicate:    { label: 'Duplicate detected',        width: 100, color: 'amber' },
+    error:        { label: 'Processing failed',         width: 100, color: 'red' },
+    check_review: { label: 'Check detected - confirm in chat', width: 30, color: 'amber' },
+  };
+
+  function showReceiptProgress(receiptId, fileName, step) {
+    const config = RECEIPT_PROGRESS_STEPS[step] || RECEIPT_PROGRESS_STEPS.uploading;
+
+    // Get or create container
+    let container = document.querySelector('.msg-receipt-progress-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.className = 'msg-receipt-progress-container';
+      const chatMain = document.querySelector('.msg-chat-main');
+      if (chatMain) {
+        chatMain.appendChild(container);
+      } else {
+        return;
+      }
+    }
+
+    // Get or create card for this receipt
+    let card = container.querySelector(`[data-progress-receipt="${receiptId}"]`);
+    if (!card) {
+      card = document.createElement('div');
+      card.className = 'msg-receipt-progress';
+      card.setAttribute('data-progress-receipt', receiptId);
+      card.innerHTML = `
+        <div class="msg-receipt-progress-info">
+          <span class="msg-receipt-progress-name"></span>
+          <span class="msg-receipt-progress-step"></span>
+        </div>
+        <div class="msg-receipt-progress-bar">
+          <div class="msg-receipt-progress-fill"></div>
+        </div>
+      `;
+      container.appendChild(card);
+      // Trigger entrance animation
+      requestAnimationFrame(() => card.classList.add('msg-receipt-progress--visible'));
+    }
+
+    // Update content
+    const nameEl = card.querySelector('.msg-receipt-progress-name');
+    const stepEl = card.querySelector('.msg-receipt-progress-step');
+    const fillEl = card.querySelector('.msg-receipt-progress-fill');
+
+    if (nameEl) nameEl.textContent = fileName;
+    if (stepEl) stepEl.textContent = config.label;
+    if (fillEl) {
+      fillEl.style.width = config.width + '%';
+      fillEl.className = 'msg-receipt-progress-fill';
+      fillEl.classList.add(`msg-receipt-progress-fill--${config.color}`);
+    }
+
+    // Update card state classes
+    card.classList.remove('msg-receipt-progress--done', 'msg-receipt-progress--error', 'msg-receipt-progress--duplicate');
+    if (step === 'ready') card.classList.add('msg-receipt-progress--done');
+    if (step === 'error') card.classList.add('msg-receipt-progress--error');
+    if (step === 'duplicate') card.classList.add('msg-receipt-progress--duplicate');
+
+    // Toggle progress animation
+    if (['uploading', 'scanning', 'categorizing'].includes(step)) {
+      fillEl.classList.add('msg-receipt-progress-fill--animated');
+    } else {
+      fillEl.classList.remove('msg-receipt-progress-fill--animated');
+    }
+
+    // Clear any existing cosmetic timer
+    if (receiptProgressTimers[receiptId]) {
+      clearTimeout(receiptProgressTimers[receiptId]);
+      delete receiptProgressTimers[receiptId];
+    }
+
+    // Cosmetic timer: scanning -> categorizing after 4s
+    if (step === 'scanning') {
+      receiptProgressTimers[receiptId] = setTimeout(() => {
+        const existing = container.querySelector(`[data-progress-receipt="${receiptId}"]`);
+        if (existing && !existing.classList.contains('msg-receipt-progress--done') &&
+            !existing.classList.contains('msg-receipt-progress--error')) {
+          showReceiptProgress(receiptId, fileName, 'categorizing');
+        }
+      }, 4000);
+    }
+  }
+
+  function hideReceiptProgress(receiptId, delay = 4000) {
+    // Clear cosmetic timer
+    if (receiptProgressTimers[receiptId]) {
+      clearTimeout(receiptProgressTimers[receiptId]);
+      delete receiptProgressTimers[receiptId];
+    }
+
+    setTimeout(() => {
+      const container = document.querySelector('.msg-receipt-progress-container');
+      if (!container) return;
+      const card = container.querySelector(`[data-progress-receipt="${receiptId}"]`);
+      if (!card) return;
+
+      card.classList.add('msg-receipt-progress--hiding');
+      card.addEventListener('animationend', () => {
+        card.remove();
+        // Remove container if empty
+        if (container.children.length === 0) {
+          container.remove();
+        }
+      }, { once: true });
+    }, delay);
   }
 
   function renderAttachmentsPreview() {
@@ -2203,6 +2531,17 @@
     state.messages.push(message);
     renderMessages();
 
+    // Track active check flow from bot messages
+    if (message.metadata?.check_flow_active && message.metadata?.check_flow_state) {
+      state.activeCheckFlow = {
+        receiptId: message.metadata.pending_receipt_id,
+        state: message.metadata.check_flow_state,
+      };
+    } else if (message.metadata?.check_flow_state === 'completed' ||
+               message.metadata?.check_flow_state === 'cancelled') {
+      state.activeCheckFlow = null;
+    }
+
     // Show toast notification only for messages from others
     if (message.user_id !== state.currentUser?.user_id) {
       showMessageNotification(message);
@@ -2453,7 +2792,67 @@
       const action = e.target.closest("[data-action]")?.dataset.action;
       const messageId = e.target.closest("[data-message-id]")?.dataset.messageId;
 
-      if (!action || !messageId) return;
+      if (!action) return;
+
+      // Bot action buttons (Process Anyway / Skip)
+      if (action === "force-process") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        if (receiptId) handleForceProcessReceipt(receiptId, e.target.closest(".msg-bot-actions"));
+        return;
+      }
+      if (action === "dismiss-duplicate") {
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-dismissed">Skipped</span>';
+        }
+        return;
+      }
+
+      // Check flow button actions
+      if (action === "check-confirm-yes" || action === "check-confirm-no") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Processing...</span>';
+          const checkAction = action === "check-confirm-yes" ? "confirm_check" : "deny_check";
+          _forwardToCheckAction(receiptId, checkAction, null);
+        }
+        return;
+      }
+
+      if (action === "check-split-yes" || action === "check-split-no") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Processing...</span>';
+          const checkAction = action === "check-split-yes" ? "split_yes" : "split_no";
+          _forwardToCheckAction(receiptId, checkAction, null);
+        }
+        return;
+      }
+
+      if (action === "check-category-confirm") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Creating expenses...</span>';
+          _forwardToCheckAction(receiptId, "confirm_categories", null);
+        }
+        return;
+      }
+
+      if (action === "check-cancel") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-dismissed">Cancelled</span>';
+          _forwardToCheckAction(receiptId, "cancel", null);
+          state.activeCheckFlow = null;
+        }
+        return;
+      }
+
+      if (!messageId) return;
 
       switch (action) {
         case "reply":

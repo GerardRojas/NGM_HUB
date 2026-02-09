@@ -102,15 +102,7 @@
                 </div>
             </div>
 
-            <!-- Templates List -->
-            <div class="estimator-list-card">
-                <div class="estimator-list-title">Templates</div>
-                <div class="estimator-files-wrapper">
-                    <ul id="estimator-templates-list" class="estimator-files-list">
-                        <li class="estimator-file" style="color: #6b7280; font-style: italic;">Loading...</li>
-                    </ul>
-                </div>
-            </div>
+            <!-- Templates are shown via the template picker modal when creating a new estimate -->
         </aside>
 
         <!-- MAIN AREA -->
@@ -389,6 +381,60 @@
     </div>
 
     <!-- =========================================================
+         MODAL: OVERHEAD CONFIGURATION
+    ========================================================== -->
+    <div id="overhead-modal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-content overhead-modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">Overhead Configuration</div>
+                    <button type="button" class="modal-btn header-action" id="overhead-close-btn">
+                        &times;
+                    </button>
+                </div>
+
+                <div class="overhead-summary-row">
+                    <span class="overhead-summary-label">Base Subtotal</span>
+                    <span class="overhead-summary-value" id="overhead-base-subtotal">$0.00</span>
+                </div>
+
+                <table class="overhead-table">
+                    <thead>
+                        <tr>
+                            <th class="oh-col-toggle"></th>
+                            <th class="oh-col-name">Name</th>
+                            <th class="oh-col-pct">%</th>
+                            <th class="oh-col-amount">Amount</th>
+                            <th class="oh-col-actions"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="overhead-table-body">
+                    </tbody>
+                </table>
+
+                <button type="button" class="overhead-add-line-btn" id="overhead-add-line">
+                    + Add Line
+                </button>
+
+                <div class="overhead-total-row">
+                    <span class="overhead-total-label">Total Overhead</span>
+                    <span class="overhead-total-pct" id="overhead-total-pct">0%</span>
+                    <span class="overhead-total-amount" id="overhead-total-amount">$0.00</span>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="modal-btn cancel" id="overhead-cancel-btn">
+                        Cancel
+                    </button>
+                    <button type="button" class="modal-btn" id="overhead-save-btn">
+                        Apply
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================
          MODAL: SAVE AS TEMPLATE
     ========================================================== -->
     <div id="save-as-template-modal" class="modal-backdrop hidden">
@@ -499,7 +545,7 @@
          MODAL: ADD CONCEPT TO ESTIMATE
     ========================================================== -->
     <div id="add-concept-modal" class="modal-backdrop hidden">
-        <div class="modal" style="width: min(900px, 90vw);">
+        <div class="modal" style="width: min(1100px, 92vw);">
             <div class="modal-content">
                 <div class="modal-header">
                     <div class="modal-title">Add Concept to Estimate</div>

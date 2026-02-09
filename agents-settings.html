@@ -773,6 +773,69 @@
         .recipient-dropdown-empty {
             padding: 16px; text-align: center; color: #6b7280; font-size: 13px;
         }
+
+        /* ====== Agents Directory ====== */
+        .agents-directory {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .agent-overview-card {
+            background: #18181b;
+            border: 1px solid #27272f;
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .agent-overview-card:hover {
+            border-color: #3f3f46;
+            background: #1f1f23;
+        }
+
+        .agent-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .agent-avatar-sm {
+            width: 36px;
+            height: 36px;
+            font-size: 15px;
+        }
+
+        .agent-overview-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .agent-overview-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #e5e7eb;
+        }
+
+        .agent-overview-role {
+            font-size: 12px;
+            color: #6b7280;
+        }
     </style>
     <script src="assets/js/page-loading.js" defer></script>
 </head>
@@ -844,73 +907,53 @@
                             </div>
 
                             <div id="settingsContent" style="display: none; padding: 24px;">
-                                <!-- Stats Row -->
-                                <div class="stats-row">
-                                    <div class="stat-card">
-                                        <span class="stat-label">Total Permissions</span>
-                                        <span class="stat-value" id="statTotal">-</span>
-                                    </div>
-                                    <div class="stat-card">
-                                        <span class="stat-label">Enabled</span>
-                                        <span class="stat-value enabled" id="statEnabled">-</span>
-                                    </div>
-                                    <div class="stat-card">
-                                        <span class="stat-label">Disabled</span>
-                                        <span class="stat-value disabled" id="statDisabled">-</span>
-                                    </div>
-                                    <div class="stat-card">
-                                        <span class="stat-label">High Risk Enabled</span>
-                                        <span class="stat-value" id="statHighRisk">-</span>
-                                    </div>
-                                </div>
-
-                                <!-- Capabilities Tree + Volume Chart -->
-                                <div class="two-col-grid">
-                                    <!-- Capabilities Tree -->
-                                    <div class="capabilities-card">
-                                        <h3 class="capabilities-title">
-                                            <span style="font-size: 16px;">🌳</span>
-                                            Arturito Capabilities by Module
-                                        </h3>
-                                        <div class="module-tree" id="capabilitiesTree">
-                                            <!-- Tree will be rendered by JS -->
+                                <!-- Agents Directory -->
+                                <div class="agents-directory">
+                                    <div class="agent-overview-card" onclick="document.getElementById('arturitoSection').scrollIntoView({behavior:'smooth',block:'start'})">
+                                        <div class="agent-avatar" style="background: hsl(262 70% 55%)">A</div>
+                                        <div class="agent-overview-info">
+                                            <span class="agent-overview-name">Arturito</span>
+                                            <span class="agent-overview-role">AI Assistant</span>
                                         </div>
                                     </div>
-
-                                    <!-- Volume Chart -->
-                                    <div class="chart-card">
-                                        <h3 class="chart-title">
-                                            <span style="font-size: 16px;">📊</span>
-                                            Capabilities by Category
-                                        </h3>
-                                        <div class="bar-chart" id="volumeChart">
-                                            <!-- Chart will be rendered by JS -->
+                                    <div class="agent-overview-card" onclick="document.getElementById('agentManagerSection').scrollIntoView({behavior:'smooth',block:'start'})">
+                                        <div class="agent-avatar" style="background: hsl(142 70% 40%)">R</div>
+                                        <div class="agent-overview-info">
+                                            <span class="agent-overview-name">Receipt Agent</span>
+                                            <span class="agent-overview-role">Receipt Processing</span>
                                         </div>
-                                        <div class="chart-legend">
-                                            <div class="legend-item"><span class="legend-dot read"></span> Read (Query data)</div>
-                                            <div class="legend-item"><span class="legend-dot create"></span> Create (Add new records)</div>
-                                            <div class="legend-item"><span class="legend-dot navigation"></span> Navigation (UI control)</div>
-                                            <div class="legend-item"><span class="legend-dot notification"></span> Notification (Alerts)</div>
-                                            <div class="legend-item"><span class="legend-dot update"></span> Update (Modify)</div>
-                                            <div class="legend-item"><span class="legend-dot delete"></span> Delete (Remove)</div>
+                                    </div>
+                                    <div class="agent-overview-card" onclick="document.getElementById('daneelSection').scrollIntoView({behavior:'smooth',block:'start'})">
+                                        <div class="agent-avatar" style="background: hsl(217 70% 50%)">D</div>
+                                        <div class="agent-overview-info">
+                                            <span class="agent-overview-name">Daneel</span>
+                                            <span class="agent-overview-role">Budget Monitor</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Permissions by Category -->
-                                <div class="arturito-settings-grid" id="permissionsContainer">
-                                    <!-- Permissions cards will be rendered here -->
+                                <!-- ====== Arturito Section ====== -->
+                                <div class="analytics-section" id="arturitoSection">
+                                    <div class="section-header" style="display: flex; align-items: center; gap: 14px;">
+                                        <div class="agent-avatar agent-avatar-sm" style="background: hsl(262 70% 55%)">A</div>
+                                        <div>
+                                            <h3 style="font-size: 16px; font-weight: 600; color: #e5e7eb; margin: 0 0 4px 0;">Arturito</h3>
+                                            <p style="font-size: 13px; color: #6b7280; margin: 0;">AI assistant permissions and capabilities</p>
+                                        </div>
+                                    </div>
+                                    <div class="arturito-settings-grid" id="permissionsContainer" style="margin-top: 20px;">
+                                        <!-- Permissions cards will be rendered here -->
+                                    </div>
                                 </div>
 
                                 <!-- ====== Agent Manager Section ====== -->
                                 <div class="analytics-section" style="margin-top: 40px;" id="agentManagerSection">
-                                    <div class="section-header">
-                                        <h3 style="font-size: 16px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">
-                                            Receipt Agent
-                                        </h3>
-                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">
-                                            Arturito receipt processing stats and configuration
-                                        </p>
+                                    <div class="section-header" style="display: flex; align-items: center; gap: 14px;">
+                                        <div class="agent-avatar agent-avatar-sm" style="background: hsl(142 70% 40%)">R</div>
+                                        <div>
+                                            <h3 style="font-size: 16px; font-weight: 600; color: #e5e7eb; margin: 0 0 4px 0;">Receipt Agent</h3>
+                                            <p style="font-size: 13px; color: #6b7280; margin: 0;">Receipt processing stats and configuration</p>
+                                        </div>
                                     </div>
 
                                     <!-- Scope of Work -->
@@ -1060,13 +1103,12 @@
 
                                 <!-- ====== Daneel (Budget Monitor) Section ====== -->
                                 <div class="analytics-section" style="margin-top: 40px;" id="daneelSection">
-                                    <div class="section-header">
-                                        <h3 style="font-size: 16px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">
-                                            Daneel - Budget Monitor
-                                        </h3>
-                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">
-                                            AI agent that monitors project budgets and posts alerts to accounting channels
-                                        </p>
+                                    <div class="section-header" style="display: flex; align-items: center; gap: 14px;">
+                                        <div class="agent-avatar agent-avatar-sm" style="background: hsl(217 70% 50%)">D</div>
+                                        <div>
+                                            <h3 style="font-size: 16px; font-weight: 600; color: #e5e7eb; margin: 0 0 4px 0;">Daneel</h3>
+                                            <p style="font-size: 13px; color: #6b7280; margin: 0;">Budget monitor - alerts to accounting channels</p>
+                                        </div>
                                     </div>
 
                                     <!-- Scope of Work -->
@@ -1302,55 +1344,6 @@
             navigation: { name: 'Navigation & UI', icon: '🧭' },
         };
 
-        // Capabilities tree structure (static definition of Arturito's functions)
-        const CAPABILITIES_TREE = {
-            "Budget & Finance": {
-                icon: "💰",
-                functions: [
-                    { name: "Budget vs Actuals (BVA)", intent: "BUDGET_VS_ACTUALS", desc: "Generate project budget reports" },
-                    { name: "Category Queries", intent: "CONSULTA_ESPECIFICA", desc: "Query specific BVA categories" },
-                    { name: "Search Expenses", intent: "SEARCH_EXPENSES", desc: "Find expenses by amount/vendor/category" },
-                ]
-            },
-            "Projects": {
-                icon: "📁",
-                functions: [
-                    { name: "List Projects", intent: "LIST_PROJECTS", desc: "View all active projects" },
-                    { name: "Create Project", intent: "CREATE_PROJECT", desc: "Add new project to system" },
-                    { name: "Scope of Work (SOW)", intent: "SCOPE_OF_WORK", desc: "Query project scope details" },
-                ]
-            },
-            "Vendors": {
-                icon: "🏪",
-                functions: [
-                    { name: "List Vendors", intent: "LIST_VENDORS", desc: "View all vendors/suppliers" },
-                    { name: "Create Vendor", intent: "CREATE_VENDOR", desc: "Add new vendor to system" },
-                ]
-            },
-            "Communication": {
-                icon: "📨",
-                functions: [
-                    { name: "Expense Reminders", intent: "EXPENSE_REMINDER", desc: "Send pending expense notifications" },
-                    { name: "Bug Reports", intent: "REPORT_BUG", desc: "Report issues to dev team" },
-                ]
-            },
-            "Navigation & UI": {
-                icon: "🧭",
-                functions: [
-                    { name: "NGM Actions", intent: "NGM_ACTION", desc: "Navigate pages, open modals" },
-                    { name: "Copilot Commands", intent: "COPILOT", desc: "Control page filters and UI" },
-                ]
-            },
-            "Conversation": {
-                icon: "💬",
-                functions: [
-                    { name: "Small Talk", intent: null, desc: "General conversation (always enabled)" },
-                    { name: "Greetings", intent: null, desc: "Respond to user greetings" },
-                    { name: "NGM Help", intent: null, desc: "Answer how-to questions" },
-                ]
-            }
-        };
-
         // Check user role access
         function checkAccess() {
             const userStr = localStorage.getItem('ngmUser');
@@ -1390,9 +1383,6 @@
                 permissionsData = data;
 
                 renderPermissions(data.by_category);
-                updateStats(data.permissions);
-                renderCapabilitiesTree(data.permissions);
-                renderVolumeChart(data.by_category);
 
                 document.getElementById('loadingState').style.display = 'none';
                 document.getElementById('settingsContent').style.display = 'block';
@@ -1402,111 +1392,6 @@
                 document.getElementById('loadingState').innerHTML = `
                     <span style="color: #ef4444;">Error loading permissions. Please refresh.</span>
                 `;
-            }
-        }
-
-        // Update stats cards
-        function updateStats(permissions) {
-            const total = permissions.length;
-            const enabled = permissions.filter(p => p.enabled).length;
-            const disabled = total - enabled;
-            const highRiskEnabled = permissions.filter(p => p.enabled && p.risk_level === 'high').length;
-
-            document.getElementById('statTotal').textContent = total;
-            document.getElementById('statEnabled').textContent = enabled;
-            document.getElementById('statDisabled').textContent = disabled;
-            document.getElementById('statHighRisk').textContent = highRiskEnabled;
-        }
-
-        // Render capabilities tree
-        function renderCapabilitiesTree(permissions) {
-            const container = document.getElementById('capabilitiesTree');
-            container.innerHTML = '';
-
-            // Create a map of intent -> enabled status
-            const enabledMap = {};
-            permissions.forEach(p => {
-                enabledMap[p.intent] = p.enabled;
-            });
-
-            for (const [moduleName, moduleData] of Object.entries(CAPABILITIES_TREE)) {
-                const moduleDiv = document.createElement('div');
-                moduleDiv.className = 'module-group';
-
-                const functionsHtml = moduleData.functions.map(fn => {
-                    // null intent means always enabled (like SMALL_TALK)
-                    const isEnabled = fn.intent === null || enabledMap[fn.intent] !== false;
-                    const statusIcon = isEnabled ? '✓' : '✗';
-                    const statusClass = isEnabled ? 'enabled' : 'disabled';
-
-                    return `
-                        <div class="function-item ${statusClass}" title="${fn.desc}">
-                            <span class="fn-icon">${statusIcon}</span>
-                            ${fn.name}
-                        </div>
-                    `;
-                }).join('');
-
-                moduleDiv.innerHTML = `
-                    <div class="module-name">
-                        <span>${moduleData.icon}</span>
-                        ${moduleName}
-                    </div>
-                    <div class="module-functions">
-                        ${functionsHtml}
-                    </div>
-                `;
-
-                container.appendChild(moduleDiv);
-            }
-        }
-
-        // Render volume chart
-        function renderVolumeChart(byCategory) {
-            const container = document.getElementById('volumeChart');
-            container.innerHTML = '';
-
-            // Calculate totals per category
-            const categoryOrder = ['read', 'create', 'navigation', 'notification', 'update', 'delete'];
-            const categoryLabels = {
-                read: 'Read',
-                create: 'Create',
-                navigation: 'Navigation',
-                notification: 'Notification',
-                update: 'Update',
-                delete: 'Delete'
-            };
-
-            // Find max for scaling
-            let maxCount = 0;
-            const counts = {};
-            for (const cat of categoryOrder) {
-                const perms = byCategory[cat] || [];
-                const enabledCount = perms.filter(p => p.enabled).length;
-                counts[cat] = { total: perms.length, enabled: enabledCount };
-                if (perms.length > maxCount) maxCount = perms.length;
-            }
-
-            // Render bars
-            for (const cat of categoryOrder) {
-                const data = counts[cat];
-                if (data.total === 0) continue;
-
-                const widthPercent = (data.total / maxCount) * 100;
-                const enabledPercent = data.total > 0 ? Math.round((data.enabled / data.total) * 100) : 0;
-
-                const barHtml = `
-                    <div class="bar-row">
-                        <span class="bar-label">${categoryLabels[cat]}</span>
-                        <div class="bar-container">
-                            <div class="bar-fill bar-${cat}" style="width: ${widthPercent}%;">
-                                <span class="bar-value">${data.enabled}/${data.total} enabled</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                container.insertAdjacentHTML('beforeend', barHtml);
             }
         }
 

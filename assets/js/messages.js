@@ -241,6 +241,8 @@
 
       // Ensure required group channels exist (auto-create Payroll etc.)
       await ensureGroupChannels();
+      // Always re-render groups after ensure (may have created new ones)
+      renderGroups();
       // Update cache with any newly created groups
       saveToCache(CACHE_KEYS.CHANNELS, state.channels);
 
@@ -809,6 +811,9 @@
             }
           }
           console.log(`[Messages] Group "${groupName}" ensured`);
+        } else {
+          const errBody = await res.json().catch(() => ({}));
+          console.error(`[Messages] Failed to create group "${groupName}":`, res.status, errBody);
         }
       } catch (err) {
         console.warn(`[Messages] Failed to ensure group "${groupName}":`, err);

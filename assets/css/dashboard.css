@@ -335,6 +335,7 @@
 /* Task Action */
 .my-work-task-action {
     flex-shrink: 0;
+    margin-left: 16px;
 }
 
 .task-action-btn {

@@ -2470,23 +2470,19 @@
    ======================================== */
 
 .msg-message--bot {
-  background: rgba(245, 158, 11, 0.04);
-  border-left: 3px solid hsl(35, 70%, 45%);
   border-radius: 0 8px 8px 0;
-  padding-left: 12px;
-  margin-left: -12px;
 }
 
 .msg-message-avatar--bot {
-  background: hsl(35, 70%, 45%);
+  background: hsl(145, 65%, 42%);
   color: #fff !important;
-  border-color: hsl(35, 70%, 45%) !important;
+  border-color: hsl(145, 65%, 42%) !important;
   font-weight: 700;
   font-size: 18px;
 }
 
 .msg-message--bot .msg-message-author {
-  color: hsl(35, 70%, 55%);
+  color: hsl(145, 60%, 50%);
   font-weight: 600;
 }
 
@@ -2499,8 +2495,8 @@
   font-weight: 700;
   letter-spacing: 0.5px;
   border-radius: 3px;
-  background: rgba(245, 158, 11, 0.15);
-  color: hsl(35, 70%, 55%);
+  background: rgba(34, 197, 94, 0.15);
+  color: hsl(145, 60%, 50%);
   vertical-align: middle;
   line-height: 14px;
 }
@@ -2533,12 +2529,12 @@
 }
 
 .msg-bot-action-btn--primary {
-  background: hsl(35, 70%, 45%);
+  background: hsl(145, 65%, 38%);
   color: #fff;
 }
 
 .msg-bot-action-btn--primary:hover {
-  background: hsl(35, 70%, 50%);
+  background: hsl(145, 65%, 44%);
 }
 
 .msg-bot-action-btn--secondary {

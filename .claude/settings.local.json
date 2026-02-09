@@ -31,7 +31,8 @@
       "Bash(done)",
       "Bash(for f in *.sql)",
       "Bash(for:*)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(git status:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"

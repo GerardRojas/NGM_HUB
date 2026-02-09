@@ -985,7 +985,7 @@
     const isBot = msg.user_id === ARTURITO_BOT_USER_ID || msg.metadata?.agent_message;
     const user = state.users.find((u) => u.user_id === msg.user_id) || { user_name: msg.user_name };
     const userName = isBot ? "Arturito" : (user.user_name || msg.user_name || "Unknown");
-    const avatarColor = isBot ? "hsl(35, 70%, 45%)" : getAvatarColor(user);
+    const avatarColor = isBot ? "hsl(145, 65%, 42%)" : getAvatarColor(user);
     const initials = isBot ? "A" : getInitials(userName);
     const time = formatTime(msg.created_at);
     const content = formatMessageContent(msg.content);
@@ -2652,8 +2652,21 @@
     }
   }
 
+  // ── Polling fallback state ──
+  let pollingTimer = null;
+  const POLL_INTERVAL_MS = 4000;
+  let realtimeConnected = false;
+
   function subscribeToChannel(channel) {
-    if (!state.supabaseClient) return;
+    // Stop any existing polling
+    stopMessagePolling();
+
+    if (!state.supabaseClient) {
+      // No Supabase client - rely on polling only
+      console.warn("[Messages] No Supabase client, using polling fallback");
+      startMessagePolling();
+      return;
+    }
 
     // Unsubscribe from previous channel
     if (state.messageSubscription) {
@@ -2664,9 +2677,13 @@
     }
 
     const channelKey = `${channel.type}:${channel.id || channel.projectId}`;
+    realtimeConnected = false;
 
     // Subscribe to new messages (Postgres Changes)
-    console.log("[Messages] Subscribing to channel:", channelKey);
+    // NOTE: We subscribe to ALL inserts on the messages table (no filter)
+    // because channel_key is a GENERATED column that does not work with
+    // Supabase Realtime filters. We filter client-side instead.
+    console.log("[Messages] Subscribing to realtime for channel:", channelKey);
     state.messageSubscription = state.supabaseClient
       .channel(`messages:${channelKey}`)
       .on(
@@ -2675,15 +2692,28 @@
           event: "INSERT",
           schema: "public",
           table: "messages",
-          filter: `channel_key=eq.${channelKey}`,
         },
         (payload) => {
-          console.log("[Messages] Realtime message received:", payload.new?.id);
-          handleNewMessage(payload.new);
+          const msg = payload.new;
+          if (!msg) return;
+
+          // Client-side filter: only handle messages for the current channel
+          const msgKey = msg.channel_key ||
+            `${msg.channel_type}:${msg.channel_id || msg.project_id}`;
+          if (msgKey !== channelKey) return;
+
+          console.log("[Messages] Realtime message received:", msg.id);
+          handleNewMessage(msg);
         }
       )
       .subscribe((status) => {
         console.log("[Messages] Realtime subscription status:", status);
+        if (status === "SUBSCRIBED") {
+          realtimeConnected = true;
+        } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+          realtimeConnected = false;
+          console.warn("[Messages] Realtime disconnected, relying on polling");
+        }
       });
 
     // Subscribe to typing indicators (Presence channel)
@@ -2693,17 +2723,62 @@
         const presenceState = state.typingSubscription.presenceState();
         updateTypingIndicator(presenceState);
       })
-      .on("presence", { event: "join" }, ({ key, newPresences }) => {
-        console.log("[Messages] User joined typing:", newPresences);
-      })
-      .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
-        console.log("[Messages] User left typing:", leftPresences);
-      })
+      .on("presence", { event: "join" }, ({ key, newPresences }) => {})
+      .on("presence", { event: "leave" }, ({ key, leftPresences }) => {})
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") {
           console.log("[Messages] Typing presence subscribed");
         }
       });
+
+    // Always start polling as a safety net
+    startMessagePolling();
+  }
+
+  /**
+   * Polling fallback: fetches recent messages every few seconds
+   * to catch anything the realtime subscription might miss.
+   */
+  function startMessagePolling() {
+    stopMessagePolling();
+
+    pollingTimer = setInterval(async () => {
+      if (!state.currentChannel) return;
+
+      try {
+        const ch = state.currentChannel;
+        let url = `${API_BASE}/messages?channel_type=${ch.type}&limit=15`;
+
+        if (ch.type.startsWith("project_")) {
+          url += `&project_id=${ch.projectId}`;
+        } else {
+          url += `&channel_id=${ch.id}`;
+        }
+
+        const res = await authFetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+        const freshMessages = data.messages || data || [];
+
+        // Check for messages we don't already have
+        const existingIds = new Set(state.messages.map(m => m.id));
+        const newMessages = freshMessages.filter(m => !existingIds.has(m.id));
+
+        if (newMessages.length > 0) {
+          console.log(`[Messages] Polling found ${newMessages.length} new message(s)`);
+          newMessages.forEach(msg => handleNewMessage(msg));
+        }
+      } catch (err) {
+        // Silently ignore polling errors
+      }
+    }, POLL_INTERVAL_MS);
+  }
+
+  function stopMessagePolling() {
+    if (pollingTimer) {
+      clearInterval(pollingTimer);
+      pollingTimer = null;
+    }
   }
 
   function handleNewMessage(message) {
@@ -2737,9 +2812,19 @@
       }
     }
 
-    // New message from another user - add and notify
+    // New message - add and render
     state.messages.push(message);
+
+    // Auto-scroll if user is near the bottom (within 150px)
+    const container = DOM.messagesContainer;
+    const wasNearBottom = container &&
+      (container.scrollHeight - container.scrollTop - container.clientHeight < 150);
+
     renderMessages();
+
+    if (wasNearBottom) {
+      setTimeout(() => scrollToBottom(true), 60);
+    }
 
     // Track active check flow from bot messages
     if (message.metadata?.check_flow_active && message.metadata?.check_flow_state) {

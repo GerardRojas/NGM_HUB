@@ -66,6 +66,9 @@
     mode: 'from-template'   // 'from-template' | 'create-new'
   };
 
+  // Table row selection state: { catIndex, subIndex, itemIndex } or null
+  let selectedRow = null;
+
   // DOM Elements cache
   const els = {};
 
@@ -480,6 +483,126 @@
 
       // Update sidebar summary
       renderEstimateSummary();
+    });
+
+    // Row selection via click delegation
+    els.tbody?.addEventListener('click', (e) => {
+      // Don't select when clicking inputs
+      if (e.target.tagName === 'INPUT') return;
+
+      const tr = e.target.closest('tr');
+      if (!tr) return;
+
+      // Clear previous selection
+      els.tbody.querySelectorAll('.row-selected').forEach(r => r.classList.remove('row-selected'));
+
+      if (tr.classList.contains('item-row')) {
+        selectedRow = {
+          catIndex: parseInt(tr.dataset.catIndex, 10),
+          subIndex: parseInt(tr.dataset.subIndex, 10),
+          itemIndex: parseInt(tr.dataset.itemIndex, 10)
+        };
+        tr.classList.add('row-selected');
+      } else if (tr.classList.contains('category-row') && tr.dataset.subRow !== undefined) {
+        selectedRow = {
+          catIndex: parseInt(tr.dataset.parentIndex, 10),
+          subIndex: parseInt(tr.dataset.subRow, 10),
+          itemIndex: null
+        };
+        tr.classList.add('row-selected');
+      } else if (tr.classList.contains('group-row')) {
+        selectedRow = {
+          catIndex: parseInt(tr.dataset.groupIndex, 10),
+          subIndex: 0,
+          itemIndex: null
+        };
+        tr.classList.add('row-selected');
+      }
+    });
+
+    // Context menu
+    const ctxMenu = document.getElementById('estimator-context-menu');
+    const ctxDeleteBtn = ctxMenu?.querySelector('[data-action="delete-concept"]');
+
+    els.tbody?.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (!ctxMenu) return;
+
+      // Determine which row was right-clicked
+      const tr = e.target.closest('tr');
+      if (!tr) return;
+
+      // Select the row
+      els.tbody.querySelectorAll('.row-selected').forEach(r => r.classList.remove('row-selected'));
+
+      const isItemRow = tr.classList.contains('item-row');
+      const isSubRow = tr.classList.contains('category-row') && tr.dataset.subRow !== undefined;
+      const isGroupRow = tr.classList.contains('group-row');
+
+      if (isItemRow) {
+        selectedRow = {
+          catIndex: parseInt(tr.dataset.catIndex, 10),
+          subIndex: parseInt(tr.dataset.subIndex, 10),
+          itemIndex: parseInt(tr.dataset.itemIndex, 10)
+        };
+      } else if (isSubRow) {
+        selectedRow = {
+          catIndex: parseInt(tr.dataset.parentIndex, 10),
+          subIndex: parseInt(tr.dataset.subRow, 10),
+          itemIndex: null
+        };
+      } else if (isGroupRow) {
+        selectedRow = {
+          catIndex: parseInt(tr.dataset.groupIndex, 10),
+          subIndex: 0,
+          itemIndex: null
+        };
+      }
+      tr.classList.add('row-selected');
+
+      // Show/hide delete option
+      if (ctxDeleteBtn) {
+        ctxDeleteBtn.style.display = isItemRow ? '' : 'none';
+      }
+
+      // Position menu
+      ctxMenu.classList.remove('hidden');
+      ctxMenu.style.left = e.clientX + 'px';
+      ctxMenu.style.top = e.clientY + 'px';
+
+      // Keep within viewport
+      requestAnimationFrame(() => {
+        const rect = ctxMenu.getBoundingClientRect();
+        if (rect.right > window.innerWidth) {
+          ctxMenu.style.left = (e.clientX - rect.width) + 'px';
+        }
+        if (rect.bottom > window.innerHeight) {
+          ctxMenu.style.top = (e.clientY - rect.height) + 'px';
+        }
+      });
+    });
+
+    // Context menu actions
+    ctxMenu?.addEventListener('click', (e) => {
+      const action = e.target.closest('[data-action]')?.dataset.action;
+      ctxMenu.classList.add('hidden');
+      if (action === 'add-concept') {
+        const catIdx = selectedRow ? selectedRow.catIndex : null;
+        handleAddConcept(catIdx);
+      }
+      if (action === 'delete-concept') deleteSelectedConcept();
+    });
+
+    // Hide context menu on click elsewhere or Escape
+    document.addEventListener('click', (e) => {
+      if (ctxMenu && !ctxMenu.contains(e.target)) {
+        ctxMenu.classList.add('hidden');
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && ctxMenu) {
+        ctxMenu.classList.add('hidden');
+      }
     });
   }
 
@@ -2092,7 +2215,7 @@
   // ADD CONCEPT MODAL
   // ================================
 
-  function handleAddConcept() {
+  function handleAddConcept(preselectCatIndex) {
     // Reset state
     addConceptState = {
       selectedConcept: null,
@@ -2104,14 +2227,14 @@
     if (templateCache.concepts.length === 0) {
       showFeedback('Loading catalog...', 'info');
       refreshCatalogFromDB().then(() => {
-        openAddConceptModal();
+        openAddConceptModal(preselectCatIndex);
       });
     } else {
-      openAddConceptModal();
+      openAddConceptModal(preselectCatIndex);
     }
   }
 
-  function openAddConceptModal() {
+  function openAddConceptModal(preselectCatIndex) {
     if (!els.addConceptModal) return;
 
     // Populate the concept picker table
@@ -2119,6 +2242,15 @@
 
     // Populate target category dropdown
     populateTargetCategoryDropdown();
+
+    // Pre-select category from context menu row
+    if (preselectCatIndex != null && currentEstimateData) {
+      const cat = currentEstimateData.categories[preselectCatIndex];
+      if (cat) {
+        const select = document.getElementById('add-concept-target-category');
+        if (select) select.value = cat.id;
+      }
+    }
 
     // Reset form
     document.getElementById('add-concept-qty').value = '1';
@@ -2482,6 +2614,28 @@
     renderEstimate();
 
     showFeedback(`Added "${concept.short_description || concept.code}" (x${qty}) to estimate`, 'success');
+  }
+
+  function deleteSelectedConcept() {
+    if (!selectedRow || selectedRow.itemIndex == null || !currentEstimateData) return;
+
+    const { catIndex, subIndex, itemIndex } = selectedRow;
+    const cat = currentEstimateData.categories[catIndex];
+    if (!cat) return;
+    const sub = cat.subcategories?.[subIndex];
+    if (!sub || !sub.items?.[itemIndex]) return;
+
+    const item = sub.items[itemIndex];
+    const itemName = item.name || item.code || 'Concept';
+
+    sub.items.splice(itemIndex, 1);
+
+    selectedRow = null;
+    recalculateEstimateTotals();
+    markDirty();
+    renderEstimate();
+
+    showFeedback(`Removed "${itemName}" from estimate`, 'success');
   }
 
   function recalculateEstimateTotals() {

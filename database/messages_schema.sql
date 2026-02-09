@@ -291,6 +291,10 @@ CREATE POLICY "Users can mark their mentions as read" ON message_mentions
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Enable realtime for messages table (ignore if already added)
 
+-- REPLICA IDENTITY FULL is required for Supabase Realtime to send full row
+-- data on INSERT/UPDATE/DELETE events (needed for client-side filtering)
+ALTER TABLE messages REPLICA IDENTITY FULL;
+
 DO $$
 BEGIN
     IF NOT EXISTS (

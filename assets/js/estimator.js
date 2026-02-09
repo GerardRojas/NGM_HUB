@@ -1284,8 +1284,8 @@
         return [];
       }
 
-      // List all folders in templates bucket
-      const { data: folders, error } = await supabaseClient.storage
+      // List all items in templates bucket root
+      const { data: items, error } = await supabaseClient.storage
         .from(BUCKETS.TEMPLATES)
         .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
@@ -1294,8 +1294,18 @@
         return [];
       }
 
-      // Filter to only folders (they have null metadata)
-      const templateFolders = folders.filter(f => f.id === null || !f.metadata);
+      console.log('[ESTIMATOR] Bucket items:', items);
+
+      // Filter to only folders: they have no metadata, or id is null, or name has no extension
+      const templateFolders = (items || []).filter(f => {
+        const name = f.name || '';
+        if (!name) return false;
+        // Skip files (have extensions)
+        if (name.includes('.')) return false;
+        return true;
+      });
+
+      console.log('[ESTIMATOR] Template folders found:', templateFolders.map(f => f.name));
 
       // Load meta for each template
       const templates = [];
@@ -1316,18 +1326,21 @@
               concepts_count: meta.concepts_count || 0,
               materials_count: meta.materials_count || 0
             });
+          } else {
+            // No meta file, use folder name
+            templates.push({
+              id: folder.name,
+              name: folder.name.replace(/-\d+$/, '').replace(/-/g, ' ')
+            });
           }
         } catch (err) {
-          // If no meta, use folder name
+          // If error loading meta, still list the template
           templates.push({
             id: folder.name,
             name: folder.name.replace(/-\d+$/, '').replace(/-/g, ' ')
           });
         }
       }
-
-      // Update sidebar
-      updateTemplatesListUI(templates);
 
       return templates;
     } catch (err) {

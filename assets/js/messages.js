@@ -980,7 +980,8 @@
     // Build CSS classes
     const classes = ['msg-message'];
     if (isOwnMessage) classes.push('msg-message--own');
-    if (isSending) classes.push('msg-message--sending');
+    if (isSending && !msg._failed) classes.push('msg-message--sending');
+    if (msg._failed) classes.push('msg-message--failed');
     if (isBot) classes.push('msg-message--bot');
 
     // Check for receipt status tag
@@ -1312,9 +1313,12 @@
     } catch (err) {
       console.error("[Messages] Send error:", err);
       showToast("Failed to send message", "error");
-      // Remove temp message on error
-      state.messages = state.messages.filter((m) => m.id !== tempMessage.id);
-      renderMessages();
+      // Keep temp message visible with failed indicator
+      const failIdx = state.messages.findIndex((m) => m.id === tempMessage.id);
+      if (failIdx !== -1) {
+        state.messages[failIdx]._failed = true;
+        renderMessages();
+      }
     }
   }
 
@@ -1694,6 +1698,36 @@
       const tempProgressId = `temp-${Date.now()}`;
       showReceiptProgress(tempProgressId, file.name, 'uploading');
 
+      // Show message instantly (before upload) with local preview
+      const localPreviewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : null;
+      const tempMsgId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const tempReceiptMsg = {
+        id: tempMsgId,
+        content: `**Receipt:** ${file.name}`,
+        channel_type: state.currentChannel.type,
+        user_id: state.currentUser?.user_id,
+        user_name: state.currentUser?.user_name,
+        created_at: new Date().toISOString(),
+        attachments: [{
+          id: `receipt-temp`,
+          name: file.name,
+          size: file.size || 0,
+          type: file.type || 'image/jpeg',
+          url: localPreviewUrl || '',
+          thumbnail_url: localPreviewUrl || ''
+        }],
+        metadata: {
+          receipt_status: 'pending'
+        }
+      };
+      if (state.currentChannel.type.startsWith("project_")) {
+        tempReceiptMsg.project_id = state.currentChannel.projectId;
+      } else {
+        tempReceiptMsg.channel_id = state.currentChannel.id;
+      }
+      state.messages.push(tempReceiptMsg);
+      renderMessages(true);
+
       try {
         const result = await uploadReceiptToPending(file);
 
@@ -1714,8 +1748,24 @@
             }
           }
 
-          // Send a message with receipt metadata for status tracking
-          await sendReceiptMessage(receipt, file.name);
+          // Upgrade temp message with real receipt data
+          const tempIdx = state.messages.findIndex(m => m.id === tempMsgId);
+          if (tempIdx !== -1) {
+            state.messages[tempIdx].content = `**Receipt:** [${file.name}](${receipt.file_url})`;
+            state.messages[tempIdx].metadata.pending_receipt_id = receipt.id;
+            state.messages[tempIdx].attachments = [{
+              id: `receipt-${receipt.id}`,
+              name: file.name,
+              size: receipt.file_size || file.size || 0,
+              type: receipt.file_type || file.type || 'image/jpeg',
+              url: receipt.file_url,
+              thumbnail_url: receipt.thumbnail_url || receipt.file_url
+            }];
+            if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+          }
+
+          // Send the message to the server (in background, don't await)
+          sendReceiptMessage(receipt, file.name, tempMsgId);
 
           // Auto-process the receipt (progress updates happen inside)
           await processReceiptNow(receipt.id, file.name);
@@ -1725,6 +1775,13 @@
         showReceiptProgress(tempProgressId, file.name, 'error');
         hideReceiptProgress(tempProgressId, 6000);
         showToast(`Failed to upload ${file.name}: ${err.message}`, "error");
+        // Keep temp message visible but mark as failed
+        const tempIdx = state.messages.findIndex(m => m.id === tempMsgId);
+        if (tempIdx !== -1) {
+          state.messages[tempIdx]._failed = true;
+          renderMessages();
+        }
+        if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
       }
     }
   }
@@ -1732,8 +1789,7 @@
   /**
    * Send a message with receipt metadata for status tracking
    */
-  async function sendReceiptMessage(receipt, fileName) {
-    const content = DOM.messageInput.value.trim();
+  async function sendReceiptMessage(receipt, fileName, existingTempId) {
     if (!state.currentChannel) return;
 
     const messageData = {
@@ -1762,15 +1818,18 @@
       messageData.channel_id = state.currentChannel.id;
     }
 
-    // Optimistic UI update
-    const tempMessage = {
-      id: `temp-${Date.now()}`,
-      ...messageData,
-      created_at: new Date().toISOString(),
-      user_name: state.currentUser?.user_name,
-    };
-    state.messages.push(tempMessage);
-    renderMessages();
+    // Use existing temp message if provided, otherwise create one
+    const tempId = existingTempId || `temp-${Date.now()}`;
+    if (!existingTempId) {
+      const tempMessage = {
+        id: tempId,
+        ...messageData,
+        created_at: new Date().toISOString(),
+        user_name: state.currentUser?.user_name,
+      };
+      state.messages.push(tempMessage);
+      renderMessages();
+    }
 
     try {
       const res = await authFetch(`${API_BASE}/messages`, {
@@ -1783,16 +1842,14 @@
 
       const data = await res.json();
       // Replace temp message with real one
-      const tempIndex = state.messages.findIndex((m) => m.id === tempMessage.id);
+      const tempIndex = state.messages.findIndex((m) => m.id === tempId);
       if (tempIndex !== -1) {
         state.messages[tempIndex] = data.message || data;
         renderMessages();
       }
     } catch (err) {
       console.error("[Messages] Receipt message send error:", err);
-      // Remove temp message on error
-      state.messages = state.messages.filter((m) => m.id !== tempMessage.id);
-      renderMessages();
+      // Keep temp message visible - don't remove. Just log the error.
     }
   }
 
@@ -2516,14 +2573,24 @@
 
     // For own messages: replace temp message with real one (optimistic update completion)
     if (message.user_id === state.currentUser?.user_id) {
-      const tempIndex = state.messages.findIndex((m) =>
-        m.id?.toString().startsWith("temp-")
-      );
+      // Try to match by receipt ID first, then by first temp message
+      const receiptId = message.metadata?.pending_receipt_id;
+      let tempIndex = -1;
+      if (receiptId) {
+        tempIndex = state.messages.findIndex((m) =>
+          m.id?.toString().startsWith("temp-") &&
+          m.metadata?.pending_receipt_id === receiptId
+        );
+      }
+      if (tempIndex === -1) {
+        tempIndex = state.messages.findIndex((m) =>
+          m.id?.toString().startsWith("temp-")
+        );
+      }
       if (tempIndex !== -1) {
-        // Replace temp with real - no need to re-render, just update in place
         state.messages[tempIndex] = message;
-        renderMessages(); // Single render after replacing temp
-        return; // Don't add again or show notification for own message
+        renderMessages();
+        return;
       }
     }
 

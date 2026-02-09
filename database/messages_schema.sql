@@ -80,6 +80,7 @@ CREATE TABLE IF NOT EXISTS messages (
     thread_count INTEGER DEFAULT 0,
 
     -- Metadata
+    metadata JSONB DEFAULT '{}',             -- Bot messages, receipt status, flow state
     is_edited BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()

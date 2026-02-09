@@ -446,6 +446,60 @@
     gap: 4px;
 }
 
+/* ==========================================
+   TAG SELECTOR (Project Type, Footings)
+   ========================================== */
+
+.tag-selector {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.tag-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.tag-option {
+    padding: 5px 12px;
+    border-radius: 9999px;
+    border: 1px solid #2a2a2a;
+    background: transparent;
+    color: #9ca3af;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.tag-option:hover {
+    border-color: #3a3a3a;
+    color: #e5e7eb;
+}
+
+.tag-option.selected {
+    background: rgba(62, 207, 142, 0.12);
+    border-color: #3ecf8e;
+    color: #3ecf8e;
+}
+
+.tag-option.input-readonly {
+    pointer-events: none;
+    opacity: 0.5;
+}
+
+.tag-other-input {
+    margin-top: 2px;
+    font-size: 12px !important;
+    padding: 5px 10px !important;
+}
+
+.tag-other-input.hidden {
+    display: none;
+}
+
 /* Layout específico para el modal de columnas */
 #columns-modal .modal-content {
     width: min(520px, 80vw);   /* más compacto que Project Info */

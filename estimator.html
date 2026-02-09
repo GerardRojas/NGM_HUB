@@ -273,7 +273,11 @@
                     </div>
                     <div>
                         <div class="field-label">Project Type</div>
-                        <input type="text" id="project-type-input" class="input" />
+                        <div class="tag-selector" id="project-type-selector">
+                            <div class="tag-options" id="project-type-options"></div>
+                            <input type="text" id="project-type-other-input" class="input tag-other-input hidden" placeholder="Specify other type..." />
+                        </div>
+                        <input type="hidden" id="project-type-input" />
                     </div>
                     <div>
                         <div class="field-label">Total Area (SqFt)</div>
@@ -288,8 +292,11 @@
                         <input type="text" id="project-nonhabitable-area-input" class="input" />
                     </div>
                     <div>
-                        <div class="field-label">Footings Type</div>
-                        <input type="text" id="project-footings-input" class="input" />
+                        <div class="field-label">Foundation Type</div>
+                        <div class="tag-selector" id="project-footings-selector">
+                            <div class="tag-options" id="project-footings-options"></div>
+                        </div>
+                        <input type="hidden" id="project-footings-input" />
                     </div>
                     <div>
                         <div class="field-label">Number of Rooms</div>

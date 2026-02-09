@@ -2957,6 +2957,15 @@
   // PROJECT INFO MODAL
   // ================================
 
+  // Tag selector options
+  const PROJECT_TYPE_OPTIONS = [
+    'ADU Attached', 'ADU Detached', 'Above The Garage', 'Garage Conversion',
+    'Commercial', 'Home Renovation', 'Addition', 'Landscape', 'Other'
+  ];
+  const FOOTINGS_TYPE_OPTIONS = [
+    'Slab on Grade', 'Raised Foundation', 'Mixed Foundation', 'Reinforce Foundation'
+  ];
+
   function setupProjectInfoModal() {
     const modal = els.projectModal;
     if (!modal) return;
@@ -2981,6 +2990,78 @@
       date: document.getElementById('project-date-input')
     };
 
+    // Tag selector state
+    let selectedTypes = [];
+    let selectedFootings = [];
+    const typeOtherInput = document.getElementById('project-type-other-input');
+
+    function renderTagSelector(containerId, options, selected, onToggle) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.innerHTML = '';
+      options.forEach(opt => {
+        const tag = document.createElement('button');
+        tag.type = 'button';
+        tag.className = 'tag-option' + (selected.includes(opt) ? ' selected' : '');
+        tag.textContent = opt;
+        tag.addEventListener('click', () => {
+          if (!editMode) return;
+          onToggle(opt);
+        });
+        container.appendChild(tag);
+      });
+    }
+
+    function renderProjectTypeTags() {
+      renderTagSelector('project-type-options', PROJECT_TYPE_OPTIONS, selectedTypes, (opt) => {
+        if (opt === 'Other') {
+          if (selectedTypes.includes('Other')) {
+            selectedTypes = selectedTypes.filter(t => t !== 'Other');
+            typeOtherInput?.classList.add('hidden');
+            if (typeOtherInput) typeOtherInput.value = '';
+          } else {
+            selectedTypes.push('Other');
+            typeOtherInput?.classList.remove('hidden');
+            typeOtherInput?.focus();
+          }
+        } else {
+          if (selectedTypes.includes(opt)) {
+            selectedTypes = selectedTypes.filter(t => t !== opt);
+          } else {
+            selectedTypes.push(opt);
+          }
+        }
+        renderProjectTypeTags();
+        syncTypeHidden();
+      });
+    }
+
+    function renderFootingsTags() {
+      renderTagSelector('project-footings-options', FOOTINGS_TYPE_OPTIONS, selectedFootings, (opt) => {
+        if (selectedFootings.includes(opt)) {
+          selectedFootings = selectedFootings.filter(t => t !== opt);
+        } else {
+          selectedFootings.push(opt);
+        }
+        renderFootingsTags();
+        syncFootingsHidden();
+      });
+    }
+
+    function syncTypeHidden() {
+      const vals = selectedTypes.filter(t => t !== 'Other');
+      if (selectedTypes.includes('Other') && typeOtherInput?.value) {
+        vals.push(typeOtherInput.value.trim());
+      }
+      if (inputs.type) inputs.type.value = vals.join(', ');
+    }
+
+    function syncFootingsHidden() {
+      if (inputs.footings) inputs.footings.value = selectedFootings.join(', ');
+    }
+
+    typeOtherInput?.addEventListener('input', syncTypeHidden);
+
     let editMode = false;
 
     function setEditMode(enabled) {
@@ -2991,6 +3072,11 @@
           inp.classList.toggle('input-readonly', !enabled);
         }
       });
+      // Toggle tag options readonly
+      modal.querySelectorAll('.tag-option').forEach(tag => {
+        tag.classList.toggle('input-readonly', !enabled);
+      });
+      if (typeOtherInput) typeOtherInput.readOnly = !enabled;
       if (saveBtn) saveBtn.disabled = !enabled;
       if (manageBtn) manageBtn.textContent = enabled ? 'Done editing' : 'Manage info';
     }
@@ -2999,16 +3085,50 @@
       const proj = currentEstimateData?.project || {};
       if (inputs.name) inputs.name.value = proj['Project Name'] || currentEstimateData?.project_name || '';
       if (inputs.address) inputs.address.value = proj['Address'] || '';
-      if (inputs.type) inputs.type.value = proj['Project Type'] || '';
       if (inputs.totalArea) inputs.totalArea.value = proj['Total Area (SqFt)'] || '';
       if (inputs.habitableArea) inputs.habitableArea.value = proj['Habitable Area (SqFt)'] || '';
       if (inputs.nonHabitableArea) inputs.nonHabitableArea.value = proj['Non Habitable Area (SqFt)'] || '';
-      if (inputs.footings) inputs.footings.value = proj['Footings Type'] || '';
       if (inputs.rooms) inputs.rooms.value = proj['Number of Rooms'] || '';
       if (inputs.baths) inputs.baths.value = proj['Number of Bathrooms'] || '';
       if (inputs.units) inputs.units.value = proj['Number of Units'] || '';
       if (inputs.foundation) inputs.foundation.value = proj['Foundation Type'] || '';
       if (inputs.date) inputs.date.value = proj['Date'] || currentEstimateData?.date || '';
+
+      // Populate tag selectors from saved values
+      const savedType = proj['Project Type'] || '';
+      const savedFootings = proj['Footings Type'] || '';
+
+      // Parse saved values back to arrays
+      selectedTypes = [];
+      if (savedType) {
+        const parts = savedType.split(',').map(s => s.trim()).filter(Boolean);
+        parts.forEach(p => {
+          if (PROJECT_TYPE_OPTIONS.includes(p)) {
+            selectedTypes.push(p);
+          } else {
+            // Custom value = "Other" was selected
+            selectedTypes.push('Other');
+            if (typeOtherInput) {
+              typeOtherInput.value = p;
+              typeOtherInput.classList.remove('hidden');
+            }
+          }
+        });
+      }
+      if (!selectedTypes.includes('Other') && typeOtherInput) {
+        typeOtherInput.classList.add('hidden');
+        typeOtherInput.value = '';
+      }
+
+      selectedFootings = [];
+      if (savedFootings) {
+        selectedFootings = savedFootings.split(',').map(s => s.trim()).filter(Boolean);
+      }
+
+      renderProjectTypeTags();
+      renderFootingsTags();
+      syncTypeHidden();
+      syncFootingsHidden();
     }
 
     manageBtn?.addEventListener('click', () => setEditMode(!editMode));
@@ -3024,6 +3144,10 @@
         closeProjectModal();
         return;
       }
+
+      // Sync tag values before saving
+      syncTypeHidden();
+      syncFootingsHidden();
 
       // Save to state
       if (!currentEstimateData) currentEstimateData = {};

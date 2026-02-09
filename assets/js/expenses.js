@@ -3984,6 +3984,8 @@
 
     // Update running total bar after adding row
     updateRunningTotalBar();
+
+    return rowIndex;
   }
 
   function buildModalSelectHtml(field, options, valueKey, textKey) {
@@ -5765,12 +5767,14 @@
         const dateInput = row.querySelector('.exp-input--date');
         const descInput = row.querySelector('.exp-input--desc');
         const amountInput = row.querySelector('.exp-input--amount');
-        const vendorInput = row.querySelector('.exp-input--vendor');
-        const accountInput = row.querySelector('.exp-input--account');
+        const vendorInput = row.querySelector('[data-field="vendor_id"]');
+        const accountInput = row.querySelector('[data-field="account_id"]');
 
         if (dateInput && receipt.receipt_date) dateInput.value = receipt.receipt_date;
         if (descInput) descInput.value = receipt.parsed_data?.description || `Receipt: ${receipt.file_name}`;
-        if (amountInput && receipt.amount) amountInput.value = receipt.amount;
+        if (amountInput && receipt.amount) {
+          amountInput.value = parseFloat(receipt.amount).toFixed(2);
+        }
         if (vendorInput && receipt.vendor_name) vendorInput.value = receipt.vendor_name;
         if (accountInput && receipt.suggested_category) accountInput.value = receipt.suggested_category;
 
@@ -5786,6 +5790,9 @@
           receiptBtn.classList.add('receipt-icon-btn--has-receipt');
           receiptBtn.title = 'Receipt attached from pending';
         }
+
+        // Update running total
+        handleAmountChange();
       }
     }
 

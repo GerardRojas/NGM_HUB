@@ -2517,6 +2517,7 @@
 /* Bot action buttons (Process Anyway / Skip) */
 .msg-bot-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
   margin-top: 8px;
 }

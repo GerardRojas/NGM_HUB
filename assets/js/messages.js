@@ -56,6 +56,7 @@
     lastTypingBroadcast: 0,
     renderDebounceTimer: null,
     activeCheckFlow: null, // { receiptId, state } when a check flow conversation is active
+    activeDuplicateFlow: null, // { receiptId } when a duplicate confirmation is active
   };
 
   // Debounced render to prevent rapid re-renders causing flicker
@@ -795,6 +796,22 @@
 
     state.messages = messages;
 
+    // Scan loaded messages for active flows (check flow / duplicate flow)
+    state.activeCheckFlow = null;
+    state.activeDuplicateFlow = null;
+    for (const msg of messages) {
+      if (msg.metadata?.check_flow_active && msg.metadata?.check_flow_state) {
+        state.activeCheckFlow = { receiptId: msg.metadata.pending_receipt_id, state: msg.metadata.check_flow_state };
+      } else if (msg.metadata?.check_flow_state === 'completed' || msg.metadata?.check_flow_state === 'cancelled') {
+        state.activeCheckFlow = null;
+      }
+      if (msg.metadata?.duplicate_flow_active && msg.metadata?.duplicate_flow_state === 'awaiting_confirmation') {
+        state.activeDuplicateFlow = { receiptId: msg.metadata.pending_receipt_id };
+      } else if (msg.metadata?.duplicate_flow_state === 'confirmed' || msg.metadata?.duplicate_flow_state === 'skipped') {
+        state.activeDuplicateFlow = null;
+      }
+    }
+
     // Hide loading, show messages
     if (DOM.chatLoading) DOM.chatLoading.style.display = "none";
     DOM.messagesList.style.display = "flex";
@@ -987,9 +1004,23 @@
     // Check for receipt status tag
     const receiptStatusTag = renderReceiptStatusTag(msg);
 
-    // Bot action buttons (e.g. "Process Anyway" for duplicate receipts)
+    // Bot action buttons for duplicate receipts
     let botActions = '';
-    if (isBot && msg.metadata?.allow_force_process && msg.metadata?.receipt_status === 'duplicate') {
+    if (isBot && msg.metadata?.duplicate_flow_active && msg.metadata?.duplicate_flow_state === 'awaiting_confirmation') {
+      const receiptId = msg.metadata.pending_receipt_id;
+      botActions = `
+        <div class="msg-bot-actions" data-receipt-id="${receiptId}">
+          <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="dup-confirm-yes" data-receipt-id="${receiptId}">
+            Yes, process it
+          </button>
+          <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="dup-confirm-no" data-receipt-id="${receiptId}">
+            No, skip
+          </button>
+          <span class="msg-bot-input-hint">or type yes/no</span>
+        </div>
+      `;
+    } else if (isBot && msg.metadata?.allow_force_process && msg.metadata?.receipt_status === 'duplicate') {
+      // Fallback for old-format duplicate messages without flow metadata
       const receiptId = msg.metadata.pending_receipt_id;
       botActions = `
         <div class="msg-bot-actions" data-receipt-id="${receiptId}">
@@ -1249,6 +1280,45 @@
     }
   }
 
+  // ── Duplicate flow helpers ──
+  function _getDuplicateFlowAction(content) {
+    if (!state.activeDuplicateFlow || !isReceiptsChannel()) return null;
+
+    const text = content.toLowerCase().trim();
+    const yesPatterns = ['yes', 'si', 'y', 'ok', 'sure', 'proceed', 'continue', 'go ahead', 'process'];
+    const noPatterns = ['no', 'n', 'skip', 'cancel', 'nah', 'nope', 'stop'];
+
+    if (yesPatterns.includes(text)) {
+      return { receiptId: state.activeDuplicateFlow.receiptId, action: 'confirm_process' };
+    }
+    if (noPatterns.includes(text)) {
+      return { receiptId: state.activeDuplicateFlow.receiptId, action: 'skip' };
+    }
+    return null;
+  }
+
+  async function _forwardToDuplicateAction(receiptId, action) {
+    try {
+      const body = { action: action, user_id: state.currentUser?.user_id };
+
+      const response = await authFetch(
+        `${API_BASE}/pending-receipts/${receiptId}/duplicate-action`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        console.error("[Messages] Duplicate action error:", error);
+      }
+    } catch (err) {
+      console.error("[Messages] Duplicate action fetch error:", err);
+    }
+  }
+
   async function sendMessage() {
     const content = DOM.messageInput.value.trim();
     if (!content && state.attachments.length === 0) return;
@@ -1256,6 +1326,9 @@
 
     // Check if this message is a response to an active check flow
     const checkFlowAction = _getCheckFlowAction(content);
+
+    // Check if this message is a response to an active duplicate flow
+    const duplicateFlowAction = _getDuplicateFlowAction(content);
 
     const messageData = {
       content: content,
@@ -1309,6 +1382,12 @@
       // Forward to check-action endpoint if this was a check flow response
       if (checkFlowAction) {
         _forwardToCheckAction(checkFlowAction.receiptId, checkFlowAction.action, content);
+      }
+
+      // Forward to duplicate-action endpoint if this was a duplicate flow response
+      if (duplicateFlowAction) {
+        _forwardToDuplicateAction(duplicateFlowAction.receiptId, duplicateFlowAction.action);
+        state.activeDuplicateFlow = null;
       }
     } catch (err) {
       console.error("[Messages] Send error:", err);
@@ -2609,6 +2688,16 @@
       state.activeCheckFlow = null;
     }
 
+    // Track active duplicate flow from bot messages
+    if (message.metadata?.duplicate_flow_active && message.metadata?.duplicate_flow_state === 'awaiting_confirmation') {
+      state.activeDuplicateFlow = {
+        receiptId: message.metadata.pending_receipt_id,
+      };
+    } else if (message.metadata?.duplicate_flow_state === 'confirmed' ||
+               message.metadata?.duplicate_flow_state === 'skipped') {
+      state.activeDuplicateFlow = null;
+    }
+
     // Show toast notification only for messages from others
     if (message.user_id !== state.currentUser?.user_id) {
       showMessageNotification(message);
@@ -2861,7 +2950,29 @@
 
       if (!action) return;
 
-      // Bot action buttons (Process Anyway / Skip)
+      // Duplicate flow button actions (new conversational flow)
+      if (action === "dup-confirm-yes") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Processing...</span>';
+          _forwardToDuplicateAction(receiptId, "confirm_process");
+          state.activeDuplicateFlow = null;
+        }
+        return;
+      }
+      if (action === "dup-confirm-no") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-dismissed">Skipped</span>';
+          _forwardToDuplicateAction(receiptId, "skip");
+          state.activeDuplicateFlow = null;
+        }
+        return;
+      }
+
+      // Legacy bot action buttons (Process Anyway / Skip)
       if (action === "force-process") {
         const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
         if (receiptId) handleForceProcessReceipt(receiptId, e.target.closest(".msg-bot-actions"));

@@ -24,11 +24,15 @@
     height: 100vh;
 }
 
-/* SOLO en Estimator: que main-content NO tenga max-width ni márgenes */
+/* SOLO en Estimator: que main-content NO tenga max-width ni márgenes,
+   y que sea flex column para que la tabla ocupe el espacio restante */
 .estimator-page .main-content {
     max-width: none !important;
     margin-inline: 0 !important;
     width: 100% !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 /* ==========================================
@@ -249,6 +253,14 @@
    PANEL + TABLA ESTIMATOR (BLANCO)
    ========================================== */
 
+/* Section que envuelve el panel de tabla: crece para llenar el espacio restante */
+.estimator-main-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
 /* Panel principal del estimator (fondo blanco).
    Ahora su ancho también depende del slider. */
 .estimator-panel {
@@ -260,10 +272,14 @@
     max-width: 100%;
     width: calc(var(--estimator-table-width, 100) * 1%);
     margin-inline: 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Wrapper de tabla con scroll propio y header sticky.
-   El ancho se alinea al panel; mejor scroll al fondo. */
+   Usa flex: 1 para llenar el espacio restante del panel en vez de max-height fijo */
 .estimator-table-wrapper {
     background: #ffffff;
     border-radius: 10px;
@@ -271,7 +287,8 @@
     overflow: auto;
     width: 100%;
     max-width: 100%;
-    max-height: calc(100vh - 230px);
+    flex: 1;
+    min-height: 0;
     box-sizing: border-box;
     padding-bottom: 4px; /* deja ver el borde inferior al llegar hasta abajo */
 }

@@ -588,7 +588,8 @@
       ctxMenu.classList.add('hidden');
       if (action === 'add-concept') {
         const catIdx = selectedRow ? selectedRow.catIndex : null;
-        handleAddConcept(catIdx);
+        const subIdx = selectedRow ? selectedRow.subIndex : null;
+        handleAddConcept(catIdx, subIdx);
       }
       if (action === 'delete-concept') deleteSelectedConcept();
     });
@@ -2215,12 +2216,13 @@
   // ADD CONCEPT MODAL
   // ================================
 
-  function handleAddConcept(preselectCatIndex) {
+  function handleAddConcept(preselectCatIndex, preselectSubIndex) {
     // Reset state
     addConceptState = {
       selectedConcept: null,
       builderItems: [],
-      mode: 'from-template'
+      mode: 'from-template',
+      targetSubIndex: preselectSubIndex ?? null
     };
 
     // Ensure we have catalog data
@@ -2603,8 +2605,12 @@
       line_items: lineItems
     };
 
-    // Add to first subcategory
-    targetCategory.subcategories[0].items.push(newItem);
+    // Add to the right-clicked subcategory, or fall back to first
+    const subIdx = addConceptState.targetSubIndex;
+    const targetSub = (subIdx != null && targetCategory.subcategories[subIdx])
+      ? targetCategory.subcategories[subIdx]
+      : targetCategory.subcategories[0];
+    targetSub.items.push(newItem);
 
     // Recalculate totals
     recalculateEstimateTotals();

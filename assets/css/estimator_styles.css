@@ -373,6 +373,11 @@
     padding-left: 55px;  /* sangría */
 }
 
+/* Concepts (item rows) con sangría al nivel de subcategorías */
+.item-row .col-name {
+    padding-left: 55px;
+}
+
 /* Columna de código (ID / clave) */
 .category-accnum {
     width: 80px;

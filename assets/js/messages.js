@@ -1917,7 +1917,11 @@
         body: JSON.stringify(messageData),
       });
 
-      if (!res.ok) throw new Error("Failed to send message");
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        console.error("[Messages] Receipt message POST error:", res.status, errBody);
+        return; // Keep temp message visible
+      }
 
       const data = await res.json();
       // Replace temp message with real one

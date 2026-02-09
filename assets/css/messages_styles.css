@@ -1038,7 +1038,7 @@
 
 /* Constrain input area content for large screens */
 .msg-input-area > * {
-  max-width: 1200px;
+  max-width: 1600px;
   margin-left: auto;
   margin-right: auto;
 }

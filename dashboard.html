@@ -140,16 +140,27 @@
                 <span class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · Live</span>
                 </div>
 
-                <!-- Search bar -->
-                <form class="ngm-search" role="search">
-                <span class="ngm-global-search-icon">⌕</span>
+                <!-- Search bar (opens command palette) -->
+                <form class="ngm-search" role="search" id="searchForm">
+                <svg class="ngm-global-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                 <input
                     type="search"
                     class="ngm-search-input"
-                    placeholder="Search…"
+                    placeholder="Search..."
                     aria-label="Search"
+                    readonly
                 />
+                <span class="ngm-search-shortcut">Ctrl+K</span>
                 </form>
+
+                <!-- Mobile-only: search + mentions triggers -->
+                <button type="button" class="mobile-topbar-btn" id="btnMobileSearch" title="Search">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+                <button type="button" class="mobile-topbar-btn mobile-mentions-btn" id="btnMobileMentions" title="Mentions">
+                    <span class="mobile-mentions-at">@</span>
+                    <span class="mobile-mentions-count" id="mobileMentionsCount" style="display: none;">0</span>
+                </button>
 
                 <!-- Usuario / rol -->
                 <span id="user-pill" class="user-pill">User · Role</span>
@@ -157,35 +168,6 @@
             </header>
 
             <main class="main-content dashboard-main">
-                <!-- Mentions Section (personal notifications) -->
-                <section class="mentions-section">
-                    <div class="section-header-row">
-                        <div>
-                            <h2 class="section-title">Mentions</h2>
-                            <p class="section-subtitle">
-                                Recent messages where you were mentioned.
-                            </p>
-                        </div>
-                        <a href="messages.html" class="section-action-link">View all messages →</a>
-                    </div>
-
-                    <div id="mentions-container" class="module-card mentions-card">
-                        <div class="mentions-loading" id="mentions-loading">
-                            <span class="mentions-loading-text">Loading mentions...</span>
-                        </div>
-                        <div class="mentions-empty" id="mentions-empty" style="display: none;">
-                            <div class="mentions-empty-icon">@</div>
-                            <p class="mentions-empty-text">No recent mentions</p>
-                        </div>
-                        <div class="mentions-list" id="mentions-list" style="display: none;">
-                            <!-- Mentions rendered by JS -->
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Separador visual entre mentions y my work -->
-                <div class="section-divider"></div>
-
                 <!-- My Work Section -->
                 <section class="my-work-section">
                     <div class="section-header-row">
@@ -250,300 +232,246 @@
                     <h2 class="section-title">Modules</h2>
                     <div class="modules-grid">
 
-                        <!-- Expenses Engine (activo) -->
-                        <a
-                            class="module-card"
-                            href="expenses.html"
-                            data-module="expenses"
-                            data-status="active"
-                        >
+                        <!-- Expenses Engine -->
+                        <a class="module-card" href="expenses.html" data-module="expenses" data-status="active">
                             <div class="module-icon">
-                                <span class="module-icon-badge">EE</span>
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                                </span>
                             </div>
                             <h3 class="module-title">Expenses Engine</h3>
-                            <p class="module-desc">
-                                Capture, interpret and categorize expenses safely, without breaking formulas.
-                            </p>
+                            <p class="module-desc">Capture, interpret and categorize expenses safely, without breaking formulas.</p>
                         </a>
 
-                        <!-- Pipeline Manager (activo) -->
-                        <a
-                            class="module-card"
-                            href="pipeline.html"
-                            data-module="pipeline"
-                            data-status="active"
-                        >
+                        <!-- Pipeline Manager -->
+                        <a class="module-card" href="pipeline.html" data-module="pipeline" data-status="active">
                             <div class="module-icon">
-                                <span class="module-icon-badge">PL</span>
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="6" height="16" rx="1"></rect><rect x="14" y="4" width="6" height="12" rx="1"></rect></svg>
+                                </span>
                             </div>
                             <h3 class="module-title">Pipeline Manager</h3>
-                            <p class="module-desc">
-                                Manage tasks, sprints and delivery pipelines for all teams.
-                            </p>
+                            <p class="module-desc">Manage tasks, sprints and delivery pipelines for all teams.</p>
                         </a>
 
-                        <!-- Projects (activo) -->
-                        <a
-                            class="module-card"
-                            href="projects.html"
-                            data-module="projects"
-                            data-status="active"
-                        >
+                        <!-- Projects -->
+                        <a class="module-card" href="projects.html" data-module="projects" data-status="active">
                             <div class="module-icon">
-                                <span class="module-icon-badge">PR</span>
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                                </span>
                             </div>
                             <h3 class="module-title">Projects</h3>
-                            <p class="module-desc">
-                                Manage active, paused and completed projects for all connected systems.
-                            </p>
+                            <p class="module-desc">Manage active, paused and completed projects for all connected systems.</p>
                         </a>
 
-                        <!-- Vendors (activo) -->
-                        <a
-                            class="module-card"
-                            href="vendors.html"
-                            data-module="vendors"
-                            data-status="active"
-                        >
+                        <!-- Vendors -->
+                        <a class="module-card" href="vendors.html" data-module="vendors" data-status="active">
                             <div class="module-icon">
-                                <span class="module-icon-badge">VN</span>
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                                </span>
                             </div>
                             <h3 class="module-title">Vendors</h3>
-                            <p class="module-desc">
-                                Manage vendor catalog for expenses and accounting integration.
-                            </p>
+                            <p class="module-desc">Manage vendor catalog for expenses and accounting integration.</p>
                         </a>
 
-                        <!-- Accounts (activo) -->
-                        <a
-                            class="module-card"
-                            href="accounts.html"
-                            data-module="accounts"
-                            data-status="active"
-                        >
+                        <!-- Accounts -->
+                        <a class="module-card" href="accounts.html" data-module="accounts" data-status="active">
                             <div class="module-icon">
-                                <span class="module-icon-badge">AC</span>
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                                </span>
                             </div>
                             <h3 class="module-title">Accounts</h3>
-                            <p class="module-desc">
-                                Manage chart of accounts for expense categorization and reporting.
-                            </p>
+                            <p class="module-desc">Manage chart of accounts for expense categorization and reporting.</p>
                         </a>
 
-                        <!-- Estimator Suite (activo) -->
-                        <a
-                            class="module-card"
-                            href="estimator.html"
-                            data-module="estimator"
-                            data-status="active"
-                        >
+                        <!-- Estimator Suite -->
+                        <a class="module-card" href="estimator.html" data-module="estimator" data-status="active">
                             <div class="module-icon">
-                                <span class="module-icon-badge">ES</span>
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="8" y1="10" x2="10" y2="10"></line><line x1="14" y1="10" x2="16" y2="10"></line><line x1="8" y1="14" x2="10" y2="14"></line><line x1="14" y1="14" x2="16" y2="14"></line><line x1="8" y1="18" x2="16" y2="18"></line></svg>
+                                </span>
                             </div>
                             <h3 class="module-title">Estimator Suite</h3>
-                            <p class="module-desc">
-                                Materials database, estimator, concept builder and document builder in one place.
-                            </p>
+                            <p class="module-desc">Materials database, estimator, concept builder and document builder in one place.</p>
                         </a>
 
-                        <a
-                        class="module-card"
-                        href="team.html"
-                        data-module="team"
-                        data-status="active"
-                        >
-                        <div class="module-icon">
-                            <span class="module-icon-badge">TM</span>
-                        </div>
-                        <h3 class="module-title">Team Management</h3>
-                        <p class="module-desc">
-                            Manage users, roles and access. Add, edit or deactivate team members.
-                        </p>
+                        <!-- Team Management -->
+                        <a class="module-card" href="team.html" data-module="team" data-status="active">
+                            <div class="module-icon">
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                                </span>
+                            </div>
+                            <h3 class="module-title">Team Management</h3>
+                            <p class="module-desc">Manage users, roles and access. Add, edit or deactivate team members.</p>
                         </a>
 
                         <!-- Messages -->
-                        <a
-                        class="module-card"
-                        href="messages.html"
-                        data-module="messages"
-                        data-status="active"
-                        >
-                        <div class="module-icon">
-                            <span class="module-icon-badge">MS</span>
-                        </div>
-                        <h3 class="module-title">Messages</h3>
-                        <p class="module-desc">
-                            Team communication hub with project channels and direct messages.
-                        </p>
+                        <a class="module-card" href="messages.html" data-module="messages" data-status="active">
+                            <div class="module-icon">
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                </span>
+                            </div>
+                            <h3 class="module-title">Messages</h3>
+                            <p class="module-desc">Team communication hub with project channels and direct messages.</p>
                         </a>
 
                         <!-- Arturito -->
-                        <a
-                        class="module-card"
-                        href="arturito.html"
-                        data-module="arturito"
-                        data-status="active"
-                        >
-                        <div class="module-icon">
-                            <span class="module-icon-badge">AR</span>
-                        </div>
-                        <h3 class="module-title">Arturito</h3>
-                        <p class="module-desc">
-                            AI assistant for project queries, BVA reports, and administrative help.
-                        </p>
+                        <a class="module-card" href="arturito.html" data-module="arturito" data-status="active">
+                            <div class="module-icon">
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+                                </span>
+                            </div>
+                            <h3 class="module-title">Arturito</h3>
+                            <p class="module-desc">AI assistant for project queries, BVA reports, and administrative help.</p>
                         </a>
 
                         <!-- God View -->
-                        <a
-                        class="module-card"
-                        href="god-view.html"
-                        data-module="god_view"
-                        data-status="active"
-                        >
-                        <div class="module-icon">
-                            <span class="module-icon-badge">GV</span>
-                        </div>
-                        <h3 class="module-title">God View</h3>
-                        <p class="module-desc">
-                            Executive overview dashboard with system-wide insights and metrics.
-                        </p>
+                        <a class="module-card" href="god-view.html" data-module="god_view" data-status="active">
+                            <div class="module-icon">
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                                </span>
+                            </div>
+                            <h3 class="module-title">God View</h3>
+                            <p class="module-desc">Executive overview dashboard with system-wide insights and metrics.</p>
                         </a>
 
                         <!-- Reporting -->
-                        <a
-                        class="module-card"
-                        href="reporting.html"
-                        data-module="reporting"
-                        data-status="active"
-                        >
-                        <div class="module-icon">
-                            <span class="module-icon-badge">RP</span>
-                        </div>
-                        <h3 class="module-title">Reporting</h3>
-                        <p class="module-desc">
-                            Generate custom reports and analytics from all system data.
-                        </p>
+                        <a class="module-card" href="reporting.html" data-module="reporting" data-status="active">
+                            <div class="module-icon">
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                                </span>
+                            </div>
+                            <h3 class="module-title">Reporting</h3>
+                            <p class="module-desc">Generate custom reports and analytics from all system data.</p>
                         </a>
 
                         <!-- Budgets -->
-                        <a
-                        class="module-card"
-                        href="budgets.html"
-                        data-module="budgets"
-                        data-status="active"
-                        >
-                        <div class="module-icon">
-                            <span class="module-icon-badge">BG</span>
-                        </div>
-                        <h3 class="module-title">Budgets</h3>
-                        <p class="module-desc">
-                            Manage budgets, track spending, and forecast financial performance.
-                        </p>
+                        <a class="module-card" href="budgets.html" data-module="budgets" data-status="active">
+                            <div class="module-icon">
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                                </span>
+                            </div>
+                            <h3 class="module-title">Budgets</h3>
+                            <p class="module-desc">Manage budgets, track spending, and forecast financial performance.</p>
                         </a>
 
                         <!-- Roles Management -->
-                        <a
-                        class="module-card"
-                        href="roles.html"
-                        data-module="roles"
-                        data-status="active"
-                        >
-                        <div class="module-icon">
-                            <span class="module-icon-badge">RL</span>
-                        </div>
-                        <h3 class="module-title">Roles Management</h3>
-                        <p class="module-desc">
-                            Configure user roles and module permissions across the system.
-                        </p>
+                        <a class="module-card" href="roles.html" data-module="roles" data-status="active">
+                            <div class="module-icon">
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                </span>
+                            </div>
+                            <h3 class="module-title">Roles Management</h3>
+                            <p class="module-desc">Configure user roles and module permissions across the system.</p>
                         </a>
 
                         <!-- Settings -->
-                        <a
-                        class="module-card"
-                        href="settings.html"
-                        data-module="settings"
-                        data-status="active"
-                        >
-                        <div class="module-icon">
-                            <span class="module-icon-badge">ST</span>
-                        </div>
-                        <h3 class="module-title">Settings</h3>
-                        <p class="module-desc">
-                            System configuration, integrations, and general preferences.
-                        </p>
+                        <a class="module-card" href="settings.html" data-module="settings" data-status="active">
+                            <div class="module-icon">
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                                </span>
+                            </div>
+                            <h3 class="module-title">Settings</h3>
+                            <p class="module-desc">System configuration, integrations, and general preferences.</p>
                         </a>
 
                         <!-- Audit Logs -->
-                        <a
-                        class="module-card"
-                        href="audit.html"
-                        data-module="audit"
-                        data-status="active"
-                        >
-                        <div class="module-icon">
-                            <span class="module-icon-badge">AU</span>
-                        </div>
-                        <h3 class="module-title">Audit Logs</h3>
-                        <p class="module-desc">
-                            Track system activity, user actions, and security events.
-                        </p>
+                        <a class="module-card" href="audit.html" data-module="audit" data-status="active">
+                            <div class="module-icon">
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                </span>
+                            </div>
+                            <h3 class="module-title">Audit Logs</h3>
+                            <p class="module-desc">Track system activity, user actions, and security events.</p>
                         </a>
 
-                        <!-- Finance / Books Reporting (coming soon) -->
-                        <button 
-                            class="module-card module-coming-soon" 
-                            type="button"
-                            data-roles="COO,CEO,Accounting Manager,Bookkeeper"
-                            data-status="coming-soon"
-                            disabled
-                        >
+                        <!-- Finance & Books (coming soon) -->
+                        <button class="module-card module-coming-soon" type="button" data-roles="COO,CEO,Accounting Manager,Bookkeeper" data-status="coming-soon" disabled>
                             <div class="module-icon">
-                                <span class="module-icon-badge">FIN</span>
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                                </span>
                             </div>
                             <h3 class="module-title">Finance &amp; Books</h3>
-                            <p class="module-desc">
-                                Budget vs Actuals, accounts, classes and books reporting.
-                            </p>
+                            <p class="module-desc">Budget vs Actuals, accounts, classes and books reporting.</p>
                         </button>
 
                         <!-- Automations & Bots (coming soon) -->
-                        <button 
-                            class="module-card module-coming-soon" 
-                            type="button"
-                            data-roles="COO,CEO"
-                            data-status="coming-soon"
-                            disabled
-                        >
+                        <button class="module-card module-coming-soon" type="button" data-roles="COO,CEO" data-status="coming-soon" disabled>
                             <div class="module-icon">
-                                <span class="module-icon-badge">AUTO</span>
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                                </span>
                             </div>
                             <h3 class="module-title">Automations &amp; Bots</h3>
-                            <p class="module-desc">
-                                Orchestrate background processes, syncs and AI assistants like Arturito.
-                            </p>
+                            <p class="module-desc">Orchestrate background processes, syncs and AI assistants like Arturito.</p>
                         </button>
 
                         <!-- Data Vault (coming soon) -->
-                        <button 
-                            class="module-card module-coming-soon" 
-                            type="button"
-                            data-roles="COO,CEO,Accounting Manager"
-                            data-status="coming-soon"
-                            disabled
-                        >
+                        <button class="module-card module-coming-soon" type="button" data-roles="COO,CEO,Accounting Manager" data-status="coming-soon" disabled>
                             <div class="module-icon">
-                                <span class="module-icon-badge">VAULT</span>
+                                <span class="module-icon-badge">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                                </span>
                             </div>
                             <h3 class="module-title">Data Vault</h3>
-                            <p class="module-desc">
-                                Centralized storage, snapshots and access policies for your core datasets.
-                            </p>
+                            <p class="module-desc">Centralized storage, snapshots and access policies for your core datasets.</p>
                         </button>
                     </div>
                 </section>
             </main>
         </div>
     </div>
+
+    <!-- Mentions Drawer -->
+    <div class="mentions-drawer" id="mentionsDrawer">
+        <div class="mentions-drawer-tab" id="mentionsDrawerTab">
+            <span class="mentions-tab-icon">@</span>
+            <span class="mentions-tab-count" id="mentionsTabCount" style="display: none;">0</span>
+        </div>
+        <div class="mentions-drawer-content">
+            <div class="mentions-drawer-header">
+                <div>
+                    <h3 class="mentions-drawer-title">Mentions</h3>
+                    <p class="mentions-drawer-subtitle">Recent messages where you were mentioned.</p>
+                </div>
+                <button type="button" class="mentions-drawer-close" id="mentionsDrawerClose">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="mentions-drawer-body">
+                <div class="mentions-loading" id="mentions-loading">
+                    <span class="mentions-loading-text">Loading mentions...</span>
+                </div>
+                <div class="mentions-empty" id="mentions-empty" style="display: none;">
+                    <div class="mentions-empty-icon">@</div>
+                    <p class="mentions-empty-text">No recent mentions</p>
+                </div>
+                <div class="mentions-list" id="mentions-list" style="display: none;">
+                    <!-- Mentions rendered by JS -->
+                </div>
+            </div>
+            <div class="mentions-drawer-footer">
+                <a href="messages.html" class="section-action-link">View all messages</a>
+            </div>
+        </div>
+    </div>
+    <div class="mentions-drawer-overlay" id="mentionsDrawerOverlay"></div>
 
     <script src="assets/js/arturito_widget.js"></script>
 

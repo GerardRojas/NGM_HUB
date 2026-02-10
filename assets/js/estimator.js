@@ -1971,9 +1971,11 @@
       trGroup.innerHTML = `
         <td class="category-accnum col-code">${catCode}</td>
         <td class="image-cell col-image"></td>
-        <td class="group-cell col-name">
-          <span class="group-toggle-icon">${groupState[indexCat] ? '▾' : '▸'}</span>
-          <span class="group-name">${catName}</span>
+        <td class="col-name">
+          <div class="group-cell">
+            <span class="group-toggle-icon">${groupState[indexCat] ? '▾' : '▸'}</span>
+            <span class="group-name">${catName}</span>
+          </div>
         </td>
         <td class="group-spacer col-qty"></td>
         <td class="group-spacer col-unit"></td>
@@ -2072,10 +2074,12 @@
             <td class="image-cell col-image">
               ${imageUrl ? `<img src="${imageUrl}" alt="" class="item-thumbnail" onerror="this.style.display='none'">` : '—'}
             </td>
-            <td class="item-name col-name">
-              <span class="item-name-text">${name}</span>
-              ${compBadge}
-              ${typeBadgesHtml}
+            <td class="col-name">
+              <div class="item-name">
+                <span class="item-name-text">${name}</span>
+                ${compBadge}
+                ${typeBadgesHtml}
+              </div>
             </td>
             <td class="col-qty">
               <input type="number" class="inline-qty-input" value="${qty || 0}" min="0" step="any"

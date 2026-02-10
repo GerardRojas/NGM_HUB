@@ -28,6 +28,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   currentUser = user;
 
+  // Init UI components
+  initMentionsDrawer();
+  initCommandPalette();
+
   // Load data in parallel for faster loading
   try {
     await Promise.all([
@@ -92,7 +96,45 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
-// MENTIONS SECTION
+// MENTIONS DRAWER
+// ─────────────────────────────────────────────────────────────────────────
+
+function initMentionsDrawer() {
+  const drawer = document.getElementById('mentionsDrawer');
+  const tab = document.getElementById('mentionsDrawerTab');
+  const closeBtn = document.getElementById('mentionsDrawerClose');
+  const overlay = document.getElementById('mentionsDrawerOverlay');
+  if (!drawer) return;
+
+  function openDrawer() {
+    drawer.classList.add('is-open');
+    if (overlay) overlay.classList.add('is-visible');
+  }
+
+  function closeDrawer() {
+    drawer.classList.remove('is-open');
+    if (overlay) overlay.classList.remove('is-visible');
+  }
+
+  if (tab) tab.addEventListener('click', openDrawer);
+  if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+  if (overlay) overlay.addEventListener('click', closeDrawer);
+
+  // Mobile topbar mentions button
+  const mobileBtn = document.getElementById('btnMobileMentions');
+  if (mobileBtn) mobileBtn.addEventListener('click', openDrawer);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && drawer.classList.contains('is-open')) {
+      closeDrawer();
+    }
+  });
+
+  window.MentionsDrawer = { open: openDrawer, close: closeDrawer };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// MENTIONS DATA
 // ─────────────────────────────────────────────────────────────────────────
 
 async function loadMentions(user) {
@@ -118,6 +160,30 @@ async function loadMentions(user) {
 
     // Hide loading
     loadingEl.style.display = "none";
+
+    // Update notification badges
+    moduleBadgeCounts.messages = mentions.length;
+    updateModuleBadges();
+
+    // Update mentions drawer tab count + mobile button badge
+    const tabCountEl = document.getElementById('mentionsTabCount');
+    const mobileCountEl = document.getElementById('mobileMentionsCount');
+    if (tabCountEl) {
+      if (mentions.length > 0) {
+        tabCountEl.textContent = mentions.length;
+        tabCountEl.style.display = 'flex';
+      } else {
+        tabCountEl.style.display = 'none';
+      }
+    }
+    if (mobileCountEl) {
+      if (mentions.length > 0) {
+        mobileCountEl.textContent = mentions.length;
+        mobileCountEl.style.display = 'flex';
+      } else {
+        mobileCountEl.style.display = 'none';
+      }
+    }
 
     if (mentions.length === 0) {
       // Show empty state
@@ -347,6 +413,19 @@ async function loadMyWorkTasks(user) {
     console.error("[Dashboard] Failed to load My Work tasks:", err);
   }
 
+  // Update module notification badges
+  moduleBadgeCounts.pipeline = tasks.filter(t => t.type === 'pipeline_task').length;
+  moduleBadgeCounts.expenses = tasks.filter(t => t.type === 'expense_authorization').length;
+  updateModuleBadges();
+
+  // Populate search data for command palette
+  myWorkSearchData = tasks.map(t => ({
+    title: t.title,
+    subtitle: t.subtitle || t.module,
+    link: t.link,
+    type: 'task'
+  }));
+
   // Sort: working first, then by priority (high > medium > low), then by due date
   const priorityWeight = { urgent: 0, high: 1, critical: 1, medium: 2, low: 3 };
   tasks.sort((a, b) => {
@@ -375,116 +454,145 @@ async function loadMyWorkTasks(user) {
   }
 }
 
+function renderSingleTask(task) {
+  // Determine action button based on task type
+  let actionHtml;
+
+  if (task.type === "pipeline_task") {
+    if (task.isStartable) {
+      actionHtml = `
+        <button type="button" class="task-action-btn task-start-btn" data-task-id="${task.taskId}">
+          <span class="task-btn-icon">&#9654;</span> Start
+        </button>
+      `;
+    } else if (task.isWorking) {
+      const elapsedTime = task.timeStart ? formatElapsedTime(task.timeStart) : "";
+      actionHtml = `
+        <div class="task-working-actions">
+          <span class="task-working-timer" data-time-start="${task.timeStart || ''}">
+            <span class="task-working-dot"></span>
+            ${elapsedTime ? `<span class="task-elapsed-time">${elapsedTime}</span>` : '<span class="task-elapsed-time">0m</span>'}
+          </span>
+          <button type="button" class="task-action-btn task-review-btn" data-task-id="${task.taskId}" data-task-title="${escapeHtml(task.title)}">
+            Send to Review
+          </button>
+        </div>
+      `;
+    } else {
+      actionHtml = `<a href="${task.link}" class="task-action-btn task-view-btn">${task.actionText}</a>`;
+    }
+  } else {
+    actionHtml = `<a href="${task.link}" class="task-action-btn">${task.actionText}</a>`;
+  }
+
+  // Status badge
+  let statusBadge = "";
+  if (task.type === "pipeline_task" && task.statusName) {
+    const sLower = task.statusName.toLowerCase();
+    let statusMod = "";
+    if (sLower === "not started") statusMod = " task-status-badge--not-started";
+    else if (sLower === "working on it") statusMod = " task-status-badge--working";
+    else if (sLower.includes("review")) statusMod = " task-status-badge--review";
+    else if (sLower === "stuck") statusMod = " task-status-badge--stuck";
+    statusBadge = `<span class="task-status-badge${statusMod}">${escapeHtml(task.statusName)}</span>`;
+  }
+
+  // Role badge
+  let roleBadge = "";
+  if (task.type === "pipeline_task" && task.userRole && task.userRole !== "owner") {
+    const roleLabel = task.userRole === "collaborator" ? "Collaborator" : "Manager";
+    roleBadge = `<span class="task-role-badge task-role-${task.userRole}">${roleLabel}</span>`;
+  }
+
+  // Priority pill
+  let priorityPill = "";
+  if (task.type === "pipeline_task" && task.priorityName) {
+    const pLower = task.priorityName.toLowerCase();
+    let prioClass = "task-priority-default";
+    if (pLower === "high" || pLower === "urgent" || pLower === "critical") {
+      prioClass = "task-priority-high";
+    } else if (pLower === "medium") {
+      prioClass = "task-priority-medium";
+    } else if (pLower === "low") {
+      prioClass = "task-priority-low";
+    }
+    priorityPill = `<span class="task-priority-pill ${prioClass}">${escapeHtml(task.priorityName)}</span>`;
+  }
+
+  // Due date
+  let dueDateHtml = "";
+  if (task.type === "pipeline_task" && task.dueDate) {
+    const dueDate = new Date(task.dueDate + "T00:00:00");
+    const now = new Date();
+    const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+    const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const isOverdue = dueDateOnly < todayOnly;
+    const isToday = dueDateOnly.getTime() === todayOnly.getTime();
+    const dateLabel = dueDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    let dueCssClass = "task-due-date";
+    if (isOverdue) dueCssClass += " task-due-overdue";
+    else if (isToday) dueCssClass += " task-due-today";
+    const prefix = isOverdue ? "Overdue: " : (isToday ? "Today: " : "Due: ");
+    dueDateHtml = `<span class="${dueCssClass}">${prefix}${dateLabel}</span>`;
+  }
+
+  const statusSlug = (task.statusName || '').toLowerCase().replace(/\s+/g, '-');
+  const prioritySlug = (task.priorityName || '').toLowerCase();
+
+  return `
+    <div class="my-work-task" data-type="${task.type}" data-task-id="${task.taskId || ''}" data-role="${task.userRole || 'owner'}" data-status="${statusSlug}" data-priority="${prioritySlug}">
+      <div class="my-work-task-icon">
+        <span class="task-icon-badge ${task.iconClass}">${task.icon}</span>
+      </div>
+      <div class="my-work-task-content">
+        <div class="my-work-task-title">${escapeHtml(task.title)} ${statusBadge} ${roleBadge}</div>
+        <div class="my-work-task-meta">
+          <span class="task-meta-module">${escapeHtml(task.module)}</span>
+          ${task.subtitle ? `<span class="task-meta-separator">&middot;</span><span class="task-meta-project">${escapeHtml(task.subtitle)}</span>` : ''}
+          ${priorityPill ? `<span class="task-meta-separator">&middot;</span>${priorityPill}` : ''}
+          ${dueDateHtml ? `<span class="task-meta-separator">&middot;</span>${dueDateHtml}` : ''}
+        </div>
+      </div>
+      <div class="my-work-task-action">
+        ${actionHtml}
+      </div>
+    </div>
+  `;
+}
+
 function renderMyWorkTasks(tasks) {
   const listEl = document.getElementById("my-work-list");
   if (!listEl) return;
 
-  const html = tasks.map((task) => {
-    // Determine action button based on task type
-    let actionHtml;
+  // Group tasks by status category
+  const groups = [
+    { key: 'working', label: 'Working', tasks: [] },
+    { key: 'action', label: 'Action Required', tasks: [] },
+    { key: 'other', label: 'Other', tasks: [] }
+  ];
 
-    if (task.type === "pipeline_task") {
-      if (task.isStartable) {
-        // Start button for "Not Started" tasks
-        actionHtml = `
-          <button type="button" class="task-action-btn task-start-btn" data-task-id="${task.taskId}">
-            <span class="task-btn-icon">▶</span> Start
-          </button>
-        `;
-      } else if (task.isWorking) {
-        // Working task: show elapsed time + Send to Review button
-        const elapsedTime = task.timeStart ? formatElapsedTime(task.timeStart) : "";
-        actionHtml = `
-          <div class="task-working-actions">
-            <span class="task-working-timer" data-time-start="${task.timeStart || ''}">
-              <span class="task-working-dot"></span>
-              ${elapsedTime ? `<span class="task-elapsed-time">${elapsedTime}</span>` : '<span class="task-elapsed-time">0m</span>'}
-            </span>
-            <button type="button" class="task-action-btn task-review-btn" data-task-id="${task.taskId}" data-task-title="${escapeHtml(task.title)}">
-              Send to Review
-            </button>
-          </div>
-        `;
-      } else {
-        // View button for other statuses
-        actionHtml = `<a href="${task.link}" class="task-action-btn task-view-btn">${task.actionText}</a>`;
-      }
+  tasks.forEach(task => {
+    if (task.isWorking) {
+      groups[0].tasks.push(task);
+    } else if (task.type === 'expense_authorization' || task.isStartable ||
+               (task.statusName || '').toLowerCase() === 'not started') {
+      groups[1].tasks.push(task);
     } else {
-      // Default action for other task types
-      actionHtml = `<a href="${task.link}" class="task-action-btn">${task.actionText}</a>`;
+      groups[2].tasks.push(task);
     }
+  });
 
-    // Status badge for pipeline tasks (always visible with color coding)
-    let statusBadge = "";
-    if (task.type === "pipeline_task" && task.statusName) {
-      const sLower = task.statusName.toLowerCase();
-      let statusMod = "";
-      if (sLower === "not started") statusMod = " task-status-badge--not-started";
-      else if (sLower === "working on it") statusMod = " task-status-badge--working";
-      else if (sLower.includes("review")) statusMod = " task-status-badge--review";
-      else if (sLower === "stuck") statusMod = " task-status-badge--stuck";
-      statusBadge = `<span class="task-status-badge${statusMod}">${escapeHtml(task.statusName)}</span>`;
+  let html = '';
+  const activeGroups = groups.filter(g => g.tasks.length > 0);
+
+  activeGroups.forEach(group => {
+    if (activeGroups.length > 1) {
+      html += `<div class="my-work-group-header">${group.label} (${group.tasks.length})</div>`;
     }
-
-    // Role badge for collaborators and managers
-    let roleBadge = "";
-    if (task.type === "pipeline_task" && task.userRole && task.userRole !== "owner") {
-      const roleLabel = task.userRole === "collaborator" ? "Collaborator" : "Manager";
-      roleBadge = `<span class="task-role-badge task-role-${task.userRole}">${roleLabel}</span>`;
-    }
-
-    // Priority pill
-    let priorityPill = "";
-    if (task.type === "pipeline_task" && task.priorityName) {
-      const pLower = task.priorityName.toLowerCase();
-      let prioClass = "task-priority-default";
-      if (pLower === "high" || pLower === "urgent" || pLower === "critical") {
-        prioClass = "task-priority-high";
-      } else if (pLower === "medium") {
-        prioClass = "task-priority-medium";
-      } else if (pLower === "low") {
-        prioClass = "task-priority-low";
-      }
-      priorityPill = `<span class="task-priority-pill ${prioClass}">${escapeHtml(task.priorityName)}</span>`;
-    }
-
-    // Due date display
-    let dueDateHtml = "";
-    if (task.type === "pipeline_task" && task.dueDate) {
-      const dueDate = new Date(task.dueDate + "T00:00:00");
-      const now = new Date();
-      const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
-      const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const isOverdue = dueDateOnly < todayOnly;
-      const isToday = dueDateOnly.getTime() === todayOnly.getTime();
-      const dateLabel = dueDate.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      let dueCssClass = "task-due-date";
-      if (isOverdue) dueCssClass += " task-due-overdue";
-      else if (isToday) dueCssClass += " task-due-today";
-      const prefix = isOverdue ? "Overdue: " : (isToday ? "Today: " : "Due: ");
-      dueDateHtml = `<span class="${dueCssClass}">${prefix}${dateLabel}</span>`;
-    }
-
-    return `
-      <div class="my-work-task" data-type="${task.type}" data-task-id="${task.taskId || ''}" data-role="${task.userRole || 'owner'}">
-        <div class="my-work-task-icon">
-          <span class="task-icon-badge ${task.iconClass}">${task.icon}</span>
-        </div>
-        <div class="my-work-task-content">
-          <div class="my-work-task-title">${escapeHtml(task.title)} ${statusBadge} ${roleBadge}</div>
-          <div class="my-work-task-meta">
-            <span class="task-meta-module">${escapeHtml(task.module)}</span>
-            ${task.subtitle ? `<span class="task-meta-separator">&middot;</span><span class="task-meta-project">${escapeHtml(task.subtitle)}</span>` : ''}
-            ${priorityPill ? `<span class="task-meta-separator">&middot;</span>${priorityPill}` : ''}
-            ${dueDateHtml ? `<span class="task-meta-separator">&middot;</span>${dueDateHtml}` : ''}
-          </div>
-        </div>
-        <div class="my-work-task-action">
-          ${actionHtml}
-        </div>
-      </div>
-    `;
-  }).join("");
+    group.tasks.forEach(task => {
+      html += renderSingleTask(task);
+    });
+  });
 
   listEl.innerHTML = html;
 
@@ -1171,6 +1279,236 @@ async function handleRejectTask(taskId, reviewId, notes, refLink, closeModalFn) 
       confirmBtn.textContent = "Return for Revision";
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// COMMAND PALETTE
+// ---------------------------------------------------------------------------
+
+let moduleSearchData = [];
+let myWorkSearchData = [];
+
+function buildModuleSearchData() {
+  moduleSearchData = [];
+  document.querySelectorAll('.module-card[data-module]').forEach(card => {
+    if (card.style.display === 'none') return;
+    const title = card.querySelector('.module-title')?.textContent || '';
+    const desc = card.querySelector('.module-desc')?.textContent || '';
+    const href = card.getAttribute('href');
+    const mod = card.dataset.module;
+    if (href && title) {
+      moduleSearchData.push({ title, desc, href, module: mod, type: 'module' });
+    }
+  });
+}
+
+function initCommandPalette() {
+  const searchForm = document.getElementById('searchForm');
+
+  buildModuleSearchData();
+
+  if (searchForm) {
+    searchForm.addEventListener('click', (e) => {
+      e.preventDefault();
+      openCommandPalette();
+    });
+  }
+
+  // Mobile topbar search button
+  const mobileSearchBtn = document.getElementById('btnMobileSearch');
+  if (mobileSearchBtn) mobileSearchBtn.addEventListener('click', openCommandPalette);
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      openCommandPalette();
+    }
+  });
+}
+
+function openCommandPalette() {
+  const existing = document.getElementById('cmdPalette');
+  if (existing) { existing.remove(); return; }
+
+  const html = `
+    <div id="cmdPalette" class="cmd-palette-backdrop">
+      <div class="cmd-palette">
+        <div class="cmd-palette-input-wrapper">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" class="cmd-palette-input" id="cmdPaletteInput" placeholder="Search modules, tasks, pages..." autofocus />
+        </div>
+        <div class="cmd-palette-results" id="cmdPaletteResults"></div>
+        <div class="cmd-palette-footer">
+          <span><kbd>&#8593;</kbd><kbd>&#8595;</kbd> Navigate</span>
+          <span><kbd>Enter</kbd> Open</span>
+          <span><kbd>Esc</kbd> Close</span>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  const backdrop = document.getElementById('cmdPalette');
+  const input = document.getElementById('cmdPaletteInput');
+  const resultsContainer = document.getElementById('cmdPaletteResults');
+
+  let selectedIndex = 0;
+  let currentResults = [];
+
+  renderPaletteResults('');
+  setTimeout(() => input.focus(), 50);
+
+  input.addEventListener('input', () => {
+    selectedIndex = 0;
+    renderPaletteResults(input.value);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectedIndex = Math.min(selectedIndex + 1, currentResults.length - 1);
+      highlightPaletteSelected();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectedIndex = Math.max(selectedIndex - 1, 0);
+      highlightPaletteSelected();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (currentResults[selectedIndex]) {
+        navigatePaletteTo(currentResults[selectedIndex]);
+      }
+    } else if (e.key === 'Escape') {
+      closePalette();
+    }
+  });
+
+  backdrop.addEventListener('click', (e) => {
+    if (e.target === backdrop) closePalette();
+  });
+
+  function closePalette() {
+    backdrop.remove();
+  }
+
+  function renderPaletteResults(query) {
+    const q = query.trim().toLowerCase();
+    currentResults = [];
+    let resultHtml = '';
+
+    // Search modules
+    const matchedModules = moduleSearchData.filter(m =>
+      m.title.toLowerCase().includes(q) ||
+      m.desc.toLowerCase().includes(q) ||
+      m.module.toLowerCase().includes(q)
+    );
+
+    // Search tasks
+    const matchedTasks = myWorkSearchData.filter(t =>
+      t.title.toLowerCase().includes(q) ||
+      (t.subtitle || '').toLowerCase().includes(q)
+    );
+
+    if (matchedModules.length > 0) {
+      resultHtml += '<div class="cmd-palette-category">Modules</div>';
+      matchedModules.forEach(m => {
+        currentResults.push(m);
+        const idx = currentResults.length - 1;
+        resultHtml += `<div class="cmd-palette-item" data-index="${idx}">
+          <div class="cmd-palette-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            </svg>
+          </div>
+          <div class="cmd-palette-item-text">
+            <div class="cmd-palette-item-title">${escapeHtml(m.title)}</div>
+            <div class="cmd-palette-item-subtitle">${escapeHtml(m.desc)}</div>
+          </div>
+          <span class="cmd-palette-item-badge">Module</span>
+        </div>`;
+      });
+    }
+
+    if (matchedTasks.length > 0) {
+      resultHtml += '<div class="cmd-palette-category">My Tasks</div>';
+      matchedTasks.forEach(t => {
+        currentResults.push(t);
+        const idx = currentResults.length - 1;
+        resultHtml += `<div class="cmd-palette-item" data-index="${idx}">
+          <div class="cmd-palette-item-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 11l3 3L22 4"></path>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+          </div>
+          <div class="cmd-palette-item-text">
+            <div class="cmd-palette-item-title">${escapeHtml(t.title)}</div>
+            <div class="cmd-palette-item-subtitle">${escapeHtml(t.subtitle || '')}</div>
+          </div>
+          <span class="cmd-palette-item-badge">Task</span>
+        </div>`;
+      });
+    }
+
+    if (currentResults.length === 0) {
+      resultHtml = '<div class="cmd-palette-empty">No results found</div>';
+    }
+
+    resultsContainer.innerHTML = resultHtml;
+    highlightPaletteSelected();
+
+    resultsContainer.querySelectorAll('.cmd-palette-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const idx = parseInt(item.dataset.index);
+        if (currentResults[idx]) navigatePaletteTo(currentResults[idx]);
+      });
+    });
+  }
+
+  function highlightPaletteSelected() {
+    resultsContainer.querySelectorAll('.cmd-palette-item').forEach(el => {
+      el.classList.toggle('is-selected', parseInt(el.dataset.index) === selectedIndex);
+    });
+    const selected = resultsContainer.querySelector('.is-selected');
+    if (selected) selected.scrollIntoView({ block: 'nearest' });
+  }
+
+  function navigatePaletteTo(result) {
+    closePalette();
+    if (result.href) {
+      window.location.href = result.href;
+    } else if (result.link) {
+      window.location.href = result.link;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MODULE NOTIFICATION BADGES
+// ---------------------------------------------------------------------------
+
+const moduleBadgeCounts = {};
+
+function updateModuleBadges() {
+  Object.entries(moduleBadgeCounts).forEach(([moduleKey, count]) => {
+    const card = document.querySelector(`.module-card[data-module="${moduleKey}"]`);
+    if (!card) return;
+    const iconContainer = card.querySelector('.module-icon');
+    if (!iconContainer) return;
+
+    const existing = iconContainer.querySelector('.module-notification-badge');
+    if (existing) existing.remove();
+
+    if (count > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'module-notification-badge';
+      badge.textContent = count > 99 ? '99+' : String(count);
+      iconContainer.appendChild(badge);
+    }
+  });
 }
 
 // ---------------------------------------------------------------------------

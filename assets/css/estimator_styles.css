@@ -339,10 +339,13 @@
 }
 
 /* Celda principal de nombre de categoría */
+.group-row .col-name {
+    background: #ffffff;       /* fondo blanco */
+}
+
 .group-row .group-cell {
     font-weight: 700;
-    color: #213b82;      /* verde corporativo en texto */
-    background: #ffffff;       /* fondo blanco */
+    color: #213b82;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -361,7 +364,7 @@
 }
 
 /* Hover consistente en toda la fila de categoría */
-.group-row:hover .group-cell,
+.group-row:hover .col-name,
 .group-row:hover .group-spacer,
 .group-row:hover .category-accnum {
     background: #f0fdf4;
@@ -372,6 +375,13 @@
     font-weight: 600;
     color: #111827;
     padding-left: 55px;  /* sangría */
+    position: relative;
+}
+
+/* Flecha de toggle en subcategoría: posición absoluta para no mover el nombre */
+.category-row .category-name .sub-toggle-icon {
+    position: absolute;
+    left: 38px;
 }
 
 /* Concepts (item rows) con sangría mayor que subcategorías */

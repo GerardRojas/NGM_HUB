@@ -583,11 +583,11 @@
   var dividerFoundation    = document.getElementById("dividerFoundation");
   var sectionFoundation    = document.getElementById("sectionFoundation");
   var stepFoundation       = document.getElementById("stepFoundation");
-  var selectFoundation     = document.getElementById("selectFoundation");
+  var gridFoundation       = document.getElementById("gridFoundation");
   var dividerLandSurface   = document.getElementById("dividerLandSurface");
   var sectionLandSurface   = document.getElementById("sectionLandSurface");
   var stepLandSurface      = document.getElementById("stepLandSurface");
-  var selectLandSurface    = document.getElementById("selectLandSurface");
+  var gridLandSurface      = document.getElementById("gridLandSurface");
   var sectionAdditionalOptions = document.getElementById("sectionAdditionalOptions");
   var stepAdditionalOptions    = document.getElementById("stepAdditionalOptions");
   var chkPlansPermits      = document.getElementById("chkPlansPermits");
@@ -794,14 +794,14 @@
     var skipFoundation = selectedType === "studio";
     if (skipFoundation && configDone) {
       selectedFoundation = "slab_on_grade";
-      if (selectFoundation) selectFoundation.value = "slab_on_grade";
+      if (gridFoundation) selectCard(gridFoundation, "foundation", "slab_on_grade");
     }
 
     // Garage conversion: force reinforced_foundation, skip foundation UI
     var forceReinforced = selectedType === "garage_conversion";
     if (forceReinforced && configDone) {
       selectedFoundation = "reinforced_foundation";
-      if (selectFoundation) selectFoundation.value = "reinforced_foundation";
+      if (gridFoundation) selectCard(gridFoundation, "foundation", "reinforced_foundation");
     }
 
     var hideFoundation = skipFoundation || forceReinforced;
@@ -817,7 +817,7 @@
     var skipLand = selectedType === "garage_conversion";
     if (skipLand && foundationDone) {
       selectedLandSurface = "flat_land";
-      if (selectLandSurface) selectLandSurface.value = "flat_land";
+      if (gridLandSurface) selectCard(gridLandSurface, "land", "flat_land");
     }
 
     sectionLandSurface.classList.toggle("locked", !foundationDone || skipLand);
@@ -3243,8 +3243,8 @@
       selectedConstruction = null;
       selectedFoundation = null;
       selectedLandSurface = null;
-      if (selectFoundation) selectFoundation.value = "";
-      if (selectLandSurface) selectLandSurface.value = "";
+      if (gridFoundation) gridFoundation.querySelectorAll(".adu-option-card").forEach(function (c) { c.classList.remove("selected"); });
+      if (gridLandSurface) gridLandSurface.querySelectorAll(".adu-option-card").forEach(function (c) { c.classList.remove("selected"); });
       enteredSqft = null;
       gridStories.querySelectorAll(".adu-option-card").forEach(function (c) {
         c.classList.remove("selected");
@@ -3349,9 +3349,12 @@
   // ------------------------------------------
   // EVENT: Foundation Type selection
   // ------------------------------------------
-  if (selectFoundation) {
-    selectFoundation.addEventListener("change", function () {
-      selectedFoundation = selectFoundation.value || null;
+  if (gridFoundation) {
+    gridFoundation.addEventListener("click", function (e) {
+      var card = e.target.closest(".adu-option-card");
+      if (!card || card.classList.contains("disabled") || !card.dataset.foundation) return;
+      selectedFoundation = card.dataset.foundation;
+      selectCard(gridFoundation, "foundation", selectedFoundation);
       refresh();
     });
   }
@@ -3359,9 +3362,12 @@
   // ------------------------------------------
   // EVENT: Land Surface selection
   // ------------------------------------------
-  if (selectLandSurface) {
-    selectLandSurface.addEventListener("change", function () {
-      selectedLandSurface = selectLandSurface.value || null;
+  if (gridLandSurface) {
+    gridLandSurface.addEventListener("click", function (e) {
+      var card = e.target.closest(".adu-option-card");
+      if (!card || card.classList.contains("disabled") || !card.dataset.land) return;
+      selectedLandSurface = card.dataset.land;
+      selectCard(gridLandSurface, "land", selectedLandSurface);
       refresh();
     });
   }
@@ -3599,6 +3605,12 @@
       gridConstruction.querySelectorAll(".adu-option-card").forEach(function (c) {
         c.classList.remove("selected");
       });
+      if (gridFoundation) gridFoundation.querySelectorAll(".adu-option-card").forEach(function (c) {
+        c.classList.remove("selected");
+      });
+      if (gridLandSurface) gridLandSurface.querySelectorAll(".adu-option-card").forEach(function (c) {
+        c.classList.remove("selected");
+      });
       inputSqft.value = "";
 
       // Reset new fields
@@ -3608,8 +3620,6 @@
       if (configModeRow) configModeRow.classList.add("hidden");
       if (inputBedrooms) inputBedrooms.value = "";
       if (inputBathrooms) inputBathrooms.value = "";
-      if (selectFoundation) selectFoundation.value = "";
-      if (selectLandSurface) selectLandSurface.value = "";
       if (chkPlansPermits) chkPlansPermits.checked = false;
       if (chkSolarPanels) chkSolarPanels.checked = false;
       if (chkFireSprinklers) chkFireSprinklers.checked = false;

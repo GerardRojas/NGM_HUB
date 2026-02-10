@@ -2482,7 +2482,7 @@
 }
 
 /* ========================================
-   Bot Message Styling (Arturito agent)
+   Bot Message Styling (base for all agents)
    ======================================== */
 
 .msg-message--bot {
@@ -2502,7 +2502,6 @@
   font-weight: 600;
 }
 
-
 .msg-message--bot .msg-message-body {
   color: rgba(255, 255, 255, 0.9);
 }
@@ -2510,6 +2509,28 @@
 /* Hide action buttons (react/reply/thread) on bot messages */
 .msg-message--bot .msg-message-actions {
   display: none;
+}
+
+/* ---- Andrew (receipt agent) ---- */
+
+.msg-message-avatar--bot-andrew {
+  background: hsl(35, 70%, 45%);
+  border-color: hsl(35, 70%, 45%) !important;
+}
+
+.msg-message--bot-andrew .msg-message-author {
+  color: hsl(35, 65%, 55%);
+}
+
+/* ---- Daneel (budget monitor) ---- */
+
+.msg-message-avatar--bot-daneel {
+  background: hsl(210, 70%, 50%);
+  border-color: hsl(210, 70%, 50%) !important;
+}
+
+.msg-message--bot-daneel .msg-message-author {
+  color: hsl(210, 65%, 60%);
 }
 
 /* Bot action buttons (Process Anyway / Skip) */

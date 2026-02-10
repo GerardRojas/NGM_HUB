@@ -53,7 +53,7 @@
     "companies": { label: "Companies", href: "companies.html", order: 2, category: "admin" },
     "roles": { label: "Roles Management", href: "roles.html", order: 3, category: "admin" },
     "god_view": { label: "God View", href: "god-view.html", order: 4, category: "admin" },
-    "arturito_settings": { label: "Agent Settings", href: "agents-settings.html", order: 5, category: "admin" },
+    "arturito_settings": { label: "Agent Hub", href: "agents-settings.html", order: 5, category: "admin" },
     "settings": { label: "Settings", href: "settings.html", order: 6, category: "admin" },
     "audit": { label: "Audit Logs", href: "audit.html", order: 7, category: "admin" },
   };

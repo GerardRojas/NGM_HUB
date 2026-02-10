@@ -269,6 +269,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const AI_AGENT_IDS = new Set([
     "00000000-0000-0000-0000-000000000001",
     "00000000-0000-0000-0000-000000000002",
+    "00000000-0000-0000-0000-000000000003",
   ]);
 
   const AI_AGENTS = [
@@ -287,6 +288,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       avatar_color: 210,
       _isAgent: true,
       role: { name: "Budget Monitor" },
+      seniority: { name: "-" },
+      status: { name: "Active" },
+    },
+    {
+      user_id: "00000000-0000-0000-0000-000000000003",
+      user_name: "Andrew",
+      avatar_color: 35,
+      _isAgent: true,
+      role: { name: "Receipt Agent" },
       seniority: { name: "-" },
       status: { name: "Active" },
     },

@@ -998,6 +998,16 @@
       return;
     }
 
+    // For each receipt, only the latest bot message should show action buttons.
+    // Older messages for the same receipt had their buttons acted on already.
+    const latestBotMsgPerReceipt = new Map();
+    state.messages.forEach((msg) => {
+      const rid = msg.metadata?.pending_receipt_id;
+      if (rid && BOT_AGENTS[msg.user_id]) {
+        latestBotMsgPerReceipt.set(rid, msg.id);
+      }
+    });
+
     let html = "";
     let lastDate = null;
 
@@ -1012,7 +1022,9 @@
 
       // Check if this is a temporary/sending message
       const isSending = msg.id?.toString().startsWith("temp-");
-      html += renderMessage(msg, isSending);
+      const rid = msg.metadata?.pending_receipt_id;
+      const showButtons = !rid || latestBotMsgPerReceipt.get(rid) === msg.id;
+      html += renderMessage(msg, isSending, showButtons);
     });
 
     DOM.messagesList.innerHTML = html;
@@ -1045,14 +1057,20 @@
     `;
   }
 
-  const ARTURITO_BOT_USER_ID = "00000000-0000-0000-0000-000000000001";
+  // Bot agent registry
+  const BOT_AGENTS = {
+    "00000000-0000-0000-0000-000000000001": { name: "Arturito", color: "hsl(145, 65%, 42%)", initials: "A", css: "arturito" },
+    "00000000-0000-0000-0000-000000000002": { name: "Daneel", color: "hsl(210, 70%, 50%)", initials: "D", css: "daneel" },
+    "00000000-0000-0000-0000-000000000003": { name: "Andrew", color: "hsl(35, 70%, 45%)", initials: "An", css: "andrew" },
+  };
 
-  function renderMessage(msg, isSending = false) {
-    const isBot = msg.user_id === ARTURITO_BOT_USER_ID || msg.metadata?.agent_message;
+  function renderMessage(msg, isSending = false, showButtons = true) {
+    const botInfo = BOT_AGENTS[msg.user_id];
+    const isBot = !!botInfo || !!msg.metadata?.agent_message;
     const user = state.users.find((u) => u.user_id === msg.user_id) || { user_name: msg.user_name };
-    const userName = isBot ? "Arturito" : (user.user_name || msg.user_name || "Unknown");
-    const avatarColor = isBot ? "hsl(145, 65%, 42%)" : getAvatarColor(user);
-    const initials = isBot ? "A" : getInitials(userName);
+    const userName = botInfo ? botInfo.name : (user.user_name || msg.user_name || "Unknown");
+    const avatarColor = botInfo ? botInfo.color : getAvatarColor(user);
+    const initials = botInfo ? botInfo.initials : getInitials(userName);
     const time = formatTime(msg.created_at);
     const content = formatMessageContent(msg.content);
     const hasAttachments = msg.attachments && msg.attachments.length > 0;
@@ -1066,13 +1084,14 @@
     if (isSending && !msg._failed) classes.push('msg-message--sending');
     if (msg._failed) classes.push('msg-message--failed');
     if (isBot) classes.push('msg-message--bot');
+    if (botInfo) classes.push('msg-message--bot-' + botInfo.css);
 
     // Check for receipt status tag
     const receiptStatusTag = renderReceiptStatusTag(msg);
 
     // Bot action buttons for duplicate receipts
     let botActions = '';
-    if (isBot && msg.metadata?.duplicate_flow_active && msg.metadata?.duplicate_flow_state === 'awaiting_confirmation') {
+    if (showButtons && isBot && msg.metadata?.duplicate_flow_active && msg.metadata?.duplicate_flow_state === 'awaiting_confirmation') {
       const receiptId = msg.metadata.pending_receipt_id;
       botActions = `
         <div class="msg-bot-actions" data-receipt-id="${receiptId}">
@@ -1085,7 +1104,7 @@
           <span class="msg-bot-input-hint">or type yes/no</span>
         </div>
       `;
-    } else if (isBot && msg.metadata?.allow_force_process && msg.metadata?.receipt_status === 'duplicate') {
+    } else if (showButtons && isBot && msg.metadata?.allow_force_process && msg.metadata?.receipt_status === 'duplicate') {
       // Fallback for old-format duplicate messages without flow metadata
       const receiptId = msg.metadata.pending_receipt_id;
       botActions = `
@@ -1101,7 +1120,7 @@
     }
 
     // Check flow action buttons
-    if (isBot && msg.metadata?.check_flow_active) {
+    if (showButtons && isBot && msg.metadata?.check_flow_active) {
       const receiptId = msg.metadata.pending_receipt_id;
       const flowState = msg.metadata.check_flow_state;
 
@@ -1151,7 +1170,7 @@
     }
 
     // Receipt flow action buttons
-    if (isBot && msg.metadata?.receipt_flow_active) {
+    if (showButtons && isBot && msg.metadata?.receipt_flow_active) {
       const receiptId = msg.metadata.pending_receipt_id;
       const flowState = msg.metadata.receipt_flow_state;
 
@@ -1205,7 +1224,7 @@
 
     return `
       <div class="${classes.join(' ')}" data-message-id="${msg.id}">
-        <div class="msg-message-avatar ${isBot ? 'msg-message-avatar--bot' : ''}" style="color: ${avatarColor}; border-color: ${avatarColor}">
+        <div class="msg-message-avatar ${isBot ? 'msg-message-avatar--bot' : ''} ${botInfo ? 'msg-message-avatar--bot-' + botInfo.css : ''}" style="color: ${avatarColor}; border-color: ${avatarColor}">
           ${initials}
         </div>
         <div class="msg-message-content">

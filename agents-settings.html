@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1a1a1a" />
-    <title>NGM HUB — Agent Settings</title>
+    <title>NGM HUB — Agent Hub</title>
     <link rel="icon" type="image/png" href="assets/img/arturito_icon.png" />
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="assets/img/greenblack_icon.png" />
@@ -26,712 +26,384 @@
     <script src="assets/js/arturito_analytics.js" defer></script>
 
     <style>
-        /* Arturito Settings specific styles */
-        .arturito-settings-grid {
-            display: grid;
-            gap: 20px;
+        /* ====== Hub Grid ====== */
+        .hub-header { margin-bottom: 28px; }
+        .hub-header h2 {
+            font-size: 13px; font-weight: 500;
+            color: var(--text-primary); margin: 0;
+        }
+        .hub-header p {
+            font-size: 11px; color: var(--ngm-text-muted);
+            margin: 4px 0 0;
         }
 
-        .permission-card {
-            background: #18181b;
-            border: 1px solid #27272f;
-            border-radius: 8px;
-            padding: 24px;
-        }
-
-        .permission-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid #27272f;
-        }
-
-        .permission-card-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #e5e7eb;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .permission-card-title .category-icon {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-
-        .category-read { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
-        .category-create { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
-        .category-update { background: rgba(249, 115, 22, 0.2); color: #f97316; }
-        .category-delete { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
-        .category-notification { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
-        .category-navigation { background: rgba(20, 184, 166, 0.2); color: #14b8a6; }
-
-        .permission-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .permission-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 16px;
-            background: #0a0a0b;
-            border: 1px solid #27272f;
-            border-radius: 6px;
-            transition: border-color 0.2s;
-        }
-
-        .permission-item:hover {
-            border-color: #3f3f46;
-        }
-
-        .permission-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .permission-name {
-            font-size: 13px;
-            font-weight: 500;
-            color: #e5e7eb;
-        }
-
-        .permission-desc {
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        .permission-risk {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 10px;
-            font-weight: 500;
-            text-transform: uppercase;
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-top: 4px;
-        }
-
-        .risk-low { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
-        .risk-medium { background: rgba(249, 115, 22, 0.15); color: #f97316; }
-        .risk-high { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-
-        /* Toggle switch */
-        .toggle-switch {
-            position: relative;
-            width: 44px;
-            height: 24px;
-            flex-shrink: 0;
-        }
-
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #3f3f46;
-            transition: 0.3s;
-            border-radius: 24px;
-        }
-
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: #e5e7eb;
-            transition: 0.3s;
-            border-radius: 50%;
-        }
-
-        .toggle-switch input:checked + .toggle-slider {
-            background-color: #8b5cf6;
-        }
-
-        .toggle-switch input:checked + .toggle-slider:before {
-            transform: translateX(20px);
-        }
-
-        .toggle-switch input:disabled + .toggle-slider {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Access denied overlay */
-        .access-denied-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.95);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-        }
-
-        .access-denied-icon {
-            width: 80px;
-            height: 80px;
-            background: rgba(239, 68, 68, 0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 24px;
-            font-size: 40px;
-        }
-
-        .access-denied-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #e5e7eb;
-            margin-bottom: 8px;
-        }
-
-        .access-denied-message {
-            font-size: 14px;
-            color: #6b7280;
-            margin-bottom: 24px;
-            text-align: center;
-            max-width: 400px;
-        }
-
-        .access-denied-btn {
-            padding: 10px 24px;
-            background: #8b5cf6;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .access-denied-btn:hover {
-            background: #7c3aed;
-        }
-
-        /* Stats cards */
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: #18181b;
-            border: 1px solid #27272f;
-            border-radius: 8px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 600;
-            color: #e5e7eb;
-        }
-
-        .stat-value.enabled { color: #22c55e; }
-        .stat-value.disabled { color: #ef4444; }
-
-        /* Two column layout */
-        .two-col-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        @media (max-width: 1200px) {
-            .two-col-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Capabilities Tree */
-        .capabilities-card {
-            background: #18181b;
-            border: 1px solid #27272f;
-            border-radius: 8px;
-            padding: 24px;
-        }
-
-        .capabilities-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #e5e7eb;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin: 0 0 20px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .module-tree {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .module-group {
-            border-left: 2px solid #3f3f46;
-            padding-left: 16px;
-        }
-
-        .module-name {
-            font-size: 13px;
-            font-weight: 600;
-            color: #8b5cf6;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .module-functions {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            margin-left: 8px;
-        }
-
-        .function-item {
-            font-size: 12px;
-            color: #9ca3af;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .function-item::before {
-            content: "├─";
-            color: #4b5563;
-            font-family: monospace;
-        }
-
-        .function-item:last-child::before {
-            content: "└─";
-        }
-
-        .function-item .fn-icon {
-            font-size: 10px;
-        }
-
-        .function-item.enabled { color: #e5e7eb; }
-        .function-item.disabled { color: #6b7280; text-decoration: line-through; }
-
-        /* Volume Chart */
-        .chart-card {
-            background: #18181b;
-            border: 1px solid #27272f;
-            border-radius: 8px;
-            padding: 24px;
-        }
-
-        .chart-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: #e5e7eb;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin: 0 0 20px 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .bar-chart {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .bar-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .bar-label {
-            font-size: 12px;
-            color: #9ca3af;
-            width: 100px;
-            flex-shrink: 0;
-            text-align: right;
-        }
-
-        .bar-container {
-            flex: 1;
-            height: 24px;
-            background: #27272f;
-            border-radius: 4px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .bar-fill {
-            height: 100%;
-            border-radius: 4px;
-            transition: width 0.5s ease;
-            display: flex;
-            align-items: center;
-            padding-left: 8px;
-        }
-
-        .bar-value {
-            font-size: 11px;
-            font-weight: 500;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
-
-        .bar-read { background: linear-gradient(90deg, #22c55e, #16a34a); }
-        .bar-create { background: linear-gradient(90deg, #3b82f6, #2563eb); }
-        .bar-navigation { background: linear-gradient(90deg, #14b8a6, #0d9488); }
-        .bar-notification { background: linear-gradient(90deg, #a855f7, #9333ea); }
-        .bar-update { background: linear-gradient(90deg, #f97316, #ea580c); }
-        .bar-delete { background: linear-gradient(90deg, #ef4444, #dc2626); }
-
-        .chart-legend {
+        .hub-grid {
             display: flex;
             flex-wrap: wrap;
             gap: 16px;
-            margin-top: 20px;
-            padding-top: 16px;
-            border-top: 1px solid #27272f;
+            align-items: stretch;
         }
 
-        .legend-item {
+        .hub-card {
+            background: var(--ngm-bg-surface);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            cursor: pointer;
+            transition: border-color 0.15s ease, background-color 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            flex: 0 0 320px;
+            min-height: 180px;
+        }
+
+        .hub-card:hover {
+            background: var(--ngm-bg-surface-soft);
+            border-color: var(--border-strong);
+        }
+
+        .hub-card:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        .hub-card-top {
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-size: 11px;
-            color: #9ca3af;
+            gap: 14px;
         }
 
-        .legend-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 2px;
+        .agent-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            flex-shrink: 0;
         }
 
-        .legend-dot.read { background: #22c55e; }
-        .legend-dot.create { background: #3b82f6; }
-        .legend-dot.navigation { background: #14b8a6; }
-        .legend-dot.notification { background: #a855f7; }
-        .legend-dot.update { background: #f97316; }
-        .legend-dot.delete { background: #ef4444; }
+        .agent-avatar-lg {
+            width: 48px;
+            height: 48px;
+            font-size: 16px;
+        }
 
-        /* Command Analytics Styles */
-        .analytics-section {
-            background: #18181b;
-            border: 1px solid #27272f;
-            border-radius: 8px;
+        .hub-card-identity { flex: 1; min-width: 0; }
+
+        .hub-card-name {
+            font-size: 0.95rem; font-weight: 500;
+            color: var(--text-primary); margin: 0;
+        }
+        .hub-card-role {
+            font-size: 0.8rem; color: var(--ngm-text-muted);
+            margin: 3px 0 0;
+        }
+
+        .hub-status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .hub-status-active { background: var(--accent); }
+        .hub-status-idle { background: #fbbf24; }
+        .hub-status-disabled { background: #ef4444; }
+
+        .hub-card-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border-soft);
+        }
+
+        .hub-metric { text-align: center; }
+        .hub-metric-value {
+            font-size: 16px; font-weight: 600;
+            color: var(--text-primary); display: block;
+        }
+        .hub-metric-value.metric-error { color: #ef4444; }
+        .hub-metric-value.metric-success { color: var(--accent); }
+        .hub-metric-label {
+            font-size: 11px; color: var(--ngm-text-muted);
+            display: block; margin-top: 2px;
+        }
+
+        .hub-card-footer { text-align: right; }
+        .hub-card-cta {
+            font-size: 12px; color: var(--accent);
+            opacity: 0; transition: opacity 0.15s ease;
+        }
+        .hub-card:hover .hub-card-cta { opacity: 1; }
+
+        /* ====== Detail View ====== */
+        .detail-back-btn {
+            background: none; border: none;
+            color: var(--text-secondary); font-size: 13px;
+            cursor: pointer; padding: 0;
+            margin-bottom: 24px;
+            display: inline-flex; align-items: center; gap: 6px;
+            transition: color 0.15s ease;
+        }
+        .detail-back-btn:hover { color: var(--text-primary); }
+
+        .detail-header {
+            display: flex; align-items: center; gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .detail-header-info { flex: 1; }
+        .detail-agent-name {
+            font-size: 15px; font-weight: 500;
+            color: var(--text-primary); margin: 0;
+        }
+        .detail-agent-role {
+            font-size: 12px; color: var(--ngm-text-muted);
+            margin: 4px 0 0;
+        }
+
+        .detail-status-badge {
+            padding: 2px 6px; border-radius: 4px;
+            font-size: 10px; font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .detail-status-active {
+            background: rgba(62,207,142,0.15); color: var(--accent);
+            border: 1px solid rgba(62,207,142,0.3);
+        }
+
+        .detail-status-disabled {
+            background: rgba(239,68,68,0.15); color: #ef4444;
+            border: 1px solid rgba(239,68,68,0.3);
+        }
+
+        .detail-tabs {
+            display: flex; gap: 0;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-soft);
+        }
+
+        .detail-tab-btn {
+            background: none; border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--ngm-text-muted); font-size: 13px; font-weight: 500;
+            padding: 10px 16px; cursor: pointer;
+            transition: color 0.15s ease, border-color 0.15s ease;
+        }
+        .detail-tab-btn:hover { color: var(--text-primary); }
+        .detail-tab-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .detail-tab-panel { display: none; }
+        .detail-tab-panel.is-active { display: block; }
+
+        /* ====== Reused Component Styles ====== */
+
+        .permission-card {
+            background: var(--ngm-bg-surface);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-md);
             padding: 24px;
         }
 
-        .section-header {
-            margin-bottom: 20px;
+        .permission-card + .permission-card { margin-top: 16px; }
+
+        .permission-card-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-soft);
         }
 
-        .chart-content {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+        .permission-card-title {
+            font-size: 13px; font-weight: 500;
+            color: var(--text-primary);
+            text-transform: uppercase; letter-spacing: 0.05em;
+            margin: 0; display: flex; align-items: center; gap: 8px;
         }
 
-        .chart-bar {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .chart-bar-label {
+        .permission-card-title .category-icon {
+            width: 20px; height: 20px; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
             font-size: 12px;
-            color: #d1d5db;
-            min-width: 120px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
 
-        .chart-bar-fill {
-            flex: 1;
-            height: 24px;
-            background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
-            border-radius: 4px;
-            position: relative;
-            transition: width 0.5s ease;
-        }
+        .category-read { background: rgba(62,207,142,0.15); color: var(--accent); }
+        .category-create { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .category-update { background: rgba(249,115,22,0.15); color: #f97316; }
+        .category-delete { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .category-notification { background: rgba(168,85,247,0.15); color: #a855f7; }
+        .category-navigation { background: rgba(20,184,166,0.15); color: #14b8a6; }
 
-        .chart-bar-value {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 11px;
-            font-weight: 600;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-        }
+        .permission-list { display: flex; flex-direction: column; gap: 12px; }
 
-        /* Failed Commands Table */
-        .failed-commands-table {
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        .failed-commands-table table {
-            width: 100%;
-            border-collapse: collapse;
-            background: #0a0a0b;
-            border: 1px solid #27272f;
-        }
-
-        .failed-commands-table th {
-            background: #18181b;
+        .permission-item {
+            display: flex; align-items: center; justify-content: space-between;
             padding: 12px 16px;
-            text-align: left;
-            font-size: 12px;
-            font-weight: 600;
-            color: #9ca3af;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border-bottom: 1px solid #27272f;
+            background: var(--bg-main);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-sm);
+            transition: border-color 0.15s ease;
+        }
+        .permission-item:hover { border-color: var(--border-strong); }
+
+        .permission-info { display: flex; flex-direction: column; gap: 4px; }
+        .permission-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+        .permission-desc { font-size: 12px; color: var(--ngm-text-muted); }
+
+        .permission-risk {
+            display: inline-flex; align-items: center; gap: 4px;
+            font-size: 10px; font-weight: 500; text-transform: uppercase;
+            padding: 2px 6px; border-radius: 4px; margin-top: 4px;
         }
 
-        .failed-commands-table td {
-            padding: 12px 16px;
-            font-size: 13px;
-            color: #d1d5db;
-            border-bottom: 1px solid #27272f;
-        }
-
-        .failed-commands-table tbody tr:hover {
-            background: #18181b;
-            cursor: pointer;
-        }
-
-        .failed-commands-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .failed-commands-table .command-text {
-            font-family: 'Roboto Mono', monospace;
-            font-size: 12px;
-            color: #8b5cf6;
-        }
-
-        .failed-commands-table .page-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            background: rgba(59, 130, 246, 0.15);
-            color: #3b82f6;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 500;
-        }
-
-        .failed-commands-table .count-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 28px;
-            height: 24px;
-            padding: 0 8px;
-            background: rgba(239, 68, 68, 0.15);
-            color: #ef4444;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .failed-commands-table .time-ago {
-            font-size: 12px;
-            color: #6b7280;
-        }
-
-        /* Empty state */
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #6b7280;
-        }
-
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-            opacity: 0.5;
-        }
-
-        .empty-state-text {
-            font-size: 14px;
-            color: #9ca3af;
-        }
-
-        /* Loading state */
-        .loading-spinner {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-            color: #6b7280;
-            font-size: 14px;
-        }
-
-        @media (max-width: 768px) {
-            .stats-row {
-                grid-template-columns: 1fr;
-            }
-
-            .chart-bar-label {
-                min-width: 80px;
-                font-size: 11px;
-            }
-
-            .failed-commands-table th,
-            .failed-commands-table td {
-                padding: 8px 12px;
-                font-size: 12px;
-            }
-        }
-
-      /* Loading overlay styles */
-      body.page-loading { overflow: hidden; }
-      .page-loading-overlay {
-        position: fixed; inset: 0; background: #0d0d0d;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        z-index: 9999; gap: 16px;
-      }
-      .page-loading-overlay.hidden { display: none; }
-      .page-loading .app-layout { visibility: hidden; }
-      .loading-logo { width: 160px; height: 160px; object-fit: contain; animation: pulse 1.5s ease-in-out infinite; }
-      .loading-text { color: rgba(255,255,255,0.5); font-size: 13px; font-family: system-ui, sans-serif; letter-spacing: 0.05em; }
-      @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
-
-        /* Agent Config */
-        .agent-config-list { display: flex; flex-direction: column; gap: 0; }
-        .agent-config-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 0;
-            border-bottom: 1px solid #27272f;
-        }
-        .agent-config-item:last-child { border-bottom: none; }
-        .agent-config-info { flex: 1; min-width: 0; padding-right: 24px; }
-        .agent-config-name { font-size: 14px; font-weight: 500; color: #e5e7eb; display: block; }
-        .agent-config-desc { font-size: 12px; color: #6b7280; margin-top: 2px; display: block; }
-        .agent-config-control { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+        .risk-low { background: rgba(62,207,142,0.15); color: var(--accent); }
+        .risk-medium { background: rgba(249,115,22,0.15); color: #f97316; }
+        .risk-high { background: rgba(239,68,68,0.15); color: #ef4444; }
 
         /* Toggle Switch */
         .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .toggle-slider {
             position: absolute; inset: 0; cursor: pointer; border-radius: 24px;
-            background: #3f3f46; transition: background 0.2s;
+            background: var(--border-strong); transition: background 0.15s ease;
         }
         .toggle-slider::before {
             content: ""; position: absolute; width: 18px; height: 18px;
             left: 3px; bottom: 3px; border-radius: 50%;
-            background: #fff; transition: transform 0.2s;
+            background: #fff; transition: transform 0.15s ease;
         }
-        .toggle-switch input:checked + .toggle-slider { background: #22c55e; }
+        .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
         .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+        .toggle-switch input:disabled + .toggle-slider { opacity: 0.5; cursor: not-allowed; }
+
+        /* Stats Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px; margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--ngm-bg-surface);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+
+        .stat-label {
+            font-size: 11px; color: var(--ngm-text-muted);
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+
+        .stat-value { font-size: 24px; font-weight: 600; color: var(--text-primary); }
+        .stat-value.enabled { color: var(--accent); }
+        .stat-value.disabled { color: #ef4444; }
+
+        /* Module Tree (Scope of Work) */
+        .module-tree { display: flex; flex-direction: column; gap: 16px; }
+
+        .module-group {
+            border-left: 2px solid var(--border-strong);
+            padding-left: 16px;
+        }
+
+        .module-name {
+            font-size: 13px; font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 8px;
+            display: flex; align-items: center; gap: 6px;
+        }
+
+        .module-functions { display: flex; flex-direction: column; gap: 4px; margin-left: 8px; }
+
+        .function-item {
+            font-size: 12px; color: var(--text-secondary);
+            display: flex; align-items: center; gap: 6px;
+        }
+        .function-item::before {
+            content: "---"; color: var(--ngm-text-subtle);
+            font-family: monospace;
+        }
+        .function-item:last-child::before { content: "---"; }
+        .function-item.enabled { color: var(--text-primary); }
+        .function-item.disabled { color: var(--ngm-text-muted); text-decoration: line-through; }
+
+        /* Agent Config */
+        .agent-config-list { display: flex; flex-direction: column; gap: 0; }
+
+        .agent-config-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .agent-config-item:last-child { border-bottom: none; }
+
+        .agent-config-info { flex: 1; min-width: 0; padding-right: 24px; }
+        .agent-config-name { font-size: 13px; font-weight: 500; color: var(--text-primary); display: block; }
+        .agent-config-desc { font-size: 12px; color: var(--ngm-text-muted); margin-top: 2px; display: block; }
+        .agent-config-control { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 
         /* Confidence Slider */
         .confidence-slider {
             -webkit-appearance: none; appearance: none;
             width: 120px; height: 6px; border-radius: 3px;
-            background: #3f3f46; outline: none;
+            background: var(--border-strong); outline: none;
         }
         .confidence-slider::-webkit-slider-thumb {
             -webkit-appearance: none; appearance: none;
             width: 16px; height: 16px; border-radius: 50%;
-            background: #22c55e; cursor: pointer;
+            background: var(--accent); cursor: pointer;
         }
         .confidence-slider::-moz-range-thumb {
             width: 16px; height: 16px; border-radius: 50%;
-            background: #22c55e; cursor: pointer; border: none;
+            background: var(--accent); cursor: pointer; border: none;
         }
         .confidence-value {
-            font-size: 14px; font-weight: 600; color: #22c55e;
+            font-size: 14px; font-weight: 600; color: var(--accent);
             min-width: 40px; text-align: right;
         }
 
-        /* ====== Recipient Multi-Select Picker ====== */
+        /* Recipient Picker */
         .recipient-picker { position: relative; }
         .recipient-picker-input {
             display: flex; flex-wrap: wrap; gap: 6px; min-height: 42px;
-            padding: 8px 12px; background: #0a0a0b; border: 1px solid #27272f;
-            border-radius: 6px; cursor: text; align-items: center;
-            transition: border-color 0.2s;
+            padding: 8px 12px;
+            background: var(--bg-input); border: 1px solid var(--border-soft);
+            border-radius: var(--radius-sm); cursor: text; align-items: center;
+            transition: border-color 0.15s ease;
         }
-        .recipient-picker-input:focus-within { border-color: #8b5cf6; }
+        .recipient-picker-input:focus-within { border-color: var(--accent); }
         .recipient-picker-input .search-field {
-            border: none; background: transparent; color: #e5e7eb;
+            border: none; background: transparent; color: var(--text-primary);
             font-size: 13px; outline: none; flex: 1; min-width: 120px;
         }
-        .recipient-picker-input .search-field::placeholder { color: #6b7280; }
+        .recipient-picker-input .search-field::placeholder { color: var(--ngm-text-muted); }
 
-        /* Chips */
         .recipient-chip {
             display: inline-flex; align-items: center; gap: 6px;
             padding: 4px 10px; border-radius: 16px; font-size: 12px;
             font-weight: 500; white-space: nowrap; max-width: 200px;
         }
         .recipient-chip.role-chip {
-            background: rgba(139, 92, 246, 0.2); color: #a78bfa;
-            border: 1px solid rgba(139, 92, 246, 0.3);
+            background: rgba(139,92,246,0.15); color: #a78bfa;
+            border: 1px solid rgba(139,92,246,0.25);
         }
         .recipient-chip.user-chip {
-            background: rgba(59, 130, 246, 0.15); color: #93c5fd;
-            border: 1px solid rgba(59, 130, 246, 0.25);
+            background: rgba(59,130,246,0.1); color: #93c5fd;
+            border: 1px solid rgba(59,130,246,0.2);
         }
         .recipient-chip .chip-remove {
             cursor: pointer; font-size: 14px; line-height: 1;
-            opacity: 0.7; transition: opacity 0.15s;
+            opacity: 0.7; transition: opacity 0.15s ease;
         }
         .recipient-chip .chip-remove:hover { opacity: 1; }
         .chip-avatar {
@@ -740,101 +412,189 @@
             font-size: 10px; font-weight: 600; color: white; flex-shrink: 0;
         }
 
-        /* Dropdown */
         .recipient-dropdown {
             position: absolute; top: 100%; left: 0; right: 0;
-            background: #18181b; border: 1px solid #3f3f46;
-            border-radius: 6px; margin-top: 4px; max-height: 280px;
+            background: var(--ngm-bg-surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-sm); margin-top: 4px; max-height: 280px;
             overflow-y: auto; z-index: 100; display: none;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            box-shadow: var(--ngm-shadow-strong);
         }
         .recipient-dropdown.is-open { display: block; }
         .recipient-dropdown-group-label {
-            font-size: 11px; font-weight: 600; color: #6b7280;
+            font-size: 11px; font-weight: 600; color: var(--ngm-text-muted);
             text-transform: uppercase; letter-spacing: 0.05em;
             padding: 10px 12px 4px; user-select: none;
         }
         .recipient-dropdown-item {
             display: flex; align-items: center; gap: 10px;
-            padding: 8px 12px; cursor: pointer; transition: background 0.15s;
-            font-size: 13px; color: #d1d5db;
+            padding: 8px 12px; cursor: pointer;
+            transition: background 0.15s ease;
+            font-size: 13px; color: var(--text-primary);
         }
-        .recipient-dropdown-item:hover { background: #27272f; }
-        .recipient-dropdown-item.is-selected { background: rgba(139, 92, 246, 0.1); }
+        .recipient-dropdown-item:hover { background: rgba(255,255,255,0.04); }
+        .recipient-dropdown-item.is-selected { background: rgba(62,207,142,0.06); }
         .recipient-dropdown-item .item-check {
-            width: 16px; height: 16px; border: 1px solid #4b5563;
+            width: 16px; height: 16px; border: 1px solid var(--border-strong);
             border-radius: 3px; display: flex; align-items: center;
             justify-content: center; flex-shrink: 0; font-size: 10px;
-            transition: all 0.15s;
+            transition: all 0.15s ease;
         }
         .recipient-dropdown-item.is-selected .item-check {
-            background: #8b5cf6; border-color: #8b5cf6; color: white;
+            background: var(--accent); border-color: var(--accent); color: white;
         }
         .recipient-dropdown-empty {
-            padding: 16px; text-align: center; color: #6b7280; font-size: 13px;
+            padding: 16px; text-align: center; color: var(--ngm-text-muted); font-size: 13px;
         }
 
-        /* ====== Agents Directory ====== */
-        .agents-directory {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 16px;
-            margin-bottom: 32px;
+        /* Analytics / Charts */
+        .analytics-section {
+            background: var(--ngm-bg-surface);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-md);
+            padding: 24px;
         }
 
-        .agent-overview-card {
-            background: #18181b;
-            border: 1px solid #27272f;
-            border-radius: 8px;
+        .section-header { margin-bottom: 20px; }
+
+        .chart-content { display: flex; flex-direction: column; gap: 8px; }
+        .chart-bar { display: flex; align-items: center; gap: 12px; }
+
+        .chart-bar-label {
+            font-size: 12px; color: var(--text-secondary); min-width: 120px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .chart-bar-fill {
+            flex: 1; height: 24px;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-hover) 100%);
+            border-radius: 4px; position: relative;
+            transition: width 0.5s ease;
+        }
+
+        .chart-bar-value {
+            position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+            font-size: 11px; font-weight: 600; color: white;
+        }
+
+        /* Two column layout */
+        .two-col-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 16px; margin-bottom: 24px;
+        }
+
+        @media (max-width: 1200px) {
+            .two-col-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Chart Card */
+        .chart-card {
+            background: var(--ngm-bg-surface);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-md);
             padding: 20px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            cursor: pointer;
-            transition: border-color 0.2s, background 0.2s;
         }
 
-        .agent-overview-card:hover {
-            border-color: #3f3f46;
-            background: #1f1f23;
+        .chart-title {
+            font-size: 13px; font-weight: 500; color: var(--text-primary);
+            text-transform: uppercase; letter-spacing: 0.05em;
+            margin: 0 0 16px 0;
         }
 
-        .agent-avatar {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: 600;
-            color: white;
-            flex-shrink: 0;
+        /* Failed Commands Table */
+        .failed-commands-table { border-radius: var(--radius-sm); overflow: hidden; }
+
+        .failed-commands-table table {
+            width: 100%; border-collapse: collapse;
+            background: var(--bg-main); border: 1px solid var(--border-soft);
         }
 
-        .agent-avatar-sm {
-            width: 36px;
-            height: 36px;
-            font-size: 15px;
+        .failed-commands-table th {
+            background: var(--ngm-bg-surface); padding: 12px 16px; text-align: left;
+            font-size: 11px; font-weight: 600; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border-soft);
         }
 
-        .agent-overview-info {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            flex: 1;
-            min-width: 0;
+        .failed-commands-table td {
+            padding: 12px 16px; font-size: 13px; color: var(--text-primary);
+            border-bottom: 1px solid var(--border-soft);
         }
 
-        .agent-overview-name {
-            font-size: 15px;
-            font-weight: 600;
-            color: #e5e7eb;
+        .failed-commands-table tbody tr:hover {
+            background: rgba(255,255,255,0.02); cursor: pointer;
+        }
+        .failed-commands-table tbody tr:last-child td { border-bottom: none; }
+
+        /* Access Denied */
+        .access-denied-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.95);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999;
+        }
+        .access-denied-icon {
+            width: 80px; height: 80px; background: rgba(239,68,68,0.15);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin-bottom: 24px; font-size: 40px; color: #ef4444;
+        }
+        .access-denied-title { font-size: 20px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; }
+        .access-denied-message {
+            font-size: 13px; color: var(--ngm-text-muted); margin-bottom: 24px;
+            text-align: center; max-width: 400px;
+        }
+        .access-denied-btn {
+            padding: 8px 20px; background: var(--accent); color: white; border: none;
+            border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: background 0.15s ease;
+        }
+        .access-denied-btn:hover { background: var(--accent-hover); }
+
+        /* Loading / Empty */
+        .loading-spinner {
+            display: flex; align-items: center; justify-content: center;
+            padding: 40px; color: var(--ngm-text-muted); font-size: 13px;
         }
 
-        .agent-overview-role {
-            font-size: 12px;
-            color: #6b7280;
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--ngm-text-muted); }
+        .empty-state-text { font-size: 13px; color: var(--text-secondary); }
+
+        /* Arturito settings grid */
+        .arturito-settings-grid { display: grid; gap: 16px; }
+
+        /* Section reset btn */
+        .config-section-actions {
+            margin-top: 20px; display: flex; justify-content: flex-end;
+        }
+
+        /* Page loading overlay */
+        body.page-loading { overflow: hidden; }
+        .page-loading-overlay {
+            position: fixed; inset: 0; background: var(--bg-main);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; gap: 16px;
+        }
+        .page-loading-overlay.hidden { display: none; }
+        .page-loading .app-layout { visibility: hidden; }
+        .loading-logo { width: 160px; height: 160px; object-fit: contain; animation: pulse 1.5s ease-in-out infinite; }
+        .loading-text { color: rgba(255,255,255,0.5); font-size: 13px; font-family: system-ui, sans-serif; letter-spacing: 0.05em; }
+        @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .hub-grid { justify-content: center; }
+            .hub-card { flex: 0 0 280px; }
+        }
+        @media (max-width: 640px) {
+            .hub-card { flex: 1 1 100%; }
+            .hub-card-metrics { gap: 8px; }
+            .hub-metric-value { font-size: 14px; }
+        }
+        @media (max-width: 768px) {
+            .stats-row { grid-template-columns: 1fr; }
+            .chart-bar-label { min-width: 80px; font-size: 11px; }
+            .failed-commands-table th,
+            .failed-commands-table td { padding: 8px 12px; font-size: 12px; }
         }
     </style>
     <script src="assets/js/page-loading.js" defer></script>
@@ -846,9 +606,9 @@
         <span class="loading-text">Loading...</span>
     </div>
 
-    <!-- Access Denied Overlay (hidden by default, shown if not CEO/COO) -->
+    <!-- Access Denied Overlay -->
     <div class="access-denied-overlay" id="accessDeniedOverlay" style="display: none;">
-        <div class="access-denied-icon">🔒</div>
+        <div class="access-denied-icon">X</div>
         <h2 class="access-denied-title">Access Restricted</h2>
         <p class="access-denied-message">
             This page is only available to CEO and COO roles. If you believe you should have access, please contact your administrator.
@@ -859,7 +619,6 @@
     </div>
 
     <div class="app-layout" id="mainContent" style="display: none;">
-        <!-- Sidebar (content generated by sidebar.js) -->
         <aside class="sidebar" id="sidebar"></aside>
 
         <div class="main-area">
@@ -869,454 +628,578 @@
                         <div class="ngm-brand-icon-small"><img src="assets/img/white_icon.png" alt="NGM"></div>
                         <div class="ngm-brand-text">
                             <span class="ngm-brand-org">Next Generation Management</span>
-                            <span class="ngm-brand-context">NGM Hub · Agent Settings</span>
+                            <span class="ngm-brand-context">NGM Hub -- Agent Hub</span>
                         </div>
                     </div>
                 </div>
                 <div class="ngm-topbar-right">
                     <div class="ngm-meta">
-                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
-                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · —</span>
+                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment -- ---</span>
+                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server -- ---</span>
                     </div>
                     <form class="ngm-search" role="search" onsubmit="return false;">
-                        <span class="ngm-global-search-icon">⌕</span>
+                        <span class="ngm-global-search-icon">?</span>
                         <input type="search" class="ngm-search-input" placeholder="Search..." />
                     </form>
-                    <span id="user-pill" class="user-pill">User · —</span>
+                    <span id="user-pill" class="user-pill">User -- ---</span>
                 </div>
             </header>
 
             <main class="main-content">
                 <div class="workspace">
                     <section class="data-section">
-                        <div class="expenses-toolbar">
-                            <div class="toolbar-left">
-                                <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Agent Settings</h2>
-                                <p style="font-size: 13px; color: #6b7280; margin: 4px 0 0 0;">Configure AI agents, permissions, and capabilities</p>
-                            </div>
-                            <div class="toolbar-right">
-                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnResetDefaults">Reset to Defaults</button>
-                                <a href="arturito.html" class="btn-toolbar btn-toolbar-primary" style="text-decoration: none;">Open Arturito Chat</a>
-                            </div>
-                        </div>
-
                         <div class="expenses-table-container">
                             <div id="loadingState" class="expenses-loading-state">
                                 <img src="assets/img/white_icon.png" class="loading-logo loading-logo-lg" alt="Loading...">
-                                <span class="loading-text">Loading permissions...</span>
+                                <span class="loading-text">Loading agents...</span>
                             </div>
 
                             <div id="settingsContent" style="display: none; padding: 24px;">
-                                <!-- Agents Directory -->
-                                <div class="agents-directory">
-                                    <div class="agent-overview-card" onclick="document.getElementById('arturitoSection').scrollIntoView({behavior:'smooth',block:'start'})">
-                                        <div class="agent-avatar" style="background: hsl(262 70% 55%)">A</div>
-                                        <div class="agent-overview-info">
-                                            <span class="agent-overview-name">Arturito</span>
-                                            <span class="agent-overview-role">AI Assistant</span>
-                                        </div>
-                                    </div>
-                                    <div class="agent-overview-card" onclick="document.getElementById('agentManagerSection').scrollIntoView({behavior:'smooth',block:'start'})">
-                                        <div class="agent-avatar" style="background: hsl(142 70% 40%)">R</div>
-                                        <div class="agent-overview-info">
-                                            <span class="agent-overview-name">Receipt Agent</span>
-                                            <span class="agent-overview-role">Receipt Processing</span>
-                                        </div>
-                                    </div>
-                                    <div class="agent-overview-card" onclick="document.getElementById('daneelSection').scrollIntoView({behavior:'smooth',block:'start'})">
-                                        <div class="agent-avatar" style="background: hsl(217 70% 50%)">D</div>
-                                        <div class="agent-overview-info">
-                                            <span class="agent-overview-name">Daneel</span>
-                                            <span class="agent-overview-role">Budget Monitor</span>
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <!-- ====== Arturito Section ====== -->
-                                <div class="analytics-section" id="arturitoSection">
-                                    <div class="section-header" style="display: flex; align-items: center; gap: 14px;">
-                                        <div class="agent-avatar agent-avatar-sm" style="background: hsl(262 70% 55%)">A</div>
-                                        <div>
-                                            <h3 style="font-size: 16px; font-weight: 600; color: #e5e7eb; margin: 0 0 4px 0;">Arturito</h3>
-                                            <p style="font-size: 13px; color: #6b7280; margin: 0;">AI assistant permissions and capabilities</p>
-                                        </div>
-                                    </div>
-                                    <div class="arturito-settings-grid" id="permissionsContainer" style="margin-top: 20px;">
-                                        <!-- Permissions cards will be rendered here -->
-                                    </div>
-                                </div>
-
-                                <!-- ====== Agent Manager Section ====== -->
-                                <div class="analytics-section" style="margin-top: 40px;" id="agentManagerSection">
-                                    <div class="section-header" style="display: flex; align-items: center; gap: 14px;">
-                                        <div class="agent-avatar agent-avatar-sm" style="background: hsl(142 70% 40%)">R</div>
-                                        <div>
-                                            <h3 style="font-size: 16px; font-weight: 600; color: #e5e7eb; margin: 0 0 4px 0;">Receipt Agent</h3>
-                                            <p style="font-size: 13px; color: #6b7280; margin: 0;">Receipt processing stats and configuration</p>
-                                        </div>
+                                <!-- ==================== HUB VIEW ==================== -->
+                                <div id="hubView">
+                                    <div class="hub-header">
+                                        <h2>Agent Hub</h2>
+                                        <p>Monitor, configure, and review AI agent performance</p>
                                     </div>
 
-                                    <!-- Scope of Work -->
-                                    <div class="permission-card" style="margin-top: 20px;">
-                                        <div class="permission-card-header">
-                                            <h3 class="permission-card-title">Scope of Work</h3>
-                                        </div>
-                                        <div class="module-tree">
-                                            <div class="module-group">
-                                                <div class="module-name"><span>1</span> Receipt Upload & Storage</div>
-                                                <div class="module-functions">
-                                                    <div class="function-item enabled">Receives receipt images and PDFs from project channels</div>
-                                                    <div class="function-item enabled">Stores files in the pending-expenses storage bucket</div>
-                                                    <div class="function-item enabled">Computes file hash for duplicate tracking</div>
+                                    <div class="hub-grid">
+                                        <!-- Arturito Card -->
+                                        <div class="hub-card" data-agent="arturito" onclick="AgentHub.showDetail('arturito')">
+                                            <div class="hub-card-top">
+                                                <div class="agent-avatar" style="background: hsl(262 70% 55%)">A</div>
+                                                <div class="hub-card-identity">
+                                                    <h3 class="hub-card-name">Arturito</h3>
+                                                    <p class="hub-card-role">AI Assistant</p>
+                                                </div>
+                                                <span class="hub-status-dot hub-status-active" id="hubDotArturito"></span>
+                                            </div>
+                                            <div class="hub-card-metrics">
+                                                <div class="hub-metric">
+                                                    <span class="hub-metric-value" id="hubArturitoPermissions">--</span>
+                                                    <span class="hub-metric-label">Permissions</span>
+                                                </div>
+                                                <div class="hub-metric">
+                                                    <span class="hub-metric-value" id="hubArturitoGptRate">--</span>
+                                                    <span class="hub-metric-label">GPT Fallback</span>
+                                                </div>
+                                                <div class="hub-metric">
+                                                    <span class="hub-metric-value" id="hubArturitoFailures">--</span>
+                                                    <span class="hub-metric-label">Failures</span>
                                                 </div>
                                             </div>
-                                            <div class="module-group">
-                                                <div class="module-name"><span>2</span> OCR Extraction</div>
-                                                <div class="module-functions">
-                                                    <div class="function-item enabled">Analyzes receipt images using OpenAI Vision</div>
-                                                    <div class="function-item enabled">Extracts vendor name, amount, and date</div>
-                                                    <div class="function-item enabled">Supports image and PDF file formats</div>
-                                                </div>
+                                            <div class="hub-card-footer">
+                                                <span class="hub-card-cta">View details &rarr;</span>
                                             </div>
-                                            <div class="module-group">
-                                                <div class="module-name"><span>3</span> Duplicate Detection</div>
-                                                <div class="module-functions">
-                                                    <div class="function-item enabled">Checks file hash against existing receipts (exact match)</div>
-                                                    <div class="function-item enabled">Checks data duplicates by vendor + amount + date</div>
-                                                    <div class="function-item enabled">Prompts user for confirmation when duplicate found</div>
-                                                </div>
-                                            </div>
-                                            <div class="module-group">
-                                                <div class="module-name"><span>4</span> Auto-Categorization</div>
-                                                <div class="module-functions">
-                                                    <div class="function-item enabled">Categorizes expenses using GPT with construction stage context</div>
-                                                    <div class="function-item enabled">Detects multi-category receipts and suggests splits</div>
-                                                    <div class="function-item enabled">Returns confidence score for each categorization</div>
-                                                </div>
-                                            </div>
-                                            <div class="module-group">
-                                                <div class="module-name"><span>5</span> Check Detection</div>
-                                                <div class="module-functions">
-                                                    <div class="function-item enabled">Identifies check images via filename heuristics</div>
-                                                    <div class="function-item enabled">Routes checks through a separate review flow</div>
-                                                </div>
-                                            </div>
-                                            <div class="module-group">
-                                                <div class="module-name"><span>6</span> Expense Creation</div>
-                                                <div class="module-functions">
-                                                    <div class="function-item enabled">Auto-creates expense entries from approved receipts</div>
-                                                    <div class="function-item enabled">Supports single and split expense creation</div>
-                                                    <div class="function-item enabled">Links receipts to existing expenses when matched</div>
-                                                </div>
-                                            </div>
-                                            <div class="module-group">
-                                                <div class="module-name"><span>7</span> Status Reporting</div>
-                                                <div class="module-functions">
-                                                    <div class="function-item enabled">Posts summary messages to project Receipts channel</div>
-                                                    <div class="function-item enabled">Notifies on duplicates, errors, and successful processing</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Agent Stats Row 1 -->
-                                    <div class="stats-row" style="margin-top: 20px;">
-                                        <div class="stat-card">
-                                            <span class="stat-label">Total Processed</span>
-                                            <span class="stat-value" id="agentStatTotal">-</span>
-                                        </div>
-                                        <div class="stat-card">
-                                            <span class="stat-label">Expenses Created</span>
-                                            <span class="stat-value enabled" id="agentStatLinked">-</span>
-                                        </div>
-                                        <div class="stat-card">
-                                            <span class="stat-label">Success Rate</span>
-                                            <span class="stat-value" id="agentStatSuccessRate">-</span>
-                                        </div>
-                                        <div class="stat-card">
-                                            <span class="stat-label">Avg Confidence</span>
-                                            <span class="stat-value" id="agentStatConfidence">-</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Agent Stats Row 2 -->
-                                    <div class="stats-row">
-                                        <div class="stat-card">
-                                            <span class="stat-label">Pending Review</span>
-                                            <span class="stat-value" id="agentStatPending">-</span>
-                                        </div>
-                                        <div class="stat-card">
-                                            <span class="stat-label">Errors</span>
-                                            <span class="stat-value disabled" id="agentStatErrors">-</span>
-                                        </div>
-                                        <div class="stat-card">
-                                            <span class="stat-label">Duplicates Caught</span>
-                                            <span class="stat-value" id="agentStatDuplicates">-</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Agent Configuration -->
-                                    <div class="permission-card" style="margin-top: 20px;">
-                                        <div class="permission-card-header">
-                                            <h3 class="permission-card-title">Agent Configuration</h3>
                                         </div>
 
-                                        <div class="agent-config-list">
-                                            <!-- Auto-create expenses -->
-                                            <div class="agent-config-item">
-                                                <div class="agent-config-info">
-                                                    <span class="agent-config-name">Auto-create expenses</span>
-                                                    <span class="agent-config-desc">Automatically create expense records after scanning receipts</span>
+                                        <!-- Andrew Card -->
+                                        <div class="hub-card" data-agent="andrew" onclick="AgentHub.showDetail('andrew')">
+                                            <div class="hub-card-top">
+                                                <div class="agent-avatar" style="background: hsl(35 70% 45%)">An</div>
+                                                <div class="hub-card-identity">
+                                                    <h3 class="hub-card-name">Andrew</h3>
+                                                    <p class="hub-card-role">Receipt Processing</p>
                                                 </div>
-                                                <label class="toggle-switch">
-                                                    <input type="checkbox" id="cfgAutoCreate" checked>
-                                                    <span class="toggle-slider"></span>
-                                                </label>
+                                                <span class="hub-status-dot hub-status-active" id="hubDotAndrew"></span>
                                             </div>
-
-                                            <!-- Minimum confidence -->
-                                            <div class="agent-config-item">
-                                                <div class="agent-config-info">
-                                                    <span class="agent-config-name">Minimum confidence threshold</span>
-                                                    <span class="agent-config-desc">Only auto-create if categorization confidence is above this %</span>
+                                            <div class="hub-card-metrics">
+                                                <div class="hub-metric">
+                                                    <span class="hub-metric-value" id="hubAndrewProcessed">--</span>
+                                                    <span class="hub-metric-label">Processed</span>
                                                 </div>
-                                                <div class="agent-config-control">
-                                                    <input type="range" id="cfgMinConfidence" min="50" max="95" step="5" value="70" class="confidence-slider">
-                                                    <span class="confidence-value" id="cfgMinConfidenceValue">70%</span>
+                                                <div class="hub-metric">
+                                                    <span class="hub-metric-value metric-success" id="hubAndrewSuccessRate">--</span>
+                                                    <span class="hub-metric-label">Success</span>
+                                                </div>
+                                                <div class="hub-metric">
+                                                    <span class="hub-metric-value metric-error" id="hubAndrewErrors">--</span>
+                                                    <span class="hub-metric-label">Errors</span>
                                                 </div>
                                             </div>
+                                            <div class="hub-card-footer">
+                                                <span class="hub-card-cta">View details &rarr;</span>
+                                            </div>
+                                        </div>
 
-                                            <!-- Auto-skip duplicates -->
-                                            <div class="agent-config-item">
-                                                <div class="agent-config-info">
-                                                    <span class="agent-config-name">Auto-skip exact duplicates</span>
-                                                    <span class="agent-config-desc">Automatically reject receipts with matching file hash (no confirmation prompt)</span>
+                                        <!-- Daneel Card -->
+                                        <div class="hub-card" data-agent="daneel" onclick="AgentHub.showDetail('daneel')">
+                                            <div class="hub-card-top">
+                                                <div class="agent-avatar" style="background: hsl(217 70% 50%)">D</div>
+                                                <div class="hub-card-identity">
+                                                    <h3 class="hub-card-name">Daneel</h3>
+                                                    <p class="hub-card-role">Budget Monitor</p>
                                                 </div>
-                                                <label class="toggle-switch">
-                                                    <input type="checkbox" id="cfgAutoSkipDuplicates">
-                                                    <span class="toggle-slider"></span>
-                                                </label>
+                                                <span class="hub-status-dot hub-status-active" id="hubDotDaneel"></span>
+                                            </div>
+                                            <div class="hub-card-metrics">
+                                                <div class="hub-metric">
+                                                    <span class="hub-metric-value" id="hubDaneelStatus">--</span>
+                                                    <span class="hub-metric-label">Status</span>
+                                                </div>
+                                                <div class="hub-metric">
+                                                    <span class="hub-metric-value" id="hubDaneelWarnThreshold">--</span>
+                                                    <span class="hub-metric-label">Warn At</span>
+                                                </div>
+                                                <div class="hub-metric">
+                                                    <span class="hub-metric-value" id="hubDaneelAlerts">--</span>
+                                                    <span class="hub-metric-label">Alerts</span>
+                                                </div>
+                                            </div>
+                                            <div class="hub-card-footer">
+                                                <span class="hub-card-cta">View details &rarr;</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- ====== Daneel (Budget Monitor) Section ====== -->
-                                <div class="analytics-section" style="margin-top: 40px;" id="daneelSection">
-                                    <div class="section-header" style="display: flex; align-items: center; gap: 14px;">
-                                        <div class="agent-avatar agent-avatar-sm" style="background: hsl(217 70% 50%)">D</div>
-                                        <div>
-                                            <h3 style="font-size: 16px; font-weight: 600; color: #e5e7eb; margin: 0 0 4px 0;">Daneel</h3>
-                                            <p style="font-size: 13px; color: #6b7280; margin: 0;">Budget monitor - alerts to accounting channels</p>
-                                        </div>
-                                    </div>
+                                <!-- ==================== DETAIL VIEW ==================== -->
+                                <div id="detailView" style="display: none;">
+                                    <button type="button" id="btnBackToHub" class="detail-back-btn">
+                                        &larr; Back to Agent Hub
+                                    </button>
 
-                                    <!-- Scope of Work -->
-                                    <div class="permission-card" style="margin-top: 20px;">
-                                        <div class="permission-card-header">
-                                            <h3 class="permission-card-title">Scope of Work</h3>
-                                        </div>
-                                        <div class="module-tree">
-                                            <div class="module-group">
-                                                <div class="module-name"><span>1</span> Budget Threshold Monitoring</div>
-                                                <div class="module-functions">
-                                                    <div class="function-item enabled">Monitors project spending vs allocated budgets</div>
-                                                    <div class="function-item enabled">Warning alert at configurable threshold (default 80%)</div>
-                                                    <div class="function-item enabled">Critical alert at configurable threshold (default 95%)</div>
-                                                    <div class="function-item enabled">Overspend detection when expenses exceed budget</div>
+                                    <div id="detailHeader" class="detail-header"></div>
+                                    <div id="detailTabs" class="detail-tabs"></div>
+
+                                    <div id="detailContent">
+                                        <!-- ====== Arturito Panels ====== -->
+                                        <div id="arturito-overview" class="detail-tab-panel">
+                                            <div class="stats-row">
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Total Permissions</span>
+                                                    <span class="stat-value" id="arturitoStatTotal">-</span>
                                                 </div>
-                                            </div>
-                                            <div class="module-group">
-                                                <div class="module-name"><span>2</span> Expense Anomaly Detection</div>
-                                                <div class="module-functions">
-                                                    <div class="function-item enabled">Identifies unusual spending patterns per category</div>
-                                                    <div class="function-item enabled">Flags expenses with no assigned budget</div>
-                                                    <div class="function-item enabled">Detects sudden spikes in category spending</div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Enabled</span>
+                                                    <span class="stat-value enabled" id="arturitoStatEnabled">-</span>
                                                 </div>
-                                            </div>
-                                            <div class="module-group">
-                                                <div class="module-name"><span>3</span> Department Mentions</div>
-                                                <div class="module-functions">
-                                                    <div class="function-item enabled">Mentions relevant roles/users when posting alerts</div>
-                                                    <div class="function-item enabled">Configurable recipient list per alert type</div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Disabled</span>
+                                                    <span class="stat-value disabled" id="arturitoStatDisabled">-</span>
                                                 </div>
-                                            </div>
-                                            <div class="module-group">
-                                                <div class="module-name"><span>4</span> Channel Alerts</div>
-                                                <div class="module-functions">
-                                                    <div class="function-item enabled">Posts messages to project accounting channels</div>
-                                                    <div class="function-item enabled">Includes @mentions for configured recipients</div>
-                                                    <div class="function-item enabled">Supports warning, critical, and overspend alert types</div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">High Risk Enabled</span>
+                                                    <span class="stat-value" id="arturitoStatHighRisk">-</span>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <!-- Daneel Configuration -->
-                                    <div class="permission-card" style="margin-top: 20px;">
-                                        <div class="permission-card-header">
-                                            <h3 class="permission-card-title">Agent Configuration</h3>
-                                        </div>
-                                        <div class="agent-config-list">
-                                            <!-- Enable/Disable Daneel -->
-                                            <div class="agent-config-item">
-                                                <div class="agent-config-info">
-                                                    <span class="agent-config-name">Enable Daneel</span>
-                                                    <span class="agent-config-desc">Master toggle for all budget monitoring and alert posting</span>
+                                        <div id="arturito-scope" class="detail-tab-panel">
+                                            <div class="permission-card">
+                                                <div class="permission-card-header">
+                                                    <h3 class="permission-card-title">Capabilities</h3>
                                                 </div>
-                                                <label class="toggle-switch">
-                                                    <input type="checkbox" id="daneelEnabled" checked>
-                                                    <span class="toggle-slider"></span>
-                                                </label>
-                                            </div>
-
-                                            <!-- Warning threshold -->
-                                            <div class="agent-config-item">
-                                                <div class="agent-config-info">
-                                                    <span class="agent-config-name">Warning threshold</span>
-                                                    <span class="agent-config-desc">Alert when a category reaches this % of its budget</span>
+                                                <div class="module-tree">
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>1</span> Chat Assistant</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Natural language command routing from any page</div>
+                                                            <div class="function-item enabled">Context-aware responses based on current module</div>
+                                                            <div class="function-item enabled">GPT fallback for unrecognized commands</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>2</span> CRUD Operations</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Read data across all modules (expenses, pipeline, projects)</div>
+                                                            <div class="function-item enabled">Create new records (expenses, tasks, budgets)</div>
+                                                            <div class="function-item enabled">Update existing entries and fields</div>
+                                                            <div class="function-item enabled">Delete records with confirmation</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>3</span> Navigation & Notifications</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Navigate between pages and modules</div>
+                                                            <div class="function-item enabled">Send push notifications to team members</div>
+                                                            <div class="function-item enabled">Open modals and forms contextually</div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div class="agent-config-control">
-                                                    <input type="range" id="daneelWarningThreshold" min="50" max="95" step="5" value="80" class="confidence-slider">
-                                                    <span class="confidence-value" id="daneelWarningThresholdValue">80%</span>
-                                                </div>
-                                            </div>
-
-                                            <!-- Critical threshold -->
-                                            <div class="agent-config-item">
-                                                <div class="agent-config-info">
-                                                    <span class="agent-config-name">Critical threshold</span>
-                                                    <span class="agent-config-desc">Escalate to critical alert at this % of budget</span>
-                                                </div>
-                                                <div class="agent-config-control">
-                                                    <input type="range" id="daneelCriticalThreshold" min="85" max="100" step="5" value="95" class="confidence-slider">
-                                                    <span class="confidence-value" id="daneelCriticalThresholdValue">95%</span>
-                                                </div>
-                                            </div>
-
-                                            <!-- Overspend alerts -->
-                                            <div class="agent-config-item">
-                                                <div class="agent-config-info">
-                                                    <span class="agent-config-name">Overspend alerts</span>
-                                                    <span class="agent-config-desc">Post alert when expenses exceed the allocated budget</span>
-                                                </div>
-                                                <label class="toggle-switch">
-                                                    <input type="checkbox" id="daneelOverspendAlert" checked>
-                                                    <span class="toggle-slider"></span>
-                                                </label>
-                                            </div>
-
-                                            <!-- No budget alerts -->
-                                            <div class="agent-config-item">
-                                                <div class="agent-config-info">
-                                                    <span class="agent-config-name">No-budget alerts</span>
-                                                    <span class="agent-config-desc">Alert when expenses are posted to categories without a budget</span>
-                                                </div>
-                                                <label class="toggle-switch">
-                                                    <input type="checkbox" id="daneelNoBudgetAlert" checked>
-                                                    <span class="toggle-slider"></span>
-                                                </label>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    <!-- Alert Recipients -->
-                                    <div class="permission-card" style="margin-top: 20px;">
-                                        <div class="permission-card-header">
-                                            <h3 class="permission-card-title">Alert Recipients</h3>
-                                            <span style="font-size: 12px; color: #6b7280;" id="daneelRecipientCount">0 selected</span>
-                                        </div>
-                                        <p style="font-size: 13px; color: #6b7280; margin: 0 0 16px 0;">
-                                            Select roles or individual users who will be @mentioned in Daneel alert messages.
-                                            Selecting a role includes all current users with that role.
-                                        </p>
-                                        <div class="recipient-picker" id="daneelRecipientPicker">
-                                            <div class="recipient-picker-input" id="daneelPickerInput">
-                                                <input type="text" class="search-field" id="daneelRecipientSearch"
-                                                       placeholder="Search roles or users..." autocomplete="off">
+                                        <div id="arturito-config" class="detail-tab-panel">
+                                            <div class="arturito-settings-grid" id="permissionsContainer">
+                                                <!-- Permissions cards rendered by JS -->
                                             </div>
-                                            <div class="recipient-dropdown" id="daneelRecipientDropdown">
-                                                <!-- Populated by JS -->
+                                            <div class="config-section-actions">
+                                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnResetDefaults">Reset to Defaults</button>
+                                            </div>
+                                        </div>
+
+                                        <div id="arturito-failures" class="detail-tab-panel">
+                                            <div class="analytics-section">
+                                                <div class="section-header">
+                                                    <h3 style="font-size: 13px; font-weight: 500; color: var(--text-primary); margin: 0 0 4px 0;">
+                                                        Command Analytics
+                                                    </h3>
+                                                    <p style="font-size: 11px; color: var(--ngm-text-muted); margin: 0;">
+                                                        Track failed copilot commands to improve recognition over time
+                                                    </p>
+                                                </div>
+
+                                                <div class="stats-row" style="margin-top: 20px;">
+                                                    <div class="stat-card">
+                                                        <span class="stat-label">Total Failures (30d)</span>
+                                                        <span class="stat-value" id="analyticsTotal">-</span>
+                                                    </div>
+                                                    <div class="stat-card">
+                                                        <span class="stat-label">Unique Commands</span>
+                                                        <span class="stat-value" id="analyticsUnique">-</span>
+                                                    </div>
+                                                    <div class="stat-card">
+                                                        <span class="stat-label">GPT Fallback Rate</span>
+                                                        <span class="stat-value" id="analyticsGptRate">-</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="two-col-grid" style="margin-top: 20px;">
+                                                    <div class="chart-card">
+                                                        <h4 class="chart-title">Top Pages with Failures</h4>
+                                                        <div id="topPagesChart" class="chart-content"></div>
+                                                    </div>
+                                                    <div class="chart-card">
+                                                        <h4 class="chart-title">Most Common Error Reasons</h4>
+                                                        <div id="topErrorsChart" class="chart-content"></div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="commands-table-section" style="margin-top: 20px;">
+                                                    <h4 style="font-size: 13px; font-weight: 500; color: var(--text-primary); margin: 0 0 12px 0;">
+                                                        Most Frequently Failed Commands
+                                                    </h4>
+                                                    <div class="failed-commands-table">
+                                                        <table id="failedCommandsTable" style="width: 100%;">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Command</th>
+                                                                    <th>Page</th>
+                                                                    <th>Failures</th>
+                                                                    <th>Last Seen</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="failedCommandsBody"></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+
+                                                <div style="margin-top: 20px; text-align: right;">
+                                                    <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnRefreshAnalytics">
+                                                        Refresh Analytics
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- ====== Andrew Panels ====== -->
+                                        <div id="andrew-overview" class="detail-tab-panel">
+                                            <div class="stats-row">
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Total Processed</span>
+                                                    <span class="stat-value" id="agentStatTotal">-</span>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Expenses Created</span>
+                                                    <span class="stat-value enabled" id="agentStatLinked">-</span>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Success Rate</span>
+                                                    <span class="stat-value" id="agentStatSuccessRate">-</span>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Avg Confidence</span>
+                                                    <span class="stat-value" id="agentStatConfidence">-</span>
+                                                </div>
+                                            </div>
+                                            <div class="stats-row">
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Pending Review</span>
+                                                    <span class="stat-value" id="agentStatPending">-</span>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Errors</span>
+                                                    <span class="stat-value disabled" id="agentStatErrors">-</span>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Duplicates Caught</span>
+                                                    <span class="stat-value" id="agentStatDuplicates">-</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="andrew-scope" class="detail-tab-panel">
+                                            <div class="permission-card">
+                                                <div class="permission-card-header">
+                                                    <h3 class="permission-card-title">Scope of Work</h3>
+                                                </div>
+                                                <div class="module-tree">
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>1</span> Receipt Upload & Storage</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Receives receipt images and PDFs from project channels</div>
+                                                            <div class="function-item enabled">Stores files in the pending-expenses storage bucket</div>
+                                                            <div class="function-item enabled">Computes file hash for duplicate tracking</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>2</span> OCR Extraction</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Analyzes receipt images using OpenAI Vision</div>
+                                                            <div class="function-item enabled">Extracts vendor name, amount, and date</div>
+                                                            <div class="function-item enabled">Supports image and PDF file formats</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>3</span> Duplicate Detection</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Checks file hash against existing receipts (exact match)</div>
+                                                            <div class="function-item enabled">Checks data duplicates by vendor + amount + date</div>
+                                                            <div class="function-item enabled">Prompts user for confirmation when duplicate found</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>4</span> Auto-Categorization</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Categorizes expenses using GPT with construction stage context</div>
+                                                            <div class="function-item enabled">Detects multi-category receipts and suggests splits</div>
+                                                            <div class="function-item enabled">Returns confidence score for each categorization</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>5</span> Check Detection</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Identifies check images via filename heuristics</div>
+                                                            <div class="function-item enabled">Routes checks through a separate review flow</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>6</span> Expense Creation</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Auto-creates expense entries from approved receipts</div>
+                                                            <div class="function-item enabled">Supports single and split expense creation</div>
+                                                            <div class="function-item enabled">Links receipts to existing expenses when matched</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>7</span> Status Reporting</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Posts summary messages to project Receipts channel</div>
+                                                            <div class="function-item enabled">Notifies on duplicates, errors, and successful processing</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="andrew-config" class="detail-tab-panel">
+                                            <div class="permission-card">
+                                                <div class="permission-card-header">
+                                                    <h3 class="permission-card-title">Agent Configuration</h3>
+                                                </div>
+                                                <div class="agent-config-list">
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Auto-create expenses</span>
+                                                            <span class="agent-config-desc">Automatically create expense records after scanning receipts</span>
+                                                        </div>
+                                                        <label class="toggle-switch">
+                                                            <input type="checkbox" id="cfgAutoCreate" checked>
+                                                            <span class="toggle-slider"></span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Minimum confidence threshold</span>
+                                                            <span class="agent-config-desc">Only auto-create if categorization confidence is above this %</span>
+                                                        </div>
+                                                        <div class="agent-config-control">
+                                                            <input type="range" id="cfgMinConfidence" min="50" max="95" step="5" value="70" class="confidence-slider">
+                                                            <span class="confidence-value" id="cfgMinConfidenceValue">70%</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Auto-skip exact duplicates</span>
+                                                            <span class="agent-config-desc">Automatically reject receipts with matching file hash (no confirmation prompt)</span>
+                                                        </div>
+                                                        <label class="toggle-switch">
+                                                            <input type="checkbox" id="cfgAutoSkipDuplicates">
+                                                            <span class="toggle-slider"></span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="andrew-failures" class="detail-tab-panel">
+                                            <div class="stats-row">
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Processing Errors</span>
+                                                    <span class="stat-value disabled" id="andrewFailureErrors">-</span>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Duplicates Caught</span>
+                                                    <span class="stat-value" id="andrewFailureDuplicates">-</span>
+                                                </div>
+                                            </div>
+                                            <div class="empty-state" id="andrewFailuresEmpty">
+                                                <p class="empty-state-text">Detailed failure logs will appear here as they are tracked.</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- ====== Daneel Panels ====== -->
+                                        <div id="daneel-overview" class="detail-tab-panel">
+                                            <div class="stats-row">
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Agent Status</span>
+                                                    <span class="stat-value" id="daneelStatStatus">-</span>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Warning Threshold</span>
+                                                    <span class="stat-value" id="daneelStatWarn">-</span>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Critical Threshold</span>
+                                                    <span class="stat-value" id="daneelStatCrit">-</span>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Alerts Sent</span>
+                                                    <span class="stat-value" id="daneelStatAlerts">--</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="daneel-scope" class="detail-tab-panel">
+                                            <div class="permission-card">
+                                                <div class="permission-card-header">
+                                                    <h3 class="permission-card-title">Scope of Work</h3>
+                                                </div>
+                                                <div class="module-tree">
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>1</span> Budget Threshold Monitoring</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Monitors project spending vs allocated budgets</div>
+                                                            <div class="function-item enabled">Warning alert at configurable threshold (default 80%)</div>
+                                                            <div class="function-item enabled">Critical alert at configurable threshold (default 95%)</div>
+                                                            <div class="function-item enabled">Overspend detection when expenses exceed budget</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>2</span> Expense Anomaly Detection</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Identifies unusual spending patterns per category</div>
+                                                            <div class="function-item enabled">Flags expenses with no assigned budget</div>
+                                                            <div class="function-item enabled">Detects sudden spikes in category spending</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>3</span> Department Mentions</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Mentions relevant roles/users when posting alerts</div>
+                                                            <div class="function-item enabled">Configurable recipient list per alert type</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>4</span> Channel Alerts</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Posts messages to project accounting channels</div>
+                                                            <div class="function-item enabled">Includes @mentions for configured recipients</div>
+                                                            <div class="function-item enabled">Supports warning, critical, and overspend alert types</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="daneel-config" class="detail-tab-panel">
+                                            <div class="permission-card">
+                                                <div class="permission-card-header">
+                                                    <h3 class="permission-card-title">Agent Configuration</h3>
+                                                </div>
+                                                <div class="agent-config-list">
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Enable Daneel</span>
+                                                            <span class="agent-config-desc">Master toggle for all budget monitoring and alert posting</span>
+                                                        </div>
+                                                        <label class="toggle-switch">
+                                                            <input type="checkbox" id="daneelEnabled" checked>
+                                                            <span class="toggle-slider"></span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Warning threshold</span>
+                                                            <span class="agent-config-desc">Alert when a category reaches this % of its budget</span>
+                                                        </div>
+                                                        <div class="agent-config-control">
+                                                            <input type="range" id="daneelWarningThreshold" min="50" max="95" step="5" value="80" class="confidence-slider">
+                                                            <span class="confidence-value" id="daneelWarningThresholdValue">80%</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Critical threshold</span>
+                                                            <span class="agent-config-desc">Escalate to critical alert at this % of budget</span>
+                                                        </div>
+                                                        <div class="agent-config-control">
+                                                            <input type="range" id="daneelCriticalThreshold" min="85" max="100" step="5" value="95" class="confidence-slider">
+                                                            <span class="confidence-value" id="daneelCriticalThresholdValue">95%</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Overspend alerts</span>
+                                                            <span class="agent-config-desc">Post alert when expenses exceed the allocated budget</span>
+                                                        </div>
+                                                        <label class="toggle-switch">
+                                                            <input type="checkbox" id="daneelOverspendAlert" checked>
+                                                            <span class="toggle-slider"></span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">No-budget alerts</span>
+                                                            <span class="agent-config-desc">Alert when expenses are posted to categories without a budget</span>
+                                                        </div>
+                                                        <label class="toggle-switch">
+                                                            <input type="checkbox" id="daneelNoBudgetAlert" checked>
+                                                            <span class="toggle-slider"></span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Alert Recipients -->
+                                            <div class="permission-card" style="margin-top: 20px;">
+                                                <div class="permission-card-header">
+                                                    <h3 class="permission-card-title">Alert Recipients</h3>
+                                                    <span style="font-size: 11px; color: var(--ngm-text-muted);" id="daneelRecipientCount">0 selected</span>
+                                                </div>
+                                                <p style="font-size: 12px; color: var(--ngm-text-muted); margin: 0 0 16px 0;">
+                                                    Select roles or individual users who will be @mentioned in Daneel alert messages.
+                                                    Selecting a role includes all current users with that role.
+                                                </p>
+                                                <div class="recipient-picker" id="daneelRecipientPicker">
+                                                    <div class="recipient-picker-input" id="daneelPickerInput">
+                                                        <input type="text" class="search-field" id="daneelRecipientSearch"
+                                                               placeholder="Search roles or users..." autocomplete="off">
+                                                    </div>
+                                                    <div class="recipient-dropdown" id="daneelRecipientDropdown"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div id="daneel-failures" class="detail-tab-panel">
+                                            <div class="empty-state">
+                                                <p class="empty-state-text">No failure tracking configured for this agent yet.</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Command Analytics Section -->
-                                <div class="analytics-section" style="margin-top: 40px;">
-                                    <div class="section-header">
-                                        <h3 style="font-size: 16px; font-weight: 600; color: #e5e7eb; margin: 0 0 8px 0;">
-                                            📊 Command Analytics
-                                        </h3>
-                                        <p style="font-size: 13px; color: #6b7280; margin: 0;">
-                                            Track failed copilot commands to improve recognition over time
-                                        </p>
-                                    </div>
-
-                                    <!-- Stats Cards Row -->
-                                    <div class="stats-row" style="margin-top: 20px;">
-                                        <div class="stat-card">
-                                            <span class="stat-label">Total Failures (30d)</span>
-                                            <span class="stat-value" id="analyticsTotal">-</span>
-                                        </div>
-                                        <div class="stat-card">
-                                            <span class="stat-label">Unique Commands</span>
-                                            <span class="stat-value" id="analyticsUnique">-</span>
-                                        </div>
-                                        <div class="stat-card">
-                                            <span class="stat-label">GPT Fallback Rate</span>
-                                            <span class="stat-value" id="analyticsGptRate">-</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Top Pages & Errors Charts -->
-                                    <div class="two-col-grid" style="margin-top: 20px;">
-                                        <!-- Top Pages -->
-                                        <div class="chart-card">
-                                            <h4 class="chart-title">Top Pages with Failures</h4>
-                                            <div id="topPagesChart" class="chart-content">
-                                                <!-- Render bars with page names and counts -->
-                                            </div>
-                                        </div>
-
-                                        <!-- Top Errors -->
-                                        <div class="chart-card">
-                                            <h4 class="chart-title">Most Common Error Reasons</h4>
-                                            <div id="topErrorsChart" class="chart-content">
-                                                <!-- Render bars with error types and counts -->
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Most Failed Commands Table -->
-                                    <div class="commands-table-section" style="margin-top: 20px;">
-                                        <h4 style="font-size: 14px; font-weight: 600; color: #e5e7eb; margin: 0 0 12px 0;">
-                                            Most Frequently Failed Commands
-                                        </h4>
-                                        <div class="failed-commands-table">
-                                            <table id="failedCommandsTable" style="width: 100%;">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Command</th>
-                                                        <th>Page</th>
-                                                        <th>Failures</th>
-                                                        <th>Last Seen</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="failedCommandsBody">
-                                                    <!-- Populated by JS -->
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-
-                                    <!-- Refresh Button -->
-                                    <div style="margin-top: 20px; text-align: right;">
-                                        <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnRefreshAnalytics">
-                                            Refresh Analytics
-                                        </button>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </section>
@@ -1329,251 +1212,444 @@
     (function() {
         'use strict';
 
-        const API_BASE = window.API_BASE || "https://ngm-fastapi.onrender.com";
-        const ALLOWED_ROLES = ['CEO', 'COO', 'KD COO'];
+        var API_BASE = window.API_BASE || "https://ngm-fastapi.onrender.com";
+        var ALLOWED_ROLES = ['CEO', 'COO', 'KD COO'];
 
-        let permissionsData = null;
+        var permissionsData = null;
+        var currentAgent = null;
+        var currentTab = 'overview';
+        var _daneelPickerInitialized = false;
 
-        // Category display names and icons
-        const CATEGORY_INFO = {
-            read: { name: 'Read Operations', icon: '📖' },
-            create: { name: 'Create Operations', icon: '➕' },
-            update: { name: 'Update Operations', icon: '✏️' },
-            delete: { name: 'Delete Operations', icon: '🗑️' },
-            notification: { name: 'Notifications', icon: '🔔' },
-            navigation: { name: 'Navigation & UI', icon: '🧭' },
+        // Agent registry
+        var AGENTS = {
+            arturito: {
+                name: 'Arturito',
+                role: 'AI Assistant',
+                initials: 'A',
+                color: 'hsl(262 70% 55%)',
+                tabs: ['overview', 'scope', 'config', 'failures']
+            },
+            andrew: {
+                name: 'Andrew',
+                role: 'Receipt Processing',
+                initials: 'An',
+                color: 'hsl(35 70% 45%)',
+                tabs: ['overview', 'scope', 'config', 'failures']
+            },
+            daneel: {
+                name: 'Daneel',
+                role: 'Budget Monitor',
+                initials: 'D',
+                color: 'hsl(217 70% 50%)',
+                tabs: ['overview', 'scope', 'config', 'failures']
+            }
         };
 
-        // Check user role access
+        // Category display names
+        var CATEGORY_INFO = {
+            read: { name: 'Read Operations', icon: 'R' },
+            create: { name: 'Create Operations', icon: '+' },
+            update: { name: 'Update Operations', icon: 'E' },
+            delete: { name: 'Delete Operations', icon: 'X' },
+            notification: { name: 'Notifications', icon: 'N' },
+            navigation: { name: 'Navigation & UI', icon: 'G' },
+        };
+
+        // ============================================
+        // ACCESS CHECK
+        // ============================================
+
         function checkAccess() {
-            const userStr = localStorage.getItem('ngmUser');
+            var userStr = localStorage.getItem('ngmUser');
             if (!userStr) {
                 window.location.href = 'login.html';
                 return false;
             }
-
             try {
-                const user = JSON.parse(userStr);
-                const userRole = user.user_role || user.role || '';
-
+                var user = JSON.parse(userStr);
+                var userRole = user.user_role || user.role || '';
                 if (!ALLOWED_ROLES.includes(userRole)) {
                     document.getElementById('accessDeniedOverlay').style.display = 'flex';
                     document.getElementById('mainContent').style.display = 'none';
                     return false;
                 }
-
                 document.getElementById('accessDeniedOverlay').style.display = 'none';
                 document.getElementById('mainContent').style.display = '';
                 return true;
-
             } catch (err) {
-                console.error('[ARTURITO-SETTINGS] Error parsing user:', err);
                 window.location.href = 'login.html';
                 return false;
             }
         }
 
-        // Load permissions from API
-        async function loadPermissions() {
-            try {
-                const res = await fetch(`${API_BASE}/arturito/permissions`);
-                if (!res.ok) throw new Error('Failed to load permissions');
-
-                const data = await res.json();
-                permissionsData = data;
-
-                renderPermissions(data.by_category);
-
-                document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('settingsContent').style.display = 'block';
-
-            } catch (err) {
-                console.error('[ARTURITO-SETTINGS] Error loading permissions:', err);
-                document.getElementById('loadingState').innerHTML = `
-                    <span style="color: #ef4444;">Error loading permissions. Please refresh.</span>
-                `;
-            }
-        }
-
-        // Render permissions by category
-        function renderPermissions(byCategory) {
-            const container = document.getElementById('permissionsContainer');
-            container.innerHTML = '';
-
-            // Order categories
-            const categoryOrder = ['read', 'create', 'update', 'delete', 'notification', 'navigation'];
-
-            for (const category of categoryOrder) {
-                const permissions = byCategory[category];
-                if (!permissions || permissions.length === 0) continue;
-
-                const info = CATEGORY_INFO[category] || { name: category, icon: '📋' };
-
-                const card = document.createElement('div');
-                card.className = 'permission-card';
-                card.innerHTML = `
-                    <div class="permission-card-header">
-                        <h3 class="permission-card-title">
-                            <span class="category-icon category-${category}">${info.icon}</span>
-                            ${info.name}
-                        </h3>
-                        <span style="font-size: 12px; color: #6b7280;">${permissions.length} permissions</span>
-                    </div>
-                    <div class="permission-list">
-                        ${permissions.map(p => renderPermissionItem(p)).join('')}
-                    </div>
-                `;
-
-                container.appendChild(card);
-            }
-        }
-
-        // Render single permission item
-        function renderPermissionItem(permission) {
-            const isHighRisk = permission.risk_level === 'high';
-            const isMediumRisk = permission.risk_level === 'medium';
-
-            return `
-                <div class="permission-item" data-intent="${permission.intent}">
-                    <div class="permission-info">
-                        <span class="permission-name">${permission.intent}</span>
-                        <span class="permission-desc">${permission.description}</span>
-                        <span class="permission-risk risk-${permission.risk_level}">
-                            ${permission.risk_level === 'high' ? '⚠️' : permission.risk_level === 'medium' ? '⚡' : '✓'}
-                            ${permission.risk_level} risk
-                        </span>
-                    </div>
-                    <label class="toggle-switch">
-                        <input type="checkbox"
-                               ${permission.enabled ? 'checked' : ''}
-                               data-intent="${permission.intent}"
-                               onchange="ArturitoSettings.togglePermission('${permission.intent}', this.checked)"
-                               ${isHighRisk ? 'title="High risk operation - enable with caution"' : ''}>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            `;
-        }
-
-        // Toggle permission
-        async function togglePermission(intent, enabled) {
-            try {
-                const res = await fetch(`${API_BASE}/arturito/permissions`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ intent, enabled })
-                });
-
-                if (!res.ok) throw new Error('Failed to update permission');
-
-                const result = await res.json();
-
-                // Show toast
-                if (window.showToast) {
-                    window.showToast(
-                        `${intent} ${enabled ? 'enabled' : 'disabled'}`,
-                        enabled ? 'success' : 'info'
-                    );
-                }
-
-                // Reload to update stats
-                await loadPermissions();
-
-            } catch (err) {
-                console.error('[ARTURITO-SETTINGS] Error toggling permission:', err);
-
-                // Revert checkbox
-                const checkbox = document.querySelector(`input[data-intent="${intent}"]`);
-                if (checkbox) checkbox.checked = !enabled;
-
-                if (window.showToast) {
-                    window.showToast('Error updating permission', 'error');
-                }
-            }
-        }
-
-        // Reset to defaults
-        async function resetToDefaults() {
-            if (!confirm('Reset all permissions to their default values?')) return;
-
-            try {
-                const res = await fetch(`${API_BASE}/arturito/permissions/reset`, {
-                    method: 'POST'
-                });
-
-                if (!res.ok) throw new Error('Failed to reset permissions');
-
-                if (window.showToast) {
-                    window.showToast('Permissions reset to defaults', 'success');
-                }
-
-                await loadPermissions();
-
-            } catch (err) {
-                console.error('[ARTURITO-SETTINGS] Error resetting permissions:', err);
-                if (window.showToast) {
-                    window.showToast('Error resetting permissions', 'error');
-                }
-            }
-        }
-
-        // ====== Agent Manager ======
+        // ============================================
+        // AUTH HEADERS
+        // ============================================
 
         function _agentAuthHeaders() {
             var token = localStorage.getItem('ngmToken');
             return token ? { 'Authorization': 'Bearer ' + token } : {};
         }
 
-        async function loadAgentStats() {
-            try {
-                var resp = await fetch(API_BASE + '/pending-receipts/agent-stats', {
-                    headers: _agentAuthHeaders()
-                });
-                if (!resp.ok) return;
-                var stats = await resp.json();
+        // ============================================
+        // VIEW SWITCHING
+        // ============================================
 
-                document.getElementById('agentStatTotal').textContent = stats.total_processed;
-                document.getElementById('agentStatLinked').textContent = stats.expenses_created;
-                document.getElementById('agentStatSuccessRate').textContent = stats.success_rate + '%';
-                document.getElementById('agentStatConfidence').textContent = stats.avg_confidence + '%';
-                document.getElementById('agentStatPending').textContent = stats.pending_review;
-                document.getElementById('agentStatErrors').textContent = stats.errors;
-                document.getElementById('agentStatDuplicates').textContent = stats.duplicates_caught;
-            } catch (e) {
-                console.error('[AgentManager] Stats error:', e);
+        function showHub() {
+            document.getElementById('hubView').style.display = '';
+            document.getElementById('detailView').style.display = 'none';
+            currentAgent = null;
+            updateHubMetrics();
+        }
+
+        function showDetail(agentId) {
+            if (!AGENTS[agentId]) return;
+            currentAgent = agentId;
+            currentTab = 'overview';
+
+            document.getElementById('hubView').style.display = 'none';
+            document.getElementById('detailView').style.display = '';
+
+            renderDetailHeader(agentId);
+            renderDetailTabs(agentId);
+            switchTab('overview');
+
+            // Load agent-specific data
+            if (agentId === 'arturito') {
+                loadPermissions();
+                if (window.arturityAnalytics) window.arturityAnalytics.reload();
+            } else if (agentId === 'andrew') {
+                loadAgentStats();
+                loadAgentConfig();
+            } else if (agentId === 'daneel') {
+                loadDaneelConfig();
+                if (!_daneelPickerInitialized) {
+                    loadRecipientOptions().then(function() {
+                        return loadDaneelRecipientsSaved();
+                    }).then(function() {
+                        renderRecipientChips();
+                        initDaneelRecipientPicker();
+                        _daneelPickerInitialized = true;
+                    });
+                }
             }
         }
 
-        async function loadAgentConfig() {
-            try {
-                var resp = await fetch(API_BASE + '/pending-receipts/agent-config', {
-                    headers: _agentAuthHeaders()
-                });
-                if (!resp.ok) return;
-                var config = await resp.json();
+        function renderDetailHeader(agentId) {
+            var agent = AGENTS[agentId];
+            var headerEl = document.getElementById('detailHeader');
 
-                document.getElementById('cfgAutoCreate').checked = config.auto_create_expense !== false;
-                var minConf = config.min_confidence || 70;
-                document.getElementById('cfgMinConfidence').value = minConf;
-                document.getElementById('cfgMinConfidenceValue').textContent = minConf + '%';
-                document.getElementById('cfgAutoSkipDuplicates').checked = config.auto_skip_duplicates === true;
-            } catch (e) {
-                console.error('[AgentManager] Config load error:', e);
+            var statusClass = 'detail-status-active';
+            var statusText = 'Active';
+
+            if (agentId === 'daneel') {
+                var daneelToggle = document.getElementById('daneelEnabled');
+                if (daneelToggle && !daneelToggle.checked) {
+                    statusClass = 'detail-status-disabled';
+                    statusText = 'Disabled';
+                }
+            }
+
+            headerEl.innerHTML =
+                '<div class="agent-avatar agent-avatar-lg" style="background:' + agent.color + '">' + agent.initials + '</div>' +
+                '<div class="detail-header-info">' +
+                    '<h2 class="detail-agent-name">' + agent.name + '</h2>' +
+                    '<p class="detail-agent-role">' + agent.role + '</p>' +
+                '</div>' +
+                '<span class="detail-status-badge ' + statusClass + '">' + statusText + '</span>';
+        }
+
+        function renderDetailTabs(agentId) {
+            var agent = AGENTS[agentId];
+            var tabsEl = document.getElementById('detailTabs');
+            var tabLabels = {
+                overview: 'Overview',
+                scope: 'Scope of Work',
+                config: 'Configuration',
+                failures: 'Failures'
+            };
+
+            tabsEl.innerHTML = agent.tabs.map(function(tab) {
+                return '<button class="detail-tab-btn' + (tab === 'overview' ? ' active' : '') + '" ' +
+                       'data-tab="' + tab + '" onclick="AgentHub.switchTab(\'' + tab + '\')">' +
+                       tabLabels[tab] + '</button>';
+            }).join('');
+        }
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+
+            // Hide all panels
+            var panels = document.querySelectorAll('.detail-tab-panel');
+            for (var i = 0; i < panels.length; i++) {
+                panels[i].classList.remove('is-active');
+            }
+
+            // Show the active panel
+            var activePanel = document.getElementById(currentAgent + '-' + tabId);
+            if (activePanel) activePanel.classList.add('is-active');
+
+            // Update tab button styles
+            var buttons = document.querySelectorAll('.detail-tab-btn');
+            for (var j = 0; j < buttons.length; j++) {
+                buttons[j].classList.toggle('active', buttons[j].dataset.tab === tabId);
             }
         }
 
-        async function saveAgentConfig(key, value) {
-            try {
-                var body = {};
-                body[key] = value;
-                await fetch(API_BASE + '/pending-receipts/agent-config', {
-                    method: 'PATCH',
-                    headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
-                    body: JSON.stringify(body)
-                });
-            } catch (e) {
-                console.error('[AgentManager] Config save error:', e);
+        // ============================================
+        // HUB METRICS
+        // ============================================
+
+        function updateHubMetrics() {
+            // Arturito
+            if (permissionsData && permissionsData.by_category) {
+                var total = 0, enabled = 0;
+                var cats = permissionsData.by_category;
+                for (var cat in cats) {
+                    if (cats.hasOwnProperty(cat)) {
+                        var perms = cats[cat];
+                        total += perms.length;
+                        for (var p = 0; p < perms.length; p++) {
+                            if (perms[p].enabled) enabled++;
+                        }
+                    }
+                }
+                document.getElementById('hubArturitoPermissions').textContent = enabled + '/' + total;
             }
+            if (window.arturityAnalytics) {
+                var aStats = window.arturityAnalytics.getCurrentStats();
+                if (aStats) {
+                    document.getElementById('hubArturitoGptRate').textContent = (aStats.gpt_attempt_rate || 0) + '%';
+                    document.getElementById('hubArturitoFailures').textContent = aStats.total_failures || '0';
+                }
+            }
+
+            // Andrew
+            _fetchAndrewHubStats();
+
+            // Daneel
+            _fetchDaneelHubStats();
+        }
+
+        function _fetchAndrewHubStats() {
+            fetch(API_BASE + '/pending-receipts/agent-stats', { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(stats) {
+                    if (!stats) return;
+                    document.getElementById('hubAndrewProcessed').textContent = stats.total_processed;
+                    document.getElementById('hubAndrewSuccessRate').textContent = stats.success_rate + '%';
+                    var errEl = document.getElementById('hubAndrewErrors');
+                    errEl.textContent = stats.errors;
+                    errEl.className = 'hub-metric-value' + (stats.errors > 0 ? ' metric-error' : '');
+                })
+                .catch(function() {});
+        }
+
+        function _fetchDaneelHubStats() {
+            fetch(API_BASE + '/budget-alerts/settings', { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(result) {
+                    if (!result) return;
+                    var config = result.data || result || {};
+                    var isEnabled = config.is_enabled !== false;
+
+                    var statusEl = document.getElementById('hubDaneelStatus');
+                    statusEl.textContent = isEnabled ? 'Active' : 'Off';
+                    statusEl.className = 'hub-metric-value' + (isEnabled ? ' metric-success' : ' metric-error');
+
+                    document.getElementById('hubDaneelWarnThreshold').textContent = (config.warning_threshold || 80) + '%';
+                    document.getElementById('hubDaneelAlerts').textContent = '--';
+
+                    var dot = document.getElementById('hubDotDaneel');
+                    if (dot) dot.className = 'hub-status-dot ' + (isEnabled ? 'hub-status-active' : 'hub-status-disabled');
+                })
+                .catch(function() {});
+        }
+
+        // ============================================
+        // ARTURITO PERMISSIONS
+        // ============================================
+
+        function loadPermissions() {
+            fetch(API_BASE + '/arturito/permissions')
+                .then(function(res) {
+                    if (!res.ok) throw new Error('Failed');
+                    return res.json();
+                })
+                .then(function(data) {
+                    permissionsData = data;
+                    renderPermissions(data.by_category);
+                    updateArturitoOverviewStats(data.by_category);
+
+                    document.getElementById('loadingState').style.display = 'none';
+                    document.getElementById('settingsContent').style.display = 'block';
+                })
+                .catch(function(err) {
+                    console.error('[AgentHub] Error loading permissions:', err);
+                    document.getElementById('loadingState').style.display = 'none';
+                    document.getElementById('settingsContent').style.display = 'block';
+                });
+        }
+
+        function updateArturitoOverviewStats(byCategory) {
+            var total = 0, enabled = 0, highRiskEnabled = 0;
+            var cats = byCategory || {};
+            for (var cat in cats) {
+                if (!cats.hasOwnProperty(cat)) continue;
+                var perms = cats[cat];
+                total += perms.length;
+                for (var i = 0; i < perms.length; i++) {
+                    if (perms[i].enabled) {
+                        enabled++;
+                        if (perms[i].risk_level === 'high') highRiskEnabled++;
+                    }
+                }
+            }
+            document.getElementById('arturitoStatTotal').textContent = total;
+            document.getElementById('arturitoStatEnabled').textContent = enabled;
+            document.getElementById('arturitoStatDisabled').textContent = total - enabled;
+            document.getElementById('arturitoStatHighRisk').textContent = highRiskEnabled;
+        }
+
+        function renderPermissions(byCategory) {
+            var container = document.getElementById('permissionsContainer');
+            container.innerHTML = '';
+            var categoryOrder = ['read', 'create', 'update', 'delete', 'notification', 'navigation'];
+
+            for (var c = 0; c < categoryOrder.length; c++) {
+                var category = categoryOrder[c];
+                var permissions = byCategory[category];
+                if (!permissions || permissions.length === 0) continue;
+
+                var info = CATEGORY_INFO[category] || { name: category, icon: '?' };
+                var card = document.createElement('div');
+                card.className = 'permission-card';
+                card.innerHTML =
+                    '<div class="permission-card-header">' +
+                        '<h3 class="permission-card-title">' +
+                            '<span class="category-icon category-' + category + '">' + info.icon + '</span>' +
+                            info.name +
+                        '</h3>' +
+                        '<span style="font-size: 11px; color: var(--ngm-text-muted);">' + permissions.length + ' permissions</span>' +
+                    '</div>' +
+                    '<div class="permission-list">' +
+                        permissions.map(function(p) { return renderPermissionItem(p); }).join('') +
+                    '</div>';
+                container.appendChild(card);
+            }
+        }
+
+        function renderPermissionItem(permission) {
+            return '<div class="permission-item" data-intent="' + permission.intent + '">' +
+                '<div class="permission-info">' +
+                    '<span class="permission-name">' + permission.intent + '</span>' +
+                    '<span class="permission-desc">' + permission.description + '</span>' +
+                    '<span class="permission-risk risk-' + permission.risk_level + '">' +
+                        (permission.risk_level === 'high' ? '!' : permission.risk_level === 'medium' ? '*' : 'ok') +
+                        ' ' + permission.risk_level + ' risk' +
+                    '</span>' +
+                '</div>' +
+                '<label class="toggle-switch">' +
+                    '<input type="checkbox" ' +
+                        (permission.enabled ? 'checked ' : '') +
+                        'data-intent="' + permission.intent + '" ' +
+                        'onchange="AgentHub.togglePermission(\'' + permission.intent + '\', this.checked)">' +
+                    '<span class="toggle-slider"></span>' +
+                '</label>' +
+            '</div>';
+        }
+
+        function togglePermission(intent, enabled) {
+            fetch(API_BASE + '/arturito/permissions', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ intent: intent, enabled: enabled })
+            })
+            .then(function(res) {
+                if (!res.ok) throw new Error('Failed');
+                return res.json();
+            })
+            .then(function() {
+                if (window.Toast) {
+                    window.Toast[enabled ? 'success' : 'info'](intent + ' ' + (enabled ? 'enabled' : 'disabled'));
+                }
+                loadPermissions();
+            })
+            .catch(function(err) {
+                console.error('[AgentHub] Toggle error:', err);
+                var checkbox = document.querySelector('input[data-intent="' + intent + '"]');
+                if (checkbox) checkbox.checked = !enabled;
+                if (window.Toast) window.Toast.error('Error updating permission');
+            });
+        }
+
+        function resetToDefaults() {
+            if (!confirm('Reset all permissions to their default values?')) return;
+
+            fetch(API_BASE + '/arturito/permissions/reset', { method: 'POST' })
+                .then(function(res) {
+                    if (!res.ok) throw new Error('Failed');
+                    if (window.Toast) window.Toast.success('Permissions reset to defaults');
+                    loadPermissions();
+                })
+                .catch(function(err) {
+                    console.error('[AgentHub] Reset error:', err);
+                    if (window.Toast) window.Toast.error('Error resetting permissions');
+                });
+        }
+
+        // ============================================
+        // ANDREW AGENT
+        // ============================================
+
+        function loadAgentStats() {
+            fetch(API_BASE + '/pending-receipts/agent-stats', { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(stats) {
+                    if (!stats) return;
+                    document.getElementById('agentStatTotal').textContent = stats.total_processed;
+                    document.getElementById('agentStatLinked').textContent = stats.expenses_created;
+                    document.getElementById('agentStatSuccessRate').textContent = stats.success_rate + '%';
+                    document.getElementById('agentStatConfidence').textContent = stats.avg_confidence + '%';
+                    document.getElementById('agentStatPending').textContent = stats.pending_review;
+                    document.getElementById('agentStatErrors').textContent = stats.errors;
+                    document.getElementById('agentStatDuplicates').textContent = stats.duplicates_caught;
+
+                    // Also update failures tab
+                    document.getElementById('andrewFailureErrors').textContent = stats.errors;
+                    document.getElementById('andrewFailureDuplicates').textContent = stats.duplicates_caught;
+                })
+                .catch(function(e) {
+                    console.error('[AgentHub] Stats error:', e);
+                });
+        }
+
+        function loadAgentConfig() {
+            fetch(API_BASE + '/pending-receipts/agent-config', { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(config) {
+                    if (!config) return;
+                    document.getElementById('cfgAutoCreate').checked = config.auto_create_expense !== false;
+                    var minConf = config.min_confidence || 70;
+                    document.getElementById('cfgMinConfidence').value = minConf;
+                    document.getElementById('cfgMinConfidenceValue').textContent = minConf + '%';
+                    document.getElementById('cfgAutoSkipDuplicates').checked = config.auto_skip_duplicates === true;
+                })
+                .catch(function(e) {
+                    console.error('[AgentHub] Config load error:', e);
+                });
+        }
+
+        function saveAgentConfig(key, value) {
+            var body = {};
+            body[key] = value;
+            fetch(API_BASE + '/pending-receipts/agent-config', {
+                method: 'PATCH',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
+                body: JSON.stringify(body)
+            }).catch(function(e) {
+                console.error('[AgentHub] Config save error:', e);
+            });
         }
 
         function initAgentManager() {
@@ -1589,116 +1665,126 @@
             document.getElementById('cfgAutoSkipDuplicates').addEventListener('change', function(e) {
                 saveAgentConfig('auto_skip_duplicates', e.target.checked);
             });
-
-            loadAgentStats();
-            loadAgentConfig();
         }
 
-        // ====== Daneel Budget Monitor ======
+        // ============================================
+        // DANEEL BUDGET MONITOR
+        // ============================================
 
         var _daneelRecipients = { roles: [], users: [] };
         var _allRoles = [];
         var _allUsers = [];
 
-        async function loadDaneelConfig() {
-            try {
-                var resp = await fetch(API_BASE + '/budget-alerts/settings', {
-                    headers: _agentAuthHeaders()
+        function loadDaneelConfig() {
+            fetch(API_BASE + '/budget-alerts/settings', { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(result) {
+                    if (!result) return;
+                    var config = result.data || result || {};
+
+                    var isEnabled = config.is_enabled !== false;
+                    document.getElementById('daneelEnabled').checked = isEnabled;
+
+                    var warnVal = config.warning_threshold || 80;
+                    document.getElementById('daneelWarningThreshold').value = warnVal;
+                    document.getElementById('daneelWarningThresholdValue').textContent = warnVal + '%';
+
+                    var critVal = config.critical_threshold || 95;
+                    document.getElementById('daneelCriticalThreshold').value = critVal;
+                    document.getElementById('daneelCriticalThresholdValue').textContent = critVal + '%';
+
+                    document.getElementById('daneelOverspendAlert').checked = config.overspend_alert !== false;
+                    document.getElementById('daneelNoBudgetAlert').checked = config.no_budget_alert !== false;
+
+                    // Update overview stats
+                    document.getElementById('daneelStatStatus').textContent = isEnabled ? 'Enabled' : 'Disabled';
+                    document.getElementById('daneelStatStatus').className = 'stat-value' + (isEnabled ? ' enabled' : ' disabled');
+                    document.getElementById('daneelStatWarn').textContent = warnVal + '%';
+                    document.getElementById('daneelStatCrit').textContent = critVal + '%';
+
+                    // Update detail header if currently viewing daneel
+                    if (currentAgent === 'daneel') {
+                        renderDetailHeader('daneel');
+                    }
+                })
+                .catch(function(e) {
+                    console.error('[Daneel] Config load error:', e);
                 });
-                if (!resp.ok) return;
-                var result = await resp.json();
-                var config = result.data || result || {};
-
-                document.getElementById('daneelEnabled').checked = config.is_enabled !== false;
-
-                var warnVal = config.warning_threshold || 80;
-                document.getElementById('daneelWarningThreshold').value = warnVal;
-                document.getElementById('daneelWarningThresholdValue').textContent = warnVal + '%';
-
-                var critVal = config.critical_threshold || 95;
-                document.getElementById('daneelCriticalThreshold').value = critVal;
-                document.getElementById('daneelCriticalThresholdValue').textContent = critVal + '%';
-
-                document.getElementById('daneelOverspendAlert').checked = config.overspend_alert !== false;
-                document.getElementById('daneelNoBudgetAlert').checked = config.no_budget_alert !== false;
-            } catch (e) {
-                console.error('[Daneel] Config load error:', e);
-            }
         }
 
-        async function saveDaneelConfig(key, value) {
-            try {
-                var body = {};
-                body[key] = value;
-                await fetch(API_BASE + '/budget-alerts/settings', {
-                    method: 'PUT',
-                    headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
-                    body: JSON.stringify(body)
-                });
-            } catch (e) {
+        function saveDaneelConfig(key, value) {
+            var body = {};
+            body[key] = value;
+            fetch(API_BASE + '/budget-alerts/settings', {
+                method: 'PUT',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
+                body: JSON.stringify(body)
+            }).catch(function(e) {
                 console.error('[Daneel] Config save error:', e);
-            }
+            });
         }
 
         // ====== Recipient Picker ======
 
-        async function loadRecipientOptions() {
-            try {
-                var results = await Promise.all([
-                    fetch(API_BASE + '/team/rols', { headers: _agentAuthHeaders() }),
-                    fetch(API_BASE + '/team/users', { headers: _agentAuthHeaders() })
-                ]);
+        function loadRecipientOptions() {
+            return Promise.all([
+                fetch(API_BASE + '/team/rols', { headers: _agentAuthHeaders() }),
+                fetch(API_BASE + '/team/users', { headers: _agentAuthHeaders() })
+            ]).then(function(results) {
                 if (results[0].ok) {
-                    var rolesData = await results[0].json();
-                    _allRoles = Array.isArray(rolesData) ? rolesData : (rolesData.data || []);
-                }
-                if (results[1].ok) {
-                    var usersData = await results[1].json();
-                    var allUsers = Array.isArray(usersData) ? usersData : (usersData.data || []);
-                    _allUsers = allUsers.filter(function(u) {
-                        return u.user_id !== '00000000-0000-0000-0000-000000000001'
-                            && u.user_id !== '00000000-0000-0000-0000-000000000002';
+                    return results[0].json().then(function(rolesData) {
+                        _allRoles = Array.isArray(rolesData) ? rolesData : (rolesData.data || []);
+                        return results[1];
                     });
                 }
-            } catch (e) {
-                console.error('[Daneel] Error loading recipient options:', e);
-            }
-        }
-
-        async function saveDaneelRecipients() {
-            try {
-                var payload = {
-                    daneel_alert_recipients: JSON.stringify({
-                        roles: _daneelRecipients.roles,
-                        users: _daneelRecipients.users
-                    })
-                };
-                await fetch(API_BASE + '/pending-receipts/agent-config', {
-                    method: 'PATCH',
-                    headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
-                    body: JSON.stringify(payload)
-                });
-            } catch (e) {
-                console.error('[Daneel] Error saving recipients:', e);
-            }
-        }
-
-        async function loadDaneelRecipientsSaved() {
-            try {
-                var resp = await fetch(API_BASE + '/pending-receipts/agent-config', {
-                    headers: _agentAuthHeaders()
-                });
-                if (!resp.ok) return;
-                var config = await resp.json();
-                var raw = config.daneel_alert_recipients;
-                if (raw) {
-                    var parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                    _daneelRecipients.roles = parsed.roles || [];
-                    _daneelRecipients.users = parsed.users || [];
+                return results[1];
+            }).then(function(usersResp) {
+                if (usersResp && usersResp.ok) {
+                    return usersResp.json().then(function(usersData) {
+                        var allUsers = Array.isArray(usersData) ? usersData : (usersData.data || []);
+                        _allUsers = allUsers.filter(function(u) {
+                            return u.user_id !== '00000000-0000-0000-0000-000000000001'
+                                && u.user_id !== '00000000-0000-0000-0000-000000000002'
+                                && u.user_id !== '00000000-0000-0000-0000-000000000003';
+                        });
+                    });
                 }
-            } catch (e) {
-                console.error('[Daneel] Error loading saved recipients:', e);
-            }
+            }).catch(function(e) {
+                console.error('[Daneel] Error loading recipient options:', e);
+            });
+        }
+
+        function saveDaneelRecipients() {
+            var payload = {
+                daneel_alert_recipients: JSON.stringify({
+                    roles: _daneelRecipients.roles,
+                    users: _daneelRecipients.users
+                })
+            };
+            fetch(API_BASE + '/pending-receipts/agent-config', {
+                method: 'PATCH',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
+                body: JSON.stringify(payload)
+            }).catch(function(e) {
+                console.error('[Daneel] Error saving recipients:', e);
+            });
+        }
+
+        function loadDaneelRecipientsSaved() {
+            return fetch(API_BASE + '/pending-receipts/agent-config', { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(config) {
+                    if (!config) return;
+                    var raw = config.daneel_alert_recipients;
+                    if (raw) {
+                        var parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                        _daneelRecipients.roles = parsed.roles || [];
+                        _daneelRecipients.users = parsed.users || [];
+                    }
+                })
+                .catch(function(e) {
+                    console.error('[Daneel] Error loading saved recipients:', e);
+                });
         }
 
         function _escapeHtml(text) {
@@ -1749,7 +1835,6 @@
             dropdown.innerHTML = '';
             var query = (filter || '').toLowerCase();
 
-            // Roles group
             var filteredRoles = _allRoles.filter(function(r) {
                 var name = r.rol_name || r.name || '';
                 return !query || name.toLowerCase().indexOf(query) >= 0;
@@ -1775,7 +1860,6 @@
                 });
             }
 
-            // Users group
             var filteredUsers = _allUsers.filter(function(u) {
                 return !query || (u.user_name || '').toLowerCase().indexOf(query) >= 0;
             });
@@ -1798,7 +1882,7 @@
                         '<span class="item-check">' + (isSelected ? '&#10003;' : '') + '</span>'
                         + '<span class="chip-avatar" style="background:hsl(' + hue + ' 70% 45%)">' + initials + '</span>'
                         + '<span>' + _escapeHtml(user.user_name) + '</span>'
-                        + (roleName ? '<span style="font-size:11px;color:#6b7280;margin-left:auto;">' + _escapeHtml(roleName) + '</span>' : '');
+                        + (roleName ? '<span style="font-size:11px;color:var(--ngm-text-muted);margin-left:auto;">' + _escapeHtml(roleName) + '</span>' : '');
                     dropdown.appendChild(item);
                 });
             }
@@ -1834,18 +1918,12 @@
 
                 if (type === 'role') {
                     var idx = _daneelRecipients.roles.indexOf(id);
-                    if (idx >= 0) {
-                        _daneelRecipients.roles.splice(idx, 1);
-                    } else {
-                        _daneelRecipients.roles.push(id);
-                    }
+                    if (idx >= 0) _daneelRecipients.roles.splice(idx, 1);
+                    else _daneelRecipients.roles.push(id);
                 } else if (type === 'user') {
                     var idx2 = _daneelRecipients.users.indexOf(id);
-                    if (idx2 >= 0) {
-                        _daneelRecipients.users.splice(idx2, 1);
-                    } else {
-                        _daneelRecipients.users.push(id);
-                    }
+                    if (idx2 >= 0) _daneelRecipients.users.splice(idx2, 1);
+                    else _daneelRecipients.users.push(id);
                 }
 
                 renderRecipientChips();
@@ -1884,7 +1962,6 @@
         }
 
         function initDaneel() {
-            // Config toggles
             document.getElementById('daneelEnabled').addEventListener('change', function(e) {
                 saveDaneelConfig('is_enabled', e.target.checked);
             });
@@ -1906,27 +1983,29 @@
             document.getElementById('daneelNoBudgetAlert').addEventListener('change', function(e) {
                 saveDaneelConfig('no_budget_alert', e.target.checked);
             });
-
-            loadDaneelConfig();
-
-            // Load recipient picker data, then saved selections, then render
-            loadRecipientOptions().then(function() {
-                return loadDaneelRecipientsSaved();
-            }).then(function() {
-                renderRecipientChips();
-                initDaneelRecipientPicker();
-            });
         }
 
-        // Initialize
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
         document.addEventListener('DOMContentLoaded', function() {
             if (!checkAccess()) return;
 
+            // Load Arturito permissions (also triggers settingsContent display)
             loadPermissions();
+
+            // Init config listeners (one-time binding)
             initAgentManager();
             initDaneel();
 
-            // Reset button
+            // Load hub metrics
+            updateHubMetrics();
+
+            // Back button
+            document.getElementById('btnBackToHub').addEventListener('click', showHub);
+
+            // Reset button (Arturito config)
             document.getElementById('btnResetDefaults').addEventListener('click', resetToDefaults);
 
             // Init topbar pills
@@ -1934,9 +2013,12 @@
         });
 
         // Expose for inline handlers
-        window.ArturitoSettings = {
-            togglePermission,
-            resetToDefaults
+        window.AgentHub = {
+            showDetail: showDetail,
+            showHub: showHub,
+            switchTab: switchTab,
+            togglePermission: togglePermission,
+            resetToDefaults: resetToDefaults
         };
 
     })();

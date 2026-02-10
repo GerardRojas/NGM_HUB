@@ -1088,6 +1088,19 @@
                                                     <span class="stat-value" id="daneelStatPendingInfo">--</span>
                                                 </div>
                                             </div>
+                                            <!-- Project Review Section -->
+                                            <div style="margin-top: 24px;">
+                                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                                    <h6 style="font-size: 14px; font-weight: 600; color: var(--ngm-text); margin: 0;">Expense Review by Project</h6>
+                                                    <button id="daneelRefreshProjects" type="button"
+                                                            style="padding: 4px 12px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 6px; color: var(--ngm-text-muted); font-size: 11px; cursor: pointer;">
+                                                        Refresh
+                                                    </button>
+                                                </div>
+                                                <div id="daneelProjectReview" style="display: flex; flex-direction: column; gap: 8px;">
+                                                    <div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Loading projects...</div>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div id="daneel-scope" class="detail-tab-panel">
@@ -1290,28 +1303,30 @@
                                                                    style="width: 120px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; background: var(--ngm-bg-input); color: var(--ngm-text); font-size: 13px;">
                                                         </div>
                                                     </div>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Bookkeeping role</span>
-                                                            <span class="agent-config-desc">Role to @mention when requesting missing expense info</span>
+                                                    <div class="agent-config-item" style="flex-direction: column; align-items: flex-start;">
+                                                        <div class="agent-config-info" style="margin-bottom: 8px;">
+                                                            <span class="agent-config-name">Bookkeeping team</span>
+                                                            <span class="agent-config-desc">Users @mentioned when requesting missing expense info</span>
                                                         </div>
-                                                        <div class="agent-config-control">
-                                                            <select id="daneelBookkeepingRole"
-                                                                    style="padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; background: var(--ngm-bg-input); color: var(--ngm-text); font-size: 13px;">
-                                                                <option value="">-- None --</option>
-                                                            </select>
+                                                        <div class="recipient-picker" id="daneelBookkeepingPicker" style="width: 100%;">
+                                                            <div class="recipient-picker-input" id="daneelBookkeepingPickerInput">
+                                                                <input type="text" class="search-field" id="daneelBookkeepingSearch"
+                                                                       placeholder="Search users..." autocomplete="off">
+                                                            </div>
+                                                            <div class="recipient-dropdown" id="daneelBookkeepingDropdown"></div>
                                                         </div>
                                                     </div>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Accounting manager role</span>
-                                                            <span class="agent-config-desc">Role to @mention when escalating ambiguous expenses</span>
+                                                    <div class="agent-config-item" style="flex-direction: column; align-items: flex-start;">
+                                                        <div class="agent-config-info" style="margin-bottom: 8px;">
+                                                            <span class="agent-config-name">Escalation recipients</span>
+                                                            <span class="agent-config-desc">Users @mentioned when escalating ambiguous expenses</span>
                                                         </div>
-                                                        <div class="agent-config-control">
-                                                            <select id="daneelAccountingMgrRole"
-                                                                    style="padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; background: var(--ngm-bg-input); color: var(--ngm-text); font-size: 13px;">
-                                                                <option value="">-- None --</option>
-                                                            </select>
+                                                        <div class="recipient-picker" id="daneelEscalationPicker" style="width: 100%;">
+                                                            <div class="recipient-picker-input" id="daneelEscalationPickerInput">
+                                                                <input type="text" class="search-field" id="daneelEscalationSearch"
+                                                                       placeholder="Search users..." autocomplete="off">
+                                                            </div>
+                                                            <div class="recipient-dropdown" id="daneelEscalationDropdown"></div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1349,6 +1364,13 @@
                                                             Run once to process all existing pending expenses
                                                         </span>
                                                     </div>
+                                                </div>
+                                                <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--ngm-border); text-align: right;">
+                                                    <span id="daneelAutoAuthSaveStatus" style="font-size: 12px; color: var(--ngm-text-muted); margin-right: 12px;"></span>
+                                                    <button id="daneelApplyConfig" type="button"
+                                                            style="background: hsl(217 70% 50%); color: #fff; border: none; padding: 8px 24px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
+                                                        Apply Changes
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -1491,7 +1513,25 @@
                     }).then(function() {
                         renderRecipientChips();
                         initDaneelRecipientPicker();
-                        _populateRoleSelects(null, null);
+                        // Init auto-auth user pickers
+                        _initUserPicker({
+                            pickerId: 'daneelBookkeepingPicker',
+                            inputId: 'daneelBookkeepingPickerInput',
+                            searchId: 'daneelBookkeepingSearch',
+                            dropdownId: 'daneelBookkeepingDropdown',
+                            getUsers: function() { return _daneelBookkeepingUsers; },
+                            setUsers: function(v) { _daneelBookkeepingUsers = v; }
+                        });
+                        _initUserPicker({
+                            pickerId: 'daneelEscalationPicker',
+                            inputId: 'daneelEscalationPickerInput',
+                            searchId: 'daneelEscalationSearch',
+                            dropdownId: 'daneelEscalationDropdown',
+                            getUsers: function() { return _daneelAccountingMgrUsers; },
+                            setUsers: function(v) { _daneelAccountingMgrUsers = v; }
+                        });
+                        _renderUserPickerChips('daneelBookkeepingPickerInput', 'daneelBookkeepingSearch', _daneelBookkeepingUsers);
+                        _renderUserPickerChips('daneelEscalationPickerInput', 'daneelEscalationSearch', _daneelAccountingMgrUsers);
                         _daneelPickerInitialized = true;
                     });
                 }
@@ -1846,6 +1886,8 @@
         // ============================================
 
         var _daneelRecipients = { roles: [], users: [] };
+        var _daneelBookkeepingUsers = [];
+        var _daneelAccountingMgrUsers = [];
         var _allRoles = [];
         var _allUsers = [];
 
@@ -2158,58 +2200,60 @@
                 saveDaneelConfig('no_budget_alert', e.target.checked);
             });
 
-            // Auto-Auth config listeners
+            // Auto-Auth config listeners (UI-only, no auto-save -- Apply button handles saving)
             document.getElementById('daneelAutoAuthEnabled').addEventListener('change', function(e) {
-                saveDaneelAutoAuthConfig('daneel_auto_auth_enabled', e.target.checked);
                 document.getElementById('daneelAutoAuthStatusLabel').textContent = e.target.checked ? 'Enabled' : 'Disabled';
                 document.getElementById('hubDaneelAutoAuth').textContent = e.target.checked ? 'On' : 'Off';
-            });
-            document.getElementById('daneelRequireBill').addEventListener('change', function(e) {
-                saveDaneelAutoAuthConfig('daneel_auto_auth_require_bill', e.target.checked);
-            });
-            document.getElementById('daneelRequireReceipt').addEventListener('change', function(e) {
-                saveDaneelAutoAuthConfig('daneel_auto_auth_require_receipt', e.target.checked);
             });
             document.getElementById('daneelFuzzyThreshold').addEventListener('input', function(e) {
                 document.getElementById('daneelFuzzyThresholdValue').textContent = e.target.value + '%';
             });
-            document.getElementById('daneelFuzzyThreshold').addEventListener('change', function(e) {
-                saveDaneelAutoAuthConfig('daneel_fuzzy_threshold', parseInt(e.target.value));
-            });
-            document.getElementById('daneelAmountTolerance').addEventListener('change', function(e) {
-                saveDaneelAutoAuthConfig('daneel_amount_tolerance', parseFloat(e.target.value));
-            });
-            document.getElementById('daneelLaborKeywords').addEventListener('change', function(e) {
-                saveDaneelAutoAuthConfig('daneel_labor_keywords', e.target.value.trim());
-            });
-            document.getElementById('daneelBookkeepingRole').addEventListener('change', function(e) {
-                saveDaneelAutoAuthConfig('daneel_bookkeeping_role', e.target.value || null);
-            });
-            document.getElementById('daneelAccountingMgrRole').addEventListener('change', function(e) {
-                saveDaneelAutoAuthConfig('daneel_accounting_mgr_role', e.target.value || null);
-            });
-            document.getElementById('daneelGptFallback').addEventListener('change', function(e) {
-                saveDaneelAutoAuthConfig('daneel_gpt_fallback_enabled', e.target.checked);
-            });
             document.getElementById('daneelGptConfidence').addEventListener('input', function(e) {
                 document.getElementById('daneelGptConfidenceValue').textContent = e.target.value + '%';
             });
-            document.getElementById('daneelGptConfidence').addEventListener('change', function(e) {
-                saveDaneelAutoAuthConfig('daneel_gpt_fallback_confidence', parseInt(e.target.value));
-            });
+
+            // Apply button -- batch save all config
+            document.getElementById('daneelApplyConfig').addEventListener('click', saveDaneelAutoAuthConfig);
+
+            // Refresh projects button
+            document.getElementById('daneelRefreshProjects').addEventListener('click', loadDaneelProjectReview);
         }
 
         // ====== Daneel Auto-Auth Config ======
 
-        function saveDaneelAutoAuthConfig(key, value) {
-            var body = {};
-            body[key] = value;
+        function saveDaneelAutoAuthConfig() {
+            var btn = document.getElementById('daneelApplyConfig');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            var body = {
+                daneel_auto_auth_enabled: document.getElementById('daneelAutoAuthEnabled').checked,
+                daneel_auto_auth_require_bill: document.getElementById('daneelRequireBill').checked,
+                daneel_auto_auth_require_receipt: document.getElementById('daneelRequireReceipt').checked,
+                daneel_fuzzy_threshold: parseInt(document.getElementById('daneelFuzzyThreshold').value),
+                daneel_amount_tolerance: parseFloat(document.getElementById('daneelAmountTolerance').value),
+                daneel_labor_keywords: document.getElementById('daneelLaborKeywords').value.trim(),
+                daneel_gpt_fallback_enabled: document.getElementById('daneelGptFallback').checked,
+                daneel_gpt_fallback_confidence: parseInt(document.getElementById('daneelGptConfidence').value),
+                daneel_bookkeeping_users: JSON.stringify(_daneelBookkeepingUsers),
+                daneel_accounting_mgr_users: JSON.stringify(_daneelAccountingMgrUsers),
+            };
             fetch(API_BASE + '/daneel/auto-auth/config', {
                 method: 'PUT',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
                 body: JSON.stringify(body)
+            }).then(function(resp) {
+                btn.disabled = false;
+                btn.textContent = 'Apply Changes';
+                if (resp.ok) {
+                    if (window.Toast) window.Toast.success('Auto-auth settings saved');
+                } else {
+                    if (window.Toast) window.Toast.error('Failed to save settings');
+                }
             }).catch(function(e) {
+                btn.disabled = false;
+                btn.textContent = 'Apply Changes';
                 console.error('[Daneel] Auto-auth config save error:', e);
+                if (window.Toast) window.Toast.error('Failed to save settings');
             });
         }
 
@@ -2240,8 +2284,18 @@
                     document.getElementById('daneelGptConfidence').value = gptConf;
                     document.getElementById('daneelGptConfidenceValue').textContent = gptConf + '%';
 
-                    // Populate role selects if _allRoles is loaded
-                    _populateRoleSelects(cfg.daneel_bookkeeping_role, cfg.daneel_accounting_mgr_role);
+                    // Load user picker selections
+                    try {
+                        var bkRaw = cfg.daneel_bookkeeping_users;
+                        _daneelBookkeepingUsers = bkRaw ? (typeof bkRaw === 'string' ? JSON.parse(bkRaw) : bkRaw) : [];
+                    } catch(e) { _daneelBookkeepingUsers = []; }
+                    try {
+                        var mgRaw = cfg.daneel_accounting_mgr_users;
+                        _daneelAccountingMgrUsers = mgRaw ? (typeof mgRaw === 'string' ? JSON.parse(mgRaw) : mgRaw) : [];
+                    } catch(e) { _daneelAccountingMgrUsers = []; }
+
+                    _renderUserPickerChips('daneelBookkeepingPickerInput', 'daneelBookkeepingSearch', _daneelBookkeepingUsers);
+                    _renderUserPickerChips('daneelEscalationPickerInput', 'daneelEscalationSearch', _daneelAccountingMgrUsers);
                 })
                 .catch(function(e) {
                     console.error('[Daneel] Auto-auth config load error:', e);
@@ -2258,26 +2312,198 @@
                 .catch(function(e) {
                     console.error('[Daneel] Auto-auth status load error:', e);
                 });
+
+            // Load project review
+            loadDaneelProjectReview();
         }
 
-        function _populateRoleSelects(bookkeepingRoleId, accountingMgrRoleId) {
-            var roles = _allRoles.length > 0 ? _allRoles : [];
-            var selects = [
-                { el: document.getElementById('daneelBookkeepingRole'), val: bookkeepingRoleId },
-                { el: document.getElementById('daneelAccountingMgrRole'), val: accountingMgrRoleId }
-            ];
-            selects.forEach(function(s) {
-                s.el.innerHTML = '<option value="">-- None --</option>';
-                roles.forEach(function(role) {
-                    var opt = document.createElement('option');
-                    opt.value = role.rol_id || role.id || '';
-                    opt.textContent = role.rol_name || role.name || '';
-                    if (opt.value && String(opt.value) === String(s.val)) {
-                        opt.selected = true;
-                    }
-                    s.el.appendChild(opt);
-                });
+        // ====== User Multi-Select Picker (reusable) ======
+
+        function _renderUserPickerChips(containerId, searchId, userIds) {
+            var container = document.getElementById(containerId);
+            var searchInput = document.getElementById(searchId);
+            if (!container || !searchInput) return;
+
+            // Remove existing chips
+            var existingChips = container.querySelectorAll('.recipient-chip');
+            existingChips.forEach(function(c) { c.remove(); });
+
+            // Render chips for selected users
+            userIds.forEach(function(uid) {
+                var user = _allUsers.find(function(u) { return String(u.user_id) === String(uid); });
+                if (!user) return;
+                var name = user.user_name || 'Unknown';
+                var hue = user.avatar_color || 200;
+                var initials = name.split(' ').map(function(w) { return w[0]; }).join('').substring(0, 2).toUpperCase();
+
+                var chip = document.createElement('span');
+                chip.className = 'recipient-chip user-chip';
+                chip.innerHTML =
+                    '<span class="chip-avatar" style="background:hsl(' + hue + ' 70% 45%)">' + initials + '</span>'
+                    + _escapeHtml(name)
+                    + ' <span class="chip-remove" data-picker="' + containerId + '" data-id="' + uid + '">&times;</span>';
+                container.insertBefore(chip, searchInput);
             });
+        }
+
+        function _renderUserPickerDropdown(dropdownId, searchQuery, selectedIds) {
+            var dropdown = document.getElementById(dropdownId);
+            if (!dropdown) return;
+            dropdown.innerHTML = '';
+
+            var query = (searchQuery || '').toLowerCase();
+            var filtered = _allUsers.filter(function(u) {
+                var name = u.user_name || '';
+                return !query || name.toLowerCase().indexOf(query) >= 0;
+            });
+
+            if (filtered.length === 0) {
+                var empty = document.createElement('div');
+                empty.style.cssText = 'padding: 12px; text-align: center; color: var(--ngm-text-muted); font-size: 12px;';
+                empty.textContent = query ? 'No users found' : 'No users available';
+                dropdown.appendChild(empty);
+                return;
+            }
+
+            filtered.forEach(function(user) {
+                var uid = String(user.user_id);
+                var isSelected = selectedIds.indexOf(uid) >= 0;
+                var name = user.user_name || 'Unknown';
+                var hue = user.avatar_color || 200;
+                var initials = name.split(' ').map(function(w) { return w[0]; }).join('').substring(0, 2).toUpperCase();
+
+                var item = document.createElement('div');
+                item.className = 'recipient-dropdown-item' + (isSelected ? ' is-selected' : '');
+                item.dataset.type = 'user';
+                item.dataset.id = uid;
+                item.innerHTML =
+                    '<span class="item-check">' + (isSelected ? '&#10003;' : '') + '</span>'
+                    + '<span class="chip-avatar" style="background:hsl(' + hue + ' 70% 45%); width:22px; height:22px; font-size:10px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; color:#fff; margin-right:8px;">' + initials + '</span>'
+                    + '<span>' + _escapeHtml(name) + '</span>';
+                dropdown.appendChild(item);
+            });
+        }
+
+        function _initUserPicker(cfg) {
+            var container = document.getElementById(cfg.inputId);
+            var searchInput = document.getElementById(cfg.searchId);
+            var dropdown = document.getElementById(cfg.dropdownId);
+            if (!container || !searchInput || !dropdown) return;
+
+            searchInput.addEventListener('focus', function() {
+                _renderUserPickerDropdown(cfg.dropdownId, '', cfg.getUsers());
+                dropdown.classList.add('is-open');
+            });
+
+            searchInput.addEventListener('input', function() {
+                _renderUserPickerDropdown(cfg.dropdownId, searchInput.value, cfg.getUsers());
+                dropdown.classList.add('is-open');
+            });
+
+            dropdown.addEventListener('click', function(e) {
+                var item = e.target.closest('.recipient-dropdown-item');
+                if (!item) return;
+                var uid = item.dataset.id;
+                var currentUsers = cfg.getUsers();
+                var idx = currentUsers.indexOf(uid);
+                if (idx >= 0) {
+                    currentUsers.splice(idx, 1);
+                } else {
+                    currentUsers.push(uid);
+                }
+                cfg.setUsers(currentUsers);
+                _renderUserPickerChips(cfg.inputId, cfg.searchId, currentUsers);
+                _renderUserPickerDropdown(cfg.dropdownId, searchInput.value, currentUsers);
+            });
+
+            container.addEventListener('click', function(e) {
+                var removeBtn = e.target.closest('.chip-remove');
+                if (!removeBtn) {
+                    searchInput.focus();
+                    return;
+                }
+                var uid = removeBtn.dataset.id;
+                var currentUsers = cfg.getUsers();
+                cfg.setUsers(currentUsers.filter(function(id) { return id !== uid; }));
+                _renderUserPickerChips(cfg.inputId, cfg.searchId, cfg.getUsers());
+                if (dropdown.classList.contains('is-open')) {
+                    _renderUserPickerDropdown(cfg.dropdownId, searchInput.value, cfg.getUsers());
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('#' + cfg.pickerId)) {
+                    dropdown.classList.remove('is-open');
+                }
+            });
+        }
+
+        // ====== Project Review ======
+
+        function loadDaneelProjectReview() {
+            var container = document.getElementById('daneelProjectReview');
+            if (!container) return;
+
+            container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Loading projects...</div>';
+
+            fetch(API_BASE + '/daneel/auto-auth/project-summary', { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(result) {
+                    if (!result || !result.data || result.data.length === 0) {
+                        container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">No projects with expense activity</div>';
+                        return;
+                    }
+                    container.innerHTML = '';
+                    result.data.forEach(function(project) {
+                        var row = document.createElement('div');
+                        row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 8px;';
+                        var leftHtml = '<div style="flex: 1; min-width: 0;">'
+                            + '<div style="font-size: 13px; font-weight: 500; color: var(--ngm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + _escapeHtml(project.project_name) + '</div>'
+                            + '<div style="display: flex; gap: 12px; margin-top: 4px; font-size: 11px; color: var(--ngm-text-muted);">'
+                            + '<span>Pending: <strong style="color: ' + (project.pending > 0 ? '#f59e0b' : 'var(--ngm-text-muted)') + '">' + project.pending + '</strong></span>'
+                            + '<span>Authorized: <strong style="color: #10b981">' + project.authorized_by_daneel + '</strong></span>'
+                            + '<span>Missing: <strong style="color: ' + (project.missing_info > 0 ? '#ef4444' : 'var(--ngm-text-muted)') + '">' + project.missing_info + '</strong></span>'
+                            + '</div></div>';
+                        var runBtn = '';
+                        if (project.pending > 0) {
+                            runBtn = '<button type="button" data-project-id="' + project.project_id + '" class="daneel-run-project-btn"'
+                                + ' style="padding: 4px 12px; background: hsl(217 70% 50%); color: #fff; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap; margin-left: 12px;">Run</button>';
+                        }
+                        row.innerHTML = leftHtml + runBtn;
+                        container.appendChild(row);
+                    });
+
+                    // Attach run handlers
+                    container.querySelectorAll('.daneel-run-project-btn').forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            var pid = btn.dataset.projectId;
+                            btn.disabled = true;
+                            btn.textContent = '...';
+                            fetch(API_BASE + '/daneel/auto-auth/run?project_id=' + encodeURIComponent(pid), {
+                                method: 'POST',
+                                headers: _agentAuthHeaders()
+                            }).then(function(resp) { return resp.ok ? resp.json() : null; })
+                            .then(function(data) {
+                                btn.disabled = false;
+                                btn.textContent = 'Run';
+                                if (data) {
+                                    if (window.Toast) window.Toast.success('Processed: ' + (data.authorized || 0) + ' authorized, ' + (data.missing_info || 0) + ' need info');
+                                    loadDaneelProjectReview();
+                                } else {
+                                    if (window.Toast) window.Toast.error('Run failed');
+                                }
+                            }).catch(function() {
+                                btn.disabled = false;
+                                btn.textContent = 'Run';
+                                if (window.Toast) window.Toast.error('Run failed');
+                            });
+                        });
+                    });
+                })
+                .catch(function(e) {
+                    console.error('[Daneel] Project review load error:', e);
+                    container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Failed to load projects</div>';
+                });
         }
 
         function runDaneelBacklog() {
@@ -2297,12 +2523,15 @@
                 btn.textContent = 'Process Backlog';
                 if (result.status === 'disabled') {
                     statusEl.textContent = 'Auto-auth is disabled. Enable it first.';
+                    if (window.Toast) window.Toast.warning('Auto-auth is disabled');
                     return;
                 }
-                statusEl.textContent = 'Done: ' + (result.authorized || 0) + ' authorized, '
+                var summary = (result.authorized || 0) + ' authorized, '
                     + (result.missing_info || 0) + ' missing info, '
                     + (result.duplicates || 0) + ' duplicates, '
                     + (result.escalated || 0) + ' escalated';
+                statusEl.textContent = 'Done: ' + summary;
+                if (window.Toast) window.Toast.success('Backlog processed: ' + summary);
                 // Refresh stats
                 loadDaneelAutoAuthConfig();
             })
@@ -2310,6 +2539,7 @@
                 btn.disabled = false;
                 btn.textContent = 'Process Backlog';
                 statusEl.textContent = 'Error: ' + e.message;
+                if (window.Toast) window.Toast.error('Backlog run failed');
             });
         }
 

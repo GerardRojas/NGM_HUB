@@ -141,7 +141,6 @@
     DOM.projectChannels = document.getElementById("projectChannels");
     DOM.groupChannels = document.getElementById("groupChannels");
     DOM.directMessages = document.getElementById("directMessages");
-    DOM.customChannels = document.getElementById("customChannels");
     DOM.channelSearchInput = document.getElementById("channelSearchInput");
 
     // Chat area
@@ -344,7 +343,7 @@
       state.channels = data.channels || data || [];
       // Save to cache
       saveToCache(CACHE_KEYS.CHANNELS, state.channels);
-      console.log("[Messages] Loaded", state.channels.length, "custom channels");
+      console.log("[Messages] Loaded", state.channels.length, "channels");
       return state.channels;
     } catch (err) {
       console.warn("[Messages] Failed to load channels:", err);
@@ -383,10 +382,9 @@
   // CHANNEL RENDERING
   // ─────────────────────────────────────────────────────────────────────────
   function renderChannels() {
-    renderProjectChannels();
     renderGroups();
+    renderProjectChannels();
     renderDirectMessages();
-    renderCustomChannels();
   }
 
   // Project colors for sidebar
@@ -479,7 +477,7 @@
     }
   }
 
-  // Main section collapse state (Projects, Direct Messages, Custom Channels)
+  // Main section collapse state (Groups, Projects, Direct Messages)
   function getSectionCollapsedState(sectionName) {
     try {
       const states = JSON.parse(localStorage.getItem("ngm_section_collapsed_states") || "{}");
@@ -519,7 +517,7 @@
 
   function initSectionCollapsedStates() {
     // Apply saved collapsed states on init
-    ["projects", "groups", "direct", "custom"].forEach(sectionName => {
+    ["groups", "projects", "direct"].forEach(sectionName => {
       const isCollapsed = getSectionCollapsedState(sectionName);
       if (isCollapsed) {
         const sectionHeader = document.querySelector(`.msg-channel-section-header[data-section="${sectionName}"]`);
@@ -703,49 +701,14 @@
     DOM.directMessages.innerHTML = html;
   }
 
-  function renderCustomChannels() {
-    if (!DOM.customChannels) return;
-
-    const customChannels = state.channels.filter(
-      (c) => c.type === CHANNEL_TYPES.CUSTOM
-    );
-
-    if (customChannels.length === 0) {
-      DOM.customChannels.innerHTML = `
-        <div class="msg-channel-empty">No custom channels yet</div>
-      `;
-      return;
-    }
-
-    let html = "";
-    customChannels.forEach((channel) => {
-      const channelColor = getCustomChannelColor(channel.id || channel.name);
-      const initials = getChannelInitials(channel.name);
-
-      html += `
-        <button type="button" class="msg-channel-item msg-custom-item"
-                data-channel-id="${channel.id}"
-                data-channel-type="${CHANNEL_TYPES.CUSTOM}">
-          <span class="msg-dm-avatar" style="color: ${channelColor}; border-color: ${channelColor}">
-            ${initials}
-          </span>
-          <span class="msg-channel-name">${escapeHtml(channel.name)}</span>
-          ${channel.unread_count ? `<span class="msg-unread-badge">${channel.unread_count}</span>` : ""}
-        </button>
-      `;
-    });
-
-    DOM.customChannels.innerHTML = html;
-  }
-
   function renderGroups() {
     if (!DOM.groupChannels) return;
 
-    const groupChannels = state.channels.filter(
-      (c) => c.type === CHANNEL_TYPES.GROUP
+    const allGroupChannels = state.channels.filter(
+      (c) => c.type === CHANNEL_TYPES.GROUP || c.type === CHANNEL_TYPES.CUSTOM
     );
 
-    if (groupChannels.length === 0) {
+    if (allGroupChannels.length === 0) {
       DOM.groupChannels.innerHTML = `
         <div class="msg-channel-empty">No groups yet</div>
       `;
@@ -753,14 +716,15 @@
     }
 
     let html = "";
-    groupChannels.forEach((channel) => {
+    allGroupChannels.forEach((channel) => {
       const channelColor = getCustomChannelColor(channel.id || channel.name);
       const initials = getChannelInitials(channel.name);
+      const itemClass = channel.type === CHANNEL_TYPES.CUSTOM ? "msg-custom-item" : "msg-group-item";
 
       html += `
-        <button type="button" class="msg-channel-item msg-group-item"
+        <button type="button" class="msg-channel-item ${itemClass}"
                 data-channel-id="${channel.id}"
-                data-channel-type="${CHANNEL_TYPES.GROUP}">
+                data-channel-type="${channel.type}">
           <span class="msg-dm-avatar" style="color: ${channelColor}; border-color: ${channelColor}">
             ${initials}
           </span>
@@ -895,6 +859,8 @@
     state.activeDuplicateFlow = null;
     state.activeReceiptFlow = null;
     for (const msg of messages) {
+      // Skip cross-posted split notifications (loop prevention)
+      if (msg.metadata?.split_repost) continue;
       if (msg.metadata?.check_flow_active && msg.metadata?.check_flow_state) {
         state.activeCheckFlow = { receiptId: msg.metadata.pending_receipt_id, state: msg.metadata.check_flow_state };
       } else if (msg.metadata?.check_flow_state === 'completed' || msg.metadata?.check_flow_state === 'cancelled') {
@@ -906,7 +872,7 @@
         state.activeDuplicateFlow = null;
       }
       if (msg.metadata?.receipt_flow_active && msg.metadata?.receipt_flow_state) {
-        state.activeReceiptFlow = { receiptId: msg.metadata.pending_receipt_id, state: msg.metadata.receipt_flow_state };
+        state.activeReceiptFlow = { receiptId: msg.metadata.pending_receipt_id, state: msg.metadata.receipt_flow_state, awaitingText: !!msg.metadata.awaiting_text_input };
       } else if (msg.metadata?.receipt_flow_state === 'completed' || msg.metadata?.receipt_flow_state === 'cancelled') {
         state.activeReceiptFlow = null;
       }
@@ -1189,7 +1155,29 @@
       const receiptId = msg.metadata.pending_receipt_id;
       const flowState = msg.metadata.receipt_flow_state;
 
-      if (flowState === 'awaiting_project_decision') {
+      if (flowState === 'awaiting_item_selection') {
+        if (msg.metadata?.awaiting_text_input) {
+          botActions = `
+            <div class="msg-bot-actions" data-receipt-id="${receiptId}">
+              <span class="msg-bot-input-hint">Example: 3, 4 to Sunset Heights, 7 to Oak Park</span>
+              <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="receipt-cancel" data-receipt-id="${receiptId}">
+                Cancel
+              </button>
+            </div>
+          `;
+        } else {
+          botActions = `
+            <div class="msg-bot-actions" data-receipt-id="${receiptId}">
+              <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="receipt-all-this-project" data-receipt-id="${receiptId}">
+                All for this project
+              </button>
+              <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="receipt-assign-items" data-receipt-id="${receiptId}">
+                Assign items to projects
+              </button>
+            </div>
+          `;
+        }
+      } else if (flowState === 'awaiting_project_decision') {
         botActions = `
           <div class="msg-bot-actions" data-receipt-id="${receiptId}">
             <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="receipt-single-project" data-receipt-id="${receiptId}">
@@ -1254,7 +1242,9 @@
   function renderReceiptStatusTag(msg) {
     if (!msg.metadata?.pending_receipt_id) return '';
 
-    const status = msg.metadata.receipt_status || 'pending';
+    // Use split_repost variant for cross-posted split notifications
+    const isSplitRepost = !!msg.metadata.split_repost;
+    const status = isSplitRepost ? 'split_repost' : (msg.metadata.receipt_status || 'pending');
     const statusConfig = {
       pending: { label: 'Pending', class: 'msg-receipt-status--pending', icon: '⏳' },
       processing: { label: 'Processing', class: 'msg-receipt-status--processing', icon: '⚙️' },
@@ -1263,7 +1253,8 @@
       duplicate: { label: 'Duplicate', class: 'msg-receipt-status--duplicate', icon: '!' },
       error: { label: 'Error', class: 'msg-receipt-status--error', icon: '⚠️' },
       check_review: { label: 'Check', class: 'msg-receipt-status--check', icon: '?' },
-      split: { label: 'Split', class: 'msg-receipt-status--split', icon: '/' }
+      split: { label: 'Split', class: 'msg-receipt-status--split', icon: '/' },
+      split_repost: { label: 'Split', class: 'msg-receipt-status--split-repost', icon: '<-' }
     };
 
     const config = statusConfig[status] || statusConfig.pending;
@@ -1463,6 +1454,12 @@
   // ── Receipt flow helpers ──
   function _getReceiptFlowAction(content) {
     if (!state.activeReceiptFlow || !isReceiptsChannel()) return null;
+    // New: item assignment text input
+    if (state.activeReceiptFlow.state === 'awaiting_item_selection'
+        && state.activeReceiptFlow.awaitingText) {
+      return { receiptId: state.activeReceiptFlow.receiptId, action: 'assign_items' };
+    }
+    // Old: manual split details (backward compat)
     if (state.activeReceiptFlow.state === 'awaiting_split_details') {
       return content.toLowerCase().trim() === 'done'
         ? { receiptId: state.activeReceiptFlow.receiptId, action: 'split_done' }
@@ -1530,6 +1527,8 @@
 
         // Update flow state from bot messages
         for (const msg of fresh) {
+          // Skip cross-posted split notifications (loop prevention)
+          if (msg.metadata?.split_repost) continue;
           if (msg.metadata?.check_flow_active && msg.metadata?.check_flow_state) {
             state.activeCheckFlow = { receiptId: msg.metadata.pending_receipt_id, state: msg.metadata.check_flow_state };
           }
@@ -1537,7 +1536,7 @@
             state.activeDuplicateFlow = { receiptId: msg.metadata.pending_receipt_id };
           }
           if (msg.metadata?.receipt_flow_active && msg.metadata?.receipt_flow_state) {
-            state.activeReceiptFlow = { receiptId: msg.metadata.pending_receipt_id, state: msg.metadata.receipt_flow_state };
+            state.activeReceiptFlow = { receiptId: msg.metadata.pending_receipt_id, state: msg.metadata.receipt_flow_state, awaitingText: !!msg.metadata.awaiting_text_input };
           } else if (msg.metadata?.receipt_flow_state === 'completed' || msg.metadata?.receipt_flow_state === 'cancelled') {
             state.activeReceiptFlow = null;
           }
@@ -3390,7 +3389,28 @@
         return;
       }
 
-      // Receipt flow button actions
+      // Receipt flow button actions (new item-level flow)
+      if (action === "receipt-all-this-project") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Creating expenses...</span>';
+          _forwardToReceiptAction(receiptId, "all_this_project", null);
+        }
+        return;
+      }
+
+      if (action === "receipt-assign-items") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Processing...</span>';
+          _forwardToReceiptAction(receiptId, "start_assign", null);
+        }
+        return;
+      }
+
+      // Receipt flow button actions (old flow - backward compat)
       if (action === "receipt-single-project") {
         const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
         const actionsEl = e.target.closest(".msg-bot-actions");
@@ -3550,7 +3570,7 @@
       }
     });
 
-    // Main section header click - toggle collapse (Projects, Direct Messages, Custom Channels)
+    // Main section header click - toggle collapse (Groups, Projects, Direct Messages)
     document.addEventListener("click", (e) => {
       const sectionHeader = e.target.closest(".msg-channel-section-header");
       if (sectionHeader) {

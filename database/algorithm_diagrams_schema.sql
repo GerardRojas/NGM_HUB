@@ -264,3 +264,268 @@ INSERT INTO algorithm_diagrams (name, codename, description, version, spec, diag
     }'::jsonb
 )
 ON CONFLICT DO NOTHING;
+
+-- ============================================
+-- INSERT DANEEL (Budget Monitor Agent)
+-- ============================================
+
+INSERT INTO algorithm_diagrams (name, codename, description, version, spec, diagram) VALUES
+(
+    'DANEEL Budget Monitor',
+    'DANEEL',
+    'Event-driven budget monitoring agent. Triggers on expense authorization, compares budget vs actuals per account, and posts alerts to project accounting channel.',
+    '1.0',
+    '{
+        "flow": [
+            { "id": "trigger", "type": "input", "label": "Expense Authorized" },
+            { "id": "load_project", "type": "process", "label": "Load Project", "from": "trigger", "tool": "supabase" },
+            { "id": "load_settings", "type": "process", "label": "Load Settings", "from": "load_project", "tool": "supabase" },
+            { "id": "enabled", "type": "decision", "label": "Enabled?", "from": "load_settings" },
+            { "id": "exit_disabled", "type": "output", "label": "skip (disabled)", "from": "enabled", "branch": "No" },
+            { "id": "load_recipients", "type": "process", "label": "Load Recipients", "from": "enabled", "branch": "Yes", "tool": "supabase" },
+            { "id": "has_recipients", "type": "decision", "label": "Recipients?", "from": "load_recipients" },
+            { "id": "exit_no_recip", "type": "output", "label": "skip (none)", "from": "has_recipients", "branch": "No" },
+            { "id": "get_budgets", "type": "process", "label": "Get Budgets", "from": "has_recipients", "branch": "Yes", "tool": "supabase" },
+            { "id": "get_actuals", "type": "process", "label": "Get Actuals", "from": "get_budgets", "tool": "supabase" },
+            { "id": "compare", "type": "process", "label": "Budget vs Actuals", "from": "get_actuals" },
+            { "id": "alert_type", "type": "decision", "label": "Threshold?", "from": "compare" },
+            { "id": "overspend", "type": "process", "label": "OVERSPEND", "from": "alert_type", "branch": ">=100%" },
+            { "id": "critical", "type": "process", "label": "CRITICAL", "from": "alert_type", "branch": ">=95%" },
+            { "id": "warning", "type": "process", "label": "WARNING", "from": "alert_type", "branch": ">=80%" },
+            { "id": "no_budget", "type": "process", "label": "NO BUDGET", "from": "alert_type", "branch": "No Budget" },
+            { "id": "exit_ok", "type": "output", "label": "no alert", "from": "alert_type", "branch": "<80%" },
+            { "id": "dedup", "type": "decision", "label": "Already Sent?", "from": ["overspend", "critical", "warning", "no_budget"] },
+            { "id": "exit_dup", "type": "output", "label": "skip (dedup)", "from": "dedup", "branch": "Yes" },
+            { "id": "notify", "type": "process", "label": "Notify Recipients", "from": "dedup", "branch": "No", "tool": "firebase" },
+            { "id": "log", "type": "process", "label": "Save Alert Log", "from": "notify", "tool": "supabase" },
+            { "id": "post_channel", "type": "process", "label": "Post to Channel", "from": "log", "tool": "daneel-bot" },
+            { "id": "output", "type": "output", "label": "alert delivered", "from": "post_channel" }
+        ]
+    }'::jsonb,
+    '{
+        "nodes": [
+            { "id": "trigger", "label": "Expense Authorized", "x": 300, "y": 40, "type": "input" },
+            { "id": "load_project", "label": "Load Project", "x": 300, "y": 120, "type": "process", "tool": "supabase" },
+            { "id": "load_settings", "label": "Load Settings", "x": 300, "y": 200, "type": "process", "tool": "supabase" },
+            { "id": "enabled", "label": "Enabled?", "x": 300, "y": 280, "type": "decision" },
+            { "id": "exit_disabled", "label": "skip (disabled)", "x": 500, "y": 280, "type": "output" },
+            { "id": "load_recipients", "label": "Load Recipients", "x": 300, "y": 370, "type": "process", "tool": "supabase" },
+            { "id": "has_recipients", "label": "Recipients?", "x": 300, "y": 450, "type": "decision" },
+            { "id": "exit_no_recip", "label": "skip (none)", "x": 500, "y": 450, "type": "output" },
+            { "id": "get_budgets", "label": "Get Budgets", "x": 200, "y": 540, "type": "process", "tool": "budgets_qbo" },
+            { "id": "get_actuals", "label": "Get Actuals", "x": 400, "y": 540, "type": "process", "tool": "expenses" },
+            { "id": "compare", "label": "Budget vs Actuals", "x": 300, "y": 630, "type": "process" },
+            { "id": "alert_type", "label": "Threshold?", "x": 300, "y": 720, "type": "decision" },
+            { "id": "overspend", "label": "OVERSPEND", "x": 80, "y": 810, "type": "process" },
+            { "id": "critical", "label": "CRITICAL", "x": 220, "y": 810, "type": "process" },
+            { "id": "warning", "label": "WARNING", "x": 360, "y": 810, "type": "process" },
+            { "id": "no_budget", "label": "NO BUDGET", "x": 500, "y": 810, "type": "process" },
+            { "id": "exit_ok", "label": "no alert", "x": 620, "y": 720, "type": "output" },
+            { "id": "dedup", "label": "Already Sent?", "x": 300, "y": 900, "type": "decision" },
+            { "id": "exit_dup", "label": "skip (dedup)", "x": 500, "y": 900, "type": "output" },
+            { "id": "notify", "label": "Notify Recipients", "x": 300, "y": 990, "type": "process", "tool": "firebase" },
+            { "id": "log", "label": "Save Alert Log", "x": 300, "y": 1070, "type": "process", "tool": "supabase" },
+            { "id": "post_channel", "label": "Post to Channel", "x": 300, "y": 1150, "type": "process", "tool": "daneel-bot" },
+            { "id": "output", "label": "alert delivered", "x": 300, "y": 1240, "type": "output" }
+        ],
+        "edges": [
+            { "from": "trigger", "to": "load_project" },
+            { "from": "load_project", "to": "load_settings" },
+            { "from": "load_settings", "to": "enabled" },
+            { "from": "enabled", "to": "exit_disabled", "label": "No" },
+            { "from": "enabled", "to": "load_recipients", "label": "Yes" },
+            { "from": "load_recipients", "to": "has_recipients" },
+            { "from": "has_recipients", "to": "exit_no_recip", "label": "No" },
+            { "from": "has_recipients", "to": "get_budgets", "label": "Yes" },
+            { "from": "has_recipients", "to": "get_actuals", "label": "Yes" },
+            { "from": "get_budgets", "to": "compare" },
+            { "from": "get_actuals", "to": "compare" },
+            { "from": "compare", "to": "alert_type" },
+            { "from": "alert_type", "to": "overspend", "label": ">=100%" },
+            { "from": "alert_type", "to": "critical", "label": ">=95%" },
+            { "from": "alert_type", "to": "warning", "label": ">=80%" },
+            { "from": "alert_type", "to": "no_budget", "label": "No Budget" },
+            { "from": "alert_type", "to": "exit_ok", "label": "<80%" },
+            { "from": "overspend", "to": "dedup" },
+            { "from": "critical", "to": "dedup" },
+            { "from": "warning", "to": "dedup" },
+            { "from": "no_budget", "to": "dedup" },
+            { "from": "dedup", "to": "exit_dup", "label": "Yes" },
+            { "from": "dedup", "to": "notify", "label": "No" },
+            { "from": "notify", "to": "log" },
+            { "from": "log", "to": "post_channel" },
+            { "from": "post_channel", "to": "output" }
+        ]
+    }'::jsonb
+)
+ON CONFLICT DO NOTHING;
+
+-- ============================================
+-- INSERT ANDREW (Bookkeeper Agent)
+-- Full pipeline: Upload, Guards, OCR, Categorize,
+-- User Decision, Item-Level Split Flow
+-- ============================================
+
+INSERT INTO algorithm_diagrams (name, codename, description, version, spec, diagram) VALUES
+(
+    'ANDREW Bookkeeper Agent',
+    'ANDREW',
+    'Agente bookkeeper automatizado. Pipeline completo: upload, guards (hash dup, check detect), OCR via IRIS, auto-categorizacion via ATLAS, flujo de decision del usuario con lista numerada de items, y split multi-proyecto con notificaciones cruzadas.',
+    '1.0',
+    '{
+        "flow": [
+            { "id": "upload", "type": "input", "label": "File Uploaded to Channel" },
+            { "id": "validate", "type": "process", "label": "Validate File Type", "from": "upload" },
+            { "id": "store", "type": "process", "label": "Store in Bucket", "from": "validate", "tool": "supabase-storage" },
+            { "id": "hash", "type": "process", "label": "Compute SHA-256", "from": "store", "tool": "hashlib" },
+            { "id": "hash_dup", "type": "decision", "label": "Hash Duplicate?", "from": "hash" },
+
+            { "id": "was_split", "type": "decision", "label": "Was Split?", "from": "hash_dup", "branch": "Yes" },
+            { "id": "load_prev", "type": "process", "label": "Load Previous Scan + Categories", "from": "was_split", "branch": "Yes", "tool": "supabase" },
+            { "id": "dup_exit", "type": "output", "label": "Duplicate Warning", "from": "was_split", "branch": "No" },
+
+            { "id": "check_detect", "type": "process", "label": "Detect Document Type", "from": "hash_dup", "branch": "No", "tool": "gpt-4o-mini" },
+            { "id": "is_check", "type": "decision", "label": "Is Check?", "from": "check_detect" },
+            { "id": "check_exit", "type": "output", "label": "Route to Check Flow", "from": "is_check", "branch": "Yes" },
+
+            { "id": "scan", "type": "process", "label": "Scan Receipt (IRIS)", "from": "is_check", "branch": "No", "tool": "gpt-4o" },
+            { "id": "extract", "type": "process", "label": "Extract Line Items + Validate", "from": "scan", "tool": "json-schema" },
+            { "id": "resolve_vendor", "type": "process", "label": "Resolve Vendor (DB)", "from": "extract", "tool": "supabase-rpc" },
+            { "id": "data_dup", "type": "process", "label": "Check Data Duplicate", "from": "resolve_vendor", "tool": "supabase-rpc" },
+            { "id": "categorize", "type": "process", "label": "Auto-Categorize Items (ATLAS)", "from": "data_dup", "tool": "gpt-4o-mini" },
+            { "id": "attach_cats", "type": "process", "label": "Attach Categories to Items", "from": "categorize" },
+            { "id": "update_db", "type": "process", "label": "Update DB Record", "from": "attach_cats", "tool": "supabase-rpc" },
+
+            { "id": "build_list", "type": "process", "label": "Build Numbered Item List", "from": ["update_db", "load_prev"] },
+            { "id": "post_msg", "type": "process", "label": "Post Bot Message + Buttons", "from": "build_list" },
+            { "id": "user_choice", "type": "decision", "label": "User Choice?", "from": "post_msg" },
+
+            { "id": "cancelled", "type": "output", "label": "Receipt Cancelled", "from": "user_choice", "branch": "Cancel" },
+
+            { "id": "create_all", "type": "process", "label": "Create All Expenses", "from": "user_choice", "branch": "All This Project", "tool": "supabase-rpc" },
+            { "id": "budget_single", "type": "process", "label": "Trigger Budget Check", "from": "create_all", "tool": "daneel" },
+            { "id": "done_single", "type": "output", "label": "Receipt Completed", "from": "budget_single" },
+
+            { "id": "show_prompt", "type": "process", "label": "Show Assignment Prompt", "from": "user_choice", "branch": "Assign Items" },
+            { "id": "user_text", "type": "input", "label": "User Types Assignments", "from": "show_prompt" },
+            { "id": "parse", "type": "process", "label": "Parse Assignment Text", "from": "user_text", "tool": "regex-bilingual" },
+            { "id": "parse_valid", "type": "decision", "label": "Parse Valid?", "from": "parse" },
+            { "id": "parse_error", "type": "output", "label": "Error: Retry", "from": "parse_valid", "branch": "No" },
+
+            { "id": "resolve_projects", "type": "process", "label": "Resolve Project Names", "from": "parse_valid", "branch": "Yes", "tool": "supabase-rpc" },
+            { "id": "all_found", "type": "decision", "label": "All Found?", "from": "resolve_projects" },
+            { "id": "proj_error", "type": "output", "label": "Error: Not Found", "from": "all_found", "branch": "No" },
+
+            { "id": "create_this", "type": "process", "label": "Create This Project Expenses", "from": "all_found", "branch": "Yes", "tool": "supabase-rpc" },
+            { "id": "create_others", "type": "process", "label": "Create Other Projects Expenses", "from": "create_this", "tool": "supabase-rpc" },
+            { "id": "split_notify", "type": "process", "label": "Post Split Notifications", "from": "create_others", "tool": "bot-message" },
+            { "id": "budget_all", "type": "process", "label": "Trigger Budget Checks (All)", "from": "split_notify", "tool": "daneel" },
+            { "id": "post_summary", "type": "process", "label": "Post Split Summary", "from": "budget_all" },
+            { "id": "done_split", "type": "output", "label": "Split Completed", "from": "post_summary" }
+        ]
+    }'::jsonb,
+    '{
+        "nodes": [
+            { "id": "upload", "label": "File Uploaded", "x": 300, "y": 40, "type": "input" },
+            { "id": "validate", "label": "Validate Type", "x": 300, "y": 120, "type": "process" },
+            { "id": "store", "label": "Store in Bucket", "x": 300, "y": 200, "type": "process", "tool": "supabase-storage" },
+            { "id": "hash", "label": "SHA-256 Hash", "x": 300, "y": 280, "type": "process", "tool": "hashlib" },
+            { "id": "hash_dup", "label": "Hash Dup?", "x": 300, "y": 360, "type": "decision" },
+
+            { "id": "was_split", "label": "Was Split?", "x": 100, "y": 460, "type": "decision" },
+            { "id": "load_prev", "label": "Load Prev Data", "x": 30, "y": 560, "type": "process", "tool": "supabase" },
+            { "id": "dup_exit", "label": "Dup Warning", "x": 200, "y": 560, "type": "output" },
+
+            { "id": "check_detect", "label": "Detect Doc Type", "x": 480, "y": 460, "type": "process", "tool": "gpt-4o-mini" },
+            { "id": "is_check", "label": "Is Check?", "x": 480, "y": 560, "type": "decision" },
+            { "id": "check_exit", "label": "Check Flow", "x": 630, "y": 560, "type": "output" },
+
+            { "id": "scan", "label": "Scan (IRIS)", "x": 300, "y": 660, "type": "process", "tool": "gpt-4o" },
+            { "id": "extract", "label": "Extract + Validate", "x": 300, "y": 740, "type": "process", "tool": "json-schema" },
+            { "id": "resolve_vendor", "label": "Resolve Vendor", "x": 300, "y": 820, "type": "process", "tool": "supabase-rpc" },
+            { "id": "data_dup", "label": "Data Dup Check", "x": 300, "y": 900, "type": "process", "tool": "supabase-rpc" },
+            { "id": "categorize", "label": "Categorize (ATLAS)", "x": 300, "y": 980, "type": "process", "tool": "gpt-4o-mini" },
+            { "id": "attach_cats", "label": "Attach Categories", "x": 300, "y": 1060, "type": "process" },
+            { "id": "update_db", "label": "Update DB", "x": 300, "y": 1140, "type": "process", "tool": "supabase-rpc" },
+
+            { "id": "build_list", "label": "Build Item List", "x": 260, "y": 1240, "type": "process" },
+            { "id": "post_msg", "label": "Post Message", "x": 260, "y": 1320, "type": "process" },
+            { "id": "user_choice", "label": "User Choice?", "x": 260, "y": 1400, "type": "decision" },
+
+            { "id": "cancelled", "label": "Cancelled", "x": 510, "y": 1400, "type": "output" },
+
+            { "id": "create_all", "label": "Create All $", "x": 60, "y": 1500, "type": "process", "tool": "supabase-rpc" },
+            { "id": "budget_single", "label": "Budget Check", "x": 60, "y": 1580, "type": "process", "tool": "daneel" },
+            { "id": "done_single", "label": "Completed", "x": 60, "y": 1660, "type": "output" },
+
+            { "id": "show_prompt", "label": "Show Prompt", "x": 310, "y": 1500, "type": "process" },
+            { "id": "user_text", "label": "User Assigns", "x": 310, "y": 1580, "type": "input" },
+            { "id": "parse", "label": "Parse Text", "x": 310, "y": 1660, "type": "process", "tool": "regex" },
+            { "id": "parse_valid", "label": "Valid?", "x": 310, "y": 1740, "type": "decision" },
+            { "id": "parse_error", "label": "Error: Retry", "x": 510, "y": 1740, "type": "output" },
+
+            { "id": "resolve_projects", "label": "Resolve Projects", "x": 310, "y": 1830, "type": "process", "tool": "supabase-rpc" },
+            { "id": "all_found", "label": "All Found?", "x": 310, "y": 1910, "type": "decision" },
+            { "id": "proj_error", "label": "Not Found", "x": 510, "y": 1910, "type": "output" },
+
+            { "id": "create_this", "label": "This Project $", "x": 310, "y": 2000, "type": "process", "tool": "supabase-rpc" },
+            { "id": "create_others", "label": "Other Projects $", "x": 310, "y": 2080, "type": "process", "tool": "supabase-rpc" },
+            { "id": "split_notify", "label": "Split Notifications", "x": 310, "y": 2160, "type": "process", "tool": "bot-msg" },
+            { "id": "budget_all", "label": "Budget Checks", "x": 310, "y": 2240, "type": "process", "tool": "daneel" },
+            { "id": "post_summary", "label": "Post Summary", "x": 310, "y": 2320, "type": "process" },
+            { "id": "done_split", "label": "Split Completed", "x": 310, "y": 2400, "type": "output" }
+        ],
+        "edges": [
+            { "from": "upload", "to": "validate" },
+            { "from": "validate", "to": "store" },
+            { "from": "store", "to": "hash" },
+            { "from": "hash", "to": "hash_dup" },
+
+            { "from": "hash_dup", "to": "was_split", "label": "Yes" },
+            { "from": "hash_dup", "to": "check_detect", "label": "No" },
+
+            { "from": "was_split", "to": "load_prev", "label": "Yes" },
+            { "from": "was_split", "to": "dup_exit", "label": "No" },
+            { "from": "load_prev", "to": "build_list" },
+
+            { "from": "check_detect", "to": "is_check" },
+            { "from": "is_check", "to": "check_exit", "label": "Yes" },
+            { "from": "is_check", "to": "scan", "label": "No" },
+
+            { "from": "scan", "to": "extract" },
+            { "from": "extract", "to": "resolve_vendor" },
+            { "from": "resolve_vendor", "to": "data_dup" },
+            { "from": "data_dup", "to": "categorize" },
+            { "from": "categorize", "to": "attach_cats" },
+            { "from": "attach_cats", "to": "update_db" },
+            { "from": "update_db", "to": "build_list" },
+
+            { "from": "build_list", "to": "post_msg" },
+            { "from": "post_msg", "to": "user_choice" },
+
+            { "from": "user_choice", "to": "cancelled", "label": "Cancel" },
+            { "from": "user_choice", "to": "create_all", "label": "All" },
+            { "from": "user_choice", "to": "show_prompt", "label": "Assign" },
+
+            { "from": "create_all", "to": "budget_single" },
+            { "from": "budget_single", "to": "done_single" },
+
+            { "from": "show_prompt", "to": "user_text" },
+            { "from": "user_text", "to": "parse" },
+            { "from": "parse", "to": "parse_valid" },
+            { "from": "parse_valid", "to": "parse_error", "label": "No" },
+            { "from": "parse_valid", "to": "resolve_projects", "label": "Yes" },
+
+            { "from": "resolve_projects", "to": "all_found" },
+            { "from": "all_found", "to": "proj_error", "label": "No" },
+            { "from": "all_found", "to": "create_this", "label": "Yes" },
+
+            { "from": "create_this", "to": "create_others" },
+            { "from": "create_others", "to": "split_notify" },
+            { "from": "split_notify", "to": "budget_all" },
+            { "from": "budget_all", "to": "post_summary" },
+            { "from": "post_summary", "to": "done_split" }
+        ]
+    }'::jsonb
+)
+ON CONFLICT DO NOTHING;

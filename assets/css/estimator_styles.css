@@ -315,6 +315,7 @@
 .estimator-table td {
     padding: 8px 10px;
     border-bottom: 1px solid #e5e7eb;
+    color: #111827;
 }
 
 /* Hover muy suave con tinte verde */
@@ -373,9 +374,9 @@
     padding-left: 55px;  /* sangría */
 }
 
-/* Concepts (item rows) con sangría al nivel de subcategorías */
+/* Concepts (item rows) con sangría al nivel del texto de subcategorías */
 .item-row .col-name {
-    padding-left: 55px;
+    padding-left: 70px;
 }
 
 /* Columna de código (ID / clave) */

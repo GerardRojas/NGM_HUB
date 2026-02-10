@@ -2222,6 +2222,7 @@
       selectedConcept: null,
       builderItems: [],
       mode: 'from-template',
+      targetCatIndex: preselectCatIndex ?? null,
       targetSubIndex: preselectSubIndex ?? null
     };
 
@@ -2242,16 +2243,24 @@
     // Populate the concept picker table
     populateConceptPicker();
 
-    // Populate target category dropdown
-    populateTargetCategoryDropdown();
-
-    // Pre-select category from context menu row
-    if (preselectCatIndex != null && currentEstimateData) {
+    // Update insert-target label
+    const targetLabel = document.getElementById('add-concept-insert-target');
+    if (targetLabel && preselectCatIndex != null && currentEstimateData) {
       const cat = currentEstimateData.categories[preselectCatIndex];
       if (cat) {
-        const select = document.getElementById('add-concept-target-category');
-        if (select) select.value = cat.id;
+        const subIdx = addConceptState.targetSubIndex;
+        const sub = (subIdx != null && cat.subcategories?.[subIdx])
+          ? cat.subcategories[subIdx] : null;
+        const label = sub ? `${cat.name} > ${sub.name}` : cat.name;
+        targetLabel.textContent = label;
+        targetLabel.classList.add('has-target');
+      } else {
+        targetLabel.textContent = 'Select a row in the table first';
+        targetLabel.classList.remove('has-target');
       }
+    } else if (targetLabel) {
+      targetLabel.textContent = 'Select a row in the table first';
+      targetLabel.classList.remove('has-target');
     }
 
     // Reset form
@@ -2455,23 +2464,6 @@
     return badges[type] || badges.material;
   }
 
-  function populateTargetCategoryDropdown() {
-    const select = document.getElementById('add-concept-target-category');
-    if (!select || !currentEstimateData) return;
-
-    // Get existing categories
-    const categories = currentEstimateData.categories || [];
-
-    select.innerHTML = '<option value="">Auto (from concept)</option>';
-
-    categories.forEach(cat => {
-      select.innerHTML += `<option value="${escapeHtml(cat.id)}">${escapeHtml(cat.name)}</option>`;
-    });
-
-    // Add option to create new
-    select.innerHTML += '<option value="__new__">+ Create New Category</option>';
-  }
-
   async function confirmAddConcept() {
     if (!addConceptState.selectedConcept) {
       showFeedback('Please select a concept', 'error');
@@ -2503,23 +2495,20 @@
       };
     }
 
-    // Determine target category
-    const targetCategoryId = document.getElementById('add-concept-target-category')?.value;
-    let targetCategory = null;
-
-    if (targetCategoryId && targetCategoryId !== '' && targetCategoryId !== '__new__') {
-      targetCategory = currentEstimateData.categories.find(c => c.id === targetCategoryId);
-    }
+    // Determine target category from right-click context
+    const catIdx = addConceptState.targetCatIndex;
+    let targetCategory = (catIdx != null && currentEstimateData.categories[catIdx])
+      ? currentEstimateData.categories[catIdx]
+      : null;
 
     if (!targetCategory) {
-      // Find or create category based on concept's category
+      // Fallback: find or create category based on concept's category
       const categoryName = concept.category_name || 'General';
       targetCategory = currentEstimateData.categories.find(
         c => c.name === categoryName || c.id === concept.category_id
       );
 
       if (!targetCategory) {
-        // Create new category
         targetCategory = {
           id: concept.category_id || 'CAT-' + Date.now(),
           name: categoryName,

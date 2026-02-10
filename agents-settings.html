@@ -26,6 +26,17 @@
     <script src="assets/js/arturito_analytics.js" defer></script>
 
     <style>
+        /* ====== Fixed container height ====== */
+        .expenses-table-container {
+            height: calc(100vh - 280px);
+            min-height: 500px;
+        }
+        #settingsContent {
+            height: 100%;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
         /* ====== Hub Grid ====== */
         .hub-header { margin-bottom: 28px; }
         .hub-header h2 {
@@ -738,8 +749,8 @@
                                                     <span class="hub-metric-label">Status</span>
                                                 </div>
                                                 <div class="hub-metric">
-                                                    <span class="hub-metric-value" id="hubDaneelWarnThreshold">--</span>
-                                                    <span class="hub-metric-label">Warn At</span>
+                                                    <span class="hub-metric-value" id="hubDaneelAutoAuth">--</span>
+                                                    <span class="hub-metric-label">Auto-Auth</span>
                                                 </div>
                                                 <div class="hub-metric">
                                                     <span class="hub-metric-value" id="hubDaneelAlerts">--</span>
@@ -1068,6 +1079,14 @@
                                                     <span class="stat-label">Alerts Sent</span>
                                                     <span class="stat-value" id="daneelStatAlerts">--</span>
                                                 </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Auto-Auth</span>
+                                                    <span class="stat-value" id="daneelStatAutoAuth">--</span>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Pending Info</span>
+                                                    <span class="stat-value" id="daneelStatPendingInfo">--</span>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -1107,6 +1126,15 @@
                                                             <div class="function-item enabled">Posts messages to project accounting channels</div>
                                                             <div class="function-item enabled">Includes @mentions for configured recipients</div>
                                                             <div class="function-item enabled">Supports warning, critical, and overspend alert types</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>5</span> Expense Auto-Authorization</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Auto-authorizes expenses that pass health check and duplicate verification</div>
+                                                            <div class="function-item enabled">Requests missing information from bookkeeping team</div>
+                                                            <div class="function-item enabled">Escalates ambiguous expenses to accounting manager</div>
+                                                            <div class="function-item enabled">Batch notifications per project in general channel</div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1188,6 +1216,139 @@
                                                                placeholder="Search roles or users..." autocomplete="off">
                                                     </div>
                                                     <div class="recipient-dropdown" id="daneelRecipientDropdown"></div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Expense Auto-Authorization -->
+                                            <div class="permission-card" style="margin-top: 20px;">
+                                                <div class="permission-card-header">
+                                                    <h3 class="permission-card-title">Expense Auto-Authorization</h3>
+                                                    <span style="font-size: 11px; color: var(--ngm-text-muted);" id="daneelAutoAuthStatusLabel">Disabled</span>
+                                                </div>
+                                                <p style="font-size: 12px; color: var(--ngm-text-muted); margin: 0 0 16px 0;">
+                                                    When enabled, Daneel will automatically authorize new pending expenses that pass health check
+                                                    and duplicate verification. Expenses that fail checks are escalated to the appropriate team.
+                                                </p>
+                                                <div class="agent-config-list">
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Enable Auto-Authorization</span>
+                                                            <span class="agent-config-desc">Master switch -- only processes NEW expenses while active</span>
+                                                        </div>
+                                                        <label class="toggle-switch">
+                                                            <input type="checkbox" id="daneelAutoAuthEnabled">
+                                                            <span class="toggle-slider"></span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Require bill number</span>
+                                                            <span class="agent-config-desc">Expenses without a bill number will not be auto-authorized</span>
+                                                        </div>
+                                                        <label class="toggle-switch">
+                                                            <input type="checkbox" id="daneelRequireBill" checked>
+                                                            <span class="toggle-slider"></span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Require receipt attachment</span>
+                                                            <span class="agent-config-desc">Expenses without an attached receipt will not be auto-authorized</span>
+                                                        </div>
+                                                        <label class="toggle-switch">
+                                                            <input type="checkbox" id="daneelRequireReceipt" checked>
+                                                            <span class="toggle-slider"></span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Fuzzy match threshold</span>
+                                                            <span class="agent-config-desc">Minimum similarity % for description matching in duplicate detection</span>
+                                                        </div>
+                                                        <div class="agent-config-control">
+                                                            <input type="range" id="daneelFuzzyThreshold" min="70" max="100" step="5" value="85" class="confidence-slider">
+                                                            <span class="confidence-value" id="daneelFuzzyThresholdValue">85%</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Amount tolerance ($)</span>
+                                                            <span class="agent-config-desc">Max dollar difference to consider two amounts as equal</span>
+                                                        </div>
+                                                        <div class="agent-config-control">
+                                                            <input type="number" id="daneelAmountTolerance" value="0.05" min="0" max="10" step="0.01"
+                                                                   style="width: 70px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; background: var(--ngm-bg-input); color: var(--ngm-text); font-size: 13px;">
+                                                        </div>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Labor keywords</span>
+                                                            <span class="agent-config-desc">Keywords in account name to identify labor/payroll (comma separated)</span>
+                                                        </div>
+                                                        <div class="agent-config-control">
+                                                            <input type="text" id="daneelLaborKeywords" value="labor" placeholder="labor, payroll"
+                                                                   style="width: 120px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; background: var(--ngm-bg-input); color: var(--ngm-text); font-size: 13px;">
+                                                        </div>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Bookkeeping role</span>
+                                                            <span class="agent-config-desc">Role to @mention when requesting missing expense info</span>
+                                                        </div>
+                                                        <div class="agent-config-control">
+                                                            <select id="daneelBookkeepingRole"
+                                                                    style="padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; background: var(--ngm-bg-input); color: var(--ngm-text); font-size: 13px;">
+                                                                <option value="">-- None --</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Accounting manager role</span>
+                                                            <span class="agent-config-desc">Role to @mention when escalating ambiguous expenses</span>
+                                                        </div>
+                                                        <div class="agent-config-control">
+                                                            <select id="daneelAccountingMgrRole"
+                                                                    style="padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; background: var(--ngm-bg-input); color: var(--ngm-text); font-size: 13px;">
+                                                                <option value="">-- None --</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
+                                                    <h6 style="font-size: 13px; font-weight: 600; color: var(--ngm-text); margin-bottom: 12px;">GPT Fallback (Ambiguous Cases)</h6>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Enable GPT fallback</span>
+                                                            <span class="agent-config-desc">Use GPT-4o-mini to resolve expenses the rule engine cannot classify</span>
+                                                        </div>
+                                                        <div class="agent-config-control">
+                                                            <div class="form-check form-switch">
+                                                                <input class="form-check-input" type="checkbox" id="daneelGptFallback" role="switch">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Min. confidence threshold</span>
+                                                            <span class="agent-config-desc">GPT responses below this confidence are still escalated to humans</span>
+                                                        </div>
+                                                        <div class="agent-config-control" style="display: flex; align-items: center; gap: 8px;">
+                                                            <input type="range" id="daneelGptConfidence" min="50" max="95" step="5" value="75" class="confidence-slider">
+                                                            <span class="confidence-value" id="daneelGptConfidenceValue">75%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
+                                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                                        <button id="daneelRunBacklog" type="button"
+                                                                style="padding: 8px 16px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 6px; color: var(--ngm-text); font-size: 13px; cursor: pointer;">
+                                                            Process Backlog
+                                                        </button>
+                                                        <span style="font-size: 12px; color: var(--ngm-text-muted);" id="daneelBacklogStatus">
+                                                            Run once to process all existing pending expenses
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1323,12 +1484,14 @@
                 loadAgentConfig();
             } else if (agentId === 'daneel') {
                 loadDaneelConfig();
+                loadDaneelAutoAuthConfig();
                 if (!_daneelPickerInitialized) {
                     loadRecipientOptions().then(function() {
                         return loadDaneelRecipientsSaved();
                     }).then(function() {
                         renderRecipientChips();
                         initDaneelRecipientPicker();
+                        _populateRoleSelects(null, null);
                         _daneelPickerInitialized = true;
                     });
                 }
@@ -1457,11 +1620,22 @@
                     statusEl.textContent = isEnabled ? 'Active' : 'Off';
                     statusEl.className = 'hub-metric-value' + (isEnabled ? ' metric-success' : ' metric-error');
 
-                    document.getElementById('hubDaneelWarnThreshold').textContent = (config.warning_threshold || 80) + '%';
                     document.getElementById('hubDaneelAlerts').textContent = '--';
 
                     var dot = document.getElementById('hubDotDaneel');
                     if (dot) dot.className = 'hub-status-dot ' + (isEnabled ? 'hub-status-active' : 'hub-status-disabled');
+                })
+                .catch(function() {});
+
+            // Auto-auth status for hub card
+            fetch(API_BASE + '/daneel/auto-auth/config', { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(cfg) {
+                    if (!cfg) return;
+                    var autoAuthEl = document.getElementById('hubDaneelAutoAuth');
+                    if (autoAuthEl) {
+                        autoAuthEl.textContent = cfg.daneel_auto_auth_enabled === true ? 'On' : 'Off';
+                    }
                 })
                 .catch(function() {});
         }
@@ -1983,6 +2157,160 @@
             document.getElementById('daneelNoBudgetAlert').addEventListener('change', function(e) {
                 saveDaneelConfig('no_budget_alert', e.target.checked);
             });
+
+            // Auto-Auth config listeners
+            document.getElementById('daneelAutoAuthEnabled').addEventListener('change', function(e) {
+                saveDaneelAutoAuthConfig('daneel_auto_auth_enabled', e.target.checked);
+                document.getElementById('daneelAutoAuthStatusLabel').textContent = e.target.checked ? 'Enabled' : 'Disabled';
+                document.getElementById('hubDaneelAutoAuth').textContent = e.target.checked ? 'On' : 'Off';
+            });
+            document.getElementById('daneelRequireBill').addEventListener('change', function(e) {
+                saveDaneelAutoAuthConfig('daneel_auto_auth_require_bill', e.target.checked);
+            });
+            document.getElementById('daneelRequireReceipt').addEventListener('change', function(e) {
+                saveDaneelAutoAuthConfig('daneel_auto_auth_require_receipt', e.target.checked);
+            });
+            document.getElementById('daneelFuzzyThreshold').addEventListener('input', function(e) {
+                document.getElementById('daneelFuzzyThresholdValue').textContent = e.target.value + '%';
+            });
+            document.getElementById('daneelFuzzyThreshold').addEventListener('change', function(e) {
+                saveDaneelAutoAuthConfig('daneel_fuzzy_threshold', parseInt(e.target.value));
+            });
+            document.getElementById('daneelAmountTolerance').addEventListener('change', function(e) {
+                saveDaneelAutoAuthConfig('daneel_amount_tolerance', parseFloat(e.target.value));
+            });
+            document.getElementById('daneelLaborKeywords').addEventListener('change', function(e) {
+                saveDaneelAutoAuthConfig('daneel_labor_keywords', e.target.value.trim());
+            });
+            document.getElementById('daneelBookkeepingRole').addEventListener('change', function(e) {
+                saveDaneelAutoAuthConfig('daneel_bookkeeping_role', e.target.value || null);
+            });
+            document.getElementById('daneelAccountingMgrRole').addEventListener('change', function(e) {
+                saveDaneelAutoAuthConfig('daneel_accounting_mgr_role', e.target.value || null);
+            });
+            document.getElementById('daneelGptFallback').addEventListener('change', function(e) {
+                saveDaneelAutoAuthConfig('daneel_gpt_fallback_enabled', e.target.checked);
+            });
+            document.getElementById('daneelGptConfidence').addEventListener('input', function(e) {
+                document.getElementById('daneelGptConfidenceValue').textContent = e.target.value + '%';
+            });
+            document.getElementById('daneelGptConfidence').addEventListener('change', function(e) {
+                saveDaneelAutoAuthConfig('daneel_gpt_fallback_confidence', parseInt(e.target.value));
+            });
+        }
+
+        // ====== Daneel Auto-Auth Config ======
+
+        function saveDaneelAutoAuthConfig(key, value) {
+            var body = {};
+            body[key] = value;
+            fetch(API_BASE + '/daneel/auto-auth/config', {
+                method: 'PUT',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
+                body: JSON.stringify(body)
+            }).catch(function(e) {
+                console.error('[Daneel] Auto-auth config save error:', e);
+            });
+        }
+
+        function loadDaneelAutoAuthConfig() {
+            fetch(API_BASE + '/daneel/auto-auth/config', { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(cfg) {
+                    if (!cfg) return;
+
+                    var enabled = cfg.daneel_auto_auth_enabled === true;
+                    document.getElementById('daneelAutoAuthEnabled').checked = enabled;
+                    document.getElementById('daneelAutoAuthStatusLabel').textContent = enabled ? 'Enabled' : 'Disabled';
+                    document.getElementById('hubDaneelAutoAuth').textContent = enabled ? 'On' : 'Off';
+
+                    document.getElementById('daneelRequireBill').checked = cfg.daneel_auto_auth_require_bill !== false;
+                    document.getElementById('daneelRequireReceipt').checked = cfg.daneel_auto_auth_require_receipt !== false;
+
+                    var fuzzy = cfg.daneel_fuzzy_threshold || 85;
+                    document.getElementById('daneelFuzzyThreshold').value = fuzzy;
+                    document.getElementById('daneelFuzzyThresholdValue').textContent = fuzzy + '%';
+
+                    document.getElementById('daneelAmountTolerance').value = cfg.daneel_amount_tolerance || 0.05;
+                    document.getElementById('daneelLaborKeywords').value = cfg.daneel_labor_keywords || 'labor';
+
+                    // GPT fallback controls
+                    document.getElementById('daneelGptFallback').checked = cfg.daneel_gpt_fallback_enabled === true;
+                    var gptConf = cfg.daneel_gpt_fallback_confidence || 75;
+                    document.getElementById('daneelGptConfidence').value = gptConf;
+                    document.getElementById('daneelGptConfidenceValue').textContent = gptConf + '%';
+
+                    // Populate role selects if _allRoles is loaded
+                    _populateRoleSelects(cfg.daneel_bookkeeping_role, cfg.daneel_accounting_mgr_role);
+                })
+                .catch(function(e) {
+                    console.error('[Daneel] Auto-auth config load error:', e);
+                });
+
+            // Load status
+            fetch(API_BASE + '/daneel/auto-auth/status', { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(status) {
+                    if (!status) return;
+                    document.getElementById('daneelStatAutoAuth').textContent = status.authorized_last_30d || 0;
+                    document.getElementById('daneelStatPendingInfo').textContent = status.pending_info_count || 0;
+                })
+                .catch(function(e) {
+                    console.error('[Daneel] Auto-auth status load error:', e);
+                });
+        }
+
+        function _populateRoleSelects(bookkeepingRoleId, accountingMgrRoleId) {
+            var roles = _allRoles.length > 0 ? _allRoles : [];
+            var selects = [
+                { el: document.getElementById('daneelBookkeepingRole'), val: bookkeepingRoleId },
+                { el: document.getElementById('daneelAccountingMgrRole'), val: accountingMgrRoleId }
+            ];
+            selects.forEach(function(s) {
+                s.el.innerHTML = '<option value="">-- None --</option>';
+                roles.forEach(function(role) {
+                    var opt = document.createElement('option');
+                    opt.value = role.rol_id || role.id || '';
+                    opt.textContent = role.rol_name || role.name || '';
+                    if (opt.value && String(opt.value) === String(s.val)) {
+                        opt.selected = true;
+                    }
+                    s.el.appendChild(opt);
+                });
+            });
+        }
+
+        function runDaneelBacklog() {
+            var btn = document.getElementById('daneelRunBacklog');
+            var statusEl = document.getElementById('daneelBacklogStatus');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+            statusEl.textContent = 'Running -- this may take a moment...';
+
+            fetch(API_BASE + '/daneel/auto-auth/run-backlog', {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders())
+            })
+            .then(function(resp) { return resp.json(); })
+            .then(function(result) {
+                btn.disabled = false;
+                btn.textContent = 'Process Backlog';
+                if (result.status === 'disabled') {
+                    statusEl.textContent = 'Auto-auth is disabled. Enable it first.';
+                    return;
+                }
+                statusEl.textContent = 'Done: ' + (result.authorized || 0) + ' authorized, '
+                    + (result.missing_info || 0) + ' missing info, '
+                    + (result.duplicates || 0) + ' duplicates, '
+                    + (result.escalated || 0) + ' escalated';
+                // Refresh stats
+                loadDaneelAutoAuthConfig();
+            })
+            .catch(function(e) {
+                btn.disabled = false;
+                btn.textContent = 'Process Backlog';
+                statusEl.textContent = 'Error: ' + e.message;
+            });
         }
 
         // ============================================
@@ -2007,6 +2335,9 @@
 
             // Reset button (Arturito config)
             document.getElementById('btnResetDefaults').addEventListener('click', resetToDefaults);
+
+            // Daneel backlog button
+            document.getElementById('daneelRunBacklog').addEventListener('click', runDaneelBacklog);
 
             // Init topbar pills
             if (window.initTopbarPills) window.initTopbarPills();

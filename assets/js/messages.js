@@ -1124,21 +1124,7 @@
       const receiptId = msg.metadata.pending_receipt_id;
       const flowState = msg.metadata.check_flow_state;
 
-      if (flowState === 'check_detected') {
-        botActions = `
-          <div class="msg-bot-actions" data-receipt-id="${receiptId}">
-            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="check-confirm-material" data-receipt-id="${receiptId}">
-              Material
-            </button>
-            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="check-confirm-labor" data-receipt-id="${receiptId}">
-              Labor
-            </button>
-            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="check-confirm-no" data-receipt-id="${receiptId}">
-              Not a check
-            </button>
-          </div>
-        `;
-      } else if (flowState === 'awaiting_split_decision') {
+      if (flowState === 'awaiting_split_decision') {
         botActions = `
           <div class="msg-bot-actions" data-receipt-id="${receiptId}">
             <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="check-split-yes" data-receipt-id="${receiptId}">
@@ -1160,7 +1146,16 @@
             </button>
           </div>
         `;
-      } else if (['awaiting_amount', 'awaiting_description', 'awaiting_split_details'].includes(flowState)) {
+      } else if (flowState === 'awaiting_date_confirm') {
+        botActions = `
+          <div class="msg-bot-actions" data-receipt-id="${receiptId}">
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="check-use-today" data-receipt-id="${receiptId}">
+              Use today's date
+            </button>
+            <span class="msg-bot-input-hint">Or type a date (MM/DD/YYYY)</span>
+          </div>
+        `;
+      } else if (['awaiting_check_number', 'awaiting_vendor_info', 'awaiting_split_entries', 'awaiting_category_review'].includes(flowState)) {
         botActions = `
           <div class="msg-bot-actions msg-bot-actions--hint" data-receipt-id="${receiptId}">
             <span class="msg-bot-input-hint">Type your response in the chat input below</span>
@@ -1174,7 +1169,19 @@
       const receiptId = msg.metadata.pending_receipt_id;
       const flowState = msg.metadata.receipt_flow_state;
 
-      if (flowState === 'awaiting_item_selection') {
+      if (flowState === 'awaiting_category_confirmation') {
+        botActions = `
+          <div class="msg-bot-actions" data-receipt-id="${receiptId}">
+            <span class="msg-bot-input-hint">Example: 1 Materials, 2 Delivery</span>
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="receipt-accept-categories" data-receipt-id="${receiptId}">
+              Accept Suggestions
+            </button>
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="receipt-cancel" data-receipt-id="${receiptId}">
+              Cancel
+            </button>
+          </div>
+        `;
+      } else if (flowState === 'awaiting_item_selection') {
         if (msg.metadata?.awaiting_text_input) {
           botActions = `
             <div class="msg-bot-actions" data-receipt-id="${receiptId}">
@@ -1385,12 +1392,13 @@
     if (!state.activeCheckFlow || (!isReceiptsChannel() && !isPayrollChannel())) return null;
 
     const flowState = state.activeCheckFlow.state;
+    const lowerContent = content.toLowerCase().trim();
     const textInputStates = {
-      'awaiting_amount': 'submit_amount',
-      'awaiting_description': 'submit_description',
-      'awaiting_split_details': content.toLowerCase().trim() === 'done'
-        ? 'split_done'
-        : 'submit_split_line',
+      'awaiting_check_number': 'submit_check_number',
+      'awaiting_vendor_info': 'submit_vendor_info',
+      'awaiting_split_entries': lowerContent === 'done' ? 'split_done' : 'submit_split_entry',
+      'awaiting_date_confirm': 'submit_date',
+      'awaiting_category_review': lowerContent === 'confirm' ? 'confirm_categories' : 'submit_category_correction',
     };
 
     if (textInputStates[flowState]) {
@@ -1473,6 +1481,10 @@
   // ── Receipt flow helpers ──
   function _getReceiptFlowAction(content) {
     if (!state.activeReceiptFlow || !isReceiptsChannel()) return null;
+    // Category confirmation text input
+    if (state.activeReceiptFlow.state === 'awaiting_category_confirmation') {
+      return { receiptId: state.activeReceiptFlow.receiptId, action: 'confirm_categories' };
+    }
     // New: item assignment text input
     if (state.activeReceiptFlow.state === 'awaiting_item_selection'
         && state.activeReceiptFlow.awaitingText) {
@@ -3359,19 +3371,13 @@
         return;
       }
 
-      // Check flow button actions (material / labor / not a check)
-      if (["check-confirm-material", "check-confirm-labor", "check-confirm-no"].includes(action)) {
+      // Check flow: use today's date
+      if (action === "check-use-today") {
         const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
         const actionsEl = e.target.closest(".msg-bot-actions");
         if (receiptId && actionsEl) {
-          const actionMap = {
-            "check-confirm-material": "confirm_material",
-            "check-confirm-labor": "confirm_labor",
-            "check-confirm-no": "deny_check",
-          };
-          const label = action === "check-confirm-labor" ? "Routing to Payroll..." : "Processing...";
-          actionsEl.innerHTML = `<span class="msg-bot-actions-loading">${label}</span>`;
-          _forwardToCheckAction(receiptId, actionMap[action], null);
+          actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Categorizing...</span>';
+          _forwardToCheckAction(receiptId, "use_today", null);
         }
         return;
       }
@@ -3404,6 +3410,17 @@
           actionsEl.innerHTML = '<span class="msg-bot-actions-dismissed">Cancelled</span>';
           _forwardToCheckAction(receiptId, "cancel", null);
           state.activeCheckFlow = null;
+        }
+        return;
+      }
+
+      // Receipt flow: accept suggested categories
+      if (action === "receipt-accept-categories") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Confirming categories...</span>';
+          _forwardToReceiptAction(receiptId, "confirm_categories", "all correct");
         }
         return;
       }

@@ -103,26 +103,31 @@
       }
 
       const raw = name.trim();
-      const safeName = Utils.escapeHtml(raw || "-");
-      const initial = Utils.escapeHtml(Utils.getInitial(raw || "-"));
+
+      // Empty / placeholder
+      if (!raw || raw === "-") {
+        return `
+          <span class="pm-person pm-person--empty" title="Click to assign">
+            <span class="pm-avatar pm-avatar--placeholder"></span>
+          </span>
+        `;
+      }
+
+      const safeName = Utils.escapeHtml(raw);
+      const initial = Utils.escapeHtml(Utils.getInitial(raw));
 
       // Use avatar_color if available (official user color), otherwise generate from user_id or name
-      // This matches the logic in Team Management for consistency
       let hue;
       if (avatarColor !== undefined && avatarColor !== null && !isNaN(Number(avatarColor))) {
         hue = Math.max(0, Math.min(360, Number(avatarColor)));
       } else {
-        // Fallback: prefer user_id for stable colors, then name
-        const key = oderId || (raw ? raw.toLowerCase() : "__unknown__");
+        const key = oderId || raw.toLowerCase();
         hue = Utils.hashStringToHue(String(key));
       }
 
-      // Single color for ring style (transparent center, colored border)
-      // Matches Team Management: hsl(hue 70% 45%)
-      const color = raw ? `hsl(${hue} 70% 45%)` : "#666";
+      const color = `hsl(${hue} 70% 45%)`;
 
-      // If photo is available, use it
-      if (photo && raw) {
+      if (photo) {
         return `
           <span class="pm-person" title="${safeName}">
             <span class="pm-avatar pm-avatar-img" style="border-color:${color};">
@@ -148,7 +153,12 @@
      */
     renderMultiplePeople(people, maxDisplay = 3) {
       if (!Array.isArray(people) || people.length === 0) {
-        return `<span class="pm-person-empty">-</span>`;
+        return this.renderPerson("-");
+      }
+
+      // Single person: render at full size (same as owner column)
+      if (people.length === 1) {
+        return this.renderPerson(people[0]);
       }
 
       const displayPeople = people.slice(0, maxDisplay);
@@ -157,8 +167,7 @@
       // Build all names for tooltip
       const allNames = people.map(p => p.name || p.username || "Unknown").join(", ");
 
-      const singleClass = people.length === 1 ? " pm-people-single" : "";
-      let html = `<span class="pm-people-stack${singleClass}" title="${Utils.escapeHtml(allNames)}">`;
+      let html = `<span class="pm-people-stack" title="${Utils.escapeHtml(allNames)}">`;
 
       displayPeople.forEach((person, index) => {
         const name = person.name || person.username || "";
@@ -183,7 +192,7 @@
 
         if (photo && name) {
           html += `
-            <span class="pm-avatar pm-avatar-img pm-avatar-stacked" style="--av-ring:${color}; z-index:${zIndex};" title="${Utils.escapeHtml(name)}">
+            <span class="pm-avatar pm-avatar-img pm-avatar-stacked" style="border-color:${color}; z-index:${zIndex};" title="${Utils.escapeHtml(name)}">
               <img src="${Utils.escapeHtml(photo)}" alt="${Utils.escapeHtml(name)}" />
             </span>
           `;
@@ -238,18 +247,16 @@
         case "collaborator": {
           // Render multiple collaborators as stacked avatars
           if (Array.isArray(t.collaborators) && t.collaborators.length > 0) {
-            // Filter out empty entries
             const validCollabs = t.collaborators.filter(c => c && (c.name || c.id));
             if (validCollabs.length > 0) {
               return this.renderMultiplePeople(validCollabs, 3);
             }
           }
-          return `<span class="pm-person-empty">-</span>`;
+          return this.renderPerson("-");
         }
 
         case "manager": {
           // Render multiple managers as stacked avatars
-          // First check new managers array, then fallback to single manager
           if (Array.isArray(t.managers) && t.managers.length > 0) {
             const validManagers = t.managers.filter(m => m && (m.name || m.id));
             if (validManagers.length > 0) {
@@ -260,7 +267,7 @@
           if (t.manager && (t.manager.name || t.manager.id)) {
             return this.renderPerson(t.manager);
           }
-          return `<span class="pm-person-empty">-</span>`;
+          return this.renderPerson("-");
         }
 
         case "company":

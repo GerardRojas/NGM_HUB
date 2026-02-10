@@ -362,14 +362,18 @@
   // Uses DB avatar_color when available for consistency with Team/Companies pages
   // ================================
   function renderPersonHtml(personOrName) {
-    let raw, color;
+    let raw, color, photo, userId;
 
     if (personOrName && typeof personOrName === 'object') {
       raw = String(personOrName.name || '').trim();
       color = personOrName.color || null;
+      photo = personOrName.photo || personOrName.user_photo || null;
+      userId = personOrName.id || personOrName.user_id || null;
     } else {
       raw = String(personOrName || '').trim();
       color = null;
+      photo = null;
+      userId = null;
     }
 
     if (!raw || raw === "-") {
@@ -384,8 +388,21 @@
     const initial = raw[0]?.toUpperCase() || "?";
 
     if (!color) {
-      const hue = hashStringToHue(raw.toLowerCase());
+      // Use user ID for stable fallback (matches Renderers.renderPerson logic)
+      const key = userId ? String(userId) : raw.toLowerCase();
+      const hue = hashStringToHue(key);
       color = `hsl(${hue} 70% 45%)`;
+    }
+
+    if (photo) {
+      return `
+        <span class="pm-person" title="${safeName}">
+          <span class="pm-avatar pm-avatar-img" style="border-color: ${color};">
+            <img src="${escapeHtml(photo)}" alt="${safeName}" />
+          </span>
+          <span class="pm-person-name">${safeName}</span>
+        </span>
+      `;
     }
 
     return `
@@ -404,22 +421,25 @@
     if (Array.isArray(usersOrStr)) {
       people = usersOrStr.map(u => ({
         name: String(u.name || '').trim(),
-        color: u.color || null
+        color: u.color || null,
+        photo: u.photo || u.user_photo || null,
+        id: u.id || u.user_id || null
       })).filter(p => p.name);
     } else {
       const str = String(usersOrStr || '').trim();
       if (!str || str === '-') {
-        return `
-          <span class="pm-person pm-person--empty" title="Click to assign">
-            <span class="pm-avatar pm-avatar--placeholder"></span>
-          </span>
-        `;
+        return renderPersonHtml("-");
       }
-      people = str.split(',').map(n => ({ name: n.trim(), color: null })).filter(p => p.name);
+      people = str.split(',').map(n => ({ name: n.trim(), color: null, photo: null, id: null })).filter(p => p.name);
     }
 
     if (!people.length) {
-      return `<span class="pm-person-empty">-</span>`;
+      return renderPersonHtml("-");
+    }
+
+    // Single person: render at full size (same as owner column)
+    if (people.length === 1) {
+      return renderPersonHtml(people[0]);
     }
 
     const allNames = people.map(p => p.name).join(', ');
@@ -433,16 +453,25 @@
       const initial = (person.name || '?')[0]?.toUpperCase() || '?';
       let color = person.color;
       if (!color) {
-        const hue = hashStringToHue(person.name.toLowerCase());
+        const key = person.id ? String(person.id) : person.name.toLowerCase();
+        const hue = hashStringToHue(key);
         color = `hsl(${hue} 70% 45%)`;
       }
       const zIndex = displayPeople.length - index;
 
-      html += `
-        <span class="pm-avatar pm-avatar-stacked" style="color: ${color}; border-color: ${color}; z-index: ${zIndex};" title="${escapeHtml(person.name)}">
-          ${escapeHtml(initial)}
-        </span>
-      `;
+      if (person.photo) {
+        html += `
+          <span class="pm-avatar pm-avatar-img pm-avatar-stacked" style="border-color: ${color}; z-index: ${zIndex};" title="${escapeHtml(person.name)}">
+            <img src="${escapeHtml(person.photo)}" alt="${escapeHtml(person.name)}" />
+          </span>
+        `;
+      } else {
+        html += `
+          <span class="pm-avatar pm-avatar-stacked" style="color: ${color}; border-color: ${color}; z-index: ${zIndex};" title="${escapeHtml(person.name)}">
+            ${escapeHtml(initial)}
+          </span>
+        `;
+      }
     });
 
     if (overflow > 0) {
@@ -679,9 +708,9 @@
       }
     });
 
-    // Pre-select current users
+    // Pre-select current users and open (use rAF to ensure container is in DOM)
     if (currentValue && currentValue !== "-") {
-      setTimeout(async () => {
+      requestAnimationFrame(async () => {
         const users = await window.PM_PeoplePicker?.fetchUsers?.() || [];
 
         if (isMultiple && currentValue.includes(",")) {
@@ -698,11 +727,11 @@
         }
 
         if (picker.open) picker.open();
-      }, 50);
+      });
     } else {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         if (picker.open) picker.open();
-      }, 50);
+      });
     }
 
     container._picker = picker;

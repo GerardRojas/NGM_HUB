@@ -290,7 +290,7 @@
 
       // Lock to prevent the opening click from immediately closing
       this._openingLock = true;
-      setTimeout(() => { this._openingLock = false; }, 100);
+      setTimeout(() => { this._openingLock = false; }, 30);
 
       this.isOpen = true;
       activeDropdown = this;
@@ -314,11 +314,11 @@
       this._onWindowScroll = () => this.positionDropdown();
       window.addEventListener('scroll', this._onWindowScroll, { passive: true });
 
-      // Load users if not cached
+      // Load users (synchronous when cached)
       await this.loadUsers();
 
-      // Focus search
-      setTimeout(() => this.searchInput.focus(), 50);
+      // Focus search on next frame
+      requestAnimationFrame(() => this.searchInput?.focus());
     }
 
     positionDropdown() {
@@ -379,8 +379,27 @@
     }
 
     async loadUsers() {
-      this.list.innerHTML = '<div class="pm-people-loading">Loading...</div>';
+      // Fast path: module-level cache is still valid, render synchronously (no flash)
+      if (usersCache && (Date.now() - cacheTimestamp < CACHE_TTL)) {
+        this.users = usersCache;
+        this.renderList();
+        return;
+      }
 
+      // Already have users from a previous open: render them, refresh in background
+      if (this.users && this.users.length > 0) {
+        this.renderList();
+        fetchUsers().then(users => {
+          if (users.length) {
+            this.users = users;
+            if (this.isOpen) this.renderList();
+          }
+        });
+        return;
+      }
+
+      // First load ever: show loading indicator
+      this.list.innerHTML = '<div class="pm-people-loading">Loading...</div>';
       const users = await fetchUsers();
 
       if (!users.length) {

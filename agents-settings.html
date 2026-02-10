@@ -49,8 +49,8 @@
         }
 
         .hub-grid {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
             align-items: stretch;
         }
@@ -65,7 +65,6 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
-            flex: 0 0 320px;
             min-height: 180px;
         }
 
@@ -594,11 +593,10 @@
 
         /* Responsive */
         @media (max-width: 1024px) {
-            .hub-grid { justify-content: center; }
-            .hub-card { flex: 0 0 280px; }
+            .hub-grid { grid-template-columns: repeat(2, 1fr); }
         }
         @media (max-width: 640px) {
-            .hub-card { flex: 1 1 100%; }
+            .hub-grid { grid-template-columns: 1fr; }
             .hub-card-metrics { gap: 8px; }
             .hub-metric-value { font-size: 14px; }
         }
@@ -2613,33 +2611,60 @@
                         detail.innerHTML = '<div style="color: var(--ngm-text-muted);">No decisions in this report</div>';
                         return;
                     }
-                    var html = '<table style="width: 100%; border-collapse: collapse;">'
-                        + '<thead><tr style="border-bottom: 1px solid var(--ngm-border); text-align: left;">'
-                        + '<th style="padding: 4px 6px; font-weight: 600; color: var(--ngm-text-muted);">Vendor</th>'
-                        + '<th style="padding: 4px 6px; font-weight: 600; color: var(--ngm-text-muted);">Amount</th>'
-                        + '<th style="padding: 4px 6px; font-weight: 600; color: var(--ngm-text-muted);">Date</th>'
-                        + '<th style="padding: 4px 6px; font-weight: 600; color: var(--ngm-text-muted);">Decision</th>'
-                        + '<th style="padding: 4px 6px; font-weight: 600; color: var(--ngm-text-muted);">Rule</th>'
-                        + '<th style="padding: 4px 6px; font-weight: 600; color: var(--ngm-text-muted);">Details</th>'
-                        + '</tr></thead><tbody>';
-
                     var decColors = { authorized: '#10b981', missing_info: '#f59e0b', duplicate: '#8b5cf6', escalated: '#ef4444' };
-                    report.decisions.forEach(function(d) {
+                    var checkLabels = { health: 'Health Check', bill_hint: 'Bill Hint', duplicate: 'Duplicate (R1-R9)', gpt_resolve: 'GPT Resolve', gpt_batch: 'GPT Batch Review' };
+                    var html = '';
+
+                    report.decisions.forEach(function(d, idx) {
                         var color = decColors[d.decision] || 'var(--ngm-text-muted)';
-                        var detailStr = d.reason || '';
-                        if (d.missing_fields && d.missing_fields.length > 0) {
-                            detailStr = 'Missing: ' + d.missing_fields.join(', ');
+                        var amt = '$' + (d.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                        // Expense header row
+                        html += '<div style="' + (idx > 0 ? 'margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--ngm-border);' : '') + ' display: flex; align-items: center; gap: 10px;">'
+                            + '<span style="font-weight: 600; color: var(--ngm-text); min-width: 120px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + _escapeHtml(d.vendor || '') + '</span>'
+                            + '<span style="color: var(--ngm-text); min-width: 80px;">' + amt + '</span>'
+                            + '<span style="color: var(--ngm-text-muted); min-width: 80px;">' + (d.date || '') + '</span>'
+                            + (d.bill_id ? '<span style="color: var(--ngm-text-muted); font-size: 10px;">Bill: ' + _escapeHtml(d.bill_id) + '</span>' : '')
+                            + '<span style="margin-left: auto; color: ' + color + '; font-weight: 600; font-size: 11px; text-transform: uppercase;">' + (d.decision || '') + '</span>'
+                            + '</div>';
+
+                        // Checks trail (if available)
+                        if (d.checks && d.checks.length > 0) {
+                            html += '<div style="display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 0 4px;">';
+                            d.checks.forEach(function(c) {
+                                var label = checkLabels[c.check] || c.check;
+                                var bg = c.passed ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)';
+                                var fg = c.passed ? '#10b981' : '#ef4444';
+                                var icon = c.passed ? 'V' : 'X';
+                                html += '<span title="' + _escapeHtml(c.detail || '') + '" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; background: ' + bg + '; color: ' + fg + '; font-size: 10px; font-weight: 500; cursor: default;">'
+                                    + '<span style="font-weight: 700;">' + icon + '</span> ' + _escapeHtml(label)
+                                    + '</span>';
+                            });
+                            html += '</div>';
+                            // Detail text under checks
+                            html += '<div style="margin: 2px 0 0 4px; font-size: 10px; color: var(--ngm-text-muted);">';
+                            d.checks.forEach(function(c) {
+                                if (c.detail) {
+                                    var label = checkLabels[c.check] || c.check;
+                                    var fg = c.passed ? '#10b981' : '#ef4444';
+                                    html += '<div style="margin-top: 1px;"><span style="color: ' + fg + '; font-weight: 500;">' + _escapeHtml(label) + ':</span> ' + _escapeHtml(c.detail) + '</div>';
+                                }
+                            });
+                            html += '</div>';
+                        } else {
+                            // Fallback for old reports without checks trail
+                            var detailStr = d.reason || '';
+                            if (d.missing_fields && d.missing_fields.length > 0) {
+                                detailStr = 'Missing: ' + d.missing_fields.join(', ');
+                            }
+                            if (detailStr) {
+                                html += '<div style="margin: 2px 0 0 4px; font-size: 10px; color: var(--ngm-text-muted);">'
+                                    + '<span style="font-weight: 500;">' + _escapeHtml(d.rule || '') + ':</span> ' + _escapeHtml(detailStr)
+                                    + '</div>';
+                            }
                         }
-                        html += '<tr style="border-bottom: 1px solid var(--ngm-border);">'
-                            + '<td style="padding: 4px 6px; white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis;">' + _escapeHtml(d.vendor || '') + '</td>'
-                            + '<td style="padding: 4px 6px; white-space: nowrap;">$' + (d.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td>'
-                            + '<td style="padding: 4px 6px; white-space: nowrap;">' + (d.date || '') + '</td>'
-                            + '<td style="padding: 4px 6px;"><span style="color: ' + color + '; font-weight: 600;">' + (d.decision || '') + '</span></td>'
-                            + '<td style="padding: 4px 6px; color: var(--ngm-text-muted);">' + _escapeHtml(d.rule || '') + '</td>'
-                            + '<td style="padding: 4px 6px; color: var(--ngm-text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="' + _escapeHtml(detailStr) + '">' + _escapeHtml(detailStr) + '</td>'
-                            + '</tr>';
                     });
-                    html += '</tbody></table>';
+
                     detail.innerHTML = html;
                 })
                 .catch(function() {

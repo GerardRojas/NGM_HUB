@@ -140,6 +140,7 @@
         }
         .hub-metric-value.metric-error { color: #ef4444; }
         .hub-metric-value.metric-success { color: var(--accent); }
+        .hub-metric-value.metric-muted { color: var(--ngm-text-muted, #94a3b8); }
         .hub-metric-label {
             font-size: 11px; color: var(--ngm-text-muted);
             display: block; margin-top: 2px;
@@ -1101,6 +1102,19 @@
                                                     <div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Loading projects...</div>
                                                 </div>
                                             </div>
+                                            <!-- Auth Reports Section -->
+                                            <div style="margin-top: 24px;">
+                                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                                    <h6 style="font-size: 14px; font-weight: 600; color: var(--ngm-text); margin: 0;">Auth Reports</h6>
+                                                    <button id="daneelRefreshReports" type="button"
+                                                            style="padding: 4px 12px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 6px; color: var(--ngm-text-muted); font-size: 11px; cursor: pointer;">
+                                                        Refresh
+                                                    </button>
+                                                </div>
+                                                <div id="daneelAuthReports" style="display: flex; flex-direction: column; gap: 6px;">
+                                                    <div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Loading reports...</div>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div id="daneel-scope" class="detail-tab-panel">
@@ -1674,7 +1688,9 @@
                     if (!cfg) return;
                     var autoAuthEl = document.getElementById('hubDaneelAutoAuth');
                     if (autoAuthEl) {
-                        autoAuthEl.textContent = cfg.daneel_auto_auth_enabled === true ? 'On' : 'Off';
+                        var aaOn = cfg.daneel_auto_auth_enabled === true;
+                        autoAuthEl.textContent = aaOn ? 'On' : 'Off';
+                        autoAuthEl.className = 'hub-metric-value' + (aaOn ? ' metric-success' : ' metric-muted');
                     }
                 })
                 .catch(function() {});
@@ -2203,7 +2219,9 @@
             // Auto-Auth config listeners (UI-only, no auto-save -- Apply button handles saving)
             document.getElementById('daneelAutoAuthEnabled').addEventListener('change', function(e) {
                 document.getElementById('daneelAutoAuthStatusLabel').textContent = e.target.checked ? 'Enabled' : 'Disabled';
-                document.getElementById('hubDaneelAutoAuth').textContent = e.target.checked ? 'On' : 'Off';
+                var aaEl = document.getElementById('hubDaneelAutoAuth');
+                aaEl.textContent = e.target.checked ? 'On' : 'Off';
+                aaEl.className = 'hub-metric-value' + (e.target.checked ? ' metric-success' : ' metric-muted');
             });
             document.getElementById('daneelFuzzyThreshold').addEventListener('input', function(e) {
                 document.getElementById('daneelFuzzyThresholdValue').textContent = e.target.value + '%';
@@ -2217,6 +2235,9 @@
 
             // Refresh projects button
             document.getElementById('daneelRefreshProjects').addEventListener('click', loadDaneelProjectReview);
+
+            // Refresh reports button
+            document.getElementById('daneelRefreshReports').addEventListener('click', loadDaneelAuthReports);
         }
 
         // ====== Daneel Auto-Auth Config ======
@@ -2266,7 +2287,9 @@
                     var enabled = cfg.daneel_auto_auth_enabled === true;
                     document.getElementById('daneelAutoAuthEnabled').checked = enabled;
                     document.getElementById('daneelAutoAuthStatusLabel').textContent = enabled ? 'Enabled' : 'Disabled';
-                    document.getElementById('hubDaneelAutoAuth').textContent = enabled ? 'On' : 'Off';
+                    var aaHubEl = document.getElementById('hubDaneelAutoAuth');
+                    aaHubEl.textContent = enabled ? 'On' : 'Off';
+                    aaHubEl.className = 'hub-metric-value' + (enabled ? ' metric-success' : ' metric-muted');
 
                     document.getElementById('daneelRequireBill').checked = cfg.daneel_auto_auth_require_bill !== false;
                     document.getElementById('daneelRequireReceipt').checked = cfg.daneel_auto_auth_require_receipt !== false;
@@ -2313,8 +2336,9 @@
                     console.error('[Daneel] Auto-auth status load error:', e);
                 });
 
-            // Load project review
+            // Load project review and auth reports
             loadDaneelProjectReview();
+            loadDaneelAuthReports();
         }
 
         // ====== User Multi-Select Picker (reusable) ======
@@ -2487,8 +2511,23 @@
                                 btn.disabled = false;
                                 btn.textContent = 'Run';
                                 if (data) {
-                                    if (window.Toast) window.Toast.success('Processed: ' + (data.authorized || 0) + ' authorized, ' + (data.missing_info || 0) + ' need info');
+                                    if (data.status === 'disabled') {
+                                        if (window.Toast) window.Toast.warning('Auto-auth is disabled. Enable it in the config tab first.');
+                                    } else {
+                                        var parts = [];
+                                        if (data.authorized) parts.push(data.authorized + ' authorized');
+                                        if (data.missing_info) parts.push(data.missing_info + ' need info');
+                                        if (data.duplicates) parts.push(data.duplicates + ' duplicates');
+                                        if (data.escalated) parts.push(data.escalated + ' escalated');
+                                        var msg = parts.length > 0 ? parts.join(', ') : 'No pending expenses found';
+                                        if (window.Toast) window.Toast.success(msg);
+                                        // Log missing detail to console for debugging
+                                        if (data.missing_detail && data.missing_detail.length > 0) {
+                                            console.log('[Daneel] Missing info detail:', data.missing_detail);
+                                        }
+                                    }
                                     loadDaneelProjectReview();
+                                    loadDaneelAuthReports();
                                 } else {
                                     if (window.Toast) window.Toast.error('Run failed');
                                 }
@@ -2503,6 +2542,116 @@
                 .catch(function(e) {
                     console.error('[Daneel] Project review load error:', e);
                     container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Failed to load projects</div>';
+                });
+        }
+
+        // ====== Auth Reports ======
+
+        function loadDaneelAuthReports() {
+            var container = document.getElementById('daneelAuthReports');
+            if (!container) return;
+
+            container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Loading reports...</div>';
+
+            fetch(API_BASE + '/daneel/auto-auth/reports?limit=15', { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(result) {
+                    if (!result || !result.data || result.data.length === 0) {
+                        container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">No reports yet</div>';
+                        return;
+                    }
+                    container.innerHTML = '';
+                    result.data.forEach(function(r) {
+                        var typeLabel = r.report_type === 'project_run' ? 'Project' : r.report_type === 'backlog' ? 'Backlog' : r.report_type === 'realtime' ? 'Realtime' : r.report_type;
+                        var ts = r.created_at ? new Date(r.created_at).toLocaleString() : '--';
+                        var nameStr = r.project_name || '';
+
+                        var badges = '';
+                        if (r.authorized > 0) badges += '<span style="background: #10b981; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px;">' + r.authorized + ' auth</span>';
+                        if (r.missing_info > 0) badges += '<span style="background: #f59e0b; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px;">' + r.missing_info + ' missing</span>';
+                        if (r.duplicates > 0) badges += '<span style="background: #8b5cf6; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px;">' + r.duplicates + ' dup</span>';
+                        if (r.escalated > 0) badges += '<span style="background: #ef4444; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px;">' + r.escalated + ' esc</span>';
+
+                        var row = document.createElement('div');
+                        row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 8px; cursor: pointer;';
+                        row.innerHTML = '<div style="flex: 1; min-width: 0;">'
+                            + '<div style="display: flex; align-items: center; gap: 8px;">'
+                            + '<span style="font-size: 10px; font-weight: 600; color: var(--ngm-text-muted); text-transform: uppercase; min-width: 55px;">' + typeLabel + '</span>'
+                            + '<span style="font-size: 12px; color: var(--ngm-text);">' + _escapeHtml(nameStr) + '</span>'
+                            + '</div>'
+                            + '<div style="display: flex; align-items: center; gap: 4px; margin-top: 3px;">'
+                            + badges
+                            + '<span style="font-size: 10px; color: var(--ngm-text-muted); margin-left: auto;">' + ts + '</span>'
+                            + '</div>'
+                            + '</div>';
+
+                        row.addEventListener('click', function() {
+                            _openReportDetail(r.report_id, row);
+                        });
+                        container.appendChild(row);
+                    });
+                })
+                .catch(function(e) {
+                    console.error('[Daneel] Reports load error:', e);
+                    container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Failed to load reports</div>';
+                });
+        }
+
+        function _openReportDetail(reportId, rowEl) {
+            // Check if detail is already open
+            var existing = rowEl.nextElementSibling;
+            if (existing && existing.classList.contains('daneel-report-detail')) {
+                existing.remove();
+                return;
+            }
+            // Remove any other open detail
+            var allDetails = document.querySelectorAll('.daneel-report-detail');
+            for (var i = 0; i < allDetails.length; i++) allDetails[i].remove();
+
+            var detail = document.createElement('div');
+            detail.className = 'daneel-report-detail';
+            detail.style.cssText = 'padding: 10px 12px; background: var(--ngm-bg); border: 1px solid var(--ngm-border); border-top: none; border-radius: 0 0 8px 8px; margin-top: -6px; font-size: 11px;';
+            detail.innerHTML = '<div style="text-align: center; color: var(--ngm-text-muted);">Loading...</div>';
+            rowEl.after(detail);
+
+            fetch(API_BASE + '/daneel/auto-auth/reports/' + reportId, { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(report) {
+                    if (!report || !report.decisions || report.decisions.length === 0) {
+                        detail.innerHTML = '<div style="color: var(--ngm-text-muted);">No decisions in this report</div>';
+                        return;
+                    }
+                    var html = '<table style="width: 100%; border-collapse: collapse;">'
+                        + '<thead><tr style="border-bottom: 1px solid var(--ngm-border); text-align: left;">'
+                        + '<th style="padding: 4px 6px; font-weight: 600; color: var(--ngm-text-muted);">Vendor</th>'
+                        + '<th style="padding: 4px 6px; font-weight: 600; color: var(--ngm-text-muted);">Amount</th>'
+                        + '<th style="padding: 4px 6px; font-weight: 600; color: var(--ngm-text-muted);">Date</th>'
+                        + '<th style="padding: 4px 6px; font-weight: 600; color: var(--ngm-text-muted);">Decision</th>'
+                        + '<th style="padding: 4px 6px; font-weight: 600; color: var(--ngm-text-muted);">Rule</th>'
+                        + '<th style="padding: 4px 6px; font-weight: 600; color: var(--ngm-text-muted);">Details</th>'
+                        + '</tr></thead><tbody>';
+
+                    var decColors = { authorized: '#10b981', missing_info: '#f59e0b', duplicate: '#8b5cf6', escalated: '#ef4444' };
+                    report.decisions.forEach(function(d) {
+                        var color = decColors[d.decision] || 'var(--ngm-text-muted)';
+                        var detailStr = d.reason || '';
+                        if (d.missing_fields && d.missing_fields.length > 0) {
+                            detailStr = 'Missing: ' + d.missing_fields.join(', ');
+                        }
+                        html += '<tr style="border-bottom: 1px solid var(--ngm-border);">'
+                            + '<td style="padding: 4px 6px; white-space: nowrap; max-width: 140px; overflow: hidden; text-overflow: ellipsis;">' + _escapeHtml(d.vendor || '') + '</td>'
+                            + '<td style="padding: 4px 6px; white-space: nowrap;">$' + (d.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td>'
+                            + '<td style="padding: 4px 6px; white-space: nowrap;">' + (d.date || '') + '</td>'
+                            + '<td style="padding: 4px 6px;"><span style="color: ' + color + '; font-weight: 600;">' + (d.decision || '') + '</span></td>'
+                            + '<td style="padding: 4px 6px; color: var(--ngm-text-muted);">' + _escapeHtml(d.rule || '') + '</td>'
+                            + '<td style="padding: 4px 6px; color: var(--ngm-text-muted); max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="' + _escapeHtml(detailStr) + '">' + _escapeHtml(detailStr) + '</td>'
+                            + '</tr>';
+                    });
+                    html += '</tbody></table>';
+                    detail.innerHTML = html;
+                })
+                .catch(function() {
+                    detail.innerHTML = '<div style="color: #ef4444;">Failed to load report detail</div>';
                 });
         }
 
@@ -2532,8 +2681,9 @@
                     + (result.escalated || 0) + ' escalated';
                 statusEl.textContent = 'Done: ' + summary;
                 if (window.Toast) window.Toast.success('Backlog processed: ' + summary);
-                // Refresh stats
+                // Refresh stats and reports
                 loadDaneelAutoAuthConfig();
+                loadDaneelAuthReports();
             })
             .catch(function(e) {
                 btn.disabled = false;

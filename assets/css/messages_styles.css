@@ -863,11 +863,13 @@
 }
 
 /* Message reactions */
-.msg-message-reactions {
+.msg-message-reactions,
+.msg-reactions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 10px;
+  align-items: center;
 }
 
 .msg-reaction {
@@ -886,13 +888,17 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-.msg-reaction.is-reacted {
+.msg-reaction.is-reacted,
+.msg-reaction.msg-reaction--active {
   background: rgba(62, 207, 142, 0.12);
   border-color: rgba(62, 207, 142, 0.25);
 }
 
 .msg-reaction-emoji {
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .msg-reaction-count {
@@ -900,7 +906,13 @@
   color: rgba(255, 255, 255, 0.6);
 }
 
-.msg-reaction.is-reacted .msg-reaction-count {
+.msg-reaction.is-reacted .msg-reaction-count,
+.msg-reaction.msg-reaction--active .msg-reaction-count {
+  color: #3ecf8e;
+}
+
+.msg-reaction.is-reacted .msg-reaction-emoji,
+.msg-reaction.msg-reaction--active .msg-reaction-emoji {
   color: #3ecf8e;
 }
 
@@ -932,33 +944,162 @@
   display: none;
   position: absolute;
   right: 12px;
-  top: 8px;
-  background: #1a1a1a;
+  top: -14px;
+  background: #222;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  padding: 4px;
-  gap: 2px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: 3px;
+  gap: 1px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  z-index: 10;
 }
 
 .msg-message:hover .msg-message-actions {
   display: flex;
+  align-items: center;
+}
+
+/* Don't show actions on deleted messages */
+.msg-message--deleted .msg-message-actions,
+.msg-message--deleted:hover .msg-message-actions {
+  display: none;
 }
 
 .msg-action-btn {
-  padding: 6px 8px;
+  padding: 6px 7px;
   background: transparent;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.45);
   transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+}
+
+.msg-action-btn svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 
 .msg-action-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: rgba(62, 207, 142, 0.12);
+  color: #3ecf8e;
+}
+
+.msg-action-btn--delete:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.msg-action-count {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* ── Deleted message ── */
+.msg-message--deleted {
+  opacity: 0.55;
+}
+
+.msg-message-body--deleted {
+  background: transparent !important;
+  padding: 6px 14px !important;
+  border: 1px dashed rgba(255, 255, 255, 0.1) !important;
+  border-radius: 10px !important;
+}
+
+.msg-deleted-text {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 13px;
+}
+
+/* ── Custom SVG Emoji Picker ── */
+.msg-emoji-picker {
+  position: absolute;
+  z-index: 50;
+  background: #222;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
+
+.msg-emoji-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.6);
+  transition: all 0.15s ease;
+  padding: 6px;
+}
+
+.msg-emoji-btn:hover {
+  background: rgba(62, 207, 142, 0.15);
+  color: #3ecf8e;
+  transform: scale(1.15);
+}
+
+.msg-emoji-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ── Reaction pills with SVG ── */
+.msg-reaction svg {
+  width: 14px;
+  height: 14px;
+}
+
+.msg-reaction--add svg {
+  width: 12px;
+  height: 12px;
+}
+
+.msg-reaction--active svg {
+  color: #3ecf8e;
+}
+
+.msg-emoji-legacy {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* ── Clear conversation button ── */
+.msg-clear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.msg-clear-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.msg-clear-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
 }
 
 /* Chat loading spinner */
@@ -2507,7 +2648,8 @@
 }
 
 /* Hide action buttons (react/reply/thread) on bot messages */
-.msg-message--bot .msg-message-actions {
+.msg-message--bot .msg-message-actions,
+.msg-message--bot:hover .msg-message-actions {
   display: none;
 }
 

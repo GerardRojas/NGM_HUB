@@ -917,6 +917,24 @@
     DOM.chatName.textContent = name;
     DOM.chatDescription.textContent = description;
 
+    // Clear conversation button (CEO/COO only)
+    const existingClearBtn = document.getElementById("btnClearConversation");
+    if (existingClearBtn) existingClearBtn.remove();
+
+    if (isAdminRole()) {
+      const clearBtn = document.createElement("button");
+      clearBtn.id = "btnClearConversation";
+      clearBtn.className = "msg-header-action-btn msg-clear-btn";
+      clearBtn.title = "Clear conversation";
+      clearBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+      clearBtn.addEventListener("click", clearConversation);
+      // Insert near the header actions
+      const headerActions = document.querySelector(".msg-chat-header-actions");
+      if (headerActions) {
+        headerActions.insertBefore(clearBtn, headerActions.firstChild);
+      }
+    }
+
     // Show/hide receipts channel indicator
     updateReceiptsIndicator(channel);
   }
@@ -1063,6 +1081,12 @@
     "00000000-0000-0000-0000-000000000002": { name: "Daneel", color: "hsl(210, 70%, 50%)", initials: "D", css: "daneel" },
     "00000000-0000-0000-0000-000000000003": { name: "Andrew", color: "hsl(35, 70%, 45%)", initials: "An", css: "andrew" },
   };
+
+  // SVG icons for message action buttons
+  const SVG_REACT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>';
+  const SVG_REPLY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>';
+  const SVG_THREAD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  const SVG_DELETE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
 
   function renderMessage(msg, isSending = false, showButtons = true) {
     const botInfo = BOT_AGENTS[msg.user_id];
@@ -1229,6 +1253,34 @@
       }
     }
 
+    // Deleted message rendering
+    if (msg.is_deleted) {
+      classes.push('msg-message--deleted');
+      return `
+        <div class="${classes.join(' ')}" data-message-id="${msg.id}">
+          <div class="msg-message-avatar ${isBot ? 'msg-message-avatar--bot' : ''}" style="color: ${avatarColor}; border-color: ${avatarColor}">
+            ${initials}
+          </div>
+          <div class="msg-message-content">
+            <div class="msg-message-header">
+              <span class="msg-message-author">${escapeHtml(userName)}</span>
+              <span class="msg-message-time">${time}</span>
+            </div>
+            <div class="msg-message-body msg-message-body--deleted">
+              <span class="msg-deleted-text">This message was deleted</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Delete button only for own non-bot messages
+    const deleteBtn = (isOwnMessage && !isBot && !isSending) ? `
+      <button type="button" class="msg-action-btn msg-action-btn--delete" data-action="delete" data-message-id="${msg.id}" title="Delete message">
+        ${SVG_DELETE}
+      </button>
+    ` : '';
+
     return `
       <div class="${classes.join(' ')}" data-message-id="${msg.id}">
         <div class="msg-message-avatar ${isBot ? 'msg-message-avatar--bot' : ''} ${botInfo ? 'msg-message-avatar--bot-' + botInfo.css : ''}" style="color: ${avatarColor}; border-color: ${avatarColor}">
@@ -1248,14 +1300,15 @@
           ${hasReactions ? renderReactions(msg.reactions, msg.id) : ""}
           <div class="msg-message-actions">
             <button type="button" class="msg-action-btn" data-action="react" data-message-id="${msg.id}" title="Add reaction">
-              😊
+              ${SVG_REACT}
             </button>
             <button type="button" class="msg-action-btn" data-action="reply" data-message-id="${msg.id}" title="Reply">
-              ↩
+              ${SVG_REPLY}
             </button>
             <button type="button" class="msg-action-btn" data-action="thread" data-message-id="${msg.id}" title="Start thread">
-              💬 ${threadCount > 0 ? threadCount : ""}
+              ${SVG_THREAD}${threadCount > 0 ? `<span class="msg-action-count">${threadCount}</span>` : ""}
             </button>
+            ${deleteBtn}
           </div>
         </div>
       </div>
@@ -1330,14 +1383,15 @@
       html += `
         <button type="button" class="msg-reaction ${hasReacted ? "msg-reaction--active" : ""}"
                 data-emoji="${emoji}" data-message-id="${messageId}">
-          <span class="msg-reaction-emoji">${emoji}</span>
+          <span class="msg-reaction-emoji">${getEmojiHtml(emoji)}</span>
           <span class="msg-reaction-count">${count}</span>
         </button>
       `;
     }
+    // Add reaction button with + SVG
     html += `
       <button type="button" class="msg-reaction msg-reaction--add" data-action="add-reaction" data-message-id="${messageId}">
-        <span>+</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       </button>
     `;
     html += "</div>";
@@ -1739,9 +1793,28 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // REACTIONS
+  // REACTIONS — Custom SVG Emojis
   // ─────────────────────────────────────────────────────────────────────────
-  const EMOJI_PICKER = ["👍", "👎", "❤️", "😂", "😮", "😢", "🎉", "🔥"];
+  const SVG_EMOJIS = {
+    thumbsup:  { label: "Thumbs Up",  svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>' },
+    thumbsdown:{ label: "Thumbs Down", svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15V19a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>' },
+    heart:     { label: "Heart",       svg: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' },
+    fire:      { label: "Fire",        svg: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 23c-3.87 0-7-3.13-7-7 0-2.38 1.2-4.53 2.55-6.27A22.5 22.5 0 0 1 12 5.3a22.5 22.5 0 0 1 4.45 4.43C17.8 11.47 19 13.62 19 16c0 3.87-3.13 7-7 7zm0-14.15C10.06 11.15 7 14.14 7 16c0 2.76 2.24 5 5 5s5-2.24 5-5c0-1.86-3.06-4.85-5-6.85z"/><path d="M12 21c-1.66 0-3-1.34-3-3 0-1.09.8-2.27 1.56-3.12L12 13.4l1.44 1.48C14.2 15.73 15 16.91 15 18c0 1.66-1.34 3-3 3z"/></svg>' },
+    star:      { label: "Star",        svg: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>' },
+    check:     { label: "Approve",     svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>' },
+    clap:      { label: "Celebrate",   svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M4.93 4.93l2.83 2.83M2 12h4M19.07 4.93l-2.83 2.83M22 12h-4"/><circle cx="12" cy="16" r="5"/><path d="M9.5 14.5l1.5 1.5 3-3"/></svg>' },
+    eyes:      { label: "Looking",     svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' },
+    rocket:    { label: "Rocket",      svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>' },
+    laugh:     { label: "LOL",         svg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M7 13s1.5 3 5 3 5-3 5-3"/><line x1="9" y1="9" x2="9.01" y2="9" stroke-width="3"/><line x1="15" y1="9" x2="15.01" y2="9" stroke-width="3"/></svg>' },
+  };
+  const EMOJI_CODES = Object.keys(SVG_EMOJIS);
+
+  function getEmojiHtml(code) {
+    const entry = SVG_EMOJIS[code];
+    if (entry) return entry.svg;
+    // Fallback for legacy Unicode emojis
+    return `<span class="msg-emoji-legacy">${code}</span>`;
+  }
 
   async function toggleReaction(messageId, emoji) {
     const message = state.messages.find((m) => m.id === messageId);
@@ -1779,39 +1852,131 @@
   }
 
   function showEmojiPicker(messageId) {
-    // Simple emoji picker (could be enhanced with a full picker library)
+    // Remove any existing picker first
+    document.querySelectorAll(".msg-emoji-picker").forEach(p => p.remove());
+
     const picker = document.createElement("div");
     picker.className = "msg-emoji-picker";
-    picker.innerHTML = EMOJI_PICKER.map(
-      (emoji) =>
-        `<button type="button" class="msg-emoji-btn" data-emoji="${emoji}">${emoji}</button>`
+    picker.innerHTML = EMOJI_CODES.map(
+      (code) =>
+        `<button type="button" class="msg-emoji-btn" data-emoji="${code}" title="${SVG_EMOJIS[code].label}">${SVG_EMOJIS[code].svg}</button>`
     ).join("");
 
     picker.addEventListener("click", (e) => {
-      const emoji = e.target.dataset.emoji;
-      if (emoji) {
-        toggleReaction(messageId, emoji);
+      const btn = e.target.closest("[data-emoji]");
+      if (btn) {
+        toggleReaction(messageId, btn.dataset.emoji);
         picker.remove();
       }
     });
 
-    // Position near the reaction button
-    const btn = document.querySelector(
-      `[data-action="add-reaction"][data-message-id="${messageId}"]`
+    // Position near the reaction/react button
+    const actionBtn = document.querySelector(
+      `[data-action="react"][data-message-id="${messageId}"], [data-action="add-reaction"][data-message-id="${messageId}"]`
     );
-    if (btn) {
-      btn.parentElement.appendChild(picker);
-      // Remove on outside click
-      setTimeout(() => {
-        document.addEventListener(
-          "click",
-          (e) => {
-            if (!picker.contains(e.target)) picker.remove();
-          },
-          { once: true }
-        );
-      }, 0);
+    if (actionBtn) {
+      const msgEl = actionBtn.closest(".msg-message");
+      if (msgEl) {
+        msgEl.appendChild(picker);
+        // Position relative to the button
+        const msgRect = msgEl.getBoundingClientRect();
+        const btnRect = actionBtn.getBoundingClientRect();
+        picker.style.left = (btnRect.left - msgRect.left) + "px";
+        picker.style.top = (btnRect.top - msgRect.top - picker.offsetHeight - 6) + "px";
+      }
     }
+
+    // Remove on outside click
+    setTimeout(() => {
+      document.addEventListener(
+        "click",
+        (e) => {
+          if (!picker.contains(e.target) && !e.target.closest("[data-action='react']") && !e.target.closest("[data-action='add-reaction']")) {
+            picker.remove();
+          }
+        },
+        { once: true }
+      );
+    }, 0);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // DELETE MESSAGE / CLEAR CONVERSATION
+  // ─────────────────────────────────────────────────────────────────────────
+
+  async function deleteMessage(messageId) {
+    if (!confirm("Delete this message? It will be replaced with \"This message was deleted\".")) return;
+
+    const message = state.messages.find((m) => m.id === messageId);
+    if (!message) return;
+
+    // Save original content for revert
+    const originalContent = message.content;
+
+    // Optimistic update
+    message.is_deleted = true;
+    message.content = "";
+    renderMessages();
+
+    try {
+      const res = await authFetch(`${API_BASE}/messages/${messageId}/delete`, {
+        method: "PATCH",
+      });
+      if (!res.ok) {
+        // Revert
+        message.is_deleted = false;
+        message.content = originalContent;
+        renderMessages();
+        const err = await res.json().catch(() => ({}));
+        showToast(err.detail || "Failed to delete message", "error");
+      }
+    } catch (err) {
+      console.error("[Messages] Delete error:", err);
+      message.is_deleted = false;
+      message.content = originalContent;
+      renderMessages();
+      showToast("Failed to delete message", "error");
+    }
+  }
+
+  async function clearConversation() {
+    if (!state.currentChannel) return;
+
+    const count = state.messages.length;
+    if (!confirm(`Clear all ${count} messages in this conversation? This cannot be undone.`)) return;
+
+    const ch = state.currentChannel;
+    const body = { channel_type: ch.type };
+    if (ch.type === "custom" || ch.type === "direct" || ch.type === "group") {
+      body.channel_id = ch.id;
+    } else {
+      body.project_id = ch.projectId;
+    }
+
+    try {
+      const res = await authFetch(`${API_BASE}/messages/channel/clear`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        state.messages = [];
+        renderMessages();
+        showToast(`Cleared ${data.count || 0} messages`, "success");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.detail || "Failed to clear conversation", "error");
+      }
+    } catch (err) {
+      console.error("[Messages] Clear error:", err);
+      showToast("Failed to clear conversation", "error");
+    }
+  }
+
+  function isAdminRole() {
+    const role = state.currentUser?.user_role;
+    return role === "CEO" || role === "COO";
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -3500,6 +3665,9 @@
         case "react":
         case "add-reaction":
           showEmojiPicker(messageId);
+          break;
+        case "delete":
+          deleteMessage(messageId);
           break;
       }
     });

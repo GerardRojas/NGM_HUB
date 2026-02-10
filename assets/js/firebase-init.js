@@ -194,8 +194,8 @@
       const avatarColor = payload.data?.avatar_color || null;
 
       // Use Toast system if available
-      if (window.Toast && window.Toast.mention) {
-        window.Toast.mention(title, body, {
+      if (window.Toast) {
+        const toastOpts = {
           avatar: senderName ? {
             name: senderName,
             color: avatarColor
@@ -204,7 +204,14 @@
             const url = payload.data?.url || "/messages.html";
             window.location.href = url;
           }
-        });
+        };
+
+        const msgType = payload.data?.type || "mention";
+        if (msgType === "message" && window.Toast.chat) {
+          window.Toast.chat(title, body, toastOpts);
+        } else if (window.Toast.mention) {
+          window.Toast.mention(title, body, toastOpts);
+        }
       } else {
         // Fallback to native notification
         if (Notification.permission === "granted") {

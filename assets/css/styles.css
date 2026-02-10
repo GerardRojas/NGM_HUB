@@ -95,6 +95,26 @@ body.auth-ready:not(.page-loading) .app-layout {
 body {
     background: var(--bg-body);
     color: var(--text-primary);
+    scrollbar-color: #2a2a2a #0d0d0d;
+}
+
+/* Custom scrollbar for Webkit browsers */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #3a3a3a;
 }
 
 /* Links base */

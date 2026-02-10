@@ -1167,21 +1167,10 @@
    * Reconciles tasks in a tbody: updates existing, creates new, removes old
    */
   function reconcileTasks(tbody, tasks) {
-    // Handle empty state
-    if (!tasks.length) {
-      // Check if empty row already exists
-      const existingEmpty = tbody.querySelector(".pm-empty-row");
-      if (!existingEmpty) {
-        tbody.innerHTML = "";
-        tbody.appendChild(createEmptyRow());
-      }
-      return;
-    }
-
-    // Remove empty row if it exists
-    const emptyRow = tbody.querySelector(".pm-empty-row");
-    if (emptyRow) {
-      tbody.removeChild(emptyRow);
+    // Temporarily detach empty row (preserve it with its event handlers)
+    const existingEmpty = tbody.querySelector(".pm-empty-row");
+    if (existingEmpty) {
+      existingEmpty.remove();
     }
 
     // Build map of existing rows by taskId
@@ -1254,6 +1243,10 @@
     if (createdCount > 0 || removedCount > 0) {
       console.log(`[SMART-RENDER] Tasks: updated=${updatedCount}, created=${createdCount}, removed=${removedCount}`);
     }
+
+    // Re-append empty row at the bottom (reuse existing or create new)
+    const emptyToAppend = existingEmpty || createEmptyRow();
+    tbody.appendChild(emptyToAppend);
   }
 
   /**
@@ -1430,25 +1423,24 @@
   function createTableBody(tasks) {
     const tbody = document.createElement("tbody");
 
-    if (!tasks.length) {
-      tbody.appendChild(createEmptyRow());
-    } else {
-      tasks.forEach(task => {
-        tbody.appendChild(createTaskRow(task));
-      });
-    }
+    tasks.forEach(task => {
+      tbody.appendChild(createTaskRow(task));
+    });
+
+    // Always append an input row at the bottom for quick-add
+    tbody.appendChild(createEmptyRow());
 
     return tbody;
   }
 
   /**
-   * Creates an input row for empty groups so users can quickly add a task
+   * Creates an input row at the bottom of every group for quick task creation
    */
   function createEmptyRow() {
     const emptyRow = document.createElement("tr");
     emptyRow.className = "pm-empty-row pm-input-row";
 
-    // First cell has the input, rest are empty placeholders
+    // First cell has the input, rest are clickable placeholders that focus the input
     emptyRow.innerHTML = VISIBLE_COLUMNS.map((col, i) => {
       if (i === 0) {
         return `
@@ -1460,74 +1452,82 @@
             </div>
           </td>`;
       }
-      return `<td data-col="${col.key}"><div class="pm-input-cell-empty"></div></td>`;
+      return `<td data-col="${col.key}" class="pm-input-cell-clickable"><div class="pm-input-cell-empty"></div></td>`;
     }).join("");
 
-    // Bind input behavior
     const input = emptyRow.querySelector(".pm-inline-new-task");
-    if (input) {
-      input.addEventListener("keydown", async (e) => {
-        if (e.key !== "Enter") return;
-        e.preventDefault();
+    if (!input) return emptyRow;
 
-        const description = input.value.trim();
-        if (!description) return;
+    // Click on any cell in the row focuses the input
+    emptyRow.addEventListener("click", (e) => {
+      if (e.target !== input) {
+        input.focus();
+      }
+    });
 
-        // Get group status from parent .pm-group element
-        const groupElem = input.closest(".pm-group");
-        const groupKey = groupElem?.dataset?.groupKey || "not started";
+    // Enter key creates the task
+    input.addEventListener("keydown", async (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
 
-        // Disable input while saving
-        input.disabled = true;
-        input.value = "Creating...";
+      const description = input.value.trim();
+      if (!description) return;
 
-        try {
-          const apiBase = window.API_BASE || "";
-          const token = localStorage.getItem("ngmToken");
-          const headers = { "Content-Type": "application/json" };
-          if (token) headers["Authorization"] = "Bearer " + token;
+      const groupElem = input.closest(".pm-group");
+      const groupKey = groupElem?.dataset?.groupKey || "not started";
 
-          const res = await fetch(`${apiBase}/pipeline/tasks`, {
-            method: "POST",
-            headers,
-            credentials: "include",
-            body: JSON.stringify({
-              task_description: description,
-              status: groupKey,
-            }),
-          });
+      input.disabled = true;
+      input.value = "Creating...";
 
-          if (!res.ok) {
-            throw new Error(`Server error (${res.status})`);
-          }
+      try {
+        const apiBase = window.API_BASE || "";
+        const token = localStorage.getItem("ngmToken");
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = "Bearer " + token;
 
-          if (window.Toast) {
-            Toast.success("Task Created", "Task added successfully!");
-          }
+        const res = await fetch(`${apiBase}/pipeline/tasks`, {
+          method: "POST",
+          headers,
+          credentials: "include",
+          body: JSON.stringify({
+            task_description: description,
+            status: groupKey,
+          }),
+        });
 
-          // Refresh pipeline
-          if (typeof window.fetchPipeline === "function") {
-            window.fetchPipeline().catch(() => {});
-          }
-        } catch (err) {
-          console.error("[Pipeline] Quick-add failed:", err);
-          if (window.Toast) {
-            Toast.error("Create Failed", err.message);
-          }
-          // Restore input on failure
-          input.disabled = false;
-          input.value = description;
+        if (!res.ok) {
+          throw new Error(`Server error (${res.status})`);
         }
-      });
 
-      // Focus styling
-      input.addEventListener("focus", () => {
-        emptyRow.classList.add("pm-input-row--active");
-      });
-      input.addEventListener("blur", () => {
-        emptyRow.classList.remove("pm-input-row--active");
-      });
-    }
+        // Clear input for next entry
+        input.disabled = false;
+        input.value = "";
+
+        if (window.Toast) {
+          Toast.success("Task Created", "Task added successfully!");
+        }
+
+        // Refresh pipeline (force to bypass cache since we just created a task)
+        if (typeof window.fetchPipeline === "function") {
+          window.fetchPipeline({ forceRefresh: true }).catch(() => {});
+        }
+      } catch (err) {
+        console.error("[Pipeline] Quick-add failed:", err);
+        if (window.Toast) {
+          Toast.error("Create Failed", err.message);
+        }
+        input.disabled = false;
+        input.value = description;
+      }
+    });
+
+    // Focus styling
+    input.addEventListener("focus", () => {
+      emptyRow.classList.add("pm-input-row--active");
+    });
+    input.addEventListener("blur", () => {
+      emptyRow.classList.remove("pm-input-row--active");
+    });
 
     return emptyRow;
   }

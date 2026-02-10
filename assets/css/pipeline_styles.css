@@ -526,6 +526,10 @@
     min-height: 28px;
 }
 
+.pm-input-cell-clickable {
+    cursor: text;
+}
+
 /* ============================================
    🔧 ALINEACIÓN DE COLUMNAS EN TABLA
    ============================================ */

@@ -3005,13 +3005,14 @@
     width: 100%;
     min-width: 100%;
     max-width: 100%;
-    height: auto;
+    min-height: 0;
     flex: 1;
     transform: none;
     border-right: none;
     background: #1a1a1a;
     overflow-y: auto;
-    padding-bottom: 80px; /* Space for bottom nav */
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
   }
 
   /* Hide the "New Chat" button header - we'll use bottom nav */

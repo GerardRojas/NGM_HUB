@@ -1110,10 +1110,16 @@
                                             <div style="margin-top: 24px;">
                                                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                                                     <h6 style="font-size: 14px; font-weight: 600; color: var(--ngm-text); margin: 0;">Auth Reports</h6>
-                                                    <button id="daneelRefreshReports" type="button"
-                                                            style="padding: 4px 12px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 6px; color: var(--ngm-text-muted); font-size: 11px; cursor: pointer;">
-                                                        Refresh
-                                                    </button>
+                                                    <div style="display: flex; gap: 6px;">
+                                                        <button id="daneelClearReports" type="button"
+                                                                style="padding: 4px 12px; background: transparent; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; color: #ef4444; font-size: 11px; cursor: pointer;">
+                                                            Clear Logs
+                                                        </button>
+                                                        <button id="daneelRefreshReports" type="button"
+                                                                style="padding: 4px 12px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 6px; color: var(--ngm-text-muted); font-size: 11px; cursor: pointer;">
+                                                            Refresh
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <div id="daneelAuthReports" style="display: flex; flex-direction: column; gap: 6px;">
                                                     <div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Loading reports...</div>
@@ -2242,6 +2248,9 @@
 
             // Refresh reports button
             document.getElementById('daneelRefreshReports').addEventListener('click', loadDaneelAuthReports);
+
+            // Clear reports button
+            document.getElementById('daneelClearReports').addEventListener('click', clearDaneelAuthReports);
         }
 
         // ====== Daneel Auto-Auth Config ======
@@ -2591,6 +2600,34 @@
                     console.error('[Daneel] Reports load error:', e);
                     container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Failed to load reports</div>';
                 });
+        }
+
+        function clearDaneelAuthReports() {
+            if (!confirm('Delete all auth reports? This cannot be undone.')) return;
+            var btn = document.getElementById('daneelClearReports');
+            btn.disabled = true;
+            btn.textContent = 'Clearing...';
+            fetch(API_BASE + '/daneel/auto-auth/reports', {
+                method: 'DELETE',
+                headers: _agentAuthHeaders()
+            })
+            .then(function(resp) { return resp.json(); })
+            .then(function(result) {
+                btn.disabled = false;
+                btn.textContent = 'Clear Logs';
+                if (result.ok) {
+                    if (window.Toast) window.Toast.success('Auth reports cleared');
+                    loadDaneelAuthReports();
+                } else {
+                    if (window.Toast) window.Toast.error('Failed to clear reports');
+                }
+            })
+            .catch(function(e) {
+                btn.disabled = false;
+                btn.textContent = 'Clear Logs';
+                console.error('[Daneel] Clear reports error:', e);
+                if (window.Toast) window.Toast.error('Failed to clear reports');
+            });
         }
 
         function _openReportDetail(reportId, rowEl) {

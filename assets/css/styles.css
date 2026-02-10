@@ -33,6 +33,7 @@ body.page-loading .app-layout {
 body.auth-ready:not(.page-loading) .app-layout {
     opacity: 1;
     visibility: visible;
+    transition: opacity 0.3s ease-in;
 }
 
 /* ==========================================

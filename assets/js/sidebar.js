@@ -228,6 +228,10 @@
     });
 
     navEl.innerHTML = html;
+
+    // Signal that sidebar has finished rendering
+    window._sidebarReady = true;
+    window.dispatchEvent(new CustomEvent('sidebar-ready'));
   }
 
   async function initSidebar() {

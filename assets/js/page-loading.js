@@ -106,11 +106,21 @@
 
     setTimeout(() => {
       const overlay = document.getElementById('pageLoadingOverlay');
-      if (overlay) {
-        overlay.classList.add('hidden');
-      }
+
+      // Reveal content first (behind the overlay) so it paints
       document.body.classList.remove('page-loading');
       document.body.classList.add('auth-ready');
+
+      if (overlay) {
+        // Smooth fade-out instead of instant display:none
+        overlay.style.transition = 'opacity 0.35s ease-out';
+        overlay.style.opacity = '0';
+        overlay.addEventListener('transitionend', () => {
+          overlay.classList.add('hidden');
+        }, { once: true });
+        // Fallback in case transitionend doesn't fire
+        setTimeout(() => overlay.classList.add('hidden'), 400);
+      }
     }, remaining);
   }
 

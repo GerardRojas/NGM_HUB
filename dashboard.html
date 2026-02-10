@@ -33,6 +33,7 @@
         /* Only show content when auth-ready AND page-loading is removed */
         body.auth-ready:not(.page-loading) .app-layout {
             opacity: 1;
+            transition: opacity 0.3s ease-in;
         }
         /* Immediate loading state - shown before external CSS loads */
         body.page-loading {

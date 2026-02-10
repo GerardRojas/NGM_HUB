@@ -32,18 +32,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   initMentionsDrawer();
   initCommandPalette();
 
-  // Load data in parallel for faster loading
+  // Wait for sidebar to finish rendering (it loads permissions async)
+  function waitForSidebar() {
+    if (window._sidebarReady) return Promise.resolve();
+    return new Promise(resolve => {
+      window.addEventListener('sidebar-ready', resolve, { once: true });
+      // Fallback: don't block forever if sidebar fails
+      setTimeout(resolve, 3000);
+    });
+  }
+
+  // Load data + sidebar in parallel, hide overlay only when ALL are ready
   try {
     await Promise.all([
       loadMentions(user),
       loadMyWorkTasks(user),
-      loadPendingReviews(user)
+      loadPendingReviews(user),
+      waitForSidebar()
     ]);
   } catch (err) {
     console.error("[Dashboard] Error loading data:", err);
   }
 
-  // Hide loading overlay after data is loaded
+  // Hide loading overlay after data AND sidebar are ready
   hidePageLoading();
 
   // 2) Rellenar pill de usuario

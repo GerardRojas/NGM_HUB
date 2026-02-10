@@ -9018,7 +9018,13 @@
         document.getElementById('diagramModalVersion').textContent = `v${node.version || '1.0'}`;
 
         const container = document.getElementById('diagramSvgContainer');
-        container.innerHTML = renderDiagramSvg(diagram, { width: 500, height: 520, mini: false });
+        // Keep zoom controls - only replace the SVG
+        const zoomControls = document.getElementById('diagramZoomControls');
+        const zoomControlsHtml = zoomControls ? zoomControls.outerHTML : '';
+        container.innerHTML = renderDiagramSvg(diagram, { width: 500, height: 520, mini: false }) + zoomControlsHtml;
+
+        // Reset zoom/pan state
+        resetDiagramZoom();
 
         // Hide details panel initially
         document.getElementById('diagramNodeDetails').classList.add('hidden');
@@ -9056,8 +9062,10 @@
             });
         });
 
-        // Click on container background to hide details
+        // Click on container background to hide details (skip if user just panned)
         container.addEventListener('click', (e) => {
+            if (diagramZoom.didPan) { diagramZoom.didPan = false; return; }
+            if (e.target.closest('.diagram-zoom-controls')) return;
             if (e.target === container || e.target.closest('.algo-diagram-svg') === e.target) {
                 document.getElementById('diagramNodeDetails')?.classList.add('hidden');
                 container.querySelectorAll('.diagram-node').forEach(n => n.classList.remove('selected'));
@@ -9127,6 +9135,89 @@
         modal.addEventListener('click', (e) => {
             if (e.target === modal) closeDiagramModal();
         });
+
+        // Diagram zoom/pan setup
+        setupDiagramZoom();
+    }
+
+    // ================================
+    // Diagram Zoom & Pan
+    // ================================
+    const diagramZoom = { scale: 1, panX: 0, panY: 0, isDragging: false, didPan: false, startX: 0, startY: 0, MIN: 0.3, MAX: 4, STEP: 0.15 };
+
+    function setupDiagramZoom() {
+        const container = document.getElementById('diagramSvgContainer');
+        if (!container) return;
+
+        // Wheel zoom
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -diagramZoom.STEP : diagramZoom.STEP;
+            const newScale = Math.min(diagramZoom.MAX, Math.max(diagramZoom.MIN, diagramZoom.scale + delta));
+            if (newScale === diagramZoom.scale) return;
+
+            // Zoom toward cursor
+            const rect = container.getBoundingClientRect();
+            const cx = e.clientX - rect.left - rect.width / 2;
+            const cy = e.clientY - rect.top - rect.height / 2;
+            const ratio = 1 - newScale / diagramZoom.scale;
+            diagramZoom.panX += (cx - diagramZoom.panX) * ratio;
+            diagramZoom.panY += (cy - diagramZoom.panY) * ratio;
+            diagramZoom.scale = newScale;
+            applyDiagramTransform();
+        }, { passive: false });
+
+        // Pan - mousedown
+        container.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.diagram-zoom-controls') || e.target.closest('.diagram-node')) return;
+            diagramZoom.isDragging = true;
+            diagramZoom.didPan = false;
+            diagramZoom.startX = e.clientX - diagramZoom.panX;
+            diagramZoom.startY = e.clientY - diagramZoom.panY;
+            container.classList.add('dragging');
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!diagramZoom.isDragging) return;
+            diagramZoom.didPan = true;
+            diagramZoom.panX = e.clientX - diagramZoom.startX;
+            diagramZoom.panY = e.clientY - diagramZoom.startY;
+            applyDiagramTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            if (!diagramZoom.isDragging) return;
+            diagramZoom.isDragging = false;
+            document.getElementById('diagramSvgContainer')?.classList.remove('dragging');
+        });
+
+        // Button controls via delegation (buttons get recreated on each modal open)
+        container.addEventListener('click', (e) => {
+            const btn = e.target.closest('.diagram-zoom-btn');
+            if (!btn) return;
+            e.stopPropagation();
+            if (btn.id === 'btnDiagramZoomIn') diagramZoomBy(diagramZoom.STEP * 2);
+            else if (btn.id === 'btnDiagramZoomOut') diagramZoomBy(-diagramZoom.STEP * 2);
+            else if (btn.id === 'btnDiagramZoomReset') resetDiagramZoom();
+        });
+    }
+
+    function diagramZoomBy(delta) {
+        diagramZoom.scale = Math.min(diagramZoom.MAX, Math.max(diagramZoom.MIN, diagramZoom.scale + delta));
+        applyDiagramTransform();
+    }
+
+    function resetDiagramZoom() {
+        diagramZoom.scale = 1;
+        diagramZoom.panX = 0;
+        diagramZoom.panY = 0;
+        applyDiagramTransform();
+    }
+
+    function applyDiagramTransform() {
+        const svg = document.querySelector('#diagramSvgContainer .algo-diagram-svg');
+        if (!svg) return;
+        svg.style.transform = `translate(${diagramZoom.panX}px, ${diagramZoom.panY}px) scale(${diagramZoom.scale})`;
     }
 
     // ================================

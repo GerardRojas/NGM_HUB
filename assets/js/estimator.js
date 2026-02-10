@@ -523,6 +523,8 @@
     // Context menu
     const ctxMenu = document.getElementById('estimator-context-menu');
     const ctxDeleteBtn = ctxMenu?.querySelector('[data-action="delete-concept"]');
+    const ctxMoveBtn = ctxMenu?.querySelector('[data-action="move-concept"]');
+    const ctxEditBtn = ctxMenu?.querySelector('[data-action="edit-item"]');
 
     els.tbody?.addEventListener('contextmenu', (e) => {
       e.preventDefault();
@@ -560,10 +562,10 @@
       }
       tr.classList.add('row-selected');
 
-      // Show/hide delete option
-      if (ctxDeleteBtn) {
-        ctxDeleteBtn.style.display = isItemRow ? '' : 'none';
-      }
+      // Show/hide item-only options
+      if (ctxDeleteBtn) ctxDeleteBtn.style.display = isItemRow ? '' : 'none';
+      if (ctxMoveBtn) ctxMoveBtn.style.display = isItemRow ? '' : 'none';
+      if (ctxEditBtn) ctxEditBtn.style.display = isItemRow ? '' : 'none';
 
       // Position menu
       ctxMenu.classList.remove('hidden');
@@ -591,6 +593,9 @@
         const subIdx = selectedRow ? selectedRow.subIndex : null;
         handleAddConcept(catIdx, subIdx);
       }
+      if (action === 'add-custom-item') openCustomItemModal();
+      if (action === 'edit-item') openEditItemModal();
+      if (action === 'move-concept') openMoveConceptPicker();
       if (action === 'delete-concept') deleteSelectedConcept();
     });
 
@@ -2038,9 +2043,15 @@
           // Get image URL
           const imageUrl = getItemImageUrl('concept', item.concept_id, item.custom_image);
 
+          // Composite / Simple badge
+          const isComposite = item.line_items && item.line_items.length > 0;
+          const compBadge = isComposite
+            ? '<span class="item-comp-badge" title="Composite">C</span>'
+            : '<span class="item-comp-badge simple" title="Simple">S</span>';
+
           // Generate type badges if line_items exist
           let typeBadgesHtml = '';
-          if (item.line_items && item.line_items.length > 0) {
+          if (isComposite) {
             const types = new Set(item.line_items.map(li => li.type));
             typeBadgesHtml = '<span class="item-type-indicators">';
             if (types.has('material')) typeBadgesHtml += '<span class="item-type-indicator mat" title="Contains materials"></span>';
@@ -2063,6 +2074,7 @@
             </td>
             <td class="item-name col-name">
               <span class="item-name-text">${name}</span>
+              ${compBadge}
               ${typeBadgesHtml}
             </td>
             <td class="col-qty">
@@ -2352,7 +2364,7 @@
         <tr data-concept-id="${concept.id}" data-concept='${escapeHtml(JSON.stringify(concept))}'>
           <td><code style="color: #3ecf8e;">${escapeHtml(concept.code || '')}</code></td>
           <td>${escapeHtml(concept.short_description || concept.name || '')}</td>
-          <td>${escapeHtml(concept.unit_name || concept.unit || 'EA')}</td>
+          <td>${escapeHtml(concept.unit_name || concept.unit || 'Ea')}</td>
           <td>${formatCurrency(concept.calculated_cost || concept.base_cost || 0)}</td>
           <td><div class="concept-types">${typeBadges || '-'}</div></td>
         </tr>
@@ -2404,7 +2416,7 @@
       return {
         type: li.item_type || li.type || 'material',
         description: li.description || material?.short_description || li.material_id,
-        unit: li.unit_name || material?.unit_name || 'EA',
+        unit: li.unit_name || material?.unit_name || 'Ea',
         qty: li.quantity || 1,
         unitCost: li.unit_cost || li.unit_cost_override || material?.price_numeric || 0
       };
@@ -2418,7 +2430,7 @@
           allItems.push({
             type: item.type || 'material',
             description: item.description,
-            unit: item.unit || 'EA',
+            unit: item.unit || 'Ea',
             qty: item.qty || 1,
             unitCost: item.unitCost || item.unit_cost || 0
           });
@@ -2540,7 +2552,7 @@
         return {
           type: cm.item_type || cm.type || 'material',
           description: cm.description || material?.short_description || cm.material_id,
-          unit: cm.unit_name || material?.unit_name || 'EA',
+          unit: cm.unit_name || material?.unit_name || 'Ea',
           qty: cm.quantity || 1,
           unitCost: cm.unit_cost || cm.unit_cost_override || material?.price_numeric || 0
         };
@@ -2567,7 +2579,7 @@
           lineItems.push({
             type: item.type || 'material',
             description: item.description,
-            unit: item.unit || 'EA',
+            unit: item.unit || 'Ea',
             qty: item.qty || 1,
             unitCost: item.unitCost || item.unit_cost || 0
           });
@@ -2586,7 +2598,7 @@
       concept_id: concept.id,
       qty: qty,
       quantity: qty,
-      unit: concept.unit_name || concept.unit || 'EA',
+      unit: concept.unit_name || concept.unit || 'Ea',
       unit_cost: unitCost,
       base_cost: unitCost,
       total: qty * unitCost,
@@ -2611,6 +2623,295 @@
     showFeedback(`Added "${concept.short_description || concept.code}" (x${qty}) to estimate`, 'success');
   }
 
+  // ================================
+  // ADD CUSTOM ITEM
+  // ================================
+
+  let customItemMode = 'simple';
+  let customLineItems = [];
+
+  function openCustomItemModal() {
+    const modal = document.getElementById('custom-item-modal');
+    if (!modal) return;
+
+    customItemMode = 'simple';
+    customLineItems = [];
+
+    // Reset fields
+    document.getElementById('custom-item-name').value = '';
+    document.getElementById('custom-item-desc').value = '';
+    document.getElementById('custom-item-unit').value = 'Ea';
+    document.getElementById('custom-item-qty').value = '1';
+    document.getElementById('custom-item-cost').value = '0';
+
+    // Reset toggle
+    modal.querySelectorAll('.custom-mode-btn').forEach(b => b.classList.remove('active'));
+    modal.querySelector('[data-mode="simple"]').classList.add('active');
+    document.getElementById('custom-item-cost-group').classList.remove('hidden');
+    document.getElementById('custom-item-lines-section').classList.add('hidden');
+    document.getElementById('custom-lines-body').innerHTML = '';
+    document.getElementById('custom-item-calc-cost').textContent = '$0.00';
+
+    modal.classList.remove('hidden');
+    document.getElementById('custom-item-name').focus();
+  }
+
+  function closeCustomItemModal() {
+    document.getElementById('custom-item-modal')?.classList.add('hidden');
+  }
+
+  function toggleCustomMode(mode) {
+    customItemMode = mode;
+    const modal = document.getElementById('custom-item-modal');
+    modal.querySelectorAll('.custom-mode-btn').forEach(b => b.classList.remove('active'));
+    modal.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+
+    if (mode === 'simple') {
+      document.getElementById('custom-item-cost-group').classList.remove('hidden');
+      document.getElementById('custom-item-lines-section').classList.add('hidden');
+    } else {
+      document.getElementById('custom-item-cost-group').classList.add('hidden');
+      document.getElementById('custom-item-lines-section').classList.remove('hidden');
+    }
+  }
+
+  function renderCustomLineItems() {
+    const tbody = document.getElementById('custom-lines-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+    customLineItems.forEach((li, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <select class="edit-item-input cli-type" data-idx="${idx}" style="padding: 4px 6px; font-size: 12px;">
+            <option value="material" ${li.type === 'material' ? 'selected' : ''}>Material</option>
+            <option value="labor" ${li.type === 'labor' ? 'selected' : ''}>Labor</option>
+            <option value="external" ${li.type === 'external' ? 'selected' : ''}>External</option>
+          </select>
+        </td>
+        <td><input type="text" class="edit-item-input cli-desc" data-idx="${idx}" value="${escapeHtml(li.description)}" style="padding: 4px 6px; font-size: 12px;"></td>
+        <td><input type="text" class="edit-item-input cli-unit" data-idx="${idx}" value="${escapeHtml(li.unit)}" style="padding: 4px 6px; font-size: 12px;"></td>
+        <td><input type="number" class="edit-item-input cli-qty" data-idx="${idx}" value="${li.qty}" min="0" step="any" style="padding: 4px 6px; font-size: 12px; width: 100%;"></td>
+        <td><input type="number" class="edit-item-input cli-cost" data-idx="${idx}" value="${li.unitCost}" min="0" step="any" style="padding: 4px 6px; font-size: 12px; width: 100%;"></td>
+        <td><button type="button" class="cli-remove" data-idx="${idx}" title="Remove">&times;</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    recalcCustomCost();
+  }
+
+  function recalcCustomCost() {
+    // Sync values from inputs
+    const tbody = document.getElementById('custom-lines-body');
+    if (tbody) {
+      tbody.querySelectorAll('.cli-type').forEach(el => {
+        customLineItems[+el.dataset.idx].type = el.value;
+      });
+      tbody.querySelectorAll('.cli-desc').forEach(el => {
+        customLineItems[+el.dataset.idx].description = el.value;
+      });
+      tbody.querySelectorAll('.cli-unit').forEach(el => {
+        customLineItems[+el.dataset.idx].unit = el.value;
+      });
+      tbody.querySelectorAll('.cli-qty').forEach(el => {
+        customLineItems[+el.dataset.idx].qty = parseFloat(el.value) || 0;
+      });
+      tbody.querySelectorAll('.cli-cost').forEach(el => {
+        customLineItems[+el.dataset.idx].unitCost = parseFloat(el.value) || 0;
+      });
+    }
+
+    const total = customLineItems.reduce((sum, li) => sum + (li.qty * li.unitCost), 0);
+    const el = document.getElementById('custom-item-calc-cost');
+    if (el) el.textContent = formatCurrency(total);
+  }
+
+  function confirmCustomItem() {
+    const name = document.getElementById('custom-item-name').value.trim();
+    if (!name) {
+      showFeedback('Please enter an item name', 'error');
+      return;
+    }
+
+    const desc = document.getElementById('custom-item-desc').value.trim();
+    const unit = document.getElementById('custom-item-unit').value.trim() || 'Ea';
+    const qty = parseFloat(document.getElementById('custom-item-qty').value) || 1;
+
+    let unitCost = 0;
+    let lineItems = [];
+
+    if (customItemMode === 'simple') {
+      unitCost = parseFloat(document.getElementById('custom-item-cost').value) || 0;
+    } else {
+      recalcCustomCost();
+      lineItems = customLineItems.map(li => ({
+        type: li.type,
+        description: li.description,
+        unit: li.unit,
+        qty: li.qty,
+        unitCost: li.unitCost
+      }));
+      unitCost = lineItems.reduce((sum, li) => sum + (li.qty * li.unitCost), 0);
+    }
+
+    // Determine target from selectedRow
+    if (!currentEstimateData) {
+      currentEstimateData = {
+        project_name: 'New Estimate',
+        project: {},
+        categories: [],
+        overhead: { percentage: 0, amount: 0 }
+      };
+    }
+
+    const catIdx = selectedRow ? selectedRow.catIndex : null;
+    const subIdx = selectedRow ? selectedRow.subIndex : null;
+
+    let targetCategory = (catIdx != null && currentEstimateData.categories[catIdx])
+      ? currentEstimateData.categories[catIdx] : null;
+
+    if (!targetCategory) {
+      targetCategory = currentEstimateData.categories[0];
+      if (!targetCategory) {
+        targetCategory = { id: 'CAT-' + Date.now(), name: 'General', total_cost: 0, subcategories: [{ name: 'Items', total_cost: 0, items: [] }] };
+        currentEstimateData.categories.push(targetCategory);
+      }
+    }
+
+    if (!targetCategory.subcategories || targetCategory.subcategories.length === 0) {
+      targetCategory.subcategories = [{ name: 'Items', total_cost: 0, items: [] }];
+    }
+
+    const targetSub = (subIdx != null && targetCategory.subcategories[subIdx])
+      ? targetCategory.subcategories[subIdx]
+      : targetCategory.subcategories[0];
+
+    const newItem = {
+      id: 'CUSTOM-' + Date.now(),
+      code: '',
+      name: name,
+      description: desc,
+      origin: 'custom',
+      qty: qty,
+      quantity: qty,
+      unit: unit,
+      unit_cost: unitCost,
+      base_cost: unitCost,
+      total: qty * unitCost,
+      total_cost: qty * unitCost,
+      line_items: lineItems
+    };
+
+    targetSub.items.push(newItem);
+
+    recalculateEstimateTotals();
+    markDirty();
+    renderEstimate();
+    closeCustomItemModal();
+
+    showFeedback(`Added custom item "${name}" (x${qty})`, 'success');
+  }
+
+  // Wire custom item modal events
+  (function initCustomItemModal() {
+    const modal = document.getElementById('custom-item-modal');
+    if (!modal) return;
+
+    modal.querySelector('#custom-item-close')?.addEventListener('click', closeCustomItemModal);
+    modal.querySelector('#custom-item-cancel')?.addEventListener('click', closeCustomItemModal);
+    modal.querySelector('#custom-item-confirm')?.addEventListener('click', confirmCustomItem);
+
+    // Mode toggle
+    modal.querySelectorAll('.custom-mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => toggleCustomMode(btn.dataset.mode));
+    });
+
+    // Add line
+    modal.querySelector('#custom-add-line')?.addEventListener('click', () => {
+      customLineItems.push({ type: 'material', description: '', unit: 'Ea', qty: 1, unitCost: 0 });
+      renderCustomLineItems();
+    });
+
+    // Delegate: remove line + recalc on input
+    const linesBody = document.getElementById('custom-lines-body');
+    linesBody?.addEventListener('click', (e) => {
+      const removeBtn = e.target.closest('.cli-remove');
+      if (removeBtn) {
+        customLineItems.splice(+removeBtn.dataset.idx, 1);
+        renderCustomLineItems();
+      }
+    });
+    linesBody?.addEventListener('input', () => recalcCustomCost());
+  })();
+
+  function openEditItemModal() {
+    if (!selectedRow || selectedRow.itemIndex == null || !currentEstimateData) return;
+
+    const { catIndex, subIndex, itemIndex } = selectedRow;
+    const cat = currentEstimateData.categories[catIndex];
+    if (!cat) return;
+    const sub = cat.subcategories?.[subIndex];
+    if (!sub || !sub.items?.[itemIndex]) return;
+
+    const item = sub.items[itemIndex];
+
+    const overlay = document.createElement('div');
+    overlay.className = 'move-concept-overlay';
+    overlay.innerHTML = `
+      <div class="move-concept-panel" style="min-width: 380px;">
+        <h4>Edit Item</h4>
+        <p class="move-concept-desc">${escapeHtml(item.code || item.id || '')}</p>
+        <div class="edit-item-fields">
+          <label class="edit-item-label">Name
+            <input type="text" class="edit-item-input" id="edit-item-name" value="${escapeHtml(item.name || '')}">
+          </label>
+          <label class="edit-item-label">Description
+            <input type="text" class="edit-item-input" id="edit-item-desc" value="${escapeHtml(item.description || '')}">
+          </label>
+          <div style="display: flex; gap: 10px;">
+            <label class="edit-item-label" style="flex:1;">Unit
+              <input type="text" class="edit-item-input" id="edit-item-unit" value="${escapeHtml(item.unit || '')}">
+            </label>
+            <label class="edit-item-label" style="flex:1;">Unit Cost
+              <input type="number" class="edit-item-input" id="edit-item-cost" value="${item.unit_cost ?? item.base_cost ?? 0}" min="0" step="any">
+            </label>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; margin-top: 14px;">
+          <button class="move-concept-cancel" id="edit-item-cancel" style="flex:1;">Cancel</button>
+          <button class="move-concept-cancel" id="edit-item-save" style="flex:1; border-color: #3ecf8e; color: #3ecf8e;">Save</button>
+        </div>
+      </div>
+    `;
+
+    overlay.querySelector('#edit-item-cancel').addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    overlay.querySelector('#edit-item-save').addEventListener('click', () => {
+      item.name = document.getElementById('edit-item-name').value.trim() || item.name;
+      item.description = document.getElementById('edit-item-desc').value.trim();
+      item.unit = document.getElementById('edit-item-unit').value.trim() || item.unit;
+      const newCost = parseFloat(document.getElementById('edit-item-cost').value);
+      if (!isNaN(newCost)) {
+        item.unit_cost = newCost;
+        item.base_cost = newCost;
+      }
+
+      recalculateEstimateTotals();
+      markDirty();
+      renderEstimate();
+      overlay.remove();
+      showFeedback(`Updated "${item.name}"`, 'success');
+    });
+
+    document.body.appendChild(overlay);
+    overlay.querySelector('#edit-item-name').focus();
+  }
+
   function deleteSelectedConcept() {
     if (!selectedRow || selectedRow.itemIndex == null || !currentEstimateData) return;
 
@@ -2631,6 +2932,80 @@
     renderEstimate();
 
     showFeedback(`Removed "${itemName}" from estimate`, 'success');
+  }
+
+  function openMoveConceptPicker() {
+    if (!selectedRow || selectedRow.itemIndex == null || !currentEstimateData) return;
+
+    const { catIndex, subIndex, itemIndex } = selectedRow;
+    const cat = currentEstimateData.categories[catIndex];
+    if (!cat) return;
+    const sub = cat.subcategories?.[subIndex];
+    if (!sub || !sub.items?.[itemIndex]) return;
+
+    const item = sub.items[itemIndex];
+    const itemName = item.name || item.code || 'Concept';
+
+    // Build subcategory list across all categories
+    let listHtml = '';
+    currentEstimateData.categories.forEach((c, ci) => {
+      if (!c.subcategories || c.subcategories.length === 0) return;
+      listHtml += `<li class="move-cat-header">${escapeHtml(c.name)}</li>`;
+      c.subcategories.forEach((s, si) => {
+        const isCurrent = ci === catIndex && si === subIndex;
+        listHtml += `<li data-cat="${ci}" data-sub="${si}" class="${isCurrent ? 'current' : ''}">${escapeHtml(s.name)}${isCurrent ? ' (current)' : ''}</li>`;
+      });
+    });
+
+    const overlay = document.createElement('div');
+    overlay.className = 'move-concept-overlay';
+    overlay.innerHTML = `
+      <div class="move-concept-panel">
+        <h4>Move "${escapeHtml(itemName)}"</h4>
+        <p class="move-concept-desc">Select the target subcategory</p>
+        <ul class="move-concept-list">${listHtml}</ul>
+        <button class="move-concept-cancel">Cancel</button>
+      </div>
+    `;
+
+    overlay.querySelector('.move-concept-cancel').addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+
+    overlay.querySelector('.move-concept-list').addEventListener('click', (e) => {
+      const li = e.target.closest('li[data-cat]');
+      if (!li || li.classList.contains('current')) return;
+
+      const targetCat = parseInt(li.dataset.cat, 10);
+      const targetSub = parseInt(li.dataset.sub, 10);
+
+      // Remove from source
+      const movedItem = sub.items.splice(itemIndex, 1)[0];
+
+      // Add to target
+      const dest = currentEstimateData.categories[targetCat]?.subcategories?.[targetSub];
+      if (dest) {
+        dest.items.push(movedItem);
+      } else {
+        sub.items.splice(itemIndex, 0, movedItem);
+        showFeedback('Target subcategory not found', 'error');
+        overlay.remove();
+        return;
+      }
+
+      selectedRow = null;
+      recalculateEstimateTotals();
+      markDirty();
+      renderEstimate();
+      overlay.remove();
+
+      const destCatName = currentEstimateData.categories[targetCat]?.name || '';
+      const destSubName = dest.name || '';
+      showFeedback(`Moved "${itemName}" to ${destCatName} > ${destSubName}`, 'success');
+    });
+
+    document.body.appendChild(overlay);
   }
 
   function recalculateEstimateTotals() {

@@ -374,9 +374,9 @@
     padding-left: 55px;  /* sangría */
 }
 
-/* Concepts (item rows) con sangría al nivel del texto de subcategorías */
+/* Concepts (item rows) con sangría mayor que subcategorías */
 .item-row .col-name {
-    padding-left: 70px;
+    padding-left: 80px;
 }
 
 /* Columna de código (ID / clave) */
@@ -388,6 +388,15 @@
 
 .item-row .category-accnum {
     color: #111827;
+}
+
+/* Bordes diferenciados por nivel jerarquico */
+.estimator-table .group-row td {
+    border-bottom: 2px solid #d1d5db;
+}
+
+.estimator-table .item-row td {
+    border-bottom: 1px solid #f3f4f6;
 }
 
 /* Celdas 'mute' pero en tema claro */
@@ -462,6 +471,247 @@
 .insert-target-label.has-target {
     color: #3ecf8e;
     font-weight: 500;
+}
+
+/* Move concept modal (inline subcategory picker) */
+.move-concept-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.move-concept-panel {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 20px;
+    min-width: 320px;
+    max-width: 440px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+}
+
+.move-concept-panel h4 {
+    color: #e5e7eb;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+}
+
+.move-concept-panel .move-concept-desc {
+    color: #6b7280;
+    font-size: 12px;
+    margin: 0 0 14px 0;
+}
+
+.move-concept-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 14px 0;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+.move-concept-list li {
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #d1d5db;
+    font-size: 13px;
+    transition: background 0.12s;
+}
+
+.move-concept-list li:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+.move-concept-list li.current {
+    color: #6b7280;
+    cursor: default;
+    font-style: italic;
+}
+
+.move-concept-list li.current:hover {
+    background: transparent;
+}
+
+.move-concept-list .move-cat-header {
+    color: #9ca3af;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 12px 4px;
+    cursor: default;
+}
+
+.move-concept-list .move-cat-header:hover {
+    background: transparent;
+}
+
+.move-concept-cancel {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    color: #9ca3af;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.move-concept-cancel:hover {
+    background: rgba(255,255,255,0.04);
+}
+
+/* Edit item fields */
+.edit-item-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.edit-item-label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.edit-item-input {
+    padding: 7px 10px;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    background: #111111;
+    color: #e5e7eb;
+    font-size: 13px;
+}
+
+.edit-item-input:focus {
+    outline: none;
+    border-color: #3ecf8e;
+}
+
+/* Composite / Simple badge (inline in item name cell) */
+.item-comp-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    font-weight: 700;
+    border-radius: 4px;
+    background: rgba(59, 130, 246, 0.12);
+    color: #60a5fa;
+    flex-shrink: 0;
+    letter-spacing: -0.02em;
+}
+
+.item-comp-badge.simple {
+    background: rgba(156, 163, 175, 0.10);
+    color: #9ca3af;
+}
+
+/* Custom item modal */
+.custom-item-mode-toggle {
+    display: flex;
+    gap: 4px;
+    background: #111111;
+    border-radius: 8px;
+    padding: 3px;
+    border: 1px solid #2a2a2a;
+}
+
+.custom-mode-btn {
+    flex: 1;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #6b7280;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+}
+
+.custom-mode-btn.active {
+    background: #2a2a2a;
+    color: #e5e7eb;
+}
+
+.custom-mode-btn:hover:not(.active) {
+    color: #9ca3af;
+}
+
+.custom-add-line-btn {
+    padding: 4px 10px;
+    border: 1px dashed #3a3a3a;
+    border-radius: 6px;
+    background: transparent;
+    color: #6b7280;
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color 0.12s, color 0.12s;
+}
+
+.custom-add-line-btn:hover {
+    border-color: #3ecf8e;
+    color: #3ecf8e;
+}
+
+.custom-lines-wrapper {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+}
+
+.custom-line-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.custom-line-items-table th {
+    padding: 6px 6px;
+    text-align: left;
+    color: #6b7280;
+    font-weight: 500;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid #2a2a2a;
+    background: #111111;
+    position: sticky;
+    top: 0;
+}
+
+.custom-line-items-table td {
+    padding: 4px 4px;
+    border-bottom: 1px solid #1f1f1f;
+}
+
+.cli-remove {
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+.cli-remove:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
 }
 
 /* Feedback debajo de la tabla (estado, mensajes) */

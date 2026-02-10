@@ -151,6 +151,25 @@ button {
     padding: 20px 12px 12px;
     overflow-y: auto;
     min-height: 0;
+    scrollbar-width: thin;
+    scrollbar-color: #2a2a2a #0d0d0d;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: #0d0d0d;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #3a3a3a;
 }
 
 /* Bloque logo + title */

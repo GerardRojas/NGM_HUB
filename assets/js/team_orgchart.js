@@ -640,12 +640,16 @@
         const initial = escapeHtml(getInitial(u.user_name));
         const safeName = escapeHtml(u.user_name);
 
-        const avatarInner = u.user_photo
-            ? `<img src="${escapeHtml(u.user_photo)}" alt="${safeName}" />`
-            : initial;
+        const agentIconSvg = `<svg class="agent-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="9" width="14" height="10" rx="2"/><circle cx="9" cy="14" r="1.5" fill="currentColor" stroke="none"/><circle cx="15" cy="14" r="1.5" fill="currentColor" stroke="none"/><path d="M12 2v4"/><circle cx="12" cy="2" r="1" fill="currentColor" stroke="none"/><path d="M2 14h3M19 14h3"/></svg>`;
+
+        const avatarInner = isAgent
+            ? agentIconSvg + `<span class="orgchart-agent-badge">AI</span>`
+            : u.user_photo
+                ? `<img src="${escapeHtml(u.user_photo)}" alt="${safeName}" />`
+                : initial;
 
         const badgeHtml = isAgent
-            ? `<span class="team-agent-badge" style="font-size:9px;padding:1px 6px;margin-left:6px;">AI</span>`
+            ? ''
             : `<span class="orgchart-node-status ${statusActive ? 'is-active' : ''}" title="${escapeHtml(statusName)}"></span>`;
 
         div.innerHTML = `

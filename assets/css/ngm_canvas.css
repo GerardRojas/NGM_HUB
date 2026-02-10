@@ -1,0 +1,246 @@
+/* ================================
+   NGM Canvas - Reusable Canvas Library
+   ================================ */
+
+/* === Canvas Container === */
+.ngm-canvas-container {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    background: #0d0d0d;
+}
+
+.ngm-canvas-container.is-panning {
+    cursor: grabbing;
+}
+
+.ngm-canvas-container.is-selecting {
+    cursor: crosshair;
+}
+
+/* === Canvas Grid (transform layer) === */
+.ngm-canvas-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+}
+
+/* Dot grid background */
+.ngm-canvas-grid.ngm-dot-grid {
+    background-color: #0d0d0d;
+    background-image:
+        radial-gradient(circle, #1a1a1a 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* === SVG Connections Layer === */
+.ngm-connections-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+    overflow: visible;
+}
+
+/* Connection groups get pointer events for interaction */
+.ngm-connection-group {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.ngm-connection-group:hover .ngm-connection-path {
+    stroke-width: 3;
+    filter: drop-shadow(0 0 4px currentColor);
+}
+
+/* Main connection path */
+.ngm-connection-path {
+    stroke: #3f3f46;
+    stroke-width: 2;
+    fill: none;
+    stroke-dasharray: 8 4;
+    transition: stroke-width 0.15s ease;
+}
+
+.ngm-connection-path.animated {
+    animation: ngm-dashFlow 1.5s linear infinite;
+}
+
+/* Hit area for easier click targeting */
+.ngm-connection-hit-area {
+    stroke: transparent;
+    stroke-width: 20;
+    fill: none;
+    pointer-events: stroke;
+    cursor: pointer;
+}
+
+/* Connection endpoint dots */
+.ngm-connection-dot {
+    fill: #2a2a2a;
+    stroke: #4a4a4a;
+    stroke-width: 1.5;
+    transition: all 0.15s ease;
+}
+
+.ngm-connection-group:hover .ngm-connection-dot {
+    fill: #3ecf8e;
+    stroke: #3ecf8e;
+}
+
+@keyframes ngm-dashFlow {
+    from { stroke-dashoffset: 24; }
+    to { stroke-dashoffset: 0; }
+}
+
+/* === Nodes Container === */
+.ngm-nodes-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+}
+
+/* Base node styles (consumers extend with their own classes) */
+.ngm-nodes-container > * {
+    position: absolute;
+    user-select: none;
+}
+
+/* Dragging state */
+.ngm-node-dragging {
+    z-index: 100 !important;
+    cursor: grabbing !important;
+}
+
+/* Selected state */
+.ngm-node-selected {
+    outline: 2px solid #3ecf8e;
+    outline-offset: 2px;
+}
+
+/* === Snap Guides === */
+.ngm-snap-guides {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 50;
+}
+
+.ngm-snap-guide {
+    position: absolute;
+    background: rgba(62, 207, 142, 0.5);
+    box-shadow: 0 0 6px rgba(62, 207, 142, 0.3);
+}
+
+.ngm-snap-guide.horizontal {
+    left: 0;
+    width: 100%;
+    height: 1px;
+}
+
+.ngm-snap-guide.vertical {
+    top: 0;
+    height: 100%;
+    width: 1px;
+}
+
+/* === Selection Box === */
+.ngm-selection-box {
+    position: absolute;
+    border: 2px solid rgba(62, 207, 142, 0.6);
+    background: rgba(62, 207, 142, 0.08);
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+}
+
+.ngm-selection-box.active {
+    display: block;
+}
+
+/* === Minimap === */
+.ngm-canvas-minimap {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 20;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #1f1f1f;
+    background: #0a0a0a;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    transition: opacity 0.2s ease;
+}
+
+.ngm-canvas-minimap:hover {
+    opacity: 1 !important;
+}
+
+.ngm-minimap-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    background: #111111;
+    border-bottom: 1px solid #1f1f1f;
+    font-size: 10px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    user-select: none;
+}
+
+.ngm-minimap-header:hover {
+    color: #9ca3af;
+}
+
+.ngm-minimap-toggle {
+    width: 14px;
+    height: 14px;
+    color: inherit;
+    transition: transform 0.2s ease;
+}
+
+.ngm-canvas-minimap.collapsed .ngm-minimap-toggle {
+    transform: rotate(180deg);
+}
+
+.ngm-minimap-body {
+    position: relative;
+    padding: 8px;
+    overflow: hidden;
+    transition: height 0.2s ease, padding 0.2s ease;
+}
+
+.ngm-canvas-minimap.collapsed .ngm-minimap-body {
+    height: 0;
+    padding: 0 8px;
+}
+
+.ngm-minimap-canvas {
+    display: block;
+    border-radius: 4px;
+}
+
+.ngm-minimap-viewport {
+    position: absolute;
+    border: 2px solid rgba(62, 207, 142, 0.6);
+    background: rgba(62, 207, 142, 0.06);
+    border-radius: 2px;
+    pointer-events: none;
+    min-width: 10px;
+    min-height: 10px;
+}

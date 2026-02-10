@@ -2511,21 +2511,13 @@
                                 btn.disabled = false;
                                 btn.textContent = 'Run';
                                 if (data) {
-                                    if (data.status === 'disabled') {
-                                        if (window.Toast) window.Toast.warning('Auto-auth is disabled. Enable it in the config tab first.');
-                                    } else {
-                                        var parts = [];
-                                        if (data.authorized) parts.push(data.authorized + ' authorized');
-                                        if (data.missing_info) parts.push(data.missing_info + ' need info');
-                                        if (data.duplicates) parts.push(data.duplicates + ' duplicates');
-                                        if (data.escalated) parts.push(data.escalated + ' escalated');
-                                        var msg = parts.length > 0 ? parts.join(', ') : 'No pending expenses found';
-                                        if (window.Toast) window.Toast.success(msg);
-                                        // Log missing detail to console for debugging
-                                        if (data.missing_detail && data.missing_detail.length > 0) {
-                                            console.log('[Daneel] Missing info detail:', data.missing_detail);
-                                        }
-                                    }
+                                    var parts = [];
+                                    if (data.authorized) parts.push(data.authorized + ' authorized');
+                                    if (data.missing_info) parts.push(data.missing_info + ' need info');
+                                    if (data.duplicates) parts.push(data.duplicates + ' duplicates');
+                                    if (data.escalated) parts.push(data.escalated + ' escalated');
+                                    var msg = parts.length > 0 ? parts.join(', ') : 'No pending expenses found';
+                                    if (window.Toast) window.Toast.success(msg);
                                     loadDaneelProjectReview();
                                     loadDaneelAuthReports();
                                 } else {

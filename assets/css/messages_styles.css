@@ -436,6 +436,24 @@
   justify-content: center;
 }
 
+/* Unread message count badge - red pill */
+.msg-unread-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
 /* Channel loading */
 .msg-channel-loading {
   padding: 16px;
@@ -669,10 +687,6 @@
   max-width: 100%; /* Let content determine width within parent constraint */
 }
 
-.msg-message--own .msg-message-actions {
-  right: auto;
-  left: 12px;
-}
 
 /* Other users' messages bubble */
 .msg-message:not(.msg-message--own) .msg-message-body {
@@ -959,7 +973,7 @@
   z-index: 10;
 }
 
-.msg-message:hover .msg-message-actions {
+.msg-message:not(.msg-message--own):hover .msg-message-actions {
   display: flex;
   align-items: center;
 }
@@ -2701,11 +2715,6 @@
   color: rgba(255, 255, 255, 0.9);
 }
 
-/* Hide action buttons (react/reply/thread) on bot messages */
-.msg-message--bot .msg-message-actions,
-.msg-message--bot:hover .msg-message-actions {
-  display: none;
-}
 
 /* ---- Andrew (receipt agent) ---- */
 
@@ -2831,6 +2840,133 @@
   font-style: italic;
   color: rgba(255, 255, 255, 0.5);
   padding: 4px 0;
+}
+
+/* ── Category confirmation interactive card ── */
+.msg-bot-actions--category-card {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.msg-cat-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 12px;
+  max-width: 420px;
+}
+
+.msg-message--bot-andrew .msg-cat-card {
+  border-color: rgba(251, 146, 60, 0.2);
+}
+
+.msg-cat-card-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.msg-cat-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.msg-cat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.msg-cat-item-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.msg-cat-item-num {
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 600;
+  min-width: 18px;
+}
+
+.msg-cat-item-desc {
+  color: rgba(255, 255, 255, 0.8);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-cat-item-amt {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.msg-cat-conf {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(251, 146, 60, 0.15);
+  color: hsl(35, 70%, 60%);
+}
+
+.msg-cat-conf--none {
+  background: rgba(239, 68, 68, 0.15);
+  color: hsl(0, 65%, 60%);
+}
+
+.msg-cat-select {
+  width: 100%;
+  padding: 5px 8px;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.msg-cat-select:focus {
+  border-color: hsl(35, 70%, 45%);
+}
+
+.msg-cat-select option,
+.msg-cat-select optgroup {
+  background: #1e1e1e;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.msg-cat-card-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.msg-bot-action-btn--confirm {
+  background: hsl(35, 65%, 38%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.msg-bot-action-btn--confirm:hover {
+  background: hsl(35, 65%, 45%);
 }
 
 /* Receipt attachment styling */

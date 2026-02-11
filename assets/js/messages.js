@@ -58,6 +58,9 @@
     activeCheckFlow: null, // { receiptId, state } when a check flow conversation is active
     activeDuplicateFlow: null, // { receiptId } when a duplicate confirmation is active
     activeReceiptFlow: null, // { receiptId, state } when a receipt split flow is active
+    _accountsCache: null,       // { data: [...], fetchedAt: timestamp }
+    _accountsFetching: false,
+    unreadCounts: {},           // { "channel_key": count } e.g. {"project_general:uuid": 3}
   };
 
   // ── Render message HTML cache ──
@@ -66,7 +69,7 @@
 
   function _msgContentHash(msg) {
     // Lightweight hash of fields that affect rendered HTML
-    return `${msg.id}|${msg.content}|${msg.is_deleted ? 1 : 0}|${msg._failed ? 1 : 0}|${msg.metadata?.receipt_status || ''}|${msg.thread_count || 0}|${JSON.stringify(msg.reactions || {})}`;
+    return `${msg.id}|${msg.content}|${msg.is_deleted ? 1 : 0}|${msg._failed ? 1 : 0}|${msg.metadata?.receipt_status || ''}|${msg.metadata?.receipt_flow_state || ''}|${msg.thread_count || 0}|${JSON.stringify(msg.reactions || {})}`;
   }
 
   // Debounced render to prevent rapid re-renders causing flicker
@@ -243,6 +246,7 @@
         loadUsers(),
         loadProjects(),
         loadChannels(),
+        loadUnreadCounts(),
       ]);
 
       console.log(`[Messages] Parallel API fetch completed in ${(performance.now() - fetchStart).toFixed(0)}ms`);
@@ -358,6 +362,88 @@
       console.warn("[Messages] Failed to load channels:", err);
       state.channels = [];
       return state.channels;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // UNREAD COUNTS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function getChannelKey(channelType, channelId, projectId) {
+    return channelType.startsWith("project_")
+      ? `${channelType}:${projectId}`
+      : `${channelType}:${channelId}`;
+  }
+
+  async function loadUnreadCounts() {
+    try {
+      const res = await authFetch(`${API_BASE}/messages/unread-counts`);
+      if (!res.ok) return;
+      const data = await res.json();
+      state.unreadCounts = data.unread_counts || {};
+    } catch (err) {
+      console.warn("[Messages] Failed to load unread counts:", err);
+    }
+  }
+
+  async function markChannelRead(channelType, channelId, projectId) {
+    const key = getChannelKey(channelType, channelId, projectId);
+
+    // Optimistically clear the badge
+    delete state.unreadCounts[key];
+    updateBadgeForChannel(key, 0);
+
+    try {
+      const body = { channel_type: channelType };
+      if (channelType.startsWith("project_")) {
+        body.project_id = projectId;
+      } else {
+        body.channel_id = channelId;
+      }
+
+      await authFetch(`${API_BASE}/messages/mark-read`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      console.warn("[Messages] Failed to mark channel read:", err);
+    }
+  }
+
+  function unreadBadgeHtml(channelType, idOrProjectId) {
+    const key = `${channelType}:${idOrProjectId}`;
+    const count = state.unreadCounts[key];
+    if (!count) return "";
+    return `<span class="msg-unread-badge">${count > 99 ? "99+" : count}</span>`;
+  }
+
+  function updateBadgeForChannel(channelKey, count) {
+    const parts = channelKey.split(":");
+    const type = parts[0];
+    const id = parts.slice(1).join(":");
+
+    let selector;
+    if (type.startsWith("project_")) {
+      selector = `.msg-channel-item[data-channel-type="${type}"][data-project-id="${id}"]`;
+    } else {
+      selector = `.msg-channel-item[data-channel-type="${type}"][data-channel-id="${id}"]`;
+    }
+
+    const btn = document.querySelector(selector);
+    if (!btn) return;
+
+    let badge = btn.querySelector(".msg-unread-badge");
+
+    if (count > 0) {
+      if (!badge) {
+        badge = document.createElement("span");
+        badge.className = "msg-unread-badge";
+        btn.appendChild(badge);
+      }
+      badge.textContent = count > 99 ? "99+" : count;
+    } else {
+      if (badge) badge.remove();
     }
   }
 
@@ -673,6 +759,7 @@
                     data-channel-name="General">
               <span class="msg-channel-dot" style="border-color: ${projectColor};"></span>
               <span class="msg-channel-name">General</span>
+              ${unreadBadgeHtml(CHANNEL_TYPES.PROJECT_GENERAL, projectId)}
             </button>
             ${channelConfig.channels.includes("accounting") ? `
             <button type="button" class="msg-channel-item"
@@ -681,6 +768,7 @@
                     data-channel-name="Accounting">
               <span class="msg-channel-dot" style="border-color: ${projectColor};"></span>
               <span class="msg-channel-name">Accounting</span>
+              ${unreadBadgeHtml(CHANNEL_TYPES.PROJECT_ACCOUNTING, projectId)}
             </button>
             ` : ""}
             <button type="button" class="msg-channel-item"
@@ -689,6 +777,7 @@
                     data-channel-name="Receipts">
               <span class="msg-channel-dot" style="border-color: ${projectColor};"></span>
               <span class="msg-channel-name">Receipts</span>
+              ${unreadBadgeHtml(CHANNEL_TYPES.PROJECT_RECEIPTS, projectId)}
             </button>
           </div>
         </div>
@@ -783,7 +872,7 @@
             ${initials}
           </span>
           <span class="msg-channel-name">${escapeHtml(userName)}</span>
-          ${channel.unread_count ? `<span class="msg-unread-badge">${channel.unread_count}</span>` : ""}
+          ${unreadBadgeHtml(CHANNEL_TYPES.DIRECT, channel.id)}
         </button>
       `;
     });
@@ -819,7 +908,7 @@
             ${initials}
           </span>
           <span class="msg-channel-name">${escapeHtml(channel.name)}</span>
-          ${channel.unread_count ? `<span class="msg-unread-badge">${channel.unread_count}</span>` : ""}
+          ${unreadBadgeHtml(channel.type, channel.id)}
         </button>
       `;
     });
@@ -922,6 +1011,9 @@
     }
 
     state.currentChannel = channel;
+
+    // Mark this channel as read (fire-and-forget)
+    markChannelRead(channelType, channelId, projectId);
 
     // Update header
     updateChatHeader(channel);
@@ -1171,6 +1263,7 @@
       DOM.messagesList.appendChild(fragment);
       _lastRenderedIds = [...currentIds];
       scrollToBottom();
+      _populateCategorySelects();
       return;
     }
 
@@ -1205,6 +1298,7 @@
     _lastRenderedIds = [...currentIds];
     _fullRebuildNeeded = false;
     scrollToBottom();
+    _populateCategorySelects();
   }
 
   function renderDateSeparator(dateStr) {
@@ -1352,17 +1446,68 @@
       const flowState = msg.metadata.receipt_flow_state;
 
       if (flowState === 'awaiting_category_confirmation') {
-        botActions = `
-          <div class="msg-bot-actions" data-receipt-id="${receiptId}">
-            <span class="msg-bot-input-hint">Example: 1 Materials, 2 Delivery</span>
-            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="receipt-accept-categories" data-receipt-id="${receiptId}">
-              Accept Suggestions
-            </button>
-            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="receipt-cancel" data-receipt-id="${receiptId}">
-              Cancel
-            </button>
-          </div>
-        `;
+        const lowItems = msg.metadata?.low_confidence_items || [];
+        if (lowItems.length > 0) {
+          const itemsHtml = lowItems.map((item) => {
+            const desc = (item.description || '').length > 50
+              ? item.description.substring(0, 50) + '...'
+              : (item.description || '');
+            const amt = item.amount != null ? `$${Number(item.amount).toFixed(2)}` : '';
+            const confLabel = item.confidence > 0
+              ? `<span class="msg-cat-conf">${item.confidence}%</span>`
+              : '<span class="msg-cat-conf msg-cat-conf--none">no match</span>';
+            return `
+              <div class="msg-cat-item" data-item-index="${item.index}">
+                <div class="msg-cat-item-info">
+                  <span class="msg-cat-item-num">${item.index + 1}.</span>
+                  <span class="msg-cat-item-desc">${escapeHtml(desc)}</span>
+                  ${amt ? `<span class="msg-cat-item-amt">${amt}</span>` : ''}
+                  ${confLabel}
+                </div>
+                <select class="msg-cat-select" data-item-index="${item.index}"
+                        data-suggested-id="${item.suggested_account_id || ''}">
+                  <option value="">-- Select account --</option>
+                </select>
+              </div>
+            `;
+          }).join('');
+
+          botActions = `
+            <div class="msg-bot-actions msg-bot-actions--category-card" data-receipt-id="${receiptId}">
+              <div class="msg-cat-card">
+                <div class="msg-cat-card-header">Assign accounts for flagged items</div>
+                <div class="msg-cat-items">${itemsHtml}</div>
+                <div class="msg-cat-card-buttons">
+                  <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary"
+                          data-action="receipt-accept-categories" data-receipt-id="${receiptId}">
+                    Accept Suggestions
+                  </button>
+                  <button type="button" class="msg-bot-action-btn msg-bot-action-btn--confirm"
+                          data-action="receipt-confirm-selections" data-receipt-id="${receiptId}">
+                    Confirm Selections
+                  </button>
+                  <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary"
+                          data-action="receipt-cancel" data-receipt-id="${receiptId}">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          // Fallback for old messages without low_confidence_items in metadata
+          botActions = `
+            <div class="msg-bot-actions" data-receipt-id="${receiptId}">
+              <span class="msg-bot-input-hint">Example: 1 Materials, 2 Delivery</span>
+              <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="receipt-accept-categories" data-receipt-id="${receiptId}">
+                Accept Suggestions
+              </button>
+              <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="receipt-cancel" data-receipt-id="${receiptId}">
+                Cancel
+              </button>
+            </div>
+          `;
+        }
       } else if (flowState === 'awaiting_item_selection') {
         if (msg.metadata?.awaiting_text_input) {
           botActions = `
@@ -1779,8 +1924,10 @@
   // ── Receipt flow helpers ──
   function _getReceiptFlowAction(content) {
     if (!state.activeReceiptFlow || !isReceiptsChannel()) return null;
-    // Category confirmation text input
+    // Category confirmation text input (only intercept if interactive card is NOT present)
     if (state.activeReceiptFlow.state === 'awaiting_category_confirmation') {
+      const cardEl = DOM.messagesList?.querySelector('.msg-bot-actions--category-card');
+      if (cardEl) return null; // Interactive card handles this flow
       return { receiptId: state.activeReceiptFlow.receiptId, action: 'confirm_categories' };
     }
     // New: item assignment text input
@@ -1797,10 +1944,14 @@
     return null;
   }
 
-  async function _forwardToReceiptAction(receiptId, action, text) {
+  async function _forwardToReceiptAction(receiptId, action, text, assignments) {
     try {
       const body = { action: action, user_id: state.currentUser?.user_id };
-      if (text != null) body.payload = { text: text };
+      if (assignments) {
+        body.payload = { assignments: assignments };
+      } else if (text != null) {
+        body.payload = { text: text };
+      }
 
       const response = await authFetch(
         `${API_BASE}/pending-receipts/${receiptId}/receipt-action`,
@@ -1820,6 +1971,76 @@
     } catch (err) {
       console.error("[Messages] Receipt action fetch error:", err);
     }
+  }
+
+  // ── Accounts cache for category picker ──
+
+  async function _getAccounts() {
+    if (state._accountsCache && (Date.now() - state._accountsCache.fetchedAt) < 600000) {
+      return state._accountsCache.data;
+    }
+    if (state._accountsFetching) {
+      return new Promise((resolve) => {
+        const check = setInterval(() => {
+          if (!state._accountsFetching && state._accountsCache) {
+            clearInterval(check);
+            resolve(state._accountsCache.data);
+          }
+        }, 50);
+      });
+    }
+    state._accountsFetching = true;
+    try {
+      const res = await authFetch(`${API_BASE}/accounts`);
+      if (!res.ok) throw new Error("Failed to fetch accounts");
+      const json = await res.json();
+      const accounts = (json.data || []).map(a => ({
+        account_id: a.account_id,
+        name: a.Name || "",
+        category: a.AccountCategory || "",
+      }));
+      state._accountsCache = { data: accounts, fetchedAt: Date.now() };
+      return accounts;
+    } catch (err) {
+      console.error("[Messages] Accounts fetch error:", err);
+      return [];
+    } finally {
+      state._accountsFetching = false;
+    }
+  }
+
+  async function _populateCategorySelects() {
+    const selects = DOM.messagesList?.querySelectorAll('.msg-cat-select:not([data-loaded])');
+    if (!selects || selects.length === 0) return;
+
+    const accounts = await _getAccounts();
+    if (accounts.length === 0) return;
+
+    const grouped = {};
+    accounts.forEach(a => {
+      const cat = a.category || 'Other';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(a);
+    });
+
+    const sortedCats = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+
+    selects.forEach(sel => {
+      let optionsHtml = '<option value="">-- Select account --</option>';
+      for (const cat of sortedCats) {
+        optionsHtml += `<optgroup label="${escapeHtml(cat)}">`;
+        grouped[cat].forEach(a => {
+          optionsHtml += `<option value="${a.account_id}">${escapeHtml(a.name)}</option>`;
+        });
+        optionsHtml += '</optgroup>';
+      }
+      sel.innerHTML = optionsHtml;
+
+      const suggestedId = sel.dataset.suggestedId;
+      if (suggestedId) sel.value = suggestedId;
+
+      sel.setAttribute('data-loaded', '1');
+    });
   }
 
   /**
@@ -3391,13 +3612,17 @@
           const msg = payload.new;
           if (!msg) return;
 
-          // Client-side filter: only handle messages for the current channel
           const msgKey = msg.channel_key ||
             `${msg.channel_type}:${msg.channel_id || msg.project_id}`;
-          if (msgKey !== channelKey) return;
 
-          console.log("[Messages] Realtime message received:", msg.id);
-          handleNewMessage(msg);
+          if (msgKey === channelKey) {
+            // Current channel: render message normally
+            handleNewMessage(msg);
+          } else if (msg.user_id !== state.currentUser?.user_id) {
+            // Other channel, from another user: increment unread badge
+            state.unreadCounts[msgKey] = (state.unreadCounts[msgKey] || 0) + 1;
+            updateBadgeForChannel(msgKey, state.unreadCounts[msgKey]);
+          }
         }
       )
       .subscribe((status) => {
@@ -3508,6 +3733,12 @@
         renderMessages();
         return;
       }
+    }
+
+    // Keep read timestamp fresh while viewing this channel
+    if (state.currentChannel && message.user_id !== state.currentUser?.user_id) {
+      const ch = state.currentChannel;
+      markChannelRead(ch.type, ch.id, ch.projectId);
     }
 
     // New message - add and render (uses fast-path incremental append)
@@ -3911,6 +4142,39 @@
           actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Confirming categories...</span>';
           _forwardToReceiptAction(receiptId, "confirm_categories", "all correct");
         }
+        return;
+      }
+
+      // Receipt flow: confirm account selections from interactive card
+      if (action === "receipt-confirm-selections") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const cardEl = e.target.closest(".msg-bot-actions--category-card");
+        if (!receiptId || !cardEl) return;
+
+        const selects = cardEl.querySelectorAll(".msg-cat-select");
+        const assignments = [];
+        let hasEmpty = false;
+
+        selects.forEach(sel => {
+          const itemIndex = parseInt(sel.dataset.itemIndex, 10);
+          const accountId = sel.value;
+          if (!accountId) {
+            hasEmpty = true;
+            sel.style.borderColor = 'hsl(0, 65%, 50%)';
+            return;
+          }
+          sel.style.borderColor = '';
+          const accountName = sel.options[sel.selectedIndex]?.text || '';
+          assignments.push({ index: itemIndex, account_id: accountId, account_name: accountName });
+        });
+
+        if (hasEmpty) {
+          if (window.Toast) window.Toast.warning("Please select an account for all items");
+          return;
+        }
+
+        cardEl.innerHTML = '<span class="msg-bot-actions-loading">Confirming categories...</span>';
+        _forwardToReceiptAction(receiptId, "confirm_categories", null, assignments);
         return;
       }
 

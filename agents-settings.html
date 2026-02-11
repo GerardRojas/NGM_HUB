@@ -927,11 +927,11 @@
                                                 </div>
                                                 <div class="hub-metric">
                                                     <span class="hub-metric-value skeleton skeleton-stat" id="hubDaneelAutoAuth">&nbsp;</span>
-                                                    <span class="hub-metric-label">Auto-Auth</span>
+                                                    <span class="hub-metric-label">Authorized</span>
                                                 </div>
                                                 <div class="hub-metric">
                                                     <span class="hub-metric-value skeleton skeleton-stat" id="hubDaneelAlerts">&nbsp;</span>
-                                                    <span class="hub-metric-label">Alerts</span>
+                                                    <span class="hub-metric-label">Pending Info</span>
                                                 </div>
                                             </div>
                                             <div class="hub-card-footer">
@@ -1379,6 +1379,21 @@
                                                         </button>
                                                     </div>
                                                 </div>
+
+                                                <!-- Authorization Notification -->
+                                                <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
+                                                    <h6 style="font-size: 13px; font-weight: 600; color: var(--ngm-text); margin-bottom: 4px;">Authorization Notification</h6>
+                                                    <p style="font-size: 12px; color: var(--ngm-text-muted); margin: 0 0 12px 0;">
+                                                        Who gets @mentioned when Andrew creates expenses. Daneel will auto-authorize if enabled.
+                                                    </p>
+                                                    <div class="recipient-picker" id="andrewAuthNotifyPicker">
+                                                        <div class="recipient-picker-input" id="andrewAuthNotifyPickerInput">
+                                                            <input type="text" class="search-field" id="andrewAuthNotifySearch"
+                                                                   placeholder="Search users or agents..." autocomplete="off">
+                                                        </div>
+                                                        <div class="recipient-dropdown" id="andrewAuthNotifyDropdown"></div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -1788,6 +1803,7 @@
         var currentAgent = null;
         var currentTab = 'overview';
         var _daneelPickerInitialized = false;
+        var _andrewPickerInitialized = false;
 
         // Agent registry
         var AGENTS = {
@@ -1975,6 +1991,24 @@
                     loadAgentConfig();
                     loadAndrewMismatchConfig();
                     loadAndrewSmartConfig();
+                    if (!_andrewPickerInitialized) {
+                        loadRecipientOptions().then(function() {
+                            _initUserPicker({
+                                pickerId: 'andrewAuthNotifyPicker',
+                                inputId: 'andrewAuthNotifyPickerInput',
+                                searchId: 'andrewAuthNotifySearch',
+                                dropdownId: 'andrewAuthNotifyDropdown',
+                                getUsers: function() { return _andrewAuthNotifyUsers; },
+                                setUsers: function(v) {
+                                    _andrewAuthNotifyUsers = v;
+                                    _saveAndrewAuthNotifyUsers();
+                                },
+                                userPool: _andrewNotifyUserPool
+                            });
+                            _renderUserPickerChips('andrewAuthNotifyPickerInput', 'andrewAuthNotifySearch', _andrewAuthNotifyUsers, _andrewNotifyUserPool);
+                            _andrewPickerInitialized = true;
+                        });
+                    }
                 } else if (agentId === 'daneel') {
                     loadDaneelConfig();
                     loadDaneelAutoAuthConfig();
@@ -2120,36 +2154,32 @@
         }
 
         function _fetchDaneelHubStats() {
-            cachedFetch(API_BASE + '/budget-alerts/settings', { headers: _agentAuthHeaders() })
-                .then(function(result) {
-                    if (!result) return;
-                    var config = result.data || result || {};
-                    var isEnabled = config.is_enabled !== false;
+            cachedFetch(API_BASE + '/daneel/auto-auth/status', { headers: _agentAuthHeaders() })
+                .then(function(status) {
+                    if (!status) return;
 
+                    // Status = auto-auth enabled/disabled
+                    var isEnabled = status.enabled === true;
                     var statusEl = document.getElementById('hubDaneelStatus');
                     statusEl.textContent = isEnabled ? 'Active' : 'Off';
                     statusEl.classList.remove('skeleton', 'skeleton-stat');
                     statusEl.className = 'hub-metric-value' + (isEnabled ? ' metric-success' : ' metric-error');
 
-                    document.getElementById('hubDaneelAlerts').textContent = '--';
-                    document.getElementById('hubDaneelAlerts').classList.remove('skeleton', 'skeleton-stat');
+                    // Auto-Auth = authorizations last 30 days
+                    var autoAuthEl = document.getElementById('hubDaneelAutoAuth');
+                    autoAuthEl.textContent = status.authorized_last_30d || 0;
+                    autoAuthEl.classList.remove('skeleton', 'skeleton-stat');
+                    autoAuthEl.className = 'hub-metric-value' + ((status.authorized_last_30d > 0) ? ' metric-success' : ' metric-muted');
+
+                    // Alerts = pending info count
+                    var alertsEl = document.getElementById('hubDaneelAlerts');
+                    var pendingCount = status.pending_info_count || 0;
+                    alertsEl.textContent = pendingCount;
+                    alertsEl.classList.remove('skeleton', 'skeleton-stat');
+                    alertsEl.className = 'hub-metric-value' + (pendingCount > 0 ? ' metric-error' : '');
 
                     var dot = document.getElementById('hubDotDaneel');
                     if (dot) dot.className = 'hub-status-dot ' + (isEnabled ? 'hub-status-active' : 'hub-status-disabled');
-                })
-                .catch(function() {});
-
-            // Auto-auth status for hub card
-            cachedFetch(API_BASE + '/daneel/auto-auth/config', { headers: _agentAuthHeaders() })
-                .then(function(cfg) {
-                    if (!cfg) return;
-                    var autoAuthEl = document.getElementById('hubDaneelAutoAuth');
-                    if (autoAuthEl) {
-                        var aaOn = cfg.daneel_auto_auth_enabled === true;
-                        autoAuthEl.textContent = aaOn ? 'On' : 'Off';
-                        autoAuthEl.classList.remove('skeleton', 'skeleton-stat');
-                        autoAuthEl.className = 'hub-metric-value' + (aaOn ? ' metric-success' : ' metric-muted');
-                    }
                 })
                 .catch(function() {});
         }
@@ -2355,6 +2385,15 @@
                     document.getElementById('cfgMinConfidence').value = minConf;
                     document.getElementById('cfgMinConfidenceValue').textContent = minConf + '%';
                     document.getElementById('cfgAutoSkipDuplicates').checked = config.auto_skip_duplicates === true;
+
+                    // Auth notification user picker
+                    try {
+                        var raw = config.andrew_auth_notify_users;
+                        _andrewAuthNotifyUsers = raw ? (typeof raw === 'string' ? JSON.parse(raw) : raw) : [];
+                    } catch(e) { _andrewAuthNotifyUsers = []; }
+                    if (_andrewPickerInitialized) {
+                        _renderUserPickerChips('andrewAuthNotifyPickerInput', 'andrewAuthNotifySearch', _andrewAuthNotifyUsers, _andrewNotifyUserPool);
+                    }
                 })
                 .catch(function(e) {
                     console.error('[AgentHub] Config load error:', e);
@@ -2372,6 +2411,10 @@
             }).catch(function(e) {
                 console.error('[AgentHub] Config save error:', e);
             });
+        }
+
+        function _saveAndrewAuthNotifyUsers() {
+            saveAgentConfig('andrew_auth_notify_users', JSON.stringify(_andrewAuthNotifyUsers));
         }
 
         function initAgentManager() {
@@ -2497,6 +2540,9 @@
         // DANEEL BUDGET MONITOR
         // ============================================
 
+        var _andrewAuthNotifyUsers = [];
+        var _andrewNotifyUserPool = [];
+
         var _daneelRecipients = { roles: [], users: [] };
         var _daneelBookkeepingUsers = [];
         var _daneelAccountingMgrUsers = [];
@@ -2571,6 +2617,13 @@
                             && u.user_id !== '00000000-0000-0000-0000-000000000002'
                             && u.user_id !== '00000000-0000-0000-0000-000000000003';
                     });
+                    // Andrew auth-notify pool: real users + Daneel bot
+                    var daneelBot = allUsers.find(function(u) {
+                        return u.user_id === '00000000-0000-0000-0000-000000000002';
+                    });
+                    _andrewNotifyUserPool = daneelBot
+                        ? [daneelBot].concat(_allUsers)
+                        : _allUsers.slice();
                 }
             }).catch(function(e) {
                 console.error('[Daneel] Error loading recipient options:', e);
@@ -2967,7 +3020,8 @@
 
         // ====== User Multi-Select Picker (reusable) ======
 
-        function _renderUserPickerChips(containerId, searchId, userIds) {
+        function _renderUserPickerChips(containerId, searchId, userIds, userPool) {
+            var pool = userPool || _allUsers;
             var container = document.getElementById(containerId);
             var searchInput = document.getElementById(searchId);
             if (!container || !searchInput) return;
@@ -2978,7 +3032,7 @@
 
             // Render chips for selected users
             userIds.forEach(function(uid) {
-                var user = _allUsers.find(function(u) { return String(u.user_id) === String(uid); });
+                var user = pool.find(function(u) { return String(u.user_id) === String(uid); });
                 if (!user) return;
                 var name = user.user_name || 'Unknown';
                 var hue = user.avatar_color || 200;
@@ -2994,13 +3048,14 @@
             });
         }
 
-        function _renderUserPickerDropdown(dropdownId, searchQuery, selectedIds) {
+        function _renderUserPickerDropdown(dropdownId, searchQuery, selectedIds, userPool) {
+            var pool = userPool || _allUsers;
             var dropdown = document.getElementById(dropdownId);
             if (!dropdown) return;
             dropdown.innerHTML = '';
 
             var query = (searchQuery || '').toLowerCase();
-            var filtered = _allUsers.filter(function(u) {
+            var filtered = pool.filter(function(u) {
                 var name = u.user_name || '';
                 return !query || name.toLowerCase().indexOf(query) >= 0;
             });
@@ -3033,18 +3088,19 @@
         }
 
         function _initUserPicker(cfg) {
+            var pool = cfg.userPool || null;
             var container = document.getElementById(cfg.inputId);
             var searchInput = document.getElementById(cfg.searchId);
             var dropdown = document.getElementById(cfg.dropdownId);
             if (!container || !searchInput || !dropdown) return;
 
             searchInput.addEventListener('focus', function() {
-                _renderUserPickerDropdown(cfg.dropdownId, '', cfg.getUsers());
+                _renderUserPickerDropdown(cfg.dropdownId, '', cfg.getUsers(), pool);
                 dropdown.classList.add('is-open');
             });
 
             searchInput.addEventListener('input', function() {
-                _renderUserPickerDropdown(cfg.dropdownId, searchInput.value, cfg.getUsers());
+                _renderUserPickerDropdown(cfg.dropdownId, searchInput.value, cfg.getUsers(), pool);
                 dropdown.classList.add('is-open');
             });
 
@@ -3060,8 +3116,8 @@
                     currentUsers.push(uid);
                 }
                 cfg.setUsers(currentUsers);
-                _renderUserPickerChips(cfg.inputId, cfg.searchId, currentUsers);
-                _renderUserPickerDropdown(cfg.dropdownId, searchInput.value, currentUsers);
+                _renderUserPickerChips(cfg.inputId, cfg.searchId, currentUsers, pool);
+                _renderUserPickerDropdown(cfg.dropdownId, searchInput.value, currentUsers, pool);
             });
 
             container.addEventListener('click', function(e) {
@@ -3073,9 +3129,9 @@
                 var uid = removeBtn.dataset.id;
                 var currentUsers = cfg.getUsers();
                 cfg.setUsers(currentUsers.filter(function(id) { return id !== uid; }));
-                _renderUserPickerChips(cfg.inputId, cfg.searchId, cfg.getUsers());
+                _renderUserPickerChips(cfg.inputId, cfg.searchId, cfg.getUsers(), pool);
                 if (dropdown.classList.contains('is-open')) {
-                    _renderUserPickerDropdown(cfg.dropdownId, searchInput.value, cfg.getUsers());
+                    _renderUserPickerDropdown(cfg.dropdownId, searchInput.value, cfg.getUsers(), pool);
                 }
             });
 

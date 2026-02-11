@@ -38,7 +38,6 @@
     "accounts": { label: "Accounts", href: "accounts.html", order: 5, category: "bookkeeping" },
     "vendors": { label: "Vendors", href: "vendors.html", order: 6, category: "bookkeeping" },
     "reporting": { label: "Reporting", href: "reporting.html", order: 7, category: "bookkeeping" },
-    "pnl_report": { label: "P&L Report", href: "pnl-report.html", order: 8, category: "bookkeeping" },
 
     // Architecture
     "projects": { label: "Projects", href: "projects.html", order: 1, category: "architecture" },

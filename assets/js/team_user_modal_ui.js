@@ -216,6 +216,36 @@
         </div>
       </section>
 
+      <div class="tm-collapsible${(u.user_position || "").trim() ? " tm-section-open" : ""}">
+        <div class="tm-collapsible-header" onclick="this.parentElement.classList.toggle('tm-section-open')">
+          <h3 class="tm-collapsible-title">Position</h3>
+          <svg class="tm-collapsible-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div class="tm-collapsible-body">
+          <div class="tm-form-grid">
+            <label class="tm-field tm-field--full">
+              <span class="tm-field-label">Job Title</span>
+              <input id="tu_position" class="tm-input" type="text" placeholder="e.g. Senior Accountant" value="${escapeHtml(u.user_position || "")}" />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="tm-collapsible${(u.user_description || "").trim() ? " tm-section-open" : ""}">
+        <div class="tm-collapsible-header" onclick="this.parentElement.classList.toggle('tm-section-open')">
+          <h3 class="tm-collapsible-title">Description</h3>
+          <svg class="tm-collapsible-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div class="tm-collapsible-body">
+          <div class="tm-form-grid">
+            <label class="tm-field tm-field--full">
+              <span class="tm-field-label">Bio / Notes</span>
+              <textarea id="tu_description" class="tm-input" rows="4" placeholder="Write a description...">${escapeHtml(u.user_description || "")}</textarea>
+            </label>
+          </div>
+        </div>
+      </div>
+
       <section class="tm-modal-section">
         <h3 class="tm-modal-section-title">Role & Status</h3>
         <div class="tm-form-grid">
@@ -322,6 +352,8 @@
       user_birthday: qs("tu_bday")?.value || null,
       user_address: (qs("tu_addr")?.value || "").trim() || null,
       user_contract_url: (qs("tu_contract")?.value || "").trim() || null,
+      user_description: (qs("tu_description")?.value || "").trim() || null,
+      user_position: (qs("tu_position")?.value || "").trim() || null,
     };
 
     const pass = (qs("tu_password")?.value || "").trim();

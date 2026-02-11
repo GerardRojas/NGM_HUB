@@ -31,9 +31,9 @@
       }
 
       currentStats = await response.json();
-      console.log('[Analytics] Stats loaded:', currentStats);
 
       renderAllAnalytics();
+      _updateHubCards();
     } catch (error) {
       console.error('[Analytics] Error loading stats:', error);
       showError('Failed to load analytics data. Check console for details.');
@@ -166,6 +166,24 @@
 
       tbody.appendChild(row);
     });
+  }
+
+  // ========================================
+  // HUB CARD UPDATE (called after stats load)
+  // ========================================
+
+  function _updateHubCards() {
+    if (!currentStats) return;
+    var gptEl = document.getElementById('hubArturitoGptRate');
+    if (gptEl) {
+      gptEl.textContent = (currentStats.gpt_attempt_rate || 0) + '%';
+      gptEl.classList.remove('skeleton', 'skeleton-stat');
+    }
+    var failEl = document.getElementById('hubArturitoFailures');
+    if (failEl) {
+      failEl.textContent = currentStats.total_failures || '0';
+      failEl.classList.remove('skeleton', 'skeleton-stat');
+    }
   }
 
   // ========================================

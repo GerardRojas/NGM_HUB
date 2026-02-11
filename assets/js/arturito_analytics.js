@@ -172,10 +172,14 @@
   // UTILITY FUNCTIONS
   // ========================================
 
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function formatTimeAgo(date) {
@@ -204,18 +208,10 @@
   // ========================================
 
   document.addEventListener('DOMContentLoaded', () => {
-    // Load analytics on page load
-    const analyticsSection = document.querySelector('.analytics-section');
-    if (analyticsSection) {
-      console.log('[Analytics] Loading analytics data...');
-      loadAnalyticsStats();
-    }
-
-    // Refresh button
+    // Refresh button (bind once, analytics loads lazily via loadIfNeeded)
     const btnRefresh = document.getElementById('btnRefreshAnalytics');
     if (btnRefresh) {
       btnRefresh.addEventListener('click', () => {
-        console.log('[Analytics] Refreshing analytics...');
         btnRefresh.disabled = true;
         btnRefresh.textContent = 'Refreshing...';
 
@@ -227,10 +223,13 @@
     }
   });
 
-  // Expose for debugging
+  // Expose for Agent Hub integration
   window.arturityAnalytics = {
     reload: loadAnalyticsStats,
-    getCurrentStats: () => currentStats
+    getCurrentStats: () => currentStats,
+    loadIfNeeded: () => {
+      if (!currentStats) loadAnalyticsStats();
+    }
   };
 
 })();

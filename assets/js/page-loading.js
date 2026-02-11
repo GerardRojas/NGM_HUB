@@ -174,7 +174,7 @@
     show: showPageLoading,
     markManual: function() { manualHideCalled = true; },
     MIN_TIME: MIN_LOADING_TIME,
-    getElapsed: () => Date.now() - PAGE_LOAD_START
+    getElapsed: () => logoReadyTime ? Date.now() - logoReadyTime : 0
   };
 
   // Also expose as standalone function for backwards compatibility

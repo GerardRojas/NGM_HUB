@@ -13,6 +13,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
 
+    <!-- Preload loading logo -->
+    <link rel="preload" href="assets/img/white_icon.png" as="image" />
+
     <!-- Critical CSS for loading overlay -->
     <style>
       body.page-loading { overflow: hidden; }
@@ -42,7 +45,7 @@
 <body class="page-allowance-adu page-loading">
     <!-- Page Loading Overlay -->
     <div class="page-loading-overlay" id="pageLoadingOverlay">
-        <img src="assets/img/white_icon.png" class="loading-logo loading-logo-xl" alt="Loading...">
+        <img src="assets/img/white_icon.png" class="loading-logo" alt="Loading...">
         <span class="loading-text">Loading...</span>
     </div>
 

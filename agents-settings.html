@@ -13,6 +13,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
 
+    <!-- Preload loading logo -->
+    <link rel="preload" href="assets/img/white_icon.png" as="image" />
+
     <link rel="stylesheet" href="assets/css/styles.css" />
     <link rel="stylesheet" href="assets/css/expenses_styles.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
@@ -586,14 +589,10 @@
 
         /* Page loading overlay */
         body.page-loading { overflow: hidden; }
-        .page-loading-overlay {
-            position: fixed; inset: 0; background: var(--bg-main);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 9999; gap: 16px;
-        }
+        .page-loading-overlay { position: fixed; inset: 0; background: #0d0d0d; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
         .page-loading-overlay.hidden { display: none; }
         .page-loading .app-layout { visibility: hidden; }
-        .loading-logo { width: 160px; height: 160px; object-fit: contain; animation: pulse 1.5s ease-in-out infinite; }
+        .loading-logo { width: 120px; height: 120px; object-fit: contain; animation: pulse 1.5s ease-in-out infinite; }
         .loading-text { color: rgba(255,255,255,0.5); font-size: 13px; font-family: system-ui, sans-serif; letter-spacing: 0.05em; }
         @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
 
@@ -687,6 +686,104 @@
             .failed-commands-table th,
             .failed-commands-table td { padding: 8px 12px; font-size: 12px; }
         }
+
+        /* ====== View Transitions ====== */
+        #hubView, #detailView {
+            animation-duration: 0.2s;
+            animation-fill-mode: both;
+            animation-timing-function: ease-out;
+        }
+        .view-entering { animation-name: viewFadeIn; }
+        .view-leaving  { animation-name: viewFadeOut; pointer-events: none; }
+
+        @keyframes viewFadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes viewFadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to   { opacity: 0; transform: translateY(-8px); }
+        }
+
+        /* ====== Skeleton Loaders ====== */
+        .skeleton {
+            background: linear-gradient(90deg,
+                var(--ngm-bg-surface) 25%,
+                rgba(255,255,255,0.06) 37%,
+                var(--ngm-bg-surface) 63%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+            border-radius: 4px;
+            color: transparent !important;
+            pointer-events: none;
+            user-select: none;
+        }
+        .skeleton-stat { display: inline-block; min-width: 40px; }
+
+        @keyframes shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ====== CSS Containment (performance) ====== */
+        #settingsContent { contain: layout style; }
+        #hubView, #detailView { contain: content; }
+        .hub-card { contain: content; }
+        .permission-card { contain: content; }
+        .stat-card { contain: layout style; }
+        .ocr-metrics-widget { contain: content; }
+
+        /* ====== Reusable Component Classes (replace inline styles) ====== */
+        .daneel-project-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 12px; background: var(--ngm-bg-input);
+            border: 1px solid var(--ngm-border); border-radius: 8px;
+        }
+        .daneel-project-row + .daneel-project-row { margin-top: 8px; }
+        .daneel-project-name {
+            font-size: 13px; font-weight: 500; color: var(--ngm-text);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .daneel-project-stats {
+            display: flex; gap: 12px; margin-top: 4px;
+            font-size: 11px; color: var(--ngm-text-muted);
+        }
+
+        .daneel-report-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 12px; background: var(--ngm-bg-input);
+            border: 1px solid var(--ngm-border); border-radius: 8px;
+            cursor: pointer; transition: border-color 0.15s ease;
+        }
+        .daneel-report-row:hover { border-color: var(--border-strong); }
+        .daneel-report-row + .daneel-report-row { margin-top: 6px; }
+
+        .daneel-report-detail {
+            padding: 10px 12px; background: var(--bg-main);
+            border: 1px solid var(--ngm-border); border-top: none;
+            border-radius: 0 0 8px 8px; margin-top: -6px; font-size: 11px;
+        }
+
+        .daneel-run-btn {
+            padding: 4px 12px; background: hsl(217 70% 50%); color: #fff;
+            border: none; border-radius: 6px; font-size: 11px;
+            cursor: pointer; white-space: nowrap; margin-left: 12px;
+        }
+        .daneel-run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .daneel-badge {
+            padding: 1px 6px; border-radius: 4px; font-size: 10px;
+            color: #fff; margin-right: 4px; display: inline-block;
+        }
+        .daneel-badge-auth { background: #10b981; }
+        .daneel-badge-missing { background: #f59e0b; }
+        .daneel-badge-dup { background: #8b5cf6; }
+        .daneel-badge-esc { background: #ef4444; }
+
+        .empty-state-msg {
+            text-align: center; padding: 24px;
+            color: var(--ngm-text-muted); font-size: 12px;
+        }
     </style>
     <script src="assets/js/page-loading.js" defer></script>
 </head>
@@ -767,15 +864,15 @@
                                             </div>
                                             <div class="hub-card-metrics">
                                                 <div class="hub-metric">
-                                                    <span class="hub-metric-value" id="hubArturitoPermissions">--</span>
+                                                    <span class="hub-metric-value skeleton skeleton-stat" id="hubArturitoPermissions">&nbsp;</span>
                                                     <span class="hub-metric-label">Permissions</span>
                                                 </div>
                                                 <div class="hub-metric">
-                                                    <span class="hub-metric-value" id="hubArturitoGptRate">--</span>
+                                                    <span class="hub-metric-value skeleton skeleton-stat" id="hubArturitoGptRate">&nbsp;</span>
                                                     <span class="hub-metric-label">GPT Fallback</span>
                                                 </div>
                                                 <div class="hub-metric">
-                                                    <span class="hub-metric-value" id="hubArturitoFailures">--</span>
+                                                    <span class="hub-metric-value skeleton skeleton-stat" id="hubArturitoFailures">&nbsp;</span>
                                                     <span class="hub-metric-label">Failures</span>
                                                 </div>
                                             </div>
@@ -796,15 +893,15 @@
                                             </div>
                                             <div class="hub-card-metrics">
                                                 <div class="hub-metric">
-                                                    <span class="hub-metric-value" id="hubAndrewProcessed">--</span>
+                                                    <span class="hub-metric-value skeleton skeleton-stat" id="hubAndrewProcessed">&nbsp;</span>
                                                     <span class="hub-metric-label">Processed</span>
                                                 </div>
                                                 <div class="hub-metric">
-                                                    <span class="hub-metric-value metric-success" id="hubAndrewSuccessRate">--</span>
+                                                    <span class="hub-metric-value skeleton skeleton-stat" id="hubAndrewSuccessRate">&nbsp;</span>
                                                     <span class="hub-metric-label">Success</span>
                                                 </div>
                                                 <div class="hub-metric">
-                                                    <span class="hub-metric-value metric-error" id="hubAndrewErrors">--</span>
+                                                    <span class="hub-metric-value skeleton skeleton-stat" id="hubAndrewErrors">&nbsp;</span>
                                                     <span class="hub-metric-label">Errors</span>
                                                 </div>
                                             </div>
@@ -825,15 +922,15 @@
                                             </div>
                                             <div class="hub-card-metrics">
                                                 <div class="hub-metric">
-                                                    <span class="hub-metric-value" id="hubDaneelStatus">--</span>
+                                                    <span class="hub-metric-value skeleton skeleton-stat" id="hubDaneelStatus">&nbsp;</span>
                                                     <span class="hub-metric-label">Status</span>
                                                 </div>
                                                 <div class="hub-metric">
-                                                    <span class="hub-metric-value" id="hubDaneelAutoAuth">--</span>
+                                                    <span class="hub-metric-value skeleton skeleton-stat" id="hubDaneelAutoAuth">&nbsp;</span>
                                                     <span class="hub-metric-label">Auto-Auth</span>
                                                 </div>
                                                 <div class="hub-metric">
-                                                    <span class="hub-metric-value" id="hubDaneelAlerts">--</span>
+                                                    <span class="hub-metric-value skeleton skeleton-stat" id="hubDaneelAlerts">&nbsp;</span>
                                                     <span class="hub-metric-label">Alerts</span>
                                                 </div>
                                             </div>
@@ -1233,7 +1330,7 @@
                                                         </div>
                                                     </div>
                                                     <div style="margin-top: 12px; text-align: right;">
-                                                        <button type="button" onclick="saveAndrewMismatchConfig()"
+                                                        <button type="button" onclick="AgentHub.saveAndrewMismatchConfig()"
                                                                 style="background: hsl(217 70% 50%); color: #fff; border: none; padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
                                                             Save Mismatch Settings
                                                         </button>
@@ -1272,11 +1369,11 @@
                                                         </div>
                                                     </div>
                                                     <div style="margin-top: 12px; text-align: right;">
-                                                        <button type="button" onclick="saveAndrewSmartConfig()"
+                                                        <button type="button" onclick="AgentHub.saveAndrewSmartConfig()"
                                                                 style="background: hsl(217 70% 50%); color: #fff; border: none; padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
                                                             Save Smart Layer Settings
                                                         </button>
-                                                        <button type="button" onclick="runAndrewFollowupCheck()"
+                                                        <button type="button" onclick="AgentHub.runAndrewFollowupCheck()"
                                                                 style="background: hsl(35 80% 50%); color: #fff; border: none; padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; margin-left: 8px;">
                                                             Run Follow-Up Check
                                                         </button>
@@ -1661,7 +1758,7 @@
                                                         </div>
                                                     </div>
                                                     <div style="margin-top: 12px; text-align: right;">
-                                                        <button type="button" onclick="runDaneelFollowupCheck()"
+                                                        <button type="button" onclick="AgentHub.runDaneelFollowupCheck()"
                                                                 style="background: hsl(35 80% 50%); color: #fff; border: none; padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
                                                             Run Follow-Up Check
                                                         </button>
@@ -1788,14 +1885,93 @@
         }
 
         // ============================================
+        // API CACHE (TTL-based in-memory)
+        // ============================================
+
+        var _apiCache = {};
+        var CACHE_TTL = 60000; // 60 seconds
+
+        function cachedFetch(url, options, ttl) {
+            var key = url;
+            var now = Date.now();
+            var cached = _apiCache[key];
+
+            if (cached && (now - cached.ts) < (ttl || CACHE_TTL)) {
+                return Promise.resolve(cached.data);
+            }
+
+            return fetch(url, options || {})
+                .then(function(resp) {
+                    if (!resp.ok) return null;
+                    return resp.json();
+                })
+                .then(function(data) {
+                    if (data !== null) {
+                        _apiCache[key] = { data: data, ts: now };
+                    }
+                    return data;
+                });
+        }
+
+        function invalidateCache(urlFragment) {
+            for (var key in _apiCache) {
+                if (key.indexOf(urlFragment) >= 0) {
+                    delete _apiCache[key];
+                }
+            }
+        }
+
+        // ============================================
+        // HELPERS
+        // ============================================
+
+        function _removeSkeleton(id, text) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = text;
+            el.classList.remove('skeleton', 'skeleton-stat');
+        }
+
+        // ============================================
         // VIEW SWITCHING
         // ============================================
 
+        var _viewTransitioning = false;
+
+        function _animateViewSwitch(outId, inId, onAfter) {
+            if (_viewTransitioning) return;
+            _viewTransitioning = true;
+
+            var outEl = document.getElementById(outId);
+            var inEl = document.getElementById(inId);
+
+            // Scroll the container to top for clean transition
+            var container = document.getElementById('settingsContent');
+            if (container) container.scrollTop = 0;
+
+            outEl.classList.add('view-leaving');
+            outEl.addEventListener('animationend', function handler() {
+                outEl.removeEventListener('animationend', handler);
+                outEl.classList.remove('view-leaving');
+                outEl.style.display = 'none';
+
+                inEl.style.display = '';
+                inEl.classList.add('view-entering');
+                inEl.addEventListener('animationend', function h2() {
+                    inEl.removeEventListener('animationend', h2);
+                    inEl.classList.remove('view-entering');
+                    _viewTransitioning = false;
+                });
+
+                if (onAfter) onAfter();
+            });
+        }
+
         function showHub() {
-            document.getElementById('hubView').style.display = '';
-            document.getElementById('detailView').style.display = 'none';
-            currentAgent = null;
-            updateHubMetrics();
+            _animateViewSwitch('detailView', 'hubView', function() {
+                currentAgent = null;
+                updateHubMetrics();
+            });
         }
 
         function showDetail(agentId) {
@@ -1803,54 +1979,58 @@
             currentAgent = agentId;
             currentTab = 'overview';
 
-            document.getElementById('hubView').style.display = 'none';
-            document.getElementById('detailView').style.display = '';
+            _animateViewSwitch('hubView', 'detailView', function() {
+                renderDetailHeader(agentId);
+                renderDetailTabs(agentId);
+                switchTab('overview');
 
-            renderDetailHeader(agentId);
-            renderDetailTabs(agentId);
-            switchTab('overview');
-
-            // Load agent-specific data
-            if (agentId === 'arturito') {
-                loadPermissions();
-                if (window.arturityAnalytics) window.arturityAnalytics.reload();
-            } else if (agentId === 'andrew') {
-                loadAgentStats();
-                loadAgentConfig();
-                loadAndrewMismatchConfig();
-                loadAndrewSmartConfig();
-            } else if (agentId === 'daneel') {
-                loadDaneelConfig();
-                loadDaneelAutoAuthConfig();
-                if (!_daneelPickerInitialized) {
-                    loadRecipientOptions().then(function() {
-                        return loadDaneelRecipientsSaved();
-                    }).then(function() {
-                        renderRecipientChips();
-                        initDaneelRecipientPicker();
-                        // Init auto-auth user pickers
-                        _initUserPicker({
-                            pickerId: 'daneelBookkeepingPicker',
-                            inputId: 'daneelBookkeepingPickerInput',
-                            searchId: 'daneelBookkeepingSearch',
-                            dropdownId: 'daneelBookkeepingDropdown',
-                            getUsers: function() { return _daneelBookkeepingUsers; },
-                            setUsers: function(v) { _daneelBookkeepingUsers = v; }
+                // Load agent-specific data (cachedFetch avoids redundant calls)
+                if (agentId === 'arturito') {
+                    loadPermissions();
+                    if (window.arturityAnalytics) {
+                        if (window.arturityAnalytics.loadIfNeeded) {
+                            window.arturityAnalytics.loadIfNeeded();
+                        } else {
+                            window.arturityAnalytics.reload();
+                        }
+                    }
+                } else if (agentId === 'andrew') {
+                    loadAgentStats();
+                    loadAgentConfig();
+                    loadAndrewMismatchConfig();
+                    loadAndrewSmartConfig();
+                } else if (agentId === 'daneel') {
+                    loadDaneelConfig();
+                    loadDaneelAutoAuthConfig();
+                    if (!_daneelPickerInitialized) {
+                        loadRecipientOptions().then(function() {
+                            return loadDaneelRecipientsSaved();
+                        }).then(function() {
+                            renderRecipientChips();
+                            initDaneelRecipientPicker();
+                            _initUserPicker({
+                                pickerId: 'daneelBookkeepingPicker',
+                                inputId: 'daneelBookkeepingPickerInput',
+                                searchId: 'daneelBookkeepingSearch',
+                                dropdownId: 'daneelBookkeepingDropdown',
+                                getUsers: function() { return _daneelBookkeepingUsers; },
+                                setUsers: function(v) { _daneelBookkeepingUsers = v; }
+                            });
+                            _initUserPicker({
+                                pickerId: 'daneelEscalationPicker',
+                                inputId: 'daneelEscalationPickerInput',
+                                searchId: 'daneelEscalationSearch',
+                                dropdownId: 'daneelEscalationDropdown',
+                                getUsers: function() { return _daneelAccountingMgrUsers; },
+                                setUsers: function(v) { _daneelAccountingMgrUsers = v; }
+                            });
+                            _renderUserPickerChips('daneelBookkeepingPickerInput', 'daneelBookkeepingSearch', _daneelBookkeepingUsers);
+                            _renderUserPickerChips('daneelEscalationPickerInput', 'daneelEscalationSearch', _daneelAccountingMgrUsers);
+                            _daneelPickerInitialized = true;
                         });
-                        _initUserPicker({
-                            pickerId: 'daneelEscalationPicker',
-                            inputId: 'daneelEscalationPickerInput',
-                            searchId: 'daneelEscalationSearch',
-                            dropdownId: 'daneelEscalationDropdown',
-                            getUsers: function() { return _daneelAccountingMgrUsers; },
-                            setUsers: function(v) { _daneelAccountingMgrUsers = v; }
-                        });
-                        _renderUserPickerChips('daneelBookkeepingPickerInput', 'daneelBookkeepingSearch', _daneelBookkeepingUsers);
-                        _renderUserPickerChips('daneelEscalationPickerInput', 'daneelEscalationSearch', _daneelAccountingMgrUsers);
-                        _daneelPickerInitialized = true;
-                    });
+                    }
                 }
-            }
+            });
         }
 
         function renderDetailHeader(agentId) {
@@ -1932,13 +2112,13 @@
                         }
                     }
                 }
-                document.getElementById('hubArturitoPermissions').textContent = enabled + '/' + total;
+                _removeSkeleton('hubArturitoPermissions', enabled + '/' + total);
             }
             if (window.arturityAnalytics) {
                 var aStats = window.arturityAnalytics.getCurrentStats();
                 if (aStats) {
-                    document.getElementById('hubArturitoGptRate').textContent = (aStats.gpt_attempt_rate || 0) + '%';
-                    document.getElementById('hubArturitoFailures').textContent = aStats.total_failures || '0';
+                    _removeSkeleton('hubArturitoGptRate', (aStats.gpt_attempt_rate || 0) + '%');
+                    _removeSkeleton('hubArturitoFailures', aStats.total_failures || '0');
                 }
             }
 
@@ -1950,22 +2130,21 @@
         }
 
         function _fetchAndrewHubStats() {
-            fetch(API_BASE + '/pending-receipts/agent-stats', { headers: _agentAuthHeaders() })
-                .then(function(resp) { return resp.ok ? resp.json() : null; })
+            cachedFetch(API_BASE + '/pending-receipts/agent-stats', { headers: _agentAuthHeaders() })
                 .then(function(stats) {
                     if (!stats) return;
-                    document.getElementById('hubAndrewProcessed').textContent = stats.total_processed;
-                    document.getElementById('hubAndrewSuccessRate').textContent = stats.success_rate + '%';
+                    _removeSkeleton('hubAndrewProcessed', stats.total_processed);
+                    _removeSkeleton('hubAndrewSuccessRate', stats.success_rate + '%');
                     var errEl = document.getElementById('hubAndrewErrors');
                     errEl.textContent = stats.errors;
+                    errEl.classList.remove('skeleton', 'skeleton-stat');
                     errEl.className = 'hub-metric-value' + (stats.errors > 0 ? ' metric-error' : '');
                 })
                 .catch(function() {});
         }
 
         function _fetchDaneelHubStats() {
-            fetch(API_BASE + '/budget-alerts/settings', { headers: _agentAuthHeaders() })
-                .then(function(resp) { return resp.ok ? resp.json() : null; })
+            cachedFetch(API_BASE + '/budget-alerts/settings', { headers: _agentAuthHeaders() })
                 .then(function(result) {
                     if (!result) return;
                     var config = result.data || result || {};
@@ -1973,9 +2152,11 @@
 
                     var statusEl = document.getElementById('hubDaneelStatus');
                     statusEl.textContent = isEnabled ? 'Active' : 'Off';
+                    statusEl.classList.remove('skeleton', 'skeleton-stat');
                     statusEl.className = 'hub-metric-value' + (isEnabled ? ' metric-success' : ' metric-error');
 
                     document.getElementById('hubDaneelAlerts').textContent = '--';
+                    document.getElementById('hubDaneelAlerts').classList.remove('skeleton', 'skeleton-stat');
 
                     var dot = document.getElementById('hubDotDaneel');
                     if (dot) dot.className = 'hub-status-dot ' + (isEnabled ? 'hub-status-active' : 'hub-status-disabled');
@@ -1983,14 +2164,14 @@
                 .catch(function() {});
 
             // Auto-auth status for hub card
-            fetch(API_BASE + '/daneel/auto-auth/config', { headers: _agentAuthHeaders() })
-                .then(function(resp) { return resp.ok ? resp.json() : null; })
+            cachedFetch(API_BASE + '/daneel/auto-auth/config', { headers: _agentAuthHeaders() })
                 .then(function(cfg) {
                     if (!cfg) return;
                     var autoAuthEl = document.getElementById('hubDaneelAutoAuth');
                     if (autoAuthEl) {
                         var aaOn = cfg.daneel_auto_auth_enabled === true;
                         autoAuthEl.textContent = aaOn ? 'On' : 'Off';
+                        autoAuthEl.classList.remove('skeleton', 'skeleton-stat');
                         autoAuthEl.className = 'hub-metric-value' + (aaOn ? ' metric-success' : ' metric-muted');
                     }
                 })
@@ -2002,8 +2183,7 @@
         // ============================================
 
         function _fetchOcrMetrics() {
-            fetch(API_BASE + '/ocr-metrics/summary?days=30', { headers: _agentAuthHeaders() })
-                .then(function(resp) { return resp.ok ? resp.json() : null; })
+            cachedFetch(API_BASE + '/ocr-metrics/summary?days=30', { headers: _agentAuthHeaders() }, 120000)
                 .then(function(data) {
                     if (!data) return;
                     document.getElementById('ocrTotalScans').textContent = data.total_scans;
@@ -2042,23 +2222,17 @@
         // ============================================
 
         function loadPermissions() {
-            fetch(API_BASE + '/arturito/permissions')
-                .then(function(res) {
-                    if (!res.ok) throw new Error('Failed');
-                    return res.json();
-                })
+            cachedFetch(API_BASE + '/arturito/permissions', { headers: _agentAuthHeaders() })
                 .then(function(data) {
+                    if (!data) return;
                     permissionsData = data;
                     renderPermissions(data.by_category);
                     updateArturitoOverviewStats(data.by_category);
-
-                    document.getElementById('loadingState').style.display = 'none';
-                    document.getElementById('settingsContent').style.display = 'block';
+                    // Update hub card metrics with fresh permissions data
+                    updateHubMetrics();
                 })
                 .catch(function(err) {
                     console.error('[AgentHub] Error loading permissions:', err);
-                    document.getElementById('loadingState').style.display = 'none';
-                    document.getElementById('settingsContent').style.display = 'block';
                 });
         }
 
@@ -2131,9 +2305,10 @@
         }
 
         function togglePermission(intent, enabled) {
+            invalidateCache('/arturito/permissions');
             fetch(API_BASE + '/arturito/permissions', {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
                 body: JSON.stringify({ intent: intent, enabled: enabled })
             })
             .then(function(res) {
@@ -2157,7 +2332,8 @@
         function resetToDefaults() {
             if (!confirm('Reset all permissions to their default values?')) return;
 
-            fetch(API_BASE + '/arturito/permissions/reset', { method: 'POST' })
+            invalidateCache('/arturito/permissions');
+            fetch(API_BASE + '/arturito/permissions/reset', { method: 'POST', headers: _agentAuthHeaders() })
                 .then(function(res) {
                     if (!res.ok) throw new Error('Failed');
                     if (window.Toast) window.Toast.success('Permissions reset to defaults');
@@ -2174,8 +2350,7 @@
         // ============================================
 
         function loadAgentStats() {
-            fetch(API_BASE + '/pending-receipts/agent-stats', { headers: _agentAuthHeaders() })
-                .then(function(resp) { return resp.ok ? resp.json() : null; })
+            cachedFetch(API_BASE + '/pending-receipts/agent-stats', { headers: _agentAuthHeaders() })
                 .then(function(stats) {
                     if (!stats) return;
                     document.getElementById('agentStatTotal').textContent = stats.total_processed;
@@ -2196,8 +2371,7 @@
         }
 
         function loadAgentConfig() {
-            fetch(API_BASE + '/pending-receipts/agent-config', { headers: _agentAuthHeaders() })
-                .then(function(resp) { return resp.ok ? resp.json() : null; })
+            cachedFetch(API_BASE + '/pending-receipts/agent-config', { headers: _agentAuthHeaders() })
                 .then(function(config) {
                     if (!config) return;
                     document.getElementById('cfgAutoCreate').checked = config.auto_create_expense !== false;
@@ -2214,6 +2388,7 @@
         function saveAgentConfig(key, value) {
             var body = {};
             body[key] = value;
+            invalidateCache('/pending-receipts/agent-config');
             fetch(API_BASE + '/pending-receipts/agent-config', {
                 method: 'PATCH',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
@@ -2245,8 +2420,7 @@
 
         // Andrew Mismatch Config
         function loadAndrewMismatchConfig() {
-            fetch(API_BASE + '/andrew/mismatch-config', { headers: _agentAuthHeaders() })
-                .then(function(resp) { return resp.ok ? resp.json() : null; })
+            cachedFetch(API_BASE + '/andrew/mismatch-config', { headers: _agentAuthHeaders() })
                 .then(function(cfg) {
                     if (!cfg) return;
                     document.getElementById('andrewMismatchEnabled').checked = cfg.andrew_mismatch_enabled !== false;
@@ -2268,6 +2442,7 @@
                 andrew_mismatch_confidence_min: parseInt(document.getElementById('andrewMismatchConfidence').value),
                 andrew_mismatch_amount_tolerance: parseFloat(document.getElementById('andrewMismatchTolerance').value),
             };
+            invalidateCache('/andrew/mismatch-config');
             fetch(API_BASE + '/andrew/mismatch-config', {
                 method: 'PUT',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
@@ -2287,6 +2462,7 @@
                 andrew_followup_hours: parseInt(document.getElementById('andrewFollowupHours').value),
                 andrew_escalation_hours: parseInt(document.getElementById('andrewEscalationHours').value),
             };
+            invalidateCache('/andrew/mismatch-config');
             fetch(API_BASE + '/andrew/mismatch-config', {
                 method: 'PUT',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
@@ -2324,10 +2500,9 @@
         }
 
         function loadAndrewSmartConfig() {
-            fetch(API_BASE + '/andrew/mismatch-config', {
-                headers: _agentAuthHeaders()
-            }).then(function(resp) { return resp.json(); })
+            cachedFetch(API_BASE + '/andrew/mismatch-config', { headers: _agentAuthHeaders() })
             .then(function(cfg) {
+                if (!cfg) return;
                 if (cfg.andrew_smart_layer_enabled !== undefined) {
                     document.getElementById('andrewSmartLayerEnabled').checked = cfg.andrew_smart_layer_enabled !== false;
                 }
@@ -2353,8 +2528,7 @@
         var _allUsers = [];
 
         function loadDaneelConfig() {
-            fetch(API_BASE + '/budget-alerts/settings', { headers: _agentAuthHeaders() })
-                .then(function(resp) { return resp.ok ? resp.json() : null; })
+            cachedFetch(API_BASE + '/budget-alerts/settings', { headers: _agentAuthHeaders() })
                 .then(function(result) {
                     if (!result) return;
                     var config = result.data || result || {};
@@ -2392,6 +2566,7 @@
         function saveDaneelConfig(key, value) {
             var body = {};
             body[key] = value;
+            invalidateCache('/budget-alerts/settings');
             fetch(API_BASE + '/budget-alerts/settings', {
                 method: 'PUT',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
@@ -2405,25 +2580,20 @@
 
         function loadRecipientOptions() {
             return Promise.all([
-                fetch(API_BASE + '/team/rols', { headers: _agentAuthHeaders() }),
-                fetch(API_BASE + '/team/users', { headers: _agentAuthHeaders() })
+                cachedFetch(API_BASE + '/team/rols', { headers: _agentAuthHeaders() }, 300000),
+                cachedFetch(API_BASE + '/team/users', { headers: _agentAuthHeaders() }, 300000)
             ]).then(function(results) {
-                if (results[0].ok) {
-                    return results[0].json().then(function(rolesData) {
-                        _allRoles = Array.isArray(rolesData) ? rolesData : (rolesData.data || []);
-                        return results[1];
-                    });
+                var rolesData = results[0];
+                var usersData = results[1];
+                if (rolesData) {
+                    _allRoles = Array.isArray(rolesData) ? rolesData : (rolesData.data || []);
                 }
-                return results[1];
-            }).then(function(usersResp) {
-                if (usersResp && usersResp.ok) {
-                    return usersResp.json().then(function(usersData) {
-                        var allUsers = Array.isArray(usersData) ? usersData : (usersData.data || []);
-                        _allUsers = allUsers.filter(function(u) {
-                            return u.user_id !== '00000000-0000-0000-0000-000000000001'
-                                && u.user_id !== '00000000-0000-0000-0000-000000000002'
-                                && u.user_id !== '00000000-0000-0000-0000-000000000003';
-                        });
+                if (usersData) {
+                    var allUsers = Array.isArray(usersData) ? usersData : (usersData.data || []);
+                    _allUsers = allUsers.filter(function(u) {
+                        return u.user_id !== '00000000-0000-0000-0000-000000000001'
+                            && u.user_id !== '00000000-0000-0000-0000-000000000002'
+                            && u.user_id !== '00000000-0000-0000-0000-000000000003';
                     });
                 }
             }).catch(function(e) {
@@ -2438,6 +2608,7 @@
                     users: _daneelRecipients.users
                 })
             };
+            invalidateCache('/pending-receipts/agent-config');
             fetch(API_BASE + '/pending-receipts/agent-config', {
                 method: 'PATCH',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
@@ -2448,8 +2619,7 @@
         }
 
         function loadDaneelRecipientsSaved() {
-            return fetch(API_BASE + '/pending-receipts/agent-config', { headers: _agentAuthHeaders() })
-                .then(function(resp) { return resp.ok ? resp.json() : null; })
+            return cachedFetch(API_BASE + '/pending-receipts/agent-config', { headers: _agentAuthHeaders() })
                 .then(function(config) {
                     if (!config) return;
                     var raw = config.daneel_alert_recipients;
@@ -2464,10 +2634,14 @@
                 });
         }
 
-        function _escapeHtml(text) {
-            var div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        function _escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
         }
 
         function renderRecipientChips() {
@@ -2717,6 +2891,7 @@
             var btn = document.getElementById('daneelApplyConfig');
             btn.disabled = true;
             btn.textContent = 'Saving...';
+            invalidateCache('/daneel/auto-auth');
             var body = {
                 daneel_auto_auth_enabled: document.getElementById('daneelAutoAuthEnabled').checked,
                 daneel_auto_auth_require_bill: document.getElementById('daneelRequireBill').checked,
@@ -2754,8 +2929,7 @@
         }
 
         function loadDaneelAutoAuthConfig() {
-            fetch(API_BASE + '/daneel/auto-auth/config', { headers: _agentAuthHeaders() })
-                .then(function(resp) { return resp.ok ? resp.json() : null; })
+            cachedFetch(API_BASE + '/daneel/auto-auth/config', { headers: _agentAuthHeaders() })
                 .then(function(cfg) {
                     if (!cfg) return;
 
@@ -2812,8 +2986,7 @@
                 });
 
             // Load status
-            fetch(API_BASE + '/daneel/auto-auth/status', { headers: _agentAuthHeaders() })
-                .then(function(resp) { return resp.ok ? resp.json() : null; })
+            cachedFetch(API_BASE + '/daneel/auto-auth/status', { headers: _agentAuthHeaders() })
                 .then(function(status) {
                     if (!status) return;
                     document.getElementById('daneelStatAutoAuth').textContent = status.authorized_last_30d || 0;
@@ -2955,72 +3128,36 @@
             var container = document.getElementById('daneelProjectReview');
             if (!container) return;
 
-            container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Loading projects...</div>';
+            container.innerHTML = '<div class="empty-state-msg">Loading projects...</div>';
 
-            fetch(API_BASE + '/daneel/auto-auth/project-summary', { headers: _agentAuthHeaders() })
-                .then(function(resp) { return resp.ok ? resp.json() : null; })
+            cachedFetch(API_BASE + '/daneel/auto-auth/project-summary', { headers: _agentAuthHeaders() })
                 .then(function(result) {
                     if (!result || !result.data || result.data.length === 0) {
-                        container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">No projects with expense activity</div>';
+                        container.innerHTML = '<div class="empty-state-msg">No projects with expense activity</div>';
                         return;
                     }
                     container.innerHTML = '';
                     result.data.forEach(function(project) {
                         var row = document.createElement('div');
-                        row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 8px;';
+                        row.className = 'daneel-project-row';
                         var leftHtml = '<div style="flex: 1; min-width: 0;">'
-                            + '<div style="font-size: 13px; font-weight: 500; color: var(--ngm-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + _escapeHtml(project.project_name) + '</div>'
-                            + '<div style="display: flex; gap: 12px; margin-top: 4px; font-size: 11px; color: var(--ngm-text-muted);">'
+                            + '<div class="daneel-project-name">' + _escapeHtml(project.project_name) + '</div>'
+                            + '<div class="daneel-project-stats">'
                             + '<span>Pending: <strong style="color: ' + (project.pending > 0 ? '#f59e0b' : 'var(--ngm-text-muted)') + '">' + project.pending + '</strong></span>'
                             + '<span>Authorized: <strong style="color: #10b981">' + project.authorized_by_daneel + '</strong></span>'
                             + '<span>Missing: <strong style="color: ' + (project.missing_info > 0 ? '#ef4444' : 'var(--ngm-text-muted)') + '">' + project.missing_info + '</strong></span>'
                             + '</div></div>';
                         var runBtn = '';
                         if (project.pending > 0) {
-                            runBtn = '<button type="button" data-project-id="' + project.project_id + '" class="daneel-run-project-btn"'
-                                + ' style="padding: 4px 12px; background: hsl(217 70% 50%); color: #fff; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; white-space: nowrap; margin-left: 12px;">Run</button>';
+                            runBtn = '<button type="button" data-project-id="' + project.project_id + '" class="daneel-run-project-btn daneel-run-btn">Run</button>';
                         }
                         row.innerHTML = leftHtml + runBtn;
                         container.appendChild(row);
                     });
-
-                    // Attach run handlers
-                    container.querySelectorAll('.daneel-run-project-btn').forEach(function(btn) {
-                        btn.addEventListener('click', function() {
-                            var pid = btn.dataset.projectId;
-                            btn.disabled = true;
-                            btn.textContent = '...';
-                            fetch(API_BASE + '/daneel/auto-auth/run?project_id=' + encodeURIComponent(pid), {
-                                method: 'POST',
-                                headers: _agentAuthHeaders()
-                            }).then(function(resp) { return resp.ok ? resp.json() : null; })
-                            .then(function(data) {
-                                btn.disabled = false;
-                                btn.textContent = 'Run';
-                                if (data) {
-                                    var parts = [];
-                                    if (data.authorized) parts.push(data.authorized + ' authorized');
-                                    if (data.missing_info) parts.push(data.missing_info + ' need info');
-                                    if (data.duplicates) parts.push(data.duplicates + ' duplicates');
-                                    if (data.escalated) parts.push(data.escalated + ' escalated');
-                                    var msg = parts.length > 0 ? parts.join(', ') : 'No pending expenses found';
-                                    if (window.Toast) window.Toast.success(msg);
-                                    loadDaneelProjectReview();
-                                    loadDaneelAuthReports();
-                                } else {
-                                    if (window.Toast) window.Toast.error('Run failed');
-                                }
-                            }).catch(function() {
-                                btn.disabled = false;
-                                btn.textContent = 'Run';
-                                if (window.Toast) window.Toast.error('Run failed');
-                            });
-                        });
-                    });
                 })
                 .catch(function(e) {
                     console.error('[Daneel] Project review load error:', e);
-                    container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Failed to load projects</div>';
+                    container.innerHTML = '<div class="empty-state-msg">Failed to load projects</div>';
                 });
         }
 
@@ -3030,13 +3167,13 @@
             var container = document.getElementById('daneelAuthReports');
             if (!container) return;
 
-            container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Loading reports...</div>';
+            container.innerHTML = '<div class="empty-state-msg">Loading reports...</div>';
 
             fetch(API_BASE + '/daneel/auto-auth/reports?limit=15', { headers: _agentAuthHeaders() })
                 .then(function(resp) { return resp.ok ? resp.json() : null; })
                 .then(function(result) {
                     if (!result || !result.data || result.data.length === 0) {
-                        container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">No reports yet</div>';
+                        container.innerHTML = '<div class="empty-state-msg">No reports yet</div>';
                         return;
                     }
                     container.innerHTML = '';
@@ -3046,13 +3183,14 @@
                         var nameStr = r.project_name || '';
 
                         var badges = '';
-                        if (r.authorized > 0) badges += '<span style="background: #10b981; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px;">' + r.authorized + ' auth</span>';
-                        if (r.missing_info > 0) badges += '<span style="background: #f59e0b; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px;">' + r.missing_info + ' missing</span>';
-                        if (r.duplicates > 0) badges += '<span style="background: #8b5cf6; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px;">' + r.duplicates + ' dup</span>';
-                        if (r.escalated > 0) badges += '<span style="background: #ef4444; color: #fff; padding: 1px 6px; border-radius: 4px; font-size: 10px; margin-right: 4px;">' + r.escalated + ' esc</span>';
+                        if (r.authorized > 0) badges += '<span class="daneel-badge daneel-badge-auth">' + r.authorized + ' auth</span>';
+                        if (r.missing_info > 0) badges += '<span class="daneel-badge daneel-badge-missing">' + r.missing_info + ' missing</span>';
+                        if (r.duplicates > 0) badges += '<span class="daneel-badge daneel-badge-dup">' + r.duplicates + ' dup</span>';
+                        if (r.escalated > 0) badges += '<span class="daneel-badge daneel-badge-esc">' + r.escalated + ' esc</span>';
 
                         var row = document.createElement('div');
-                        row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 8px; cursor: pointer;';
+                        row.className = 'daneel-report-row';
+                        row.dataset.reportId = r.report_id;
                         row.innerHTML = '<div style="flex: 1; min-width: 0;">'
                             + '<div style="display: flex; align-items: center; gap: 8px;">'
                             + '<span style="font-size: 10px; font-weight: 600; color: var(--ngm-text-muted); text-transform: uppercase; min-width: 55px;">' + typeLabel + '</span>'
@@ -3064,15 +3202,12 @@
                             + '</div>'
                             + '</div>';
 
-                        row.addEventListener('click', function() {
-                            _openReportDetail(r.report_id, row);
-                        });
                         container.appendChild(row);
                     });
                 })
                 .catch(function(e) {
                     console.error('[Daneel] Reports load error:', e);
-                    container.innerHTML = '<div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Failed to load reports</div>';
+                    container.innerHTML = '<div class="empty-state-msg">Failed to load reports</div>';
                 });
         }
 
@@ -3117,7 +3252,6 @@
 
             var detail = document.createElement('div');
             detail.className = 'daneel-report-detail';
-            detail.style.cssText = 'padding: 10px 12px; background: var(--ngm-bg); border: 1px solid var(--ngm-border); border-top: none; border-radius: 0 0 8px 8px; margin-top: -6px; font-size: 11px;';
             detail.innerHTML = '<div style="text-align: center; color: var(--ngm-text-muted);">Loading...</div>';
             rowEl.after(detail);
 
@@ -3215,7 +3349,8 @@
                     + (result.escalated || 0) + ' escalated';
                 statusEl.textContent = 'Done: ' + summary;
                 if (window.Toast) window.Toast.success('Backlog processed: ' + summary);
-                // Refresh stats and reports
+                // Refresh stats and reports (invalidate cache for fresh data)
+                invalidateCache('/daneel/auto-auth');
                 loadDaneelAutoAuthConfig();
                 loadDaneelAuthReports();
             })
@@ -3228,24 +3363,87 @@
         }
 
         // ============================================
+        // DELEGATED LISTENERS
+        // ============================================
+
+        function _initDelegatedListeners() {
+            // Project review: delegated "Run" button clicks
+            var projContainer = document.getElementById('daneelProjectReview');
+            if (projContainer) {
+                projContainer.addEventListener('click', function(e) {
+                    var btn = e.target.closest('.daneel-run-project-btn');
+                    if (!btn || btn.disabled) return;
+                    e.stopPropagation();
+                    var pid = btn.dataset.projectId;
+                    btn.disabled = true;
+                    btn.textContent = '...';
+                    fetch(API_BASE + '/daneel/auto-auth/run?project_id=' + encodeURIComponent(pid), {
+                        method: 'POST',
+                        headers: _agentAuthHeaders()
+                    }).then(function(resp) { return resp.ok ? resp.json() : null; })
+                    .then(function(data) {
+                        btn.disabled = false;
+                        btn.textContent = 'Run';
+                        if (data) {
+                            var parts = [];
+                            if (data.authorized) parts.push(data.authorized + ' authorized');
+                            if (data.missing_info) parts.push(data.missing_info + ' need info');
+                            if (data.duplicates) parts.push(data.duplicates + ' duplicates');
+                            if (data.escalated) parts.push(data.escalated + ' escalated');
+                            var msg = parts.length > 0 ? parts.join(', ') : 'No pending expenses found';
+                            if (window.Toast) window.Toast.success(msg);
+                            invalidateCache('/daneel/auto-auth');
+                            loadDaneelProjectReview();
+                            loadDaneelAuthReports();
+                        } else {
+                            if (window.Toast) window.Toast.error('Run failed');
+                        }
+                    }).catch(function() {
+                        btn.disabled = false;
+                        btn.textContent = 'Run';
+                        if (window.Toast) window.Toast.error('Run failed');
+                    });
+                });
+            }
+
+            // Auth reports: delegated row clicks
+            var reportsContainer = document.getElementById('daneelAuthReports');
+            if (reportsContainer) {
+                reportsContainer.addEventListener('click', function(e) {
+                    var row = e.target.closest('.daneel-report-row');
+                    if (!row) return;
+                    var reportId = row.dataset.reportId;
+                    if (reportId) _openReportDetail(reportId, row);
+                });
+            }
+        }
+
+        // ============================================
         // INITIALIZATION
         // ============================================
 
         document.addEventListener('DOMContentLoaded', function() {
             if (!checkAccess()) return;
 
-            // Load Arturito permissions (also triggers settingsContent display)
-            loadPermissions();
+            // Immediately reveal the hub view -- cards are static HTML, no need to wait for API
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('settingsContent').style.display = 'block';
 
             // Init config listeners (one-time binding)
             initAgentManager();
             initDaneel();
 
-            // Load hub metrics
+            // Load hub-visible data
             updateHubMetrics();
-
-            // Load OCR metrics
             _fetchOcrMetrics();
+
+            // Load Arturito permissions for hub card metrics (cached, page already visible)
+            loadPermissions();
+
+            // Load analytics for hub card GPT rate/failures (lazy)
+            if (window.arturityAnalytics && window.arturityAnalytics.loadIfNeeded) {
+                window.arturityAnalytics.loadIfNeeded();
+            }
 
             // Back button
             document.getElementById('btnBackToHub').addEventListener('click', showHub);
@@ -3255,6 +3453,9 @@
 
             // Daneel backlog button
             document.getElementById('daneelRunBacklog').addEventListener('click', runDaneelBacklog);
+
+            // Event delegation for dynamic lists
+            _initDelegatedListeners();
 
             // Init topbar pills
             if (window.initTopbarPills) window.initTopbarPills();
@@ -3266,7 +3467,11 @@
             showHub: showHub,
             switchTab: switchTab,
             togglePermission: togglePermission,
-            resetToDefaults: resetToDefaults
+            resetToDefaults: resetToDefaults,
+            saveAndrewMismatchConfig: saveAndrewMismatchConfig,
+            saveAndrewSmartConfig: saveAndrewSmartConfig,
+            runAndrewFollowupCheck: runAndrewFollowupCheck,
+            runDaneelFollowupCheck: runDaneelFollowupCheck
         };
 
     })();

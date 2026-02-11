@@ -108,15 +108,7 @@
         }
     }
 
-    function hidePageLoading() {
-        document.body.classList.remove('page-loading');
-        const overlay = document.getElementById('pageLoadingOverlay');
-        if (overlay) {
-            overlay.style.transition = 'opacity 0.3s ease';
-            overlay.style.opacity = '0';
-            setTimeout(() => overlay.remove(), 300);
-        }
-    }
+    // hidePageLoading is provided by page-loading.js (global)
 
     // ================================
     // Filters

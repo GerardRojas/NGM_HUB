@@ -774,6 +774,7 @@
     await loadPendingAlerts(null); // Load all pending alerts initially
 
     console.log('[BUDGET_MONITOR] Initialization complete');
+    if (typeof hidePageLoading === 'function') hidePageLoading();
   }
 
   // Start on DOM ready

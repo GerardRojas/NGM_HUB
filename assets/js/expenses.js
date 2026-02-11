@@ -1214,6 +1214,14 @@
           // Skip pairs that are definitively NOT duplicates
           // ========================================
 
+          // Rule 0: Different account = NOT a duplicate
+          // Same vendor can charge the same amount to different accounts (separate purchases)
+          const exp1AccountId = exp1.account_id || '';
+          const exp2AccountId = exp2.account_id || '';
+          if (exp1AccountId && exp2AccountId && exp1AccountId !== exp2AccountId) {
+            continue;
+          }
+
           // Rule A: Split bill bypass (Daneel R7b)
           // Expenses sharing a bill marked as 'split' are NOT duplicates
           if (sameBillId && exp1BillId) {
@@ -1324,10 +1332,7 @@
             matchReasons.push('Date diff >30 days');
           }
 
-          if (exp1Account && exp2Account && !sameAccount) {
-            score -= 10;
-            matchReasons.push('Different account');
-          }
+          // Different account penalty removed -- handled by early-exit Rule 0
 
           if (exp1PaymentType && exp2PaymentType && !samePaymentType) {
             score -= 5;

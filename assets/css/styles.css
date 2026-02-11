@@ -893,8 +893,8 @@ button {
 
 /* Default size if no size class specified */
 .loading-logo:not([class*="loading-logo-"]) {
-    width: 96px;
-    height: 96px;
+    width: 120px;
+    height: 120px;
 }
 
 /* Pulse animation - consistent across all pages */

@@ -17,6 +17,9 @@
       rel="stylesheet"
     >
 
+    <!-- Preload loading logo -->
+    <link rel="preload" href="assets/img/white_icon.png" as="image" />
+
     <!-- Critical CSS for loading overlay -->
     <style>
       body.page-loading { overflow: hidden; }
@@ -44,7 +47,7 @@
 <body class="page-budget-vs-actuals page-loading">
     <!-- Page Loading Overlay -->
     <div class="page-loading-overlay" id="pageLoadingOverlay">
-        <img src="assets/img/white_icon.png" class="loading-logo loading-logo-xl" alt="Loading...">
+        <img src="assets/img/white_icon.png" class="loading-logo" alt="Loading...">
         <span class="loading-text">Loading...</span>
     </div>
 

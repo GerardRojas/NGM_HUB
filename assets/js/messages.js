@@ -4483,7 +4483,7 @@
   function createMentionItem(mention) {
     const item = document.createElement("div");
     item.className = `msg-mention-item${mention.is_read ? "" : " unread"}`;
-    item.setAttribute("data-mention-id", mention.id || mention.message_id);
+    item.setAttribute("data-mention-id", mention.message_id);
     item.setAttribute("data-message-id", mention.message_id);
     item.setAttribute("data-channel-id", mention.channel_id);
     item.setAttribute("data-channel-type", mention.channel_type || "custom");
@@ -4569,10 +4569,9 @@
   async function handleMentionClick(mention) {
     console.log("[Messages] Clicking mention:", mention);
 
-    // Mark as read
-    const mentionId = mention.id || mention.message_id;
-    if (mentionId) {
-      markMentionAsRead(mentionId);
+    // Mark as read using message_id
+    if (mention.message_id) {
+      markMentionAsRead(mention.message_id);
     }
 
     // Navigate to the channel and message
@@ -4595,14 +4594,14 @@
     }, 300);
   }
 
-  async function markMentionAsRead(mentionId) {
+  async function markMentionAsRead(messageId) {
     try {
-      await authFetch(`${API_BASE}/messages/mentions/${mentionId}/read`, {
+      await authFetch(`${API_BASE}/messages/mentions/${messageId}/read`, {
         method: "PATCH",
       });
 
       // Update cache
-      const mention = mentionsCache.find((m) => m.id === mentionId);
+      const mention = mentionsCache.find((m) => m.message_id === messageId);
       if (mention) {
         mention.is_read = true;
       }
@@ -4612,7 +4611,7 @@
       updateMentionsBadge(unreadCount);
 
       // Update UI
-      const item = document.querySelector(`[data-mention-id="${mentionId}"]`);
+      const item = document.querySelector(`[data-mention-id="${messageId}"]`);
       if (item) {
         item.classList.remove("unread");
       }

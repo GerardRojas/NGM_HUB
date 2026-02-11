@@ -12,70 +12,26 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="assets/img/greenblack_icon.png" />
 
-    <!-- Preload loading logo for instant display -->
-    <link rel="preload" href="assets/img/white_icon.png" as="image" />
-
-    <!-- mismas fuentes que login -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link 
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" 
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap"
       rel="stylesheet"
     >
 
-    <!-- Critical CSS for loading overlay - prevents flash of content -->
+    <!-- Preload loading logo -->
+    <link rel="preload" href="assets/img/white_icon.png" as="image" />
+
+    <!-- Critical CSS for loading overlay -->
     <style>
-        /* CRITICAL: Hide content until explicitly shown by JS */
-        /* This prevents any flash before CSS/JS loads */
-        .app-layout {
-            opacity: 0;
-        }
-        /* Only show content when auth-ready AND page-loading is removed */
-        body.auth-ready:not(.page-loading) .app-layout {
-            opacity: 1;
-            transition: opacity 0.3s ease-in;
-        }
-        /* Immediate loading state - shown before external CSS loads */
-        body.page-loading {
-            overflow: hidden;
-        }
-        .page-loading-overlay {
-            position: fixed;
-            inset: 0;
-            background: #0d0d0d;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            gap: 16px;
-        }
-        /* Hide overlay when loading is done */
-        .page-loading-overlay.hidden {
-            display: none;
-        }
-        .loading-logo {
-            width: 160px;
-            height: 160px;
-            object-fit: contain;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-        .loading-text {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 13px;
-            font-family: system-ui, -apple-system, sans-serif;
-            letter-spacing: 0.05em;
-        }
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 0.4;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 1;
-                transform: scale(1.05);
-            }
-        }
+      body.page-loading { overflow: hidden; }
+      .page-loading-overlay { position: fixed; inset: 0; background: #0d0d0d; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
+      .page-loading-overlay.hidden { display: none; }
+      .page-loading .app-layout { visibility: hidden; }
+      .loading-logo { width: 120px; height: 120px; object-fit: contain; animation: pulse 1.5s ease-in-out infinite; }
+      .loading-text { color: rgba(255,255,255,0.5); font-size: 13px; font-family: system-ui, sans-serif; letter-spacing: 0.05em; }
+      @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
     </style>
 
     <!-- 1) Estilos base compartidos (layout, sidebar, tipografía, componentes genéricos) -->
@@ -98,7 +54,7 @@
 <body class="page-dashboard page-loading">
     <!-- Page Loading Overlay -->
     <div class="page-loading-overlay" id="pageLoadingOverlay">
-        <img src="assets/img/white_icon.png" class="loading-logo loading-logo-xl" alt="Loading...">
+        <img src="assets/img/white_icon.png" class="loading-logo" alt="Loading...">
         <span class="loading-text">Loading...</span>
     </div>
 

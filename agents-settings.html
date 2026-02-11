@@ -597,6 +597,81 @@
         .loading-text { color: rgba(255,255,255,0.5); font-size: 13px; font-family: system-ui, sans-serif; letter-spacing: 0.05em; }
         @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
 
+        /* OCR Metrics Widget */
+        .ocr-metrics-widget {
+            margin-top: 28px;
+            background: var(--ngm-bg-surface);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-md);
+            padding: 20px 24px;
+        }
+        .ocr-metrics-widget h3 {
+            font-size: 13px; font-weight: 600;
+            color: var(--text-primary); margin: 0 0 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .ocr-metrics-widget h3 .ocr-subtitle {
+            font-weight: 400; color: var(--ngm-text-muted); font-size: 12px;
+        }
+        .ocr-metrics-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 16px;
+        }
+        .ocr-stat {
+            text-align: center; padding: 12px 8px;
+            border-radius: var(--radius-sm);
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-soft);
+        }
+        .ocr-stat-value {
+            font-size: 22px; font-weight: 700;
+            color: var(--text-primary); display: block;
+        }
+        .ocr-stat-value.ocr-pdfplumber { color: var(--accent); }
+        .ocr-stat-value.ocr-vision { color: #f59e0b; }
+        .ocr-stat-value.ocr-error { color: #ef4444; }
+        .ocr-stat-label {
+            font-size: 11px; color: var(--ngm-text-muted);
+            display: block; margin-top: 4px;
+        }
+        .ocr-bar-row {
+            margin-top: 14px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .ocr-bar-track {
+            flex: 1; height: 8px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 4px; overflow: hidden;
+            display: flex;
+        }
+        .ocr-bar-seg {
+            height: 100%; transition: width 0.4s ease;
+        }
+        .ocr-bar-seg.seg-pdf { background: var(--accent); }
+        .ocr-bar-seg.seg-vision { background: #f59e0b; }
+        .ocr-bar-seg.seg-error { background: #ef4444; }
+        .ocr-bar-legend {
+            display: flex; gap: 14px; flex-shrink: 0;
+        }
+        .ocr-legend-item {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 11px; color: var(--ngm-text-muted);
+        }
+        .ocr-legend-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+        }
+        .ocr-agent-breakdown {
+            margin-top: 14px; display: flex; gap: 16px; flex-wrap: wrap;
+        }
+        .ocr-agent-chip {
+            font-size: 12px; color: var(--text-secondary);
+            padding: 4px 10px; border-radius: 12px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-soft);
+        }
+        .ocr-agent-chip strong { color: var(--text-primary); font-weight: 600; }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .hub-grid { grid-template-columns: repeat(2, 1fr); }
@@ -766,6 +841,49 @@
                                                 <span class="hub-card-cta">View details &rarr;</span>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <!-- OCR Metrics Widget -->
+                                    <div class="ocr-metrics-widget" id="ocrMetricsWidget">
+                                        <h3>
+                                            OCR Extraction Metrics
+                                            <span class="ocr-subtitle" id="ocrMetricsPeriod">Last 30 days</span>
+                                        </h3>
+                                        <div class="ocr-metrics-row">
+                                            <div class="ocr-stat">
+                                                <span class="ocr-stat-value" id="ocrTotalScans">--</span>
+                                                <span class="ocr-stat-label">Total Scans</span>
+                                            </div>
+                                            <div class="ocr-stat">
+                                                <span class="ocr-stat-value ocr-pdfplumber" id="ocrPdfplumber">--</span>
+                                                <span class="ocr-stat-label">pdfplumber</span>
+                                            </div>
+                                            <div class="ocr-stat">
+                                                <span class="ocr-stat-value ocr-vision" id="ocrVision">--</span>
+                                                <span class="ocr-stat-label">Vision API</span>
+                                            </div>
+                                            <div class="ocr-stat">
+                                                <span class="ocr-stat-value ocr-error" id="ocrErrors">--</span>
+                                                <span class="ocr-stat-label">Errors</span>
+                                            </div>
+                                            <div class="ocr-stat">
+                                                <span class="ocr-stat-value" id="ocrAvgConfidence">--</span>
+                                                <span class="ocr-stat-label">Avg Confidence</span>
+                                            </div>
+                                        </div>
+                                        <div class="ocr-bar-row">
+                                            <div class="ocr-bar-track">
+                                                <div class="ocr-bar-seg seg-pdf" id="ocrBarPdf" style="width: 0%"></div>
+                                                <div class="ocr-bar-seg seg-vision" id="ocrBarVision" style="width: 0%"></div>
+                                                <div class="ocr-bar-seg seg-error" id="ocrBarError" style="width: 0%"></div>
+                                            </div>
+                                            <div class="ocr-bar-legend">
+                                                <span class="ocr-legend-item"><span class="ocr-legend-dot" style="background:var(--accent)"></span> pdfplumber</span>
+                                                <span class="ocr-legend-item"><span class="ocr-legend-dot" style="background:#f59e0b"></span> Vision</span>
+                                                <span class="ocr-legend-item"><span class="ocr-legend-dot" style="background:#ef4444"></span> Error</span>
+                                            </div>
+                                        </div>
+                                        <div class="ocr-agent-breakdown" id="ocrAgentBreakdown"></div>
                                     </div>
                                 </div>
 
@@ -1510,6 +1628,45 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <!-- Smart Conversation Layer -->
+                                                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
+                                                    <h6 style="font-size: 13px; font-weight: 600; color: var(--ngm-text); margin-bottom: 12px;">Smart Conversation Layer</h6>
+                                                    <div class="agent-config-list">
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Smart layer enabled</span>
+                                                                <span class="agent-config-desc">AI personality + proactive missing-info resolution on expense messages</span>
+                                                            </div>
+                                                            <div class="agent-config-control">
+                                                                <div class="form-check form-switch">
+                                                                    <input class="form-check-input" type="checkbox" id="daneelSmartLayerEnabled" role="switch" checked>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Follow-up reminder (hours)</span>
+                                                                <span class="agent-config-desc">Hours before Daneel sends a follow-up for unanswered missing-info requests</span>
+                                                            </div>
+                                                            <input type="number" id="daneelFollowupHours" value="24" min="6" max="72" step="6"
+                                                                   style="width: 70px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; font-size: 13px; text-align: center; background: var(--ngm-bg); color: var(--ngm-text);">
+                                                        </div>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Escalation (hours)</span>
+                                                                <span class="agent-config-desc">Hours before escalating to accounting manager if no response</span>
+                                                            </div>
+                                                            <input type="number" id="daneelEscalationHours" value="48" min="12" max="168" step="6"
+                                                                   style="width: 70px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; font-size: 13px; text-align: center; background: var(--ngm-bg); color: var(--ngm-text);">
+                                                        </div>
+                                                    </div>
+                                                    <div style="margin-top: 12px; text-align: right;">
+                                                        <button type="button" onclick="runDaneelFollowupCheck()"
+                                                                style="background: hsl(35 80% 50%); color: #fff; border: none; padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
+                                                            Run Follow-Up Check
+                                                        </button>
+                                                    </div>
+                                                </div>
                                                 <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
                                                     <div style="display: flex; align-items: center; gap: 12px;">
                                                         <button id="daneelRunBacklog" type="button"
@@ -1835,6 +1992,46 @@
                         var aaOn = cfg.daneel_auto_auth_enabled === true;
                         autoAuthEl.textContent = aaOn ? 'On' : 'Off';
                         autoAuthEl.className = 'hub-metric-value' + (aaOn ? ' metric-success' : ' metric-muted');
+                    }
+                })
+                .catch(function() {});
+        }
+
+        // ============================================
+        // OCR METRICS
+        // ============================================
+
+        function _fetchOcrMetrics() {
+            fetch(API_BASE + '/ocr-metrics/summary?days=30', { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(data) {
+                    if (!data) return;
+                    document.getElementById('ocrTotalScans').textContent = data.total_scans;
+                    document.getElementById('ocrPdfplumber').textContent = data.pdfplumber_count;
+                    document.getElementById('ocrVision').textContent = data.vision_count;
+                    var errEl = document.getElementById('ocrErrors');
+                    errEl.textContent = data.error_count;
+                    if (data.error_count > 0) errEl.classList.add('ocr-error');
+                    document.getElementById('ocrAvgConfidence').textContent =
+                        data.avg_confidence !== null ? data.avg_confidence + '%' : '--';
+
+                    // Bar segments
+                    var total = data.total_scans || 1;
+                    document.getElementById('ocrBarPdf').style.width = (data.pdfplumber_count / total * 100) + '%';
+                    document.getElementById('ocrBarVision').style.width = (data.vision_count / total * 100) + '%';
+                    document.getElementById('ocrBarError').style.width = (data.error_count / total * 100) + '%';
+
+                    // Agent breakdown chips
+                    var container = document.getElementById('ocrAgentBreakdown');
+                    container.innerHTML = '';
+                    var agents = data.by_agent || {};
+                    for (var agent in agents) {
+                        if (agents.hasOwnProperty(agent)) {
+                            var chip = document.createElement('span');
+                            chip.className = 'ocr-agent-chip';
+                            chip.innerHTML = '<strong>' + agent + '</strong>: ' + agents[agent] + ' scans';
+                            container.appendChild(chip);
+                        }
                     }
                 })
                 .catch(function() {});
@@ -2493,6 +2690,29 @@
 
         // ====== Daneel Auto-Auth Config ======
 
+        function runDaneelFollowupCheck() {
+            fetch(API_BASE + '/daneel/auto-auth/follow-up-check', {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
+            }).then(function(resp) { return resp.json(); })
+            .then(function(data) {
+                if (data.ok) {
+                    var s = data.stats || {};
+                    var msg = 'Follow-up check complete';
+                    if (s.followups_sent) msg += ' | ' + s.followups_sent + ' reminders sent';
+                    if (s.escalations_sent) msg += ' | ' + s.escalations_sent + ' escalated';
+                    if (s.marked_stale) msg += ' | ' + s.marked_stale + ' marked stale';
+                    if (!s.followups_sent && !s.escalations_sent && !s.marked_stale) msg += ' | No action needed';
+                    if (window.Toast) window.Toast.success(msg);
+                } else {
+                    if (window.Toast) window.Toast.error('Follow-up check failed');
+                }
+            }).catch(function(e) {
+                console.error('[Daneel] Follow-up check error:', e);
+                if (window.Toast) window.Toast.error('Follow-up check failed');
+            });
+        }
+
         function saveDaneelAutoAuthConfig() {
             var btn = document.getElementById('daneelApplyConfig');
             btn.disabled = true;
@@ -2509,6 +2729,9 @@
                 daneel_bookkeeping_users: JSON.stringify(_daneelBookkeepingUsers),
                 daneel_accounting_mgr_users: JSON.stringify(_daneelAccountingMgrUsers),
                 daneel_receipt_hash_check_enabled: document.getElementById('daneelReceiptHashCheck').checked,
+                daneel_smart_layer_enabled: document.getElementById('daneelSmartLayerEnabled').checked,
+                daneel_followup_hours: parseInt(document.getElementById('daneelFollowupHours').value),
+                daneel_escalation_hours: parseInt(document.getElementById('daneelEscalationHours').value),
             };
             fetch(API_BASE + '/daneel/auto-auth/config', {
                 method: 'PUT',
@@ -2574,6 +2797,15 @@
 
                     _renderUserPickerChips('daneelBookkeepingPickerInput', 'daneelBookkeepingSearch', _daneelBookkeepingUsers);
                     _renderUserPickerChips('daneelEscalationPickerInput', 'daneelEscalationSearch', _daneelAccountingMgrUsers);
+
+                    // Smart layer controls
+                    document.getElementById('daneelSmartLayerEnabled').checked = cfg.daneel_smart_layer_enabled !== false;
+                    if (cfg.daneel_followup_hours) {
+                        document.getElementById('daneelFollowupHours').value = cfg.daneel_followup_hours;
+                    }
+                    if (cfg.daneel_escalation_hours) {
+                        document.getElementById('daneelEscalationHours').value = cfg.daneel_escalation_hours;
+                    }
                 })
                 .catch(function(e) {
                     console.error('[Daneel] Auto-auth config load error:', e);
@@ -3011,6 +3243,9 @@
 
             // Load hub metrics
             updateHubMetrics();
+
+            // Load OCR metrics
+            _fetchOcrMetrics();
 
             // Back button
             document.getElementById('btnBackToHub').addEventListener('click', showHub);

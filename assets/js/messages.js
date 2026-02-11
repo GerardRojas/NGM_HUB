@@ -840,7 +840,7 @@
     DOM.emptyState.style.display = "none";
     DOM.messagesList.style.display = "none";
     if (DOM.chatLoading) DOM.chatLoading.style.display = "flex";
-    DOM.messageInputArea.style.display = "flex";
+    DOM.messageInputArea.style.display = "block";
 
     // Load messages
     const messages = await loadMessages(channelType, channelId, projectId);
@@ -3243,11 +3243,14 @@
   function showMessageNotification(message) {
     if (typeof Toast === "undefined") return;
 
-    const sender = state.users.find((u) => u.user_id === message.user_id) || { user_name: message.user_name };
-    const senderName = sender?.user_name || message.user_name || "Unknown";
-    const senderPhoto = sender?.user_photo;
-    const senderColor = getAvatarColor(sender);
-    const initials = getInitials(senderName);
+    const botInfo = BOT_AGENTS[message.user_id];
+    const sender = botInfo
+      ? { user_name: botInfo.name }
+      : state.users.find((u) => u.user_id === message.user_id) || { user_name: message.user_name };
+    const senderName = botInfo ? botInfo.name : (sender?.user_name || message.user_name || "Unknown");
+    const senderPhoto = botInfo ? null : sender?.user_photo;
+    const senderColor = botInfo ? botInfo.color : getAvatarColor(sender);
+    const initials = botInfo ? botInfo.initials : getInitials(senderName);
 
     // Check if current user is mentioned
     const isMentioned = checkIfMentioned(message.content, state.currentUser);
@@ -4160,7 +4163,7 @@
   function createMentionItem(mention) {
     const item = document.createElement("div");
     item.className = `msg-mention-item${mention.is_read ? "" : " unread"}`;
-    item.setAttribute("data-mention-id", mention.id);
+    item.setAttribute("data-mention-id", mention.id || mention.message_id);
     item.setAttribute("data-message-id", mention.message_id);
     item.setAttribute("data-channel-id", mention.channel_id);
     item.setAttribute("data-channel-type", mention.channel_type || "custom");
@@ -4168,10 +4171,13 @@
       item.setAttribute("data-project-id", mention.project_id);
     }
 
-    // Get sender info
-    const sender = state.users.find((u) => u.id === mention.sender_id) || {};
-    const senderName = sender.full_name || sender.username || "Unknown";
-    const initials = getInitials(senderName);
+    // Get sender info - check bot agents first, then users list, then mention data
+    const botInfo = BOT_AGENTS[mention.sender_id];
+    const sender = botInfo
+      ? null
+      : state.users.find((u) => u.user_id === mention.sender_id);
+    const senderName = botInfo ? botInfo.name : (sender?.user_name || mention.sender_name || "Unknown");
+    const initials = botInfo ? botInfo.initials : getInitials(senderName);
 
     // Format timestamp
     const timeAgo = formatRelativeTime(mention.created_at);
@@ -4180,10 +4186,11 @@
     const channelName = mention.channel_name || "Unknown channel";
 
     // Message preview with mention highlighted
-    const preview = highlightMention(mention.content || "", state.currentUser?.username);
+    const preview = highlightMention(mention.content || "", state.currentUser?.user_name);
+    const avatarColor = botInfo ? botInfo.color : (mention.sender_avatar_color ? `hsl(${mention.sender_avatar_color}, 70%, 45%)` : getAvatarColor(senderName));
 
     item.innerHTML = `
-      <div class="msg-mention-avatar" style="color: ${getAvatarColor(senderName)}; border-color: ${getAvatarColor(senderName)}">${initials}</div>
+      <div class="msg-mention-avatar" style="color: ${avatarColor}; border-color: ${avatarColor}">${initials}</div>
       <div class="msg-mention-content">
         <div class="msg-mention-header">
           <span class="msg-mention-author">${escapeHtml(senderName)}</span>
@@ -4243,14 +4250,17 @@
     console.log("[Messages] Clicking mention:", mention);
 
     // Mark as read
-    if (!mention.is_read) {
-      markMentionAsRead(mention.id);
+    const mentionId = mention.id || mention.message_id;
+    if (mentionId) {
+      markMentionAsRead(mentionId);
     }
 
     // Navigate to the channel and message
     const channelType = mention.channel_type || "custom";
-    const channelId = mention.channel_id;
-    const projectId = mention.project_id;
+    const isProjectChannel = channelType.startsWith("project_");
+    const channelId = isProjectChannel ? null : mention.channel_id;
+    // Backend puts project_id inside channel_id for project channels
+    const projectId = mention.project_id || (isProjectChannel ? mention.channel_id : null);
     const channelName = mention.channel_name || "Channel";
 
     // Hide mentions view
@@ -4268,7 +4278,7 @@
   async function markMentionAsRead(mentionId) {
     try {
       await authFetch(`${API_BASE}/messages/mentions/${mentionId}/read`, {
-        method: "POST",
+        method: "PATCH",
       });
 
       // Update cache

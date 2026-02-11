@@ -1005,6 +1005,17 @@
                                                             <div class="function-item enabled">Notifies on duplicates, errors, and successful processing</div>
                                                         </div>
                                                     </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>8</span> Bill Mismatch Reconciliation</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Triggered by Daneel when bill total mismatches expense sum</div>
+                                                            <div class="function-item enabled">Re-scans receipt via Vision OCR to extract line items</div>
+                                                            <div class="function-item enabled">Matches OCR line items against DB expenses one-by-one</div>
+                                                            <div class="function-item enabled">Identifies amount mismatches, missing items, and extra entries</div>
+                                                            <div class="function-item enabled">Can auto-correct amounts when confidence is high (configurable)</div>
+                                                            <div class="function-item enabled">Posts detailed reconciliation report to project chat</div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1044,6 +1055,59 @@
                                                             <input type="checkbox" id="cfgAutoSkipDuplicates">
                                                             <span class="toggle-slider"></span>
                                                         </label>
+                                                    </div>
+                                                </div>
+                                                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
+                                                    <h6 style="font-size: 13px; font-weight: 600; color: var(--ngm-text); margin-bottom: 12px;">Bill Mismatch Reconciliation</h6>
+                                                    <div class="agent-config-list">
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Enable reconciliation protocol</span>
+                                                                <span class="agent-config-desc">When Daneel detects a bill mismatch, Andrew re-scans and reconciles line items</span>
+                                                            </div>
+                                                            <div class="agent-config-control">
+                                                                <div class="form-check form-switch">
+                                                                    <input class="form-check-input" type="checkbox" id="andrewMismatchEnabled" role="switch" checked>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Auto-correct amounts</span>
+                                                                <span class="agent-config-desc">Automatically fix expense amounts when OCR confidence is above threshold</span>
+                                                            </div>
+                                                            <div class="agent-config-control">
+                                                                <div class="form-check form-switch">
+                                                                    <input class="form-check-input" type="checkbox" id="andrewMismatchAutoCorrect" role="switch">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Auto-correct confidence threshold</span>
+                                                                <span class="agent-config-desc">Minimum OCR confidence required to auto-correct amounts</span>
+                                                            </div>
+                                                            <div class="agent-config-control" style="display: flex; align-items: center; gap: 8px;">
+                                                                <input type="range" id="andrewMismatchConfidence" min="60" max="95" step="5" value="85" class="confidence-slider">
+                                                                <span class="confidence-value" id="andrewMismatchConfidenceValue">85%</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Amount match tolerance</span>
+                                                                <span class="agent-config-desc">Amounts within this % are considered matching (e.g., 0.02 = 2%)</span>
+                                                            </div>
+                                                            <div class="agent-config-control">
+                                                                <input type="number" id="andrewMismatchTolerance" value="0.02" min="0.005" max="0.10" step="0.005"
+                                                                       style="width: 80px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 4px; background: var(--ngm-bg-input); color: var(--ngm-text); font-size: 13px;">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div style="margin-top: 12px; text-align: right;">
+                                                        <button type="button" onclick="saveAndrewMismatchConfig()"
+                                                                style="background: hsl(217 70% 50%); color: #fff; border: none; padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
+                                                            Save Mismatch Settings
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1379,6 +1443,20 @@
                                                     </div>
                                                 </div>
                                                 <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
+                                                    <h6 style="font-size: 13px; font-weight: 600; color: var(--ngm-text); margin-bottom: 12px;">Receipt Hash Check</h6>
+                                                    <div class="agent-config-item">
+                                                        <div class="agent-config-info">
+                                                            <span class="agent-config-name">Cross-bill hash validation</span>
+                                                            <span class="agent-config-desc">Detect when the same receipt file is used on different bills within a project (excludes splits)</span>
+                                                        </div>
+                                                        <div class="agent-config-control">
+                                                            <div class="form-check form-switch">
+                                                                <input class="form-check-input" type="checkbox" id="daneelReceiptHashCheck" role="switch" checked>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
                                                     <div style="display: flex; align-items: center; gap: 12px;">
                                                         <button id="daneelRunBacklog" type="button"
                                                                 style="padding: 8px 16px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 6px; color: var(--ngm-text); font-size: 13px; cursor: pointer;">
@@ -1528,6 +1606,7 @@
             } else if (agentId === 'andrew') {
                 loadAgentStats();
                 loadAgentConfig();
+                loadAndrewMismatchConfig();
             } else if (agentId === 'daneel') {
                 loadDaneelConfig();
                 loadDaneelAutoAuthConfig();
@@ -1905,6 +1984,49 @@
             document.getElementById('cfgAutoSkipDuplicates').addEventListener('change', function(e) {
                 saveAgentConfig('auto_skip_duplicates', e.target.checked);
             });
+
+            // Mismatch reconciliation slider label
+            document.getElementById('andrewMismatchConfidence').addEventListener('input', function(e) {
+                document.getElementById('andrewMismatchConfidenceValue').textContent = e.target.value + '%';
+            });
+        }
+
+        // Andrew Mismatch Config
+        function loadAndrewMismatchConfig() {
+            fetch(API_BASE + '/andrew/mismatch-config', { headers: _agentAuthHeaders() })
+                .then(function(resp) { return resp.ok ? resp.json() : null; })
+                .then(function(cfg) {
+                    if (!cfg) return;
+                    document.getElementById('andrewMismatchEnabled').checked = cfg.andrew_mismatch_enabled !== false;
+                    document.getElementById('andrewMismatchAutoCorrect').checked = cfg.andrew_mismatch_auto_correct === true;
+                    var conf = cfg.andrew_mismatch_confidence_min || 85;
+                    document.getElementById('andrewMismatchConfidence').value = conf;
+                    document.getElementById('andrewMismatchConfidenceValue').textContent = conf + '%';
+                    document.getElementById('andrewMismatchTolerance').value = cfg.andrew_mismatch_amount_tolerance || 0.02;
+                })
+                .catch(function(e) {
+                    console.error('[Andrew] Mismatch config load error:', e);
+                });
+        }
+
+        function saveAndrewMismatchConfig() {
+            var body = {
+                andrew_mismatch_enabled: document.getElementById('andrewMismatchEnabled').checked,
+                andrew_mismatch_auto_correct: document.getElementById('andrewMismatchAutoCorrect').checked,
+                andrew_mismatch_confidence_min: parseInt(document.getElementById('andrewMismatchConfidence').value),
+                andrew_mismatch_amount_tolerance: parseFloat(document.getElementById('andrewMismatchTolerance').value),
+            };
+            fetch(API_BASE + '/andrew/mismatch-config', {
+                method: 'PUT',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
+                body: JSON.stringify(body)
+            }).then(function(resp) {
+                if (resp.ok && window.Toast) window.Toast.success('Mismatch settings saved');
+                else if (window.Toast) window.Toast.error('Failed to save mismatch settings');
+            }).catch(function(e) {
+                console.error('[Andrew] Mismatch config save error:', e);
+                if (window.Toast) window.Toast.error('Failed to save mismatch settings');
+            });
         }
 
         // ============================================
@@ -2270,6 +2392,7 @@
                 daneel_gpt_fallback_confidence: parseInt(document.getElementById('daneelGptConfidence').value),
                 daneel_bookkeeping_users: JSON.stringify(_daneelBookkeepingUsers),
                 daneel_accounting_mgr_users: JSON.stringify(_daneelAccountingMgrUsers),
+                daneel_receipt_hash_check_enabled: document.getElementById('daneelReceiptHashCheck').checked,
             };
             fetch(API_BASE + '/daneel/auto-auth/config', {
                 method: 'PUT',
@@ -2319,6 +2442,9 @@
                     var gptConf = cfg.daneel_gpt_fallback_confidence || 75;
                     document.getElementById('daneelGptConfidence').value = gptConf;
                     document.getElementById('daneelGptConfidenceValue').textContent = gptConf + '%';
+
+                    // Receipt hash check
+                    document.getElementById('daneelReceiptHashCheck').checked = cfg.daneel_receipt_hash_check_enabled !== false;
 
                     // Load user picker selections
                     try {

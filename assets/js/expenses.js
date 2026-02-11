@@ -434,6 +434,7 @@
     els.btnCloseBillModal = document.getElementById('btnCloseBillModal');
     els.btnCancelBillEdit = document.getElementById('btnCancelBillEdit');
     els.btnSaveBillEdit = document.getElementById('btnSaveBillEdit');
+    els.btnReprocessAndrew = document.getElementById('btnReprocessAndrew');
     els.billEditNumber = document.getElementById('billEditNumber');
     els.billEditExpenseCount = document.getElementById('billEditExpenseCount');
     els.billEditTotal = document.getElementById('billEditTotal');
@@ -917,16 +918,16 @@
    * Calculates a dynamic threshold for duplicate detection based on amount
    * Larger amounts have tighter tolerance, smaller amounts more lenient
    * @param {number} amount - Transaction amount
-   * @returns {number} - Percentage threshold (0-5)
+   * @returns {number} - Maximum dollar difference allowed
    */
   function getDuplicateThreshold(amount) {
-    // Ultra-strict thresholds - detect even cent differences
-    // Returns maximum percentage difference allowed
-    if (amount >= 10000) return 0.1;   // 0.1% for large amounts ($10k+ = max $10 diff)
-    if (amount >= 1000) return 0.2;    // 0.2% for medium amounts ($1k-$10k = max $2 diff)
-    if (amount >= 100) return 0.5;     // 0.5% for small amounts ($100-$1k = max $0.50 diff)
-    if (amount >= 10) return 1;        // 1% for tiny amounts ($10-$100 = max $0.10 diff)
-    return 2;                           // 2% for very small amounts (<$10 = max $0.20 diff)
+    // Fixed dollar thresholds - near-exact matching
+    // Returns maximum dollar difference allowed
+    if (amount >= 10000) return 1.00;  // $10k+ = max $1.00 diff
+    if (amount >= 1000) return 0.50;   // $1k-$10k = max $0.50 diff
+    if (amount >= 100) return 0.10;    // $100-$1k = max $0.10 diff
+    if (amount >= 10) return 0.05;     // $10-$100 = max $0.05 diff
+    return 0.02;                        // <$10 = max $0.02 diff
   }
 
   /**
@@ -1165,19 +1166,25 @@
           const exp2Description = exp2.LineDescription || '';
 
           // Field comparisons
-          const sameBillId = exp1BillId && exp2BillId && exp1BillId === exp2BillId;
+          // Fuzzy bill ID matching (90% similarity like Daneel R3)
+          const billSimilarity = (exp1BillId && exp2BillId)
+            ? calculateStringSimilarity(exp1BillId, exp2BillId)
+            : 0;
+          const sameBillId = billSimilarity >= 0.9;
 
-          // Amount comparison with dynamic threshold
-          const threshold = getDuplicateThreshold(exp1Amount);
+          // Amount comparison with fixed dollar threshold
           const amountDiff = Math.abs(exp1Amount - exp2Amount);
           const avgAmount = (exp1Amount + exp2Amount) / 2;
-          const diffPercent = avgAmount > 0 ? (amountDiff / avgAmount) * 100 : 0;
-          const sameAmount = exp1Amount > 0 && exp2Amount > 0 && diffPercent <= threshold;
+          const threshold = getDuplicateThreshold(avgAmount);
+          const sameAmount = exp1Amount > 0 && exp2Amount > 0 && amountDiff <= threshold;
+
+          // Base requirement: Same vendor + Same amount (MANDATORY)
+          if (!sameAmount) continue;
 
           // Date comparison
           const sameDate = exp1Date && exp2Date && exp1Date === exp2Date;
+          const diffDate = exp1Date && exp2Date && exp1Date !== exp2Date;
 
-          // Date difference in days
           let dateDiffDays = 999;
           if (exp1Date && exp2Date) {
             const d1 = new Date(exp1Date);
@@ -1185,13 +1192,70 @@
             dateDiffDays = Math.abs((d2 - d1) / (1000 * 60 * 60 * 24));
           }
 
-          const samePaymentType = exp1PaymentType && exp2PaymentType &&
-                                   exp1PaymentType.toLowerCase() === exp2PaymentType.toLowerCase();
+          const pay1 = exp1PaymentType.toLowerCase();
+          const pay2 = exp2PaymentType.toLowerCase();
+          const samePaymentType = pay1 && pay2 && pay1 === pay2;
+          const isCheck = pay1 === 'check' || pay2 === 'check';
 
           const sameAccount = exp1Account && exp2Account && exp1Account === exp2Account;
+          const isLabor = exp1Account.toLowerCase().includes('labor')
+                       || exp2Account.toLowerCase().includes('labor');
 
-          // Fuzzy match for description
           const descriptionSimilarity = calculateStringSimilarity(exp1Description, exp2Description);
+
+          // Receipt URL comparison
+          const receipt1 = getExpenseReceiptUrl(exp1);
+          const receipt2 = getExpenseReceiptUrl(exp2);
+          const bothHaveReceipt = receipt1 && receipt2;
+          const sameReceipt = bothHaveReceipt && receipt1 === receipt2;
+
+          // ========================================
+          // EARLY-EXIT RULES (Daneel-inspired)
+          // Skip pairs that are definitively NOT duplicates
+          // ========================================
+
+          // Rule A: Split bill bypass (Daneel R7b)
+          // Expenses sharing a bill marked as 'split' are NOT duplicates
+          if (sameBillId && exp1BillId) {
+            const rawBillId = exp1.bill_id?.trim() || exp2.bill_id?.trim();
+            const billMeta = rawBillId ? getBillMetadata(rawBillId) : null;
+            if (billMeta && billMeta.status === 'split') {
+              console.log(`[DUPLICATES] Rule A skip (split bill): ${exp1Id} <-> ${exp2Id}`);
+              continue;
+            }
+          }
+
+          // Rule B: Recurring labor payments (Daneel R5)
+          // Labor account + different dates + check payment = recurring payroll
+          if (isLabor && diffDate && isCheck) {
+            console.log(`[DUPLICATES] Rule B skip (labor+check+diff date): ${exp1Id} <-> ${exp2Id}`);
+            continue;
+          }
+
+          // Rule C: Separate check payments for same invoice (Daneel R6)
+          // Same bill + check + different dates = separate check payments
+          if (sameBillId && isCheck && diffDate) {
+            console.log(`[DUPLICATES] Rule C skip (check+same bill+diff date): ${exp1Id} <-> ${exp2Id}`);
+            continue;
+          }
+
+          // Rule D: Different receipt files (Daneel R7a)
+          // Both have receipts, different files, no shared bill = separate invoices
+          if (bothHaveReceipt && !sameReceipt && !sameBillId) {
+            console.log(`[DUPLICATES] Rule D skip (different receipts): ${exp1Id} <-> ${exp2Id}`);
+            continue;
+          }
+
+          // Timestamp rule: skip truly identical batch entries (< 5s apart + all fields match)
+          const exp1CreatedAt = exp1.created_at;
+          const exp2CreatedAt = exp2.created_at;
+          if (exp1CreatedAt && exp2CreatedAt) {
+            const tsDiff = Math.abs(new Date(exp1CreatedAt).getTime() - new Date(exp2CreatedAt).getTime()) / 1000;
+            if (tsDiff < 5 && sameDate && sameBillId && descriptionSimilarity >= 0.9) {
+              console.log(`[DUPLICATES] Timestamp skip (identical batch ${tsDiff.toFixed(1)}s): ${exp1Id} <-> ${exp2Id}`);
+              continue;
+            }
+          }
 
           // ========================================
           // SCORING ALGORITHM (0-100 points)
@@ -1200,43 +1264,43 @@
           let score = 0;
           const matchReasons = [];
 
-          // Base requirement: Same vendor + Same amount (MANDATORY)
-          if (!sameAmount) continue; // Skip if amounts don't match
-
-          score += 40; // Base score for same vendor + amount
+          // Base: same vendor + amount match (40 pts)
+          score += 40;
           matchReasons.push('Same vendor & amount');
 
-          // Bonus for near-identical amounts (within cents)
-          if (amountDiff <= 0.05) {
+          // Amount precision bonus
+          if (amountDiff <= 0.01) {
             score += 15;
-            matchReasons.push('Near-identical amount');
+            matchReasons.push('Exact amount');
           } else if (amountDiff <= 0.50) {
-            score += 10;
-            matchReasons.push(`Amount diff: $${amountDiff.toFixed(2)}`);
-          } else if (amountDiff <= 2.00) {
             score += 5;
             matchReasons.push(`Amount diff: $${amountDiff.toFixed(2)}`);
           }
 
-          // Core field bonuses
+          // Date bonuses
           if (sameDate) {
             score += 25;
             matchReasons.push('Same date');
           } else if (dateDiffDays <= 7) {
-            score += 15;
-            matchReasons.push(`Date diff: ${dateDiffDays} days`);
-          } else if (dateDiffDays <= 30) {
-            score += 5;
+            score += 10;
             matchReasons.push(`Date diff: ${dateDiffDays} days`);
           }
 
+          // Bill ID bonus (now fuzzy)
           if (sameBillId) {
             score += 15;
-            matchReasons.push('Same bill ID');
+            matchReasons.push(`Same bill ID (${Math.round(billSimilarity * 100)}%)`);
           }
 
-          if (samePaymentType) {
+          // Receipt URL bonus
+          if (sameReceipt) {
             score += 10;
+            matchReasons.push('Same receipt file');
+          }
+
+          // Secondary field bonuses
+          if (samePaymentType) {
+            score += 5;
             matchReasons.push('Same payment type');
           }
 
@@ -1245,52 +1309,34 @@
             matchReasons.push('Same account');
           }
 
+          // Description similarity
           if (descriptionSimilarity >= 0.9) {
             score += 10;
             matchReasons.push(`Description match: ${Math.round(descriptionSimilarity * 100)}%`);
           } else if (descriptionSimilarity >= 0.7) {
-            score += Math.round(descriptionSimilarity * 10);
+            score += 5;
             matchReasons.push(`Description match: ${Math.round(descriptionSimilarity * 100)}%`);
           }
 
           // Penalties
           if (dateDiffDays > 30) {
             score -= 15;
-            matchReasons.push('⚠ Date diff >30 days');
+            matchReasons.push('Date diff >30 days');
           }
 
           if (exp1Account && exp2Account && !sameAccount) {
             score -= 10;
-            matchReasons.push('⚠ Different account');
+            matchReasons.push('Different account');
           }
 
           if (exp1PaymentType && exp2PaymentType && !samePaymentType) {
-            score -= 10;
-            matchReasons.push('⚠ Different payment type');
+            score -= 5;
+            matchReasons.push('Different payment type');
           }
 
-          // TIMESTAMP PROXIMITY CHECK: If created within seconds of each other,
-          // they're likely intentional line items from the same bill entry, NOT duplicates
-          const exp1CreatedAt = exp1.created_at;
-          const exp2CreatedAt = exp2.created_at;
-          if (exp1CreatedAt && exp2CreatedAt) {
-            const ts1 = new Date(exp1CreatedAt).getTime();
-            const ts2 = new Date(exp2CreatedAt).getTime();
-            const timestampDiffSeconds = Math.abs(ts1 - ts2) / 1000;
-
-            if (timestampDiffSeconds < 30) {
-              // Created within 30 seconds - very likely same batch entry, skip entirely
-              console.log(`[DUPLICATES] Skipping pair (created ${timestampDiffSeconds.toFixed(1)}s apart): ${exp1Id} <-> ${exp2Id}`);
-              continue;
-            } else if (timestampDiffSeconds < 120) {
-              // Created within 2 minutes - probably same session, strong penalty
-              score -= 40;
-              matchReasons.push(`⚠ Created ${Math.round(timestampDiffSeconds)}s apart (same batch?)`);
-            } else if (timestampDiffSeconds < 300) {
-              // Created within 5 minutes - possibly same session, moderate penalty
-              score -= 20;
-              matchReasons.push(`⚠ Created ${Math.round(timestampDiffSeconds / 60)}min apart`);
-            }
+          if (bothHaveReceipt && !sameReceipt) {
+            score -= 10;
+            matchReasons.push('Different receipt files');
           }
 
           // Classify based on score
@@ -1476,28 +1522,39 @@
     if (!vendorId) return null;
 
     const trimmedBillId = billId?.trim() || null;
+    const normalizedNewBill = normalizeBillId(trimmedBillId);
     const normalizedDate = date?.split('T')[0] || null;
     const numAmount = amount !== null ? parseFloat(amount) : null;
 
-    // Look for potential duplicates with same vendor
     const sameVendorExpenses = expenses.filter(exp => exp.vendor_id === vendorId);
 
     for (const exp of sameVendorExpenses) {
       const expBillId = exp.bill_id?.trim();
+      const normalizedExpBill = normalizeBillId(expBillId);
       const expAmount = parseFloat(exp.Amount) || 0;
       const expDate = exp.TxnDate?.split('T')[0];
 
-      const sameBillId = trimmedBillId && expBillId && trimmedBillId === expBillId;
+      // Fuzzy bill ID matching (90% similarity)
+      const billSim = (normalizedNewBill && normalizedExpBill)
+        ? calculateStringSimilarity(normalizedNewBill, normalizedExpBill)
+        : 0;
+      const sameBillId = billSim >= 0.9;
+
       const sameAmount = numAmount !== null && numAmount > 0 && Math.abs(numAmount - expAmount) < 0.01;
       const sameDate = normalizedDate && expDate && normalizedDate === expDate;
 
-      // Check for strong duplicate indicators
+      // Split bill bypass
+      if (sameBillId && expBillId) {
+        const billMeta = getBillMetadata(expBillId);
+        if (billMeta && billMeta.status === 'split') continue;
+      }
+
       let duplicateType = null;
 
       if (sameBillId && sameAmount) {
-        duplicateType = 'strong'; // Same vendor + bill + amount
+        duplicateType = 'strong';
       } else if (sameAmount && sameDate && numAmount >= 50) {
-        duplicateType = 'likely'; // Same vendor + amount + date (significant amount)
+        duplicateType = 'likely';
       }
 
       if (duplicateType) {
@@ -7488,6 +7545,7 @@
     els.btnCloseBillModal?.addEventListener('click', closeBillEditModal);
     els.btnCancelBillEdit?.addEventListener('click', closeBillEditModal);
     els.btnSaveBillEdit?.addEventListener('click', saveBillEdit);
+    els.btnReprocessAndrew?.addEventListener('click', reprocessBillWithAndrew);
 
     // Bill status option selection
     els.billStatusOptions?.addEventListener('click', (e) => {
@@ -8611,6 +8669,46 @@
     } finally {
       els.btnSaveBillEdit.disabled = false;
       els.btnSaveBillEdit.textContent = 'Save Changes';
+    }
+  }
+
+  // ================================
+  // ANDREW BILL REPROCESS
+  // ================================
+
+  async function reprocessBillWithAndrew() {
+    if (!currentEditBillId) return;
+    if (!selectedProjectId || selectedProjectId === 'all') {
+      if (window.Toast) Toast.warning('Select a project first to reprocess with Andrew.');
+      return;
+    }
+
+    const btn = els.btnReprocessAndrew;
+    btn.disabled = true;
+    const originalHTML = btn.innerHTML;
+    btn.innerHTML = '<span class="btn-andrew-icon">An</span> Processing...';
+
+    try {
+      const apiBase = getApiBase();
+      const url = `${apiBase}/andrew/reconcile-bill?bill_id=${encodeURIComponent(currentEditBillId)}&project_id=${encodeURIComponent(selectedProjectId)}&source=manual`;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || `Request failed (${res.status})`);
+      }
+
+      if (window.Toast) Toast.success('Andrew is reviewing this bill. Check messages for results.');
+    } catch (err) {
+      console.error('[BILL] Andrew reprocess error:', err);
+      if (window.Toast) Toast.error('Could not start bill review: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHTML;
     }
   }
 

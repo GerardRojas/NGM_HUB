@@ -35,7 +35,9 @@
       "Bash(git status:*)",
       "Bash(git mv:*)",
       "Bash(awk:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(test:*)",
+      "Bash(where:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"

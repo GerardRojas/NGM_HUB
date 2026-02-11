@@ -60,17 +60,26 @@
     activeReceiptFlow: null, // { receiptId, state } when a receipt split flow is active
   };
 
+  // ── Render message HTML cache ──
+  // Maps message.id -> { html, contentHash } for memoized rendering
+  const _renderCache = new Map();
+
+  function _msgContentHash(msg) {
+    // Lightweight hash of fields that affect rendered HTML
+    return `${msg.id}|${msg.content}|${msg.is_deleted ? 1 : 0}|${msg._failed ? 1 : 0}|${msg.metadata?.receipt_status || ''}|${msg.thread_count || 0}|${JSON.stringify(msg.reactions || {})}`;
+  }
+
   // Debounced render to prevent rapid re-renders causing flicker
   function debouncedRenderMessages(immediate = false) {
     if (state.renderDebounceTimer) {
-      clearTimeout(state.renderDebounceTimer);
+      cancelAnimationFrame(state.renderDebounceTimer);
     }
     if (immediate) {
       renderMessagesInternal();
     } else {
-      state.renderDebounceTimer = setTimeout(() => {
+      state.renderDebounceTimer = requestAnimationFrame(() => {
         renderMessagesInternal();
-      }, 50); // Small delay to batch rapid updates
+      });
     }
   }
 
@@ -352,16 +361,20 @@
     }
   }
 
-  async function loadMessages(channelType, channelId, projectId) {
+  const MESSAGES_PAGE_SIZE = 50;
+  let _hasMoreMessages = false;
+  let _loadingMore = false;
+  let _currentOffset = 0; // Tracks how many total messages have been loaded for offset pagination
+
+  async function loadMessages(channelType, channelId, projectId, options = {}) {
     try {
-      // Build query params based on channel type
-      let url = `${API_BASE}/messages?channel_type=${channelType}`;
+      const limit = options.limit || MESSAGES_PAGE_SIZE;
+      const offset = options.offset || 0;
+      let url = `${API_BASE}/messages?channel_type=${channelType}&limit=${limit}&offset=${offset}`;
 
       if (channelType.startsWith("project_")) {
-        // Project channels use project_id
         url += `&project_id=${projectId}`;
       } else {
-        // Custom and direct channels use channel_id
         url += `&channel_id=${channelId}`;
       }
 
@@ -371,10 +384,74 @@
         return [];
       }
       const data = await res.json();
-      return data.messages || data || [];
+      const messages = data.messages || data || [];
+
+      // If we got fewer than requested, there are no more older messages
+      _hasMoreMessages = messages.length >= limit;
+
+      return messages;
     } catch (err) {
       console.warn("[Messages] Failed to load messages:", err);
       return [];
+    }
+  }
+
+  async function loadOlderMessages() {
+    if (_loadingMore || !_hasMoreMessages || !state.currentChannel) return;
+    _loadingMore = true;
+
+    const container = DOM.messagesContainer;
+    const prevScrollHeight = container?.scrollHeight || 0;
+
+    // Show loading indicator at top
+    const loader = document.createElement('div');
+    loader.className = 'msg-loading-older';
+    loader.textContent = 'Loading older messages...';
+    DOM.messagesList?.prepend(loader);
+
+    try {
+      const ch = state.currentChannel;
+
+      // Backend returns messages in ascending order (oldest first).
+      // We need older messages, so we need to figure out the offset.
+      // Since we always load from offset 0 initially (most recent via last N),
+      // we ask for the next page by increasing the offset.
+      _currentOffset += MESSAGES_PAGE_SIZE;
+
+      const olderMessages = await loadMessages(ch.type, ch.id, ch.projectId, {
+        offset: _currentOffset,
+        limit: MESSAGES_PAGE_SIZE,
+      });
+
+      loader.remove();
+
+      if (olderMessages.length > 0) {
+        // Deduplicate — some messages may already be in state
+        const existingIds = new Set(state.messages.map(m => m.id));
+        const newOlder = olderMessages.filter(m => !existingIds.has(m.id));
+
+        if (newOlder.length > 0) {
+          state.messages = [...newOlder, ...state.messages];
+          // Sort ascending by created_at
+          state.messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+          _markFullRebuild();
+          renderMessages(true);
+
+          // Restore scroll position so the user doesn't jump
+          if (container) {
+            requestAnimationFrame(() => {
+              const newScrollHeight = container.scrollHeight;
+              container.scrollTop = newScrollHeight - prevScrollHeight;
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[Messages] Failed to load older messages:", err);
+      _currentOffset -= MESSAGES_PAGE_SIZE; // Revert offset on error
+      loader.remove();
+    } finally {
+      _loadingMore = false;
     }
   }
 
@@ -395,14 +472,26 @@
     '#eab308', '#84cc16', '#22c55e'
   ];
 
+  // In-memory cache for project colors (avoid JSON.parse on every render)
+  let _projectColorsCache = null;
+
+  function _getProjectColors() {
+    if (!_projectColorsCache) {
+      try { _projectColorsCache = JSON.parse(localStorage.getItem('ngm_project_colors') || '{}'); }
+      catch (e) { _projectColorsCache = {}; }
+    }
+    return _projectColorsCache;
+  }
+
   function getProjectColor(projectId) {
-    const colors = JSON.parse(localStorage.getItem('ngm_project_colors') || '{}');
+    const colors = _getProjectColors();
     return colors[projectId] || PROJECT_COLORS[Math.abs(hashCode(projectId)) % PROJECT_COLORS.length];
   }
 
   function setProjectColor(projectId, color) {
-    const colors = JSON.parse(localStorage.getItem('ngm_project_colors') || '{}');
+    const colors = _getProjectColors();
     colors[projectId] = color;
+    _projectColorsCache = colors;
     localStorage.setItem('ngm_project_colors', JSON.stringify(colors));
   }
 
@@ -478,20 +567,21 @@
   }
 
   // Main section collapse state (Groups, Projects, Direct Messages)
+  let _sectionCollapsedCache = null;
+
   function getSectionCollapsedState(sectionName) {
-    try {
-      const states = JSON.parse(localStorage.getItem("ngm_section_collapsed_states") || "{}");
-      return states[sectionName] === true;
-    } catch (e) {
-      return false;
+    if (!_sectionCollapsedCache) {
+      try { _sectionCollapsedCache = JSON.parse(localStorage.getItem("ngm_section_collapsed_states") || "{}"); }
+      catch (e) { _sectionCollapsedCache = {}; }
     }
+    return _sectionCollapsedCache[sectionName] === true;
   }
 
   function setSectionCollapsedState(sectionName, isCollapsed) {
+    if (!_sectionCollapsedCache) _sectionCollapsedCache = {};
+    _sectionCollapsedCache[sectionName] = isCollapsed;
     try {
-      const states = JSON.parse(localStorage.getItem("ngm_section_collapsed_states") || "{}");
-      states[sectionName] = isCollapsed;
-      localStorage.setItem("ngm_section_collapsed_states", JSON.stringify(states));
+      localStorage.setItem("ngm_section_collapsed_states", JSON.stringify(_sectionCollapsedCache));
     } catch (e) {
       console.warn("[Messages] Failed to save section collapsed state:", e);
     }
@@ -853,6 +943,7 @@
     }
 
     state.messages = messages;
+    _markFullRebuild();
 
     // Scan loaded messages for active flows (check flow / duplicate flow / receipt flow)
     state.activeCheckFlow = null;
@@ -882,6 +973,10 @@
     if (DOM.chatLoading) DOM.chatLoading.style.display = "none";
     DOM.messagesList.style.display = "flex";
     renderMessages();
+
+    // Reset pagination state for new channel
+    _hasMoreMessages = true;
+    _currentOffset = 0;
 
     // Subscribe to realtime updates
     subscribeToChannel(channel);
@@ -1003,7 +1098,17 @@
     debouncedRenderMessages(immediate);
   }
 
-  // Internal render function - does the actual DOM update
+  // Track last rendered state for incremental updates
+  let _lastRenderedIds = [];
+  let _fullRebuildNeeded = true;
+
+  // Force a full rebuild on next render (call when messages are replaced, not appended)
+  function _markFullRebuild() {
+    _fullRebuildNeeded = true;
+    _renderCache.clear();
+  }
+
+  // Internal render function - uses incremental DOM updates when possible
   function renderMessagesInternal() {
     if (!DOM.messagesList) return;
 
@@ -1013,11 +1118,12 @@
           <p>No messages yet. Be the first to say something!</p>
         </div>
       `;
+      _lastRenderedIds = [];
+      _fullRebuildNeeded = true;
       return;
     }
 
     // For each receipt, only the latest bot message should show action buttons.
-    // Older messages for the same receipt had their buttons acted on already.
     const latestBotMsgPerReceipt = new Map();
     state.messages.forEach((msg) => {
       const rid = msg.metadata?.pending_receipt_id;
@@ -1026,26 +1132,78 @@
       }
     });
 
+    const currentIds = state.messages.map(m => m.id);
+
+    // ── FAST PATH: only new messages appended at the end ──
+    if (!_fullRebuildNeeded &&
+        _lastRenderedIds.length > 0 &&
+        currentIds.length > _lastRenderedIds.length &&
+        currentIds.slice(0, _lastRenderedIds.length).every((id, i) => id === _lastRenderedIds[i])) {
+
+      const newMessages = state.messages.slice(_lastRenderedIds.length);
+      let lastDate = _lastRenderedIds.length > 0
+        ? new Date(state.messages[_lastRenderedIds.length - 1].created_at).toDateString()
+        : null;
+
+      const fragment = document.createDocumentFragment();
+      newMessages.forEach((msg) => {
+        const msgDate = new Date(msg.created_at).toDateString();
+        if (msgDate !== lastDate) {
+          const sep = document.createElement("div");
+          sep.innerHTML = renderDateSeparator(msg.created_at);
+          while (sep.firstChild) fragment.appendChild(sep.firstChild);
+          lastDate = msgDate;
+        }
+        const isSending = msg.id?.toString().startsWith("temp-");
+        const rid = msg.metadata?.pending_receipt_id;
+        const showButtons = !rid || latestBotMsgPerReceipt.get(rid) === msg.id;
+        const html = renderMessage(msg, isSending, showButtons);
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = html;
+        // Add entrance animation class to newly appended messages
+        const msgEl = wrapper.firstElementChild;
+        if (msgEl && msgEl.classList.contains('msg-message')) {
+          msgEl.classList.add('msg-message--new');
+        }
+        while (wrapper.firstChild) fragment.appendChild(wrapper.firstChild);
+      });
+
+      DOM.messagesList.appendChild(fragment);
+      _lastRenderedIds = [...currentIds];
+      scrollToBottom();
+      return;
+    }
+
+    // ── FULL REBUILD (channel switch, message replaced, etc.) ──
+    // Build all HTML in one pass, using cache when possible
     let html = "";
     let lastDate = null;
 
     state.messages.forEach((msg) => {
       const msgDate = new Date(msg.created_at).toDateString();
-
-      // Date separator
       if (msgDate !== lastDate) {
         html += renderDateSeparator(msg.created_at);
         lastDate = msgDate;
       }
-
-      // Check if this is a temporary/sending message
       const isSending = msg.id?.toString().startsWith("temp-");
       const rid = msg.metadata?.pending_receipt_id;
       const showButtons = !rid || latestBotMsgPerReceipt.get(rid) === msg.id;
-      html += renderMessage(msg, isSending, showButtons);
+
+      // Check cache
+      const hash = _msgContentHash(msg);
+      const cached = _renderCache.get(msg.id);
+      if (cached && cached.contentHash === hash && cached.showButtons === showButtons) {
+        html += cached.html;
+      } else {
+        const msgHtml = renderMessage(msg, isSending, showButtons);
+        _renderCache.set(msg.id, { html: msgHtml, contentHash: hash, showButtons });
+        html += msgHtml;
+      }
     });
 
     DOM.messagesList.innerHTML = html;
+    _lastRenderedIds = [...currentIds];
+    _fullRebuildNeeded = false;
     scrollToBottom();
   }
 
@@ -1398,11 +1556,97 @@
     return html;
   }
 
+  // Memoize formatted content — same raw content always produces same HTML
+  const _formatCache = new Map();
+  const _FORMAT_CACHE_MAX = 200;
+
   function formatMessageContent(content) {
     if (!content) return "";
 
-    // Escape HTML first
-    let formatted = escapeHtml(content);
+    // Check cache first
+    const cached = _formatCache.get(content);
+    if (cached) return cached;
+
+    const result = _formatMessageContentUncached(content);
+
+    // Evict oldest entries if cache is too large
+    if (_formatCache.size >= _FORMAT_CACHE_MAX) {
+      const firstKey = _formatCache.keys().next().value;
+      _formatCache.delete(firstKey);
+    }
+    _formatCache.set(content, result);
+    return result;
+  }
+
+  function _formatMessageContentUncached(content) {
+    // Split content into markdown table blocks vs text blocks
+    const lines = content.split("\n");
+    const blocks = [];
+    let textBuf = [];
+    let tableBuf = [];
+
+    const flushText = () => {
+      if (textBuf.length) { blocks.push({ type: "text", text: textBuf.join("\n") }); textBuf = []; }
+    };
+    const flushTable = () => {
+      if (tableBuf.length) { blocks.push({ type: "table", lines: tableBuf }); tableBuf = []; }
+    };
+
+    for (const line of lines) {
+      const t = line.trim();
+      if (t.startsWith("|") && t.endsWith("|")) {
+        flushText();
+        tableBuf.push(t);
+      } else {
+        flushTable();
+        textBuf.push(line);
+      }
+    }
+    flushText();
+    flushTable();
+
+    let result = "";
+    for (const block of blocks) {
+      if (block.type === "table") {
+        result += _renderMarkdownTable(block.lines);
+      } else {
+        result += _formatTextBlock(block.text);
+      }
+    }
+    return result;
+  }
+
+  function _renderMarkdownTable(lines) {
+    const isSep = (l) => /^\|[\s\-:|]+\|$/.test(l);
+    const parseRow = (l) => l.split("|").map(c => c.trim()).filter((_, i, a) => i > 0 && i < a.length - 1);
+    const dataRows = lines.filter(l => !isSep(l));
+    if (!dataRows.length) return "";
+
+    const hdrCells = parseRow(dataRows[0]);
+    let html = '<table class="msg-md-table"><thead><tr>';
+    for (const c of hdrCells) {
+      let cell = escapeHtml(c);
+      cell = cell.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      html += `<th>${cell}</th>`;
+    }
+    html += "</tr></thead><tbody>";
+
+    for (let r = 1; r < dataRows.length; r++) {
+      const cells = parseRow(dataRows[r]);
+      html += "<tr>";
+      for (let i = 0; i < hdrCells.length; i++) {
+        let cell = escapeHtml(cells[i] || "");
+        cell = cell.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+        html += `<td>${cell}</td>`;
+      }
+      html += "</tr>";
+    }
+    html += "</tbody></table>";
+    return html;
+  }
+
+  function _formatTextBlock(text) {
+    let formatted = escapeHtml(text);
 
     // Parse @mentions
     formatted = formatted.replace(/@(\w+)/g, (match, username) => {
@@ -1579,6 +1823,41 @@
   }
 
   /**
+   * Detect @Andrew mention with a bill number reference.
+   * Patterns: "@Andrew revisa el bill 123", "@Andrew review bill #456"
+   */
+  function _getAndrewBillAction(content) {
+    if (!state.currentChannel?.projectId) return null;
+    if (!/@Andrew\b/i.test(content)) return null;
+    const billMatch = content.match(/(?:bill|factura|invoice)\s*#?\s*(\d+)/i);
+    if (!billMatch) return null;
+    return { billId: billMatch[1], projectId: state.currentChannel.projectId };
+  }
+
+  /**
+   * Call Andrew's reconcile-bill endpoint (fire-and-forget).
+   * Andrew posts results to the project_general channel via realtime.
+   */
+  async function _forwardToAndrewReconcile(billId, projectId) {
+    try {
+      const url = `${API_BASE}/andrew/reconcile-bill?bill_id=${encodeURIComponent(billId)}&project_id=${encodeURIComponent(projectId)}&source=manual`;
+      const response = await authFetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        console.error("[Messages] Andrew reconcile error:", error);
+        showToast("Andrew could not process this bill", "error");
+      }
+      _fetchBotMessages();
+    } catch (err) {
+      console.error("[Messages] Andrew reconcile fetch error:", err);
+      showToast("Failed to reach Andrew", "error");
+    }
+  }
+
+  /**
    * Fetch recent messages to pick up bot responses.
    * Polling fallback for when Supabase Realtime doesn't deliver.
    */
@@ -1608,6 +1887,7 @@
         state.messages.sort((a, b) =>
           new Date(a.created_at) - new Date(b.created_at)
         );
+        _markFullRebuild();
         renderMessages(true);
 
         // Update flow state from bot messages
@@ -1692,6 +1972,7 @@
       const tempIndex = state.messages.findIndex((m) => m.id === tempMessage.id);
       if (tempIndex !== -1) {
         state.messages[tempIndex] = data.message || data;
+        _markFullRebuild();
         renderMessages();
       }
 
@@ -1710,6 +1991,12 @@
       if (receiptFlowAction) {
         _forwardToReceiptAction(receiptFlowAction.receiptId, receiptFlowAction.action, content);
       }
+
+      // Forward to Andrew reconcile-bill if @Andrew was mentioned with a bill reference
+      const andrewAction = _getAndrewBillAction(content);
+      if (andrewAction) {
+        _forwardToAndrewReconcile(andrewAction.billId, andrewAction.projectId);
+      }
     } catch (err) {
       console.error("[Messages] Send error:", err);
       showToast("Failed to send message", "error");
@@ -1717,6 +2004,7 @@
       const failIdx = state.messages.findIndex((m) => m.id === tempMessage.id);
       if (failIdx !== -1) {
         state.messages[failIdx]._failed = true;
+        _markFullRebuild();
         renderMessages();
       }
     }
@@ -1743,7 +2031,13 @@
   }
 
   function showMentionDropdown(query, startPos) {
-    const filtered = state.users.filter((u) =>
+    // Bot agents available for @mention
+    const botMentionables = [
+      { user_id: "00000000-0000-0000-0000-000000000003", user_name: "Andrew", _isBot: true },
+    ];
+    const allMentionables = [...state.users, ...botMentionables];
+
+    const filtered = allMentionables.filter((u) =>
       u.user_name?.toLowerCase().includes(query)
     );
 
@@ -1754,12 +2048,15 @@
 
     let html = "";
     filtered.slice(0, 8).forEach((user) => {
-      const avatarColor = getAvatarColor(user);
-      const initials = getInitials(user.user_name);
+      const isBot = user._isBot;
+      const bot = isBot ? BOT_AGENTS[user.user_id] : null;
+      const avatarColor = bot ? bot.color : getAvatarColor(user);
+      const initials = bot ? bot.initials : getInitials(user.user_name);
+      const badge = isBot ? '<span class="msg-mention-bot-badge">BOT</span>' : '';
       html += `
         <button type="button" class="msg-mention-item" data-user-id="${user.user_id}" data-user-name="${escapeHtml(user.user_name)}">
           <span class="msg-mention-avatar" style="color: ${avatarColor}; border-color: ${avatarColor}">${initials}</span>
-          <span class="msg-mention-name">${escapeHtml(user.user_name)}</span>
+          <span class="msg-mention-name">${escapeHtml(user.user_name)}${badge}</span>
         </button>
       `;
     });
@@ -1838,7 +2135,27 @@
     } else {
       message.reactions[emoji].push(currentUserId);
     }
-    renderMessages();
+
+    // Targeted DOM update for reactions (avoid full re-render)
+    _renderCache.delete(messageId);
+    const msgEl = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (msgEl) {
+      const reactionsContainer = msgEl.querySelector('.msg-reactions');
+      const newReactionsHtml = renderReactions(message.reactions, messageId);
+      if (reactionsContainer) {
+        if (newReactionsHtml) {
+          reactionsContainer.outerHTML = newReactionsHtml;
+        } else {
+          reactionsContainer.remove();
+        }
+      } else if (newReactionsHtml) {
+        const actionsEl = msgEl.querySelector('.msg-message-actions');
+        if (actionsEl) actionsEl.insertAdjacentHTML('beforebegin', newReactionsHtml);
+      }
+    } else {
+      _markFullRebuild();
+      renderMessages();
+    }
 
     try {
       await authFetch(`${API_BASE}/messages/${messageId}/reactions`, {
@@ -1916,6 +2233,7 @@
     // Optimistic update
     message.is_deleted = true;
     message.content = "";
+    _markFullRebuild();
     renderMessages();
 
     try {
@@ -1926,6 +2244,7 @@
         // Revert
         message.is_deleted = false;
         message.content = originalContent;
+        _markFullRebuild();
         renderMessages();
         const err = await res.json().catch(() => ({}));
         showToast(err.detail || "Failed to delete message", "error");
@@ -1934,6 +2253,7 @@
       console.error("[Messages] Delete error:", err);
       message.is_deleted = false;
       message.content = originalContent;
+      _markFullRebuild();
       renderMessages();
       showToast("Failed to delete message", "error");
     }
@@ -1962,6 +2282,7 @@
       if (res.ok) {
         const data = await res.json();
         state.messages = [];
+        _markFullRebuild();
         renderMessages();
         showToast(`Cleared ${data.count || 0} messages`, "success");
       } else {
@@ -2066,6 +2387,8 @@
         const message = state.messages.find((m) => m.id === parentId);
         if (message) {
           message.thread_count = (message.thread_count || 0) + 1;
+          _renderCache.delete(message.id);
+          _markFullRebuild();
           renderMessages();
         }
       }
@@ -2295,6 +2618,7 @@
         const tempIdx = state.messages.findIndex(m => m.id === tempMsgId);
         if (tempIdx !== -1) {
           state.messages[tempIdx]._failed = true;
+          _markFullRebuild();
           renderMessages();
         }
         if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
@@ -2365,6 +2689,7 @@
       const tempIndex = state.messages.findIndex((m) => m.id === tempId);
       if (tempIndex !== -1) {
         state.messages[tempIndex] = data.message || data;
+        _markFullRebuild();
         renderMessages();
       }
     } catch (err) {
@@ -2483,44 +2808,29 @@
    * Update the receipt status in messages (for UI feedback)
    */
   function updateReceiptStatusInMessages(receiptId, newStatus) {
-    // Find messages with this receipt ID and update their status
-    let updated = false;
+    // Update state (for future renders)
     state.messages.forEach(msg => {
       if (msg.metadata?.pending_receipt_id === receiptId) {
         msg.metadata.receipt_status = newStatus;
-        updated = true;
+        // Invalidate cache for this message
+        _renderCache.delete(msg.id);
       }
     });
 
-    if (updated) {
-      renderMessages();
-    }
+    // Direct DOM update only (no full re-render needed for status change)
+    const statusConfig = {
+      pending: { label: 'Pending', icon: '\u23F3' },
+      processing: { label: 'Processing', icon: '\u2699\uFE0F' },
+      ready: { label: 'Ready', icon: '\u2705' },
+      linked: { label: 'Done', icon: '\u2713' },
+      duplicate: { label: 'Duplicate', icon: '!' },
+      error: { label: 'Error', icon: '\u26A0\uFE0F' }
+    };
+    const config = statusConfig[newStatus] || statusConfig.pending;
 
-    // Also update the DOM directly for immediate feedback
-    const statusElements = document.querySelectorAll(`[data-receipt-id="${receiptId}"]`);
+    const statusElements = document.querySelectorAll(`.msg-receipt-status[data-receipt-id="${receiptId}"]`);
     statusElements.forEach(el => {
-      // Remove old status classes
-      el.classList.remove(
-        'msg-receipt-status--pending',
-        'msg-receipt-status--processing',
-        'msg-receipt-status--ready',
-        'msg-receipt-status--linked',
-        'msg-receipt-status--duplicate',
-        'msg-receipt-status--error'
-      );
-      // Add new status class
-      el.classList.add(`msg-receipt-status--${newStatus}`);
-
-      // Update label and icon
-      const statusConfig = {
-        pending: { label: 'Pending', icon: '⏳' },
-        processing: { label: 'Processing', icon: '⚙️' },
-        ready: { label: 'Ready', icon: '✅' },
-        linked: { label: 'Done', icon: '✓' },
-        duplicate: { label: 'Duplicate', icon: '!' },
-        error: { label: 'Error', icon: '⚠️' }
-      };
-      const config = statusConfig[newStatus] || statusConfig.pending;
+      el.className = `msg-receipt-status msg-receipt-status--${newStatus}`;
       const labelEl = el.querySelector('.msg-receipt-status-label');
       const iconEl = el.querySelector('.msg-receipt-status-icon');
       if (labelEl) labelEl.textContent = config.label;
@@ -3094,9 +3404,12 @@
         console.log("[Messages] Realtime subscription status:", status);
         if (status === "SUBSCRIBED") {
           realtimeConnected = true;
+          // Realtime is working — stop redundant polling to save bandwidth
+          stopMessagePolling();
         } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
           realtimeConnected = false;
-          console.warn("[Messages] Realtime disconnected, relying on polling");
+          console.warn("[Messages] Realtime disconnected, starting polling fallback");
+          startMessagePolling();
         }
       });
 
@@ -3115,7 +3428,7 @@
         }
       });
 
-    // Always start polling as a safety net
+    // Start polling only as a safety net — will auto-stop when realtime confirms connection
     startMessagePolling();
   }
 
@@ -3191,12 +3504,13 @@
       }
       if (tempIndex !== -1) {
         state.messages[tempIndex] = message;
+        _markFullRebuild();
         renderMessages();
         return;
       }
     }
 
-    // New message - add and render
+    // New message - add and render (uses fast-path incremental append)
     state.messages.push(message);
 
     // Auto-scroll if user is near the bottom (within 150px)
@@ -3207,7 +3521,7 @@
     renderMessages();
 
     if (wasNearBottom) {
-      setTimeout(() => scrollToBottom(true), 60);
+      requestAnimationFrame(() => scrollToBottom(true));
     }
 
     // Track active check flow from bot messages
@@ -3450,6 +3764,13 @@
         group.style.display = name?.includes(query) || hasVisibleChannels ? "" : "none";
       });
     });
+
+    // Scroll-up to load older messages (pagination)
+    DOM.messagesContainer?.addEventListener("scroll", () => {
+      if (DOM.messagesContainer.scrollTop < 80 && _hasMoreMessages && !_loadingMore) {
+        loadOlderMessages();
+      }
+    }, { passive: true });
 
     // Message input
     DOM.messageInput?.addEventListener("input", (e) => {
@@ -3971,9 +4292,7 @@
   // ─────────────────────────────────────────────────────────────────────────
   function escapeHtml(str) {
     if (!str) return "";
-    const div = document.createElement("div");
-    div.textContent = str;
-    return div.innerHTML;
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   function escapeRegex(str) {
@@ -4063,7 +4382,8 @@
   }
 
   function autoResizeTextarea(textarea) {
-    textarea.style.height = "auto";
+    // Reset to 1px instead of "auto" to measure true scrollHeight without double reflow
+    textarea.style.height = "1px";
     textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px";
   }
 

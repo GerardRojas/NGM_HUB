@@ -74,6 +74,7 @@
       "**Clear filters:** 'quita filtros', 'show all'",
       "**View summary:** 'resumen de gastos', 'cuantos gastos hay'",
       "**View active filters:** 'que filtros hay', 'filtros activos'",
+      "**Reprocess bill with Andrew:** 'revisa el bill 123', 'review bill #456 with andrew'",
     ],
     projects: [
       "List and search projects",
@@ -203,6 +204,11 @@
       make: () => ({ type: "copilot", action: "expand_all" }) },
     { rx: /^(?:collapse|colapsar|cerrar|contraer)\s*(?:all|todo|todos)?$/i,
       make: () => ({ type: "copilot", action: "collapse_all" }) },
+    // Andrew bill reprocess
+    { rx: /^(?:@?andrew\s+)?(?:revisa|review|reprocess|check|analiza|analyze)\s+(?:el\s+)?(?:bill|factura|invoice)\s*#?\s*(\d+)$/i,
+      make: (m) => ({ type: "copilot", action: "andrew_reprocess_bill", params: { bill_id: m[1] } }) },
+    { rx: /^(?:revisa|review|reprocess|check|analiza|analyze)\s+(?:el\s+)?(?:bill|factura|invoice)\s*#?\s*(\d+)\s+(?:con|with)\s+andrew$/i,
+      make: (m) => ({ type: "copilot", action: "andrew_reprocess_bill", params: { bill_id: m[1] } }) },
     // BVA shortcut
     { rx: /^bva\s+(.+)$/i,
       make: (m) => ({ type: "report", action: "bva", params: { project: m[1].trim() } }) },
@@ -467,10 +473,42 @@
           }
           return { handled: false, needsChat: true };
         }
+
+        case "andrew_reprocess_bill": {
+          const projectId = EA.getSummary().selectedProject;
+          if (!projectId || projectId === 'all') {
+            return { handled: true, message: "Please select a specific project first. Andrew needs a project context to review a bill." };
+          }
+          const billId = params.bill_id;
+          if (!billId) {
+            return { handled: true, message: "Please specify a bill number. Example: \"revisa el bill 123\"" };
+          }
+          try {
+            const url = `${API_BASE}/andrew/reconcile-bill?bill_id=${encodeURIComponent(billId)}&project_id=${encodeURIComponent(projectId)}&source=manual`;
+            const response = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+              credentials: "include",
+            });
+            if (!response.ok) {
+              const errData = await response.json().catch(() => ({}));
+              throw new Error(errData.detail || `Request failed (${response.status})`);
+            }
+            return { handled: true, message: `Delegating bill #${billId} review to Andrew. He will post results in the project messages channel.` };
+          } catch (err) {
+            console.error("[Arturito Widget] Andrew reprocess error:", err);
+            return { handled: true, message: `Could not reach Andrew: ${err.message}` };
+          }
+        }
       }
     }
 
-    // â”€â”€ PIPELINE PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Andrew bill reprocess on non-expenses pages
+    if (action === "andrew_reprocess_bill") {
+      return { handled: true, message: "Please navigate to the Expenses page and select a project first, then try again." };
+    }
+
+    // â"€â"€ PIPELINE PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if (page === "pipeline.html") {
       const handlers = copilotHandlers["pipeline.html"];
       if (!handlers) return { handled: false, needsChat: true };

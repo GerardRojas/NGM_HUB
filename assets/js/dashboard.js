@@ -66,26 +66,47 @@ document.addEventListener("DOMContentLoaded", async () => {
     userPill.textContent = `${user.username || "User"} · ${roleText}${seniorityText}`;
   }
 
-  // 3) Filtrar módulos por rol y marcar coming soon
+  // 3) Filtrar modulos por permisos (misma logica que sidebar)
   const userRole = String(user.role || user.role_id || "").trim();
 
-  document.querySelectorAll(".module-card").forEach((card) => {
-    const rolesAttr = card.getAttribute("data-roles") || "";
-    const allowedRoles = rolesAttr
-      .split(",")
-      .map((r) => r.trim())
-      .filter(Boolean);
+  // Read permissions from sidebar cache (same source of truth)
+  let allowedModuleKeys = null;
+  try {
+    const cached = localStorage.getItem("sidebar_permissions");
+    if (cached) {
+      const { permissions } = JSON.parse(cached);
+      if (permissions) {
+        allowedModuleKeys = new Set(
+          permissions
+            .filter(p => p.can_view === true)
+            .map(p => p.module_key)
+        );
+      }
+    }
+  } catch (e) {
+    console.warn("[Dashboard] Could not read sidebar permissions cache:", e);
+  }
 
+  document.querySelectorAll(".module-card").forEach((card) => {
+    const moduleKey = card.getAttribute("data-module");
     const status = card.getAttribute("data-status") || "active";
 
-    // Si hay lista de roles y el rol del usuario no está, ocultamos
-    if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
-      card.style.display = "none";
-      return;
+    // For active module cards, use role_permissions (same as sidebar)
+    if (moduleKey && status === "active" && allowedModuleKeys) {
+      if (!allowedModuleKeys.has(moduleKey)) {
+        card.style.display = "none";
+        return;
+      }
     }
 
-    // Módulo coming soon -> gris + alerta al click
+    // Coming soon cards: keep data-roles filtering for these
     if (status === "coming-soon") {
+      const rolesAttr = card.getAttribute("data-roles") || "";
+      const allowedRoles = rolesAttr.split(",").map(r => r.trim()).filter(Boolean);
+      if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+        card.style.display = "none";
+        return;
+      }
       card.classList.add("module-coming-soon");
       card.addEventListener("click", (event) => {
         event.preventDefault();

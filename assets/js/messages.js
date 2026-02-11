@@ -4061,7 +4061,7 @@
 
   function autoResizeTextarea(textarea) {
     textarea.style.height = "auto";
-    textarea.style.height = Math.min(textarea.scrollHeight, 150) + "px";
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px";
   }
 
   function scrollToBottom(smooth = false) {

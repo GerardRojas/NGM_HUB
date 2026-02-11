@@ -1016,6 +1016,17 @@
                                                             <div class="function-item enabled">Posts detailed reconciliation report to project chat</div>
                                                         </div>
                                                     </div>
+                                                    <div class="module-group">
+                                                        <div class="module-name"><span>9</span> Smart Conversation Layer</div>
+                                                        <div class="module-functions">
+                                                            <div class="function-item enabled">Analyzes missing info and tries to auto-resolve (bill hints, similar expenses, vendor DB)</div>
+                                                            <div class="function-item enabled">Crafts conversational messages with Andrew's personality (dry wit, competent)</div>
+                                                            <div class="function-item enabled">Interprets natural language replies from humans (GPT-powered)</div>
+                                                            <div class="function-item enabled">Proactively asks specific questions about missing vendor, date, or amount</div>
+                                                            <div class="function-item enabled">Follows up on unanswered questions (24h reminder, 48h escalation, 72h stale)</div>
+                                                            <div class="function-item enabled">Auto-links orphan expenses to matching bills (vendor + amount + date)</div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1107,6 +1118,49 @@
                                                         <button type="button" onclick="saveAndrewMismatchConfig()"
                                                                 style="background: hsl(217 70% 50%); color: #fff; border: none; padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
                                                             Save Mismatch Settings
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Smart Conversation Layer -->
+                                                <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
+                                                    <h6 style="font-size: 13px; font-weight: 600; color: var(--ngm-text); margin-bottom: 12px;">Smart Conversation Layer</h6>
+                                                    <div class="agent-config-list">
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Smart layer enabled</span>
+                                                                <span class="agent-config-desc">AI personality + proactive info resolution on receipt messages</span>
+                                                            </div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="andrewSmartLayerEnabled" checked>
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
+                                                        </div>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Follow-up reminder (hours)</span>
+                                                                <span class="agent-config-desc">Hours before Andrew sends a follow-up for unanswered questions</span>
+                                                            </div>
+                                                            <input type="number" id="andrewFollowupHours" value="24" min="6" max="72" step="6"
+                                                                   style="width: 70px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; font-size: 13px; text-align: center; background: var(--ngm-bg); color: var(--ngm-text);">
+                                                        </div>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Escalation (hours)</span>
+                                                                <span class="agent-config-desc">Hours before escalating to bookkeeping if no response</span>
+                                                            </div>
+                                                            <input type="number" id="andrewEscalationHours" value="48" min="12" max="168" step="6"
+                                                                   style="width: 70px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; font-size: 13px; text-align: center; background: var(--ngm-bg); color: var(--ngm-text);">
+                                                        </div>
+                                                    </div>
+                                                    <div style="margin-top: 12px; text-align: right;">
+                                                        <button type="button" onclick="saveAndrewSmartConfig()"
+                                                                style="background: hsl(217 70% 50%); color: #fff; border: none; padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
+                                                            Save Smart Layer Settings
+                                                        </button>
+                                                        <button type="button" onclick="runAndrewFollowupCheck()"
+                                                                style="background: hsl(35 80% 50%); color: #fff; border: none; padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; margin-left: 8px;">
+                                                            Run Follow-Up Check
                                                         </button>
                                                     </div>
                                                 </div>
@@ -1607,6 +1661,7 @@
                 loadAgentStats();
                 loadAgentConfig();
                 loadAndrewMismatchConfig();
+                loadAndrewSmartConfig();
             } else if (agentId === 'daneel') {
                 loadDaneelConfig();
                 loadDaneelAutoAuthConfig();
@@ -2026,6 +2081,67 @@
             }).catch(function(e) {
                 console.error('[Andrew] Mismatch config save error:', e);
                 if (window.Toast) window.Toast.error('Failed to save mismatch settings');
+            });
+        }
+
+        function saveAndrewSmartConfig() {
+            var body = {
+                andrew_smart_layer_enabled: document.getElementById('andrewSmartLayerEnabled').checked,
+                andrew_followup_hours: parseInt(document.getElementById('andrewFollowupHours').value),
+                andrew_escalation_hours: parseInt(document.getElementById('andrewEscalationHours').value),
+            };
+            fetch(API_BASE + '/andrew/mismatch-config', {
+                method: 'PUT',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
+                body: JSON.stringify(body)
+            }).then(function(resp) {
+                if (resp.ok && window.Toast) window.Toast.success('Smart layer settings saved');
+                else if (window.Toast) window.Toast.error('Failed to save smart layer settings');
+            }).catch(function(e) {
+                console.error('[Andrew] Smart config save error:', e);
+                if (window.Toast) window.Toast.error('Failed to save smart layer settings');
+            });
+        }
+
+        function runAndrewFollowupCheck() {
+            fetch(API_BASE + '/andrew/follow-up-check', {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
+            }).then(function(resp) { return resp.json(); })
+            .then(function(data) {
+                if (data.ok) {
+                    var s = data.stats || {};
+                    var msg = 'Follow-up check complete';
+                    if (s.followups_sent) msg += ' | ' + s.followups_sent + ' reminders sent';
+                    if (s.escalations_sent) msg += ' | ' + s.escalations_sent + ' escalated';
+                    if (s.marked_stale) msg += ' | ' + s.marked_stale + ' marked stale';
+                    if (!s.followups_sent && !s.escalations_sent && !s.marked_stale) msg += ' | No action needed';
+                    if (window.Toast) window.Toast.success(msg);
+                } else {
+                    if (window.Toast) window.Toast.error('Follow-up check failed');
+                }
+            }).catch(function(e) {
+                console.error('[Andrew] Follow-up check error:', e);
+                if (window.Toast) window.Toast.error('Follow-up check failed');
+            });
+        }
+
+        function loadAndrewSmartConfig() {
+            fetch(API_BASE + '/andrew/mismatch-config', {
+                headers: _agentAuthHeaders()
+            }).then(function(resp) { return resp.json(); })
+            .then(function(cfg) {
+                if (cfg.andrew_smart_layer_enabled !== undefined) {
+                    document.getElementById('andrewSmartLayerEnabled').checked = cfg.andrew_smart_layer_enabled !== false;
+                }
+                if (cfg.andrew_followup_hours) {
+                    document.getElementById('andrewFollowupHours').value = cfg.andrew_followup_hours;
+                }
+                if (cfg.andrew_escalation_hours) {
+                    document.getElementById('andrewEscalationHours').value = cfg.andrew_escalation_hours;
+                }
+            }).catch(function(e) {
+                console.error('[Andrew] Smart config load error:', e);
             });
         }
 

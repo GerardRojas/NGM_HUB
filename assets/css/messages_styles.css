@@ -1268,33 +1268,36 @@
   color: #ef4444;
 }
 
-/* Input row */
-.msg-input-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* Input card (Google Chat style) */
+.msg-input-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.msg-input-card:focus-within {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(62, 207, 142, 0.3);
 }
 
 .msg-input-wrapper {
-  flex: 1;
   position: relative;
   min-width: 0;
 }
 
 .msg-input {
   width: 100%;
-  padding: 14px 20px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 26px;
+  padding: 16px 20px 8px;
+  background: transparent;
+  border: none;
   color: rgba(255, 255, 255, 0.95);
   font-size: 15px;
   font-family: inherit;
   resize: none;
   outline: none;
-  transition: all 0.15s ease;
-  max-height: 140px;
-  min-height: 52px;
+  max-height: 200px;
+  min-height: 60px;
   line-height: 1.5;
   box-sizing: border-box;
   overflow-y: auto;
@@ -1306,13 +1309,41 @@
   display: none; /* Chrome/Safari */
 }
 
-.msg-input:focus {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(62, 207, 142, 0.3);
-}
-
 .msg-input::placeholder {
   color: rgba(255, 255, 255, 0.35);
+}
+
+/* Toolbar row below textarea */
+.msg-input-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 8px;
+}
+
+.msg-input-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.msg-toolbar-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.45);
+  transition: all 0.15s ease;
+}
+
+.msg-toolbar-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 /* Mention dropdown */
@@ -1391,8 +1422,8 @@
 }
 
 .msg-btn-send {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1420,8 +1451,8 @@
 }
 
 .msg-btn-send svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 /* ==========================================
@@ -1470,10 +1501,21 @@
   gap: 12px;
   padding: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
+  align-items: flex-end;
 }
 
 .msg-thread-input-area .msg-input {
   flex: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 12px 16px;
+  min-height: 44px;
+}
+
+.msg-thread-input-area .msg-input:focus {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(62, 207, 142, 0.3);
 }
 
 /* Thread states */
@@ -1967,14 +2009,13 @@
 
   .msg-btn-icon,
   .msg-btn-send {
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
   }
 
-  /* Hide some buttons on mobile */
-  .msg-btn-icon[title="Add attachment"],
-  .msg-btn-icon[title="Add emoji"] {
-    display: none;
+  .msg-toolbar-btn {
+    width: 34px;
+    height: 34px;
   }
 }
 
@@ -1995,12 +2036,8 @@
     font-size: 13px;
   }
 
-  .msg-input-row {
-    gap: 6px;
-  }
-
   .msg-input {
-    padding: 10px 14px;
+    padding: 12px 14px 6px;
   }
 }
 
@@ -3185,44 +3222,34 @@
     background: #141414;
   }
 
+  .msg-input-card {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+  }
+
   .msg-input {
     min-height: 44px;
     max-height: 120px;
-    padding: 12px 16px;
-    border-radius: 22px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .msg-input:focus {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(62, 207, 142, 0.4);
-  }
-
-  .msg-input-row {
-    gap: 8px;
-    align-items: flex-end;
+    padding: 12px 16px 6px;
   }
 
   .msg-btn-icon,
-  .msg-btn-send {
-    width: 44px;
-    height: 44px;
+  .msg-btn-send,
+  .msg-toolbar-btn {
+    width: 36px;
+    height: 36px;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
   }
 
-  .msg-btn-icon:active {
+  .msg-btn-icon:active,
+  .msg-toolbar-btn:active {
     transform: scale(0.9);
   }
 
   .msg-btn-send:active:not(:disabled) {
     transform: scale(0.9);
-  }
-
-  /* Hide attach button on mobile */
-  #btnAttachFile {
-    display: none;
   }
 
   /* Hide header action buttons on mobile for cleaner look */

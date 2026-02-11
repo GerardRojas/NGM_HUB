@@ -206,6 +206,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const roleName = u?.role?.name || "-";
     const seniorityName = u?.seniority?.name || "-";
     const statusName = u?.status?.name || "-";
+    const departmentName = u?.department?.name || "-";
 
     return {
       ...u,
@@ -213,6 +214,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       user_role_name: roleName,
       user_seniority_name: seniorityName,
       user_status_name: statusName,
+      user_department_name: departmentName,
       color: colorFromUser(u),
     };
   }
@@ -252,6 +254,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return usersStore.filter((u) => {
       const hay = [
         u.user_name,
+        u.user_department_name,
         u.user_role_name,
         u.user_seniority_name,
         u.user_status_name,
@@ -345,14 +348,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const safeName = escapeHtml(u.user_name);
 
-      const roleVal = u.user_role_name || u.role?.name || "—";
-      const seniorityVal = u.user_seniority_name || u.seniority?.name || "—";
-      const statusVal = u.user_status_name || u.status?.name || "—";
+      const deptVal = u.user_department_name || u.department?.name || "---";
+      const roleVal = u.user_role_name || u.role?.name || "---";
+      const seniorityVal = u.user_seniority_name || u.seniority?.name || "---";
+      const statusVal = u.user_status_name || u.status?.name || "---";
 
-      const phoneVal = u.user_phone_number || "—";
-      const bdayVal = u.user_birthday || "—";
-      const addrVal = u.user_address || "—";
+      const phoneVal = u.user_phone_number || "---";
+      const bdayVal = u.user_birthday || "---";
+      const addrVal = u.user_address || "---";
 
+      const safeDept = escapeHtml(deptVal);
       const safeRole = escapeHtml(roleVal);
       const safeSeniority = escapeHtml(seniorityVal);
       const safeStatus = escapeHtml(statusVal);
@@ -398,6 +403,11 @@ document.addEventListener("DOMContentLoaded", async () => {
           </div>
 
           <div class="team-fields">
+            <div class="team-field">
+              <span class="team-field-label">Department</span>
+              <span class="team-field-value">${safeDept}</span>
+            </div>
+
             <div class="team-field">
               <span class="team-field-label">Role</span>
               <span class="team-field-value">${safeRole}</span>

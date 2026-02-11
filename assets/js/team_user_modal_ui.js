@@ -172,7 +172,7 @@
         state.meta = await fetchMeta();
       } catch (e) {
         console.warn("[TeamUserModal] /team/meta failed:", e);
-        state.meta = { roles: [], seniorities: [], statuses: [] };
+        state.meta = { roles: [], seniorities: [], statuses: [], departments: [] };
       }
     }
 
@@ -192,6 +192,7 @@
     console.log("[TeamUserModal] render() u =", u, "u.user_name =", u.user_name);
     const roleId = u?.role?.id || "";
     const seniorityId = u?.seniority?.id || "";
+    const departmentId = u?.department?.id || "";
     const statusId =
       u?.status?.id || (state.mode === "create" ? getStatusIdByName(state.meta, "Active") : "");
 
@@ -205,31 +206,16 @@
           </label>
 
           <label class="tm-field">
-            <span class="tm-field-label">Avatar Color (0–360)</span>
+            <span class="tm-field-label">Avatar Color (0-360)</span>
             <input id="tu_color" class="tm-input" type="number" min="0" max="360" placeholder="e.g. 220" value="${escapeHtml(u.avatar_color ?? "")}" />
           </label>
 
           <label class="tm-field">
             <span class="tm-field-label">Photo URL</span>
-            <input id="tu_photo" class="tm-input" type="url" placeholder="https://…" value="${escapeHtml(u.user_photo || "")}" />
+            <input id="tu_photo" class="tm-input" type="url" placeholder="https://..." value="${escapeHtml(u.user_photo || "")}" />
           </label>
         </div>
       </section>
-
-      <div class="tm-collapsible${(u.user_position || "").trim() ? " tm-section-open" : ""}">
-        <div class="tm-collapsible-header" onclick="this.parentElement.classList.toggle('tm-section-open')">
-          <h3 class="tm-collapsible-title">Position</h3>
-          <svg class="tm-collapsible-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
-        </div>
-        <div class="tm-collapsible-body">
-          <div class="tm-form-grid">
-            <label class="tm-field tm-field--full">
-              <span class="tm-field-label">Job Title</span>
-              <input id="tu_position" class="tm-input" type="text" placeholder="e.g. Senior Accountant" value="${escapeHtml(u.user_position || "")}" />
-            </label>
-          </div>
-        </div>
-      </div>
 
       <div class="tm-collapsible${(u.user_description || "").trim() ? " tm-section-open" : ""}">
         <div class="tm-collapsible-header" onclick="this.parentElement.classList.toggle('tm-section-open')">
@@ -250,9 +236,17 @@
         <h3 class="tm-modal-section-title">Role & Status</h3>
         <div class="tm-form-grid">
           <label class="tm-field">
+            <span class="tm-field-label">Department</span>
+            <select id="tu_department" class="tm-input">
+              <option value="">--</option>
+              ${optList(state.meta.departments, departmentId)}
+            </select>
+          </label>
+
+          <label class="tm-field">
             <span class="tm-field-label">Role</span>
             <select id="tu_role" class="tm-input">
-              <option value="">—</option>
+              <option value="">--</option>
               ${optList(state.meta.roles, roleId)}
             </select>
           </label>
@@ -260,7 +254,7 @@
           <label class="tm-field">
             <span class="tm-field-label">Seniority</span>
             <select id="tu_seniority" class="tm-input">
-              <option value="">—</option>
+              <option value="">--</option>
               ${optList(state.meta.seniorities, seniorityId)}
             </select>
           </label>
@@ -268,7 +262,7 @@
           <label class="tm-field">
             <span class="tm-field-label">Status</span>
             <select id="tu_status" class="tm-input">
-              <option value="">—</option>
+              <option value="">--</option>
               ${optList(state.meta.statuses, statusId)}
             </select>
           </label>
@@ -353,7 +347,7 @@
       user_address: (qs("tu_addr")?.value || "").trim() || null,
       user_contract_url: (qs("tu_contract")?.value || "").trim() || null,
       user_description: (qs("tu_description")?.value || "").trim() || null,
-      user_position: (qs("tu_position")?.value || "").trim() || null,
+      department_id: qs("tu_department")?.value || null,
     };
 
     const pass = (qs("tu_password")?.value || "").trim();

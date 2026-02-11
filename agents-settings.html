@@ -967,7 +967,17 @@
                                                 <span class="ocr-stat-value" id="ocrAvgConfidence">--</span>
                                                 <span class="ocr-stat-label">Avg Confidence</span>
                                             </div>
+                                            <div class="ocr-stat">
+                                                <span class="ocr-stat-value" id="ocrSuccessRate">--</span>
+                                                <span class="ocr-stat-label">Success Rate</span>
+                                            </div>
+                                            <div class="ocr-stat">
+                                                <span class="ocr-stat-value" id="ocrTaxDetected" style="color: #8b5cf6;">--</span>
+                                                <span class="ocr-stat-label">Tax Detected</span>
+                                            </div>
                                         </div>
+                                        <!-- Match type breakdown -->
+                                        <div class="ocr-agent-breakdown" id="ocrMatchBreakdown" style="margin-top: 10px;"></div>
                                         <div class="ocr-bar-row">
                                             <div class="ocr-bar-track">
                                                 <div class="ocr-bar-seg seg-pdf" id="ocrBarPdf" style="width: 0%"></div>
@@ -1429,8 +1439,8 @@
                                                     <span class="stat-value" id="daneelStatCrit">-</span>
                                                 </div>
                                                 <div class="stat-card">
-                                                    <span class="stat-label">Alerts Sent</span>
-                                                    <span class="stat-value" id="daneelStatAlerts">--</span>
+                                                    <span class="stat-label">Last Run</span>
+                                                    <span class="stat-value" id="daneelStatLastRun">--</span>
                                                 </div>
                                                 <div class="stat-card">
                                                     <span class="stat-label">Auto-Auth</span>
@@ -2200,6 +2210,40 @@
                     if (data.error_count > 0) errEl.classList.add('ocr-error');
                     document.getElementById('ocrAvgConfidence').textContent =
                         data.avg_confidence !== null ? data.avg_confidence + '%' : '--';
+
+                    // Success rate
+                    var srEl = document.getElementById('ocrSuccessRate');
+                    if (srEl) {
+                        srEl.textContent = data.success_rate ? data.success_rate + '%' : '--';
+                        if (data.success_rate >= 95) srEl.style.color = 'var(--accent)';
+                        else if (data.success_rate >= 80) srEl.style.color = '#f59e0b';
+                        else if (data.success_rate > 0) srEl.style.color = '#ef4444';
+                    }
+
+                    // Tax detected
+                    var taxEl = document.getElementById('ocrTaxDetected');
+                    if (taxEl) taxEl.textContent = data.tax_detected_count || 0;
+
+                    // Match type breakdown chips
+                    var matchContainer = document.getElementById('ocrMatchBreakdown');
+                    if (matchContainer && data.match_types) {
+                        matchContainer.innerHTML = '';
+                        var mt = data.match_types;
+                        var matchLabels = [
+                            { key: 'total', label: 'Total Match', color: 'var(--accent)' },
+                            { key: 'subtotal', label: 'Subtotal Match', color: '#f59e0b' },
+                            { key: 'mismatch', label: 'Mismatch', color: '#ef4444' },
+                            { key: 'none', label: 'No Match', color: 'var(--ngm-text-muted)' }
+                        ];
+                        matchLabels.forEach(function(m) {
+                            if (mt[m.key] > 0) {
+                                var chip = document.createElement('span');
+                                chip.className = 'ocr-agent-chip';
+                                chip.innerHTML = '<span style="color:' + m.color + ';font-weight:600;">' + m.label + '</span>: ' + mt[m.key];
+                                matchContainer.appendChild(chip);
+                            }
+                        });
+                    }
 
                     // Bar segments
                     var total = data.total_scans || 1;
@@ -3008,6 +3052,21 @@
                     if (!status) return;
                     document.getElementById('daneelStatAutoAuth').textContent = status.authorized_last_30d || 0;
                     document.getElementById('daneelStatPendingInfo').textContent = status.pending_info_count || 0;
+
+                    // Last run timestamp
+                    var lastRunEl = document.getElementById('daneelStatLastRun');
+                    if (lastRunEl && status.last_run) {
+                        var d = new Date(status.last_run);
+                        var now = new Date();
+                        var diffMs = now - d;
+                        var diffH = Math.floor(diffMs / 3600000);
+                        if (diffH < 1) lastRunEl.textContent = '<1h ago';
+                        else if (diffH < 24) lastRunEl.textContent = diffH + 'h ago';
+                        else lastRunEl.textContent = Math.floor(diffH / 24) + 'd ago';
+                    } else if (lastRunEl) {
+                        lastRunEl.textContent = 'Never';
+                        lastRunEl.className = 'stat-value metric-muted';
+                    }
                 })
                 .catch(function(e) {
                     console.error('[Daneel] Auto-auth status load error:', e);

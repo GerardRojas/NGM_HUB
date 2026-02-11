@@ -221,6 +221,11 @@
           });
         }
       }
+
+      // Notify chat widget for badge update
+      if (window.ChatWidget && window.ChatWidget.handlePushNotification) {
+        window.ChatWidget.handlePushNotification(payload);
+      }
     });
   }
 

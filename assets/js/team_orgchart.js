@@ -624,6 +624,59 @@
     }
 
     // ================================
+    // Description popover (single-click on org chart node)
+    // ================================
+    let _activePopover = null;
+    let _clickTimer = null;
+
+    function dismissDescPopover() {
+        if (_activePopover) {
+            _activePopover.remove();
+            _activePopover = null;
+        }
+    }
+
+    function showDescriptionPopover(u, nodeEl) {
+        dismissDescPopover();
+
+        const pop = document.createElement('div');
+        pop.className = 'orgchart-desc-popover';
+
+        const desc = (u.user_description || '').trim();
+        const safeName = escapeHtml(u.user_name || '');
+        pop.innerHTML = `
+            <div class="orgchart-desc-popover-name">${safeName}</div>
+            ${desc
+                ? `<div class="orgchart-desc-popover-text">${escapeHtml(desc)}</div>`
+                : `<div class="orgchart-desc-popover-empty">No description</div>`
+            }
+        `;
+
+        // Position below the node
+        const nodeX = parseInt(nodeEl.style.left) || 0;
+        const nodeY = parseInt(nodeEl.style.top) || 0;
+        const nodeW = nodeEl.offsetWidth || 220;
+        const nodeH = nodeEl.offsetHeight || 120;
+
+        pop.style.left = (nodeX + nodeW / 2 - 130) + 'px';
+        pop.style.top = (nodeY + nodeH + 8) + 'px';
+
+        els.nodesLayer.appendChild(pop);
+        _activePopover = pop;
+
+        // Dismiss on click outside (one-time)
+        setTimeout(() => {
+            const dismiss = (e) => {
+                if (!pop.contains(e.target)) {
+                    dismissDescPopover();
+                    document.removeEventListener('mousedown', dismiss, true);
+                }
+            };
+            document.addEventListener('mousedown', dismiss, true);
+        }, 10);
+    }
+
+    // ================================
     // Create nodes
     // ================================
     function createNodeEl(u) {
@@ -671,10 +724,29 @@
         div.style.left = pos.x + 'px';
         div.style.top = pos.y + 'px';
 
+        // Single click: show description popover (all nodes including agents)
+        let _nodeDragged = false;
+        div.addEventListener('mousedown', () => { _nodeDragged = false; });
+        div.addEventListener('mousemove', () => { _nodeDragged = true; });
+
+        div.addEventListener('click', e => {
+            if (e.target.closest('.orgchart-port')) return;
+            if (_nodeDragged) return;
+            // Delay to distinguish from double-click
+            if (_clickTimer) { clearTimeout(_clickTimer); _clickTimer = null; }
+            _clickTimer = setTimeout(() => {
+                _clickTimer = null;
+                showDescriptionPopover(u, div);
+            }, 250);
+        });
+
         if (!isAgent) {
             // Double-click to edit user
             div.addEventListener('dblclick', e => {
                 if (e.target.closest('.orgchart-port')) return;
+                // Cancel single-click popover
+                if (_clickTimer) { clearTimeout(_clickTimer); _clickTimer = null; }
+                dismissDescPopover();
                 e.preventDefault();
                 e.stopPropagation();
                 openUserEdit(u);

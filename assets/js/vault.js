@@ -38,6 +38,7 @@
   let companies = [];          // all companies
   let currentCompany = null;   // null = all projects, string = filter by company
   let expandedNodes = new Set(); // Track which tree nodes are expanded
+  let treeCache = {};          // Cache tree data per project to avoid re-fetching
 
   // ─── DOM refs ──────────────────────────────────────────────────────────────
   const $tree = document.getElementById("vaultTree");
@@ -71,6 +72,11 @@
     await loadTree();
     await loadFiles();
     bindEvents();
+
+    // Initialize topbar pills
+    if (typeof window.initTopbarPills === 'function') {
+      await window.initTopbarPills();
+    }
   }
 
   // ─── API Helpers ───────────────────────────────────────────────────────────
@@ -209,10 +215,21 @@
   }
 
   // ─── Folder Tree ───────────────────────────────────────────────────────────
-  async function loadTree() {
+  async function loadTree(forceRefresh = false) {
+    const cacheKey = currentProject || "__global__";
+
+    // Use cached data if available and not forcing refresh
+    if (!forceRefresh && treeCache[cacheKey]) {
+      folderTree = treeCache[cacheKey];
+      renderTree();
+      return;
+    }
+
+    // Fetch fresh data
     try {
       const params = currentProject ? `?project_id=${currentProject}` : "";
       folderTree = await apiFetch(`/vault/tree${params}`);
+      treeCache[cacheKey] = folderTree; // Cache the result
     } catch (e) {
       console.warn("[Vault] Failed to load tree:", e);
       folderTree = [];
@@ -243,14 +260,6 @@
 
     // Render global folders
     html += renderTreeNodes(globalRoots, 0, folderIcon);
-
-    // Add Back button container before Projects node (only show when needed)
-    const showBack = folderPath.length > 0 || currentProject;
-    html += `<div class="vault-tree-back-container" style="display:${showBack ? 'block' : 'none'};" id="vaultTreeBackBtn">`;
-    html += `<button class="vault-tree-back-btn" id="btnTreeBack">`;
-    html += `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>`;
-    html += `<span>Back</span>`;
-    html += `</button></div>`;
 
     // Add virtual "Projects" folder with filtered projects
     let filteredProjects = projects;
@@ -476,7 +485,8 @@
   }
 
   // ─── Navigation ────────────────────────────────────────────────────────────
-  function navigateToFolder(folderId, folderName) {
+  async function navigateToFolder(folderId, folderName) {
+    // Update state immediately
     if (folderId) {
       // Find if already in path
       const idx = folderPath.findIndex(c => c.id === folderId);
@@ -490,24 +500,29 @@
       folderPath = [];
       currentFolder = null;
     }
+
+    // Update UI immediately (sync operations)
     renderBreadcrumb();
     updateBackButton();
-    loadFiles();
-    // Update tree active state
+
+    // Update tree active state immediately
     if ($tree) {
       $tree.querySelectorAll(".vault-tree-node").forEach(n => {
         n.classList.toggle("active", n.dataset.id === (currentFolder || ""));
       });
     }
+
+    // Load files (async)
+    await loadFiles();
   }
 
   function updateBackButton() {
-    const btnContainer = document.getElementById("vaultTreeBackBtn");
-    if (!btnContainer) return;
+    const btn = document.getElementById("btnTreeBack");
+    if (!btn) return;
 
-    // Show back button if we're inside a folder or inside a project
-    const shouldShow = folderPath.length > 0 || currentProject;
-    btnContainer.style.display = shouldShow ? "block" : "none";
+    // Enable back button if we're inside a folder or inside a project
+    const canGoBack = folderPath.length > 0 || currentProject;
+    btn.disabled = !canGoBack;
   }
 
   function goBack() {
@@ -526,14 +541,27 @@
     }
   }
 
-  function switchProject(projectId) {
+  async function switchProject(projectId) {
+    // Update state immediately for instant visual feedback
     currentProject = projectId || null;
     currentFolder = null;
     folderPath = [];
+
+    // Update UI immediately (sync operations)
     renderBreadcrumb();
     updateBackButton();
-    loadTree();
-    loadFiles();
+
+    // Update active state in tree immediately
+    if ($tree) {
+      $tree.querySelectorAll(".vault-tree-node").forEach(n => {
+        const isThisProject = n.dataset.projectId === projectId;
+        const isProjectRoot = n.dataset.id === `__project_${projectId}__`;
+        n.classList.toggle("active", isThisProject || isProjectRoot);
+      });
+    }
+
+    // Load data in parallel (async operations)
+    await Promise.all([loadTree(), loadFiles()]);
   }
 
   // ─── Upload ────────────────────────────────────────────────────────────────
@@ -563,7 +591,7 @@
     hideProgress();
     if (window.Toast && uploaded > 0) window.Toast.success(`Uploaded ${uploaded} file(s)`);
     await loadFiles();
-    await loadTree();
+    await loadTree(true); // Force refresh after upload
   }
 
   async function singleUpload(file) {
@@ -704,7 +732,7 @@
           await apiPatch(`/vault/files/${file.id}`, { name: newName });
           if (window.Toast) window.Toast.success("Renamed");
           await loadFiles();
-          await loadTree();
+          await loadTree(true); // Force refresh after rename
         }
         break;
       }
@@ -732,7 +760,7 @@
           await apiDelete(`/vault/files/${file.id}`);
           if (window.Toast) window.Toast.success("Deleted");
           await loadFiles();
-          await loadTree();
+          await loadTree(true); // Force refresh after delete
         }
         break;
     }
@@ -782,7 +810,7 @@
       if (window.Toast) window.Toast.success("Moved");
       closeMoveModal();
       await loadFiles();
-      await loadTree();
+      await loadTree(true); // Force refresh after move
     } catch (e) {
       if (window.Toast) window.Toast.error("Move failed");
     }
@@ -882,7 +910,7 @@
       });
       if (window.Toast) window.Toast.success("Folder created");
       await loadFiles();
-      await loadTree();
+      await loadTree(true); // Force refresh after creating folder
     } catch (e) {
       if (window.Toast) window.Toast.error("Failed to create folder");
     }
@@ -1101,11 +1129,8 @@
     // New folder button
     document.getElementById("btnNewFolder")?.addEventListener("click", createNewFolder);
 
-    // Back button (delegated event since it re-renders with tree)
-    $tree?.addEventListener("click", (e) => {
-      const btn = e.target.closest("#btnTreeBack");
-      if (btn) goBack();
-    });
+    // Back button
+    document.getElementById("btnTreeBack")?.addEventListener("click", goBack);
 
     // Toggle view
     document.getElementById("btnToggleView")?.addEventListener("click", () => {

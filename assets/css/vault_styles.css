@@ -340,7 +340,7 @@
   font-size: 13px;
   color: rgba(255,255,255,0.65);
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background 0.08s ease-out, color 0.08s ease-out;
   user-select: none;
 }
 .vault-tree-node:hover {
@@ -349,6 +349,7 @@
 .vault-tree-node.active {
   background: var(--vault-accent-soft, rgba(62,207,142,0.1));
   color: var(--vault-accent, #3ecf8e);
+  transition: background 0s, color 0s; /* Instant transition for active state */
 }
 .vault-tree-node .tree-indent {
   width: 16px;
@@ -397,34 +398,35 @@
 }
 
 /* ---- Tree Back Button ---- */
-.vault-tree-back-container {
-  padding: 6px 12px;
-  margin: 4px 0;
-}
 .vault-tree-back-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  width: 100%;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 6px;
-  color: rgba(255,255,255,0.65);
-  font-size: 12px;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 10px;
+  margin: 8px 12px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 5px;
+  color: rgba(255,255,255,0.5);
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: all 0.15s;
 }
-.vault-tree-back-btn:hover {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.18);
-  color: #fff;
+.vault-tree-back-btn:not(:disabled):hover {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.8);
+}
+.vault-tree-back-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 .vault-tree-back-btn svg {
   flex-shrink: 0;
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 
 /* ---- Resizer ---- */

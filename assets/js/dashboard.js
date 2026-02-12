@@ -375,7 +375,7 @@ async function loadMyWorkTasks(user) {
           title: `${authData.total_count} expense${authData.total_count > 1 ? 's' : ''} pending authorization`,
           subtitle: `$${formatCurrency(authData.total_amount)} total`,
           module: "Expenses Engine",
-          icon: "!",
+          iconType: "money",
           iconClass: "task-icon-pending",
           link: "expenses.html?filter=pending_auth",
           actionText: "Review"
@@ -399,21 +399,23 @@ async function loadMyWorkTasks(user) {
         const isNotStarted = statusLower === "not started";
         const userRole = task.role || "owner"; // owner, collaborator, or manager
 
-        // Determine icon based on priority or status
-        let icon = "T";
+        // Determine icon SVG type based on priority or status
+        let iconType = "task";
         let iconClass = "task-icon-pipeline";
 
         if (task.priority_name) {
           const priorityLower = task.priority_name.toLowerCase();
           if (priorityLower === "high" || priorityLower === "urgent") {
-            icon = "!";
+            iconType = "alert";
             iconClass = "task-icon-urgent";
           } else if (priorityLower === "medium") {
+            iconType = "task";
             iconClass = "task-icon-pending";
           }
         }
 
         if (isWorking) {
+          iconType = "working";
           iconClass = "task-icon-working";
         }
 
@@ -426,7 +428,7 @@ async function loadMyWorkTasks(user) {
           title: task.task_description || "Untitled task",
           subtitle: task.project_name || null,
           module: "Pipeline Manager",
-          icon: icon,
+          iconType: iconType,
           iconClass: iconClass,
           link: `pipeline.html?task=${task.task_id}`,
           actionText: isWorking ? "Working" : (canStart ? "Start" : "View"),
@@ -486,6 +488,40 @@ async function loadMyWorkTasks(user) {
   }
 }
 
+// SVG icon helper function
+function getTaskIconSVG(iconType) {
+  const icons = {
+    alert: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+      <line x1="12" y1="9" x2="12" y2="13"></line>
+      <line x1="12" y1="17" x2="12.01" y2="17"></line>
+    </svg>`,
+    task: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 11l3 3L22 4"></path>
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+    </svg>`,
+    working: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>`,
+    review: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <polyline points="14 2 14 8 20 8"></polyline>
+      <line x1="16" y1="13" x2="8" y2="13"></line>
+      <line x1="16" y1="17" x2="8" y2="17"></line>
+      <polyline points="10 9 9 9 8 9"></polyline>
+    </svg>`,
+    money: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="1" x2="12" y2="23"></line>
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+    </svg>`,
+    check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>`
+  };
+  return icons[iconType] || icons.task;
+}
+
 function renderSingleTask(task) {
   // Determine action button based on task type
   let actionHtml;
@@ -494,7 +530,7 @@ function renderSingleTask(task) {
     if (task.isStartable) {
       actionHtml = `
         <button type="button" class="task-action-btn task-start-btn" data-task-id="${task.taskId}">
-          <span class="task-btn-icon">&#9654;</span> Start
+          Start
         </button>
       `;
     } else if (task.isWorking) {
@@ -570,11 +606,12 @@ function renderSingleTask(task) {
 
   const statusSlug = (task.statusName || '').toLowerCase().replace(/\s+/g, '-');
   const prioritySlug = (task.priorityName || '').toLowerCase();
+  const iconSVG = getTaskIconSVG(task.iconType || 'task');
 
   return `
     <div class="my-work-task" data-type="${task.type}" data-task-id="${task.taskId || ''}" data-role="${task.userRole || 'owner'}" data-status="${statusSlug}" data-priority="${prioritySlug}">
       <div class="my-work-task-icon">
-        <span class="task-icon-badge ${task.iconClass}">${task.icon}</span>
+        <span class="task-icon-badge ${task.iconClass}">${iconSVG}</span>
       </div>
       <div class="my-work-task-content">
         <div class="my-work-task-title">${escapeHtml(task.title)} ${statusBadge} ${roleBadge}</div>
@@ -1005,6 +1042,8 @@ function renderPendingReviews(reviews) {
   const listEl = document.getElementById("pending-reviews-list");
   if (!listEl) return;
 
+  const reviewIconSVG = getTaskIconSVG('review');
+
   const html = reviews.map((review) => {
     // Get the original task if this is a review task
     const originalTask = review.original_task || review;
@@ -1044,13 +1083,13 @@ function renderPendingReviews(reviews) {
     return `
       <div class="pending-review-task" data-task-id="${taskId}" data-review-id="${review.task_id}">
         <div class="pending-review-task-icon">
-          <span class="task-icon-badge task-icon-review">R</span>
+          <span class="task-icon-badge task-icon-review">${reviewIconSVG}</span>
         </div>
         <div class="pending-review-task-content">
           <div class="pending-review-task-title">${escapeHtml(description)} ${rejectionBadge}</div>
           <div class="pending-review-task-meta">
             <span class="task-submitted-by">Submitted by ${escapeHtml(ownerName)}</span>
-            ${projectName ? `<span class="task-meta-separator">-</span><span class="task-meta-project">${escapeHtml(projectName)}</span>` : ''}
+            ${projectName ? `<span class="task-meta-separator">&middot;</span><span class="task-meta-project">${escapeHtml(projectName)}</span>` : ''}
           </div>
         </div>
         <div class="pending-review-task-actions">

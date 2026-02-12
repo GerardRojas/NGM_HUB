@@ -1500,11 +1500,11 @@
                 <div class="msg-cat-card-buttons">
                   <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary"
                           data-action="receipt-accept-categories" data-receipt-id="${receiptId}">
-                    Accept Suggestions
+                    Accept All Suggestions
                   </button>
                   <button type="button" class="msg-bot-action-btn msg-bot-action-btn--confirm"
                           data-action="receipt-confirm-selections" data-receipt-id="${receiptId}">
-                    Confirm Selections
+                    Confirm My Selections
                   </button>
                   <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary"
                           data-action="receipt-cancel" data-receipt-id="${receiptId}">

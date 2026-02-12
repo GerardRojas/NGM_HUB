@@ -324,7 +324,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const colsWanted = computeColsWanted(n);
 
     const cardW = 280;
-    const gap = 18;
+    const gap = 24;
 
     const available = Math.max(320, getBoardWidth(target) - 24);
     const maxCols = computeMaxCols(available, cardW, gap);

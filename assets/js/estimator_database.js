@@ -345,6 +345,19 @@ const API = {
         return response.json();
     },
 
+    async syncConceptMaterials(conceptId, materials) {
+        const response = await fetch(`${API_BASE}/concepts/${conceptId}/materials/sync`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ materials })
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Failed to sync materials');
+        }
+        return response.json();
+    },
+
     // Percentage Items
     async fetchPercentageItems() {
         const response = await fetch(`${API_BASE}/percentage-items`);
@@ -1962,33 +1975,37 @@ async function saveConcept() {
             data.image = imageUrl;
         }
 
+        let conceptId;
+
         if (state.editingId) {
             await API.updateConcept(state.editingId, data);
-
-            // Update materials separately if needed
-            // This would require API endpoint for bulk material update
-
-            showToast('Concept updated successfully', 'success');
+            conceptId = state.editingId;
         } else {
             const result = await API.createConcept(data);
-
-            // Add materials to newly created concept
-            if (materials.length > 0 && result.data?.id) {
-                for (const mat of materials) {
-                    try {
-                        await fetch(`${API_BASE}/concepts/${result.data.id}/materials`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(mat)
-                        });
-                    } catch (e) {
-                        console.error('Error adding material to concept:', e);
-                    }
-                }
-            }
-
-            showToast('Concept created successfully', 'success');
+            conceptId = result.data?.id;
         }
+
+        // Sync DB materials to junction table (both create and edit)
+        if (conceptId && materials.length > 0) {
+            try {
+                const syncResult = await API.syncConceptMaterials(conceptId, materials);
+                if (syncResult.errors && syncResult.errors.length > 0) {
+                    showToast(`${syncResult.errors.length} material(s) failed to sync`, 'warning');
+                }
+            } catch (syncErr) {
+                console.error('Error syncing materials:', syncErr);
+                showToast('Warning: some materials may not have saved to junction table', 'warning');
+            }
+        } else if (conceptId && materials.length === 0) {
+            // No DB materials - clear junction table (may have had materials before edit)
+            try {
+                await API.syncConceptMaterials(conceptId, []);
+            } catch (syncErr) {
+                console.error('Error clearing materials:', syncErr);
+            }
+        }
+
+        showToast(state.editingId ? 'Concept updated successfully' : 'Concept created successfully', 'success');
 
         closeConceptModal();
         loadData(true);

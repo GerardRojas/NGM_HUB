@@ -219,7 +219,14 @@
                   </svg>
                   <span>Mentions</span>
                 </h3>
-                <span class="msg-mentions-count" id="mentionsCount">0 unread</span>
+                <div class="msg-mentions-header-right">
+                  <span class="msg-mentions-count" id="mentionsCount">0 unread</span>
+                  <button type="button" class="msg-mentions-close-btn" id="btnCloseMentions" title="Close mentions">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
               <div class="msg-mentions-list" id="mentionsList">
                 <!-- Rendered by JS -->
@@ -784,24 +791,41 @@
 
         // Web Mentions button handler
         var btnMentionsWeb = document.getElementById('btnMentionsWeb');
+        var btnCloseMentions = document.getElementById('btnCloseMentions');
         if (btnMentionsWeb) {
           var mentionsActive = false;
-          btnMentionsWeb.addEventListener('click', function() {
-            if (mentionsActive) {
-              // Hide mentions view
-              if (window.MessagesModule && window.MessagesModule.hideMentionsView) {
-                window.MessagesModule.hideMentionsView();
-              }
-              btnMentionsWeb.classList.remove('active');
-              mentionsActive = false;
-            } else {
-              // Show mentions view
-              if (window.MessagesModule && window.MessagesModule.showMentionsView) {
-                window.MessagesModule.showMentionsView();
-              }
-              btnMentionsWeb.classList.add('active');
-              mentionsActive = true;
+
+          function closeMentions() {
+            if (!mentionsActive) return;
+            if (window.MessagesModule && window.MessagesModule.hideMentionsView) {
+              window.MessagesModule.hideMentionsView();
             }
+            btnMentionsWeb.classList.remove('active');
+            mentionsActive = false;
+          }
+
+          function openMentions() {
+            if (mentionsActive) return;
+            if (window.MessagesModule && window.MessagesModule.showMentionsView) {
+              window.MessagesModule.showMentionsView();
+            }
+            btnMentionsWeb.classList.add('active');
+            mentionsActive = true;
+          }
+
+          btnMentionsWeb.addEventListener('click', function() {
+            if (mentionsActive) closeMentions();
+            else openMentions();
+          });
+
+          // Close button inside mentions header
+          if (btnCloseMentions) {
+            btnCloseMentions.addEventListener('click', closeMentions);
+          }
+
+          // Sync when mentions hidden from inside messages.js (channel click, navigation)
+          document.addEventListener('mentions-hidden', function() {
+            mentionsActive = false;
           });
         }
 

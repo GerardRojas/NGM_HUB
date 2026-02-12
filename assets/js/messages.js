@@ -273,6 +273,10 @@
         }
       }
 
+      // Apply unread badges to already-rendered channel list
+      // (unread counts aren't cached, so PHASE 1 renders without them)
+      applyAllUnreadBadges();
+
       // Load mentions badge (non-blocking)
       loadMentionsBadge();
 
@@ -444,6 +448,16 @@
       badge.textContent = count > 99 ? "99+" : count;
     } else {
       if (badge) badge.remove();
+    }
+  }
+
+  // Apply all unread badges from state.unreadCounts to the already-rendered channel list
+  function applyAllUnreadBadges() {
+    const counts = state.unreadCounts;
+    for (const key in counts) {
+      if (counts.hasOwnProperty(key) && counts[key] > 0) {
+        updateBadgeForChannel(key, counts[key]);
+      }
     }
   }
 
@@ -990,6 +1004,12 @@
   async function selectChannel(channelType, channelId, projectId, channelName, clickedElement) {
     // Generate unique request ID for this selection
     const thisRequestId = ++channelRequestId;
+
+    // Auto-hide mentions view if visible
+    const mentionsView = document.getElementById("mentionsView");
+    if (mentionsView && mentionsView.style.display !== "none") {
+      hideMentionsView();
+    }
 
     // Update UI state
     document.querySelectorAll(".msg-channel-item").forEach((el) => {
@@ -1799,7 +1819,9 @@
         (u) => u.user_name?.toLowerCase().replace(/\s+/g, "") === username.toLowerCase()
       );
       if (user) {
-        return `<span class="msg-mention" data-user-id="${user.user_id}">@${escapeHtml(user.user_name)}</span>`;
+        const isSelf = user.user_id === state.currentUser?.user_id;
+        const cls = isSelf ? "msg-mention msg-mention--self" : "msg-mention";
+        return `<span class="${cls}" data-user-id="${user.user_id}">@${escapeHtml(user.user_name)}</span>`;
       }
       return match;
     });
@@ -4944,6 +4966,12 @@
     if (channelsList) channelsList.style.display = "";
     if (searchContainer) searchContainer.style.display = "";
     if (headerBtn) headerBtn.style.display = "";
+
+    // Also reset the mentions button active state (managed in messages.html)
+    const btnMentionsWeb = document.getElementById("btnMentionsWeb");
+    if (btnMentionsWeb) btnMentionsWeb.classList.remove("active");
+    // Sync the external flag via a custom event
+    document.dispatchEvent(new CustomEvent("mentions-hidden"));
   }
 
   // Load mentions badge count on init

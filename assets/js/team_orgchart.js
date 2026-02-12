@@ -642,10 +642,11 @@
         const pop = document.createElement('div');
         pop.className = 'orgchart-desc-popover';
 
+        const dept = (u.user_department_name || u.department?.name || '').trim();
         const desc = (u.user_description || '').trim();
-        const safeName = escapeHtml(u.user_name || '');
+        const safeDept = escapeHtml(dept || 'No department');
         pop.innerHTML = `
-            <div class="orgchart-desc-popover-name">${safeName}</div>
+            <div class="orgchart-desc-popover-name">${safeDept}</div>
             ${desc
                 ? `<div class="orgchart-desc-popover-text">${escapeHtml(desc)}</div>`
                 : `<div class="orgchart-desc-popover-empty">No description</div>`
@@ -741,7 +742,7 @@
         });
 
         if (!isAgent) {
-            // Double-click to edit user
+            // Double-click to open edit context menu
             div.addEventListener('dblclick', e => {
                 if (e.target.closest('.orgchart-port')) return;
                 // Cancel single-click popover
@@ -749,10 +750,10 @@
                 dismissDescPopover();
                 e.preventDefault();
                 e.stopPropagation();
-                openUserEdit(u);
+                showNodeContextMenu(e.clientX, e.clientY, u);
             });
 
-            // Right-click context menu on node
+            // Right-click context menu on node (same menu)
             div.addEventListener('contextmenu', e => {
                 e.preventDefault();
                 e.stopPropagation();

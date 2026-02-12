@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1a1a1a" />
+    <title>NGM HUB — Project Builder</title>
+    <link rel="icon" type="image/png" href="assets/img/greenblack_icon.png" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="assets/img/greenblack_icon.png" />
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    >
+
+    <!-- Preload loading logo -->
+    <link rel="preload" href="assets/img/white_icon.png" as="image" />
+
+    <!-- Critical CSS for loading overlay -->
+    <style>
+      body.page-loading { overflow: hidden; }
+      .page-loading-overlay { position: fixed; inset: 0; background: #0d0d0d; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
+      .page-loading-overlay.hidden { display: none; }
+      .page-loading .app-layout { visibility: hidden; }
+      .loading-logo { width: 120px; height: 120px; object-fit: contain; animation: pulse 1.5s ease-in-out infinite; }
+      .loading-text { color: rgba(255,255,255,0.5); font-size: 13px; font-family: system-ui, sans-serif; letter-spacing: 0.05em; }
+      @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.05); } }
+    </style>
+
+    <link rel="stylesheet" href="assets/css/styles.css" />
+    <link rel="stylesheet" href="assets/css/project_builder_styles.css" />
+    <link rel="stylesheet" href="assets/css/toast.css" />
+    <link rel="stylesheet" href="assets/css/arturito_widget.css" />
+    <link rel="stylesheet" href="assets/css/chat_widget.css" />
+
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/auth-guard.js"></script>
+    <script src="assets/js/toast.js" defer></script>
+    <script src="assets/js/permissions.js" defer></script>
+    <script src="assets/js/pills.js" defer></script>
+    <script src="assets/js/sidebar.js" defer></script>
+    <script src="assets/js/page-loading.js" defer></script>
+    <script src="assets/js/pb_canvas.js" defer></script>
+    <script src="assets/js/pb_scan_engine.js" defer></script>
+    <script src="assets/js/project_builder.js" defer></script>
+    <script src="assets/js/arturito_widget.js" defer></script>
+    <script src="assets/js/chat_widget.js" defer></script>
+</head>
+<body class="page-project-builder page-loading">
+    <!-- Page Loading Overlay -->
+    <div class="page-loading-overlay" id="pageLoadingOverlay">
+        <img src="assets/img/white_icon.png" class="loading-logo" alt="Loading...">
+        <span class="loading-text">Loading...</span>
+    </div>
+
+    <div class="app-layout">
+
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <!-- Main -->
+        <div class="main-area">
+
+            <!-- Topbar -->
+            <header class="ngm-topbar">
+                <div class="ngm-bar-left">
+                    <div class="ngm-brand">
+                        <div class="ngm-brand-icon-small"><img src="assets/img/white_icon.png" alt="NGM"></div>
+                        <div class="ngm-brand-text">
+                            <span class="ngm-brand-org">Next Generation Management</span>
+                            <span class="ngm-brand-context">NGM Hub · Project Builder</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ngm-topbar-right">
+                    <div class="ngm-meta">
+                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
+                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · —</span>
+                    </div>
+                    <span id="user-pill" class="user-pill">User · —</span>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="pb-workspace">
+
+                    <!-- Header -->
+                    <div class="pb-header">
+                        <div class="pb-header-left">
+                            <h1 class="pb-title">Project Builder</h1>
+                            <p class="pb-subtitle">NGM Revit Suite — BIM as Code</p>
+                        </div>
+                        <div class="pb-header-right">
+                            <span class="pb-version" id="pbVersion"></span>
+                        </div>
+                    </div>
+
+                    <!-- Tab Navigation -->
+                    <nav class="pb-tabs">
+                        <button type="button" class="pb-tab pb-tab--active" data-tab="overview">Overview</button>
+                        <button type="button" class="pb-tab" data-tab="definitions">Definitions</button>
+                        <button type="button" class="pb-tab" data-tab="configure">Configure</button>
+                        <button type="button" class="pb-tab" data-tab="scan">Scan</button>
+                        <button type="button" class="pb-tab" data-tab="export">Export</button>
+                    </nav>
+
+                    <!-- ══ TAB: Overview ══ -->
+                    <section class="pb-section pb-section--active" data-section="overview">
+                        <div class="pb-stats" id="pbStats"></div>
+                        <div class="pb-panels-grid">
+                            <div class="pb-card pb-card--wide">
+                                <div class="pb-card-header">
+                                    <h3 class="pb-card-title">Automation Scripts</h3>
+                                    <span class="pb-card-badge" id="pbScriptsCount">0</span>
+                                </div>
+                                <div class="pb-card-body" id="pbScriptsList"></div>
+                            </div>
+                            <div class="pb-card">
+                                <div class="pb-card-header">
+                                    <h3 class="pb-card-title">Family Catalog</h3>
+                                    <span class="pb-card-badge" id="pbFamiliesCount">0</span>
+                                </div>
+                                <div class="pb-card-body pb-card-body--scroll" id="pbFamiliesList"></div>
+                            </div>
+                            <div class="pb-card">
+                                <div class="pb-card-header">
+                                    <h3 class="pb-card-title">Project Templates</h3>
+                                </div>
+                                <div class="pb-card-body" id="pbTemplatesList"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ══ TAB: Definitions ══ -->
+                    <section class="pb-section" data-section="definitions">
+                        <div class="pb-def-layout">
+                            <nav class="pb-def-nav" id="pbDefNav"></nav>
+                            <div class="pb-def-content" id="pbDefContent">
+                                <div class="pb-empty-state"><p>Select a definition type from the left panel.</p></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ══ TAB: Configure ══ -->
+                    <section class="pb-section" data-section="configure">
+                        <div class="pb-steps">
+                            <div class="pb-step pb-step--active" data-step="1"><span class="pb-step-number">1</span><span class="pb-step-label">Project Info</span></div>
+                            <div class="pb-step-connector"></div>
+                            <div class="pb-step" data-step="2"><span class="pb-step-number">2</span><span class="pb-step-label">Levels & Grids</span></div>
+                            <div class="pb-step-connector"></div>
+                            <div class="pb-step" data-step="3"><span class="pb-step-number">3</span><span class="pb-step-label">Wall Types</span></div>
+                            <div class="pb-step-connector"></div>
+                            <div class="pb-step" data-step="4"><span class="pb-step-number">4</span><span class="pb-step-label">Families</span></div>
+                            <div class="pb-step-connector"></div>
+                            <div class="pb-step" data-step="5"><span class="pb-step-number">5</span><span class="pb-step-label">Views & Sheets</span></div>
+                            <div class="pb-step-connector"></div>
+                            <div class="pb-step" data-step="6"><span class="pb-step-number">6</span><span class="pb-step-label">Automations</span></div>
+                        </div>
+
+                        <div id="pbStepContent">
+                            <!-- Step 1: Project Info -->
+                            <div class="pb-panel pb-panel--active" data-panel="1">
+                                <div class="pb-panel-header">
+                                    <h2 class="pb-panel-title">Project Information</h2>
+                                    <p class="pb-panel-desc">Basic info about the project. Determines template defaults.</p>
+                                </div>
+                                <div class="pb-form-grid">
+                                    <div class="pb-field">
+                                        <label class="pb-label" for="pbProjectName">Project Name</label>
+                                        <input type="text" class="pb-input" id="pbProjectName" placeholder="e.g. Smith Residence - Phase 1">
+                                    </div>
+                                    <div class="pb-field">
+                                        <label class="pb-label" for="pbProjectType">Project Type</label>
+                                        <select class="pb-select" id="pbProjectType"><option value="">Select type...</option></select>
+                                    </div>
+                                    <div class="pb-field">
+                                        <label class="pb-label" for="pbLinkedProject">Link to NGM Project</label>
+                                        <select class="pb-select" id="pbLinkedProject"><option value="">None (standalone)</option></select>
+                                        <span class="pb-hint">Links manifest to an existing NGM project for estimator sync</span>
+                                    </div>
+                                    <div class="pb-field">
+                                        <label class="pb-label" for="pbAddress">Address</label>
+                                        <input type="text" class="pb-input" id="pbAddress" placeholder="e.g. 123 Main St, Houston TX">
+                                    </div>
+                                </div>
+                                <div class="pb-template-preview" id="pbTemplatePreview" style="display:none;">
+                                    <h3 class="pb-preview-title">Template Defaults</h3>
+                                    <div class="pb-preview-grid" id="pbPreviewGrid"></div>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Levels & Grids -->
+                            <div class="pb-panel" data-panel="2">
+                                <div class="pb-panel-header">
+                                    <h2 class="pb-panel-title">Levels & Grids</h2>
+                                    <p class="pb-panel-desc">Define floor levels and structural grid lines.</p>
+                                </div>
+                                <div class="pb-split">
+                                    <div class="pb-split-col">
+                                        <div class="pb-col-header"><h3>Levels</h3><button type="button" class="pb-btn-icon" id="btnAddLevel" title="Add Level">+</button></div>
+                                        <div class="pb-table-wrap"><table class="pb-table"><thead><tr><th>Name</th><th>Elevation (ft)</th><th></th></tr></thead><tbody id="pbLevelsBody"></tbody></table></div>
+                                    </div>
+                                    <div class="pb-split-col">
+                                        <div class="pb-col-header"><h3>Grids</h3><button type="button" class="pb-btn-icon" id="btnAddGrid" title="Add Grid">+</button></div>
+                                        <div class="pb-table-wrap"><table class="pb-table"><thead><tr><th>Name</th><th>Start (ft)</th><th>End (ft)</th><th></th></tr></thead><tbody id="pbGridsBody"></tbody></table></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Wall Types -->
+                            <div class="pb-panel" data-panel="3">
+                                <div class="pb-panel-header">
+                                    <h2 class="pb-panel-title">Wall Types</h2>
+                                    <p class="pb-panel-desc">Select wall types to include from the definitions library.</p>
+                                </div>
+                                <div class="pb-checklist" id="pbWallTypes"></div>
+                            </div>
+
+                            <!-- Step 4: Families -->
+                            <div class="pb-panel" data-panel="4">
+                                <div class="pb-panel-header">
+                                    <h2 class="pb-panel-title">Families to Load</h2>
+                                    <p class="pb-panel-desc">Families from the vault that will be loaded into the Revit project.</p>
+                                </div>
+                                <div class="pb-family-groups" id="pbFamilyGroups"></div>
+                            </div>
+
+                            <!-- Step 5: Views & Sheets -->
+                            <div class="pb-panel" data-panel="5">
+                                <div class="pb-panel-header">
+                                    <h2 class="pb-panel-title">Views & Sheets</h2>
+                                    <p class="pb-panel-desc">Views and sheets to generate. Auto-populated from template.</p>
+                                </div>
+                                <div class="pb-split">
+                                    <div class="pb-split-col"><div class="pb-col-header"><h3>Views</h3></div><div class="pb-checklist" id="pbViews"></div></div>
+                                    <div class="pb-split-col"><div class="pb-col-header"><h3>Sheets</h3></div><div class="pb-checklist" id="pbSheets"></div></div>
+                                </div>
+                            </div>
+
+                            <!-- Step 6: Automations -->
+                            <div class="pb-panel" data-panel="6">
+                                <div class="pb-panel-header">
+                                    <h2 class="pb-panel-title">Automations</h2>
+                                    <p class="pb-panel-desc">Select which pyRevit scripts to include in this build configuration.</p>
+                                </div>
+                                <div class="pb-automations" id="pbAutomations"></div>
+                            </div>
+                        </div>
+
+                        <div class="pb-nav">
+                            <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnPrevStep" disabled>Previous</button>
+                            <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnNextStep">Next</button>
+                        </div>
+                    </section>
+
+                    <!-- ══ TAB: Scan ══ -->
+                    <section class="pb-section" data-section="scan">
+                        <div class="pb-scan-workspace" id="scanWorkspace">
+
+                            <!-- Left: Steps Panel -->
+                            <div class="pb-scan-steps-panel">
+
+                                <!-- Step 1: Pre-definitions -->
+                                <div class="pb-scan-step" data-scan-step="predefs" id="scanStepPredefs">
+                                    <div class="pb-scan-step-header">
+                                        <span class="pb-scan-step-badge">1</span>
+                                        <div class="pb-scan-step-info">
+                                            <h3 class="pb-scan-step-title">Pre-definitions</h3>
+                                            <p class="pb-scan-step-subtitle">Select properties that cannot be inferred from a screenshot</p>
+                                        </div>
+                                    </div>
+                                    <div class="pb-scan-step-summary" id="scanPredefsSummary" style="display:none;"></div>
+                                    <div class="pb-scan-step-body">
+                                        <div class="pb-scan-field">
+                                            <label class="pb-label">Foundation Type</label>
+                                            <div class="pb-scan-options" id="scanFoundationType"></div>
+                                        </div>
+                                        <div class="pb-scan-field">
+                                            <label class="pb-label">Default Exterior Wall</label>
+                                            <select class="pb-select" id="scanDefaultWallType"><option value="">Select wall type...</option></select>
+                                        </div>
+                                        <div class="pb-scan-field">
+                                            <label class="pb-label">Number of Stories</label>
+                                            <div class="pb-scan-options" id="scanStoryCount"></div>
+                                        </div>
+                                        <div class="pb-scan-field">
+                                            <label class="pb-label">Project Type</label>
+                                            <div class="pb-scan-options" id="scanProjectType"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 2: Upload -->
+                                <div class="pb-scan-step locked" data-scan-step="upload" id="scanStepUpload">
+                                    <div class="pb-scan-step-header">
+                                        <span class="pb-scan-step-badge">2</span>
+                                        <div class="pb-scan-step-info">
+                                            <h3 class="pb-scan-step-title">Upload Floorplan</h3>
+                                            <p class="pb-scan-step-subtitle">Upload a screenshot of the floorplan for each floor</p>
+                                        </div>
+                                    </div>
+                                    <div class="pb-scan-step-body">
+                                        <div class="pb-scan-uploads" id="scanUploads"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 3: Layers + Scale -->
+                                <div class="pb-scan-step locked" data-scan-step="layers" id="scanStepLayers">
+                                    <div class="pb-scan-step-header">
+                                        <span class="pb-scan-step-badge">3</span>
+                                        <div class="pb-scan-step-info">
+                                            <h3 class="pb-scan-step-title">Layers + Scale</h3>
+                                            <p class="pb-scan-step-subtitle">Select what to detect and set the image scale</p>
+                                        </div>
+                                    </div>
+                                    <div class="pb-scan-step-body">
+                                        <div class="pb-scan-field">
+                                            <label class="pb-label">Detection Layers</label>
+                                            <div class="pb-scan-layer-select" id="scanLayerSelect">
+                                                <label class="pb-scan-layer-check"><input type="checkbox" value="exterior_walls" checked><span>Exterior Walls</span></label>
+                                                <label class="pb-scan-layer-check"><input type="checkbox" value="interior_walls" checked><span>Interior Walls</span></label>
+                                                <label class="pb-scan-layer-check"><input type="checkbox" value="doors" checked><span>Doors</span></label>
+                                                <label class="pb-scan-layer-check"><input type="checkbox" value="windows" checked><span>Windows</span></label>
+                                                <label class="pb-scan-layer-check"><input type="checkbox" value="plumbing"><span>Plumbing</span></label>
+                                                <label class="pb-scan-layer-check"><input type="checkbox" value="kitchen"><span>Kitchen</span></label>
+                                            </div>
+                                        </div>
+                                        <div class="pb-scan-field">
+                                            <label class="pb-label">Scale Calibration</label>
+                                            <div class="pb-scan-scale-tools" id="scanScaleTools"></div>
+                                        </div>
+                                        <button type="button" class="btn-toolbar btn-toolbar-primary pb-scan-run-btn pb-scan-run-btn--large" id="btnRunAnalysis" disabled>Run Analysis</button>
+                                        <div id="scanAnalysisStatus"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 4: Review & Edit -->
+                                <div class="pb-scan-step locked" data-scan-step="review" id="scanStepReview">
+                                    <div class="pb-scan-step-header">
+                                        <span class="pb-scan-step-badge">4</span>
+                                        <div class="pb-scan-step-info">
+                                            <h3 class="pb-scan-step-title">Review + Edit</h3>
+                                            <p class="pb-scan-step-subtitle">Inspect detected elements on the canvas. Move, delete, or rotate as needed.</p>
+                                        </div>
+                                    </div>
+                                    <div class="pb-scan-step-body">
+                                        <div class="pb-scan-review-summary" id="scanReviewSummary"></div>
+                                        <button type="button" class="btn-toolbar btn-toolbar-secondary pb-scan-run-btn" id="btnRerunAnalysis">Re-run Analysis</button>
+                                        <button type="button" class="btn-toolbar btn-toolbar-primary pb-scan-run-btn" id="btnAcceptFloor" style="margin-top:6px;">Accept Floor</button>
+                                        <div class="pb-scan-floor-status" id="scanFloorStatus"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 5: Generate Batch -->
+                                <div class="pb-scan-step locked" data-scan-step="export" id="scanStepExport">
+                                    <div class="pb-scan-step-header">
+                                        <span class="pb-scan-step-badge">5</span>
+                                        <div class="pb-scan-step-info">
+                                            <h3 class="pb-scan-step-title">Generate Batch</h3>
+                                            <p class="pb-scan-step-subtitle">All floors accepted. Generate the batch for Revit.</p>
+                                        </div>
+                                    </div>
+                                    <div class="pb-scan-step-body">
+                                        <div class="pb-scan-summary" id="scanSummary"></div>
+                                        <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnPushToManifest">Generate Batch</button>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- Right: Canvas -->
+                            <div class="pb-scan-canvas-container" id="scanCanvasContainer" style="display:none;">
+                                <div class="pb-scan-canvas-toolbar" id="scanCanvasToolbar">
+                                    <button type="button" class="pb-scan-tool-btn" id="btnToolSelect" title="Select (V)">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1 1l5 12 2-5 5-2L1 1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                                    </button>
+                                    <button type="button" class="pb-scan-tool-btn" id="btnToolPan" title="Pan (Space)">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                                    </button>
+                                    <span class="pb-scan-toolbar-sep"></span>
+                                    <button type="button" class="pb-scan-tool-btn" id="btnZoomIn" title="Zoom In">+</button>
+                                    <button type="button" class="pb-scan-tool-btn" id="btnZoomOut" title="Zoom Out">-</button>
+                                    <button type="button" class="pb-scan-tool-btn" id="btnZoomFit" title="Fit View">Fit</button>
+                                    <span class="pb-scan-toolbar-sep"></span>
+                                    <button type="button" class="pb-scan-tool-btn" id="btnRotateEl" title="Rotate (R)" disabled>Rot</button>
+                                    <button type="button" class="pb-scan-tool-btn pb-scan-tool-btn--danger" id="btnDeleteEl" title="Delete (Del)" disabled>Del</button>
+                                    <span class="pb-scan-toolbar-sep"></span>
+                                    <div class="pb-scan-overlay-toggles">
+                                        <label class="pb-scan-layer-toggle"><input type="checkbox" checked data-overlay="raw"><span>OCR Points</span></label>
+                                        <label class="pb-scan-layer-toggle"><input type="checkbox" checked data-overlay="vectors"><span>Vectors</span></label>
+                                    </div>
+                                    <span class="pb-scan-toolbar-sep"></span>
+                                    <div class="pb-scan-layer-toggles" id="scanLayerToggles">
+                                        <label class="pb-scan-layer-toggle"><input type="checkbox" checked data-layer="walls"><span>Walls</span></label>
+                                        <label class="pb-scan-layer-toggle"><input type="checkbox" checked data-layer="doors"><span>Doors</span></label>
+                                        <label class="pb-scan-layer-toggle"><input type="checkbox" checked data-layer="windows"><span>Windows</span></label>
+                                        <label class="pb-scan-layer-toggle"><input type="checkbox" checked data-layer="plumbing"><span>Plumbing</span></label>
+                                        <label class="pb-scan-layer-toggle"><input type="checkbox" checked data-layer="kitchen"><span>Kitchen</span></label>
+                                    </div>
+                                    <span class="pb-scan-zoom-label" id="scanZoomLabel">100%</span>
+                                </div>
+                                <div class="pb-scan-floor-tabs" id="scanFloorTabs" style="display:none;"></div>
+                                <div class="pb-scan-canvas-viewport" id="scanCanvasViewport"></div>
+                                <div class="pb-scan-canvas-info" id="scanCanvasInfo">
+                                    <span id="scanCoordDisplay">-- , --</span>
+                                    <span id="scanScaleDisplay">Scale: --</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </section>
+
+                    <!-- ══ TAB: Export ══ -->
+                    <section class="pb-section" data-section="export">
+                        <div class="pb-export-layout">
+                            <div class="pb-card pb-card--wide">
+                                <div class="pb-card-header"><h3 class="pb-card-title">Saved Manifests</h3><span class="pb-card-badge" id="pbManifestsCount">0</span></div>
+                                <div class="pb-card-body" id="pbManifestsList">
+                                    <div class="pb-empty-state"><p>No saved manifests yet. Configure a project first.</p></div>
+                                </div>
+                            </div>
+                            <div class="pb-card pb-card--wide">
+                                <div class="pb-card-header"><h3 class="pb-card-title">Current Manifest</h3></div>
+                                <div class="pb-card-body">
+                                    <div class="pb-json-preview">
+                                        <div class="pb-json-header">
+                                            <span class="pb-json-filename" id="pbJsonFilename">No manifest configured</span>
+                                            <button type="button" class="pb-btn-copy" id="btnCopyJson" title="Copy">Copy</button>
+                                        </div>
+                                        <pre class="pb-json-code" id="pbJsonPreview">{ }</pre>
+                                    </div>
+                                    <div class="pb-export-actions">
+                                        <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnDownloadJson" disabled>Download JSON</button>
+                                        <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnSaveManifest" disabled>Save to Project</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
+    <script src="assets/js/firebase-init.js"></script>
+</body>
+</html>

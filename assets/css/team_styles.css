@@ -71,7 +71,7 @@
 .team-board {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
   padding: 0;
 }
 
@@ -469,7 +469,7 @@
 #team-board .team-cards,
 #external-board .team-cards {
   display: grid;
-  gap: 16px;
+  gap: 24px;
   justify-content: start;
   justify-items: start;
   align-items: start;

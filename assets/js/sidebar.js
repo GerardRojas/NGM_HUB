@@ -24,6 +24,7 @@
     "my_work": { label: "My Work", href: "my-work.html", order: 2, category: "general" },
     "messages": { label: "Messages", href: "messages.html", order: 3, category: "general" },
     "arturito": { label: "Arturito", href: "arturito.html", order: 4, category: "general" },
+    "vault": { label: "Data Vault", href: "vault.html", order: 5, category: "general" },
 
     // Coordination
     "operation_manager": { label: "Operation Manager", href: "operation-manager.html", order: 1, category: "coordination" },
@@ -41,6 +42,7 @@
 
     // Architecture
     "projects": { label: "Projects", href: "projects.html", order: 1, category: "architecture" },
+    "project_builder": { label: "Project Builder", href: "project-builder.html", order: 2, category: "architecture" },
 
     // Costs & Estimates
     "estimator": { label: "Estimator Suite", href: "estimator.html", order: 1, category: "costs" },

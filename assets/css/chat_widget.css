@@ -151,6 +151,7 @@
   display: flex;
   min-height: 0;
   overflow: hidden;
+  position: relative;
 }
 
 /* ---------------------------------------------------------------------------
@@ -165,6 +166,7 @@
   flex-direction: column;
   overflow: hidden;
   background: rgba(20, 20, 20, 0.4);
+  transition: width 0.25s ease, min-width 0.25s ease, border-right 0.25s ease;
 }
 
 .chat-widget-channels-search {
@@ -276,6 +278,106 @@
   justify-content: center;
   flex-shrink: 0;
   line-height: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   Sidebar Toggle Button
+   --------------------------------------------------------------------------- */
+
+.chat-widget-sidebar-toggle {
+  position: absolute;
+  left: 150px;
+  top: 50%;
+  transform: translateY(-50%) translateX(-50%);
+  z-index: 2;
+  width: 20px;
+  height: 36px;
+  border-radius: 0 6px 6px 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: none;
+  background: rgba(30, 30, 30, 0.95);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: left 0.25s ease, background 0.15s, color 0.15s;
+}
+
+.chat-widget-sidebar-toggle:hover {
+  background: rgba(50, 50, 50, 0.95);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.chat-widget-sidebar-toggle svg {
+  transition: transform 0.25s ease;
+}
+
+/* Collapsed state */
+.chat-widget-body.cw-sidebar-collapsed .chat-widget-channels {
+  width: 0;
+  min-width: 0;
+  padding: 0;
+  border-right: none;
+  overflow: hidden;
+}
+
+.chat-widget-body.cw-sidebar-collapsed .chat-widget-sidebar-toggle {
+  left: 0;
+  border-radius: 0 6px 6px 0;
+}
+
+.chat-widget-body.cw-sidebar-collapsed .chat-widget-sidebar-toggle svg {
+  transform: scaleX(-1);
+}
+
+/* ---------------------------------------------------------------------------
+   Project Collapsible Headers
+   --------------------------------------------------------------------------- */
+
+.chat-widget-project-header {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding: 5px 6px 5px 6px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.chat-widget-project-header:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.chat-widget-project-chevron {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* Sub-channel items (indented) */
+.chat-widget-ch--sub {
+  padding-left: 26px;
+}
+
+.chat-widget-ch-sub-icon {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.6;
+  width: 10px;
+  text-align: center;
 }
 
 /* ---------------------------------------------------------------------------
@@ -603,5 +705,10 @@
 
   .chat-widget-body.cw-chat-active .chat-widget-back-btn {
     display: flex;
+  }
+
+  /* Hide sidebar toggle on mobile */
+  .chat-widget-sidebar-toggle {
+    display: none;
   }
 }

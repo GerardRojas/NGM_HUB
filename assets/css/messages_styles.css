@@ -800,22 +800,43 @@
 
 /* Mention in message */
 .msg-mention {
-  background: rgba(88, 166, 255, 0.12);
-  color: #58a6ff;
-  padding: 1px 4px;
-  border-radius: 3px;
-  font-weight: 500;
+  background: rgba(88, 166, 255, 0.15);
+  color: #79b8ff;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.93em;
   cursor: pointer;
   transition: background 0.15s ease;
+  white-space: nowrap;
 }
 
 .msg-mention:hover {
-  background: rgba(88, 166, 255, 0.22);
+  background: rgba(88, 166, 255, 0.28);
+}
+
+/* Self-mention — when YOU are mentioned, stands out like Google Chat */
+.msg-mention--self {
+  background: rgba(88, 166, 255, 0.25);
+  color: #a0cfff;
+}
+
+.msg-mention--self:hover {
+  background: rgba(88, 166, 255, 0.38);
 }
 
 /* Own message mentions - slightly different for contrast */
 .msg-message--own .msg-mention {
-  background: rgba(88, 166, 255, 0.18);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.msg-message--own .msg-mention:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.msg-message--own .msg-mention--self {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 /* Message attachments */
@@ -3699,12 +3720,37 @@
   color: #3ecf8e;
 }
 
+.msg-mentions-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .msg-mentions-count {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.05);
   padding: 4px 10px;
   border-radius: 12px;
+}
+
+.msg-mentions-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.msg-mentions-close-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .msg-mentions-list {

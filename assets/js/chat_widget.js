@@ -197,6 +197,13 @@
             '</div>',
           '</div>',
 
+          // Sidebar toggle (visible when sidebar is collapsed)
+          '<button type="button" class="chat-widget-sidebar-toggle" id="chat-widget-sidebar-toggle" title="Toggle channels">',
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">',
+              '<path d="M9 18l6-12"/><path d="M3 6h18M3 12h18M3 18h18"/>',
+            '</svg>',
+          '</button>',
+
           // Chat area
           '<div class="chat-widget-chat" id="chat-widget-chat">',
             '<div class="chat-widget-chat-header" id="chat-widget-chat-header">',
@@ -242,6 +249,7 @@
     DOM.inputArea = document.getElementById("chat-widget-input-area");
     DOM.input = document.getElementById("chat-widget-input");
     DOM.send = document.getElementById("chat-widget-send");
+    DOM.sidebarToggle = document.getElementById("chat-widget-sidebar-toggle");
   }
 
   // -------------------------------------------------------------------------
@@ -375,17 +383,37 @@
   // -------------------------------------------------------------------------
   // CHANNEL RENDERING
   // -------------------------------------------------------------------------
+  // Collapsed project groups stored in memory (persisted to sessionStorage)
+  var _collapsedProjects = {};
+  try {
+    var _saved = sessionStorage.getItem("cw_collapsed_projects");
+    if (_saved) _collapsedProjects = JSON.parse(_saved);
+  } catch (e) { /* */ }
+
+  function _saveCollapsedProjects() {
+    try { sessionStorage.setItem("cw_collapsed_projects", JSON.stringify(_collapsedProjects)); } catch (e) { /* */ }
+  }
+
+  function toggleProjectGroup(projectId) {
+    _collapsedProjects[projectId] = !_collapsedProjects[projectId];
+    _saveCollapsedProjects();
+    renderChannels(DOM.search ? DOM.search.value : "");
+  }
+
+  function getProjectUnreadTotal(pid) {
+    var total = 0;
+    var subTypes = [CHANNEL_TYPES.PROJECT_GENERAL, CHANNEL_TYPES.PROJECT_RECEIPTS, CHANNEL_TYPES.PROJECT_ACCOUNTING];
+    subTypes.forEach(function (t) {
+      total += state.unreadCounts[t + ":" + pid] || 0;
+    });
+    return total;
+  }
+
   function renderChannels(filter) {
     if (!DOM.channelsList) return;
     filter = (filter || "").toLowerCase();
 
-    var projectMap = {};
-    state.projects.forEach(function (p) {
-      projectMap[p.project_id || p.id] = p;
-    });
-
     // Group channels
-    var projectChannels = [];
     var groupChannels = [];
     var directChannels = [];
 
@@ -394,56 +422,82 @@
         directChannels.push(ch);
       } else if (ch.type === CHANNEL_TYPES.GROUP || ch.type === CHANNEL_TYPES.CUSTOM) {
         groupChannels.push(ch);
-      } else if (ch.type && ch.type.startsWith("project_")) {
-        projectChannels.push(ch);
       }
-    });
-
-    // Also build project channels from projects that may not have explicit channels
-    var projectsWithChannels = {};
-    projectChannels.forEach(function (ch) {
-      if (!projectsWithChannels[ch.projectId]) projectsWithChannels[ch.projectId] = [];
-      projectsWithChannels[ch.projectId].push(ch);
     });
 
     // Build HTML
     var html = [];
 
-    // -- Projects section --
-    var projectHtml = [];
+    // -- Projects section (collapsible groups) --
+    var hasProjectContent = false;
+    var projectItems = [];
+
     state.projects.forEach(function (proj) {
       var pid = proj.project_id || proj.id;
       var pName = proj.name || proj.project_name || "Project";
       var pColor = getProjectColor(pid);
+      var collapsed = !!_collapsedProjects[pid];
       var subTypes = [
         { type: CHANNEL_TYPES.PROJECT_GENERAL, label: "General" },
         { type: CHANNEL_TYPES.PROJECT_RECEIPTS, label: "Receipts" },
         { type: CHANNEL_TYPES.PROJECT_ACCOUNTING, label: "Accounting" },
       ];
-      subTypes.forEach(function (sub) {
-        var chName = pName + " > " + sub.label;
-        if (filter && chName.toLowerCase().indexOf(filter) === -1) return;
-        var key = sub.type + ":" + pid;
-        var count = state.unreadCounts[key] || 0;
-        var active = state.currentChannel &&
-          getChannelKey(state.currentChannel.type, state.currentChannel.id, state.currentChannel.projectId) === key;
-        projectHtml.push(
-          '<button type="button" class="chat-widget-ch' + (active ? " active" : "") + '"' +
-          ' data-channel-key="' + key + '"' +
-          ' data-type="' + sub.type + '"' +
-          ' data-project-id="' + pid + '"' +
-          ' data-name="' + escapeHtml(chName) + '">' +
-            '<span class="chat-widget-ch-dot" style="border-color:' + pColor + ';"></span>' +
-            '<span class="chat-widget-ch-name">' + escapeHtml(chName) + '</span>' +
-            (count > 0 ? '<span class="chat-widget-ch-badge">' + (count > 99 ? "99+" : count) + '</span>' : '') +
-          '</button>'
-        );
-      });
+
+      // Check if any sub-channel matches filter
+      var anyMatch = false;
+      if (!filter) {
+        anyMatch = true;
+      } else {
+        if (pName.toLowerCase().indexOf(filter) !== -1) anyMatch = true;
+        subTypes.forEach(function (sub) {
+          if (sub.label.toLowerCase().indexOf(filter) !== -1) anyMatch = true;
+        });
+      }
+      if (!anyMatch) return;
+
+      var projUnread = getProjectUnreadTotal(pid);
+      var chevron = collapsed
+        ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>'
+        : '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
+
+      // Project header (collapsible)
+      projectItems.push(
+        '<button type="button" class="chat-widget-project-header" data-project-toggle="' + pid + '">' +
+          '<span class="chat-widget-project-chevron">' + chevron + '</span>' +
+          '<span class="chat-widget-ch-dot" style="border-color:' + pColor + ';"></span>' +
+          '<span class="chat-widget-ch-name">' + escapeHtml(pName) + '</span>' +
+          (collapsed && projUnread > 0 ? '<span class="chat-widget-ch-badge">' + (projUnread > 99 ? "99+" : projUnread) + '</span>' : '') +
+        '</button>'
+      );
+
+      // Sub-channels (indented, hidden when collapsed)
+      if (!collapsed) {
+        subTypes.forEach(function (sub) {
+          if (filter && sub.label.toLowerCase().indexOf(filter) === -1 && pName.toLowerCase().indexOf(filter) === -1) return;
+          var key = sub.type + ":" + pid;
+          var count = state.unreadCounts[key] || 0;
+          var active = state.currentChannel &&
+            getChannelKey(state.currentChannel.type, state.currentChannel.id, state.currentChannel.projectId) === key;
+          projectItems.push(
+            '<button type="button" class="chat-widget-ch chat-widget-ch--sub' + (active ? " active" : "") + '"' +
+            ' data-channel-key="' + key + '"' +
+            ' data-type="' + sub.type + '"' +
+            ' data-project-id="' + pid + '"' +
+            ' data-name="' + escapeHtml(pName + " > " + sub.label) + '">' +
+              '<span class="chat-widget-ch-sub-icon" style="color:' + pColor + ';">#</span>' +
+              '<span class="chat-widget-ch-name">' + escapeHtml(sub.label) + '</span>' +
+              (count > 0 ? '<span class="chat-widget-ch-badge">' + (count > 99 ? "99+" : count) + '</span>' : '') +
+            '</button>'
+          );
+        });
+      }
+
+      hasProjectContent = true;
     });
 
-    if (projectHtml.length) {
+    if (hasProjectContent) {
       html.push('<div class="chat-widget-section-label">Projects</div>');
-      html.push(projectHtml.join(""));
+      html.push(projectItems.join(""));
     }
 
     // -- Groups / Custom section --
@@ -477,7 +531,6 @@
     var directHtml = [];
     directChannels.forEach(function (ch) {
       var chName = ch.name || "Direct";
-      // For DMs, show the other person's name
       if (ch.members && state.currentUser) {
         var other = ch.members.find(function (m) {
           return (m.user_id || m) !== state.currentUser.user_id;
@@ -893,8 +946,28 @@
       DOM.body.classList.remove("cw-chat-active");
     });
 
-    // Channel selection (delegated)
+    // Sidebar collapse toggle
+    DOM.sidebarToggle.addEventListener("click", function () {
+      var body = DOM.body;
+      var isCollapsed = body.classList.toggle("cw-sidebar-collapsed");
+      try { sessionStorage.setItem("cw_sidebar_collapsed", isCollapsed ? "1" : ""); } catch (e) { /* */ }
+    });
+
+    // Restore sidebar collapsed state
+    try {
+      if (sessionStorage.getItem("cw_sidebar_collapsed") === "1") {
+        DOM.body.classList.add("cw-sidebar-collapsed");
+      }
+    } catch (e) { /* */ }
+
+    // Channel selection + project toggle (delegated)
     DOM.channelsList.addEventListener("click", function (e) {
+      // Project collapse toggle
+      var toggler = e.target.closest("[data-project-toggle]");
+      if (toggler) {
+        toggleProjectGroup(toggler.dataset.projectToggle);
+        return;
+      }
       var btn = e.target.closest(".chat-widget-ch");
       if (!btn) return;
       var type = btn.dataset.type;

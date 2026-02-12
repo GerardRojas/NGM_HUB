@@ -50,7 +50,8 @@
       "WebFetch(domain:docsbot.ai)",
       "WebFetch(domain:pricepertoken.com)",
       "Bash(git -C \"C:\\\\Users\\\\germa\\\\Desktop\\\\NGM_API\" log --oneline --all)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(type:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"

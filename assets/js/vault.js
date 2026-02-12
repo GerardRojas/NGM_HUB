@@ -39,6 +39,7 @@
   let currentCompany = null;   // null = all projects, string = filter by company
   let expandedNodes = new Set(); // Track which tree nodes are expanded
   let treeCache = {};          // Cache tree data per project to avoid re-fetching
+  let filesCache = {};         // Cache files data per folder/project to avoid re-fetching
 
   // ─── DOM refs ──────────────────────────────────────────────────────────────
   const $tree = document.getElementById("vaultTree");
@@ -353,18 +354,38 @@
   }
 
   // ─── File Listing ──────────────────────────────────────────────────────────
-  async function loadFiles() {
+  async function loadFiles(forceRefresh = false) {
+    // Build cache key
+    const cacheKey = `${currentProject || "__global__"}:${currentFolder || "__root__"}`;
+
+    // Use cached data if available and not forcing refresh
+    if (!forceRefresh && filesCache[cacheKey]) {
+      files = filesCache[cacheKey];
+      renderFiles();
+      // Still check receipt status for cached files
+      await checkReceiptStatus();
+      return;
+    }
+
+    // Fetch fresh data
     try {
       let params = [];
       if (currentFolder) params.push(`parent_id=${currentFolder}`);
       if (currentProject) params.push(`project_id=${currentProject}`);
       const qs = params.length ? `?${params.join("&")}` : "";
       files = await apiFetch(`/vault/files${qs}`);
+      filesCache[cacheKey] = files; // Cache the result
     } catch (e) {
       console.warn("[Vault] Failed to load files:", e);
       files = [];
     }
+
     // Check receipt processing status if inside a Receipts folder
+    await checkReceiptStatus();
+    renderFiles();
+  }
+
+  async function checkReceiptStatus() {
     receiptStatusMap = {};
     const isReceiptsFolder = folderPath.length > 0 && folderPath[folderPath.length - 1].name === "Receipts";
     if (isReceiptsFolder && files.length > 0) {
@@ -375,7 +396,18 @@
         } catch (_) {}
       }
     }
-    renderFiles();
+  }
+
+  // Helper to invalidate file cache for current location
+  function invalidateCurrentFilesCache() {
+    const cacheKey = `${currentProject || "__global__"}:${currentFolder || "__root__"}`;
+    delete filesCache[cacheKey];
+  }
+
+  // Helper to invalidate all caches (e.g., after major changes)
+  function invalidateAllCaches() {
+    treeCache = {};
+    filesCache = {};
   }
 
   function renderFiles() {
@@ -590,7 +622,7 @@
 
     hideProgress();
     if (window.Toast && uploaded > 0) window.Toast.success(`Uploaded ${uploaded} file(s)`);
-    await loadFiles();
+    await loadFiles(true); // Force refresh after upload
     await loadTree(true); // Force refresh after upload
   }
 
@@ -731,7 +763,7 @@
         if (newName && newName !== file.name) {
           await apiPatch(`/vault/files/${file.id}`, { name: newName });
           if (window.Toast) window.Toast.success("Renamed");
-          await loadFiles();
+          await loadFiles(true); // Force refresh after rename
           await loadTree(true); // Force refresh after rename
         }
         break;
@@ -745,7 +777,7 @@
         try {
           await apiFetch(`/vault/duplicate/${file.id}`, { method: "POST" });
           if (window.Toast) window.Toast.success("Duplicated");
-          await loadFiles();
+          await loadFiles(true); // Force refresh after duplicate
         } catch (e) {
           if (window.Toast) window.Toast.error("Duplicate failed");
         }
@@ -759,7 +791,7 @@
         if (confirm(`Delete "${file.name}"?`)) {
           await apiDelete(`/vault/files/${file.id}`);
           if (window.Toast) window.Toast.success("Deleted");
-          await loadFiles();
+          await loadFiles(true); // Force refresh after delete
           await loadTree(true); // Force refresh after delete
         }
         break;
@@ -809,7 +841,7 @@
       await apiPatch(`/vault/files/${selectedFileId}`, { parent_id: moveTargetId });
       if (window.Toast) window.Toast.success("Moved");
       closeMoveModal();
-      await loadFiles();
+      await loadFiles(true); // Force refresh after move
       await loadTree(true); // Force refresh after move
     } catch (e) {
       if (window.Toast) window.Toast.error("Move failed");
@@ -871,7 +903,7 @@
       }).then(r => { if (!r.ok) throw new Error(r.statusText); return r.json(); });
       if (window.Toast) window.Toast.success("New version uploaded");
       await loadVersions();
-      await loadFiles();
+      await loadFiles(true); // Force refresh after version upload
     } catch (e) {
       if (window.Toast) window.Toast.error("Version upload failed");
     }
@@ -909,7 +941,7 @@
         project_id: currentProject,
       });
       if (window.Toast) window.Toast.success("Folder created");
-      await loadFiles();
+      await loadFiles(true); // Force refresh after creating folder
       await loadTree(true); // Force refresh after creating folder
     } catch (e) {
       if (window.Toast) window.Toast.error("Failed to create folder");
@@ -1181,7 +1213,7 @@
           await apiFetch(`/vault/files/${versionFileId}/restore/${versionId}`, { method: "POST" });
           if (window.Toast) window.Toast.success("Version restored");
           await loadVersions();
-          await loadFiles();
+          await loadFiles(true); // Force refresh after version restore
         }
       }
     });

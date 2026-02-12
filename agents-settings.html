@@ -1418,18 +1418,83 @@
                                         </div>
 
                                         <div id="andrew-failures" class="detail-tab-panel">
-                                            <div class="stats-row">
-                                                <div class="stat-card">
-                                                    <span class="stat-label">Processing Errors</span>
-                                                    <span class="stat-value disabled" id="andrewFailureErrors">-</span>
+                                            <div class="analytics-section">
+                                                <div class="section-header">
+                                                    <h3 style="font-size: 13px; font-weight: 500; color: var(--text-primary); margin: 0 0 4px 0;">
+                                                        Processing Metrics & Failures
+                                                    </h3>
+                                                    <p style="font-size: 11px; color: var(--ngm-text-muted); margin: 0;">
+                                                        Track receipt processing performance and identify issues
+                                                    </p>
                                                 </div>
-                                                <div class="stat-card">
-                                                    <span class="stat-label">Duplicates Caught</span>
-                                                    <span class="stat-value" id="andrewFailureDuplicates">-</span>
+
+                                                <div class="stats-row" style="margin-top: 20px;">
+                                                    <div class="stat-card">
+                                                        <span class="stat-label">Processing Errors (30d)</span>
+                                                        <span class="stat-value disabled" id="andrewFailureErrors">-</span>
+                                                    </div>
+                                                    <div class="stat-card">
+                                                        <span class="stat-label">Duplicates Caught</span>
+                                                        <span class="stat-value" id="andrewFailureDuplicates">-</span>
+                                                    </div>
+                                                    <div class="stat-card">
+                                                        <span class="stat-label">Manual Reviews</span>
+                                                        <span class="stat-value" id="andrewManualReviews">-</span>
+                                                    </div>
+                                                    <div class="stat-card">
+                                                        <span class="stat-label">OCR Failures</span>
+                                                        <span class="stat-value" id="andrewOcrFailures">-</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="empty-state" id="andrewFailuresEmpty">
-                                                <p class="empty-state-text">Detailed failure logs will appear here as they are tracked.</p>
+
+                                                <div style="margin-top: 20px;">
+                                                    <h4 style="font-size: 13px; font-weight: 500; color: var(--text-primary); margin: 0 0 12px 0;">
+                                                        Recent Error Logs
+                                                    </h4>
+                                                    <div style="overflow-x: auto;">
+                                                        <table id="andrewErrorLogsTable" style="width: 100%; border-collapse: collapse;">
+                                                            <thead>
+                                                                <tr style="border-bottom: 1px solid var(--ngm-border);">
+                                                                    <th style="text-align: left; padding: 8px; font-size: 11px; font-weight: 500; color: var(--ngm-text-muted);">Date</th>
+                                                                    <th style="text-align: left; padding: 8px; font-size: 11px; font-weight: 500; color: var(--ngm-text-muted);">Project</th>
+                                                                    <th style="text-align: left; padding: 8px; font-size: 11px; font-weight: 500; color: var(--ngm-text-muted);">Type</th>
+                                                                    <th style="text-align: left; padding: 8px; font-size: 11px; font-weight: 500; color: var(--ngm-text-muted);">Details</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="andrewErrorLogsBody">
+                                                                <tr>
+                                                                    <td colspan="4" style="text-align: center; padding: 24px; font-size: 11px; color: var(--ngm-text-muted);">
+                                                                        No error logs in the last 30 days
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+
+                                                <div style="margin-top: 20px; padding: 12px; background: var(--ngm-bg-card); border: 1px solid var(--ngm-border); border-radius: 8px;">
+                                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--ngm-text-muted);">
+                                                            <circle cx="8" cy="8" r="6"></circle>
+                                                            <line x1="8" y1="5" x2="8" y2="8"></line>
+                                                            <line x1="8" y1="10.5" x2="8" y2="11"></line>
+                                                        </svg>
+                                                        <span style="font-size: 12px; font-weight: 500; color: var(--text-primary);">Manage Metrics Data</span>
+                                                    </div>
+                                                    <p style="font-size: 11px; color: var(--ngm-text-muted); margin: 0 0 12px 0;">
+                                                        Clear error logs to reset metrics, or refresh to get latest data
+                                                    </p>
+                                                    <div style="display: flex; gap: 6px;">
+                                                        <button id="andrewRefreshMetrics" type="button"
+                                                                style="padding: 4px 12px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 6px; color: var(--ngm-text); font-size: 11px; cursor: pointer;">
+                                                            Refresh Stats
+                                                        </button>
+                                                        <button id="andrewClearMetrics" type="button"
+                                                                style="padding: 4px 12px; background: transparent; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; color: #ef4444; font-size: 11px; cursor: pointer;">
+                                                            Clear Logs
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -2436,8 +2501,8 @@
                     if (!config) return;
                     document.getElementById('cfgAutoCreate').checked = config.auto_create_expense !== false;
 
-                    // Enforce threshold switch
-                    var enforceThreshold = config.enforce_confidence_threshold !== false; // Default: true
+                    // Enforce threshold switch (default: false/OFF to avoid blocking manual approvals)
+                    var enforceThreshold = config.enforce_confidence_threshold === true;
                     document.getElementById('cfgEnforceThreshold').checked = enforceThreshold;
 
                     // Min confidence slider
@@ -2958,6 +3023,10 @@
 
             // Clear reports button
             document.getElementById('daneelClearReports').addEventListener('click', clearDaneelAuthReports);
+
+            // Andrew metrics buttons
+            document.getElementById('andrewClearMetrics').addEventListener('click', clearAndrewMetrics);
+            document.getElementById('andrewRefreshMetrics').addEventListener('click', refreshAndrewStats);
         }
 
         // ====== Daneel Auto-Auth Config ======
@@ -3345,6 +3414,93 @@
                 console.error('[Daneel] Clear reports error:', e);
                 if (window.Toast) window.Toast.error('Failed to clear reports');
             });
+        }
+
+        // ====== Andrew Metrics Management ======
+
+        function clearAndrewMetrics() {
+            if (!confirm('Delete all error and duplicate records? This will reset the metrics and cannot be undone.')) return;
+            var btn = document.getElementById('andrewClearMetrics');
+            btn.disabled = true;
+            btn.textContent = 'Clearing...';
+            fetch(API_BASE + '/pending-receipts/agent-metrics', {
+                method: 'DELETE',
+                headers: _agentAuthHeaders()
+            })
+            .then(function(resp) { return resp.json(); })
+            .then(function(result) {
+                btn.disabled = false;
+                btn.textContent = 'Clear Logs';
+                if (result.ok) {
+                    if (window.Toast) window.Toast.success('Metrics cleared: ' + result.deleted_count + ' records removed');
+                    // Refresh the stats
+                    refreshAndrewStats();
+                    _fetchAndrewHubStats(); // Also update hub card
+                } else {
+                    if (window.Toast) window.Toast.error('Failed to clear metrics');
+                }
+            })
+            .catch(function(e) {
+                btn.disabled = false;
+                btn.textContent = 'Clear Logs';
+                console.error('[Andrew] Clear metrics error:', e);
+                if (window.Toast) window.Toast.error('Failed to clear metrics');
+            });
+        }
+
+        function refreshAndrewStats() {
+            // Clear cache and reload stats
+            invalidateCache('/pending-receipts/agent-stats');
+            cachedFetch(API_BASE + '/pending-receipts/agent-stats', { headers: _agentAuthHeaders() })
+                .then(function(stats) {
+                    if (!stats) return;
+
+                    // Update failures tab
+                    document.getElementById('andrewFailureErrors').textContent = stats.errors || 0;
+                    document.getElementById('andrewFailureDuplicates').textContent = stats.duplicates_caught || 0;
+                    document.getElementById('andrewManualReviews').textContent = stats.manual_reviews || 0;
+                    document.getElementById('andrewOcrFailures').textContent = stats.ocr_failures || 0;
+
+                    // Update overview tab
+                    document.getElementById('agentStatTotal').textContent = stats.total_processed;
+                    document.getElementById('agentStatLinked').textContent = stats.expenses_created;
+                    document.getElementById('agentStatSuccessRate').textContent = stats.success_rate + '%';
+                    document.getElementById('agentStatConfidence').textContent = stats.avg_confidence + '%';
+                    document.getElementById('agentStatPending').textContent = stats.pending_review;
+                    document.getElementById('agentStatErrors').textContent = stats.errors;
+                    document.getElementById('agentStatDuplicates').textContent = stats.duplicates_caught;
+
+                    // Update error logs table
+                    _renderAndrewErrorLogs(stats.error_logs || []);
+
+                    if (window.Toast) window.Toast.success('Stats refreshed');
+                })
+                .catch(function(e) {
+                    console.error('[Andrew] Refresh stats error:', e);
+                    if (window.Toast) window.Toast.error('Failed to refresh stats');
+                });
+        }
+
+        function _renderAndrewErrorLogs(logs) {
+            var tbody = document.getElementById('andrewErrorLogsBody');
+            if (!logs || logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 24px; font-size: 11px; color: var(--ngm-text-muted);">No error logs in the last 30 days</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = logs.map(function(log) {
+                var date = new Date(log.created_at);
+                var dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                var projectName = log.project_id || 'Unknown';
+                var typeColor = log.error_type === 'OCR Failure' ? '#f59e0b' : '#ef4444';
+
+                return '<tr style="border-bottom: 1px solid var(--ngm-border);">' +
+                    '<td style="padding: 8px; font-size: 11px; color: var(--ngm-text-muted);">' + dateStr + '</td>' +
+                    '<td style="padding: 8px; font-size: 11px; color: var(--ngm-text);">' + projectName + '</td>' +
+                    '<td style="padding: 8px;"><span style="padding: 2px 6px; background: ' + typeColor + '; color: #fff; font-size: 10px; border-radius: 4px;">' + log.error_type + '</span></td>' +
+                    '<td style="padding: 8px; font-size: 11px; color: var(--ngm-text-muted);">' + (log.details || 'No details') + '</td>' +
+                '</tr>';
+            }).join('');
         }
 
         function _openReportDetail(reportId, rowEl) {

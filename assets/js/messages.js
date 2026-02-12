@@ -1590,6 +1590,60 @@
       }
     }
 
+    // Edit bill categories card
+    if (showButtons && isBot && msg.metadata?.edit_categories_card) {
+      const billId = msg.metadata.bill_id;
+      const billNumber = msg.metadata.bill_number;
+      const editableItems = msg.metadata.editable_items || [];
+
+      if (editableItems.length > 0) {
+        const itemsHtml = editableItems.map((item, index) => {
+          const desc = (item.description || '').length > 50
+            ? item.description.substring(0, 50) + '...'
+            : (item.description || '');
+          const amt = item.amount != null ? `$${Number(item.amount).toFixed(2)}` : '';
+          const currentCatLabel = item.current_account_name
+            ? `<span class="msg-cat-current">${escapeHtml(item.current_account_name)}</span>`
+            : '<span class="msg-cat-current msg-cat-current--none">No category</span>';
+
+          return `
+            <div class="msg-cat-item" data-item-index="${index}">
+              <div class="msg-cat-item-info">
+                <span class="msg-cat-item-num">${index + 1}.</span>
+                <span class="msg-cat-item-desc">${escapeHtml(desc)}</span>
+                ${amt ? `<span class="msg-cat-item-amt">${amt}</span>` : ''}
+                ${currentCatLabel}
+              </div>
+              <select class="msg-cat-select" data-item-index="${index}"
+                      data-expense-id="${item.expense_id}"
+                      data-current-id="${item.current_account_id || ''}">
+                <option value="">-- Select account --</option>
+              </select>
+            </div>
+          `;
+        }).join('');
+
+        botActions = `
+          <div class="msg-bot-actions msg-bot-actions--edit-categories" data-bill-id="${billId}">
+            <div class="msg-cat-card">
+              <div class="msg-cat-card-header">Edit categories for Bill ${billNumber ? '#' + billNumber : ''}</div>
+              <div class="msg-cat-items">${itemsHtml}</div>
+              <div class="msg-cat-card-buttons">
+                <button type="button" class="msg-bot-action-btn msg-bot-action-btn--confirm"
+                        data-action="edit-categories-confirm" data-bill-id="${billId}">
+                  Save Changes
+                </button>
+                <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary"
+                        data-action="edit-categories-cancel" data-bill-id="${billId}">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
     // Deleted message rendering
     if (msg.is_deleted) {
       classes.push('msg-message--deleted');
@@ -2072,8 +2126,14 @@
       }
       sel.innerHTML = optionsHtml;
 
+      // Pre-select suggested ID (receipt flow) or current ID (edit categories flow)
       const suggestedId = sel.dataset.suggestedId;
-      if (suggestedId) sel.value = suggestedId;
+      const currentId = sel.dataset.currentId;
+      if (suggestedId) {
+        sel.value = suggestedId;
+      } else if (currentId) {
+        sel.value = currentId;
+      }
 
       sel.setAttribute('data-loaded', '1');
     });
@@ -4256,6 +4316,88 @@
 
         cardEl.innerHTML = '<span class="msg-bot-actions-loading">Confirming categories...</span>';
         _forwardToReceiptAction(receiptId, "confirm_categories", null, assignments);
+        return;
+      }
+
+      // Edit bill categories: save changes
+      if (action === "edit-categories-confirm") {
+        const billId = e.target.closest("[data-bill-id]")?.dataset.billId;
+        const cardEl = e.target.closest(".msg-bot-actions--edit-categories");
+        if (!billId || !cardEl) return;
+
+        const selects = cardEl.querySelectorAll(".msg-cat-select");
+        const assignments = [];
+        let hasEmpty = false;
+
+        selects.forEach(sel => {
+          const expenseId = sel.dataset.expenseId;
+          const accountId = sel.value;
+
+          // If no selection, use current account (no change)
+          if (!accountId) {
+            const currentId = sel.dataset.currentId;
+            if (!currentId) {
+              hasEmpty = true;
+              sel.style.borderColor = 'hsl(0, 65%, 50%)';
+              return;
+            }
+            // No change, skip this item
+            return;
+          }
+
+          sel.style.borderColor = '';
+          const accountName = sel.options[sel.selectedIndex]?.text || '';
+          assignments.push({
+            expense_id: expenseId,
+            account_id: accountId,
+            account_name: accountName
+          });
+        });
+
+        if (hasEmpty) {
+          if (window.Toast) window.Toast.warning("Please select an account for all items");
+          return;
+        }
+
+        if (assignments.length === 0) {
+          if (window.Toast) window.Toast.info("No changes to save");
+          return;
+        }
+
+        cardEl.innerHTML = '<span class="msg-bot-actions-loading">Saving changes...</span>';
+
+        // Send to backend
+        authFetch(`${API_BASE}/pending-receipts/bill-categories/confirm`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            assignments,
+            user_id: state.currentUser?.user_id
+          }),
+        })
+        .then(async (res) => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "Failed to save changes");
+
+          cardEl.innerHTML = `<span class="msg-bot-actions-success">✓ ${data.updated_count} item${data.updated_count !== 1 ? 's' : ''} updated</span>`;
+          if (window.Toast) window.Toast.success("Categories updated successfully");
+        })
+        .catch((err) => {
+          console.error("[edit-categories] Error:", err);
+          cardEl.innerHTML = `<span class="msg-bot-actions-error">Error: ${err.message}</span>`;
+          if (window.Toast) window.Toast.error("Failed to save changes");
+        });
+
+        return;
+      }
+
+      // Edit bill categories: cancel
+      if (action === "edit-categories-cancel") {
+        const billId = e.target.closest("[data-bill-id]")?.dataset.billId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (billId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-dismissed">Cancelled</span>';
+        }
         return;
       }
 

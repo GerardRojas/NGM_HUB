@@ -1006,9 +1006,17 @@
       // Toggle children
       const childrenEl = node.nextElementSibling;
       if (childrenEl?.classList.contains("vault-tree-children")) {
+        const isNowOpen = !childrenEl.classList.contains("open");
         childrenEl.classList.toggle("open");
         const arrow = node.querySelector(".tree-arrow");
         if (arrow) arrow.classList.toggle("expanded");
+
+        // Update expandedNodes Set to preserve state
+        if (isNowOpen) {
+          expandedNodes.add(id);
+        } else {
+          expandedNodes.delete(id);
+        }
       }
 
       // Handle virtual nodes

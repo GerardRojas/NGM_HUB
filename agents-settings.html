@@ -1274,8 +1274,18 @@
                                                     </div>
                                                     <div class="agent-config-item">
                                                         <div class="agent-config-info">
+                                                            <span class="agent-config-name">Enforce confidence threshold</span>
+                                                            <span class="agent-config-desc">Ask for confirmation when categorization confidence is below threshold (only for bulk processing)</span>
+                                                        </div>
+                                                        <label class="toggle-switch">
+                                                            <input type="checkbox" id="cfgEnforceThreshold">
+                                                            <span class="toggle-slider"></span>
+                                                        </label>
+                                                    </div>
+                                                    <div class="agent-config-item" id="cfgMinConfidenceContainer">
+                                                        <div class="agent-config-info">
                                                             <span class="agent-config-name">Minimum confidence threshold</span>
-                                                            <span class="agent-config-desc">Only auto-create if categorization confidence is above this %</span>
+                                                            <span class="agent-config-desc">Confidence level required for automatic categorization</span>
                                                         </div>
                                                         <div class="agent-config-control">
                                                             <input type="range" id="cfgMinConfidence" min="50" max="95" step="5" value="70" class="confidence-slider">
@@ -2425,9 +2435,19 @@
                 .then(function(config) {
                     if (!config) return;
                     document.getElementById('cfgAutoCreate').checked = config.auto_create_expense !== false;
-                    var minConf = config.min_confidence || 70;
+
+                    // Enforce threshold switch
+                    var enforceThreshold = config.enforce_confidence_threshold !== false; // Default: true
+                    document.getElementById('cfgEnforceThreshold').checked = enforceThreshold;
+
+                    // Min confidence slider
+                    var minConf = parseInt(config.min_confidence || 70);
                     document.getElementById('cfgMinConfidence').value = minConf;
                     document.getElementById('cfgMinConfidenceValue').textContent = minConf + '%';
+
+                    // Show/hide slider based on toggle
+                    document.getElementById('cfgMinConfidenceContainer').style.display = enforceThreshold ? 'flex' : 'none';
+
                     document.getElementById('cfgAutoSkipDuplicates').checked = config.auto_skip_duplicates === true;
 
                     // Auth notification user picker
@@ -2465,6 +2485,15 @@
             document.getElementById('cfgAutoCreate').addEventListener('change', function(e) {
                 saveAgentConfig('auto_create_expense', e.target.checked);
             });
+
+            // Enforce threshold toggle
+            document.getElementById('cfgEnforceThreshold').addEventListener('change', function(e) {
+                var isEnabled = e.target.checked;
+                saveAgentConfig('enforce_confidence_threshold', isEnabled);
+                // Show/hide the slider
+                document.getElementById('cfgMinConfidenceContainer').style.display = isEnabled ? 'flex' : 'none';
+            });
+
             document.getElementById('cfgMinConfidence').addEventListener('input', function(e) {
                 document.getElementById('cfgMinConfidenceValue').textContent = e.target.value + '%';
             });

@@ -6305,7 +6305,7 @@
 
         let matchedPayment = null;
 
-        if (paymentValue && paymentValue.toLowerCase() !== 'unknown') {
+        if (paymentValue) {
           // Try exact match first (case-insensitive)
           matchedPayment = metaData.payment_methods.find(p =>
             p.payment_method_name && p.payment_method_name.toLowerCase() === paymentValue.toLowerCase()
@@ -6329,20 +6329,20 @@
           paymentInput.setAttribute('data-value', matchedPayment.id);
           paymentInput.classList.remove('exp-input--no-match');
         } else {
-          // No match found - try to find "Unknown" payment method or first available
-          const unknownPayment = metaData.payment_methods.find(p =>
-            p.payment_method_name && p.payment_method_name.toLowerCase() === 'unknown'
+          // No match found - try to find "Debit" payment method or first available
+          const debitPayment = metaData.payment_methods.find(p =>
+            p.payment_method_name && p.payment_method_name.toLowerCase() === 'debit'
           );
 
-          if (unknownPayment) {
-            console.log('[POPULATE] ⚠ No payment match, using Unknown:', unknownPayment.payment_method_name);
-            paymentInput.value = unknownPayment.payment_method_name;
-            paymentInput.setAttribute('data-value', unknownPayment.id);
+          if (debitPayment) {
+            console.log('[POPULATE] ⚠ No payment match, using Debit:', debitPayment.payment_method_name);
+            paymentInput.value = debitPayment.payment_method_name;
+            paymentInput.setAttribute('data-value', debitPayment.id);
             paymentInput.classList.add('exp-input--no-match');
           } else if (metaData.payment_methods.length > 0) {
-            // If no "Unknown" exists, use the first payment method as default
+            // If no "Debit" exists, use the first payment method as default
             const defaultPayment = metaData.payment_methods[0];
-            console.log('[POPULATE] ⚠ No Unknown payment method, using first available:', defaultPayment.payment_method_name);
+            console.log('[POPULATE] ⚠ No Debit payment method, using first available:', defaultPayment.payment_method_name);
             paymentInput.value = defaultPayment.payment_method_name;
             paymentInput.setAttribute('data-value', defaultPayment.id);
             paymentInput.classList.add('exp-input--no-match');

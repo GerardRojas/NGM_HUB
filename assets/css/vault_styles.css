@@ -360,7 +360,7 @@
   height: 14px;
   flex-shrink: 0;
   color: rgba(255,255,255,0.3);
-  transition: transform 0.15s;
+  transition: transform 0.08s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .vault-tree-node .tree-arrow.expanded {
   transform: rotate(90deg);
@@ -392,9 +392,11 @@
 }
 .vault-tree-children {
   display: none;
+  overflow: hidden;
 }
 .vault-tree-children.open {
   display: block;
+  animation: vault-tree-expand 0.08s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ---- Tree Back Button ---- */
@@ -1045,5 +1047,14 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes vault-tree-expand {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

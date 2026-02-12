@@ -25,7 +25,7 @@
   }
 
   // ─── State ─────────────────────────────────────────────────────────────────
-  let currentProject = null;   // null = global vault
+  let currentProject = null;   // null = global vault, string = project id
   let currentFolder = null;    // null = root
   let folderPath = [];         // breadcrumb [{id, name}, ...]
   let folderTree = [];         // flat list of all folders
@@ -35,8 +35,6 @@
   let selectedFileId = null;   // currently selected file for context menu
   let receiptStatusMap = {};   // {file_hash: status} for receipt folders
   let projects = [];           // user's projects
-  let companies = [];          // all companies
-  let currentCompany = null;   // null = global vault, string = company id
 
   // ─── DOM refs ──────────────────────────────────────────────────────────────
   const $tree = document.getElementById("vaultTree");
@@ -65,9 +63,8 @@
 
   // ─── Init ──────────────────────────────────────────────────────────────────
   async function init() {
-    await Promise.all([loadCompanies(), loadProjects()]);
+    await loadProjects();
     renderCompanyDropdown();
-    renderProjectSubTabs();
     await loadTree();
     await loadFiles();
     bindEvents();
@@ -105,17 +102,7 @@
     return apiFetch(path, { method: "DELETE" });
   }
 
-  // ─── Companies & Projects ───────────────────────────────────────────────────
-  async function loadCompanies() {
-    try {
-      const data = await apiFetch("/companies");
-      companies = Array.isArray(data) ? data : [];
-    } catch (e) {
-      console.warn("[Vault] Failed to load companies:", e);
-      companies = [];
-    }
-  }
-
+  // ─── Projects ──────────────────────────────────────────────────────────────
   async function loadProjects() {
     try {
       const data = await apiFetch("/projects");
@@ -127,108 +114,24 @@
   }
 
   function renderCompanyDropdown() {
-    const dd = document.getElementById("vaultCompanyDropdown");
     const label = document.getElementById("vaultCompanyLabel");
     const dot = document.getElementById("vaultCompanyDot");
-    if (!dd) return;
+    const dd = document.getElementById("vaultCompanyDropdown");
 
-    // Build dropdown options
-    let html = `<button class="vault-company-option${currentCompany === null ? " active" : ""}" data-company="">`;
-    html += `<span class="vault-company-opt-dot" style="background:#3ecf8e"></span>Global Vault</button>`;
+    // Always show Global Vault
+    if (label) label.textContent = "Global Vault";
+    if (dot) dot.style.background = "#3ecf8e";
 
-    for (const c of companies) {
-      if (c.status === "Inactive") continue;
-      const hue = c.avatar_color || 0;
-      const color = `hsl(${hue},70%,50%)`;
-      const active = currentCompany === c.id ? " active" : "";
-      html += `<button class="vault-company-option${active}" data-company="${c.id}" data-hue="${hue}">`;
-      html += `<span class="vault-company-opt-dot" style="background:${color}"></span>${escapeHtml(c.name)}</button>`;
-    }
+    // Hide dropdown (not needed anymore)
+    if (dd) dd.style.display = "none";
 
-    // Orphan projects
-    const orphans = projects.filter(p => !p.source_company);
-    if (orphans.length > 0) {
-      const active = currentCompany === "__other__" ? " active" : "";
-      html += `<button class="vault-company-option${active}" data-company="__other__" data-hue="0">`;
-      html += `<span class="vault-company-opt-dot" style="background:#888"></span>Other</button>`;
-    }
-
-    dd.innerHTML = html;
-
-    // Update button label + dot
-    if (currentCompany === null) {
-      if (label) label.textContent = "Global Vault";
-      if (dot) dot.style.background = "#3ecf8e";
-    } else if (currentCompany === "__other__") {
-      if (label) label.textContent = "Other";
-      if (dot) dot.style.background = "#888";
-    } else {
-      const co = companies.find(c => c.id === currentCompany);
-      if (label) label.textContent = co ? co.name : "Company";
-      const hue = co ? (co.avatar_color || 0) : 0;
-      if (dot) dot.style.background = `hsl(${hue},70%,50%)`;
-    }
-
-    applyCompanyTheme();
-  }
-
-  function applyCompanyTheme() {
+    // Apply default theme
     const ws = document.querySelector(".vault-workspace");
-    if (!ws) return;
-    if (currentCompany === null) {
+    if (ws) {
       ws.style.setProperty("--vault-accent", "#3ecf8e");
       ws.style.setProperty("--vault-accent-soft", "rgba(62,207,142,0.1)");
       ws.style.setProperty("--vault-accent-hover", "#34b87a");
-    } else if (currentCompany === "__other__") {
-      ws.style.setProperty("--vault-accent", "#888");
-      ws.style.setProperty("--vault-accent-soft", "rgba(136,136,136,0.1)");
-      ws.style.setProperty("--vault-accent-hover", "#999");
-    } else {
-      const co = companies.find(c => c.id === currentCompany);
-      const hue = co ? (co.avatar_color || 0) : 0;
-      ws.style.setProperty("--vault-accent", `hsl(${hue},70%,50%)`);
-      ws.style.setProperty("--vault-accent-soft", `hsla(${hue},70%,50%,0.1)`);
-      ws.style.setProperty("--vault-accent-hover", `hsl(${hue},70%,42%)`);
     }
-  }
-
-  function toggleCompanyDropdown(show) {
-    const dd = document.getElementById("vaultCompanyDropdown");
-    const picker = document.getElementById("vaultCompanyPicker");
-    if (!dd || !picker) return;
-    const isOpen = dd.style.display !== "none";
-    if (show === undefined) show = !isOpen;
-    dd.style.display = show ? "flex" : "none";
-    picker.classList.toggle("open", show);
-  }
-
-  function renderProjectSubTabs() {
-    const el = document.getElementById("vaultProjectSubTabs");
-    if (!el) return;
-    if (currentCompany === null) {
-      el.style.display = "none";
-      return;
-    }
-    let list;
-    if (currentCompany === "__other__") {
-      list = projects.filter(p => !p.source_company);
-    } else {
-      list = projects.filter(p => p.source_company === currentCompany);
-    }
-    if (list.length === 0) {
-      el.style.display = "flex";
-      el.innerHTML = '<span class="vault-subtabs-empty">No projects for this company</span>';
-      return;
-    }
-    el.style.display = "flex";
-    let html = "";
-    for (const p of list) {
-      const pid = p.project_id || p.id;
-      const name = p.project_name || p.name || pid;
-      const active = currentProject === pid ? " active" : "";
-      html += `<button class="vault-subtab${active}" data-project="${pid}">${escapeHtml(name)}</button>`;
-    }
-    el.innerHTML = html;
   }
 
   // ─── Folder Tree ───────────────────────────────────────────────────────────
@@ -245,8 +148,46 @@
 
   function renderTree() {
     if (!$tree) return;
+
+    // If viewing a specific project, show its folder structure
+    if (currentProject) {
+      const roots = folderTree.filter(f => !f.parent_id);
+      $tree.innerHTML = renderTreeNodes(roots, 0);
+      return;
+    }
+
+    // Global vault: show actual folders + virtual "Projects" folder
     const roots = folderTree.filter(f => !f.parent_id);
-    $tree.innerHTML = renderTreeNodes(roots, 0);
+    let html = "";
+
+    // Render actual global folders
+    html += renderTreeNodes(roots, 0);
+
+    // Add virtual "Projects" folder
+    const hasProjects = projects.length > 0;
+    const arrowClass = hasProjects ? "tree-arrow" : "tree-arrow empty";
+    const arrow = `<svg class="${arrowClass}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
+    const folderIcon = `<svg class="tree-folder-icon" width="16" height="16" viewBox="0 0 24 24"><path class="tree-folder-back" d="M2 6a2 2 0 0 1 2-2h4.6a1 1 0 0 1 .7.3L11 6h9a2 2 0 0 1 2 2v1H2z"/><path class="tree-folder-front" d="M2 9h20v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>`;
+
+    html += `<div class="vault-tree-node" data-id="__projects__" data-name="Projects" data-virtual="true">`;
+    html += `${arrow}${folderIcon}<span class="tree-label">Projects</span>`;
+    html += `</div>`;
+
+    // Add children (project folders) - initially closed
+    if (hasProjects) {
+      html += `<div class="vault-tree-children">`;
+      for (const p of projects) {
+        const pid = p.project_id || p.id;
+        const name = p.project_name || p.name || pid;
+        const arrow2 = `<svg class="tree-arrow empty" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
+        html += `<div class="vault-tree-node" data-id="__project_${pid}__" data-project-id="${pid}" data-name="${escapeAttr(name)}" data-virtual="true">`;
+        html += `<span class="tree-indent" style="width:16px"></span>${arrow2}${folderIcon}<span class="tree-label">${escapeHtml(name)}</span>`;
+        html += `</div>`;
+      }
+      html += `</div>`;
+    }
+
+    $tree.innerHTML = html;
   }
 
   function renderTreeNodes(nodes, depth) {
@@ -376,10 +317,29 @@
   // ─── Breadcrumb ────────────────────────────────────────────────────────────
   function renderBreadcrumb() {
     if (!$breadcrumb) return;
-    let html = `<span class="vault-crumb vault-crumb-root" data-id="">Vault</span>`;
+
+    let html = "";
+
+    // Start with Vault (root)
+    if (currentProject) {
+      // When inside a project, "Vault" crumb returns to global vault
+      html = `<span class="vault-crumb" data-id="" data-action="exit-project">Vault</span>`;
+      // Add "Projects" as navigation step
+      html += `<span class="vault-crumb" data-action="exit-project">Projects</span>`;
+      // Add project name
+      const project = projects.find(p => (p.project_id || p.id) === currentProject);
+      const projectName = project ? (project.project_name || project.name) : currentProject;
+      html += `<span class="vault-crumb" data-id="" data-in-project="true">${escapeHtml(projectName)}</span>`;
+    } else {
+      // Global vault root
+      html = `<span class="vault-crumb vault-crumb-root" data-id="">Vault</span>`;
+    }
+
+    // Add folder path
     for (const crumb of folderPath) {
       html += `<span class="vault-crumb" data-id="${crumb.id}">${escapeHtml(crumb.name)}</span>`;
     }
+
     $breadcrumb.innerHTML = html;
   }
 
@@ -408,35 +368,11 @@
     }
   }
 
-  function switchCompany(companyId) {
-    if (!companyId) {
-      currentCompany = null;
-      currentProject = null;
-    } else {
-      currentCompany = companyId;
-      let list;
-      if (companyId === "__other__") {
-        list = projects.filter(p => !p.source_company);
-      } else {
-        list = projects.filter(p => p.source_company === companyId);
-      }
-      currentProject = list.length > 0 ? (list[0].project_id || list[0].id) : null;
-    }
-    currentFolder = null;
-    folderPath = [];
-    renderCompanyDropdown();
-    renderProjectSubTabs();
-    renderBreadcrumb();
-    loadTree();
-    loadFiles();
-  }
-
   function switchProject(projectId) {
     currentProject = projectId || null;
     currentFolder = null;
     folderPath = [];
     renderBreadcrumb();
-    renderProjectSubTabs();
     loadTree();
     loadFiles();
   }
@@ -849,36 +785,10 @@
 
   // ─── Event Bindings ────────────────────────────────────────────────────────
   function bindEvents() {
-    // Company dropdown toggle
+    // Company dropdown - disabled (always Global Vault)
     document.getElementById("vaultCompanyBtn")?.addEventListener("click", (e) => {
       e.stopPropagation();
-      toggleCompanyDropdown();
-    });
-
-    // Company dropdown option click
-    document.getElementById("vaultCompanyDropdown")?.addEventListener("click", (e) => {
-      const opt = e.target.closest(".vault-company-option");
-      if (!opt) return;
-      const companyId = opt.dataset.company;
-      if (companyId === undefined) return;
-      toggleCompanyDropdown(false);
-      switchCompany(companyId);
-    });
-
-    // Close dropdown on click outside
-    document.addEventListener("click", (e) => {
-      const picker = document.getElementById("vaultCompanyPicker");
-      if (picker && !picker.contains(e.target)) {
-        toggleCompanyDropdown(false);
-      }
-    });
-
-    // Project sub-tab clicks
-    document.getElementById("vaultProjectSubTabs")?.addEventListener("click", (e) => {
-      const tab = e.target.closest(".vault-subtab");
-      if (!tab) return;
-      const pid = tab.dataset.project || null;
-      switchProject(pid);
+      // Dropdown disabled - always Global Vault
     });
 
     // Tree clicks
@@ -887,6 +797,7 @@
       if (!node) return;
       const id = node.dataset.id;
       const name = node.dataset.name;
+      const isVirtual = node.dataset.virtual === "true";
 
       // Toggle children
       const childrenEl = node.nextElementSibling;
@@ -895,6 +806,21 @@
         const arrow = node.querySelector(".tree-arrow");
         if (arrow) arrow.classList.toggle("expanded");
       }
+
+      // Handle virtual nodes
+      if (isVirtual) {
+        if (id === "__projects__") {
+          // Just expand/collapse the Projects folder, don't navigate
+          return;
+        } else if (id && id.startsWith("__project_")) {
+          // Extract project ID and switch to it
+          const projectId = node.dataset.projectId;
+          if (projectId) switchProject(projectId);
+          return;
+        }
+      }
+
+      // Regular folder navigation
       navigateToFolder(id, name);
     });
 
@@ -902,6 +828,20 @@
     $breadcrumb?.addEventListener("click", (e) => {
       const crumb = e.target.closest(".vault-crumb");
       if (!crumb) return;
+
+      // Handle exit project action
+      if (crumb.dataset.action === "exit-project") {
+        switchProject(null); // Return to global vault
+        return;
+      }
+
+      // Handle in-project root click (reset to project root)
+      if (crumb.dataset.inProject === "true") {
+        navigateToFolder(null, "");
+        return;
+      }
+
+      // Handle regular folder navigation
       const id = crumb.dataset.id || null;
       if (id === currentFolder) return;
       if (!id) {

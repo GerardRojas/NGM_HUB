@@ -5,6 +5,7 @@
 /* ---- Page Layout ---- */
 .page-vault .main-content {
   max-width: none;
+  padding: 0; /* Use full width - internal components have their own padding */
 }
 .vault-workspace {
   display: flex;

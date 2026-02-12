@@ -2072,7 +2072,10 @@
                         }
                     }
                 } else if (agentId === 'andrew') {
-                    loadAgentStats();
+                    // Load stats with a small delay to ensure DOM is ready
+                    setTimeout(function() {
+                        loadAgentStats();
+                    }, 100);
                     loadAgentConfig();
                     loadAndrewMismatchConfig();
                     loadAndrewSmartConfig();
@@ -2186,6 +2189,14 @@
             var buttons = document.querySelectorAll('.detail-tab-btn');
             for (var j = 0; j < buttons.length; j++) {
                 buttons[j].classList.toggle('active', buttons[j].dataset.tab === tabId);
+            }
+
+            // Load data for specific tabs when switched to
+            if (tabId === 'overview' && currentAgent === 'andrew') {
+                // Reload Andrew stats when switching to overview tab
+                setTimeout(function() {
+                    loadAgentStats();
+                }, 50); // Small delay to ensure DOM is ready
             }
         }
 
@@ -2475,20 +2486,43 @@
         // ============================================
 
         function loadAgentStats() {
+            console.log('[AgentHub] Loading agent stats...');
             cachedFetch(API_BASE + '/pending-receipts/agent-stats', { headers: _agentAuthHeaders() })
                 .then(function(stats) {
-                    if (!stats) return;
-                    document.getElementById('agentStatTotal').textContent = stats.total_processed;
-                    document.getElementById('agentStatLinked').textContent = stats.expenses_created;
-                    document.getElementById('agentStatSuccessRate').textContent = stats.success_rate + '%';
-                    document.getElementById('agentStatConfidence').textContent = stats.avg_confidence + '%';
-                    document.getElementById('agentStatPending').textContent = stats.pending_review;
-                    document.getElementById('agentStatErrors').textContent = stats.errors;
-                    document.getElementById('agentStatDuplicates').textContent = stats.duplicates_caught;
+                    console.log('[AgentHub] Stats received:', stats);
+                    if (!stats) {
+                        console.warn('[AgentHub] No stats data received');
+                        return;
+                    }
+
+                    var el1 = document.getElementById('agentStatTotal');
+                    var el2 = document.getElementById('agentStatLinked');
+                    var el3 = document.getElementById('agentStatSuccessRate');
+                    var el4 = document.getElementById('agentStatConfidence');
+                    var el5 = document.getElementById('agentStatPending');
+                    var el6 = document.getElementById('agentStatErrors');
+                    var el7 = document.getElementById('agentStatDuplicates');
+
+                    console.log('[AgentHub] Elements found:', {
+                        total: !!el1, linked: !!el2, successRate: !!el3,
+                        confidence: !!el4, pending: !!el5, errors: !!el6, duplicates: !!el7
+                    });
+
+                    if (el1) el1.textContent = stats.total_processed || 0;
+                    if (el2) el2.textContent = stats.expenses_created || 0;
+                    if (el3) el3.textContent = (stats.success_rate || 0) + '%';
+                    if (el4) el4.textContent = (stats.avg_confidence || 0) + '%';
+                    if (el5) el5.textContent = stats.pending_review || 0;
+                    if (el6) el6.textContent = stats.errors || 0;
+                    if (el7) el7.textContent = stats.duplicates_caught || 0;
 
                     // Also update failures tab
-                    document.getElementById('andrewFailureErrors').textContent = stats.errors;
-                    document.getElementById('andrewFailureDuplicates').textContent = stats.duplicates_caught;
+                    var failEl1 = document.getElementById('andrewFailureErrors');
+                    var failEl2 = document.getElementById('andrewFailureDuplicates');
+                    if (failEl1) failEl1.textContent = stats.errors || 0;
+                    if (failEl2) failEl2.textContent = stats.duplicates_caught || 0;
+
+                    console.log('[AgentHub] Stats updated successfully');
                 })
                 .catch(function(e) {
                     console.error('[AgentHub] Stats error:', e);
@@ -3449,30 +3483,48 @@
         }
 
         function refreshAndrewStats() {
+            console.log('[Andrew] Refreshing stats...');
             // Clear cache and reload stats
             invalidateCache('/pending-receipts/agent-stats');
             cachedFetch(API_BASE + '/pending-receipts/agent-stats', { headers: _agentAuthHeaders() })
                 .then(function(stats) {
-                    if (!stats) return;
+                    console.log('[Andrew] Stats received:', stats);
+                    if (!stats) {
+                        console.warn('[Andrew] No stats data received');
+                        return;
+                    }
 
-                    // Update failures tab
-                    document.getElementById('andrewFailureErrors').textContent = stats.errors || 0;
-                    document.getElementById('andrewFailureDuplicates').textContent = stats.duplicates_caught || 0;
-                    document.getElementById('andrewManualReviews').textContent = stats.manual_reviews || 0;
-                    document.getElementById('andrewOcrFailures').textContent = stats.ocr_failures || 0;
+                    // Update failures tab (safe updates)
+                    var failEl1 = document.getElementById('andrewFailureErrors');
+                    var failEl2 = document.getElementById('andrewFailureDuplicates');
+                    var failEl3 = document.getElementById('andrewManualReviews');
+                    var failEl4 = document.getElementById('andrewOcrFailures');
+                    if (failEl1) failEl1.textContent = stats.errors || 0;
+                    if (failEl2) failEl2.textContent = stats.duplicates_caught || 0;
+                    if (failEl3) failEl3.textContent = stats.manual_reviews || 0;
+                    if (failEl4) failEl4.textContent = stats.ocr_failures || 0;
 
-                    // Update overview tab
-                    document.getElementById('agentStatTotal').textContent = stats.total_processed;
-                    document.getElementById('agentStatLinked').textContent = stats.expenses_created;
-                    document.getElementById('agentStatSuccessRate').textContent = stats.success_rate + '%';
-                    document.getElementById('agentStatConfidence').textContent = stats.avg_confidence + '%';
-                    document.getElementById('agentStatPending').textContent = stats.pending_review;
-                    document.getElementById('agentStatErrors').textContent = stats.errors;
-                    document.getElementById('agentStatDuplicates').textContent = stats.duplicates_caught;
+                    // Update overview tab (safe updates)
+                    var el1 = document.getElementById('agentStatTotal');
+                    var el2 = document.getElementById('agentStatLinked');
+                    var el3 = document.getElementById('agentStatSuccessRate');
+                    var el4 = document.getElementById('agentStatConfidence');
+                    var el5 = document.getElementById('agentStatPending');
+                    var el6 = document.getElementById('agentStatErrors');
+                    var el7 = document.getElementById('agentStatDuplicates');
+
+                    if (el1) el1.textContent = stats.total_processed || 0;
+                    if (el2) el2.textContent = stats.expenses_created || 0;
+                    if (el3) el3.textContent = (stats.success_rate || 0) + '%';
+                    if (el4) el4.textContent = (stats.avg_confidence || 0) + '%';
+                    if (el5) el5.textContent = stats.pending_review || 0;
+                    if (el6) el6.textContent = stats.errors || 0;
+                    if (el7) el7.textContent = stats.duplicates_caught || 0;
 
                     // Update error logs table
                     _renderAndrewErrorLogs(stats.error_logs || []);
 
+                    console.log('[Andrew] Stats refreshed successfully');
                     if (window.Toast) window.Toast.success('Stats refreshed');
                 })
                 .catch(function(e) {

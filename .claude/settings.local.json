@@ -37,7 +37,20 @@
       "Bash(awk:*)",
       "Bash(cd:*)",
       "Bash(test:*)",
-      "Bash(where:*)"
+      "Bash(where:*)",
+      "Bash(gh repo create:*)",
+      "Bash(winget install:*)",
+      "Bash(export PATH=\"$PATH:/c/Program Files/GitHub CLI\")",
+      "Bash(gh:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git -C \"C:\\\\Users\\\\germa\\\\Desktop\\\\NGM_REVIT\" log --oneline -15)",
+      "Bash(git submodule add:*)",
+      "WebFetch(domain:platform.openai.com)",
+      "WebFetch(domain:docsbot.ai)",
+      "WebFetch(domain:pricepertoken.com)",
+      "Bash(git -C \"C:\\\\Users\\\\germa\\\\Desktop\\\\NGM_API\" log --oneline --all)",
+      "Bash(cat:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql"

@@ -237,20 +237,20 @@
     // Minimalist folder icon (outline only)
     const folderIcon = `<svg class="tree-folder-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-8l-2-2H5a2 2 0 0 0-2 2Z"/></svg>`;
 
-    // If viewing a specific project, show its folder structure
-    if (currentProject) {
-      const roots = folderTree.filter(f => !f.parent_id);
-      $tree.innerHTML = renderTreeNodes(roots, 0, folderIcon);
-      restoreExpansion();
-      return;
-    }
-
-    // Global vault: show actual folders + virtual "Projects" folder
-    const roots = folderTree.filter(f => !f.parent_id);
+    // ALWAYS show the full tree structure (Global folders + Projects)
+    const globalRoots = folderTree.filter(f => !f.parent_id && !f.project_id);
     let html = "";
 
-    // Render actual global folders
-    html += renderTreeNodes(roots, 0, folderIcon);
+    // Render global folders
+    html += renderTreeNodes(globalRoots, 0, folderIcon);
+
+    // Add Back button container before Projects node (only show when needed)
+    const showBack = folderPath.length > 0 || currentProject;
+    html += `<div class="vault-tree-back-container" style="display:${showBack ? 'block' : 'none'};" id="vaultTreeBackBtn">`;
+    html += `<button class="vault-tree-back-btn" id="btnTreeBack">`;
+    html += `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>`;
+    html += `<span>Back</span>`;
+    html += `</button></div>`;
 
     // Add virtual "Projects" folder with filtered projects
     let filteredProjects = projects;
@@ -268,21 +268,43 @@
     html += `${arrow}${folderIcon}<span class="tree-label">Projects</span>`;
     html += `</div>`;
 
-    // Add children (project folders) - initially closed
+    // Add children (project folders)
     if (hasProjects) {
       html += `<div class="vault-tree-children">`;
       for (const p of filteredProjects) {
         const pid = p.project_id || p.id;
         const name = p.project_name || p.name || pid;
-        const arrow2 = `<svg class="tree-arrow empty" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
-        html += `<div class="vault-tree-node" data-id="__project_${pid}__" data-project-id="${pid}" data-name="${escapeAttr(name)}" data-virtual="true">`;
+
+        // Get project folders
+        const projectFolders = folderTree.filter(f => f.project_id === pid && !f.parent_id);
+        const hasSubfolders = projectFolders.length > 0;
+        const arrow2Class = hasSubfolders ? "tree-arrow" : "tree-arrow empty";
+        const arrow2 = `<svg class="${arrow2Class}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
+
+        const isActive = currentProject === pid && !currentFolder;
+        html += `<div class="vault-tree-node${isActive ? " active" : ""}" data-id="__project_${pid}__" data-project-id="${pid}" data-name="${escapeAttr(name)}" data-virtual="true">`;
         html += `<span class="tree-indent" style="width:16px"></span>${arrow2}${folderIcon}<span class="tree-label">${escapeHtml(name)}</span>`;
         html += `</div>`;
+
+        // Add project folders as children
+        if (hasSubfolders) {
+          html += `<div class="vault-tree-children">`;
+          html += renderTreeNodes(projectFolders, 2, folderIcon);
+          html += `</div>`;
+        }
       }
       html += `</div>`;
     }
 
     $tree.innerHTML = html;
+
+    // Auto-expand Projects node if viewing a project
+    if (currentProject) {
+      expandedNodes.add("__projects__");
+      const projectNodeId = `__project_${currentProject}__`;
+      expandedNodes.add(projectNodeId);
+    }
+
     restoreExpansion();
   }
 
@@ -480,12 +502,12 @@
   }
 
   function updateBackButton() {
-    const btn = document.getElementById("btnBack");
-    if (!btn) return;
+    const btnContainer = document.getElementById("vaultTreeBackBtn");
+    if (!btnContainer) return;
 
     // Show back button if we're inside a folder or inside a project
     const shouldShow = folderPath.length > 0 || currentProject;
-    btn.style.display = shouldShow ? "inline-flex" : "none";
+    btnContainer.style.display = shouldShow ? "block" : "none";
   }
 
   function goBack() {
@@ -1079,8 +1101,11 @@
     // New folder button
     document.getElementById("btnNewFolder")?.addEventListener("click", createNewFolder);
 
-    // Back button
-    document.getElementById("btnBack")?.addEventListener("click", goBack);
+    // Back button (delegated event since it re-renders with tree)
+    $tree?.addEventListener("click", (e) => {
+      const btn = e.target.closest("#btnTreeBack");
+      if (btn) goBack();
+    });
 
     // Toggle view
     document.getElementById("btnToggleView")?.addEventListener("click", () => {

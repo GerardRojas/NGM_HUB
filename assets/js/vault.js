@@ -35,6 +35,9 @@
   let selectedFileId = null;   // currently selected file for context menu
   let receiptStatusMap = {};   // {file_hash: status} for receipt folders
   let projects = [];           // user's projects
+  let companies = [];          // all companies
+  let currentCompany = null;   // null = all projects, string = filter by company
+  let expandedNodes = new Set(); // Track which tree nodes are expanded
 
   // ─── DOM refs ──────────────────────────────────────────────────────────────
   const $tree = document.getElementById("vaultTree");
@@ -63,7 +66,7 @@
 
   // ─── Init ──────────────────────────────────────────────────────────────────
   async function init() {
-    await loadProjects();
+    await Promise.all([loadCompanies(), loadProjects()]);
     renderCompanyDropdown();
     await loadTree();
     await loadFiles();
@@ -102,7 +105,17 @@
     return apiFetch(path, { method: "DELETE" });
   }
 
-  // ─── Projects ──────────────────────────────────────────────────────────────
+  // ─── Companies & Projects ──────────────────────────────────────────────────
+  async function loadCompanies() {
+    try {
+      const data = await apiFetch("/companies");
+      companies = Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.warn("[Vault] Failed to load companies:", e);
+      companies = [];
+    }
+  }
+
   async function loadProjects() {
     try {
       const data = await apiFetch("/projects");
@@ -117,21 +130,82 @@
     const label = document.getElementById("vaultCompanyLabel");
     const dot = document.getElementById("vaultCompanyDot");
     const dd = document.getElementById("vaultCompanyDropdown");
+    if (!dd) return;
 
-    // Always show Global Vault
-    if (label) label.textContent = "Global Vault";
-    if (dot) dot.style.background = "#3ecf8e";
+    // Build dropdown options
+    let html = `<button class="vault-company-option${currentCompany === null ? " active" : ""}" data-company="">`;
+    html += `<span class="vault-company-opt-dot" style="background:#3ecf8e"></span>All Projects</button>`;
 
-    // Hide dropdown (not needed anymore)
-    if (dd) dd.style.display = "none";
+    for (const c of companies) {
+      if (c.status === "Inactive") continue;
+      const hue = c.avatar_color || 0;
+      const color = `hsl(${hue},70%,50%)`;
+      const active = currentCompany === c.id ? " active" : "";
+      html += `<button class="vault-company-option${active}" data-company="${c.id}" data-hue="${hue}">`;
+      html += `<span class="vault-company-opt-dot" style="background:${color}"></span>${escapeHtml(c.name)}</button>`;
+    }
 
-    // Apply default theme
+    // Orphan projects
+    const orphans = projects.filter(p => !p.source_company);
+    if (orphans.length > 0) {
+      const active = currentCompany === "__other__" ? " active" : "";
+      html += `<button class="vault-company-option${active}" data-company="__other__" data-hue="0">`;
+      html += `<span class="vault-company-opt-dot" style="background:#888"></span>Other</button>`;
+    }
+
+    dd.innerHTML = html;
+
+    // Update button label + dot
+    if (currentCompany === null) {
+      if (label) label.textContent = "All Projects";
+      if (dot) dot.style.background = "#3ecf8e";
+    } else if (currentCompany === "__other__") {
+      if (label) label.textContent = "Other";
+      if (dot) dot.style.background = "#888";
+    } else {
+      const co = companies.find(c => c.id === currentCompany);
+      if (label) label.textContent = co ? co.name : "Company";
+      const hue = co ? (co.avatar_color || 0) : 0;
+      if (dot) dot.style.background = `hsl(${hue},70%,50%)`;
+    }
+
+    applyCompanyTheme();
+  }
+
+  function applyCompanyTheme() {
     const ws = document.querySelector(".vault-workspace");
-    if (ws) {
+    if (!ws) return;
+    if (currentCompany === null) {
       ws.style.setProperty("--vault-accent", "#3ecf8e");
       ws.style.setProperty("--vault-accent-soft", "rgba(62,207,142,0.1)");
       ws.style.setProperty("--vault-accent-hover", "#34b87a");
+    } else if (currentCompany === "__other__") {
+      ws.style.setProperty("--vault-accent", "#888");
+      ws.style.setProperty("--vault-accent-soft", "rgba(136,136,136,0.1)");
+      ws.style.setProperty("--vault-accent-hover", "#999");
+    } else {
+      const co = companies.find(c => c.id === currentCompany);
+      const hue = co ? (co.avatar_color || 0) : 0;
+      ws.style.setProperty("--vault-accent", `hsl(${hue},70%,50%)`);
+      ws.style.setProperty("--vault-accent-soft", `hsla(${hue},70%,50%,0.1)`);
+      ws.style.setProperty("--vault-accent-hover", `hsl(${hue},70%,42%)`);
     }
+  }
+
+  function toggleCompanyDropdown(show) {
+    const dd = document.getElementById("vaultCompanyDropdown");
+    const picker = document.getElementById("vaultCompanyPicker");
+    if (!dd || !picker) return;
+    const isOpen = dd.style.display !== "none";
+    if (show === undefined) show = !isOpen;
+    dd.style.display = show ? "flex" : "none";
+    picker.classList.toggle("open", show);
+  }
+
+  function switchCompany(companyId) {
+    currentCompany = companyId || null;
+    renderCompanyDropdown();
+    renderTree(); // Re-render tree to filter projects
   }
 
   // ─── Folder Tree ───────────────────────────────────────────────────────────
@@ -149,10 +223,25 @@
   function renderTree() {
     if (!$tree) return;
 
+    // Save current expansion state before re-rendering
+    if ($tree.children.length > 0) {
+      $tree.querySelectorAll(".vault-tree-node").forEach(node => {
+        const id = node.dataset.id;
+        const childrenEl = node.nextElementSibling;
+        if (childrenEl?.classList.contains("vault-tree-children") && childrenEl.classList.contains("open")) {
+          expandedNodes.add(id);
+        }
+      });
+    }
+
+    // Minimalist folder icon (outline only)
+    const folderIcon = `<svg class="tree-folder-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-8l-2-2H5a2 2 0 0 0-2 2Z"/></svg>`;
+
     // If viewing a specific project, show its folder structure
     if (currentProject) {
       const roots = folderTree.filter(f => !f.parent_id);
-      $tree.innerHTML = renderTreeNodes(roots, 0);
+      $tree.innerHTML = renderTreeNodes(roots, 0, folderIcon);
+      restoreExpansion();
       return;
     }
 
@@ -161,13 +250,19 @@
     let html = "";
 
     // Render actual global folders
-    html += renderTreeNodes(roots, 0);
+    html += renderTreeNodes(roots, 0, folderIcon);
 
-    // Add virtual "Projects" folder
-    const hasProjects = projects.length > 0;
+    // Add virtual "Projects" folder with filtered projects
+    let filteredProjects = projects;
+    if (currentCompany === "__other__") {
+      filteredProjects = projects.filter(p => !p.source_company);
+    } else if (currentCompany) {
+      filteredProjects = projects.filter(p => p.source_company === currentCompany);
+    }
+
+    const hasProjects = filteredProjects.length > 0;
     const arrowClass = hasProjects ? "tree-arrow" : "tree-arrow empty";
     const arrow = `<svg class="${arrowClass}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
-    const folderIcon = `<svg class="tree-folder-icon" width="16" height="16" viewBox="0 0 24 24"><path class="tree-folder-back" d="M2 6a2 2 0 0 1 2-2h4.6a1 1 0 0 1 .7.3L11 6h9a2 2 0 0 1 2 2v1H2z"/><path class="tree-folder-front" d="M2 9h20v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>`;
 
     html += `<div class="vault-tree-node" data-id="__projects__" data-name="Projects" data-virtual="true">`;
     html += `${arrow}${folderIcon}<span class="tree-label">Projects</span>`;
@@ -176,7 +271,7 @@
     // Add children (project folders) - initially closed
     if (hasProjects) {
       html += `<div class="vault-tree-children">`;
-      for (const p of projects) {
+      for (const p of filteredProjects) {
         const pid = p.project_id || p.id;
         const name = p.project_name || p.name || pid;
         const arrow2 = `<svg class="tree-arrow empty" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
@@ -188,9 +283,10 @@
     }
 
     $tree.innerHTML = html;
+    restoreExpansion();
   }
 
-  function renderTreeNodes(nodes, depth) {
+  function renderTreeNodes(nodes, depth, folderIcon) {
     let html = "";
     for (const node of nodes) {
       const children = folderTree.filter(f => f.parent_id === node.id);
@@ -199,16 +295,30 @@
       const indent = `<span class="tree-indent" style="width:${depth * 16}px"></span>`;
       const arrowClass = hasChildren ? "tree-arrow" : "tree-arrow empty";
       const arrow = `<svg class="${arrowClass}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
-      const folderIcon = `<svg class="tree-folder-icon" width="16" height="16" viewBox="0 0 24 24"><path class="tree-folder-back" d="M2 6a2 2 0 0 1 2-2h4.6a1 1 0 0 1 .7.3L11 6h9a2 2 0 0 1 2 2v1H2z"/><path class="tree-folder-front" d="M2 9h20v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>`;
 
       html += `<div class="vault-tree-node${isActive ? " active" : ""}" data-id="${node.id}" data-name="${escapeAttr(node.name)}">`;
       html += `${indent}${arrow}${folderIcon}<span class="tree-label">${escapeHtml(node.name)}</span>`;
       html += `</div>`;
       if (hasChildren) {
-        html += `<div class="vault-tree-children">${renderTreeNodes(children, depth + 1)}</div>`;
+        html += `<div class="vault-tree-children">${renderTreeNodes(children, depth + 1, folderIcon)}</div>`;
       }
     }
     return html;
+  }
+
+  function restoreExpansion() {
+    if (!$tree) return;
+    expandedNodes.forEach(id => {
+      const node = $tree.querySelector(`[data-id="${id}"]`);
+      if (node) {
+        const childrenEl = node.nextElementSibling;
+        if (childrenEl?.classList.contains("vault-tree-children")) {
+          childrenEl.classList.add("open");
+          const arrow = node.querySelector(".tree-arrow");
+          if (arrow) arrow.classList.add("expanded");
+        }
+      }
+    });
   }
 
   // ─── File Listing ──────────────────────────────────────────────────────────
@@ -359,6 +469,7 @@
       currentFolder = null;
     }
     renderBreadcrumb();
+    updateBackButton();
     loadFiles();
     // Update tree active state
     if ($tree) {
@@ -368,11 +479,37 @@
     }
   }
 
+  function updateBackButton() {
+    const btn = document.getElementById("btnBack");
+    if (!btn) return;
+
+    // Show back button if we're inside a folder or inside a project
+    const shouldShow = folderPath.length > 0 || currentProject;
+    btn.style.display = shouldShow ? "inline-flex" : "none";
+  }
+
+  function goBack() {
+    if (folderPath.length > 0) {
+      // Go to parent folder
+      folderPath.pop();
+      if (folderPath.length > 0) {
+        const parent = folderPath[folderPath.length - 1];
+        navigateToFolder(parent.id, parent.name);
+      } else {
+        navigateToFolder(null, "");
+      }
+    } else if (currentProject) {
+      // Exit project
+      switchProject(null);
+    }
+  }
+
   function switchProject(projectId) {
     currentProject = projectId || null;
     currentFolder = null;
     folderPath = [];
     renderBreadcrumb();
+    updateBackButton();
     loadTree();
     loadFiles();
   }
@@ -785,10 +922,27 @@
 
   // ─── Event Bindings ────────────────────────────────────────────────────────
   function bindEvents() {
-    // Company dropdown - disabled (always Global Vault)
+    // Company dropdown toggle
     document.getElementById("vaultCompanyBtn")?.addEventListener("click", (e) => {
       e.stopPropagation();
-      // Dropdown disabled - always Global Vault
+      toggleCompanyDropdown();
+    });
+
+    // Company dropdown option click
+    document.getElementById("vaultCompanyDropdown")?.addEventListener("click", (e) => {
+      const opt = e.target.closest(".vault-company-option");
+      if (!opt) return;
+      const companyId = opt.dataset.company || null;
+      toggleCompanyDropdown(false);
+      switchCompany(companyId);
+    });
+
+    // Close dropdown on click outside
+    document.addEventListener("click", (e) => {
+      const picker = document.getElementById("vaultCompanyPicker");
+      if (picker && !picker.contains(e.target)) {
+        toggleCompanyDropdown(false);
+      }
     });
 
     // Tree clicks
@@ -925,6 +1079,9 @@
     // New folder button
     document.getElementById("btnNewFolder")?.addEventListener("click", createNewFolder);
 
+    // Back button
+    document.getElementById("btnBack")?.addEventListener("click", goBack);
+
     // Toggle view
     document.getElementById("btnToggleView")?.addEventListener("click", () => {
       viewMode = viewMode === "grid" ? "list" : "grid";
@@ -1020,11 +1177,11 @@
   }
 
   function getFolderIconHtml() {
-    return `<svg class="vault-folder-svg" width="32" height="32" viewBox="0 0 24 24"><path class="vault-folder-back" d="M2 6a2 2 0 0 1 2-2h4.6a1 1 0 0 1 .7.3L11 6h9a2 2 0 0 1 2 2v1H2z"/><path class="vault-folder-front" d="M2 9h20v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>`;
+    return `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-8l-2-2H5a2 2 0 0 0-2 2Z"/></svg>`;
   }
 
   function getFolderIconSm() {
-    return `<svg class="vault-folder-svg" width="18" height="18" viewBox="0 0 24 24"><path class="vault-folder-back" d="M2 6a2 2 0 0 1 2-2h4.6a1 1 0 0 1 .7.3L11 6h9a2 2 0 0 1 2 2v1H2z"/><path class="vault-folder-front" d="M2 9h20v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>`;
+    return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-8l-2-2H5a2 2 0 0 0-2 2Z"/></svg>`;
   }
 
   // ─── SVG Icon Library ─────────────────────────────────────────────────────

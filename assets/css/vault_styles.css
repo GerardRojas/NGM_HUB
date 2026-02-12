@@ -6,6 +6,8 @@
 .page-vault .main-content {
   max-width: none;
   padding: 0; /* Use full width - internal components have their own padding */
+  margin-inline: 0; /* No centering - use full width */
+  width: 100%;
 }
 .vault-workspace {
   display: flex;
@@ -369,76 +371,18 @@
   flex-shrink: 0;
 }
 
-/* ---- Filled Folder SVG (shared across tree, cards, list, move modal) ---- */
-.vault-folder-back,
-.tree-folder-back {
-  fill: rgba(255,255,255,0.12);
-  transition: fill 0.15s, opacity 0.15s;
-}
-.vault-folder-front,
-.tree-folder-front {
-  fill: rgba(255,255,255,0.20);
-  transition: fill 0.15s, opacity 0.15s;
+/* ---- Minimalist Folder Icon (outline stroke) ---- */
+.vault-tree-node .tree-folder-icon {
+  color: rgba(255,255,255,0.4);
+  transition: color 0.15s;
 }
 
-/* Tree node hover */
-.vault-tree-node:hover .tree-folder-back {
-  fill: var(--vault-accent, #3ecf8e);
-  opacity: 0.45;
-}
-.vault-tree-node:hover .tree-folder-front {
-  fill: var(--vault-accent, #3ecf8e);
-  opacity: 0.65;
+.vault-tree-node:hover .tree-folder-icon {
+  color: var(--vault-accent, #3ecf8e);
 }
 
-/* Tree node active */
-.vault-tree-node.active .tree-folder-back {
-  fill: var(--vault-accent, #3ecf8e);
-  opacity: 0.55;
-}
-.vault-tree-node.active .tree-folder-front {
-  fill: var(--vault-accent, #3ecf8e);
-  opacity: 0.8;
-}
-
-/* File card folder hover */
-.vault-file-card:hover .vault-folder-back {
-  fill: var(--vault-accent, #3ecf8e);
-  opacity: 0.45;
-}
-.vault-file-card:hover .vault-folder-front {
-  fill: var(--vault-accent, #3ecf8e);
-  opacity: 0.65;
-}
-
-/* File card folder selected */
-.vault-file-card.selected .vault-folder-back {
-  fill: var(--vault-accent, #3ecf8e);
-  opacity: 0.55;
-}
-.vault-file-card.selected .vault-folder-front {
-  fill: var(--vault-accent, #3ecf8e);
-  opacity: 0.8;
-}
-
-/* File row folder hover */
-.vault-file-row:hover .vault-folder-back {
-  fill: var(--vault-accent, #3ecf8e);
-  opacity: 0.45;
-}
-.vault-file-row:hover .vault-folder-front {
-  fill: var(--vault-accent, #3ecf8e);
-  opacity: 0.65;
-}
-
-/* Move modal folder selected */
-.vault-move-node.selected .vault-folder-back {
-  fill: var(--vault-accent, #3ecf8e);
-  opacity: 0.55;
-}
-.vault-move-node.selected .vault-folder-front {
-  fill: var(--vault-accent, #3ecf8e);
-  opacity: 0.8;
+.vault-tree-node.active .tree-folder-icon {
+  color: var(--vault-accent, #3ecf8e);
 }
 .vault-tree-node .tree-label {
   overflow: hidden;

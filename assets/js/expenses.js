@@ -6114,7 +6114,19 @@
     } catch (error) {
       console.error('[SCAN RECEIPT] Error:', error);
       if (window.Toast) {
-        Toast.error('Scan Failed', 'Error scanning receipt.', { details: error.message });
+        // Check if it's a "receipt too long" error
+        if (error.message && error.message.includes('RECEIPT_TOO_LONG')) {
+          Toast.warning(
+            'Receipt Too Long',
+            'This receipt is too complex to process.',
+            {
+              details: 'Try using Heavy mode for better accuracy, or split the receipt into smaller sections.',
+              persistent: true
+            }
+          );
+        } else {
+          Toast.error('Scan Failed', 'Error scanning receipt.', { details: error.message });
+        }
       }
       // Hide progress and restore upload zone
       els.scanReceiptProgress.classList.add('hidden');

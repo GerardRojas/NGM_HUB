@@ -339,6 +339,8 @@
     els.btnAddExpenseRow = document.getElementById('btnAddExpenseRow');
     els.btnAutoCategorize = document.getElementById('btnAutoCategorize');
     els.btnImportCSVExpenses = document.getElementById('btnImportCSVExpenses');
+    els.btnToggleToolbar = document.getElementById('btnToggleToolbar');
+    els.modalToolbarActions = document.getElementById('modalToolbarActions');
     els.csvExpenseFileInput = document.getElementById('csvExpenseFileInput');
 
     // CSV Mapping Modal elements
@@ -3595,6 +3597,17 @@
     if (els.btnSaveAllExpenses) {
       els.btnSaveAllExpenses.disabled = false;
       els.btnSaveAllExpenses.textContent = 'Save All';
+    }
+
+    // Auto-collapse toolbar on small screens, expand on large
+    if (els.modalToolbarActions && els.btnToggleToolbar) {
+      if (window.innerWidth <= 900) {
+        els.modalToolbarActions.classList.add('collapsed');
+        els.btnToggleToolbar.classList.add('collapsed');
+      } else {
+        els.modalToolbarActions.classList.remove('collapsed');
+        els.btnToggleToolbar.classList.remove('collapsed');
+      }
     }
 
     // Show modal
@@ -7131,6 +7144,12 @@
 
     // Modal: Add row button
     els.btnAddExpenseRow?.addEventListener('click', addModalRow);
+
+    // Modal: Toolbar toggle (collapse/expand action buttons)
+    els.btnToggleToolbar?.addEventListener('click', () => {
+      els.modalToolbarActions?.classList.toggle('collapsed');
+      els.btnToggleToolbar.classList.toggle('collapsed');
+    });
 
     // Modal: Scan Receipt button
     els.btnScanReceipt?.addEventListener('click', openScanReceiptModal);

@@ -111,6 +111,53 @@
   color: #3ecf8e;
 }
 
+/* Toolbar toggle chevron */
+#addExpenseModal .modal-toolbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  margin-left: 2px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+  flex-shrink: 0;
+}
+
+#addExpenseModal .modal-toolbar-toggle:hover {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+#addExpenseModal .modal-toolbar-toggle svg {
+  transition: transform 0.2s ease;
+}
+
+#addExpenseModal .modal-toolbar-toggle.collapsed svg {
+  transform: rotate(-90deg);
+}
+
+/* Action buttons row */
+#addExpenseModal .modal-toolbar-actions {
+  display: flex;
+  gap: 10px;
+  max-height: 60px;
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+
+#addExpenseModal .modal-toolbar-actions.collapsed {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Table container */
 #addExpenseModal .modal-table-container {
   background: rgba(255, 255, 255, 0.02);
@@ -777,6 +824,59 @@
   #addExpenseModal .expense-rows-table {
     display: block;
     overflow-x: auto;
+  }
+
+  /* Compact modal for small screens */
+  #addExpenseModal .modal-body {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  #addExpenseModal .modal-header {
+    padding: 10px 14px;
+  }
+
+  #addExpenseModal .modal-footer {
+    padding: 10px 14px;
+  }
+
+  /* Compact project info */
+  #addExpenseModal .modal-project-info {
+    padding: 7px 10px;
+    gap: 8px;
+  }
+
+  #addExpenseModal .modal-project-header {
+    flex-wrap: wrap;
+  }
+
+  /* Compact action buttons */
+  #addExpenseModal .modal-toolbar-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  #addExpenseModal .modal-toolbar-actions .btn-scan-receipt,
+  #addExpenseModal .modal-toolbar-actions .btn-pending-receipts,
+  #addExpenseModal .modal-toolbar-actions .btn-auto-categorize,
+  #addExpenseModal .modal-toolbar-actions .btn-import-csv {
+    padding: 7px 12px;
+    font-size: 12px;
+  }
+
+  /* Compact bill status */
+  #addExpenseModal .bill-status-section {
+    padding: 6px 8px;
+    margin-top: 4px;
+  }
+
+  #addExpenseModal .bill-status-toggle {
+    gap: 4px;
+  }
+
+  #addExpenseModal .bill-status-btn {
+    padding: 4px 8px;
+    font-size: 11px;
   }
 }
 

@@ -449,8 +449,13 @@
                     <div class="modal-project-info">
                         <span class="modal-project-label">Project:</span>
                         <span class="modal-project-name" id="modalProjectName">—</span>
+                        <button type="button" class="modal-toolbar-toggle" id="btnToggleToolbar" title="Toggle actions">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
                     </div>
-                    <div style="display: flex; gap: 10px;">
+                    <div class="modal-toolbar-actions" id="modalToolbarActions">
                         <button type="button" class="btn-scan-receipt" id="btnScanReceipt">
                             Scan Receipt
                         </button>
@@ -461,7 +466,7 @@
                             Auto Categorize
                         </button>
                         <button type="button" class="btn-import-csv" id="btnImportCSVExpenses">
-                            📂 Import CSV
+                            Import CSV
                         </button>
                     </div>
                 </div>

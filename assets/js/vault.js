@@ -1,6 +1,6 @@
 // assets/js/vault.js
 // ================================
-// Data Vault - File Storage Module
+// Vault - File Storage Module
 // ================================
 // Hybrid file explorer with folder tree + card grid,
 // chunked uploads, versioning, search, and context menu.
@@ -33,14 +33,16 @@
   let viewMode = "grid";       // 'grid' | 'list'
   let sortBy = "name";         // 'name' | 'date' | 'size' | 'type'
   let selectedFileId = null;   // currently selected file for context menu
+  let receiptStatusMap = {};   // {file_hash: status} for receipt folders
   let projects = [];           // user's projects
+  let companies = [];          // all companies
+  let currentCompany = null;   // null = global vault, string = company id
 
   // ─── DOM refs ──────────────────────────────────────────────────────────────
   const $tree = document.getElementById("vaultTree");
   const $files = document.getElementById("vaultFiles");
   const $empty = document.getElementById("vaultEmpty");
   const $breadcrumb = document.getElementById("vaultBreadcrumb");
-  const $tabs = document.getElementById("vaultTabs");
   const $contextMenu = document.getElementById("vaultContextMenu");
   const $dropzone = document.getElementById("vaultDropzone");
   const $uploadProgress = document.getElementById("vaultUploadProgress");
@@ -63,8 +65,9 @@
 
   // ─── Init ──────────────────────────────────────────────────────────────────
   async function init() {
-    await loadProjects();
-    renderTabs();
+    await Promise.all([loadCompanies(), loadProjects()]);
+    renderCompanyDropdown();
+    renderProjectSubTabs();
     await loadTree();
     await loadFiles();
     bindEvents();
@@ -102,7 +105,17 @@
     return apiFetch(path, { method: "DELETE" });
   }
 
-  // ─── Projects ──────────────────────────────────────────────────────────────
+  // ─── Companies & Projects ───────────────────────────────────────────────────
+  async function loadCompanies() {
+    try {
+      const data = await apiFetch("/companies");
+      companies = Array.isArray(data) ? data : [];
+    } catch (e) {
+      console.warn("[Vault] Failed to load companies:", e);
+      companies = [];
+    }
+  }
+
   async function loadProjects() {
     try {
       const data = await apiFetch("/projects");
@@ -113,16 +126,109 @@
     }
   }
 
-  function renderTabs() {
-    if (!$tabs) return;
-    let html = `<button class="vault-tab${currentProject === null ? " active" : ""}" data-project="">Global Vault</button>`;
-    for (const p of projects) {
+  function renderCompanyDropdown() {
+    const dd = document.getElementById("vaultCompanyDropdown");
+    const label = document.getElementById("vaultCompanyLabel");
+    const dot = document.getElementById("vaultCompanyDot");
+    if (!dd) return;
+
+    // Build dropdown options
+    let html = `<button class="vault-company-option${currentCompany === null ? " active" : ""}" data-company="">`;
+    html += `<span class="vault-company-opt-dot" style="background:#3ecf8e"></span>Global Vault</button>`;
+
+    for (const c of companies) {
+      if (c.status === "Inactive") continue;
+      const hue = c.avatar_color || 0;
+      const color = `hsl(${hue},70%,50%)`;
+      const active = currentCompany === c.id ? " active" : "";
+      html += `<button class="vault-company-option${active}" data-company="${c.id}" data-hue="${hue}">`;
+      html += `<span class="vault-company-opt-dot" style="background:${color}"></span>${escapeHtml(c.name)}</button>`;
+    }
+
+    // Orphan projects
+    const orphans = projects.filter(p => !p.source_company);
+    if (orphans.length > 0) {
+      const active = currentCompany === "__other__" ? " active" : "";
+      html += `<button class="vault-company-option${active}" data-company="__other__" data-hue="0">`;
+      html += `<span class="vault-company-opt-dot" style="background:#888"></span>Other</button>`;
+    }
+
+    dd.innerHTML = html;
+
+    // Update button label + dot
+    if (currentCompany === null) {
+      if (label) label.textContent = "Global Vault";
+      if (dot) dot.style.background = "#3ecf8e";
+    } else if (currentCompany === "__other__") {
+      if (label) label.textContent = "Other";
+      if (dot) dot.style.background = "#888";
+    } else {
+      const co = companies.find(c => c.id === currentCompany);
+      if (label) label.textContent = co ? co.name : "Company";
+      const hue = co ? (co.avatar_color || 0) : 0;
+      if (dot) dot.style.background = `hsl(${hue},70%,50%)`;
+    }
+
+    applyCompanyTheme();
+  }
+
+  function applyCompanyTheme() {
+    const ws = document.querySelector(".vault-workspace");
+    if (!ws) return;
+    if (currentCompany === null) {
+      ws.style.setProperty("--vault-accent", "#3ecf8e");
+      ws.style.setProperty("--vault-accent-soft", "rgba(62,207,142,0.1)");
+      ws.style.setProperty("--vault-accent-hover", "#34b87a");
+    } else if (currentCompany === "__other__") {
+      ws.style.setProperty("--vault-accent", "#888");
+      ws.style.setProperty("--vault-accent-soft", "rgba(136,136,136,0.1)");
+      ws.style.setProperty("--vault-accent-hover", "#999");
+    } else {
+      const co = companies.find(c => c.id === currentCompany);
+      const hue = co ? (co.avatar_color || 0) : 0;
+      ws.style.setProperty("--vault-accent", `hsl(${hue},70%,50%)`);
+      ws.style.setProperty("--vault-accent-soft", `hsla(${hue},70%,50%,0.1)`);
+      ws.style.setProperty("--vault-accent-hover", `hsl(${hue},70%,42%)`);
+    }
+  }
+
+  function toggleCompanyDropdown(show) {
+    const dd = document.getElementById("vaultCompanyDropdown");
+    const picker = document.getElementById("vaultCompanyPicker");
+    if (!dd || !picker) return;
+    const isOpen = dd.style.display !== "none";
+    if (show === undefined) show = !isOpen;
+    dd.style.display = show ? "flex" : "none";
+    picker.classList.toggle("open", show);
+  }
+
+  function renderProjectSubTabs() {
+    const el = document.getElementById("vaultProjectSubTabs");
+    if (!el) return;
+    if (currentCompany === null) {
+      el.style.display = "none";
+      return;
+    }
+    let list;
+    if (currentCompany === "__other__") {
+      list = projects.filter(p => !p.source_company);
+    } else {
+      list = projects.filter(p => p.source_company === currentCompany);
+    }
+    if (list.length === 0) {
+      el.style.display = "flex";
+      el.innerHTML = '<span class="vault-subtabs-empty">No projects for this company</span>';
+      return;
+    }
+    el.style.display = "flex";
+    let html = "";
+    for (const p of list) {
       const pid = p.project_id || p.id;
       const name = p.project_name || p.name || pid;
       const active = currentProject === pid ? " active" : "";
-      html += `<button class="vault-tab${active}" data-project="${pid}">${escapeHtml(name)}</button>`;
+      html += `<button class="vault-subtab${active}" data-project="${pid}">${escapeHtml(name)}</button>`;
     }
-    $tabs.innerHTML = html;
+    el.innerHTML = html;
   }
 
   // ─── Folder Tree ───────────────────────────────────────────────────────────
@@ -152,7 +258,7 @@
       const indent = `<span class="tree-indent" style="width:${depth * 16}px"></span>`;
       const arrowClass = hasChildren ? "tree-arrow" : "tree-arrow empty";
       const arrow = `<svg class="${arrowClass}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
-      const folderIcon = `<svg class="tree-folder-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
+      const folderIcon = `<svg class="tree-folder-icon" width="16" height="16" viewBox="0 0 24 24"><path class="tree-folder-back" d="M2 6a2 2 0 0 1 2-2h4.6a1 1 0 0 1 .7.3L11 6h9a2 2 0 0 1 2 2v1H2z"/><path class="tree-folder-front" d="M2 9h20v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>`;
 
       html += `<div class="vault-tree-node${isActive ? " active" : ""}" data-id="${node.id}" data-name="${escapeAttr(node.name)}">`;
       html += `${indent}${arrow}${folderIcon}<span class="tree-label">${escapeHtml(node.name)}</span>`;
@@ -176,6 +282,17 @@
       console.warn("[Vault] Failed to load files:", e);
       files = [];
     }
+    // Check receipt processing status if inside a Receipts folder
+    receiptStatusMap = {};
+    const isReceiptsFolder = folderPath.length > 0 && folderPath[folderPath.length - 1].name === "Receipts";
+    if (isReceiptsFolder && files.length > 0) {
+      const hashes = files.filter(f => !f.is_folder && f.file_hash).map(f => f.file_hash);
+      if (hashes.length > 0) {
+        try {
+          receiptStatusMap = await apiFetch(`/vault/receipt-status?hashes=${hashes.join(",")}`);
+        } catch (_) {}
+      }
+    }
     renderFiles();
   }
 
@@ -196,7 +313,9 @@
       $files.innerHTML = sorted.map(f => renderFileCard(f)).join("");
     } else {
       $files.className = "vault-files vault-files-list";
-      const header = `<div class="vault-list-header"><span></span><span>Name</span><span>Modified</span><span>Size</span><span>Uploaded by</span><span></span></div>`;
+      const isReceipts = folderPath.length > 0 && folderPath[folderPath.length - 1].name === "Receipts";
+      const col5Label = isReceipts ? "Status" : "Uploaded by";
+      const header = `<div class="vault-list-header"><span></span><span>Name</span><span>Modified</span><span>Size</span><span>${col5Label}</span><span></span></div>`;
       $files.innerHTML = header + sorted.map(f => renderFileRow(f)).join("");
     }
   }
@@ -219,8 +338,14 @@
   function renderFileCard(f) {
     const icon = f.is_folder ? getFolderIconHtml() : getFileIconHtml(f);
     const meta = f.is_folder ? "" : formatSize(f.size_bytes);
+    const rStatus = !f.is_folder && f.file_hash && receiptStatusMap[f.file_hash];
+    const badge = rStatus === "linked"
+      ? `<span class="vault-receipt-badge linked" title="Processed"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`
+      : rStatus
+        ? `<span class="vault-receipt-badge pending" title="Pending"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span>`
+        : "";
     return `<div class="vault-file-card" data-id="${f.id}" data-folder="${f.is_folder}">
-      <div class="file-icon ${getIconClass(f)}">${icon}</div>
+      <div class="file-icon ${getIconClass(f)}">${icon}${badge}</div>
       <div class="file-name" title="${escapeAttr(f.name)}">${escapeHtml(f.name)}</div>
       <div class="file-meta">${meta}</div>
     </div>`;
@@ -231,13 +356,19 @@
     const date = f.updated_at ? formatDate(f.updated_at) : "";
     const size = f.is_folder ? "--" : formatSize(f.size_bytes);
     const dotsIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>`;
+    const rStatus = !f.is_folder && f.file_hash && receiptStatusMap[f.file_hash];
+    const statusBadge = rStatus === "linked"
+      ? `<span class="vault-receipt-badge-row linked" title="Processed"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Processed</span>`
+      : rStatus
+        ? `<span class="vault-receipt-badge-row pending" title="Pending">Pending</span>`
+        : "";
 
     return `<div class="vault-file-row" data-id="${f.id}" data-folder="${f.is_folder}">
       <div class="file-icon-sm ${getIconClass(f)}">${icon}</div>
       <div class="file-name" title="${escapeAttr(f.name)}">${escapeHtml(f.name)}</div>
       <div class="file-date">${date}</div>
       <div class="file-size">${size}</div>
-      <div class="file-uploader"></div>
+      <div class="file-uploader">${statusBadge}</div>
       <button class="file-actions-btn" data-id="${f.id}">${dotsIcon}</button>
     </div>`;
   }
@@ -277,12 +408,35 @@
     }
   }
 
+  function switchCompany(companyId) {
+    if (!companyId) {
+      currentCompany = null;
+      currentProject = null;
+    } else {
+      currentCompany = companyId;
+      let list;
+      if (companyId === "__other__") {
+        list = projects.filter(p => !p.source_company);
+      } else {
+        list = projects.filter(p => p.source_company === companyId);
+      }
+      currentProject = list.length > 0 ? (list[0].project_id || list[0].id) : null;
+    }
+    currentFolder = null;
+    folderPath = [];
+    renderCompanyDropdown();
+    renderProjectSubTabs();
+    renderBreadcrumb();
+    loadTree();
+    loadFiles();
+  }
+
   function switchProject(projectId) {
     currentProject = projectId || null;
     currentFolder = null;
     folderPath = [];
     renderBreadcrumb();
-    renderTabs();
+    renderProjectSubTabs();
     loadTree();
     loadFiles();
   }
@@ -519,7 +673,7 @@
       const children = folderTree.filter(f => f.parent_id === node.id);
       const indent = `<span class="move-indent" style="width:${depth * 20}px"></span>`;
       const sel = moveTargetId === node.id ? " selected" : "";
-      const folderIcon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#3ecf8e;flex-shrink:0"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
+      const folderIcon = `<svg class="vault-folder-svg" width="16" height="16" viewBox="0 0 24 24" style="flex-shrink:0"><path class="vault-folder-back" d="M2 6a2 2 0 0 1 2-2h4.6a1 1 0 0 1 .7.3L11 6h9a2 2 0 0 1 2 2v1H2z"/><path class="vault-folder-front" d="M2 9h20v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>`;
       html += `<div class="vault-move-node${sel}" data-id="${node.id}">${indent}${folderIcon} ${escapeHtml(node.name)}</div>`;
       if (children.length) html += renderMoveNodes(children, depth + 1);
     }
@@ -695,9 +849,33 @@
 
   // ─── Event Bindings ────────────────────────────────────────────────────────
   function bindEvents() {
-    // Tab clicks
-    $tabs?.addEventListener("click", (e) => {
-      const tab = e.target.closest(".vault-tab");
+    // Company dropdown toggle
+    document.getElementById("vaultCompanyBtn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleCompanyDropdown();
+    });
+
+    // Company dropdown option click
+    document.getElementById("vaultCompanyDropdown")?.addEventListener("click", (e) => {
+      const opt = e.target.closest(".vault-company-option");
+      if (!opt) return;
+      const companyId = opt.dataset.company;
+      if (companyId === undefined) return;
+      toggleCompanyDropdown(false);
+      switchCompany(companyId);
+    });
+
+    // Close dropdown on click outside
+    document.addEventListener("click", (e) => {
+      const picker = document.getElementById("vaultCompanyPicker");
+      if (picker && !picker.contains(e.target)) {
+        toggleCompanyDropdown(false);
+      }
+    });
+
+    // Project sub-tab clicks
+    document.getElementById("vaultProjectSubTabs")?.addEventListener("click", (e) => {
+      const tab = e.target.closest(".vault-subtab");
       if (!tab) return;
       const pid = tab.dataset.project || null;
       switchProject(pid);
@@ -891,39 +1069,84 @@
     if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext)) return "image-icon";
     if (["rvt", "rfa", "rte"].includes(ext)) return "revit-icon";
     if (["xls", "xlsx", "csv"].includes(ext)) return "spreadsheet-icon";
+    if (["doc", "docx", "txt", "rtf", "odt"].includes(ext)) return "doc-icon";
+    if (["ppt", "pptx", "key"].includes(ext)) return "presentation-icon";
+    if (["dwg", "dxf", "skp"].includes(ext)) return "cad-icon";
+    if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return "archive-icon";
+    if (["mp4", "mov", "avi", "mkv", "wmv", "flv", "webm"].includes(ext)) return "video-icon";
+    if (["mp3", "wav", "aac", "flac", "ogg", "m4a", "wma"].includes(ext)) return "audio-icon";
     if (ext === "ngm") return "ngm-icon";
     return "default-icon";
   }
 
   function getFolderIconHtml() {
-    return `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
+    return `<svg class="vault-folder-svg" width="32" height="32" viewBox="0 0 24 24"><path class="vault-folder-back" d="M2 6a2 2 0 0 1 2-2h4.6a1 1 0 0 1 .7.3L11 6h9a2 2 0 0 1 2 2v1H2z"/><path class="vault-folder-front" d="M2 9h20v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>`;
   }
 
   function getFolderIconSm() {
-    return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3ecf8e" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`;
+    return `<svg class="vault-folder-svg" width="18" height="18" viewBox="0 0 24 24"><path class="vault-folder-back" d="M2 6a2 2 0 0 1 2-2h4.6a1 1 0 0 1 .7.3L11 6h9a2 2 0 0 1 2 2v1H2z"/><path class="vault-folder-front" d="M2 9h20v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>`;
+  }
+
+  // ─── SVG Icon Library ─────────────────────────────────────────────────────
+  const _SVG_ATTRS = 'fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"';
+
+  const _ICONS = {
+    // PDF - document with corner fold + "PDF" label lines
+    pdf: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 12h1.5a1.5 1.5 0 0 0 0-3H8v7"/><path d="M14 16h1a2 2 0 0 0 0-4h-1v7"/>`,
+    // Image - frame with mountain + sun
+    image: `<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>`,
+    // Spreadsheet - grid table
+    spreadsheet: `<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>`,
+    // Document - page with paragraph lines
+    doc: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>`,
+    // Presentation - screen with play triangle
+    presentation: `<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><polygon points="10 7 10 13 15 10"/>`,
+    // Revit/BIM - 3D stacked layers
+    revit: `<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>`,
+    // CAD - drafting pen/ruler
+    cad: `<path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/><path d="m15 5 4 4"/>`,
+    // Archive - zipped package
+    archive: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><rect x="10" y="12" width="4" height="5" rx="1"/><line x1="12" y1="11" x2="12" y2="12"/>`,
+    // Video - play rectangle
+    video: `<rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10 9 10 15 15 12"/>`,
+    // Audio - music note
+    audio: `<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>`,
+    // NGM - hexagon star
+    ngm: `<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/>`,
+    // Default - blank document
+    default: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>`,
+  };
+
+  function _iconKey(ext) {
+    if (ext === "pdf") return "pdf";
+    if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext)) return "image";
+    if (["rvt", "rfa", "rte"].includes(ext)) return "revit";
+    if (["xls", "xlsx", "csv"].includes(ext)) return "spreadsheet";
+    if (["doc", "docx", "txt", "rtf", "odt"].includes(ext)) return "doc";
+    if (["ppt", "pptx", "key"].includes(ext)) return "presentation";
+    if (["dwg", "dxf", "skp"].includes(ext)) return "cad";
+    if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return "archive";
+    if (["mp4", "mov", "avi", "mkv", "wmv", "flv", "webm"].includes(ext)) return "video";
+    if (["mp3", "wav", "aac", "flac", "ogg", "m4a", "wma"].includes(ext)) return "audio";
+    if (ext === "ngm") return "ngm";
+    return "default";
   }
 
   function getFileIconHtml(f) {
     const ext = getFileType(f.name);
-    const size = 28;
-    // Check if image - show thumbnail
+    // Image thumbnails in grid mode
     if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext) && f.bucket_path) {
       const url = `${window.SUPABASE_URL}/storage/v1/object/public/vault/${f.bucket_path}`;
       return `<img src="${url}?width=96&height=96&resize=contain" alt="" />`;
     }
-    if (ext === "pdf") return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`;
-    if (["rvt", "rfa", "rte"].includes(ext)) return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>`;
-    if (["xls", "xlsx", "csv"].includes(ext)) return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><rect x="8" y="12" width="8" height="6"></rect></svg>`;
-    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`;
+    const key = _iconKey(ext);
+    return `<svg width="28" height="28" viewBox="0 0 24 24" ${_SVG_ATTRS}>${_ICONS[key]}</svg>`;
   }
 
   function getFileIconSm(f) {
     const ext = getFileType(f.name);
-    const s = 18;
-    if (ext === "pdf") return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`;
-    if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext)) return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>`;
-    if (["rvt", "rfa", "rte"].includes(ext)) return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>`;
-    return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>`;
+    const key = _iconKey(ext);
+    return `<svg width="18" height="18" viewBox="0 0 24 24" ${_SVG_ATTRS}>${_ICONS[key]}</svg>`;
   }
 
   function formatSize(bytes) {

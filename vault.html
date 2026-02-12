@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1a1a1a" />
-    <title>NGM HUB - Data Vault</title>
+    <title>NGM HUB - Vault</title>
     <link rel="icon" type="image/png" href="assets/img/greenblack_icon.png" />
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="assets/img/greenblack_icon.png" />
@@ -66,7 +66,7 @@
                         <div class="ngm-brand-icon-small"><img src="assets/img/white_icon.png" alt="NGM"></div>
                         <div class="ngm-brand-text">
                             <span class="ngm-brand-org">Next Generation Management</span>
-                            <span class="ngm-brand-context">NGM Hub - Data Vault</span>
+                            <span class="ngm-brand-context">NGM Hub - Vault</span>
                         </div>
                     </div>
                 </div>
@@ -86,7 +86,20 @@
                     <!-- Page Header -->
                     <section class="vault-header">
                         <div class="vault-header-left">
-                            <h1 class="page-title">Data Vault</h1>
+                            <div class="vault-title-row">
+                                <h1 class="page-title">Vault</h1>
+                                <!-- Company Dropdown -->
+                                <div class="vault-company-picker" id="vaultCompanyPicker">
+                                    <button class="vault-company-btn" id="vaultCompanyBtn" type="button">
+                                        <span class="vault-company-dot" id="vaultCompanyDot"></span>
+                                        <span class="vault-company-label" id="vaultCompanyLabel">Global Vault</span>
+                                        <svg class="vault-company-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                    </button>
+                                    <div class="vault-company-dropdown" id="vaultCompanyDropdown" style="display:none;">
+                                        <!-- Options injected dynamically -->
+                                    </div>
+                                </div>
+                            </div>
                             <p class="page-subtitle">Centralized file storage with versioning and smart organization</p>
                         </div>
                         <div class="vault-header-actions">
@@ -108,10 +121,9 @@
                         </div>
                     </section>
 
-                    <!-- Project Tabs -->
-                    <section class="vault-tabs" id="vaultTabs">
-                        <button class="vault-tab active" data-project="">Global Vault</button>
-                        <!-- Project tabs injected dynamically -->
+                    <!-- Project Sub-Tabs (shown when a company is selected) -->
+                    <section class="vault-subtabs" id="vaultProjectSubTabs" style="display:none;">
+                        <!-- Project sub-tabs injected dynamically -->
                     </section>
 
                     <!-- Breadcrumb -->

@@ -24,7 +24,7 @@
     "my_work": { label: "My Work", href: "my-work.html", order: 2, category: "general" },
     "messages": { label: "Messages", href: "messages.html", order: 3, category: "general" },
     "arturito": { label: "Arturito", href: "arturito.html", order: 4, category: "general" },
-    "vault": { label: "Data Vault", href: "vault.html", order: 5, category: "general" },
+    "vault": { label: "Vault", href: "vault.html", order: 5, category: "general" },
 
     // Coordination
     "operation_manager": { label: "Operation Manager", href: "operation-manager.html", order: 1, category: "coordination" },

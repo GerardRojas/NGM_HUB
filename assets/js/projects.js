@@ -11,6 +11,7 @@
   let projects = [];
   let originalProjects = [];
   let isEditMode = false;
+  let selectedCompanyId = '';
   let metaData = {
     companies: [],
     statuses: [],
@@ -34,6 +35,7 @@
     btnCloseAddModal: document.getElementById('btnCloseAddModal'),
     btnCancelAddProject: document.getElementById('btnCancelAddProject'),
     btnConfirmAddProject: document.getElementById('btnConfirmAddProject'),
+    companyFilter: document.getElementById('companyFilter'),
     // Add Project Form Fields
     newProjectName: document.getElementById('newProjectName'),
     newProjectCompany: document.getElementById('newProjectCompany'),
@@ -49,8 +51,25 @@
 
   async function init() {
     await loadMeta();
+    populateCompanyFilter();
     await loadProjects();
     setupEventListeners();
+  }
+
+  function populateCompanyFilter() {
+    if (!els.companyFilter) return;
+    els.companyFilter.innerHTML = '<option value="">All Companies</option>';
+    metaData.companies.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.company_id;
+      opt.textContent = c.name;
+      els.companyFilter.appendChild(opt);
+    });
+  }
+
+  function getFilteredProjects() {
+    if (!selectedCompanyId) return projects;
+    return projects.filter(p => p.source_company === selectedCompanyId);
   }
 
   // ================================
@@ -104,7 +123,9 @@
   // ================================
 
   function renderProjectsTable() {
-    if (!projects || projects.length === 0) {
+    const filtered = isEditMode ? projects : getFilteredProjects();
+
+    if (!filtered || filtered.length === 0) {
       showEmptyState();
       return;
     }
@@ -113,8 +134,9 @@
     els.table.style.display = 'table';
     els.tbody.innerHTML = '';
 
-    projects.forEach((project, index) => {
-      const row = isEditMode ? renderEditRow(project, index) : renderReadRow(project, index);
+    filtered.forEach((project, index) => {
+      const realIndex = isEditMode ? index : projects.indexOf(project);
+      const row = isEditMode ? renderEditRow(project, realIndex) : renderReadRow(project, realIndex);
       els.tbody.insertAdjacentHTML('beforeend', row);
     });
   }
@@ -208,6 +230,10 @@
   function showEmptyState() {
     els.emptyState.style.display = 'flex';
     els.table.style.display = 'none';
+    const textEl = els.emptyState.querySelector('.expenses-empty-text');
+    if (textEl) {
+      textEl.textContent = selectedCompanyId ? 'No projects for this company' : 'No projects found';
+    }
   }
 
   // ================================
@@ -488,6 +514,12 @@
     // Confirm add project
     els.btnConfirmAddProject?.addEventListener('click', () => {
       createProject();
+    });
+
+    // Company filter
+    els.companyFilter?.addEventListener('change', () => {
+      selectedCompanyId = els.companyFilter.value;
+      renderProjectsTable();
     });
 
     // Close modal on overlay click

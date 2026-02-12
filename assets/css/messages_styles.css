@@ -1308,6 +1308,19 @@
   color: #ef4444;
 }
 
+.msg-attachment-preview-thumb {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.msg-attachment-preview-icon {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.5);
+}
+
 /* Input card (Google Chat style) */
 .msg-input-card {
   background: rgba(255, 255, 255, 0.04);

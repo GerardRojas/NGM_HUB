@@ -1550,6 +1550,20 @@
             </div>
           `;
         }
+      } else if (flowState === 'awaiting_user_confirm') {
+        botActions = `
+          <div class="msg-bot-actions msg-bot-actions--confirm-card" data-receipt-id="${receiptId}">
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--primary" data-action="receipt-user-confirm" data-receipt-id="${receiptId}">
+              Confirm
+            </button>
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="receipt-user-edit" data-receipt-id="${receiptId}">
+              Edit
+            </button>
+            <button type="button" class="msg-bot-action-btn msg-bot-action-btn--secondary" data-action="receipt-cancel" data-receipt-id="${receiptId}">
+              Cancel
+            </button>
+          </div>
+        `;
       } else if (flowState === 'awaiting_project_decision') {
         botActions = `
           <div class="msg-bot-actions" data-receipt-id="${receiptId}">
@@ -2155,36 +2169,247 @@
     }
   }
 
+  /**
+   * Upload a regular (non-receipt) file to Supabase Storage and return its public URL.
+   */
+  async function uploadFileToStorage(file) {
+    if (!state.supabaseClient) {
+      throw new Error("Storage client not available");
+    }
+    const channelRef = state.currentChannel.projectId || state.currentChannel.id || "general";
+    const ext = file.name.split(".").pop() || "bin";
+    const safeName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const storagePath = `${channelRef}/${safeName}`;
+
+    const { error } = await state.supabaseClient.storage
+      .from("message-attachments")
+      .upload(storagePath, file, { upsert: false });
+
+    if (error) throw new Error(error.message);
+
+    const { data: urlData } = state.supabaseClient.storage
+      .from("message-attachments")
+      .getPublicUrl(storagePath);
+
+    return urlData.publicUrl;
+  }
+
+  /**
+   * Send receipts that were staged in attachments preview.
+   * Uploads each file, sends a message (with user text on the first one),
+   * then triggers OCR processing.
+   */
+  async function sendWithReceipts(textContent, receiptFiles) {
+    for (let i = 0; i < receiptFiles.length; i++) {
+      const att = receiptFiles[i];
+      const file = att.file;
+      const includeText = i === 0 && textContent;
+
+      const tempProgressId = `temp-${Date.now()}-${i}`;
+      showReceiptProgress(tempProgressId, file.name, "uploading");
+
+      const localPreviewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : null;
+      const tempMsgId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
+      // Build optimistic message content
+      let msgContent = includeText
+        ? `${textContent}\n\n**Receipt:** ${file.name}`
+        : `**Receipt:** ${file.name}`;
+
+      const tempReceiptMsg = {
+        id: tempMsgId,
+        content: msgContent,
+        channel_type: state.currentChannel.type,
+        user_id: state.currentUser?.user_id,
+        user_name: state.currentUser?.user_name,
+        created_at: new Date().toISOString(),
+        attachments: [{
+          id: "receipt-temp",
+          name: file.name,
+          size: file.size || 0,
+          type: file.type || "image/jpeg",
+          url: localPreviewUrl || "",
+          thumbnail_url: localPreviewUrl || ""
+        }],
+        metadata: { receipt_status: "pending" }
+      };
+      if (state.currentChannel.type.startsWith("project_")) {
+        tempReceiptMsg.project_id = state.currentChannel.projectId;
+      } else {
+        tempReceiptMsg.channel_id = state.currentChannel.id;
+      }
+      state.messages.push(tempReceiptMsg);
+      renderMessages(true);
+
+      try {
+        const result = await uploadReceiptToPending(file);
+
+        if (result.success) {
+          const receipt = result.data;
+
+          // Switch progress card to real receipt ID
+          const container = document.querySelector(".msg-receipt-progress-container");
+          if (container) {
+            const tempCard = container.querySelector(`[data-progress-receipt="${tempProgressId}"]`);
+            if (tempCard) {
+              tempCard.setAttribute("data-progress-receipt", receipt.id);
+              if (receiptProgressTimers[tempProgressId]) {
+                receiptProgressTimers[receipt.id] = receiptProgressTimers[tempProgressId];
+                delete receiptProgressTimers[tempProgressId];
+              }
+            }
+          }
+
+          // Build final content with real URL
+          let finalContent = includeText
+            ? `${textContent}\n\n**Receipt:** [${file.name}](${receipt.file_url})`
+            : `**Receipt:** [${file.name}](${receipt.file_url})`;
+
+          // Upgrade temp message
+          const tempIdx = state.messages.findIndex(m => m.id === tempMsgId);
+          if (tempIdx !== -1) {
+            state.messages[tempIdx].content = finalContent;
+            state.messages[tempIdx].metadata.pending_receipt_id = receipt.id;
+            state.messages[tempIdx].attachments = [{
+              id: `receipt-${receipt.id}`,
+              name: file.name,
+              size: receipt.file_size || file.size || 0,
+              type: receipt.file_type || file.type || "image/jpeg",
+              url: receipt.file_url,
+              thumbnail_url: receipt.thumbnail_url || receipt.file_url
+            }];
+            if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+          }
+
+          // Send receipt message to API (includes user text)
+          const messageData = {
+            content: finalContent,
+            channel_type: state.currentChannel.type,
+            user_id: state.currentUser?.user_id,
+            reply_to_id: null,
+            attachments: [{
+              id: `receipt-${receipt.id}`,
+              name: file.name,
+              size: receipt.file_size || 0,
+              type: receipt.file_type || "image/jpeg",
+              url: receipt.file_url,
+              thumbnail_url: receipt.thumbnail_url
+            }],
+            metadata: {
+              pending_receipt_id: receipt.id,
+              receipt_status: receipt.status || "pending"
+            }
+          };
+          if (state.currentChannel.type.startsWith("project_")) {
+            messageData.project_id = state.currentChannel.projectId;
+          } else {
+            messageData.channel_id = state.currentChannel.id;
+          }
+
+          try {
+            const res = await authFetch(`${API_BASE}/messages`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(messageData),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              const idx = state.messages.findIndex(m => m.id === tempMsgId);
+              if (idx !== -1) {
+                state.messages[idx] = data.message || data;
+                _markFullRebuild();
+                renderMessages();
+              }
+            }
+          } catch (sendErr) {
+            console.error("[Messages] Receipt message send error:", sendErr);
+          }
+
+          // Auto-process the receipt
+          await processReceiptNow(receipt.id, file.name);
+        }
+      } catch (err) {
+        console.error("[Messages] Receipt upload error:", err);
+        showReceiptProgress(tempProgressId, file.name, "error");
+        hideReceiptProgress(tempProgressId, 6000);
+        showToast(`Failed to upload ${file.name}: ${err.message}`, "error");
+        const tempIdx = state.messages.findIndex(m => m.id === tempMsgId);
+        if (tempIdx !== -1) {
+          state.messages[tempIdx]._failed = true;
+          _markFullRebuild();
+          renderMessages();
+        }
+        if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+      }
+    }
+  }
+
   async function sendMessage() {
     const content = DOM.messageInput.value.trim();
     if (!content && state.attachments.length === 0) return;
     if (!state.currentChannel) return;
 
+    // Snapshot state before clearing
+    const pendingAttachments = [...state.attachments];
+    const receiptFiles = pendingAttachments.filter(a => a.isReceipt);
+    const regularFiles = pendingAttachments.filter(a => !a.isReceipt);
+    const replyToId = state.replyingTo?.id || null;
+
+    // Clear input immediately for responsiveness
+    DOM.messageInput.value = "";
+    DOM.btnSendMessage.disabled = true;
+    clearReply();
+    clearAttachments();
+    autoResizeTextarea(DOM.messageInput);
+
+    // Receipt channel: dedicated upload + process flow
+    if (receiptFiles.length > 0) {
+      await sendWithReceipts(content, receiptFiles);
+      return;
+    }
+
     // Check if this message is a response to an active check flow
     const checkFlowAction = _getCheckFlowAction(content);
-
-    // Check if this message is a response to an active duplicate flow
     const duplicateFlowAction = _getDuplicateFlowAction(content);
-
-    // Check if this message is a response to an active receipt flow
     const receiptFlowAction = _getReceiptFlowAction(content);
+
+    // Upload regular files to get real URLs
+    const uploadedAttachments = [];
+    for (const att of regularFiles) {
+      try {
+        const url = await uploadFileToStorage(att.file);
+        uploadedAttachments.push({
+          id: att.id,
+          name: att.name,
+          size: att.size,
+          type: att.type,
+          url: url,
+          thumbnail_url: att.type.startsWith("image/") ? url : null,
+        });
+      } catch (uploadErr) {
+        console.error("[Messages] File upload error:", uploadErr);
+        showToast(`Failed to upload ${att.name}`, "error");
+      }
+    }
 
     const messageData = {
       content: content,
       channel_type: state.currentChannel.type,
       user_id: state.currentUser?.user_id,
-      reply_to_id: state.replyingTo?.id || null,
-      attachments: state.attachments,
+      reply_to_id: replyToId,
+      attachments: uploadedAttachments.length > 0 ? uploadedAttachments : undefined,
     };
 
-    // Set channel reference based on type
     if (state.currentChannel.type.startsWith("project_")) {
       messageData.project_id = state.currentChannel.projectId;
     } else {
       messageData.channel_id = state.currentChannel.id;
     }
 
-    // Optimistic UI update - show immediately
+    // Don't send empty message if all uploads failed and no text
+    if (!content && uploadedAttachments.length === 0) return;
+
+    // Optimistic UI update
     const tempMessage = {
       id: `temp-${Date.now()}`,
       ...messageData,
@@ -2192,14 +2417,7 @@
       user_name: state.currentUser?.user_name,
     };
     state.messages.push(tempMessage);
-    renderMessages(true); // Immediate render for user feedback
-
-    // Clear input
-    DOM.messageInput.value = "";
-    DOM.btnSendMessage.disabled = true;
-    clearReply();
-    clearAttachments();
-    autoResizeTextarea(DOM.messageInput);
+    renderMessages(true);
 
     try {
       const res = await authFetch(`${API_BASE}/messages`, {
@@ -2211,7 +2429,6 @@
       if (!res.ok) throw new Error("Failed to send message");
 
       const data = await res.json();
-      // Replace temp message with real one
       const tempIndex = state.messages.findIndex((m) => m.id === tempMessage.id);
       if (tempIndex !== -1) {
         state.messages[tempIndex] = data.message || data;
@@ -2219,23 +2436,16 @@
         renderMessages();
       }
 
-      // Forward to check-action endpoint if this was a check flow response
       if (checkFlowAction) {
         _forwardToCheckAction(checkFlowAction.receiptId, checkFlowAction.action, content);
       }
-
-      // Forward to duplicate-action endpoint if this was a duplicate flow response
       if (duplicateFlowAction) {
         _forwardToDuplicateAction(duplicateFlowAction.receiptId, duplicateFlowAction.action);
         state.activeDuplicateFlow = null;
       }
-
-      // Forward to receipt-action endpoint if this was a receipt flow response
       if (receiptFlowAction) {
         _forwardToReceiptAction(receiptFlowAction.receiptId, receiptFlowAction.action, content);
       }
-
-      // Forward to Andrew reconcile-bill if @Andrew was mentioned with a bill reference
       const andrewAction = _getAndrewBillAction(content);
       if (andrewAction) {
         _forwardToAndrewReconcile(andrewAction.billId, andrewAction.projectId);
@@ -2243,7 +2453,6 @@
     } catch (err) {
       console.error("[Messages] Send error:", err);
       showToast("Failed to send message", "error");
-      // Keep temp message visible with failed indicator
       const failIdx = state.messages.findIndex((m) => m.id === tempMessage.id);
       if (failIdx !== -1) {
         state.messages[failIdx]._failed = true;
@@ -2277,6 +2486,7 @@
     // Bot agents available for @mention
     const botMentionables = [
       { user_id: "00000000-0000-0000-0000-000000000003", user_name: "Andrew", _isBot: true },
+      { user_id: "00000000-0000-0000-0000-000000000002", user_name: "Daneel", _isBot: true },
     ];
     const allMentionables = [...state.users, ...botMentionables];
 
@@ -2727,26 +2937,27 @@
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    // Special handling for receipts channel
-    if (isReceiptsChannel()) {
-      await handleReceiptUpload(files);
-      return;
-    }
+    const isReceipt = isReceiptsChannel();
+    const maxSize = isReceipt ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
+    const allowedReceiptTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
 
-    // Regular attachment handling
     for (const file of files) {
-      if (file.size > 10 * 1024 * 1024) {
-        showToast(`File ${file.name} is too large (max 10MB)`, "warning");
+      if (isReceipt && !allowedReceiptTypes.includes(file.type)) {
+        showToast(`${file.name}: Only images and PDFs allowed for receipts`, "warning");
+        continue;
+      }
+      if (file.size > maxSize) {
+        showToast(`${file.name} is too large (max ${isReceipt ? '20' : '10'}MB)`, "warning");
         continue;
       }
 
-      // Add to attachments (would upload to storage in real implementation)
       state.attachments.push({
         id: `att-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
         name: file.name,
         size: file.size,
         type: file.type,
         file: file,
+        isReceipt: isReceipt,
         preview: file.type.startsWith("image/")
           ? URL.createObjectURL(file)
           : null,
@@ -2754,191 +2965,7 @@
     }
 
     renderAttachmentsPreview();
-  }
-
-  /**
-   * Handle receipt uploads for the Receipts channel
-   * Uploads to pending-receipts API and optionally triggers processing
-   */
-  async function handleReceiptUpload(files) {
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
-
-    for (const file of files) {
-      // Validate file type
-      if (!allowedTypes.includes(file.type)) {
-        showToast(`${file.name}: Only images and PDFs allowed for receipts`, "warning");
-        continue;
-      }
-
-      // Validate size (20MB max for receipts)
-      if (file.size > 20 * 1024 * 1024) {
-        showToast(`${file.name} is too large (max 20MB)`, "warning");
-        continue;
-      }
-
-      // Use temp ID for progress until we get real receipt ID
-      const tempProgressId = `temp-${Date.now()}`;
-      showReceiptProgress(tempProgressId, file.name, 'uploading');
-
-      // Show message instantly (before upload) with local preview
-      const localPreviewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : null;
-      const tempMsgId = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-      const tempReceiptMsg = {
-        id: tempMsgId,
-        content: `**Receipt:** ${file.name}`,
-        channel_type: state.currentChannel.type,
-        user_id: state.currentUser?.user_id,
-        user_name: state.currentUser?.user_name,
-        created_at: new Date().toISOString(),
-        attachments: [{
-          id: `receipt-temp`,
-          name: file.name,
-          size: file.size || 0,
-          type: file.type || 'image/jpeg',
-          url: localPreviewUrl || '',
-          thumbnail_url: localPreviewUrl || ''
-        }],
-        metadata: {
-          receipt_status: 'pending'
-        }
-      };
-      if (state.currentChannel.type.startsWith("project_")) {
-        tempReceiptMsg.project_id = state.currentChannel.projectId;
-      } else {
-        tempReceiptMsg.channel_id = state.currentChannel.id;
-      }
-      state.messages.push(tempReceiptMsg);
-      renderMessages(true);
-
-      try {
-        const result = await uploadReceiptToPending(file);
-
-        if (result.success) {
-          const receipt = result.data;
-
-          // Switch progress card to real receipt ID
-          const container = document.querySelector('.msg-receipt-progress-container');
-          if (container) {
-            const tempCard = container.querySelector(`[data-progress-receipt="${tempProgressId}"]`);
-            if (tempCard) {
-              tempCard.setAttribute('data-progress-receipt', receipt.id);
-              // Transfer cosmetic timer key
-              if (receiptProgressTimers[tempProgressId]) {
-                receiptProgressTimers[receipt.id] = receiptProgressTimers[tempProgressId];
-                delete receiptProgressTimers[tempProgressId];
-              }
-            }
-          }
-
-          // Upgrade temp message with real receipt data
-          const tempIdx = state.messages.findIndex(m => m.id === tempMsgId);
-          if (tempIdx !== -1) {
-            state.messages[tempIdx].content = `**Receipt:** [${file.name}](${receipt.file_url})`;
-            state.messages[tempIdx].metadata.pending_receipt_id = receipt.id;
-            state.messages[tempIdx].attachments = [{
-              id: `receipt-${receipt.id}`,
-              name: file.name,
-              size: receipt.file_size || file.size || 0,
-              type: receipt.file_type || file.type || 'image/jpeg',
-              url: receipt.file_url,
-              thumbnail_url: receipt.thumbnail_url || receipt.file_url
-            }];
-            if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
-          }
-
-          // Send the message to the server (in background, don't await)
-          sendReceiptMessage(receipt, file.name, tempMsgId);
-
-          // Auto-process the receipt (progress updates happen inside)
-          await processReceiptNow(receipt.id, file.name);
-        }
-      } catch (err) {
-        console.error("[Messages] Receipt upload error:", err);
-        showReceiptProgress(tempProgressId, file.name, 'error');
-        hideReceiptProgress(tempProgressId, 6000);
-        showToast(`Failed to upload ${file.name}: ${err.message}`, "error");
-        // Keep temp message visible but mark as failed
-        const tempIdx = state.messages.findIndex(m => m.id === tempMsgId);
-        if (tempIdx !== -1) {
-          state.messages[tempIdx]._failed = true;
-          _markFullRebuild();
-          renderMessages();
-        }
-        if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
-      }
-    }
-  }
-
-  /**
-   * Send a message with receipt metadata for status tracking
-   */
-  async function sendReceiptMessage(receipt, fileName, existingTempId) {
-    if (!state.currentChannel) return;
-
-    const messageData = {
-      content: `**Receipt:** [${fileName}](${receipt.file_url})`,
-      channel_type: state.currentChannel.type,
-      user_id: state.currentUser?.user_id,
-      reply_to_id: null,
-      attachments: [{
-        id: `receipt-${receipt.id}`,
-        name: fileName,
-        size: receipt.file_size || 0,
-        type: receipt.file_type || 'image/jpeg',
-        url: receipt.file_url,
-        thumbnail_url: receipt.thumbnail_url
-      }],
-      metadata: {
-        pending_receipt_id: receipt.id,
-        receipt_status: receipt.status || 'pending'
-      }
-    };
-
-    // Set channel reference based on type
-    if (state.currentChannel.type.startsWith("project_")) {
-      messageData.project_id = state.currentChannel.projectId;
-    } else {
-      messageData.channel_id = state.currentChannel.id;
-    }
-
-    // Use existing temp message if provided, otherwise create one
-    const tempId = existingTempId || `temp-${Date.now()}`;
-    if (!existingTempId) {
-      const tempMessage = {
-        id: tempId,
-        ...messageData,
-        created_at: new Date().toISOString(),
-        user_name: state.currentUser?.user_name,
-      };
-      state.messages.push(tempMessage);
-      renderMessages();
-    }
-
-    try {
-      const res = await authFetch(`${API_BASE}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(messageData),
-      });
-
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        console.error("[Messages] Receipt message POST error:", res.status, errBody);
-        return; // Keep temp message visible
-      }
-
-      const data = await res.json();
-      // Replace temp message with real one
-      const tempIndex = state.messages.findIndex((m) => m.id === tempId);
-      if (tempIndex !== -1) {
-        state.messages[tempIndex] = data.message || data;
-        _markFullRebuild();
-        renderMessages();
-      }
-    } catch (err) {
-      console.error("[Messages] Receipt message send error:", err);
-      // Keep temp message visible - don't remove. Just log the error.
-    }
+    updateSendButtonState();
   }
 
   /**
@@ -3204,6 +3231,7 @@
   function renderAttachmentsPreview() {
     if (state.attachments.length === 0) {
       DOM.attachmentsPreview.style.display = "none";
+      updateSendButtonState();
       return;
     }
 
@@ -3211,18 +3239,19 @@
     DOM.attachmentsPreview.innerHTML = state.attachments
       .map(
         (att) => `
-        <div class="msg-attachment-preview" data-attachment-id="${att.id}">
+        <div class="msg-attachment-preview-item" data-attachment-id="${att.id}">
           ${
             att.preview
-              ? `<img src="${att.preview}" alt="${escapeHtml(att.name)}" />`
-              : `<span class="msg-attachment-preview-icon">📄</span>`
+              ? `<img src="${att.preview}" alt="${escapeHtml(att.name)}" class="msg-attachment-preview-thumb" />`
+              : `<svg class="msg-attachment-preview-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`
           }
           <span class="msg-attachment-preview-name">${escapeHtml(att.name)}</span>
-          <button type="button" class="msg-attachment-remove" data-attachment-id="${att.id}">×</button>
+          <button type="button" class="msg-attachment-preview-remove" data-attachment-id="${att.id}">&times;</button>
         </div>
       `
       )
       .join("");
+    updateSendButtonState();
   }
 
   function removeAttachment(attachmentId) {
@@ -3240,6 +3269,14 @@
     });
     state.attachments = [];
     DOM.attachmentsPreview.style.display = "none";
+    updateSendButtonState();
+  }
+
+  function updateSendButtonState() {
+    if (!DOM.btnSendMessage || !DOM.messageInput) return;
+    const hasText = DOM.messageInput.value.trim().length > 0;
+    const hasAttachments = state.attachments.length > 0;
+    DOM.btnSendMessage.disabled = !hasText && !hasAttachments;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -4028,7 +4065,7 @@
     // Message input
     DOM.messageInput?.addEventListener("input", (e) => {
       autoResizeTextarea(e.target);
-      DOM.btnSendMessage.disabled = !e.target.value.trim();
+      updateSendButtonState();
       handleMentionInput(e);
       broadcastTyping();
     });
@@ -4152,6 +4189,28 @@
           actionsEl.innerHTML = '<span class="msg-bot-actions-dismissed">Cancelled</span>';
           _forwardToCheckAction(receiptId, "cancel", null);
           state.activeCheckFlow = null;
+        }
+        return;
+      }
+
+      // Receipt flow: user confirm (smart context resolution)
+      if (action === "receipt-user-confirm") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-loading">Creating expenses...</span>';
+          _forwardToReceiptAction(receiptId, "confirm", null);
+        }
+        return;
+      }
+
+      // Receipt flow: user wants to edit (smart context resolution)
+      if (action === "receipt-user-edit") {
+        const receiptId = e.target.closest("[data-receipt-id]")?.dataset.receiptId;
+        const actionsEl = e.target.closest(".msg-bot-actions");
+        if (receiptId && actionsEl) {
+          actionsEl.innerHTML = '<span class="msg-bot-actions-dismissed">Editing...</span>';
+          _forwardToReceiptAction(receiptId, "edit", null);
         }
         return;
       }
@@ -4300,7 +4359,7 @@
     // Attachments
     DOM.btnAttachFile?.addEventListener("click", openFilePicker);
     DOM.attachmentsPreview?.addEventListener("click", (e) => {
-      const removeBtn = e.target.closest(".msg-attachment-remove");
+      const removeBtn = e.target.closest(".msg-attachment-preview-remove");
       if (removeBtn) {
         removeAttachment(removeBtn.dataset.attachmentId);
       }

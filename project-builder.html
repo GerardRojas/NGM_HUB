@@ -101,52 +101,13 @@
 
                     <!-- Tab Navigation -->
                     <nav class="pb-tabs">
-                        <button type="button" class="pb-tab pb-tab--active" data-tab="overview">Overview</button>
+                        <button type="button" class="pb-tab pb-tab--active" data-tab="configure">Project Configuration</button>
                         <button type="button" class="pb-tab" data-tab="definitions">Definitions</button>
-                        <button type="button" class="pb-tab" data-tab="configure">Configure</button>
-                        <button type="button" class="pb-tab" data-tab="scan">Scan</button>
                         <button type="button" class="pb-tab" data-tab="export">Export</button>
                     </nav>
 
-                    <!-- ══ TAB: Overview ══ -->
-                    <section class="pb-section pb-section--active" data-section="overview">
-                        <div class="pb-stats" id="pbStats"></div>
-                        <div class="pb-panels-grid">
-                            <div class="pb-card pb-card--wide">
-                                <div class="pb-card-header">
-                                    <h3 class="pb-card-title">Automation Scripts</h3>
-                                    <span class="pb-card-badge" id="pbScriptsCount">0</span>
-                                </div>
-                                <div class="pb-card-body" id="pbScriptsList"></div>
-                            </div>
-                            <div class="pb-card">
-                                <div class="pb-card-header">
-                                    <h3 class="pb-card-title">Family Catalog</h3>
-                                    <span class="pb-card-badge" id="pbFamiliesCount">0</span>
-                                </div>
-                                <div class="pb-card-body pb-card-body--scroll" id="pbFamiliesList"></div>
-                            </div>
-                            <div class="pb-card">
-                                <div class="pb-card-header">
-                                    <h3 class="pb-card-title">Project Templates</h3>
-                                </div>
-                                <div class="pb-card-body" id="pbTemplatesList"></div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- ══ TAB: Definitions ══ -->
-                    <section class="pb-section" data-section="definitions">
-                        <div class="pb-def-layout">
-                            <nav class="pb-def-nav" id="pbDefNav"></nav>
-                            <div class="pb-def-content" id="pbDefContent">
-                                <div class="pb-empty-state"><p>Select a definition type from the left panel.</p></div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- ══ TAB: Configure ══ -->
-                    <section class="pb-section" data-section="configure">
+                    <!-- ══ TAB: Project Configuration ══ -->
+                    <section class="pb-section pb-section--active" data-section="configure">
                         <div class="pb-steps">
                             <div class="pb-step pb-step--active" data-step="1"><span class="pb-step-number">1</span><span class="pb-step-label">Project Info</span></div>
                             <div class="pb-step-connector"></div>
@@ -255,10 +216,8 @@
                             <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnPrevStep" disabled>Previous</button>
                             <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnNextStep">Next</button>
                         </div>
-                    </section>
 
-                    <!-- ══ TAB: Scan ══ -->
-                    <section class="pb-section" data-section="scan">
+                        <!-- ── Scan Workspace (merged into Project Configuration) ── -->
                         <div class="pb-scan-workspace" id="scanWorkspace">
 
                             <!-- Left: Steps Panel -->
@@ -411,6 +370,16 @@
                                 </div>
                             </div>
 
+                        </div>
+                    </section><!-- end Project Configuration -->
+
+                    <!-- ══ TAB: Definitions ══ -->
+                    <section class="pb-section" data-section="definitions">
+                        <div class="pb-def-layout">
+                            <nav class="pb-def-nav" id="pbDefNav"></nav>
+                            <div class="pb-def-content" id="pbDefContent">
+                                <div class="pb-empty-state"><p>Select a definition type from the left panel.</p></div>
+                            </div>
                         </div>
                     </section>
 

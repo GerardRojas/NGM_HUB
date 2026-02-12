@@ -42,8 +42,12 @@
     bindStepNav();
     bindExportActions();
     await Promise.all([loadRegistry(), loadDefIndex(), loadTemplatesIndex(), loadProjects()]);
-    renderOverview();
+    if (registry) {
+      var ver = $("#pbVersion");
+      if (ver) ver.textContent = "v" + (registry.version || "1.0");
+    }
     renderDefNav();
+    if (window.PBScanEngine) window.PBScanEngine.init();
     populateProjectTypeOptions();
     bindProjectInfo();
   }
@@ -69,93 +73,9 @@
         $$(".pb-tab").forEach(function (b) { b.classList.toggle("pb-tab--active", b.dataset.tab === tab); });
         $$(".pb-section").forEach(function (s) { s.classList.toggle("pb-section--active", s.dataset.section === tab); });
         if (tab === "export") refreshExport();
-        if (tab === "scan" && window.PBScanEngine) window.PBScanEngine.init();
+        if (tab === "configure" && window.PBScanEngine) window.PBScanEngine.init();
       });
     });
-  }
-
-  // ═══════════════════════════════════════
-  // OVERVIEW TAB
-  // ═══════════════════════════════════════
-  function renderOverview() {
-    if (!registry) {
-      $("#pbStats").innerHTML = '<div class="pb-empty-state"><p>Could not load Revit ecosystem data from API.</p></div>';
-      return;
-    }
-
-    var ver = $("#pbVersion");
-    if (ver) ver.textContent = "v" + (registry.version || "1.0");
-
-    var totalScripts = 0, readyScripts = 0, totalFamilies = 0;
-    var panels = registry.panels || {};
-    Object.keys(panels).forEach(function (k) {
-      var scripts = panels[k].scripts || [];
-      totalScripts += scripts.length;
-      scripts.forEach(function (s) { if (s.status === "ready") readyScripts++; });
-    });
-    var fams = registry.families || {};
-    Object.keys(fams).forEach(function (k) { totalFamilies += (fams[k] || []).length; });
-    var defCount = defIndex ? Object.keys(defIndex).length : 0;
-    var tplCount = templatesIndex ? Object.keys(templatesIndex).length : 0;
-
-    $("#pbStats").innerHTML =
-      statCard("Scripts", totalScripts, readyScripts + " ready") +
-      statCard("Families", totalFamilies, "In catalog") +
-      statCard("Definitions", defCount, "Types") +
-      statCard("Templates", tplCount, "Project types");
-
-    renderScriptsList();
-    $("#pbScriptsCount").textContent = totalScripts;
-    renderFamiliesList();
-    $("#pbFamiliesCount").textContent = totalFamilies;
-    renderTemplatesList();
-  }
-
-  function statCard(label, value, sub) {
-    return '<div class="pb-stat-card"><div class="pb-stat-value">' + value + '</div><div class="pb-stat-label">' + esc(label) + '</div><div class="pb-stat-sub">' + esc(sub) + '</div></div>';
-  }
-
-  function renderScriptsList() {
-    var el = $("#pbScriptsList");
-    if (!registry || !registry.panels) { el.innerHTML = ""; return; }
-    var html = "";
-    Object.keys(registry.panels).forEach(function (panelKey) {
-      var panel = registry.panels[panelKey];
-      html += '<div class="pb-script-panel"><div class="pb-script-panel-header">' + esc(panel.label) + '</div>';
-      (panel.scripts || []).forEach(function (s) {
-        var cls = s.status === "ready" ? "pb-status--ready" : "pb-status--planned";
-        html += '<div class="pb-script-row"><span class="pb-script-name">' + esc(s.name) + '</span><span class="pb-status ' + cls + '">' + esc(s.status) + '</span></div>';
-        html += '<div class="pb-script-desc">' + esc(s.description || "") + '</div>';
-      });
-      html += '</div>';
-    });
-    el.innerHTML = html;
-  }
-
-  function renderFamiliesList() {
-    var el = $("#pbFamiliesList");
-    if (!registry || !registry.families) { el.innerHTML = ""; return; }
-    var html = "";
-    Object.keys(registry.families).forEach(function (cat) {
-      var items = registry.families[cat];
-      html += '<div class="pb-fam-group"><div class="pb-fam-group-label">' + esc(cat) + ' (' + items.length + ')</div>';
-      items.forEach(function (f) {
-        html += '<div class="pb-fam-row"><span class="pb-fam-name">' + esc(f.name.replace("NGM_", "")) + '</span><span class="pb-fam-types">' + (f.types || []).length + ' types</span></div>';
-      });
-      html += '</div>';
-    });
-    el.innerHTML = html;
-  }
-
-  function renderTemplatesList() {
-    var el = $("#pbTemplatesList");
-    if (!templatesIndex) { el.innerHTML = ""; return; }
-    var html = "";
-    Object.keys(templatesIndex).forEach(function (k) {
-      var t = templatesIndex[k];
-      html += '<div class="pb-tpl-card"><div class="pb-tpl-name">' + esc(k) + '</div><div class="pb-tpl-desc">' + esc(t.description || "") + '</div></div>';
-    });
-    el.innerHTML = html;
   }
 
   // ═══════════════════════════════════════

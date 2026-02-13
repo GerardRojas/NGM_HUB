@@ -750,6 +750,41 @@
         </button>
     </div>
 
+    <!-- Canvas Context Menu (right-click on empty canvas space) -->
+    <div class="context-menu hidden" id="canvasContextMenu">
+        <button type="button" class="context-menu-item ctx-tree-only" data-action="add-module">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="12" y1="8" x2="12" y2="16"></line>
+                <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+            Add Module
+        </button>
+        <button type="button" class="context-menu-item ctx-detail-only" data-action="add-step" style="display:none">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Step
+        </button>
+        <div class="context-menu-divider"></div>
+        <button type="button" class="context-menu-item" data-action="select-all">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+            </svg>
+            Select All
+        </button>
+        <button type="button" class="context-menu-item" data-action="fit-view">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+            </svg>
+            Fit to View
+        </button>
+    </div>
+
     <!-- Algorithm Diagram Preview (hover tooltip) -->
     <div class="algorithm-diagram-preview hidden" id="algorithmDiagramPreview">
         <div class="preview-header">

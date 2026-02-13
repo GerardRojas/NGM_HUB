@@ -876,10 +876,14 @@
         selectedModules: [],  // Array of selected module IDs
         selectionBox: {
             active: false,
+            tracking: false,
+            justFinished: false,
             startX: 0,
             startY: 0,
             endX: 0,
-            endY: 0
+            endY: 0,
+            screenStartX: 0,
+            screenStartY: 0
         },
     };
 
@@ -1682,6 +1686,7 @@
             btnAddModule: document.getElementById('btnAddModule'),
             moduleContextMenu: document.getElementById('moduleContextMenu'),
             flowNodeContextMenu: document.getElementById('flowNodeContextMenu'),
+            canvasContextMenu: document.getElementById('canvasContextMenu'),
             // Process navigator elements
             processNavigator: document.getElementById('processNavigator'),
             processNavigatorList: document.getElementById('processNavigatorList'),
@@ -1811,12 +1816,20 @@
             elements.canvasContainer.addEventListener('mouseup', handleCanvasMouseUp);
             elements.canvasContainer.addEventListener('mouseleave', handleCanvasMouseUp);
             elements.canvasContainer.addEventListener('wheel', handleCanvasWheel, { passive: false });
-            // Prevent default context menu on canvas to allow right-click selection
+            // Canvas context menu (right-click on empty space)
             elements.canvasContainer.addEventListener('contextmenu', (e) => {
-                // Only prevent if clicking on empty canvas space, not on nodes
-                if (!e.target.closest('.tree-node') && !e.target.closest('.flow-node')) {
-                    e.preventDefault();
+                // Don't override if on a node (handled by node itself)
+                if (e.target.closest('.tree-node') || e.target.closest('.flow-node')) return;
+
+                e.preventDefault();
+
+                // Don't show context menu if selection box just finished (was dragging)
+                if (state.selectionBox.justFinished) {
+                    state.selectionBox.justFinished = false;
+                    return;
                 }
+
+                showCanvasContextMenu(e.clientX, e.clientY);
             });
         }
 
@@ -1825,6 +1838,7 @@
         setupModuleModalListeners();
         setupNotepadListeners();
         setupFlowNodeContextMenu();
+        setupCanvasContextMenu();
         setupModuleDetailPanelListeners();
 
         // Algorithm diagram badge events (event delegation)
@@ -1852,7 +1866,12 @@
 
         // Context menu (close on click outside)
         document.addEventListener('click', (e) => {
-            if (!e.target.closest('.context-menu') && !e.target.closest('.tree-node.custom-module') && !e.target.closest('.flow-node')) {
+            if (!e.target.closest('.context-menu')) {
+                hideContextMenu();
+            }
+        });
+        document.addEventListener('mousedown', (e) => {
+            if (!e.target.closest('.context-menu')) {
                 hideContextMenu();
             }
         });
@@ -1886,11 +1905,13 @@
                     endConnectionMode(null);
                 }
                 // Cancel selection
-                if (state.selectionBox.active) {
+                if (state.selectionBox.active || state.selectionBox.tracking) {
                     state.selectionBox.active = false;
+                    state.selectionBox.tracking = false;
                     if (elements.selectionBox) {
                         elements.selectionBox.classList.remove('active');
                     }
+                    elements.canvasContainer.style.cursor = 'grab';
                 }
                 clearModuleSelection();
                 closeFlowNodeDetailPanel();
@@ -2919,6 +2940,89 @@
         if (elements.flowNodeContextMenu) {
             elements.flowNodeContextMenu.classList.add('hidden');
         }
+        if (elements.canvasContextMenu) {
+            elements.canvasContextMenu.classList.add('hidden');
+        }
+    }
+
+    // ================================
+    // Canvas Context Menu (right-click on empty space)
+    // ================================
+    function showCanvasContextMenu(clientX, clientY) {
+        hideContextMenu();
+
+        if (!elements.canvasContextMenu) {
+            console.error('[CONTEXT-MENU] canvasContextMenu element not found!');
+            return;
+        }
+
+        // Show/hide detail-view-only items
+        const isDetailView = state.currentLevel !== 'tree';
+        elements.canvasContextMenu.querySelectorAll('.ctx-tree-only').forEach(el => {
+            el.style.display = isDetailView ? 'none' : '';
+        });
+        elements.canvasContextMenu.querySelectorAll('.ctx-detail-only').forEach(el => {
+            el.style.display = isDetailView ? '' : 'none';
+        });
+
+        elements.canvasContextMenu.style.left = `${clientX}px`;
+        elements.canvasContextMenu.style.top = `${clientY}px`;
+        elements.canvasContextMenu.classList.remove('hidden');
+
+        // Keep in viewport
+        requestAnimationFrame(() => {
+            const rect = elements.canvasContextMenu.getBoundingClientRect();
+            if (rect.right > window.innerWidth) {
+                elements.canvasContextMenu.style.left = `${clientX - rect.width}px`;
+            }
+            if (rect.bottom > window.innerHeight) {
+                elements.canvasContextMenu.style.top = `${clientY - rect.height}px`;
+            }
+        });
+    }
+
+    function setupCanvasContextMenu() {
+        if (!elements.canvasContextMenu) return;
+
+        elements.canvasContextMenu.addEventListener('click', (e) => {
+            const item = e.target.closest('.context-menu-item');
+            if (!item) return;
+
+            const action = item.dataset.action;
+            hideContextMenu();
+
+            switch (action) {
+                case 'add-module':
+                    openAddModuleModal();
+                    break;
+                case 'add-step':
+                    if (typeof window.processManager?.addSubProcessNode === 'function') {
+                        window.processManager.addSubProcessNode();
+                    }
+                    break;
+                case 'fit-view':
+                    centerCanvas();
+                    break;
+                case 'select-all':
+                    selectAllModules();
+                    break;
+            }
+        });
+    }
+
+    function selectAllModules() {
+        const selector = state.currentLevel === 'tree' ? '.tree-node.custom-module' : '.flow-node';
+        const container = state.currentLevel === 'tree' ? elements.treeViewContainer : elements.detailViewContainer;
+        if (!container) return;
+
+        state.selectedModules = [];
+        container.querySelectorAll(selector).forEach(node => {
+            const id = node.dataset.id || node.dataset.nodeId;
+            if (id && id !== 'hub') {
+                state.selectedModules.push(id);
+                node.classList.add('selected');
+            }
+        });
     }
 
     function showFlowNodeContextMenu(e, nodeId, processId, isSubProcess = false) {
@@ -6426,7 +6530,7 @@
             return;
         }
 
-        // Right click = selection box
+        // Right click = track for selection box (activated on drag) or context menu (no drag)
         if (e.button === 2) {
             e.preventDefault();
 
@@ -6435,19 +6539,21 @@
                 clearModuleSelection();
             }
 
-            // Get canvas-relative coordinates (accounting for offset and scale)
+            // Store start coordinates but don't activate selection box yet
+            // Selection box activates only after dragging past threshold (5px)
             const rect = elements.canvasContainer.getBoundingClientRect();
             const x = (e.clientX - rect.left - state.canvas.offsetX) / state.canvas.scale;
             const y = (e.clientY - rect.top - state.canvas.offsetY) / state.canvas.scale;
 
-            state.selectionBox.active = true;
+            state.selectionBox.tracking = true;
+            state.selectionBox.active = false;
+            state.selectionBox.justFinished = false;
             state.selectionBox.startX = x;
             state.selectionBox.startY = y;
             state.selectionBox.endX = x;
             state.selectionBox.endY = y;
-
-            updateSelectionBox();
-            elements.canvasContainer.style.cursor = 'crosshair';
+            state.selectionBox.screenStartX = e.clientX;
+            state.selectionBox.screenStartY = e.clientY;
         }
     }
 
@@ -6458,6 +6564,18 @@
             state.connectionMode.mouseY = e.clientY;
             drawConnectionPreview();
             return;
+        }
+
+        // Right-click drag: activate selection box after threshold
+        if (state.selectionBox.tracking && !state.selectionBox.active) {
+            const dist = Math.sqrt(
+                Math.pow(e.clientX - state.selectionBox.screenStartX, 2) +
+                Math.pow(e.clientY - state.selectionBox.screenStartY, 2)
+            );
+            if (dist > 5) {
+                state.selectionBox.active = true;
+                elements.canvasContainer.style.cursor = 'crosshair';
+            }
         }
 
         // Update selection box if active
@@ -6498,15 +6616,21 @@
             return;
         }
 
-        // End selection box
+        // End selection box (or tracking without activation)
         if (state.selectionBox.active) {
             finishSelection();
             state.selectionBox.active = false;
+            state.selectionBox.tracking = false;
+            state.selectionBox.justFinished = true;
             if (elements.selectionBox) {
                 elements.selectionBox.classList.remove('active');
             }
             elements.canvasContainer.style.cursor = 'grab';
             return;
+        }
+        if (state.selectionBox.tracking) {
+            // Right-click without drag — allow contextmenu to fire
+            state.selectionBox.tracking = false;
         }
 
         state.canvas.isDragging = false;

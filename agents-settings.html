@@ -784,6 +784,113 @@
             text-align: center; padding: 24px;
             color: var(--ngm-text-muted); font-size: 12px;
         }
+
+        /* ====== Settings Cards (self-contained config sections) ====== */
+        .settings-card {
+            background: var(--ngm-bg-card);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-md);
+        }
+        .settings-card + .settings-card { margin-top: 16px; }
+
+        .settings-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 24px;
+            border-bottom: 1px solid var(--border-soft);
+        }
+        .settings-card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0;
+        }
+        .settings-card-badge {
+            font-size: 11px;
+            color: var(--ngm-text-muted);
+        }
+        .settings-card-body { padding: 20px 24px; }
+        .settings-card-body > p:first-child {
+            font-size: 12px;
+            color: var(--ngm-text-muted);
+            margin: 0 0 16px 0;
+        }
+        .settings-card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 14px 24px;
+            border-top: 1px solid var(--border-soft);
+            flex-wrap: wrap;
+        }
+        .settings-card-footer .save-status {
+            font-size: 12px;
+            color: var(--ngm-text-muted);
+            margin-right: auto;
+        }
+
+        /* ====== Settings Buttons ====== */
+        .settings-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 7px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.12s ease, box-shadow 0.15s ease, background 0.15s ease;
+            border: none;
+        }
+        .settings-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .settings-btn-save {
+            background: linear-gradient(135deg, #22c55e, #15803d);
+            color: #0f2a1e;
+            font-weight: 600;
+        }
+        .settings-btn-save:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.35);
+        }
+        .settings-btn-action {
+            background: transparent;
+            border: 1px solid var(--border-strong);
+            color: var(--text-primary);
+        }
+        .settings-btn-action:hover:not(:disabled) {
+            border-color: rgba(148, 163, 184, 0.5);
+            background: rgba(255, 255, 255, 0.04);
+        }
+        .settings-btn-danger {
+            background: transparent;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+        .settings-btn-danger:hover:not(:disabled) {
+            border-color: rgba(239, 68, 68, 0.5);
+            background: rgba(239, 68, 68, 0.08);
+        }
+
+        /* ====== Settings Inputs ====== */
+        .settings-input {
+            width: 80px;
+            padding: 4px 8px;
+            border: 1px solid var(--border-soft);
+            border-radius: 6px;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            font-size: 13px;
+            text-align: center;
+        }
+        .settings-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        .settings-input-wide { width: 120px; text-align: left; }
     </style>
     <script src="assets/js/page-loading.js" defer></script>
 </head>
@@ -1257,76 +1364,84 @@
                                         </div>
 
                                         <div id="andrew-config" class="detail-tab-panel">
-                                            <div class="permission-card">
-                                                <div class="permission-card-header">
-                                                    <h3 class="permission-card-title">Agent Configuration</h3>
+                                            <!-- Card 1: Receipt Processing -->
+                                            <div class="settings-card">
+                                                <div class="settings-card-header">
+                                                    <h3 class="settings-card-title">Receipt Processing</h3>
                                                 </div>
-                                                <div class="agent-config-list">
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Auto-create expenses</span>
-                                                            <span class="agent-config-desc">Automatically create expense records after scanning receipts</span>
+                                                <div class="settings-card-body">
+                                                    <p>Core receipt handling behavior. Changes save automatically.</p>
+                                                    <div class="agent-config-list">
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Auto-create expenses</span>
+                                                                <span class="agent-config-desc">Automatically create expense records after scanning receipts</span>
+                                                            </div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="cfgAutoCreate" checked>
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
                                                         </div>
-                                                        <label class="toggle-switch">
-                                                            <input type="checkbox" id="cfgAutoCreate" checked>
-                                                            <span class="toggle-slider"></span>
-                                                        </label>
-                                                    </div>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Enforce confidence threshold</span>
-                                                            <span class="agent-config-desc">Ask for confirmation when categorization confidence is below threshold (only for bulk processing)</span>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Enforce confidence threshold</span>
+                                                                <span class="agent-config-desc">Ask for confirmation when categorization confidence is below threshold (only for bulk processing)</span>
+                                                            </div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="cfgEnforceThreshold">
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
                                                         </div>
-                                                        <label class="toggle-switch">
-                                                            <input type="checkbox" id="cfgEnforceThreshold">
-                                                            <span class="toggle-slider"></span>
-                                                        </label>
-                                                    </div>
-                                                    <div class="agent-config-item" id="cfgMinConfidenceContainer">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Minimum confidence threshold</span>
-                                                            <span class="agent-config-desc">Confidence level required for automatic categorization</span>
+                                                        <div class="agent-config-item" id="cfgMinConfidenceContainer">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Minimum confidence threshold</span>
+                                                                <span class="agent-config-desc">Confidence level required for automatic categorization</span>
+                                                            </div>
+                                                            <div class="agent-config-control">
+                                                                <input type="range" id="cfgMinConfidence" min="50" max="95" step="5" value="70" class="confidence-slider">
+                                                                <span class="confidence-value" id="cfgMinConfidenceValue">70%</span>
+                                                            </div>
                                                         </div>
-                                                        <div class="agent-config-control">
-                                                            <input type="range" id="cfgMinConfidence" min="50" max="95" step="5" value="70" class="confidence-slider">
-                                                            <span class="confidence-value" id="cfgMinConfidenceValue">70%</span>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Auto-skip exact duplicates</span>
+                                                                <span class="agent-config-desc">Automatically reject receipts with matching file hash (no confirmation prompt)</span>
+                                                            </div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="cfgAutoSkipDuplicates">
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
                                                         </div>
-                                                    </div>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Auto-skip exact duplicates</span>
-                                                            <span class="agent-config-desc">Automatically reject receipts with matching file hash (no confirmation prompt)</span>
-                                                        </div>
-                                                        <label class="toggle-switch">
-                                                            <input type="checkbox" id="cfgAutoSkipDuplicates">
-                                                            <span class="toggle-slider"></span>
-                                                        </label>
                                                     </div>
                                                 </div>
-                                                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
-                                                    <h6 style="font-size: 13px; font-weight: 600; color: var(--ngm-text); margin-bottom: 12px;">Bill Mismatch Reconciliation</h6>
+                                            </div>
+
+                                            <!-- Card 2: Bill Mismatch Reconciliation -->
+                                            <div class="settings-card">
+                                                <div class="settings-card-header">
+                                                    <h3 class="settings-card-title">Bill Mismatch Reconciliation</h3>
+                                                </div>
+                                                <div class="settings-card-body">
                                                     <div class="agent-config-list">
                                                         <div class="agent-config-item">
                                                             <div class="agent-config-info">
                                                                 <span class="agent-config-name">Enable reconciliation protocol</span>
                                                                 <span class="agent-config-desc">When Daneel detects a bill mismatch, Andrew re-scans and reconciles line items</span>
                                                             </div>
-                                                            <div class="agent-config-control">
-                                                                <div class="form-check form-switch">
-                                                                    <input class="form-check-input" type="checkbox" id="andrewMismatchEnabled" role="switch" checked>
-                                                                </div>
-                                                            </div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="andrewMismatchEnabled" checked>
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
                                                         </div>
                                                         <div class="agent-config-item">
                                                             <div class="agent-config-info">
                                                                 <span class="agent-config-name">Auto-correct amounts</span>
                                                                 <span class="agent-config-desc">Automatically fix expense amounts when OCR confidence is above threshold</span>
                                                             </div>
-                                                            <div class="agent-config-control">
-                                                                <div class="form-check form-switch">
-                                                                    <input class="form-check-input" type="checkbox" id="andrewMismatchAutoCorrect" role="switch">
-                                                                </div>
-                                                            </div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="andrewMismatchAutoCorrect">
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
                                                         </div>
                                                         <div class="agent-config-item">
                                                             <div class="agent-config-info">
@@ -1344,22 +1459,24 @@
                                                                 <span class="agent-config-desc">Amounts within this % are considered matching (e.g., 0.02 = 2%)</span>
                                                             </div>
                                                             <div class="agent-config-control">
-                                                                <input type="number" id="andrewMismatchTolerance" value="0.02" min="0.005" max="0.10" step="0.005"
-                                                                       style="width: 80px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 4px; background: var(--ngm-bg-input); color: var(--ngm-text); font-size: 13px;">
+                                                                <input type="number" id="andrewMismatchTolerance" value="0.02" min="0.005" max="0.10" step="0.005" class="settings-input">
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div style="margin-top: 12px; text-align: right;">
-                                                        <button type="button" onclick="AgentHub.saveAndrewMismatchConfig()"
-                                                                style="background: hsl(217 70% 50%); color: #fff; border: none; padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
-                                                            Save Mismatch Settings
-                                                        </button>
-                                                    </div>
                                                 </div>
+                                                <div class="settings-card-footer">
+                                                    <button type="button" class="settings-btn settings-btn-save" onclick="AgentHub.saveAndrewMismatchConfig()">
+                                                        Save Mismatch Settings
+                                                    </button>
+                                                </div>
+                                            </div>
 
-                                                <!-- Smart Conversation Layer -->
-                                                <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
-                                                    <h6 style="font-size: 13px; font-weight: 600; color: var(--ngm-text); margin-bottom: 12px;">Smart Conversation Layer</h6>
+                                            <!-- Card 3: Smart Conversation Layer -->
+                                            <div class="settings-card">
+                                                <div class="settings-card-header">
+                                                    <h3 class="settings-card-title">Smart Conversation Layer</h3>
+                                                </div>
+                                                <div class="settings-card-body">
                                                     <div class="agent-config-list">
                                                         <div class="agent-config-item">
                                                             <div class="agent-config-info">
@@ -1376,36 +1493,34 @@
                                                                 <span class="agent-config-name">Follow-up reminder (hours)</span>
                                                                 <span class="agent-config-desc">Hours before Andrew sends a follow-up for unanswered questions</span>
                                                             </div>
-                                                            <input type="number" id="andrewFollowupHours" value="24" min="6" max="72" step="6"
-                                                                   style="width: 70px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; font-size: 13px; text-align: center; background: var(--ngm-bg); color: var(--ngm-text);">
+                                                            <input type="number" id="andrewFollowupHours" value="24" min="6" max="72" step="6" class="settings-input">
                                                         </div>
                                                         <div class="agent-config-item">
                                                             <div class="agent-config-info">
                                                                 <span class="agent-config-name">Escalation (hours)</span>
                                                                 <span class="agent-config-desc">Hours before escalating to bookkeeping if no response</span>
                                                             </div>
-                                                            <input type="number" id="andrewEscalationHours" value="48" min="12" max="168" step="6"
-                                                                   style="width: 70px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; font-size: 13px; text-align: center; background: var(--ngm-bg); color: var(--ngm-text);">
+                                                            <input type="number" id="andrewEscalationHours" value="48" min="12" max="168" step="6" class="settings-input">
                                                         </div>
                                                     </div>
-                                                    <div style="margin-top: 12px; text-align: right;">
-                                                        <button type="button" onclick="AgentHub.saveAndrewSmartConfig()"
-                                                                style="background: hsl(217 70% 50%); color: #fff; border: none; padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
-                                                            Save Smart Layer Settings
-                                                        </button>
-                                                        <button type="button" onclick="AgentHub.runAndrewFollowupCheck()"
-                                                                style="background: hsl(35 80% 50%); color: #fff; border: none; padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; margin-left: 8px;">
-                                                            Run Follow-Up Check
-                                                        </button>
-                                                    </div>
                                                 </div>
+                                                <div class="settings-card-footer">
+                                                    <button type="button" class="settings-btn settings-btn-save" onclick="AgentHub.saveAndrewSmartConfig()">
+                                                        Save Settings
+                                                    </button>
+                                                    <button type="button" class="settings-btn settings-btn-action" onclick="AgentHub.runAndrewFollowupCheck()">
+                                                        Run Follow-Up Check
+                                                    </button>
+                                                </div>
+                                            </div>
 
-                                                <!-- Authorization Notification -->
-                                                <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
-                                                    <h6 style="font-size: 13px; font-weight: 600; color: var(--ngm-text); margin-bottom: 4px;">Authorization Notification</h6>
-                                                    <p style="font-size: 12px; color: var(--ngm-text-muted); margin: 0 0 12px 0;">
-                                                        Who gets @mentioned when Andrew creates expenses. Daneel will auto-authorize if enabled.
-                                                    </p>
+                                            <!-- Card 4: Authorization Notification -->
+                                            <div class="settings-card">
+                                                <div class="settings-card-header">
+                                                    <h3 class="settings-card-title">Authorization Notification</h3>
+                                                </div>
+                                                <div class="settings-card-body">
+                                                    <p>Who gets @mentioned when Andrew creates expenses. Daneel will auto-authorize if enabled.</p>
                                                     <div class="recipient-picker" id="andrewAuthNotifyPicker">
                                                         <div class="recipient-picker-input" id="andrewAuthNotifyPickerInput">
                                                             <input type="text" class="search-field" id="andrewAuthNotifySearch"
@@ -1612,250 +1727,242 @@
                                         </div>
 
                                         <div id="daneel-config" class="detail-tab-panel">
-                                            <div class="permission-card">
-                                                <div class="permission-card-header">
-                                                    <h3 class="permission-card-title">Agent Configuration</h3>
+                                            <!-- Card 1: Budget Monitoring -->
+                                            <div class="settings-card">
+                                                <div class="settings-card-header">
+                                                    <h3 class="settings-card-title">Budget Monitoring</h3>
                                                 </div>
-                                                <div class="agent-config-list">
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Enable Daneel</span>
-                                                            <span class="agent-config-desc">Master toggle for all budget monitoring and alert posting</span>
+                                                <div class="settings-card-body">
+                                                    <p>Threshold and alert settings for budget monitoring. Changes save automatically.</p>
+                                                    <div class="agent-config-list">
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Enable Daneel</span>
+                                                                <span class="agent-config-desc">Master toggle for all budget monitoring and alert posting</span>
+                                                            </div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="daneelEnabled" checked>
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
                                                         </div>
-                                                        <label class="toggle-switch">
-                                                            <input type="checkbox" id="daneelEnabled" checked>
-                                                            <span class="toggle-slider"></span>
-                                                        </label>
-                                                    </div>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Warning threshold</span>
-                                                            <span class="agent-config-desc">Alert when a category reaches this % of its budget</span>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Warning threshold</span>
+                                                                <span class="agent-config-desc">Alert when a category reaches this % of its budget</span>
+                                                            </div>
+                                                            <div class="agent-config-control">
+                                                                <input type="range" id="daneelWarningThreshold" min="50" max="95" step="5" value="80" class="confidence-slider">
+                                                                <span class="confidence-value" id="daneelWarningThresholdValue">80%</span>
+                                                            </div>
                                                         </div>
-                                                        <div class="agent-config-control">
-                                                            <input type="range" id="daneelWarningThreshold" min="50" max="95" step="5" value="80" class="confidence-slider">
-                                                            <span class="confidence-value" id="daneelWarningThresholdValue">80%</span>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Critical threshold</span>
+                                                                <span class="agent-config-desc">Escalate to critical alert at this % of budget</span>
+                                                            </div>
+                                                            <div class="agent-config-control">
+                                                                <input type="range" id="daneelCriticalThreshold" min="85" max="100" step="5" value="95" class="confidence-slider">
+                                                                <span class="confidence-value" id="daneelCriticalThresholdValue">95%</span>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Critical threshold</span>
-                                                            <span class="agent-config-desc">Escalate to critical alert at this % of budget</span>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Overspend alerts</span>
+                                                                <span class="agent-config-desc">Post alert when expenses exceed the allocated budget</span>
+                                                            </div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="daneelOverspendAlert" checked>
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
                                                         </div>
-                                                        <div class="agent-config-control">
-                                                            <input type="range" id="daneelCriticalThreshold" min="85" max="100" step="5" value="95" class="confidence-slider">
-                                                            <span class="confidence-value" id="daneelCriticalThresholdValue">95%</span>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">No-budget alerts</span>
+                                                                <span class="agent-config-desc">Alert when expenses are posted to categories without a budget</span>
+                                                            </div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="daneelNoBudgetAlert" checked>
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
                                                         </div>
-                                                    </div>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Overspend alerts</span>
-                                                            <span class="agent-config-desc">Post alert when expenses exceed the allocated budget</span>
-                                                        </div>
-                                                        <label class="toggle-switch">
-                                                            <input type="checkbox" id="daneelOverspendAlert" checked>
-                                                            <span class="toggle-slider"></span>
-                                                        </label>
-                                                    </div>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">No-budget alerts</span>
-                                                            <span class="agent-config-desc">Alert when expenses are posted to categories without a budget</span>
-                                                        </div>
-                                                        <label class="toggle-switch">
-                                                            <input type="checkbox" id="daneelNoBudgetAlert" checked>
-                                                            <span class="toggle-slider"></span>
-                                                        </label>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <!-- Alert Recipients -->
-                                            <div class="permission-card" style="margin-top: 20px;">
-                                                <div class="permission-card-header">
-                                                    <h3 class="permission-card-title">Alert Recipients</h3>
-                                                    <span style="font-size: 11px; color: var(--ngm-text-muted);" id="daneelRecipientCount">0 selected</span>
+                                            <!-- Card 2: Alert Recipients -->
+                                            <div class="settings-card">
+                                                <div class="settings-card-header">
+                                                    <h3 class="settings-card-title">Alert Recipients</h3>
+                                                    <span class="settings-card-badge" id="daneelRecipientCount">0 selected</span>
                                                 </div>
-                                                <p style="font-size: 12px; color: var(--ngm-text-muted); margin: 0 0 16px 0;">
-                                                    Select roles or individual users who will be @mentioned in Daneel alert messages.
-                                                    Selecting a role includes all current users with that role.
-                                                </p>
-                                                <div class="recipient-picker" id="daneelRecipientPicker">
-                                                    <div class="recipient-picker-input" id="daneelPickerInput">
-                                                        <input type="text" class="search-field" id="daneelRecipientSearch"
-                                                               placeholder="Search roles or users..." autocomplete="off">
+                                                <div class="settings-card-body">
+                                                    <p>Select roles or individual users who will be @mentioned in Daneel alert messages. Selecting a role includes all current users with that role.</p>
+                                                    <div class="recipient-picker" id="daneelRecipientPicker">
+                                                        <div class="recipient-picker-input" id="daneelPickerInput">
+                                                            <input type="text" class="search-field" id="daneelRecipientSearch"
+                                                                   placeholder="Search roles or users..." autocomplete="off">
+                                                        </div>
+                                                        <div class="recipient-dropdown" id="daneelRecipientDropdown"></div>
                                                     </div>
-                                                    <div class="recipient-dropdown" id="daneelRecipientDropdown"></div>
                                                 </div>
                                             </div>
 
-                                            <!-- Expense Auto-Authorization -->
-                                            <div class="permission-card" style="margin-top: 20px;">
-                                                <div class="permission-card-header">
-                                                    <h3 class="permission-card-title">Expense Auto-Authorization</h3>
-                                                    <span style="font-size: 11px; color: var(--ngm-text-muted);" id="daneelAutoAuthStatusLabel">Disabled</span>
+                                            <!-- Card 3: Expense Auto-Authorization -->
+                                            <div class="settings-card">
+                                                <div class="settings-card-header">
+                                                    <h3 class="settings-card-title">Expense Auto-Authorization</h3>
+                                                    <span class="settings-card-badge" id="daneelAutoAuthStatusLabel">Disabled</span>
                                                 </div>
-                                                <p style="font-size: 12px; color: var(--ngm-text-muted); margin: 0 0 16px 0;">
-                                                    When enabled, Daneel will automatically authorize new pending expenses that pass health check
-                                                    and duplicate verification. Expenses that fail checks are escalated to the appropriate team.
-                                                </p>
-                                                <div class="agent-config-list">
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Enable Auto-Authorization</span>
-                                                            <span class="agent-config-desc">Master switch -- only processes NEW expenses while active</span>
-                                                        </div>
-                                                        <label class="toggle-switch">
-                                                            <input type="checkbox" id="daneelAutoAuthEnabled">
-                                                            <span class="toggle-slider"></span>
-                                                        </label>
-                                                    </div>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Require bill number</span>
-                                                            <span class="agent-config-desc">Expenses without a bill number will not be auto-authorized</span>
-                                                        </div>
-                                                        <label class="toggle-switch">
-                                                            <input type="checkbox" id="daneelRequireBill" checked>
-                                                            <span class="toggle-slider"></span>
-                                                        </label>
-                                                    </div>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Require receipt attachment</span>
-                                                            <span class="agent-config-desc">Expenses without an attached receipt will not be auto-authorized</span>
-                                                        </div>
-                                                        <label class="toggle-switch">
-                                                            <input type="checkbox" id="daneelRequireReceipt" checked>
-                                                            <span class="toggle-slider"></span>
-                                                        </label>
-                                                    </div>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Fuzzy match threshold</span>
-                                                            <span class="agent-config-desc">Minimum similarity % for description matching in duplicate detection</span>
-                                                        </div>
-                                                        <div class="agent-config-control">
-                                                            <input type="range" id="daneelFuzzyThreshold" min="70" max="100" step="5" value="85" class="confidence-slider">
-                                                            <span class="confidence-value" id="daneelFuzzyThresholdValue">85%</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Amount tolerance ($)</span>
-                                                            <span class="agent-config-desc">Max dollar difference to consider two amounts as equal</span>
-                                                        </div>
-                                                        <div class="agent-config-control">
-                                                            <input type="number" id="daneelAmountTolerance" value="0.05" min="0" max="10" step="0.01"
-                                                                   style="width: 70px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; background: var(--ngm-bg-input); color: var(--ngm-text); font-size: 13px;">
-                                                        </div>
-                                                    </div>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Labor keywords</span>
-                                                            <span class="agent-config-desc">Keywords in account name to identify labor/payroll (comma separated)</span>
-                                                        </div>
-                                                        <div class="agent-config-control">
-                                                            <input type="text" id="daneelLaborKeywords" value="labor" placeholder="labor, payroll"
-                                                                   style="width: 120px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; background: var(--ngm-bg-input); color: var(--ngm-text); font-size: 13px;">
-                                                        </div>
-                                                    </div>
-                                                    <div class="agent-config-item" style="flex-direction: column; align-items: flex-start;">
-                                                        <div class="agent-config-info" style="margin-bottom: 8px;">
-                                                            <span class="agent-config-name">Bookkeeping team</span>
-                                                            <span class="agent-config-desc">Users @mentioned when requesting missing expense info</span>
-                                                        </div>
-                                                        <div class="recipient-picker" id="daneelBookkeepingPicker" style="width: 100%;">
-                                                            <div class="recipient-picker-input" id="daneelBookkeepingPickerInput">
-                                                                <input type="text" class="search-field" id="daneelBookkeepingSearch"
-                                                                       placeholder="Search users..." autocomplete="off">
+                                                <div class="settings-card-body">
+                                                    <p>When enabled, Daneel will automatically authorize new pending expenses that pass health check and duplicate verification. Expenses that fail checks are escalated to the appropriate team.</p>
+                                                    <div class="agent-config-list">
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Enable Auto-Authorization</span>
+                                                                <span class="agent-config-desc">Master switch -- only processes NEW expenses while active</span>
                                                             </div>
-                                                            <div class="recipient-dropdown" id="daneelBookkeepingDropdown"></div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="daneelAutoAuthEnabled">
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
                                                         </div>
-                                                    </div>
-                                                    <div class="agent-config-item" style="flex-direction: column; align-items: flex-start;">
-                                                        <div class="agent-config-info" style="margin-bottom: 8px;">
-                                                            <span class="agent-config-name">Escalation recipients</span>
-                                                            <span class="agent-config-desc">Users @mentioned when escalating ambiguous expenses</span>
-                                                        </div>
-                                                        <div class="recipient-picker" id="daneelEscalationPicker" style="width: 100%;">
-                                                            <div class="recipient-picker-input" id="daneelEscalationPickerInput">
-                                                                <input type="text" class="search-field" id="daneelEscalationSearch"
-                                                                       placeholder="Search users..." autocomplete="off">
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Require bill number</span>
+                                                                <span class="agent-config-desc">Expenses without a bill number will not be auto-authorized</span>
                                                             </div>
-                                                            <div class="recipient-dropdown" id="daneelEscalationDropdown"></div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="daneelRequireBill" checked>
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
-                                                    <h6 style="font-size: 13px; font-weight: 600; color: var(--ngm-text); margin-bottom: 12px;">Receipt Hash Check</h6>
-                                                    <div class="agent-config-item">
-                                                        <div class="agent-config-info">
-                                                            <span class="agent-config-name">Cross-bill hash validation</span>
-                                                            <span class="agent-config-desc">Detect when the same receipt file is used on different bills within a project (excludes splits)</span>
-                                                        </div>
-                                                        <div class="agent-config-control">
-                                                            <div class="form-check form-switch">
-                                                                <input class="form-check-input" type="checkbox" id="daneelReceiptHashCheck" role="switch" checked>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Require receipt attachment</span>
+                                                                <span class="agent-config-desc">Expenses without an attached receipt will not be auto-authorized</span>
                                                             </div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="daneelRequireReceipt" checked>
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
+                                                        </div>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Fuzzy match threshold</span>
+                                                                <span class="agent-config-desc">Minimum similarity % for description matching in duplicate detection</span>
+                                                            </div>
+                                                            <div class="agent-config-control">
+                                                                <input type="range" id="daneelFuzzyThreshold" min="70" max="100" step="5" value="85" class="confidence-slider">
+                                                                <span class="confidence-value" id="daneelFuzzyThresholdValue">85%</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Amount tolerance ($)</span>
+                                                                <span class="agent-config-desc">Max dollar difference to consider two amounts as equal</span>
+                                                            </div>
+                                                            <div class="agent-config-control">
+                                                                <input type="number" id="daneelAmountTolerance" value="0.05" min="0" max="10" step="0.01" class="settings-input">
+                                                            </div>
+                                                        </div>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Labor keywords</span>
+                                                                <span class="agent-config-desc">Keywords in account name to identify labor/payroll (comma separated)</span>
+                                                            </div>
+                                                            <div class="agent-config-control">
+                                                                <input type="text" id="daneelLaborKeywords" value="labor" placeholder="labor, payroll" class="settings-input settings-input-wide">
+                                                            </div>
+                                                        </div>
+                                                        <div class="agent-config-item" style="flex-direction: column; align-items: flex-start;">
+                                                            <div class="agent-config-info" style="margin-bottom: 8px;">
+                                                                <span class="agent-config-name">Bookkeeping team</span>
+                                                                <span class="agent-config-desc">Users @mentioned when requesting missing expense info</span>
+                                                            </div>
+                                                            <div class="recipient-picker" id="daneelBookkeepingPicker" style="width: 100%;">
+                                                                <div class="recipient-picker-input" id="daneelBookkeepingPickerInput">
+                                                                    <input type="text" class="search-field" id="daneelBookkeepingSearch"
+                                                                           placeholder="Search users..." autocomplete="off">
+                                                                </div>
+                                                                <div class="recipient-dropdown" id="daneelBookkeepingDropdown"></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="agent-config-item" style="flex-direction: column; align-items: flex-start;">
+                                                            <div class="agent-config-info" style="margin-bottom: 8px;">
+                                                                <span class="agent-config-name">Escalation recipients</span>
+                                                                <span class="agent-config-desc">Users @mentioned when escalating ambiguous expenses</span>
+                                                            </div>
+                                                            <div class="recipient-picker" id="daneelEscalationPicker" style="width: 100%;">
+                                                                <div class="recipient-picker-input" id="daneelEscalationPickerInput">
+                                                                    <input type="text" class="search-field" id="daneelEscalationSearch"
+                                                                           placeholder="Search users..." autocomplete="off">
+                                                                </div>
+                                                                <div class="recipient-dropdown" id="daneelEscalationDropdown"></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="agent-config-item">
+                                                            <div class="agent-config-info">
+                                                                <span class="agent-config-name">Cross-bill hash validation</span>
+                                                                <span class="agent-config-desc">Detect when the same receipt file is used on different bills within a project (excludes splits)</span>
+                                                            </div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="daneelReceiptHashCheck" checked>
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <!-- Smart Conversation Layer -->
-                                                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
-                                                    <h6 style="font-size: 13px; font-weight: 600; color: var(--ngm-text); margin-bottom: 12px;">Smart Conversation Layer</h6>
+                                                <div class="settings-card-footer">
+                                                    <span id="daneelAutoAuthSaveStatus" class="save-status"></span>
+                                                    <span id="daneelBacklogStatus" class="save-status">Run once to process all existing pending expenses</span>
+                                                    <button id="daneelApplyConfig" type="button" class="settings-btn settings-btn-save">
+                                                        Save Auto-Auth Settings
+                                                    </button>
+                                                    <button id="daneelRunBacklog" type="button" class="settings-btn settings-btn-action">
+                                                        Process Backlog
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Card 4: Smart Conversation Layer -->
+                                            <div class="settings-card">
+                                                <div class="settings-card-header">
+                                                    <h3 class="settings-card-title">Smart Conversation Layer</h3>
+                                                </div>
+                                                <div class="settings-card-body">
                                                     <div class="agent-config-list">
                                                         <div class="agent-config-item">
                                                             <div class="agent-config-info">
                                                                 <span class="agent-config-name">Smart layer enabled</span>
                                                                 <span class="agent-config-desc">AI personality + proactive missing-info resolution on expense messages</span>
                                                             </div>
-                                                            <div class="agent-config-control">
-                                                                <div class="form-check form-switch">
-                                                                    <input class="form-check-input" type="checkbox" id="daneelSmartLayerEnabled" role="switch" checked>
-                                                                </div>
-                                                            </div>
+                                                            <label class="toggle-switch">
+                                                                <input type="checkbox" id="daneelSmartLayerEnabled" checked>
+                                                                <span class="toggle-slider"></span>
+                                                            </label>
                                                         </div>
                                                         <div class="agent-config-item">
                                                             <div class="agent-config-info">
                                                                 <span class="agent-config-name">Follow-up reminder (hours)</span>
                                                                 <span class="agent-config-desc">Hours before Daneel sends a follow-up for unanswered missing-info requests</span>
                                                             </div>
-                                                            <input type="number" id="daneelFollowupHours" value="24" min="6" max="72" step="6"
-                                                                   style="width: 70px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; font-size: 13px; text-align: center; background: var(--ngm-bg); color: var(--ngm-text);">
+                                                            <input type="number" id="daneelFollowupHours" value="24" min="6" max="72" step="6" class="settings-input">
                                                         </div>
                                                         <div class="agent-config-item">
                                                             <div class="agent-config-info">
                                                                 <span class="agent-config-name">Escalation (hours)</span>
                                                                 <span class="agent-config-desc">Hours before escalating to accounting manager if no response</span>
                                                             </div>
-                                                            <input type="number" id="daneelEscalationHours" value="48" min="12" max="168" step="6"
-                                                                   style="width: 70px; padding: 4px 8px; border: 1px solid var(--ngm-border); border-radius: 6px; font-size: 13px; text-align: center; background: var(--ngm-bg); color: var(--ngm-text);">
+                                                            <input type="number" id="daneelEscalationHours" value="48" min="12" max="168" step="6" class="settings-input">
                                                         </div>
                                                     </div>
-                                                    <div style="margin-top: 12px; text-align: right;">
-                                                        <button type="button" onclick="AgentHub.runDaneelFollowupCheck()"
-                                                                style="background: hsl(35 80% 50%); color: #fff; border: none; padding: 6px 20px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
-                                                            Run Follow-Up Check
-                                                        </button>
-                                                    </div>
                                                 </div>
-                                                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--ngm-border);">
-                                                    <div style="display: flex; align-items: center; gap: 12px;">
-                                                        <button id="daneelRunBacklog" type="button"
-                                                                style="padding: 8px 16px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 6px; color: var(--ngm-text); font-size: 13px; cursor: pointer;">
-                                                            Process Backlog
-                                                        </button>
-                                                        <span style="font-size: 12px; color: var(--ngm-text-muted);" id="daneelBacklogStatus">
-                                                            Run once to process all existing pending expenses
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--ngm-border); text-align: right;">
-                                                    <span id="daneelAutoAuthSaveStatus" style="font-size: 12px; color: var(--ngm-text-muted); margin-right: 12px;"></span>
-                                                    <button id="daneelApplyConfig" type="button"
-                                                            style="background: hsl(217 70% 50%); color: #fff; border: none; padding: 8px 24px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer;">
-                                                        Apply Changes
+                                                <div class="settings-card-footer">
+                                                    <button id="daneelSaveSmartLayer" type="button" class="settings-btn settings-btn-save">
+                                                        Save Settings
+                                                    </button>
+                                                    <button type="button" class="settings-btn settings-btn-action" onclick="AgentHub.runDaneelFollowupCheck()">
+                                                        Run Follow-Up Check
                                                     </button>
                                                 </div>
                                             </div>
@@ -3075,8 +3182,9 @@
             document.getElementById('daneelFuzzyThreshold').addEventListener('input', function(e) {
                 document.getElementById('daneelFuzzyThresholdValue').textContent = e.target.value + '%';
             });
-            // Apply button -- batch save all config
+            // Save buttons
             document.getElementById('daneelApplyConfig').addEventListener('click', saveDaneelAutoAuthConfig);
+            document.getElementById('daneelSaveSmartLayer').addEventListener('click', saveDaneelSmartConfig);
 
             // Refresh projects button
             document.getElementById('daneelRefreshProjects').addEventListener('click', loadDaneelProjectReview);
@@ -3132,6 +3240,33 @@
                 daneel_bookkeeping_users: JSON.stringify(_daneelBookkeepingUsers),
                 daneel_accounting_mgr_users: JSON.stringify(_daneelAccountingMgrUsers),
                 daneel_receipt_hash_check_enabled: document.getElementById('daneelReceiptHashCheck').checked,
+            };
+            fetch(API_BASE + '/daneel/auto-auth/config', {
+                method: 'PUT',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
+                body: JSON.stringify(body)
+            }).then(function(resp) {
+                btn.disabled = false;
+                btn.textContent = 'Save Auto-Auth Settings';
+                if (resp.ok) {
+                    if (window.Toast) window.Toast.success('Auto-auth settings saved');
+                } else {
+                    if (window.Toast) window.Toast.error('Failed to save settings');
+                }
+            }).catch(function(e) {
+                btn.disabled = false;
+                btn.textContent = 'Save Auto-Auth Settings';
+                console.error('[Daneel] Auto-auth config save error:', e);
+                if (window.Toast) window.Toast.error('Failed to save settings');
+            });
+        }
+
+        function saveDaneelSmartConfig() {
+            var btn = document.getElementById('daneelSaveSmartLayer');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            invalidateCache('/daneel/auto-auth');
+            var body = {
                 daneel_smart_layer_enabled: document.getElementById('daneelSmartLayerEnabled').checked,
                 daneel_followup_hours: parseInt(document.getElementById('daneelFollowupHours').value),
                 daneel_escalation_hours: parseInt(document.getElementById('daneelEscalationHours').value),
@@ -3142,16 +3277,16 @@
                 body: JSON.stringify(body)
             }).then(function(resp) {
                 btn.disabled = false;
-                btn.textContent = 'Apply Changes';
+                btn.textContent = 'Save Settings';
                 if (resp.ok) {
-                    if (window.Toast) window.Toast.success('Auto-auth settings saved');
+                    if (window.Toast) window.Toast.success('Smart layer settings saved');
                 } else {
                     if (window.Toast) window.Toast.error('Failed to save settings');
                 }
             }).catch(function(e) {
                 btn.disabled = false;
-                btn.textContent = 'Apply Changes';
-                console.error('[Daneel] Auto-auth config save error:', e);
+                btn.textContent = 'Save Settings';
+                console.error('[Daneel] Smart layer config save error:', e);
                 if (window.Toast) window.Toast.error('Failed to save settings');
             });
         }
@@ -3815,6 +3950,7 @@
             resetToDefaults: resetToDefaults,
             saveAndrewMismatchConfig: saveAndrewMismatchConfig,
             saveAndrewSmartConfig: saveAndrewSmartConfig,
+            saveDaneelSmartConfig: saveDaneelSmartConfig,
             runAndrewFollowupCheck: runAndrewFollowupCheck,
             runDaneelFollowupCheck: runDaneelFollowupCheck
         };

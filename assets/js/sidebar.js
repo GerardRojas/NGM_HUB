@@ -224,7 +224,8 @@
       // Links de los módulos
       modules.forEach(m => {
         const active = m.href === current ? " nav-item-active" : "";
-        html += `<a href="${m.href}" class="nav-item${active}" data-module="${m.module_key}">${m.label}</a>`;
+        const badgeSlot = m.module_key === "messages" ? '<span class="nav-unread-badge" id="sidebar-msg-badge" style="display:none;"></span>' : "";
+        html += `<a href="${m.href}" class="nav-item${active}" data-module="${m.module_key}">${m.label}${badgeSlot}</a>`;
       });
     });
 
@@ -305,11 +306,105 @@
 
   window.initSidebar = initSidebar;
 
+  // ─── Unread Messages Badge ──────────────────────────────────────────────
+  // Lightweight: fetch total unread count and subscribe to Realtime for updates.
+  // Skipped on the messages page itself (full UI handles its own badges).
+  function initUnreadBadge() {
+    const isMessagesPage = document.body.classList.contains("page-messages");
+    if (isMessagesPage) return;
+
+    const SUPABASE_URL = window.NGM_CONFIG?.SUPABASE_URL || "";
+    const SUPABASE_ANON_KEY = window.NGM_CONFIG?.SUPABASE_ANON_KEY || "";
+    let unreadCounts = {};
+    let supabaseClient = null;
+    let subscription = null;
+
+    function getBadgeEl() {
+      return document.getElementById("sidebar-msg-badge");
+    }
+
+    function updateBadge() {
+      const badge = getBadgeEl();
+      if (!badge) return;
+      let total = 0;
+      for (const k in unreadCounts) {
+        if (unreadCounts.hasOwnProperty(k)) total += unreadCounts[k];
+      }
+      if (total > 0) {
+        badge.textContent = total > 99 ? "99+" : total;
+        badge.style.display = "inline-flex";
+      } else {
+        badge.style.display = "none";
+      }
+    }
+
+    async function fetchUnreadCounts() {
+      try {
+        const token = localStorage.getItem("ngmToken");
+        if (!token) return;
+        const res = await fetch(`${window.API_BASE}/messages/unread-counts`, {
+          credentials: "include",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        unreadCounts = data.unread_counts || {};
+        updateBadge();
+      } catch (_) {}
+    }
+
+    function getCurrentUserId() {
+      try {
+        const u = JSON.parse(localStorage.getItem("ngmUser") || "{}");
+        return u.user_id || u.id || null;
+      } catch (_) { return null; }
+    }
+
+    function initRealtime() {
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY || typeof window.supabase === "undefined") return;
+
+      // Reuse existing client if chat_widget already created one
+      supabaseClient = window._ngmSupabaseClient ||
+        window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      const userId = getCurrentUserId();
+
+      subscription = supabaseClient
+        .channel("sidebar_unread")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages" },
+          (payload) => {
+            const msg = payload.new;
+            if (!msg || msg.user_id === userId) return;
+            const msgKey = msg.channel_key ||
+              `${msg.channel_type}:${msg.channel_id || msg.project_id}`;
+            unreadCounts[msgKey] = (unreadCounts[msgKey] || 0) + 1;
+            updateBadge();
+          }
+        )
+        .subscribe();
+    }
+
+    // Wait for sidebar to finish rendering before starting
+    function start() {
+      fetchUnreadCounts();
+      initRealtime();
+    }
+
+    if (window._sidebarReady) {
+      start();
+    } else {
+      window.addEventListener("sidebar-ready", start, { once: true });
+    }
+  }
+
   // Auto-init - esperar a que API_BASE esté definido
   function waitForAPIAndInit() {
     if (window.API_BASE) {
       console.log("[SIDEBAR] API_BASE ready, initializing...");
       initSidebar();
+      initUnreadBadge();
     } else {
       console.log("[SIDEBAR] Waiting for API_BASE...");
       setTimeout(waitForAPIAndInit, 50);

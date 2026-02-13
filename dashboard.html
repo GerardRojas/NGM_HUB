@@ -126,6 +126,63 @@
             </header>
 
             <main class="main-content dashboard-main">
+                <!-- Greeting Header -->
+                <section class="dash-greeting">
+                    <div class="dash-greeting-text">
+                        <h1 id="dash-greeting-msg">Good morning</h1>
+                        <div class="dash-greeting-date" id="dash-greeting-date"></div>
+                    </div>
+                    <div class="dash-stats">
+                        <div class="dash-stat">
+                            <span class="dash-stat-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                            </span>
+                            <div class="dash-stat-content">
+                                <span class="dash-stat-value" id="stat-pending-tasks">--</span>
+                                <span class="dash-stat-label">Pending Tasks</span>
+                            </div>
+                        </div>
+                        <div class="dash-stat">
+                            <span class="dash-stat-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            </span>
+                            <div class="dash-stat-content">
+                                <span class="dash-stat-value" id="stat-unread-msgs">--</span>
+                                <span class="dash-stat-label">Unread Messages</span>
+                            </div>
+                        </div>
+                        <div class="dash-stat">
+                            <span class="dash-stat-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </span>
+                            <div class="dash-stat-content">
+                                <span class="dash-stat-value" id="stat-in-review">--</span>
+                                <span class="dash-stat-label">In Review</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Quick Actions (role-filtered by JS) -->
+                <section class="dash-quick-actions" id="dash-quick-actions" style="display: none;">
+                    <a class="dash-quick-action" data-requires="expenses" href="expenses.html?action=new">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        New Expense
+                    </a>
+                    <a class="dash-quick-action" data-requires="pipeline" href="pipeline.html">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        New Task
+                    </a>
+                    <a class="dash-quick-action" data-requires="expenses" href="expenses.html?action=receipt">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        Upload Receipt
+                    </a>
+                    <a class="dash-quick-action" data-requires="vault" href="vault.html">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        Upload to Vault
+                    </a>
+                </section>
+
                 <!-- My Work Section -->
                 <section class="my-work-section">
                     <div class="section-header-row">
@@ -187,8 +244,11 @@
 
                 <!-- Grid de módulos (webapps) -->
                 <section class="modules-section">
-                    <h2 class="section-title">Modules</h2>
-                    <div class="modules-grid">
+                    <div class="modules-header-row">
+                        <h2 class="section-title">Modules</h2>
+                        <button type="button" class="modules-toggle-btn" id="modules-toggle-btn">Show all</button>
+                    </div>
+                    <div class="modules-grid is-collapsed" id="modules-grid">
 
                         <!-- Expenses Engine -->
                         <a class="module-card" href="expenses.html" data-module="expenses" data-status="active">

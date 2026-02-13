@@ -1294,6 +1294,39 @@
         }
         break;
 
+      case "pnl_report_pdf":
+        // Show PDF download button (same as BVA)
+        if (actionData.pdf_url) {
+          const pnlProjectName = actionData.project_name || "P&L COGS Report";
+          return `
+            <div class="arturito-widget-action-btns">
+              <a href="${escapeHtml(actionData.pdf_url)}"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 class="arturito-widget-action-btn-inline arturito-widget-action-btn-primary arturito-widget-pdf-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right: 6px;">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="12" y1="18" x2="12" y2="12"/>
+                  <line x1="9" y1="15" x2="15" y2="15"/>
+                </svg>
+                Open PDF
+              </a>
+              <button type="button"
+                      class="arturito-widget-action-btn-inline"
+                      onclick="ArturitoWidget.downloadPDF('${escapeHtml(actionData.pdf_url)}', '${escapeHtml(pnlProjectName)}')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right: 6px;">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Download
+              </button>
+            </div>
+          `;
+        }
+        break;
+
       case "category_query_response":
         // Render group card with per-account BVA data
         if (actionData.accounts && actionData.accounts.length > 0) {
@@ -1337,12 +1370,13 @@
         break;
 
       case "ask_project":
-        // Show clickable project buttons when user asks for BVA without specifying project
+        // Show clickable project buttons when user asks for BVA/PNL without specifying project
         if (actionData.projects && actionData.projects.length > 0) {
+          const cmdPrefix = actionData.command || "bva";
           const projectButtons = actionData.projects.slice(0, 6).map(p =>
             `<button type="button"
                     class="arturito-widget-action-btn-inline arturito-widget-project-btn"
-                    onclick="ArturitoWidget.selectProjectForBVA('${escapeHtml(p.name)}', '${escapeHtml(String(p.id || ''))}')">
+                    onclick="ArturitoWidget.selectProjectForReport('${escapeHtml(cmdPrefix)}', '${escapeHtml(p.name)}', '${escapeHtml(String(p.id || ''))}')">
               ${escapeHtml(p.name)}
             </button>`
           ).join("");
@@ -1906,18 +1940,23 @@
   }
 
   /**
-   * Select a project and request its BVA report
-   * Called when user clicks on a project button after asking for BVA without project
-   * @param {string} projectName - Name of the project to generate BVA for
+   * Select a project and request a report (BVA or PNL)
+   * Called when user clicks on a project button after asking for a report without project
+   * @param {string} command - Command prefix ("bva" or "pnl")
+   * @param {string} projectName - Name of the project
+   * @param {string} projectId - ID of the project
    */
-  function selectProjectForBVA(projectName, projectId) {
-    // Set input and let sendMessage handle the full flow
-    DOM.input.textContent = `bva ${projectName}`;
-    // When we have the project ID, send it to the API for direct resolution
+  function selectProjectForReport(command, projectName, projectId) {
+    DOM.input.textContent = `${command} ${projectName}`;
     if (projectId) {
       state._bvaProjectId = projectId;
     }
     sendMessage();
+  }
+
+  // Backwards compat alias
+  function selectProjectForBVA(projectName, projectId) {
+    selectProjectForReport("bva", projectName, projectId);
   }
 
   /**
@@ -2045,6 +2084,7 @@
     registerCopilotHandlers,
     downloadPDF,
     selectProjectForBVA,
+    selectProjectForReport,
   };
 
   // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

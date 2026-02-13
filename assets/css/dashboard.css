@@ -243,7 +243,6 @@
 
 .my-work-section {
     margin-bottom: 8px;
-    max-width: var(--dashboard-modules-max-width);
     width: 100%;
 }
 
@@ -1521,7 +1520,6 @@
 
 .pending-reviews-section {
     margin-bottom: 8px;
-    max-width: var(--dashboard-modules-max-width);
     width: 100%;
 }
 
@@ -1982,4 +1980,230 @@
     font-size: 10px;
     font-family: inherit;
     color: #888888;
+}
+
+/* ---------- GREETING HEADER ---------- */
+
+.dash-greeting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    width: 100%;
+}
+
+.dash-greeting-text h1 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: #ededed;
+    line-height: 1.3;
+}
+
+.dash-greeting-date {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #555555;
+    font-weight: 400;
+}
+
+.dash-stats {
+    display: flex;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.dash-stat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: #111111;
+    border: 1px solid #1f1f1f;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    cursor: default;
+}
+
+.dash-stat:hover {
+    border-color: rgba(62, 207, 142, 0.3);
+    background: rgba(62, 207, 142, 0.04);
+}
+
+.dash-stat-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid #2a2a2a;
+    background: #1a1a1a;
+    color: #888888;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.dash-stat:hover .dash-stat-icon {
+    border-color: rgba(62, 207, 142, 0.4);
+    background: rgba(62, 207, 142, 0.08);
+    color: #3ecf8e;
+}
+
+.dash-stat-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.dash-stat-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.dash-stat-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #ededed;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.dash-stat-label {
+    font-size: 11px;
+    color: #555555;
+    font-weight: 400;
+}
+
+/* ---------- QUICK ACTIONS ---------- */
+
+.dash-quick-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.dash-quick-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    background: #111111;
+    border: 1px solid #1f1f1f;
+    color: #999999;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.dash-quick-action:hover {
+    border-color: rgba(62, 207, 142, 0.4);
+    background: rgba(62, 207, 142, 0.06);
+    color: #3ecf8e;
+}
+
+.dash-quick-action svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+}
+
+.dash-quick-action:hover svg {
+    opacity: 1;
+}
+
+/* ---------- MODULES COLLAPSE ---------- */
+
+.modules-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.modules-toggle-btn {
+    background: none;
+    border: none;
+    color: #3ecf8e;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.12s ease;
+}
+
+.modules-toggle-btn:hover {
+    background: rgba(62, 207, 142, 0.08);
+}
+
+.modules-grid.is-collapsed {
+    max-height: 312px;
+    overflow: hidden;
+    position: relative;
+}
+
+.modules-grid.is-collapsed::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(to bottom, transparent, #0d0d0d);
+    pointer-events: none;
+}
+
+/* Smooth transition for expand/collapse */
+.modules-grid {
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ---------- RESPONSIVE: GREETING & QUICK ACTIONS ---------- */
+
+@media (max-width: 768px) {
+    .dash-greeting {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    .dash-stats {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .dash-stat {
+        min-width: 0;
+        flex: 1;
+        padding: 8px 12px;
+    }
+    .dash-stat-value {
+        font-size: 14px;
+    }
+    .dash-quick-actions {
+        gap: 8px;
+    }
+    .dash-quick-action {
+        font-size: 12px;
+        padding: 7px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .dash-greeting-text h1 {
+        font-size: 17px;
+    }
+    .dash-stat-label {
+        display: none;
+    }
+    .dash-stat {
+        padding: 8px 10px;
+        gap: 8px;
+    }
 }

@@ -259,6 +259,23 @@ button {
     color: #3ecf8e;
 }
 
+/* Unread badge (messages) */
+.nav-unread-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+}
+
 /* Category group headers */
 .nav-group-header {
     font-size: 10px;

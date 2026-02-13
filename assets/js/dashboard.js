@@ -29,6 +29,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   currentUser = user;
 
   // Init UI components
+  initGreeting(user);
   initMentionsDrawer();
   initCommandPalette();
 
@@ -48,6 +49,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       loadMentions(user),
       loadMyWorkTasks(user),
       loadPendingReviews(user),
+      loadUnreadCount(),
       waitForSidebar()
     ]);
   } catch (err) {
@@ -87,6 +89,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.warn("[Dashboard] Could not read sidebar permissions cache:", e);
   }
 
+  // Filter quick actions by role permissions
+  initQuickActions(allowedModuleKeys);
+
   document.querySelectorAll(".module-card").forEach((card) => {
     const moduleKey = card.getAttribute("data-module");
     const status = card.getAttribute("data-status") || "active";
@@ -116,6 +121,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
   });
+
+  // Modules collapse/expand toggle
+  initModulesToggle();
 
   // 4) (Opcional) Logout rápido si luego quieres un botón
   const logoutBtn = document.getElementById("logout-btn");
@@ -472,6 +480,10 @@ async function loadMyWorkTasks(user) {
     const db = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
     return da - db;
   });
+
+  // Update stat pill
+  const statPendingEl = document.getElementById('stat-pending-tasks');
+  if (statPendingEl) statPendingEl.textContent = tasks.length;
 
   // Hide loading
   loadingEl.style.display = "none";
@@ -1013,6 +1025,10 @@ async function loadPendingReviews(user) {
 
     const data = await response.json();
     const reviews = data.tasks || [];
+
+    // Update stat pill
+    const statReviewEl = document.getElementById('stat-in-review');
+    if (statReviewEl) statReviewEl.textContent = reviews.length;
 
     // Hide loading
     loadingEl.style.display = "none";
@@ -1579,6 +1595,90 @@ function updateModuleBadges() {
       badge.textContent = count > 99 ? '99+' : String(count);
       iconContainer.appendChild(badge);
     }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// GREETING + STATS + QUICK ACTIONS + MODULES TOGGLE
+// ---------------------------------------------------------------------------
+
+function initGreeting(user) {
+  const greetingEl = document.getElementById('dash-greeting-msg');
+  const dateEl = document.getElementById('dash-greeting-date');
+  if (!greetingEl) return;
+
+  const hour = new Date().getHours();
+  let greeting;
+  if (hour < 12) greeting = 'Good morning';
+  else if (hour < 18) greeting = 'Good afternoon';
+  else greeting = 'Good evening';
+
+  const name = user.full_name || user.username || '';
+  const firstName = name.split(' ')[0];
+  greetingEl.textContent = firstName ? `${greeting}, ${firstName}` : greeting;
+
+  if (dateEl) {
+    dateEl.textContent = new Intl.DateTimeFormat('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    }).format(new Date());
+  }
+}
+
+async function loadUnreadCount() {
+  try {
+    const token = localStorage.getItem('ngmToken');
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    const res = await fetch(`${DASHBOARD_API}/messages/unread-counts`, {
+      credentials: 'include', headers
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const counts = data.unread_counts || data;
+    const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
+    const el = document.getElementById('stat-unread-msgs');
+    if (el) el.textContent = total;
+  } catch (e) {
+    console.warn('[Dashboard] Failed to load unread counts:', e);
+  }
+}
+
+function initQuickActions(allowedModuleKeys) {
+  const section = document.getElementById('dash-quick-actions');
+  if (!section) return;
+
+  const actions = section.querySelectorAll('.dash-quick-action[data-requires]');
+  let visibleCount = 0;
+
+  actions.forEach(action => {
+    const required = action.getAttribute('data-requires');
+    if (allowedModuleKeys && !allowedModuleKeys.has(required)) {
+      action.style.display = 'none';
+    } else {
+      visibleCount++;
+    }
+  });
+
+  if (visibleCount > 0) {
+    section.style.display = '';
+  }
+}
+
+function initModulesToggle() {
+  const toggleBtn = document.getElementById('modules-toggle-btn');
+  const grid = document.getElementById('modules-grid');
+  if (!toggleBtn || !grid) return;
+
+  // Restore preference
+  const expanded = localStorage.getItem('dashboard_modules_expanded') === 'true';
+  if (expanded) {
+    grid.classList.remove('is-collapsed');
+    toggleBtn.textContent = 'Show less';
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    const isCollapsed = grid.classList.toggle('is-collapsed');
+    toggleBtn.textContent = isCollapsed ? 'Show all' : 'Show less';
+    localStorage.setItem('dashboard_modules_expanded', String(!isCollapsed));
   });
 }
 

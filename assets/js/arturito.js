@@ -1204,8 +1204,9 @@
     switch (action) {
       case "ask_project":
         if (actionData.projects && actionData.projects.length > 0) {
+          var cmdPrefix = actionData.command || "bva";
           const projectButtons = actionData.projects.slice(0, 6).map(function (p) {
-            return '<button type="button" class="art-action-btn art-project-btn" onclick="ArturitoChat.selectProjectForBVA(\'' + escapeHtml(p.name) + '\', \'' + escapeHtml(String(p.id || '')) + '\')">'
+            return '<button type="button" class="art-action-btn art-project-btn" onclick="ArturitoChat.selectProjectForReport(\'' + escapeHtml(cmdPrefix) + '\', \'' + escapeHtml(p.name) + '\', \'' + escapeHtml(String(p.id || '')) + '\')">'
               + escapeHtml(p.name) + '</button>';
           }).join("");
           return '<div class="art-action-btns art-project-grid">' + projectButtons + '</div>';
@@ -1226,6 +1227,23 @@
             + '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/>'
             + '<line x1="12" y1="15" x2="12" y2="3"/></svg>'
             + 'Descargar</button></div>';
+        }
+        break;
+
+      case "pnl_report_pdf":
+        if (actionData.pdf_url) {
+          var pnlProjectName = actionData.project_name || "P&L COGS Report";
+          return '<div class="art-action-btns">'
+            + '<a href="' + escapeHtml(actionData.pdf_url) + '" target="_blank" rel="noopener noreferrer" class="art-action-btn art-action-btn--primary art-pdf-btn">'
+            + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right:6px;flex-shrink:0">'
+            + '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'
+            + '<line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>'
+            + 'Open PDF</a>'
+            + '<button type="button" class="art-action-btn" onclick="ArturitoChat.downloadPDF(\'' + escapeHtml(actionData.pdf_url) + '\', \'' + escapeHtml(pnlProjectName) + '\')">'
+            + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin-right:6px;flex-shrink:0">'
+            + '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/>'
+            + '<line x1="12" y1="15" x2="12" y2="3"/></svg>'
+            + 'Download</button></div>';
         }
         break;
 
@@ -1273,15 +1291,17 @@
     return "";
   }
 
-  function selectProjectForBVA(projectName, projectId) {
-    DOM.chatInput.textContent = "bva " + projectName;
+  function selectProjectForReport(command, projectName, projectId) {
+    DOM.chatInput.textContent = command + " " + projectName;
     handleInputChange();
-    // When we have the project ID, send it to the API for direct resolution
-    // (avoids NLU re-parsing and fuzzy name matching issues)
     if (projectId) {
       state._bvaProjectId = projectId;
     }
     sendMessage();
+  }
+
+  function selectProjectForBVA(projectName, projectId) {
+    selectProjectForReport("bva", projectName, projectId);
   }
 
   async function downloadPDF(pdfUrl, projectName) {
@@ -1480,6 +1500,7 @@
     getThreadId: () => state.threadId,
     debug: (on) => { state.debug = on !== false; console.log("[Arturito] Debug mode:", state.debug); },
     selectProjectForBVA,
+    selectProjectForReport,
     downloadPDF,
   };
 })();

@@ -221,11 +221,11 @@
   // UTILITY: Get ID value from a datalist input
   // ================================
   function getDatalistValue(input, datalistId) {
-    var storedValue = input.getAttribute('data-value');
+    const storedValue = input.getAttribute('data-value');
     if (storedValue) return storedValue;
-    var datalist = document.getElementById(datalistId);
+    const datalist = document.getElementById(datalistId);
     if (datalist) {
-      var matchingOption = Array.from(datalist.options).find(function(opt) { return opt.value === input.value; });
+      const matchingOption = Array.from(datalist.options).find(function(opt) { return opt.value === input.value; });
       if (matchingOption) return matchingOption.getAttribute('data-id');
     }
     return null;

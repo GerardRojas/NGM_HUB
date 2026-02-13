@@ -146,9 +146,9 @@
 #addExpenseModal .modal-toolbar-actions {
   display: flex;
   gap: 10px;
-  max-height: 60px;
+  max-height: 50px;
   opacity: 1;
-  overflow: hidden;
+  overflow: visible;
   transition: max-height 0.25s ease, opacity 0.2s ease;
 }
 
@@ -471,16 +471,16 @@
   background: rgba(62, 207, 142, 0.08);
 }
 
-/* Auto Categorize button - matches Scan Receipt style */
+/* Auto Categorize button - grey default, purple on hover */
 #addExpenseModal .btn-auto-categorize {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
   border-radius: 8px;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-  background: rgba(139, 92, 246, 0.08);
-  color: #a78bfa;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -488,9 +488,9 @@
 }
 
 #addExpenseModal .btn-auto-categorize:hover:not(:disabled) {
-  border-color: rgba(139, 92, 246, 0.5);
-  background: rgba(139, 92, 246, 0.15);
-  color: #c4b5fd;
+  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.12);
+  color: #a78bfa;
   transform: translateY(-1px);
 }
 
@@ -507,16 +507,16 @@
   flex-shrink: 0;
 }
 
-/* Import CSV button */
+/* Import CSV button - grey default, blue on hover */
 #addExpenseModal .btn-import-csv {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
   border-radius: 8px;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  background: rgba(59, 130, 246, 0.08);
-  color: #60a5fa;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -524,9 +524,9 @@
 }
 
 #addExpenseModal .btn-import-csv:hover {
-  border-color: rgba(59, 130, 246, 0.5);
-  background: rgba(59, 130, 246, 0.15);
-  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
   transform: translateY(-1px);
 }
 
@@ -1461,20 +1461,20 @@ input[type="number"].form-input {
   padding: 20px;
 }
 
-/* Scan Receipt Button - NGM Green theme */
+/* Scan Receipt Button - grey default, green on hover */
 .btn-scan-receipt {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
   border-radius: 8px;
-  border: 1px solid rgba(62, 207, 142, 0.3);
-  background: rgba(62, 207, 142, 0.08);
-  color: #3ecf8e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
 
 .btn-scan-receipt svg {
@@ -1482,8 +1482,9 @@ input[type="number"].form-input {
 }
 
 .btn-scan-receipt:hover {
-  background: rgba(62, 207, 142, 0.15);
-  border-color: rgba(62, 207, 142, 0.5);
+  background: rgba(62, 207, 142, 0.12);
+  border-color: rgba(62, 207, 142, 0.4);
+  color: #3ecf8e;
   transform: translateY(-1px);
 }
 
@@ -1493,8 +1494,8 @@ input[type="number"].form-input {
 
 /* Scan Receipt Modal Card */
 .modal-scan-receipt {
-  width: min(500px, 95%);
-  max-width: 500px;
+  width: min(680px, 95vw);
+  max-width: 680px;
   max-height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
@@ -1502,7 +1503,7 @@ input[type="number"].form-input {
   background: #111111 !important;
   border: 1px solid #1f1f1f;
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
 }
 
@@ -1548,16 +1549,13 @@ input[type="number"].form-input {
 /* Modal Body */
 #scanReceiptModal .modal-body {
   flex: 1;
-  padding: 20px 18px;
+  padding: 20px 22px;
   overflow-y: auto;
   background: #111111;
 }
 
 #scanReceiptModal .modal-hint {
-  font-size: 13px;
-  color: #9ca3af;
-  margin: 0 0 20px 0;
-  line-height: 1.5;
+  display: none;
 }
 
 /* Modal Footer */
@@ -1589,17 +1587,40 @@ input[type="number"].form-input {
   color: #e5e7eb;
 }
 
-/* Model Selector */
+/* ── Scan Layout (2-column: modes | upload) ── */
+.scan-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.scan-layout-models {
+  flex: 1 1 55%;
+  min-width: 0;
+}
+
+.scan-layout-upload {
+  flex: 1 1 45%;
+  min-width: 0;
+}
+
+.scan-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  margin-bottom: 10px;
+}
+
+/* Model Selector (vertical stack) */
 .scan-model-selector {
   display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-  align-items: stretch;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .scan-model-option {
-  flex: 1 1 0;
-  min-width: 0;
   cursor: pointer;
   display: flex;
 }
@@ -1610,49 +1631,56 @@ input[type="number"].form-input {
 
 .scan-model-card {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   transition: all 0.2s ease;
-  position: relative;
   width: 100%;
   box-sizing: border-box;
 }
 
+.scan-model-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .scan-model-option:hover .scan-model-card {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .scan-model-option input[type="radio"]:checked + .scan-model-card {
-  background: rgba(139, 92, 246, 0.1);
-  border-color: rgba(139, 92, 246, 0.5);
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 0 0 0 1px rgba(139, 92, 246, 0.15);
 }
 
 .scan-model-icon {
-  width: 36px;
-  height: 36px;
-  padding: 8px;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 8px;
-  color: #9ca3af;
+  color: #6b7280;
   flex-shrink: 0;
 }
 
 .scan-model-option input[type="radio"]:checked + .scan-model-card .scan-model-icon {
   color: #a78bfa;
+  background: rgba(139, 92, 246, 0.12);
 }
 
 .scan-model-info {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  gap: 6px;
 }
 
 .scan-model-name {
@@ -1663,26 +1691,90 @@ input[type="number"].form-input {
 
 .scan-model-desc {
   font-size: 11px;
-  color: var(--text-secondary, #9ca3af);
+  line-height: 1.45;
+  color: #787f89;
+  padding-left: 48px;
 }
 
+.scan-model-option input[type="radio"]:checked + .scan-model-card .scan-model-desc {
+  color: #9ca3af;
+}
+
+/* Tags row (PDF only, ~3s, Low cost) */
+.scan-model-tags {
+  display: flex;
+  gap: 5px;
+  padding-left: 48px;
+  margin-top: 2px;
+}
+
+.scan-model-tag {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.scan-model-option input[type="radio"]:checked + .scan-model-card .scan-model-tag {
+  background: rgba(139, 92, 246, 0.08);
+  border-color: rgba(139, 92, 246, 0.2);
+  color: #a78bfa;
+}
+
+/* Badge (FREE) */
 .scan-model-badge {
   display: inline-block;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.5px;
-  padding: 1px 5px;
-  background: rgba(245, 158, 11, 0.2);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 1px 6px;
   border-radius: 4px;
   vertical-align: middle;
-  margin-left: 4px;
-  line-height: 1.4;
+  line-height: 1.5;
+}
+
+.scan-model-badge--free {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+/* Disabled model option (image/scanned PDF detected) */
+.scan-model-option.scan-model-disabled {
+  opacity: 0.30;
+  pointer-events: none;
+  filter: grayscale(0.6);
+}
+
+.scan-model-warning {
+  font-size: 11px;
+  color: #f59e0b;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: rgba(245, 158, 11, 0.06);
+  border: 1px solid rgba(245, 158, 11, 0.12);
+  border-radius: 6px;
+  text-align: center;
+}
+
+/* Responsive: stack vertically on narrow screens */
+@media (max-width: 640px) {
+  .scan-layout {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .scan-layout-models,
+  .scan-layout-upload {
+    flex: 1 1 100%;
+  }
 }
 
 .scan-receipt-upload-zone {
-  margin: 20px 0;
+  margin: 0;
 }
 
 .scan-receipt-drop-area {
@@ -1690,11 +1782,12 @@ input[type="number"].form-input {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 48px 24px;
-  border: 2px dashed rgba(148, 163, 184, 0.3);
+  gap: 14px;
+  padding: 40px 20px;
+  min-height: 200px;
+  border: 2px dashed rgba(148, 163, 184, 0.2);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.015);
   cursor: pointer;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
@@ -1726,7 +1819,7 @@ input[type="number"].form-input {
 }
 
 .scan-receipt-drop-primary {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-primary, #e5e7eb);
 }
@@ -2339,18 +2432,19 @@ input[type="number"].form-input {
   gap: 8px;
   padding: 10px 16px;
   border-radius: 8px;
-  border: 1px solid rgba(251, 146, 60, 0.3);
-  background: rgba(251, 146, 60, 0.08);
-  color: #fb923c;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.12s ease;
 }
 
 .btn-pending-receipts:hover {
-  background: rgba(251, 146, 60, 0.15);
-  border-color: rgba(251, 146, 60, 0.5);
+  background: rgba(251, 146, 60, 0.12);
+  border-color: rgba(251, 146, 60, 0.4);
+  color: #fb923c;
   transform: translateY(-1px);
 }
 
@@ -2366,10 +2460,16 @@ input[type="number"].form-input {
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  background: rgba(251, 146, 60, 0.25);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 9px;
   font-size: 11px;
   font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-pending-receipts:hover .pending-count-badge {
+  background: rgba(251, 146, 60, 0.25);
   color: #fb923c;
 }
 

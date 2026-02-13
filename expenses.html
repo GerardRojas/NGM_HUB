@@ -561,75 +561,106 @@
             </div>
 
             <div class="modal-body">
-                <p class="modal-hint">Upload a receipt image or PDF and AI will automatically extract the expense details.</p>
-
-                <!-- Model Selection -->
-                <div class="scan-model-selector">
-                    <label class="scan-model-option">
-                        <input type="radio" name="scanModel" value="fast" checked>
-                        <div class="scan-model-card">
-                            <svg class="scan-model-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                            </svg>
-                            <div class="scan-model-info">
-                                <span class="scan-model-name">NGM Fast</span>
-                                <span class="scan-model-desc">Quick scan, lower cost</span>
-                            </div>
+                <div class="scan-layout">
+                    <!-- Left: Model Selection -->
+                    <div class="scan-layout-models">
+                        <div class="scan-section-label">Scan Mode</div>
+                        <div class="scan-model-selector">
+                            <label class="scan-model-option" id="scanModelSuperFast">
+                                <input type="radio" name="scanModel" value="super-fast" checked>
+                                <div class="scan-model-card">
+                                    <div class="scan-model-header">
+                                        <svg class="scan-model-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path>
+                                            <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path>
+                                            <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path>
+                                            <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path>
+                                        </svg>
+                                        <div class="scan-model-info">
+                                            <span class="scan-model-name">Super Hiper Fast</span>
+                                        </div>
+                                    </div>
+                                    <span class="scan-model-desc">Pattern matching only. Instant results with zero AI cost. Best for known vendors like Home Depot, Wayfair, Amazon.</span>
+                                    <div class="scan-model-tags">
+                                        <span class="scan-model-tag">PDF only</span>
+                                        <span class="scan-model-tag">~0s</span>
+                                        <span class="scan-model-tag">$0</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="scan-model-option" id="scanModelFast">
+                                <input type="radio" name="scanModel" value="fast">
+                                <div class="scan-model-card">
+                                    <div class="scan-model-header">
+                                        <svg class="scan-model-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                        </svg>
+                                        <div class="scan-model-info">
+                                            <span class="scan-model-name">Fast</span>
+                                        </div>
+                                    </div>
+                                    <span class="scan-model-desc">Text extraction + AI analysis. Good balance of speed and accuracy. Handles most digital invoices.</span>
+                                    <div class="scan-model-tags">
+                                        <span class="scan-model-tag">PDF only</span>
+                                        <span class="scan-model-tag">~3s</span>
+                                        <span class="scan-model-tag">Low cost</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <label class="scan-model-option">
+                                <input type="radio" name="scanModel" value="heavy">
+                                <div class="scan-model-card">
+                                    <div class="scan-model-header">
+                                        <svg class="scan-model-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="11" cy="11" r="8"></circle>
+                                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                            <line x1="11" y1="8" x2="11" y2="14"></line>
+                                            <line x1="8" y1="11" x2="14" y2="11"></line>
+                                        </svg>
+                                        <div class="scan-model-info">
+                                            <span class="scan-model-name">Heavy</span>
+                                        </div>
+                                    </div>
+                                    <span class="scan-model-desc">Vision AI reads the image pixel by pixel. Required for photos, scanned docs, and handwritten receipts.</span>
+                                    <div class="scan-model-tags">
+                                        <span class="scan-model-tag">PDF + Images</span>
+                                        <span class="scan-model-tag">~8s</span>
+                                        <span class="scan-model-tag">Higher cost</span>
+                                    </div>
+                                </div>
+                            </label>
                         </div>
-                    </label>
-                    <label class="scan-model-option">
-                        <input type="radio" name="scanModel" value="heavy">
-                        <div class="scan-model-card">
-                            <svg class="scan-model-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                <line x1="11" y1="8" x2="11" y2="14"></line>
-                                <line x1="8" y1="11" x2="14" y2="11"></line>
-                            </svg>
-                            <div class="scan-model-info">
-                                <span class="scan-model-name">NGM Heavy</span>
-                                <span class="scan-model-desc">More accurate, complex receipts</span>
-                            </div>
-                        </div>
-                    </label>
-                    <label class="scan-model-option">
-                        <input type="radio" name="scanModel" value="fast-beta">
-                        <div class="scan-model-card">
-                            <svg class="scan-model-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path>
-                                <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path>
-                                <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"></path>
-                                <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"></path>
-                            </svg>
-                            <div class="scan-model-info">
-                                <span class="scan-model-name">Fast Beta <span class="scan-model-badge">BETA</span></span>
-                                <span class="scan-model-desc">Mini model, fastest</span>
-                            </div>
-                        </div>
-                    </label>
-                </div>
-
-                <div id="scanReceiptUploadZone" class="scan-receipt-upload-zone">
-                    <input type="file" id="scanReceiptFileInput" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,application/pdf" style="display: none;">
-                    <div class="scan-receipt-drop-area" id="scanReceiptDropArea">
-                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                            <polyline points="21 15 16 10 5 21"></polyline>
-                        </svg>
-                        <div class="scan-receipt-drop-text">
-                            <span class="scan-receipt-drop-primary">Click to upload or drag and drop</span>
-                            <span class="scan-receipt-drop-secondary">JPG, PNG, WebP, GIF or PDF (max 20MB)</span>
+                        <div id="scanModelWarning" class="scan-model-warning hidden">
+                            Images and scanned PDFs require Heavy mode.
                         </div>
                     </div>
-                </div>
 
-                <div id="scanReceiptProgress" class="scan-receipt-progress hidden">
-                    <img src="assets/img/white_icon.png" alt="Processing..." class="scan-receipt-progress-logo">
-                    <div class="scan-receipt-progress-bar">
-                        <div class="scan-receipt-progress-fill" id="scanReceiptProgressFill"></div>
+                    <!-- Right: Upload Zone -->
+                    <div class="scan-layout-upload">
+                        <div class="scan-section-label">Upload</div>
+                        <div id="scanReceiptUploadZone" class="scan-receipt-upload-zone">
+                            <input type="file" id="scanReceiptFileInput" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif,application/pdf" style="display: none;">
+                            <div class="scan-receipt-drop-area" id="scanReceiptDropArea">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <div class="scan-receipt-drop-text">
+                                    <span class="scan-receipt-drop-primary">Click to upload or drag & drop</span>
+                                    <span class="scan-receipt-drop-secondary">JPG, PNG, WebP, GIF or PDF (max 20MB)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="scanReceiptProgress" class="scan-receipt-progress hidden">
+                            <img src="assets/img/white_icon.png" alt="Processing..." class="scan-receipt-progress-logo">
+                            <div class="scan-receipt-progress-bar">
+                                <div class="scan-receipt-progress-fill" id="scanReceiptProgressFill"></div>
+                            </div>
+                            <div class="scan-receipt-progress-text" id="scanReceiptProgressText">Processing receipt...</div>
+                        </div>
                     </div>
-                    <div class="scan-receipt-progress-text" id="scanReceiptProgressText">Processing receipt...</div>
                 </div>
             </div>
 

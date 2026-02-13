@@ -5529,6 +5529,8 @@
       els.scanReceiptUploadZone.style.display = '';
     }
     els.scanReceiptProgress.classList.add('hidden');
+    // Reset model selector to default state
+    resetScanModelSelector();
   }
 
   // ================================
@@ -5796,6 +5798,75 @@
     return Math.abs(invoiceTotal - calculatedSum);
   }
 
+  /**
+   * Check if uploaded file has extractable text (PDF) or is image/scanned.
+   * Disables Super Fast and Fast buttons if no text is available.
+   */
+  async function checkReceiptTypeAndToggleModels(file) {
+    const superFastOpt = document.getElementById('scanModelSuperFast');
+    const fastOpt = document.getElementById('scanModelFast');
+    const warningEl = document.getElementById('scanModelWarning');
+
+    // Images are always non-text
+    if (file.type !== 'application/pdf') {
+      if (superFastOpt) superFastOpt.classList.add('scan-model-disabled');
+      if (fastOpt) fastOpt.classList.add('scan-model-disabled');
+      if (warningEl) warningEl.classList.remove('hidden');
+      // Auto-select heavy
+      const heavyRadio = document.querySelector('input[name="scanModel"][value="heavy"]');
+      if (heavyRadio) heavyRadio.checked = true;
+      return false;
+    }
+
+    // PDF: check for extractable text via API
+    try {
+      const apiBase = getApiBase();
+      const authToken = getAuthToken();
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const resp = await fetch(`${apiBase}/expenses/check-receipt-type`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken}` },
+        body: formData,
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        if (!data.has_text) {
+          if (superFastOpt) superFastOpt.classList.add('scan-model-disabled');
+          if (fastOpt) fastOpt.classList.add('scan-model-disabled');
+          if (warningEl) warningEl.classList.remove('hidden');
+          const heavyRadio = document.querySelector('input[name="scanModel"][value="heavy"]');
+          if (heavyRadio) heavyRadio.checked = true;
+          return false;
+        }
+      }
+    } catch (err) {
+      console.warn('[SCAN] check-receipt-type failed, allowing all modes:', err.message);
+    }
+
+    // Text PDF: enable all modes
+    if (superFastOpt) superFastOpt.classList.remove('scan-model-disabled');
+    if (fastOpt) fastOpt.classList.remove('scan-model-disabled');
+    if (warningEl) warningEl.classList.add('hidden');
+    return true;
+  }
+
+  /**
+   * Reset scan model selector to default state (all enabled, super-fast selected).
+   */
+  function resetScanModelSelector() {
+    const superFastOpt = document.getElementById('scanModelSuperFast');
+    const fastOpt = document.getElementById('scanModelFast');
+    const warningEl = document.getElementById('scanModelWarning');
+    if (superFastOpt) superFastOpt.classList.remove('scan-model-disabled');
+    if (fastOpt) fastOpt.classList.remove('scan-model-disabled');
+    if (warningEl) warningEl.classList.add('hidden');
+    const superFastRadio = document.querySelector('input[name="scanModel"][value="super-fast"]');
+    if (superFastRadio) superFastRadio.checked = true;
+  }
+
   async function handleScanReceiptFile(file) {
     if (!file) return;
 
@@ -5815,6 +5886,9 @@
       }
       return;
     }
+
+    // Check file type and toggle model buttons
+    await checkReceiptTypeAndToggleModels(file);
 
     const apiBase = getApiBase();
 
@@ -5957,7 +6031,7 @@
         // Show extraction method and time
         const method = result.extraction_method || 'unknown';
         const execTime = result.execution_time_seconds || 0;
-        const methodLabel = method === 'pdfplumber' ? 'Text Extract' : method === 'vision_direct' ? 'Vision (Heavy)' : 'Vision';
+        const methodLabel = method === 'regex' ? 'Super Fast (Regex)' : method === 'pdfplumber' ? 'Text Extract' : method === 'vision_direct' ? 'Vision (Heavy)' : 'Vision';
         details += `Method: ${methodLabel} | Time: ${execTime}s`;
         if (usedRetry) details += ' (2nd pass)';
         details += '\n\n';
@@ -6002,6 +6076,15 @@
             'This receipt is too complex to process.',
             {
               details: 'Try using Heavy mode for better accuracy, or split the receipt into smaller sections.',
+              persistent: true
+            }
+          );
+        } else if (error.message && error.message.includes('Super Fast mode')) {
+          Toast.warning(
+            'Super Fast Unavailable',
+            'Regex confidence too low for this receipt.',
+            {
+              details: 'Try using NGM Fast or Heavy mode for better accuracy.',
               persistent: true
             }
           );

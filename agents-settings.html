@@ -2238,7 +2238,12 @@
         function _fetchAndrewHubStats() {
             cachedFetch(API_BASE + '/pending-receipts/agent-stats', { headers: _agentAuthHeaders() })
                 .then(function(stats) {
-                    if (!stats) return;
+                    if (!stats) {
+                        _removeSkeleton('hubAndrewProcessed', '-');
+                        _removeSkeleton('hubAndrewSuccessRate', '-');
+                        _removeSkeleton('hubAndrewErrors', '-');
+                        return;
+                    }
                     _removeSkeleton('hubAndrewProcessed', stats.total_processed);
                     _removeSkeleton('hubAndrewSuccessRate', stats.success_rate + '%');
                     var errEl = document.getElementById('hubAndrewErrors');
@@ -2246,7 +2251,11 @@
                     errEl.classList.remove('skeleton', 'skeleton-stat');
                     errEl.className = 'hub-metric-value' + (stats.errors > 0 ? ' metric-error' : '');
                 })
-                .catch(function() {});
+                .catch(function() {
+                    _removeSkeleton('hubAndrewProcessed', '-');
+                    _removeSkeleton('hubAndrewSuccessRate', '-');
+                    _removeSkeleton('hubAndrewErrors', '-');
+                });
         }
 
         function _fetchDaneelHubStats() {
@@ -2492,7 +2501,7 @@
                     console.log('[AgentHub] Stats received:', stats);
                     if (!stats) {
                         console.warn('[AgentHub] No stats data received');
-                        return;
+                        stats = {};
                     }
 
                     var el1 = document.getElementById('agentStatTotal');
@@ -2571,8 +2580,14 @@
                 method: 'PATCH',
                 headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
                 body: JSON.stringify(body)
+            }).then(function(resp) {
+                if (!resp.ok) {
+                    console.error('[AgentHub] Config save failed:', resp.status);
+                    if (window.Toast) window.Toast.error('Failed to save setting');
+                }
             }).catch(function(e) {
                 console.error('[AgentHub] Config save error:', e);
+                if (window.Toast) window.Toast.error('Failed to save setting');
             });
         }
 

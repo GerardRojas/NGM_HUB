@@ -14,7 +14,7 @@
     const API_BASE = window.API_BASE || "https://ngm-fastapi.onrender.com";
 
     function getAuthHeaders() {
-        const token = localStorage.getItem('firebase_token');
+        const token = localStorage.getItem('ngmToken');
         return token ? { 'Authorization': 'Bearer ' + token } : {};
     }
 

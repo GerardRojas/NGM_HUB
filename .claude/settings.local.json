@@ -51,10 +51,22 @@
       "WebFetch(domain:pricepertoken.com)",
       "Bash(git -C \"C:\\\\Users\\\\germa\\\\Desktop\\\\NGM_API\" log --oneline --all)",
       "Bash(cat:*)",
-      "Bash(type:*)"
+      "Bash(type:*)",
+      "WebFetch(domain:render.com)",
+      "Bash(curl:*)",
+      "WebFetch(domain:supabase.com)",
+      "Bash(sort:*)",
+      "Bash(basename:*)",
+      "Bash(wc:*)",
+      "WebFetch(domain:firebase.google.com)",
+      "WebFetch(domain:cheatsheetseries.owasp.org)",
+      "WebFetch(domain:vibeappscanner.com)",
+      "WebFetch(domain:curity.io)",
+      "WebFetch(domain:www.leanware.co)"
     ],
     "additionalDirectories": [
-      "C:\\Users\\germa\\Desktop\\NGM_API\\sql"
+      "C:\\Users\\germa\\Desktop\\NGM_API\\sql",
+      "C:\\Users\\germa\\Desktop\\NGM_API\\api\\routers"
     ]
   }
 }

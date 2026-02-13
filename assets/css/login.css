@@ -513,8 +513,8 @@
 }
 
 .login-transition-overlay .transition-logo {
-    width: 160px;
-    height: 160px;
+    width: 120px;
+    height: 120px;
     object-fit: contain;
     animation: pulse 1.5s ease-in-out infinite;
 }

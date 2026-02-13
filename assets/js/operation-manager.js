@@ -62,7 +62,7 @@
     // Auth
     // ================================
     function getAuthHeaders() {
-        const token = localStorage.getItem('fb_token') || localStorage.getItem('firebase_token');
+        const token = localStorage.getItem('ngmToken');
         return token ? { Authorization: 'Bearer ' + token } : {};
     }
 

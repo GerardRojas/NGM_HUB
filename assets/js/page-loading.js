@@ -156,13 +156,21 @@
       }, AUTO_HIDE_DELAY);
     });
 
-    // Fallback: Max 8 seconds in case something blocks window.onload
+    // Fallback: Max 8 seconds for pages without manual control
     setTimeout(() => {
-      if (!dataReady) {
+      if (!dataReady && !manualHideCalled) {
         console.warn('[PageLoading] Fallback triggered - hiding overlay after timeout');
         hidePageLoading(false);
       }
     }, 8000);
+
+    // Ultimate fallback: 20 seconds for pages with manual control (safety net)
+    setTimeout(() => {
+      if (!dataReady) {
+        console.warn('[PageLoading] Ultimate fallback triggered - hiding overlay after 20s');
+        hidePageLoading(false);
+      }
+    }, 20000);
   }
 
   // Setup auto-hide

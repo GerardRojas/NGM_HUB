@@ -43,6 +43,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  // Signal that dashboard will manually control the loading overlay
+  // (prevents window.load auto-hide from firing before API calls finish)
+  if (window.pageLoading) window.pageLoading.markManual();
+
   // Load data + sidebar in parallel, hide overlay only when ALL are ready
   try {
     await Promise.all([

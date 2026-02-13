@@ -1,0 +1,1 @@
+import pathlib; pathlib.Path(r"c:\Users\germa\Desktop\NGM HUB WEB\.claude\messages_reference.md").write_text(pathlib.Path(r"c:\Users\germa\Desktop\NGM HUB WEB\.claude\_ref_content.txt").read_text(encoding="utf-8"), encoding="utf-8"); print("done")

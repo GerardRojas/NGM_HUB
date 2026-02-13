@@ -125,8 +125,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     return String(base || "").replace(/\/+$/, "");
   }
 
+  function getAuthHeaders() {
+    const token = localStorage.getItem('ngmToken');
+    return token ? { Authorization: 'Bearer ' + token } : {};
+  }
+
   async function apiJson(url, options = {}) {
-    const res = await fetch(url, { credentials: "include", ...options });
+    const headers = { ...getAuthHeaders(), ...(options.headers || {}) };
+    const res = await fetch(url, { ...options, headers });
     const text = await res.text().catch(() => "");
     if (!res.ok) {
       throw new Error(`${options.method || "GET"} ${url} failed (${res.status}): ${text}`);

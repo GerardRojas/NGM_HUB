@@ -95,11 +95,16 @@
         return null;
     }
 
+    function getAuthHeaders() {
+        const token = localStorage.getItem('ngmToken');
+        return token ? { Authorization: 'Bearer ' + token } : {};
+    }
+
     // --- Generic API load ---
     async function loadStateFromApi(stateKey, defaultValue) {
         const url = `${API_BASE}/process-manager/state/${stateKey}`;
         try {
-            const res = await fetch(url);
+            const res = await fetch(url, { headers: getAuthHeaders() });
             if (res.ok) {
                 const data = await res.json();
                 return { success: true, data: data.state_data || defaultValue, error: null };
@@ -126,7 +131,7 @@
                 const payload = { state_data: data, updated_by: null };
                 const res = await fetch(url, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
                     body: JSON.stringify(payload),
                 });
                 if (!res.ok) {
@@ -1740,7 +1745,7 @@
     async function deleteUser(u) {
         if (!confirm('Delete user "' + (u.user_name || '') + '"?')) return;
         try {
-            const res = await fetch(`${API_BASE}/team/users/${u.user_id}`, { method: 'DELETE' });
+            const res = await fetch(`${API_BASE}/team/users/${u.user_id}`, { method: 'DELETE', headers: getAuthHeaders() });
             if (!res.ok) throw new Error('HTTP ' + res.status);
             if (window.Toast) window.Toast.success('User deleted');
             triggerTeamReload();

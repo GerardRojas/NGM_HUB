@@ -26,7 +26,12 @@ Aplicacion web para gestion de proyectos, presupuestos, equipos y gastos.
 - `budgets.html` - Presupuestos
 - `expenses.html` - Gastos
 - `team.html` - Equipo
+- `messages.html` - Mensajeria y chat
+- `vault.html` - Data Vault (almacenamiento de archivos)
 - `arturito.html` - Asistente Arturito
+- `agents-settings.html` - Configuracion de agentes AI (Andrew, Daneel)
+
+Para indice completo de los ~60 modulos JS/CSS, ver `.claude/modules_index.md`
 
 ## Reglas de Codigo
 
@@ -39,10 +44,13 @@ Aplicacion web para gestion de proyectos, presupuestos, equipos y gastos.
 
 ## Referencias de Modulos Complejos
 Antes de trabajar en un modulo complejo, leer su archivo de referencia en `.claude/`:
+- **Modules Index** -> `.claude/modules_index.md` (indice rapido de los ~60 modulos)
 - **Process Manager** -> `.claude/process_manager_reference.md`
 - **Expenses** -> `.claude/expenses_reference.md`
 - **Pipeline** -> `.claude/pipeline_reference.md`
+- **Messages** -> `.claude/messages_reference.md`
 - **Arturito (AI Assistant)** -> `.claude/arturito_reference.md`
+- **Code Inspection** -> `.claude/CODE_INSPECTION.md` (framework de inspeccion de codigo)
 - **Algorithm Diagrams** -> `.claude/algorithm_diagram_spec.md` (para generar diagramas de algoritmos)
 
 ## Patrones Comunes (aplican a todos los modulos)
@@ -51,9 +59,22 @@ Antes de trabajar en un modulo complejo, leer su archivo de referencia en `.clau
 - `assets/js/config.js` define `window.NGM_CONFIG = {API_BASE, SUPABASE_URL, SUPABASE_ANON_KEY}`
 - API_BASE: `https://ngm-fastapi.onrender.com` (prod) o `http://127.0.0.1:8000` (dev)
 
+### Shared Utilities
+- `assets/js/utils.js` expone `window.NGMUtils` y globals individuales:
+  - `getAuthHeaders()` - Headers de auth con Bearer token
+  - `formatCurrency(amount)` - Formato numerico USD (sin $)
+  - `formatUSD(amount)` - Formato USD completo ($1,234.56)
+  - `escapeHtml(str)` - Escape XSS via string replace chain
+  - `hashStringToHue(str)` - Hash determinista para colores de avatar
+  - `getSupabaseClient()` - Singleton Supabase client
+  - `getApiBase()` - API base URL con fallback chain
+  - `debounce(fn, ms)` - Standard debounce
+- Cargar despues de `config.js`, antes de scripts de pagina
+- Los modulos existentes aun definen sus propias copias (migracion gradual)
+
 ### Auth
 - Firebase para login, token almacenado en localStorage
-- `getAuthHeaders()` esta definido localmente en cada modulo (no compartido), retorna `{Authorization: 'Bearer ' + token}`
+- `getAuthHeaders()` disponible globalmente via `utils.js` (tambien definido localmente en modulos legacy)
 
 ### Notificaciones
 - `assets/js/toast.js` expone `window.Toast` con: `.success()`, `.error()`, `.warning()`, `.info()`

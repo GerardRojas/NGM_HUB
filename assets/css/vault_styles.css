@@ -648,6 +648,79 @@
   background: rgba(255,255,255,0.08);
   color: rgba(255,255,255,0.4);
 }
+.vault-receipt-badge.processing {
+  background: #f59e0b;
+  color: #fff;
+}
+.vault-receipt-badge-row.processing {
+  background: rgba(245,158,11,0.15);
+  color: #f59e0b;
+}
+.vault-spin {
+  animation: vault-spin 1s linear infinite;
+}
+@keyframes vault-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Process with Andrew Button ---- */
+.vault-btn-andrew {
+  background: rgba(245,158,11,0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245,158,11,0.3);
+}
+.vault-btn-andrew:hover {
+  background: rgba(245,158,11,0.25);
+}
+
+/* ---- Andrew Context Menu ---- */
+.vault-ctx-andrew-btn {
+  color: #f59e0b !important;
+}
+
+/* ---- Andrew Processing Modal ---- */
+.vault-andrew-modal { max-width: 520px; }
+.vault-andrew-summary {
+  padding: 12px 16px;
+  font-size: 14px;
+  color: rgba(255,255,255,0.7);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.vault-andrew-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+.vault-andrew-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.vault-andrew-item-name {
+  font-size: 13px;
+  color: rgba(255,255,255,0.8);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 320px;
+}
+.vault-andrew-item-status {
+  font-size: 12px;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.vault-andrew-item-status.queued,
+.vault-andrew-item-status.pending { color: #888; background: rgba(136,136,136,0.1); }
+.vault-andrew-item-status.processing { color: #f59e0b; background: rgba(245,158,11,0.1); }
+.vault-andrew-item-status.ready,
+.vault-andrew-item-status.linked,
+.vault-andrew-item-status.check_review { color: #3ecf8e; background: rgba(62,207,142,0.1); }
+.vault-andrew-item-status.error { color: #ef4444; background: rgba(239,68,68,0.1); }
+.vault-andrew-item-status.skipped { color: #888; background: rgba(136,136,136,0.1); }
 
 /* ---- File Row (List Mode) ---- */
 .vault-file-row {

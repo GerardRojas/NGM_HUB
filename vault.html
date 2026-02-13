@@ -118,6 +118,10 @@
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                                 <span>Upload</span>
                             </button>
+                            <button class="vault-btn vault-btn-andrew" id="btnProcessAndrew" title="Process pending receipts with Andrew" style="display:none;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 12l2 2 4-4"></path></svg>
+                                <span>Process with Andrew</span>
+                            </button>
                         </div>
                     </section>
 
@@ -213,6 +217,11 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
             Version History
         </button>
+        <div class="vault-context-divider vault-ctx-andrew-divider" style="display:none;"></div>
+        <button data-action="process-andrew" class="vault-ctx-andrew-btn" style="display:none;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M8 12l2 2 4-4"></path></svg>
+            Process with Andrew
+        </button>
         <div class="vault-context-divider"></div>
         <button data-action="delete" class="vault-context-danger">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -257,6 +266,25 @@
             <div class="vault-modal-footer">
                 <button class="vault-btn vault-btn-secondary" id="btnCancelMove">Cancel</button>
                 <button class="vault-btn vault-btn-primary" id="btnConfirmMove">Move Here</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Process with Andrew Modal -->
+    <div class="vault-modal-overlay" id="vaultAndrewModal" style="display:none;">
+        <div class="vault-modal vault-andrew-modal">
+            <div class="vault-modal-header">
+                <h3>Processing with Andrew</h3>
+                <button class="vault-modal-close" id="btnCloseAndrewModal">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div class="vault-modal-body">
+                <div class="vault-andrew-summary" id="vaultAndrewSummary"></div>
+                <div class="vault-andrew-list" id="vaultAndrewList"></div>
+            </div>
+            <div class="vault-modal-footer">
+                <button class="vault-btn vault-btn-secondary" id="btnDoneAndrew" style="display:none;">Close</button>
             </div>
         </div>
     </div>

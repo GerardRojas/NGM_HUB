@@ -41,6 +41,8 @@
   let expandedNodes = new Set(); // Track which tree nodes are expanded
   let treeCache = {};          // Cache tree data per project to avoid re-fetching
   let filesCache = {};         // Cache files data per folder/project to avoid re-fetching
+  let andrewBatchId = null;    // current vault batch being processed
+  let andrewPollInterval = null; // polling timer for batch status
 
   // ─── DOM refs ──────────────────────────────────────────────────────────────
   const $tree = document.getElementById("vaultTree");
@@ -433,6 +435,21 @@
       const header = `<div class="vault-list-header"><span></span><span>Name</span><span>Modified</span><span>Size</span><span>${col5Label}</span><span></span></div>`;
       $files.innerHTML = header + sorted.map(f => renderFileRow(f)).join("");
     }
+
+    updateAndrewButtonVisibility();
+  }
+
+  function updateAndrewButtonVisibility() {
+    const btn = document.getElementById("btnProcessAndrew");
+    if (!btn) return;
+    const isReceipts = folderPath.length > 0 && folderPath[folderPath.length - 1].name === "Receipts";
+    if (!isReceipts || !currentProject) { btn.style.display = "none"; return; }
+    const pending = files.filter(f => {
+      if (f.is_folder) return false;
+      const st = f.file_hash && receiptStatusMap[f.file_hash];
+      return !st || st === "pending";
+    });
+    btn.style.display = pending.length > 0 ? "" : "none";
   }
 
   function sortFiles(list) {
@@ -456,6 +473,8 @@
     const rStatus = !f.is_folder && f.file_hash && receiptStatusMap[f.file_hash];
     const badge = rStatus === "linked"
       ? `<span class="vault-receipt-badge linked" title="Processed"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>`
+      : rStatus === "processing"
+        ? `<span class="vault-receipt-badge processing" title="Processing"><svg class="vault-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg></span>`
       : rStatus
         ? `<span class="vault-receipt-badge pending" title="Pending"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span>`
         : "";
@@ -474,6 +493,8 @@
     const rStatus = !f.is_folder && f.file_hash && receiptStatusMap[f.file_hash];
     const statusBadge = rStatus === "linked"
       ? `<span class="vault-receipt-badge-row linked" title="Processed"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Processed</span>`
+      : rStatus === "processing"
+        ? `<span class="vault-receipt-badge-row processing" title="Processing"><svg class="vault-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Processing</span>`
       : rStatus
         ? `<span class="vault-receipt-badge-row pending" title="Pending">Pending</span>`
         : "";
@@ -712,12 +733,23 @@
 
     // Show/hide actions based on file type
     const isFolder = file.is_folder;
+    const isReceipts = folderPath.length > 0 && folderPath[folderPath.length - 1].name === "Receipts";
     $contextMenu.querySelectorAll("[data-action]").forEach(btn => {
       const action = btn.dataset.action;
       if (action === "download" || action === "duplicate" || action === "versions") {
         btn.style.display = isFolder ? "none" : "";
       }
     });
+
+    // Show "Process with Andrew" only for pending files in Receipts folder
+    const andrewBtn = $contextMenu.querySelector('[data-action="process-andrew"]');
+    const andrewDiv = $contextMenu.querySelector('.vault-ctx-andrew-divider');
+    if (andrewBtn) {
+      const isPending = !isFolder && isReceipts && currentProject &&
+        (!file.file_hash || !receiptStatusMap[file.file_hash] || receiptStatusMap[file.file_hash] === "pending");
+      andrewBtn.style.display = isPending ? "" : "none";
+      if (andrewDiv) andrewDiv.style.display = isPending ? "" : "none";
+    }
 
     $contextMenu.style.display = "block";
     const x = Math.min(e.clientX, window.innerWidth - 200);
@@ -785,6 +817,10 @@
 
       case "versions":
         openVersionPanel(file);
+        break;
+
+      case "process-andrew":
+        processWithAndrew([file.id]);
         break;
 
       case "delete":
@@ -1179,6 +1215,21 @@
     // New folder button
     document.getElementById("btnNewFolder")?.addEventListener("click", createNewFolder);
 
+    // Process with Andrew (bulk)
+    document.getElementById("btnProcessAndrew")?.addEventListener("click", () => {
+      const pending = files.filter(f => {
+        if (f.is_folder) return false;
+        const st = f.file_hash && receiptStatusMap[f.file_hash];
+        return !st || st === "pending";
+      });
+      if (pending.length === 0) { if (window.Toast) window.Toast.info("No pending receipts to process"); return; }
+      processWithAndrew(pending.map(f => f.id));
+    });
+
+    // Andrew modal close
+    document.getElementById("btnCloseAndrewModal")?.addEventListener("click", closeAndrewModal);
+    document.getElementById("btnDoneAndrew")?.addEventListener("click", closeAndrewModal);
+
     // Back button
     document.getElementById("btnTreeBack")?.addEventListener("click", goBack);
 
@@ -1243,6 +1294,112 @@
     // Drag & drop + resizer
     setupDragDrop();
     setupResizer();
+  }
+
+  // ─── Process with Andrew ────────────────────────────────────────────────────
+  async function processWithAndrew(vaultFileIds) {
+    if (!currentProject || !vaultFileIds.length) return;
+
+    const modal = document.getElementById("vaultAndrewModal");
+    const summary = document.getElementById("vaultAndrewSummary");
+    const list = document.getElementById("vaultAndrewList");
+    const doneBtn = document.getElementById("btnDoneAndrew");
+
+    if (modal) modal.style.display = "flex";
+    if (doneBtn) doneBtn.style.display = "none";
+    if (summary) summary.textContent = `Sending ${vaultFileIds.length} file(s) to Andrew...`;
+
+    // Build initial list
+    if (list) {
+      list.innerHTML = vaultFileIds.map(id => {
+        const f = files.find(x => x.id === id);
+        const name = f ? f.name : id;
+        return `<div class="vault-andrew-item" data-vault-id="${id}">
+          <span class="vault-andrew-item-name">${escapeHtml(name)}</span>
+          <span class="vault-andrew-item-status queued">Queued</span>
+        </div>`;
+      }).join("");
+    }
+
+    try {
+      const result = await apiPost("/pending-receipts/process-from-vault", {
+        vault_file_ids: vaultFileIds,
+        project_id: currentProject,
+      });
+
+      andrewBatchId = result.batch_id;
+      if (summary) summary.textContent = `Processing ${result.queued}/${result.total} file(s)...`;
+
+      // Update skipped/error items
+      for (const r of result.results) {
+        const item = list?.querySelector(`[data-vault-id="${r.vault_file_id}"]`);
+        if (!item) continue;
+        const el = item.querySelector(".vault-andrew-item-status");
+        if (el && r.status === "skipped") {
+          el.className = "vault-andrew-item-status skipped";
+          el.textContent = "Skipped";
+          el.title = r.message || "";
+        } else if (el && r.status === "error") {
+          el.className = "vault-andrew-item-status error";
+          el.textContent = "Error";
+          el.title = r.message || "";
+        }
+      }
+
+      if (result.queued > 0) startAndrewPolling();
+      else { if (doneBtn) doneBtn.style.display = ""; if (summary) summary.textContent = "No files to process."; }
+    } catch (e) {
+      if (summary) summary.textContent = `Error: ${e.message}`;
+      if (doneBtn) doneBtn.style.display = "";
+    }
+  }
+
+  function startAndrewPolling() {
+    if (andrewPollInterval) clearInterval(andrewPollInterval);
+    andrewPollInterval = setInterval(async () => {
+      if (!andrewBatchId) return;
+      try {
+        const st = await apiFetch(`/pending-receipts/vault-batch-status?batch_id=${andrewBatchId}`);
+        const list = document.getElementById("vaultAndrewList");
+        const summary = document.getElementById("vaultAndrewSummary");
+        const doneBtn = document.getElementById("btnDoneAndrew");
+
+        // Update per-file status
+        for (const r of st.receipts) {
+          const item = list?.querySelector(`[data-vault-id="${r.vault_file_id}"]`);
+          if (!item) continue;
+          const el = item.querySelector(".vault-andrew-item-status");
+          if (!el) continue;
+          const s = r.status;
+          el.className = `vault-andrew-item-status ${s}`;
+          el.textContent = s === "processing" ? "Processing..." : s === "ready" ? "Done" :
+            s === "linked" ? "Linked" : s === "error" ? "Error" : s === "check_review" ? "Done" : s;
+          if (r.processing_error) el.title = r.processing_error;
+        }
+
+        const s = st.statuses;
+        const done = (s.ready || 0) + (s.linked || 0) + (s.error || 0);
+        if (summary) summary.textContent = `Processed ${done}/${st.total} | ${(s.ready || 0)} ready, ${(s.error || 0)} errors`;
+
+        if (st.complete) {
+          clearInterval(andrewPollInterval);
+          andrewPollInterval = null;
+          if (doneBtn) doneBtn.style.display = "";
+          if (summary) summary.textContent = `Complete! ${(s.ready || 0)} processed, ${(s.error || 0)} errors`;
+          // Refresh receipt badges
+          invalidateCurrentFilesCache();
+          await loadFiles(true);
+        }
+      } catch (e) {
+        console.warn("[Vault] Andrew polling error:", e);
+      }
+    }, 3000);
+  }
+
+  function closeAndrewModal() {
+    const modal = document.getElementById("vaultAndrewModal");
+    if (modal) modal.style.display = "none";
+    if (andrewPollInterval) { clearInterval(andrewPollInterval); andrewPollInterval = null; }
   }
 
   // ─── Utilities ─────────────────────────────────────────────────────────────

@@ -53,6 +53,12 @@ Antes de trabajar en un modulo complejo, leer su archivo de referencia en `.clau
 - **Code Inspection** -> `.claude/CODE_INSPECTION.md` (framework de inspeccion de codigo)
 - **Algorithm Diagrams** -> `.claude/algorithm_diagram_spec.md` (para generar diagramas de algoritmos)
 
+### Agentes AI (filosofia, personalidad, arquitectura, reglas de escalabilidad)
+Antes de modificar o escalar un agente, leer su doc de filosofia:
+- **Arturito** -> `.claude/agent_arturito.md` (recepcionista inteligente, NLU, copilot, intents)
+- **Andrew** -> `.claude/agent_andrew.md` (contador de campo, OCR, categorizacion, reconciliacion)
+- **Daneel** -> `.claude/agent_daneel.md` (auditor guardian, autorizacion R1-R9, presupuesto, duplicados)
+
 ## Patrones Comunes (aplican a todos los modulos)
 
 ### Config Global

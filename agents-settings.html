@@ -3090,11 +3090,15 @@
                 dropdown.classList.add('is-open');
             });
 
+            var _dropdownDebounce = null;
             searchInput.addEventListener('input', function() {
-                renderRecipientDropdown(searchInput.value);
                 if (!dropdown.classList.contains('is-open')) {
                     dropdown.classList.add('is-open');
                 }
+                clearTimeout(_dropdownDebounce);
+                _dropdownDebounce = setTimeout(function() {
+                    renderRecipientDropdown(searchInput.value);
+                }, 200);
             });
 
             dropdown.addEventListener('click', function(e) {
@@ -3142,11 +3146,17 @@
                 saveDaneelRecipients();
             });
 
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('#daneelRecipientPicker')) {
-                    dropdown.classList.remove('is-open');
-                }
-            });
+            if (!window._agentPickerClickHandler) {
+                window._agentPickerClickHandler = function(e) {
+                    document.querySelectorAll('.recipient-dropdown.is-open').forEach(function(dd) {
+                        var picker = dd.closest('.recipient-picker') || dd.parentElement;
+                        if (!picker || !picker.contains(e.target)) {
+                            dd.classList.remove('is-open');
+                        }
+                    });
+                };
+                document.addEventListener('click', window._agentPickerClickHandler);
+            }
         }
 
         function initDaneel() {
@@ -3490,11 +3500,7 @@
                 }
             });
 
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('#' + cfg.pickerId)) {
-                    dropdown.classList.remove('is-open');
-                }
-            });
+            // Close-on-outside-click handled by shared _agentPickerClickHandler
         }
 
         // ====== Project Review ======

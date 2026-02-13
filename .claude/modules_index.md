@@ -223,6 +223,18 @@ Files over 3000 lines that are candidates for splitting:
 
 ---
 
+## Agent Philosophy Docs
+
+Reference docs for AI agent scalability. Read before modifying any agent.
+
+| Agent | Doc | Role | Key Pattern |
+|-------|-----|------|-------------|
+| Arturito | [agent_arturito.md](agent_arturito.md) | Smart Receptionist | NLU regex+GPT, 25 intents, copilot |
+| Andrew | [agent_andrew.md](agent_andrew.md) | Field Accountant | GPT routing, 6 functions, MD5 cache learning |
+| Daneel | [agent_daneel.md](agent_daneel.md) | Auditor Guardian | GPT routing, 5 functions, R1-R9 rules engine |
+
+---
+
 ## Quick Stats
 
 - **Total JS**: 70,907 lines across 61 files

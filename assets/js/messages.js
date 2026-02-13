@@ -2071,12 +2071,8 @@
     }
     if (state._accountsFetching) {
       return new Promise((resolve) => {
-        const check = setInterval(() => {
-          if (!state._accountsFetching && state._accountsCache) {
-            clearInterval(check);
-            resolve(state._accountsCache.data);
-          }
-        }, 50);
+        if (!state._accountsWaiters) state._accountsWaiters = [];
+        state._accountsWaiters.push(resolve);
       });
     }
     state._accountsFetching = true;
@@ -2090,9 +2086,17 @@
         category: a.AccountCategory || "",
       }));
       state._accountsCache = { data: accounts, fetchedAt: Date.now() };
+      if (state._accountsWaiters) {
+        state._accountsWaiters.forEach(fn => fn(accounts));
+        state._accountsWaiters = null;
+      }
       return accounts;
     } catch (err) {
       console.error("[Messages] Accounts fetch error:", err);
+      if (state._accountsWaiters) {
+        state._accountsWaiters.forEach(fn => fn([]));
+        state._accountsWaiters = null;
+      }
       return [];
     } finally {
       state._accountsFetching = false;
@@ -3692,7 +3696,10 @@
 
   // ── Polling fallback state ──
   let pollingTimer = null;
-  const POLL_INTERVAL_MS = 4000;
+  let pollingDelayTimer = null;
+  const POLL_BASE_MS = 4000;
+  const POLL_MAX_MS = 30000;
+  let pollIntervalMs = POLL_BASE_MS;
   let realtimeConnected = false;
 
   function subscribeToChannel(channel) {
@@ -3776,8 +3783,13 @@
         }
       });
 
-    // Start polling only as a safety net — will auto-stop when realtime confirms connection
-    startMessagePolling();
+    // Start polling only if realtime doesn't connect within 3s
+    pollingDelayTimer = setTimeout(() => {
+      if (!realtimeConnected) {
+        console.log("[Messages] Realtime not connected after 3s, starting polling fallback");
+        startMessagePolling();
+      }
+    }, 3000);
   }
 
   /**
@@ -3786,43 +3798,62 @@
    */
   function startMessagePolling() {
     stopMessagePolling();
+    pollIntervalMs = POLL_BASE_MS;
+    _pollTick();
+  }
 
-    pollingTimer = setInterval(async () => {
-      if (!state.currentChannel || document.hidden) return;
+  async function _pollTick() {
+    if (realtimeConnected) return;
+    if (!state.currentChannel || document.hidden) {
+      pollingTimer = setTimeout(_pollTick, pollIntervalMs);
+      return;
+    }
 
-      try {
-        const ch = state.currentChannel;
-        let url = `${API_BASE}/messages?channel_type=${ch.type}&limit=15`;
+    try {
+      const ch = state.currentChannel;
+      let url = `${API_BASE}/messages?channel_type=${ch.type}&limit=15`;
 
-        if (ch.type.startsWith("project_")) {
-          url += `&project_id=${ch.projectId}`;
-        } else {
-          url += `&channel_id=${ch.id}`;
-        }
-
-        const res = await authFetch(url);
-        if (!res.ok) return;
-        const data = await res.json();
-        const freshMessages = data.messages || data || [];
-
-        // Check for messages we don't already have
-        const existingIds = new Set(state.messages.map(m => m.id));
-        const newMessages = freshMessages.filter(m => !existingIds.has(m.id));
-
-        if (newMessages.length > 0) {
-          console.log(`[Messages] Polling found ${newMessages.length} new message(s)`);
-          newMessages.forEach(msg => handleNewMessage(msg));
-        }
-      } catch (err) {
-        // Silently ignore polling errors
+      if (ch.type.startsWith("project_")) {
+        url += `&project_id=${ch.projectId}`;
+      } else {
+        url += `&channel_id=${ch.id}`;
       }
-    }, POLL_INTERVAL_MS);
+
+      const res = await authFetch(url);
+      if (!res.ok) { _scheduleNextPoll(); return; }
+      const data = await res.json();
+      const freshMessages = data.messages || data || [];
+
+      const existingIds = new Set(state.messages.map(m => m.id));
+      const newMessages = freshMessages.filter(m => !existingIds.has(m.id));
+
+      if (newMessages.length > 0) {
+        console.log(`[Messages] Polling found ${newMessages.length} new message(s)`);
+        newMessages.forEach(msg => handleNewMessage(msg));
+        pollIntervalMs = POLL_BASE_MS;
+      } else {
+        pollIntervalMs = Math.min(pollIntervalMs * 1.5, POLL_MAX_MS);
+      }
+    } catch (err) {
+      // Silently ignore polling errors
+    }
+    _scheduleNextPoll();
+  }
+
+  function _scheduleNextPoll() {
+    if (!realtimeConnected) {
+      pollingTimer = setTimeout(_pollTick, pollIntervalMs);
+    }
   }
 
   function stopMessagePolling() {
     if (pollingTimer) {
-      clearInterval(pollingTimer);
+      clearTimeout(pollingTimer);
       pollingTimer = null;
+    }
+    if (pollingDelayTimer) {
+      clearTimeout(pollingDelayTimer);
+      pollingDelayTimer = null;
     }
   }
 
@@ -4119,11 +4150,16 @@
       });
     });
 
-    // Scroll-up to load older messages (pagination)
+    // Scroll-up to load older messages (pagination) - rAF debounced
+    let _scrollRafId = 0;
     DOM.messagesContainer?.addEventListener("scroll", () => {
-      if (DOM.messagesContainer.scrollTop < 80 && _hasMoreMessages && !_loadingMore) {
-        loadOlderMessages();
-      }
+      if (_scrollRafId) return;
+      _scrollRafId = requestAnimationFrame(() => {
+        _scrollRafId = 0;
+        if (DOM.messagesContainer.scrollTop < 80 && _hasMoreMessages && !_loadingMore) {
+          loadOlderMessages();
+        }
+      });
     }, { passive: true });
 
     // Message input

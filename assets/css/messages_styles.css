@@ -636,7 +636,7 @@
   position: relative;
   max-width: none; /* Allow full width */
   margin-bottom: 4px;
-  contain: layout style;
+  contain: layout style paint;
 }
 
 /* Loading older messages indicator */

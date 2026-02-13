@@ -3784,7 +3784,7 @@
     stopMessagePolling();
 
     pollingTimer = setInterval(async () => {
-      if (!state.currentChannel) return;
+      if (!state.currentChannel || document.hidden) return;
 
       try {
         const ch = state.currentChannel;

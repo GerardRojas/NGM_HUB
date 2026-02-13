@@ -20,7 +20,6 @@
   const SUPABASE_URL = window.NGM_CONFIG?.SUPABASE_URL || "";
   const SUPABASE_ANON_KEY = window.NGM_CONFIG?.SUPABASE_ANON_KEY || "";
   const MESSAGES_LIMIT = 30;
-  const UNREAD_POLL_MS = 30000;
   const LAST_CH_KEY = "chat_widget_last_channel";
 
   const CHANNEL_TYPES = {
@@ -68,7 +67,7 @@
     totalUnread: 0,
     supabaseClient: null,
     messageSubscription: null,
-    unreadPollingTimer: null,
+    unreadSubscription: null,
     realtimeConnected: false,
     isLoadingMessages: false,
     channelRequestId: 0,
@@ -774,9 +773,53 @@
       if (typeof supabase === "undefined") {
         await loadSupabaseSDK();
       }
-      state.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      // Reuse shared singleton to avoid Multiple GoTrueClient warning
+      if (window._ngmSupabaseClient) {
+        state.supabaseClient = window._ngmSupabaseClient;
+      } else {
+        state.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        window._ngmSupabaseClient = state.supabaseClient;
+      }
+
+      // Global subscription: listen to ALL new messages for unread badge updates.
+      // This runs even when the chat panel is closed, replacing the polling approach.
+      state.unreadSubscription = state.supabaseClient
+        .channel("cw_global_unread")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "messages" },
+          function (payload) {
+            var msg = payload.new;
+            if (!msg || !state.currentUser) return;
+            if (msg.user_id === state.currentUser.user_id) return;
+
+            var msgKey = msg.channel_key ||
+              (msg.channel_type + ":" + (msg.channel_id || msg.project_id));
+
+            // Skip if this channel is currently open in the widget
+            if (state.currentChannel) {
+              var openKey = getChannelKey(
+                state.currentChannel.type,
+                state.currentChannel.id,
+                state.currentChannel.projectId
+              );
+              if (msgKey === openKey) return;
+            }
+
+            state.unreadCounts[msgKey] = (state.unreadCounts[msgKey] || 0) + 1;
+            updateBadge();
+            updateChannelBadge(msgKey, state.unreadCounts[msgKey]);
+          }
+        )
+        .subscribe(function (status) {
+          if (status === "SUBSCRIBED") {
+            state.realtimeConnected = true;
+          } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+            state.realtimeConnected = false;
+          }
+        });
     } catch (e) {
-      // Supabase not available -- polling only
+      // Supabase not available -- visibilitychange refresh is the only fallback
     }
   }
 
@@ -827,12 +870,8 @@
               }
               renderMessages();
             }
-          } else if (msg.user_id !== state.currentUser?.user_id) {
-            // Other channel: increment unread
-            state.unreadCounts[msgKey] = (state.unreadCounts[msgKey] || 0) + 1;
-            updateBadge();
-            updateChannelBadge(msgKey, state.unreadCounts[msgKey]);
           }
+          // Other-channel unreads handled by global unread subscription
         }
       )
       .subscribe(function (status) {
@@ -845,21 +884,13 @@
   }
 
   // -------------------------------------------------------------------------
-  // UNREAD POLLING (fallback)
+  // UNREAD REFRESH (on tab focus, corrects any Realtime drift)
   // -------------------------------------------------------------------------
-  function startUnreadPolling() {
-    stopUnreadPolling();
-    state.unreadPollingTimer = setInterval(function () {
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) {
       loadUnreadCounts();
-    }, UNREAD_POLL_MS);
-  }
-
-  function stopUnreadPolling() {
-    if (state.unreadPollingTimer) {
-      clearInterval(state.unreadPollingTimer);
-      state.unreadPollingTimer = null;
     }
-  }
+  });
 
   // -------------------------------------------------------------------------
   // OPEN / CLOSE
@@ -1050,10 +1081,7 @@
     // Parallel: load user + unread counts (minimal on page load)
     await Promise.all([loadCurrentUser(), loadUnreadCounts()]);
 
-    // Start unread polling
-    startUnreadPolling();
-
-    // Init Supabase (async, non-blocking)
+    // Init Supabase Realtime (global unread subscription, no polling needed)
     initSupabaseRealtime();
   }
 

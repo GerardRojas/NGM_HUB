@@ -2997,12 +2997,17 @@
     try {
       const batchStartTime = performance.now();
 
-      // Transform updates to match backend schema
+      // Transform updates to match backend schema - clean empty strings from each update
       const batchPayload = {
-        updates: updates.map(u => ({
-          expense_id: u.id,
-          data: u.data
-        }))
+        updates: updates.map(u => {
+          const cleanData = { ...u.data };
+          for (const key of Object.keys(cleanData)) {
+            if (typeof cleanData[key] === 'string' && cleanData[key].trim() === '') {
+              delete cleanData[key];
+            }
+          }
+          return { expense_id: u.id, data: cleanData };
+        })
       };
 
       // Single API call for all updates

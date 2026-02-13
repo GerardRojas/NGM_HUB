@@ -4422,7 +4422,6 @@
 
       // Separate receipt files from expense data (can't send files in JSON)
       const receiptFilesMap = new Map(); // index -> { file, isFromScan }
-      const UUID_FIELDS = ['project', 'txn_type', 'vendor_id', 'payment_type', 'account_id', 'created_by', 'LineUID'];
       const expensesForBatch = expensesToSave.map((exp, idx) => {
         const expenseData = { ...exp };
         const receiptFile = expenseData._receiptFile;
@@ -4431,10 +4430,10 @@
         delete expenseData._fromScannedReceipt;
         delete expenseData._pendingReceiptId;
 
-        // Clean empty strings from UUID fields to prevent DB errors
-        for (const field of UUID_FIELDS) {
-          if (expenseData[field] !== undefined && expenseData[field] !== null && String(expenseData[field]).trim() === '') {
-            delete expenseData[field];
+        // Clean ALL empty string fields to prevent DB errors (esp. UUID columns)
+        for (const key of Object.keys(expenseData)) {
+          if (typeof expenseData[key] === 'string' && expenseData[key].trim() === '') {
+            delete expenseData[key];
           }
         }
 
@@ -5737,13 +5736,16 @@
       formData.append('correction_context', JSON.stringify(correctionContext));
     }
 
+    const _apiT0 = performance.now();
     const response = await fetch(`${apiBase}/expenses/parse-receipt`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${authToken}` },
       body: formData
     });
+    const _apiT1 = performance.now();
 
     const responseText = await response.text();
+    console.log(`%c[SCAN TIMING] API ${model}: fetch=${(_apiT1-_apiT0).toFixed(0)}ms, read=${(performance.now()-_apiT1).toFixed(0)}ms, size=${(responseText.length/1024).toFixed(1)}KB`, 'color:#8b5cf6');
 
     if (!response.ok) {
       let errorMessage = `Failed to parse receipt (HTTP ${response.status})`;
@@ -5812,6 +5814,15 @@
     const apiBase = getApiBase();
 
     try {
+      // ── Timing setup ──
+      const _t0 = performance.now();
+      const _tLog = (label, t) => {
+        const elapsed = (performance.now() - t).toFixed(0);
+        const total = (performance.now() - _t0).toFixed(0);
+        console.log(`%c[SCAN TIMING] ${label}: ${elapsed}ms (total: ${total}ms)`, 'color:#0ea5e9;font-weight:bold');
+      };
+      let _tStep = _t0;
+
       // Hide upload zone and show progress
       if (els.scanReceiptUploadZone) {
         els.scanReceiptUploadZone.style.display = 'none';
@@ -5822,6 +5833,7 @@
 
       // Get selected model (fast or heavy)
       const selectedModel = document.querySelector('input[name="scanModel"]:checked')?.value || 'fast';
+      console.log(`%c[SCAN TIMING] Start scan | mode=${selectedModel} | file=${file.name} (${(file.size/1024).toFixed(1)}KB)`, 'color:#0ea5e9;font-weight:bold');
 
       const authToken = getAuthToken();
       if (!authToken) return;
@@ -5829,8 +5841,11 @@
       // --- Pass 1: initial analysis ---
       els.scanReceiptProgressText.textContent = 'Analyzing receipt...';
       els.scanReceiptProgressFill.style.width = '50%';
+      _tStep = performance.now();
 
       let result = await callParseReceiptAPI(file, selectedModel, authToken, apiBase);
+      _tLog(`Pass 1 API (${selectedModel})`, _tStep);
+      console.log(`[SCAN TIMING] Pass 1 result: method=${result.extraction_method}, items=${result.data?.expenses?.length}, validation=${result.data?.validation?.validation_passed}`);
       let usedRetry = false;
 
 
@@ -5852,8 +5867,11 @@
           }))
         };
 
+        _tStep = performance.now();
         try {
           const pass2Result = await callParseReceiptAPI(file, 'heavy', authToken, apiBase, correctionCtx);
+          _tLog('Pass 2 API (heavy correction)', _tStep);
+          console.log(`[SCAN TIMING] Pass 2 result: method=${pass2Result.extraction_method}, validation=${pass2Result.data?.validation?.validation_passed}`);
 
           // Pick the better result: prefer the one that validates, or the one with smaller discrepancy
           const pass1Disc = getValidationDiscrepancy(result);
@@ -5862,13 +5880,19 @@
           if (pass2Result.data?.validation?.validation_passed || pass2Disc < pass1Disc) {
             result = pass2Result;
             usedRetry = true;
+            console.log('[SCAN TIMING] Using Pass 2 result (better validation)');
           } else {
+            console.log('[SCAN TIMING] Keeping Pass 1 result (Pass 2 not better)');
           }
         } catch (retryErr) {
+          _tLog('Pass 2 FAILED', _tStep);
           console.warn('[SCAN RECEIPT] Pass 2 failed, using pass 1 result:', retryErr.message);
         }
+      } else {
+        console.log('[SCAN TIMING] Pass 1 validation OK, skipping Pass 2');
       }
 
+      _tStep = performance.now();
       els.scanReceiptProgressText.textContent = 'Populating expense rows...';
       els.scanReceiptProgressFill.style.width = '90%';
 
@@ -5907,15 +5931,19 @@
       if (result.success && result.data && result.data.expenses) {
         await populateExpensesFromScan(result.data.expenses);
       }
+      _tLog('Populate rows', _tStep);
 
+      _tStep = performance.now();
       // Activate scanned receipt mode - blocks adding rows and marks bill as closed on save
       isScannedReceiptMode = true;
       selectedBillStatus = 'closed'; // Default to closed for scanned receipts
       updateScannedReceiptModeUI();
       updateBillStatusSection(); // Show bill status section with 'closed' pre-selected
       updateScanValidationSection(); // Show validation section with running totals
+      _tLog('UI updates', _tStep);
 
       els.scanReceiptProgressFill.style.width = '100%';
+      _tLog('TOTAL SCAN FLOW', _t0);
 
       // Build success message with validation and tax info
       if (window.Toast) {
@@ -10884,8 +10912,7 @@
 
     // Clear global search
     globalSearchTerm = '';
-    const searchInput = document.querySelector('.global-search-input');
-    if (searchInput) searchInput.value = '';
+    if (els.searchInput) els.searchInput.value = '';
 
     // Re-render table
     renderExpensesTable();
@@ -10926,8 +10953,7 @@
    */
   function arturitoSearch(term) {
     globalSearchTerm = term || '';
-    const searchInput = document.querySelector('.global-search-input');
-    if (searchInput) searchInput.value = term;
+    if (els.searchInput) els.searchInput.value = term;
     renderExpensesTable();
     return { success: true, message: `Búsqueda: "${term}"` };
   }

@@ -1594,11 +1594,14 @@ input[type="number"].form-input {
   display: flex;
   gap: 12px;
   margin-bottom: 20px;
+  align-items: stretch;
 }
 
 .scan-model-option {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   cursor: pointer;
+  display: flex;
 }
 
 .scan-model-option input[type="radio"] {
@@ -1615,6 +1618,8 @@ input[type="number"].form-input {
   border-radius: 10px;
   transition: all 0.2s ease;
   position: relative;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .scan-model-option:hover .scan-model-card {

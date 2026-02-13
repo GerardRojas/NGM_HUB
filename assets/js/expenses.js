@@ -4422,12 +4422,21 @@
 
       // Separate receipt files from expense data (can't send files in JSON)
       const receiptFilesMap = new Map(); // index -> { file, isFromScan }
+      const UUID_FIELDS = ['project', 'txn_type', 'vendor_id', 'payment_type', 'account_id', 'created_by', 'LineUID'];
       const expensesForBatch = expensesToSave.map((exp, idx) => {
         const expenseData = { ...exp };
         const receiptFile = expenseData._receiptFile;
         const isFromScan = expenseData._fromScannedReceipt;
         delete expenseData._receiptFile;
         delete expenseData._fromScannedReceipt;
+        delete expenseData._pendingReceiptId;
+
+        // Clean empty strings from UUID fields to prevent DB errors
+        for (const field of UUID_FIELDS) {
+          if (expenseData[field] !== undefined && expenseData[field] !== null && String(expenseData[field]).trim() === '') {
+            delete expenseData[field];
+          }
+        }
 
         if (receiptFile) {
           receiptFilesMap.set(idx, { file: receiptFile, isFromScan });

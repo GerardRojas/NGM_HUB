@@ -2797,6 +2797,10 @@
         state.messages = [];
         _markFullRebuild();
         renderMessages();
+        // Refresh mentions (cleared messages may have had @mentions)
+        mentionsCache = [];
+        mentionsLoaded = false;
+        loadMentionsBadge();
         showToast(`Cleared ${data.count || 0} messages`, "success");
       } else {
         const err = await res.json().catch(() => ({}));

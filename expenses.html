@@ -633,20 +633,7 @@
             </div>
 
             <div class="modal-body">
-                <p class="modal-hint">Select a receipt from the Receipts channel to create an expense.</p>
-
-                <!-- Filter tabs -->
-                <div class="pending-receipts-tabs">
-                    <button type="button" class="pending-tab active" data-status="ready">
-                        Ready <span class="pending-tab-count" id="pendingCountReady">0</span>
-                    </button>
-                    <button type="button" class="pending-tab" data-status="pending">
-                        Pending <span class="pending-tab-count" id="pendingCountPending">0</span>
-                    </button>
-                    <button type="button" class="pending-tab" data-status="processing">
-                        Processing <span class="pending-tab-count" id="pendingCountProcessing">0</span>
-                    </button>
-                </div>
+                <p class="modal-hint">Receipts without linked expenses. Click to scan and create an expense.</p>
 
                 <!-- Receipts grid -->
                 <div class="pending-receipts-grid" id="pendingReceiptsGrid">
@@ -666,8 +653,8 @@
                         <line x1="16" y1="17" x2="8" y2="17"></line>
                         <polyline points="10 9 9 9 8 9"></polyline>
                     </svg>
-                    <span>No receipts found</span>
-                    <p>Upload receipts to the <strong>Receipts</strong> channel in Messages to see them here.</p>
+                    <span>No pending receipts</span>
+                    <p>All receipts have been processed, or upload new ones to the <strong>Receipts</strong> channel.</p>
                 </div>
             </div>
 

@@ -2112,7 +2112,10 @@
                                 searchId: 'daneelBookkeepingSearch',
                                 dropdownId: 'daneelBookkeepingDropdown',
                                 getUsers: function() { return _daneelBookkeepingUsers; },
-                                setUsers: function(v) { _daneelBookkeepingUsers = v; }
+                                setUsers: function(v) {
+                                    _daneelBookkeepingUsers = v;
+                                    _saveDaneelBookkeepingUsers();
+                                }
                             });
                             _initUserPicker({
                                 pickerId: 'daneelEscalationPicker',
@@ -2120,7 +2123,10 @@
                                 searchId: 'daneelEscalationSearch',
                                 dropdownId: 'daneelEscalationDropdown',
                                 getUsers: function() { return _daneelAccountingMgrUsers; },
-                                setUsers: function(v) { _daneelAccountingMgrUsers = v; }
+                                setUsers: function(v) {
+                                    _daneelAccountingMgrUsers = v;
+                                    _saveDaneelAccountingMgrUsers();
+                                }
                             });
                             _renderUserPickerChips('daneelBookkeepingPickerInput', 'daneelBookkeepingSearch', _daneelBookkeepingUsers);
                             _renderUserPickerChips('daneelEscalationPickerInput', 'daneelEscalationSearch', _daneelAccountingMgrUsers);
@@ -2593,6 +2599,14 @@
 
         function _saveAndrewAuthNotifyUsers() {
             saveAgentConfig('andrew_auth_notify_users', JSON.stringify(_andrewAuthNotifyUsers));
+        }
+
+        function _saveDaneelBookkeepingUsers() {
+            saveAgentConfig('daneel_bookkeeping_users', JSON.stringify(_daneelBookkeepingUsers));
+        }
+
+        function _saveDaneelAccountingMgrUsers() {
+            saveAgentConfig('daneel_accounting_mgr_users', JSON.stringify(_daneelAccountingMgrUsers));
         }
 
         function initAgentManager() {

@@ -2,9 +2,6 @@
 (function () {
   'use strict';
 
-  console.log('[EXPENSES] ========================================');
-  console.log('[EXPENSES] expenses.js loaded and executing');
-  console.log('[EXPENSES] ========================================');
 
   // ================================
   // STATE
@@ -119,7 +116,6 @@
 
   // Get current mode config
   const currentModeConfig = MODE_CONFIG[expenseMode] || MODE_CONFIG.cogs;
-  console.log('[EXPENSES] Mode:', expenseMode, '| Config:', currentModeConfig.title);
   let reconciliationData = {         // Reconciliation modal state
     manualExpenses: [],
     qboExpenses: [],
@@ -222,6 +218,20 @@
   }
 
   // ================================
+  // UTILITY: Get ID value from a datalist input
+  // ================================
+  function getDatalistValue(input, datalistId) {
+    var storedValue = input.getAttribute('data-value');
+    if (storedValue) return storedValue;
+    var datalist = document.getElementById(datalistId);
+    if (datalist) {
+      var matchingOption = Array.from(datalist.options).find(function(opt) { return opt.value === input.value; });
+      if (matchingOption) return matchingOption.getAttribute('data-id');
+    }
+    return null;
+  }
+
+  // ================================
   // UTILITY: Build expense lookup Map (O(1) access by ID)
   // ================================
   function buildExpenseMap(expenseArray) {
@@ -237,7 +247,6 @@
   // PERFORMANCE: Build Lookup Maps
   // ================================
   function buildLookupMaps() {
-    console.log('[EXPENSES] Building lookup maps for O(1) access...');
 
     // Clear existing maps
     lookupMaps.txnTypes.clear();
@@ -272,13 +281,6 @@
       lookupMaps.accounts.set(a.account_id, a);
     });
 
-    console.log('[EXPENSES] Lookup maps built:', {
-      txnTypes: lookupMaps.txnTypes.size,
-      projects: lookupMaps.projects.size,
-      vendors: lookupMaps.vendors.size,
-      paymentMethods: lookupMaps.paymentMethods.size,
-      accounts: lookupMaps.accounts.size,
-    });
   }
 
   // ================================
@@ -310,11 +312,8 @@
   const els = {};
 
   function cacheElements() {
-    console.log('[EXPENSES] cacheElements called');
-    console.log('[EXPENSES] document.readyState:', document.readyState);
 
     els.projectFilter = document.getElementById('projectFilter');
-    console.log('[EXPENSES] projectFilter element found:', els.projectFilter);
     els.btnAddExpense = document.getElementById('btnAddExpense');
     els.btnEditExpenses = document.getElementById('btnEditExpenses');
     els.btnBillView = document.getElementById('btnBillView');
@@ -463,9 +462,6 @@
       // Check if user can authorize expenses
       const userRole = currentUser.user_role || currentUser.role || '';
       canAuthorize = AUTHORIZED_ROLES.includes(userRole);
-      console.log('[EXPENSES] User role:', userRole, '| Can authorize:', canAuthorize);
-      console.log('[EXPENSES] Authorized roles:', AUTHORIZED_ROLES);
-      console.log('[EXPENSES] User object:', currentUser);
     } catch (err) {
       console.error('[EXPENSES] Invalid ngmUser in localStorage', err);
       localStorage.removeItem('ngmUser');
@@ -490,10 +486,6 @@
   function getApiBase() {
     const base = window.API_BASE || window.apiBase || 'https://ngm-fastapi.onrender.com';
     const result = String(base || '').replace(/\/+$/, '');
-    console.log('[EXPENSES] getApiBase debug:', {
-      'window.API_BASE': window.API_BASE,
-      'result': result
-    });
     return result;
   }
 
@@ -665,14 +657,11 @@
   // ================================
   async function loadMetaData() {
     const apiBase = getApiBase();
-    console.log('[EXPENSES] loadMetaData called, apiBase:', apiBase);
 
     try {
       const url = `${apiBase}/expenses/meta`;
-      console.log('[EXPENSES] Fetching metadata from:', url);
 
       const meta = await apiJson(url);
-      console.log('[EXPENSES] Raw metadata response:', meta);
 
       if (!meta) {
         throw new Error('No metadata received from server');
@@ -686,19 +675,8 @@
       // TODO: Re-enable account filtering when frontend mode switching is implemented
       // For now, show all accounts in both modes
       metaData.accounts = meta.accounts || [];
-      console.log('[EXPENSES] All accounts loaded (filtering disabled):', metaData.accounts.length);
 
       // Debug: Log metadata structure to help identify correct column names
-      console.log('[METADATA] txn_types count:', metaData.txn_types.length);
-      console.log('[METADATA] projects count:', metaData.projects.length);
-      console.log('[METADATA] vendors count:', metaData.vendors.length);
-      console.log('[METADATA] payment_methods count:', metaData.payment_methods.length);
-      console.log('[METADATA] accounts count:', metaData.accounts.length);
-      console.log('[METADATA] txn_types sample:', metaData.txn_types[0]);
-      console.log('[METADATA] projects sample:', metaData.projects[0]);
-      console.log('[METADATA] accounts sample:', metaData.accounts[0]);
-      console.log('[METADATA] vendors sample:', metaData.vendors[0]);
-      console.log('[METADATA] payment_methods sample:', metaData.payment_methods[0]);
 
       // Load bills metadata separately (from bills table)
       await loadBillsMetadata();
@@ -724,7 +702,6 @@
     const apiBase = getApiBase();
     try {
       const url = `${apiBase}/bills`;
-      console.log('[BILLS] Fetching bills metadata from:', url);
 
       const result = await apiJson(url);
 
@@ -739,8 +716,6 @@
         metaData.bills = [];
       }
 
-      console.log('[BILLS] Loaded bills count:', metaData.bills.length);
-      console.log('[BILLS] Bills sample:', metaData.bills[0]);
     } catch (err) {
       // Bills table might not exist yet or endpoint not available - graceful fallback
       console.warn('[BILLS] Could not load bills metadata:', err.message);
@@ -771,11 +746,9 @@
     if (existingIndex >= 0) {
       // Update existing entry
       Object.assign(metaData.bills[existingIndex], billData);
-      console.log('[BILLS] Updated bill in cache:', billData.bill_id);
     } else {
       // Add new entry
       metaData.bills.push(billData);
-      console.log('[BILLS] Added bill to cache:', billData.bill_id);
     }
   }
 
@@ -807,9 +780,6 @@
   }
 
   function populateProjectFilter() {
-    console.log('[EXPENSES] populateProjectFilter called');
-    console.log('[EXPENSES] els.projectFilter:', els.projectFilter);
-    console.log('[EXPENSES] metaData.projects:', metaData.projects);
 
     if (!els.projectFilter) {
       console.error('[EXPENSES] projectFilter element not found!');
@@ -830,10 +800,8 @@
       opt.value = p.project_id || p.id;
       opt.textContent = p.project_name || p.name || 'Unnamed Project';
       els.projectFilter.appendChild(opt);
-      console.log('[EXPENSES] Added project option:', opt.value, opt.textContent);
     });
 
-    console.log('[EXPENSES] Total project options added:', metaData.projects.length);
   }
 
   // ================================
@@ -861,12 +829,8 @@
       const url = projectId === 'all'
         ? `${apiBase}/expenses/all`
         : `${apiBase}/expenses?project=${projectId}`;
-      console.log('[EXPENSES] Fetching from:', url);
 
       const result = await apiJson(url);
-      console.log('[EXPENSES] API Response:', result);
-      console.log('[EXPENSES] Response type:', typeof result);
-      console.log('[EXPENSES] Is Array?', Array.isArray(result));
 
       // Handle different response formats
       if (Array.isArray(result)) {
@@ -879,8 +843,6 @@
         expenses = [];
       }
 
-      console.log('[EXPENSES] Processed expenses count:', expenses.length);
-      console.log('[EXPENSES] First expense:', expenses[0]);
 
       // Detect duplicate bill numbers with different vendors
       await detectDuplicateBillNumbers();
@@ -1016,7 +978,7 @@
         return;
       }
 
-      const response = await fetch(`${API_BASE}/expenses/dismissed-duplicates?user_id=${currentUser.user_id}`, {
+      const response = await fetch(`${getApiBase()}/expenses/dismissed-duplicates?user_id=${currentUser.user_id}`, {
         credentials: 'include',
         headers: getAuthHeaders()
       });
@@ -1035,7 +997,6 @@
         dismissedDuplicates.add(pairKey);
       });
 
-      console.log(`[DUPLICATES] Loaded ${dismissedDuplicates.size} dismissed pairs from backend`);
     } catch (e) {
       console.warn('[DUPLICATES] Error loading dismissed duplicates:', e);
       dismissedDuplicates = new Set();
@@ -1055,7 +1016,7 @@
         return false;
       }
 
-      const response = await fetch(`${API_BASE}/expenses/dismissed-duplicates`, {
+      const response = await fetch(`${getApiBase()}/expenses/dismissed-duplicates`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -1076,7 +1037,6 @@
       }
 
       const result = await response.json();
-      console.log(`[DUPLICATES] Saved dismissal to backend:`, result);
       return true;
     } catch (e) {
       console.error('[DUPLICATES] Error saving dismissal:', e);
@@ -1101,14 +1061,12 @@
    * - Same vendor + same bill_id but different amounts (could be intentional line items)
    */
   async function detectDuplicateBillNumbers() {
-    console.log('[DUPLICATES] Starting enhanced duplicate detection...');
 
     duplicateBillWarnings.clear();
     duplicateClusters = [];
 
     // Skip if no expenses
     if (!expenses || expenses.length < 2) {
-      console.log('[DUPLICATES] Not enough expenses to check');
       return;
     }
 
@@ -1127,7 +1085,6 @@
       byVendor.get(vendorId).push(exp);
     });
 
-    console.log(`[DUPLICATES] Grouped ${expenses.length} expenses into ${byVendor.size} vendor groups`);
 
     const duplicatePairs = [];
 
@@ -1151,7 +1108,6 @@
 
           // Skip if this pair was already dismissed
           if (isPairDismissed(exp1Id, exp2Id)) {
-            console.log(`[DUPLICATES] Skipping dismissed pair: ${exp1Id} <-> ${exp2Id}`);
             continue;
           }
 
@@ -1230,7 +1186,6 @@
             const rawBillId = exp1.bill_id?.trim() || exp2.bill_id?.trim();
             const billMeta = rawBillId ? getBillMetadata(rawBillId) : null;
             if (billMeta && billMeta.status === 'split') {
-              console.log(`[DUPLICATES] Rule A skip (split bill): ${exp1Id} <-> ${exp2Id}`);
               continue;
             }
           }
@@ -1238,21 +1193,18 @@
           // Rule B: Recurring labor payments (Daneel R5)
           // Labor account + different dates + check payment = recurring payroll
           if (isLabor && diffDate && isCheck) {
-            console.log(`[DUPLICATES] Rule B skip (labor+check+diff date): ${exp1Id} <-> ${exp2Id}`);
             continue;
           }
 
           // Rule C: Separate check payments for same invoice (Daneel R6)
           // Same bill + check + different dates = separate check payments
           if (sameBillId && isCheck && diffDate) {
-            console.log(`[DUPLICATES] Rule C skip (check+same bill+diff date): ${exp1Id} <-> ${exp2Id}`);
             continue;
           }
 
           // Rule D: Different receipt files (Daneel R7a)
           // Both have receipts, different files, no shared bill = separate invoices
           if (bothHaveReceipt && !sameReceipt && !sameBillId) {
-            console.log(`[DUPLICATES] Rule D skip (different receipts): ${exp1Id} <-> ${exp2Id}`);
             continue;
           }
 
@@ -1262,7 +1214,6 @@
           if (exp1CreatedAt && exp2CreatedAt) {
             const tsDiff = Math.abs(new Date(exp1CreatedAt).getTime() - new Date(exp2CreatedAt).getTime()) / 1000;
             if (tsDiff < 5 && sameDate && sameBillId && descriptionSimilarity >= 0.9) {
-              console.log(`[DUPLICATES] Timestamp skip (identical batch ${tsDiff.toFixed(1)}s): ${exp1Id} <-> ${exp2Id}`);
               continue;
             }
           }
@@ -1382,16 +1333,13 @@
               date2: exp2Date
             });
 
-            console.log(`[DUPLICATES] ${duplicateType.toUpperCase()} (${score}pts): ${vendorName} - $${exp1Amount.toFixed(2)} | ${matchReasons.join(', ')}`);
           }
         }
       }
     });
 
-    console.log(`[DUPLICATES] Found ${duplicatePairs.length} duplicate pairs`);
 
     if (duplicatePairs.length === 0) {
-      console.log('[DUPLICATES] No duplicates found');
       return;
     }
 
@@ -1467,7 +1415,6 @@
       return (typePriority[b.type] || 0) - (typePriority[a.type] || 0);
     });
 
-    console.log(`[DUPLICATES] Created ${duplicateClusters.length} clusters`);
 
     // Populate legacy duplicateBillWarnings map for backwards compatibility
     duplicateClusters.forEach(cluster => {
@@ -1485,9 +1432,7 @@
     });
 
     // Show notification but DON'T auto-open panel
-    console.log(`[DUPLICATES] Detection complete: ${duplicateClusters.length} clusters found`);
     if (duplicateClusters.length > 0) {
-      console.log('[DUPLICATES] Duplicates detected - showing notification');
       currentClusterIndex = 0; // Reset to first cluster
 
       // Update button badge to show count
@@ -1509,7 +1454,6 @@
 
       // DO NOT auto-open panel - user must click button to open
     } else {
-      console.log('[DUPLICATES] No duplicates found in current expenses');
     }
   }
 
@@ -1594,7 +1538,6 @@
 
     // If no issues at all, show success toast and return
     if (duplicateClusters.length === 0 && missingInfoExpenses.length === 0) {
-      console.log('[HEALTH CHECK] No issues found');
       if (window.Toast) {
         Toast.success('All Clear! ✓', 'No duplicates or missing info found. Your expenses are healthy!');
       }
@@ -1879,7 +1822,6 @@
     });
 
     currentMissingInfoIndex = 0;
-    console.log(`[HEALTH CHECK] Found ${missingInfoExpenses.length} expenses with missing info`);
     return missingInfoExpenses.length;
   }
 
@@ -2163,7 +2105,6 @@
       for (let j = i + 1; j < expenseIds.length; j++) {
         const pairKey = getDuplicatePairKey(expenseIds[i], expenseIds[j]);
         dismissedDuplicates.add(pairKey);
-        console.log(`[DUPLICATES] Dismissing pair: ${pairKey}`);
 
         // Save to backend (async)
         savePromises.push(saveDismissedDuplicatePair(expenseIds[i], expenseIds[j]));
@@ -2174,7 +2115,6 @@
     try {
       const results = await Promise.all(savePromises);
       const successCount = results.filter(r => r === true).length;
-      console.log(`[DUPLICATES] Saved ${successCount}/${savePromises.length} dismissals to backend`);
 
       if (successCount < savePromises.length) {
         if (window.Toast) {
@@ -2690,7 +2630,6 @@
     // Get the ID - backend uses 'expense_id' as primary key
     const expenseId = exp.expense_id || exp.id || '';
     if (index === 0) {
-      console.log('[EXPENSES] First expense - using expense_id:', expenseId);
     }
 
     // Check for duplicate warning (now keyed by expense_id)
@@ -2971,15 +2910,12 @@
     // PERFORMANCE: Build Map for O(1) lookups instead of O(n) .find() calls
     const originalExpensesMap = buildExpenseMap(originalExpenses);
 
-    console.log('[EDIT] Starting save process...');
-    console.log('[EDIT] Number of rows to check:', rows.length);
 
     // Collect changes from DOM
     rows.forEach(row => {
       const index = parseInt(row.dataset.index, 10);
       const expenseId = row.dataset.id;
 
-      console.log(`[EDIT] Checking row ${index}, ID: ${expenseId}`);
 
       if (!expenseId) {
         console.warn(`[EDIT] Row ${index} has no ID, skipping`);
@@ -3005,22 +2941,16 @@
         updatedData[field] = value || null;
       });
 
-      console.log(`[EDIT] Row ${index} updated data:`, updatedData);
 
       // Check if data changed - Use Map for O(1) lookup
       const original = originalExpensesMap.get(String(expenseId));
-      console.log(`[EDIT] Row ${index} original data (found by expense_id ${expenseId}):`, original);
 
       if (original && hasChanges(original, updatedData)) {
-        console.log(`[EDIT] Row ${index} has changes, adding to update list`);
         updates.push({ id: expenseId, data: updatedData });
       } else {
-        console.log(`[EDIT] Row ${index} has no changes`);
       }
     });
 
-    console.log('[EDIT] Total updates to send:', updates.length);
-    console.log('[EDIT] Updates:', updates);
 
     // Validate: Check if any update tries to change to a closed bill
     const closedBillErrors = [];
@@ -3065,7 +2995,6 @@
     els.btnSaveChanges.textContent = 'Saving...';
 
     try {
-      console.log('[EDIT] Sending batch update for', updates.length, 'expenses');
       const batchStartTime = performance.now();
 
       // Transform updates to match backend schema
@@ -3084,8 +3013,6 @@
       });
 
       const batchEndTime = performance.now();
-      console.log(`[EDIT] Batch update completed in ${(batchEndTime - batchStartTime).toFixed(0)}ms`);
-      console.log('[EDIT] Batch result:', response.summary);
 
       // Log any failures
       if (response.failed && response.failed.length > 0) {
@@ -3325,7 +3252,6 @@
         }
       });
 
-      console.log(`[BULK_DELETE] Successful: ${successfulDeletes.length}, Failed: ${failedDeletes.length}`);
 
       // Remove ONLY successfully deleted expenses from local arrays
       successfulDeletes.forEach(expenseId => {
@@ -3459,7 +3385,6 @@
       const BATCH_SIZE = 5; // Process 5 expenses at a time
       const DELAY_MS = 300; // 300ms delay between batches
 
-      console.log(`[BULK_AUTH] Starting authorization of ${totalExpenses} expenses in batches of ${BATCH_SIZE}`);
 
       // Helper function to delay execution
       const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -3476,7 +3401,6 @@
         const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
         const totalBatches = Math.ceil(expenseIdsArray.length / BATCH_SIZE);
 
-        console.log(`[BULK_AUTH] Processing batch ${batchNumber}/${totalBatches} (${batch.length} expenses)`);
 
         // Process current batch in parallel
         const batchPromises = batch.map(async (expenseId) => {
@@ -3499,7 +3423,6 @@
               expense.auth_by = userId;
             }
 
-            console.log(`[BULK_AUTH] ✓ Authorized expense ${expenseId}`);
           } catch (err) {
             failedCount++;
             processedCount++;
@@ -3520,7 +3443,6 @@
         }
       }
 
-      console.log(`[BULK_AUTH] Completed: ${successCount} succeeded, ${failedCount} failed`);
 
       // Show results
       if (window.Toast) {
@@ -3933,7 +3855,6 @@
   }
 
   function handleFileSelected(file) {
-    console.log('[EXPENSES] File selected:', file.name, file.size);
 
     // Validate file
     if (!window.ReceiptUpload.ALLOWED_TYPES.includes(file.type)) {
@@ -4039,7 +3960,6 @@
         row.dataset.receiptFile = 'pending'; // Mark that this row has a file
         receiptBtn.classList.add('receipt-icon-btn--has-receipt');
         receiptBtn.title = `Receipt: ${file.name}`;
-        console.log(`[MODAL] Receipt attached to row ${rowIndex}:`, file.name);
       }
     });
 
@@ -4204,26 +4124,21 @@
 
             if (match) {
               value = match.id;
-              console.log(`[SAVE] Matched ${field}: "${trimmedValue}" -> ID: ${match.id}`);
             } else if (trimmedValue !== '') {
               // Value doesn't match any existing option
               console.warn(`[SAVE] No match found for ${field}: "${trimmedValue}"`);
               if (field === 'account_id') {
                 invalidAccounts.add(trimmedValue);
                 rowsWithInvalidAccounts.push({ row: rowIdx + 1, accountName: trimmedValue });
-                console.log(`[SAVE] Added to invalid accounts: "${trimmedValue}" (Row ${rowIdx + 1})`);
               } else if (field === 'vendor_id') {
                 invalidVendors.add(trimmedValue);
                 rowsWithInvalidVendors.push({ row: rowIdx + 1, vendorName: trimmedValue });
-                console.log(`[SAVE] Added to invalid vendors: "${trimmedValue}" (Row ${rowIdx + 1})`);
               } else if (field === 'txn_type') {
                 invalidTxnTypes.add(trimmedValue);
                 rowsWithInvalidTxnTypes.push({ row: rowIdx + 1, typeName: trimmedValue });
-                console.log(`[SAVE] Added to invalid txn types: "${trimmedValue}" (Row ${rowIdx + 1})`);
               } else if (field === 'payment_type') {
                 invalidPaymentTypes.add(trimmedValue);
                 rowsWithInvalidPaymentTypes.push({ row: rowIdx + 1, paymentName: trimmedValue });
-                console.log(`[SAVE] Added to invalid payment types: "${trimmedValue}" (Row ${rowIdx + 1})`);
               }
               // Leave value as text for now - we'll handle it below
             }
@@ -4452,7 +4367,6 @@
       // Create accounts automatically
       try {
         for (const accountName of invalidAccounts) {
-          console.log('[EXPENSES] Creating account:', accountName);
 
           const response = await apiJson(`${apiBase}/accounts`, {
             method: 'POST',
@@ -4467,7 +4381,6 @@
           const newAccount = response.data || response;
           const accountId = newAccount.account_id || newAccount.id;
 
-          console.log('[EXPENSES] Created account with ID:', accountId);
 
           // Add to metaData for future use
           metaData.accounts.push({
@@ -4485,7 +4398,6 @@
           });
         }
 
-        console.log('[EXPENSES] Successfully created', invalidAccounts.size, 'accounts');
       } catch (err) {
         console.error('[EXPENSES] Error creating accounts:', err);
         if (window.Toast) {
@@ -4501,7 +4413,6 @@
     els.btnSaveAllExpenses.innerHTML = '<img src="assets/img/greenblack_icon.png" class="loading-logo loading-logo-sm" alt="Loading..." style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;"> Saving expenses...';
 
     try {
-      console.log('[EXPENSES] Starting save process for', expensesToSave.length, 'expenses');
 
       // ============================================
       // PHASE 1: Create all expenses with BATCH endpoint
@@ -4525,7 +4436,6 @@
         return expenseData;
       });
 
-      console.log('[EXPENSES] Sending batch request for', expensesForBatch.length, 'expenses');
       const batchStartTime = performance.now();
 
       // Single API call for all expenses
@@ -4536,8 +4446,6 @@
       });
 
       const batchEndTime = performance.now();
-      console.log(`[EXPENSES] Batch insert completed in ${(batchEndTime - batchStartTime).toFixed(0)}ms`);
-      console.log('[EXPENSES] Batch result:', batchResult.summary);
 
       // Process created expenses
       const createdList = batchResult.created || [];
@@ -4591,7 +4499,6 @@
 
       // Link pending receipts to expenses
       if (pendingReceiptLinks.length > 0) {
-        console.log('[EXPENSES] Linking', pendingReceiptLinks.length, 'pending receipts to expenses...');
 
         for (const link of pendingReceiptLinks) {
           try {
@@ -4605,7 +4512,6 @@
             });
 
             if (linkResponse.ok) {
-              console.log(`[EXPENSES] Linked receipt ${link.receiptId} to expense ${link.expenseId}`);
 
               // Update message status in Messages module if available
               if (window.MessagesModule?.updateReceiptStatusInMessages) {
@@ -4628,7 +4534,6 @@
       const failedReceiptUploads = []; // Track failed uploads for user notification
 
       if (window.ReceiptUpload) {
-        console.log('[EXPENSES] Processing receipts by bill_id...');
 
         // First, handle grouped expenses (same bill_id) - create bill record and upload receipt
         for (const [billId, expensesInBill] of Object.entries(expensesByBillId)) {
@@ -4637,7 +4542,6 @@
 
           if (expenseWithReceipt) {
             try {
-              console.log(`[EXPENSES] Uploading receipt for bill ${billId} (${expensesInBill.length} expenses)`);
 
               // Upload using bill_id as identifier
               const receiptUrl = await window.ReceiptUpload.upload(
@@ -4648,7 +4552,6 @@
               );
 
               uploadedReceiptsByBillId[billId] = receiptUrl;
-              console.log(`[EXPENSES] Receipt uploaded for bill ${billId}:`, receiptUrl);
 
               // Create or update bill record in bills table
               try {
@@ -4672,7 +4575,6 @@
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(updateData)
                     });
-                    console.log(`[EXPENSES] Updated existing bill ${billId}:`, updateData);
                   }
                 } else {
                   // Create new bill record
@@ -4699,7 +4601,6 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(billData)
                   });
-                  console.log(`[EXPENSES] Created bill record for ${billId} with status '${billStatus}':`, billData);
 
                   // Add to local metadata cache (using upsert to prevent duplicates)
                   upsertBillInCache(billData);
@@ -4711,7 +4612,6 @@
 
               // NO longer update individual expenses with receipt_url
               // The receipt is now stored in the bills table
-              console.log(`[EXPENSES] Receipt for bill ${billId} stored in bills table (not in expenses)`);
 
             } catch (uploadErr) {
               console.error(`[EXPENSES] Error uploading receipt for bill ${billId}:`, uploadErr);
@@ -4729,7 +4629,6 @@
         for (const expData of createdExpenses) {
           if (!expData.billId && expData.receiptFile) {
             try {
-              console.log(`[EXPENSES] Uploading individual receipt for expense ${expData.expenseId} (no bill_id)`);
 
               const receiptUrl = await window.ReceiptUpload.upload(
                 expData.receiptFile,
@@ -4748,7 +4647,6 @@
                 })
               });
 
-              console.log(`[EXPENSES] Expense ${expData.expenseId} updated with individual receipt URL`);
             } catch (uploadErr) {
               console.error(`[EXPENSES] Error uploading receipt for expense ${expData.expenseId}:`, uploadErr);
               failedReceiptUploads.push({
@@ -4761,17 +4659,13 @@
         }
       }
 
-      console.log('[EXPENSES] All expenses saved successfully');
 
       // Perform 3-way validation BEFORE clearing state (only for scanned receipts)
       let threeWayValidation = null;
-      console.log('[EXPENSES] 3-way validation check - isScannedReceiptMode:', isScannedReceiptMode);
-      console.log('[EXPENSES] 3-way validation check - scannedReceiptValidation:', scannedReceiptValidation);
 
       if (isScannedReceiptMode && scannedReceiptValidation) {
         // Calculate modal total from current inputs (before modal closes)
         const modalTotal = calculateModalRunningTotal();
-        console.log('[EXPENSES] 3-way validation - modalTotal calculated:', modalTotal);
 
         const invoiceTotal = scannedReceiptValidation.invoiceTotal || 0;
         const apiSum = scannedReceiptValidation.apiCalculatedSum || 0;
@@ -4790,9 +4684,7 @@
           wasScannedReceipt: true
         };
 
-        console.log('[EXPENSES] 3-way validation result:', threeWayValidation);
       } else {
-        console.log('[EXPENSES] 3-way validation SKIPPED - not in scanned receipt mode or no validation data');
       }
 
       // Clear scanned receipt state
@@ -4805,9 +4697,7 @@
       selectedBillStatus = 'open'; // Reset to default
 
       // Reload expenses BEFORE closing modal so user doesn't see stale data
-      console.log('[EXPENSES] Reloading expenses...');
       await loadExpensesByProject(selectedProjectId);
-      console.log('[EXPENSES] Expenses reloaded, now closing modal');
 
       closeAddExpenseModal();
 
@@ -4872,7 +4762,6 @@
         method: 'GET'
       });
 
-      console.log('[EXPENSES] Audit trail loaded:', auditData);
 
       if (!auditData || !auditData.audit_trail || auditData.audit_trail.length === 0) {
         els.auditTrailList.innerHTML = '<div class="audit-trail-empty">No history available</div>';
@@ -4989,7 +4878,6 @@
       originalExpenseStatus = 'auth';
     }
 
-    console.log('[EXPENSES] Opening single expense modal for:', currentEditingExpense, 'originalStatus:', originalExpenseStatus);
 
     // Populate form fields
     els.singleExpenseDate.value = expense.TxnDate ? expense.TxnDate.split('T')[0] : '';
@@ -4998,7 +4886,6 @@
 
     // Set amount value - use plain number, not formatted (formatting will happen on blur)
     const amountValue = expense.Amount || expense.amount || 0;
-    console.log('[EXPENSES] Setting amount field value:', amountValue, 'from expense.Amount:', expense.Amount);
     els.singleExpenseAmount.value = amountValue;
 
     // Populate dropdowns
@@ -5037,14 +4924,12 @@
       const billData = getBillMetadata(billId);
       if (billData?.receipt_url) {
         receiptUrl = billData.receipt_url;
-        console.log(`[EXPENSES] Found receipt from bills table for bill ${billId}:`, receiptUrl);
       }
     }
 
     // Priority 2: Get receipt from expense itself (legacy support)
     if (!receiptUrl && expense.receipt_url) {
       receiptUrl = expense.receipt_url;
-      console.log(`[EXPENSES] Found receipt from expense:`, receiptUrl);
     }
 
     // Priority 3: Look for receipt from other expenses with same bill_id (legacy support)
@@ -5057,7 +4942,6 @@
 
       if (relatedExpenseWithReceipt) {
         receiptUrl = relatedExpenseWithReceipt.receipt_url;
-        console.log(`[EXPENSES] Found shared receipt from related expense (bill ${billId}):`, receiptUrl);
       }
     }
 
@@ -5065,9 +4949,6 @@
     renderSingleExpenseReceipt();
 
     // Handle expense status selector (only show for authorized roles)
-    console.log('[EXPENSES] Opening modal - canAuthorize:', canAuthorize);
-    console.log('[EXPENSES] Status container element exists:', !!els.singleExpenseStatusContainer);
-    console.log('[EXPENSES] Current expense status:', expense.status, 'auth_status:', expense.auth_status);
 
     // Determine current status (backwards compatible with old auth_status)
     let currentStatus = expense.status || 'pending';
@@ -5076,7 +4957,6 @@
     }
 
     if (canAuthorize && els.singleExpenseStatusContainer) {
-      console.log('[EXPENSES] Showing status selector');
       els.singleExpenseStatusContainer.style.display = 'block';
       if (els.singleExpenseAuthContainer) {
         els.singleExpenseAuthContainer.style.display = 'none'; // Hide old checkbox
@@ -5109,7 +4989,6 @@
       els.btnToggleAudit.textContent = 'Show History';
 
     } else {
-      console.log('[EXPENSES] Hiding status selector - canAuthorize:', canAuthorize);
       if (els.singleExpenseStatusContainer) {
         els.singleExpenseStatusContainer.style.display = 'none';
       }
@@ -5217,7 +5096,6 @@
   }
 
   function handleSingleExpenseReceiptReplace() {
-    console.log('[EXPENSES] Replace receipt clicked');
 
     // Create a temporary file input to trigger file selection
     const fileInput = document.createElement('input');
@@ -5244,7 +5122,6 @@
   }
 
   function handleSingleExpenseFileSelected(file) {
-    console.log('[EXPENSES] File selected for single expense:', file.name, file.size);
 
     if (!window.ReceiptUpload.ALLOWED_TYPES.includes(file.type)) {
       if (window.Toast) {
@@ -5291,21 +5168,6 @@
 
     const apiBase = getApiBase();
     const expenseId = currentEditingExpense.expense_id || currentEditingExpense.id;
-
-    // Helper function to get ID from datalist input
-    function getDatalistValue(input, datalistId) {
-      // First check if data-value was set by our input handler
-      const storedValue = input.getAttribute('data-value');
-      if (storedValue) return storedValue;
-
-      // Fallback: try to find matching option by text value
-      const datalist = document.getElementById(datalistId);
-      if (datalist) {
-        const matchingOption = Array.from(datalist.options).find(opt => opt.value === input.value);
-        if (matchingOption) return matchingOption.getAttribute('data-id');
-      }
-      return null;
-    }
 
     // Collect updated data - read from data-value attributes
     const updatedData = {
@@ -5376,8 +5238,6 @@
       updatedData.auth_by = els.singleExpenseAuthStatus.checked ? (currentUser.user_id || currentUser.id) : null;
     }
 
-    console.log('[EXPENSES] Saving single expense:', expenseId, updatedData);
-    console.log('[EXPENSES] Selected status:', selectedStatus, 'Reason:', statusReason);
 
     // Validate: Check if trying to add/change to a closed bill
     const newBillId = updatedData.bill_id?.trim() || null;
@@ -5436,7 +5296,6 @@
       // Handle receipt upload - store in bills table if bill_id exists
       if (currentReceiptFile && window.ReceiptUpload) {
         try {
-          console.log('[EXPENSES] Uploading new receipt');
 
           // Get old receipt URL to delete after successful upload
           const oldReceiptUrl = currentReceiptUrl;
@@ -5449,13 +5308,11 @@
             billId // Pass bill_id for shared receipt naming
           );
 
-          console.log('[EXPENSES] Receipt uploaded:', receiptUrl);
 
           // Delete old receipt file from storage if it exists (cleanup)
           if (oldReceiptUrl && window.ReceiptUpload.delete) {
             try {
               await window.ReceiptUpload.delete(oldReceiptUrl);
-              console.log('[EXPENSES] Old receipt file deleted from storage');
             } catch (deleteErr) {
               console.warn('[EXPENSES] Could not delete old receipt file:', deleteErr.message);
               // Non-critical error, continue
@@ -5476,7 +5333,6 @@
                 });
                 // Update local cache
                 existingBill.receipt_url = receiptUrl;
-                console.log(`[EXPENSES] Updated bill ${billId} with receipt URL`);
               } else {
                 // Create new bill record
                 const billData = {
@@ -5491,10 +5347,8 @@
                 });
                 // Add to local cache (using upsert to prevent duplicates)
                 upsertBillInCache(billData);
-                console.log(`[EXPENSES] Created bill ${billId} with receipt URL`);
               }
               // Don't store receipt_url in expense when using bills table
-              console.log(`[EXPENSES] Receipt stored in bills table for bill ${billId}`);
             } catch (billErr) {
               console.warn(`[EXPENSES] Could not update/create bill ${billId}:`, billErr.message);
               // Fallback: store in expense if bills table fails
@@ -5503,7 +5357,6 @@
           } else {
             // No bill_id - store receipt_url in expense (legacy behavior)
             updatedData.receipt_url = receiptUrl;
-            console.log('[EXPENSES] Receipt stored in expense (no bill_id)');
           }
         } catch (uploadErr) {
           console.error('[EXPENSES] Error uploading receipt:', uploadErr);
@@ -5520,7 +5373,6 @@
         if (oldReceiptUrl && window.ReceiptUpload?.delete) {
           try {
             await window.ReceiptUpload.delete(oldReceiptUrl);
-            console.log('[EXPENSES] Receipt file deleted from storage');
           } catch (deleteErr) {
             console.warn('[EXPENSES] Could not delete receipt file from storage:', deleteErr.message);
             // Non-critical error, continue with database update
@@ -5538,7 +5390,6 @@
                 body: JSON.stringify({ receipt_url: null })
               });
               existingBill.receipt_url = null;
-              console.log(`[EXPENSES] Removed receipt from bill ${billId}`);
             }
           } catch (billErr) {
             console.warn(`[EXPENSES] Could not remove receipt from bill ${billId}:`, billErr.message);
@@ -5546,7 +5397,6 @@
         }
         // Also clear from expense (legacy cleanup)
         updatedData.receipt_url = null;
-        console.log('[EXPENSES] Receipt deleted');
       }
 
       // For bookkeepers: include status in PATCH body (bypasses status endpoint role check)
@@ -5583,7 +5433,6 @@
                 reason: statusReason
               })
             });
-            console.log(`[EXPENSES] Status updated from ${currentStatus} to ${selectedStatus}`);
           } catch (statusErr) {
             console.error('[EXPENSES] Error updating status:', statusErr);
             if (window.Toast) {
@@ -5674,7 +5523,6 @@
   // ================================
 
   let pendingReceiptsData = [];
-  let currentPendingStatus = 'ready';
 
   function openPendingReceiptsModal() {
     if (!selectedProjectId) {
@@ -5682,12 +5530,7 @@
       return;
     }
     els.pendingReceiptsModal?.classList.remove('hidden');
-    // Reset to "ready" tab
-    currentPendingStatus = 'ready';
-    document.querySelectorAll('.pending-tab').forEach(t => {
-      t.classList.toggle('active', t.dataset.status === 'ready');
-    });
-    loadPendingReceipts('ready');
+    loadPendingReceipts();
   }
 
   function closePendingReceiptsModal() {
@@ -5695,14 +5538,12 @@
     pendingReceiptsData = [];
   }
 
-  async function loadPendingReceipts(status = 'ready') {
-    currentPendingStatus = status;
+  async function loadPendingReceipts() {
     const grid = els.pendingReceiptsGrid;
     const empty = els.pendingReceiptsEmpty;
 
     if (!grid) return;
 
-    // Show loading
     grid.innerHTML = `
       <div class="pending-receipts-loading">
         <div class="pending-loading-spinner"></div>
@@ -5716,7 +5557,7 @@
     if (!authToken) return;
 
     try {
-      const url = `${apiBase}/pending-receipts/project/${selectedProjectId}?status=${status}`;
+      const url = `${apiBase}/pending-receipts/project/${selectedProjectId}?unprocessed_only=true`;
       const resp = await fetch(url, {
         headers: { 'Authorization': `Bearer ${authToken}` }
       });
@@ -5725,13 +5566,6 @@
 
       const result = await resp.json();
       pendingReceiptsData = result.data || [];
-
-      // Update counts in tabs
-      if (result.counts) {
-        if (els.pendingCountReady) els.pendingCountReady.textContent = result.counts.ready || 0;
-        if (els.pendingCountPending) els.pendingCountPending.textContent = result.counts.pending || 0;
-        if (els.pendingCountProcessing) els.pendingCountProcessing.textContent = result.counts.processing || 0;
-      }
 
       renderPendingReceipts();
 
@@ -5764,7 +5598,9 @@
       const vendor = receipt.vendor_name || 'Unknown Vendor';
       const amount = receipt.amount ? `$${parseFloat(receipt.amount).toFixed(2)}` : '';
       const date = receipt.receipt_date || '';
-      const statusClass = `pending-receipt-status--${receipt.status}`;
+      const isReady = receipt.status === 'ready';
+      const badgeLabel = isReady ? 'Ready' : 'Needs scan';
+      const badgeClass = isReady ? 'pending-receipt-status--ready' : 'pending-receipt-status--pending';
 
       return `
         <div class="pending-receipt-card" data-receipt-id="${receipt.id}">
@@ -5779,7 +5615,7 @@
             ` : `
               <img src="${receipt.thumbnail_url || receipt.file_url}" alt="${receipt.file_name}" loading="lazy">
             `}
-            <span class="pending-receipt-status ${statusClass}">${receipt.status}</span>
+            <span class="pending-receipt-status ${badgeClass}">${badgeLabel}</span>
           </div>
           <div class="pending-receipt-info">
             <div class="pending-receipt-vendor">${escapeHtml(vendor)}</div>
@@ -5988,12 +5824,10 @@
       let result = await callParseReceiptAPI(file, selectedModel, authToken, apiBase);
       let usedRetry = false;
 
-      console.log('[SCAN RECEIPT] Pass 1 result:', result.data?.validation);
 
       // --- Pass 2: automatic correction if items sum does not match invoice total ---
       const pass1ValidationFailed = result.data?.validation?.validation_passed === false;
       if (pass1ValidationFailed) {
-        console.log('[SCAN RECEIPT] Validation failed on pass 1, launching correction pass...');
 
         els.scanReceiptProgressText.textContent = 'Totals mismatch detected. Analyzing again...';
         els.scanReceiptProgressFill.style.width = '60%';
@@ -6011,7 +5845,6 @@
 
         try {
           const pass2Result = await callParseReceiptAPI(file, 'heavy', authToken, apiBase, correctionCtx);
-          console.log('[SCAN RECEIPT] Pass 2 (correction) result:', pass2Result.data?.validation);
 
           // Pick the better result: prefer the one that validates, or the one with smaller discrepancy
           const pass1Disc = getValidationDiscrepancy(result);
@@ -6020,9 +5853,7 @@
           if (pass2Result.data?.validation?.validation_passed || pass2Disc < pass1Disc) {
             result = pass2Result;
             usedRetry = true;
-            console.log('[SCAN RECEIPT] Using pass 2 result (better validation)');
           } else {
-            console.log('[SCAN RECEIPT] Keeping pass 1 result (pass 2 was not better)');
           }
         } catch (retryErr) {
           console.warn('[SCAN RECEIPT] Pass 2 failed, using pass 1 result:', retryErr.message);
@@ -6034,7 +5865,6 @@
 
       // Store the scanned receipt file to attach to all generated expenses
       scannedReceiptFile = file;
-      console.log('[SCAN RECEIPT] Stored receipt file for later upload:', file.name);
 
       // Extract common bill_id from scanned expenses (all items share the same bill_id)
       if (result.success && result.data && result.data.expenses && result.data.expenses.length > 0) {
@@ -6052,9 +5882,6 @@
           scannedReceiptTotal = result.data.expenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
         }
 
-        console.log('[SCAN RECEIPT] Extracted bill_id:', scannedReceiptBillId);
-        console.log('[SCAN RECEIPT] Extracted vendor_id:', scannedReceiptVendorId);
-        console.log('[SCAN RECEIPT] Extracted total:', scannedReceiptTotal);
 
         // Store validation data for 3-way validation at save time
         scannedReceiptValidation = {
@@ -6062,7 +5889,6 @@
           apiCalculatedSum: result.data.validation?.calculated_sum || scannedReceiptTotal,
           validationPassed: result.data.validation?.validation_passed !== false
         };
-        console.log('[SCAN RECEIPT] Stored validation data:', scannedReceiptValidation);
       }
 
       // Close scan modal
@@ -6150,12 +5976,6 @@
   }
 
   async function populateExpensesFromScan(scannedExpenses) {
-    console.log('[POPULATE] ========================================');
-    console.log('[POPULATE] START populateExpensesFromScan');
-    console.log('[POPULATE] Number of expenses:', scannedExpenses?.length);
-    console.log('[POPULATE] Full scannedExpenses array:');
-    console.log(JSON.stringify(scannedExpenses, null, 2));
-    console.log('[POPULATE] ========================================');
 
     // Clear existing rows
     els.expenseRowsBody.innerHTML = '';
@@ -6163,14 +5983,6 @@
 
     // Add a row for each scanned expense
     for (const expense of scannedExpenses) {
-      console.log('[POPULATE] ----------------------------------------');
-      console.log('[POPULATE] Processing expense:', JSON.stringify(expense, null, 2));
-      console.log('[POPULATE] expense.date:', expense.date);
-      console.log('[POPULATE] expense.description:', expense.description);
-      console.log('[POPULATE] expense.amount:', expense.amount);
-      console.log('[POPULATE] expense.vendor:', expense.vendor);
-      console.log('[POPULATE] expense.category:', expense.category);
-      console.log('[POPULATE] ----------------------------------------');
 
       addModalRow();
 
@@ -6182,74 +5994,58 @@
         continue;
       }
 
-      console.log('[POPULATE] ✓ Row found for index:', index);
 
       // Populate date
       if (expense.date) {
         const dateInput = row.querySelector('[data-field="TxnDate"]');
-        console.log('[POPULATE] Looking for date input, found:', !!dateInput);
         if (dateInput) {
           dateInput.value = expense.date;
-          console.log('[POPULATE] ✓ Set date:', expense.date);
         } else {
           console.warn('[POPULATE] ❌ Date input not found!');
         }
       } else {
-        console.log('[POPULATE] ⚠ No date in expense data');
       }
 
       // Populate bill_id (invoice number from receipt)
       const billIdValue = expense.bill_id || expense.invoice_number || expense.bill_number;
       if (billIdValue) {
         const billIdInput = row.querySelector('[data-field="bill_id"]');
-        console.log('[POPULATE] Looking for bill_id input, found:', !!billIdInput);
         if (billIdInput) {
           billIdInput.value = billIdValue;
-          console.log('[POPULATE] ✓ Set bill_id:', billIdValue);
         } else {
           console.warn('[POPULATE] ❌ bill_id input not found!');
         }
       } else {
-        console.log('[POPULATE] ⚠ No bill_id/invoice_number in expense data');
       }
 
       // Populate description
       if (expense.description) {
         const descInput = row.querySelector('[data-field="LineDescription"]');
-        console.log('[POPULATE] Looking for description input, found:', !!descInput);
         if (descInput) {
           descInput.value = expense.description;
-          console.log('[POPULATE] ✓ Set description:', expense.description);
         } else {
           console.warn('[POPULATE] ❌ Description input not found!');
         }
       } else {
-        console.log('[POPULATE] ⚠ No description in expense data');
       }
 
       // Populate amount (amount from API already includes tax)
       if (expense.amount) {
         const amountInput = row.querySelector('[data-field="Amount"]');
-        console.log('[POPULATE] Looking for amount input, found:', !!amountInput);
         if (amountInput) {
           // Note: expense.amount already includes tax (it's the final_amount from API)
           // tax_included is informational only, don't add it again
           const finalAmount = parseFloat(expense.amount);
           amountInput.value = finalAmount.toFixed(2);
-          console.log('[POPULATE] ✓ Set amount:', finalAmount.toFixed(2), '(tax already included:', expense.tax_included || 0, ')');
         } else {
           console.warn('[POPULATE] ❌ Amount input not found!');
         }
       } else {
-        console.log('[POPULATE] ⚠ No amount in expense data');
       }
 
       // Try to match vendor
       if (expense.vendor && metaData.vendors) {
-        console.log('[POPULATE] Trying to match vendor:', expense.vendor);
-        console.log('[POPULATE] Available vendors:', metaData.vendors.length);
         const vendorInput = row.querySelector('[data-field="vendor_id"]');
-        console.log('[POPULATE] Looking for vendor input, found:', !!vendorInput);
         if (vendorInput) {
           // Try to find matching vendor (case-insensitive)
           const matchedVendor = metaData.vendors.find(v =>
@@ -6257,13 +6053,11 @@
           );
 
           if (matchedVendor) {
-            console.log('[POPULATE] ✓ Matched vendor:', matchedVendor.vendor_name);
             vendorInput.value = matchedVendor.vendor_name;
             vendorInput.setAttribute('data-value', matchedVendor.id);
             // Remove warning class if previously applied
             vendorInput.classList.remove('exp-input--no-match');
           } else {
-            console.log('[POPULATE] ⚠ No vendor match, setting text only:', expense.vendor);
             // Just set the text, user can select from dropdown
             vendorInput.value = expense.vendor;
             // Add warning class to highlight this input
@@ -6273,17 +6067,12 @@
           console.warn('[POPULATE] ❌ Vendor input not found!');
         }
       } else {
-        console.log('[POPULATE] ⚠ No vendor in expense data or no vendors in metadata');
       }
 
       // Try to match category or transaction_type to transaction type
       const searchValue = expense.transaction_type || expense.category;
       if (searchValue && metaData.txn_types) {
-        console.log('[POPULATE] Trying to match transaction type/category:', searchValue);
-        console.log('[POPULATE] Using field:', expense.transaction_type ? 'transaction_type' : 'category');
-        console.log('[POPULATE] Available txn_types:', metaData.txn_types.length);
         const typeInput = row.querySelector('[data-field="txn_type"]');
-        console.log('[POPULATE] Looking for type input, found:', !!typeInput);
         if (typeInput) {
           // Try exact match first (case-insensitive)
           let matchedType = metaData.txn_types.find(t =>
@@ -6292,7 +6081,6 @@
 
           // If no exact match, try fuzzy match
           if (!matchedType) {
-            console.log('[POPULATE] No exact match, trying fuzzy match...');
             matchedType = metaData.txn_types.find(t =>
               t.TnxType_name && (
                 t.TnxType_name.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -6302,13 +6090,11 @@
           }
 
           if (matchedType) {
-            console.log('[POPULATE] ✓ Matched type:', matchedType.TnxType_name);
             typeInput.value = matchedType.TnxType_name;
             typeInput.setAttribute('data-value', matchedType.TnxType_id);
             // Remove warning class if previously applied
             typeInput.classList.remove('exp-input--no-match');
           } else {
-            console.log('[POPULATE] ⚠ No type match for:', searchValue);
             // No match found, add warning class
             typeInput.classList.add('exp-input--no-match');
           }
@@ -6316,17 +6102,13 @@
           console.warn('[POPULATE] ❌ Type input not found!');
         }
       } else {
-        console.log('[POPULATE] ⚠ No transaction_type/category in expense data or no txn_types in metadata');
       }
 
       // Try to match payment_method
       const paymentValue = expense.payment_method;
       const paymentInput = row.querySelector('[data-field="payment_type"]');
-      console.log('[POPULATE] Looking for payment input, found:', !!paymentInput);
 
       if (paymentInput && metaData.payment_methods) {
-        console.log('[POPULATE] Trying to match payment method:', paymentValue);
-        console.log('[POPULATE] Available payment_methods:', metaData.payment_methods.length);
 
         let matchedPayment = null;
 
@@ -6338,7 +6120,6 @@
 
           // If no exact match, try fuzzy match
           if (!matchedPayment) {
-            console.log('[POPULATE] No exact payment match, trying fuzzy match...');
             matchedPayment = metaData.payment_methods.find(p =>
               p.payment_method_name && (
                 p.payment_method_name.toLowerCase().includes(paymentValue.toLowerCase()) ||
@@ -6349,7 +6130,6 @@
         }
 
         if (matchedPayment) {
-          console.log('[POPULATE] ✓ Matched payment method:', matchedPayment.payment_method_name);
           paymentInput.value = matchedPayment.payment_method_name;
           paymentInput.setAttribute('data-value', matchedPayment.id);
           paymentInput.classList.remove('exp-input--no-match');
@@ -6360,30 +6140,24 @@
           );
 
           if (debitPayment) {
-            console.log('[POPULATE] ⚠ No payment match, using Debit:', debitPayment.payment_method_name);
             paymentInput.value = debitPayment.payment_method_name;
             paymentInput.setAttribute('data-value', debitPayment.id);
             paymentInput.classList.add('exp-input--no-match');
           } else if (metaData.payment_methods.length > 0) {
             // If no "Debit" exists, use the first payment method as default
             const defaultPayment = metaData.payment_methods[0];
-            console.log('[POPULATE] ⚠ No Debit payment method, using first available:', defaultPayment.payment_method_name);
             paymentInput.value = defaultPayment.payment_method_name;
             paymentInput.setAttribute('data-value', defaultPayment.id);
             paymentInput.classList.add('exp-input--no-match');
           } else {
-            console.log('[POPULATE] ⚠ No payment methods available in metadata');
             paymentInput.classList.add('exp-input--no-match');
           }
         }
       } else {
-        console.log('[POPULATE] ⚠ No payment input found or no payment_methods in metadata');
       }
     }
 
     // After populating all expenses, update validation section and attach listeners
-    console.log('[POPULATE] ========================================');
-    console.log('[POPULATE] END populateExpensesFromScan - Updating validation section');
     attachAmountChangeListeners();
     updateScanValidationSection();
   }
@@ -6453,7 +6227,6 @@
     const file = event.target.files?.[0];
     if (!file) return;
 
-    console.log('[CSV_IMPORT] Selected file:', file.name);
 
     try {
       const text = await file.text();
@@ -6519,8 +6292,6 @@
         return;
       }
 
-      console.log('[CSV_IMPORT] Parsed:', csvParsedData.headers.length, 'columns,', csvParsedData.rows.length, 'rows');
-      console.log('[CSV_IMPORT] Sample row:', csvParsedData.rows[0]);
 
       // Open mapping modal
       openCsvMappingModal();
@@ -6564,7 +6335,6 @@
       }
     });
 
-    console.log('[CSV_MAPPING] Auto-detected mappings:', csvColumnMapping);
 
     // Render mapping UI
     renderCsvMappingRows();
@@ -6613,7 +6383,6 @@
       select.addEventListener('change', (e) => {
         const index = parseInt(e.target.dataset.csvIndex);
         csvColumnMapping[index] = e.target.value;
-        console.log('[CSV_MAPPING] Updated mapping:', csvColumnMapping);
       });
     });
   }
@@ -6631,7 +6400,6 @@
 
   async function confirmCSVMapping() {
     try {
-      console.log('[CSV_MAPPING] Importing', csvParsedData.rows.length, 'rows');
 
       // Step 1: Extract unique vendors and payment types from CSV
       const vendorColumnIndex = Object.keys(csvColumnMapping).find(
@@ -6658,7 +6426,6 @@
           }
         });
 
-        console.log('[CSV_MAPPING] Found', csvVendorNames.size, 'unique vendors in CSV');
 
         // Check which vendors don't exist in metaData.vendors (case-insensitive + normalized)
         const existingVendorNames = new Set(
@@ -6671,7 +6438,6 @@
 
         // Create new vendors via API
         if (newVendors.length > 0) {
-          console.log('[CSV_MAPPING] Attempting to create', newVendors.length, 'new vendors:', newVendors);
 
           const apiBase = getApiBase();
 
@@ -6683,7 +6449,6 @@
                 body: JSON.stringify({ vendor_name: vendorName })
               });
 
-              console.log('[CSV_MAPPING] ✓ Created vendor:', vendorName);
 
               // Add to local metaData
               const newVendor = {
@@ -6696,7 +6461,6 @@
             } catch (err) {
               // If vendor already exists (race condition or sync issue), try to fetch it
               if (err.message && err.message.includes('already exists')) {
-                console.log('[CSV_MAPPING] ⚠ Vendor already exists (skipping):', vendorName);
 
                 // Try to find it in backend and add to local metaData if not present
                 try {
@@ -6712,7 +6476,6 @@
                       id: existingVendor.id,
                       vendor_name: existingVendor.vendor_name
                     });
-                    console.log('[CSV_MAPPING] ✓ Added existing vendor to local cache:', vendorName);
                   }
                 } catch (fetchErr) {
                   console.warn('[CSV_MAPPING] Could not fetch existing vendor:', vendorName);
@@ -6724,7 +6487,6 @@
           }
 
           if (newVendorsCreated > 0) {
-            console.log('[CSV_MAPPING] Successfully created', newVendorsCreated, 'new vendors');
           }
         }
       }
@@ -6744,7 +6506,6 @@
           }
         });
 
-        console.log('[CSV_MAPPING] Found', csvPaymentNames.size, 'unique payment methods in CSV');
 
         // Check which payment methods don't exist in metaData.payment_methods (case-insensitive + normalized)
         const existingPaymentNames = new Set(
@@ -6757,7 +6518,6 @@
 
         // Create new payment methods via API (note: table is 'paymet_methods' with typo)
         if (newPayments.length > 0) {
-          console.log('[CSV_MAPPING] Attempting to create', newPayments.length, 'new payment methods:', newPayments);
 
           const apiBase = getApiBase();
 
@@ -6769,7 +6529,6 @@
                 body: JSON.stringify({ payment_method_name: paymentName })
               });
 
-              console.log('[CSV_MAPPING] ✓ Created payment method:', paymentName);
 
               // Add to local metaData
               const newPayment = {
@@ -6782,7 +6541,6 @@
             } catch (err) {
               // If payment method already exists (race condition or sync issue), try to fetch it
               if (err.message && err.message.includes('already exists')) {
-                console.log('[CSV_MAPPING] ⚠ Payment method already exists (skipping):', paymentName);
 
                 // Try to find it in backend and add to local metaData if not present
                 try {
@@ -6798,7 +6556,6 @@
                       id: existingPayment.id,
                       payment_method_name: existingPayment.payment_method_name
                     });
-                    console.log('[CSV_MAPPING] ✓ Added existing payment method to local cache:', paymentName);
                   }
                 } catch (fetchErr) {
                   console.warn('[CSV_MAPPING] Could not fetch existing payment method:', paymentName);
@@ -6810,7 +6567,6 @@
           }
 
           if (newPaymentMethodsCreated > 0) {
-            console.log('[CSV_MAPPING] Successfully created', newPaymentMethodsCreated, 'new payment methods');
           }
         }
       }
@@ -6984,7 +6740,6 @@
 
                 // Log if the value was modified
                 if (originalValue !== numValue.toFixed(2)) {
-                  console.log('[CSV_MAPPING] Cleaned amount:', originalValue, '->', numValue.toFixed(2));
                 }
               } else {
                 console.warn('[CSV_MAPPING] Invalid amount value:', originalValue, '-> setting to 0.00');
@@ -6995,7 +6750,6 @@
         });
       }
 
-      console.log('[CSV_MAPPING] Successfully populated', modalRowCounter, 'rows');
 
       // Close mapping modal
       closeCsvMappingModal();
@@ -7066,7 +6820,6 @@
       // Debounce the search to avoid excessive re-renders
       searchDebounceTimer = setTimeout(() => {
         globalSearchTerm = searchValue;
-        console.log('[EXPENSES] Global search (debounced):', globalSearchTerm);
         renderExpensesTable();
       }, SEARCH_DEBOUNCE_MS);
     });
@@ -7193,16 +6946,6 @@
     els.btnClosePendingReceipts?.addEventListener('click', closePendingReceiptsModal);
     els.btnCancelPendingReceipts?.addEventListener('click', closePendingReceiptsModal);
 
-    // Pending Receipts Modal: Tab clicks
-    document.querySelectorAll('.pending-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        const status = tab.dataset.status;
-        document.querySelectorAll('.pending-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        loadPendingReceipts(status);
-      });
-    });
-
     // Modal: Remove row button
     els.expenseRowsBody?.addEventListener('click', (e) => {
       if (e.target.classList.contains('exp-row-remove')) {
@@ -7288,11 +7031,9 @@
 
     // Table row click to open single expense modal (only in read-only mode)
     els.expensesTableBody?.addEventListener('click', (e) => {
-      console.log('[EXPENSES] Table click:', { isEditMode, target: e.target, closest: e.target.closest('.expense-row-clickable') });
       if (!isEditMode && e.target.closest('.expense-row-clickable')) {
         const row = e.target.closest('tr');
         const expenseId = row.dataset.id;
-        console.log('[EXPENSES] Row clicked, expenseId:', expenseId);
         if (expenseId) {
           openSingleExpenseModal(expenseId);
         } else {
@@ -7317,7 +7058,6 @@
         const matchingOption = Array.from(datalist.options).find(opt => opt.value === e.target.value);
         if (matchingOption) {
           e.target.setAttribute('data-value', matchingOption.getAttribute('data-id'));
-          console.log(`[SINGLE MODAL] Updated to:`, matchingOption.getAttribute('data-id'));
         } else {
           e.target.setAttribute('data-value', '');
         }
@@ -7417,7 +7157,6 @@
         if (matchingOption) {
           // Update the hidden value with the actual ID
           input.dataset.fieldValue = matchingOption.dataset.value;
-          console.log(`[DATALIST] Updated ${input.dataset.field} to:`, matchingOption.dataset.value);
         } else {
           // Clear if no match (user typed something not in list)
           input.dataset.fieldValue = '';
@@ -7649,7 +7388,6 @@
             b.classList.toggle('selected', b.dataset.status === status);
           });
           updateBillStatusHint();
-          console.log('[EXPENSES] Bill status changed to:', status);
         }
       }
     });
@@ -7722,14 +7460,11 @@
       if (!actionBtn) return;
 
       const action = actionBtn.dataset.action;
-      console.log('[CONTEXT MENU] Action clicked:', action);
 
       // Save references before any async operations or hideContextMenu
       const savedTarget = contextMenuTarget;
       const savedRowIndex = contextMenuRowIndex;
 
-      console.log('[CONTEXT MENU] Saved target:', savedTarget);
-      console.log('[CONTEXT MENU] Saved rowIndex:', savedRowIndex);
 
       if (action === 'fill-down') {
         fillDownWithParams(savedTarget, savedRowIndex);
@@ -7779,12 +7514,8 @@
   }
 
   function fillDownWithParams(target, sourceRowIndex) {
-    console.log('[FILL DOWN] Starting fillDown...');
-    console.log('[FILL DOWN] target:', target);
-    console.log('[FILL DOWN] sourceRowIndex:', sourceRowIndex);
 
     if (!target || sourceRowIndex === null || sourceRowIndex === undefined) {
-      console.log('[FILL DOWN] Aborted: no target or row index');
       if (window.Toast) {
         Toast.warning('Fill Down', 'No source cell selected');
       }
@@ -7792,10 +7523,8 @@
     }
 
     const rows = els.expenseRowsBody?.querySelectorAll('tr') || [];
-    console.log('[FILL DOWN] Total rows found:', rows.length);
 
     if (rows.length <= 1) {
-      console.log('[FILL DOWN] Aborted: not enough rows');
       if (window.Toast) {
         Toast.info('Fill Down', 'No rows below to fill');
       }
@@ -7804,7 +7533,6 @@
 
     const isSelect = target.tagName === 'SELECT';
     const isInput = target.tagName === 'INPUT';
-    console.log('[FILL DOWN] Target type:', target.tagName);
 
     // Get the value to copy
     let valueToCopy;
@@ -7815,10 +7543,8 @@
       valueToCopy = target.value;
     }
 
-    console.log('[FILL DOWN] Value to copy:', valueToCopy);
 
     if (!valueToCopy && valueToCopy !== 0) {
-      console.log('[FILL DOWN] Aborted: empty value');
       if (window.Toast) {
         Toast.warning('Fill Down', 'Source cell is empty');
       }
@@ -7828,10 +7554,8 @@
     // Get the cell index to find the same column in other rows
     const cell = target.closest('td');
     const cellIndex = cell?.cellIndex;
-    console.log('[FILL DOWN] Cell index:', cellIndex);
 
     if (cellIndex === undefined) {
-      console.log('[FILL DOWN] Aborted: no cell index');
       return;
     }
 
@@ -7842,7 +7566,6 @@
       const rowIndex = parseInt(row.dataset.rowIndex, 10);
 
       if (isNaN(rowIndex)) {
-        console.log('[FILL DOWN] Skipping row with invalid index');
         return;
       }
 
@@ -7850,17 +7573,14 @@
 
       const targetCell = row.cells[cellIndex];
       if (!targetCell) {
-        console.log('[FILL DOWN] No target cell at index:', cellIndex);
         return;
       }
 
       const targetInput = targetCell.querySelector('.exp-input, .exp-select');
       if (!targetInput) {
-        console.log('[FILL DOWN] No input found in cell');
         return;
       }
 
-      console.log('[FILL DOWN] Filling row:', rowIndex);
 
       // Set the value
       if (targetInput.tagName === 'SELECT') {
@@ -7879,7 +7599,6 @@
       targetInput.dispatchEvent(new Event('change', { bubbles: true }));
     });
 
-    console.log('[FILL DOWN] Filled count:', filledCount);
 
     // Show toast notification
     if (filledCount > 0 && window.Toast) {
@@ -8606,7 +8325,6 @@
       if (!confirmReopen) {
         return; // User cancelled - don't save
       }
-      console.log('[BILL] User confirmed reopening closed bill:', currentEditBillId);
     }
 
     // Get vendor ID from datalist
@@ -8642,14 +8360,12 @@
           currentEditBillId
         );
         updateData.receipt_url = receiptUrl;
-        console.log('[BILL] Receipt uploaded:', receiptUrl);
       } else if (billEditReceiptDeleted) {
         // Delete existing receipt
         const billData = getBillMetadata(currentEditBillId);
         if (billData?.receipt_url && window.ReceiptUpload?.delete) {
           try {
             await window.ReceiptUpload.delete(billData.receipt_url);
-            console.log('[BILL] Receipt deleted from storage');
           } catch (deleteErr) {
             console.warn('[BILL] Could not delete receipt file:', deleteErr.message);
           }
@@ -8667,7 +8383,6 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updateData)
         });
-        console.log('[BILL] Bill updated:', currentEditBillId);
 
         // Update local cache
         Object.assign(existingBill, updateData);
@@ -8682,7 +8397,6 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(createData)
         });
-        console.log('[BILL] Bill created:', response);
 
         // Add to local cache (using upsert to prevent duplicates)
         upsertBillInCache(createData);
@@ -9009,7 +8723,6 @@
       // Use dynamic is_cogs parameter based on expense mode
       const isCogs = currentModeConfig.qboParam;
       const url = `${apiBase}/qbo/expenses?project=${projectId}&is_cogs=${isCogs}`;
-      console.log('[QBO] Loading with is_cogs=' + isCogs + ' for mode:', expenseMode);
       const result = await apiJson(url);
 
       // Handle response format (similar to manual expenses)
@@ -9018,7 +8731,6 @@
       else if (result?.expenses) qboExpenses = result.expenses;
       else qboExpenses = [];
 
-      console.log('[QBO] Loaded expenses:', qboExpenses.length);
       renderQBOExpensesTable();
     } catch (err) {
       console.error('[QBO] Error loading expenses:', err);
@@ -9186,14 +8898,12 @@
         throw new Error('No valid QuickBooks realm ID found.');
       }
 
-      console.log('[QBO] Syncing expenses from realm:', realmId);
 
       // Call sync endpoint with realm_id
       const result = await apiJson(`${apiBase}/qbo/sync/${realmId}`, {
         method: 'POST'
       });
 
-      console.log('[QBO] Sync result:', result);
 
       // Show success message
       const message = result?.message || `Successfully synced ${result?.imported_count || 0} expenses from QuickBooks.`;
@@ -9253,8 +8963,6 @@
       qboMappings = mappingsRes?.data || [];
       ngmProjectsList = projectsRes?.data || projectsRes || [];
 
-      console.log('[QBO Mapping] Loaded mappings:', qboMappings.length);
-      console.log('[QBO Mapping] Loaded NGM projects:', ngmProjectsList.length);
 
       renderQBOMappingList();
 
@@ -9453,7 +9161,6 @@
         return;
       }
 
-      console.log('[QBO Mapping] Saving updates:', updates);
 
       // Save each mapping
       let saved = 0;
@@ -9583,7 +9290,6 @@
         }
       });
 
-      console.log('[RECONCILE] Loaded existing matches:', activeReconciliation.confirmedMatches.length);
     } catch (err) {
       console.warn('[RECONCILE] Could not load existing reconciliations:', err);
       activeReconciliation.confirmedMatches = [];
@@ -9785,7 +9491,6 @@
     const qboExpense = reconciliationData.qboExpenses.find(e => e.id === qboId);
     if (!qboExpense) return;
 
-    console.log('[RECONCILE] Starting reconciliation mode for QBO:', qboExpense);
 
     activeReconciliation.isActive = true;
     activeReconciliation.qboExpense = qboExpense;
@@ -9983,11 +9688,6 @@
       matched_amount: matchedAmount
     });
 
-    console.log('[RECONCILE] Confirmed match:', {
-      qbo_id: qbo.id,
-      manual_ids: Array.from(activeReconciliation.selectedManualIds),
-      amount: matchedAmount
-    });
 
     // Reset active reconciliation
     resetActiveReconciliation();
@@ -10063,7 +9763,6 @@
         btnSave.textContent = 'Saving...';
       }
 
-      console.log('[RECONCILE] Saving reconciliations:', activeReconciliation.confirmedMatches);
 
       const url = `${apiBase}/expenses/reconciliations`;
       const result = await apiJson(url, {
@@ -10075,7 +9774,6 @@
         })
       });
 
-      console.log('[RECONCILE] Save result:', result);
 
       const totalMatches = activeReconciliation.confirmedMatches.length;
       const totalExpenses = activeReconciliation.confirmedMatches.reduce((sum, m) => sum + m.manual_expense_ids.length, 0);
@@ -10316,7 +10014,6 @@
 
     // Prevent double-click issues
     if (isAuthToggling) {
-      console.log('[AUTH] Already processing, ignoring click');
       return;
     }
 
@@ -10324,7 +10021,6 @@
     const currentStatus = badgeElement.getAttribute('data-auth-status') === 'true';
     const newStatus = !currentStatus;
 
-    console.log('[AUTH] Toggling authorization for expense:', expenseId, 'from', currentStatus, 'to', newStatus);
 
     const apiBase = getApiBase();
 
@@ -10353,7 +10049,6 @@
         })
       });
 
-      console.log('[AUTH] Authorization updated:', response);
 
       // Update local expense data (both status and auth_status to keep in sync)
       const expense = expenses.find(e => String(e.expense_id || e.id) === String(expenseId));
@@ -10408,7 +10103,6 @@
   }
 
   async function handleStageSelection(stage) {
-    console.log('[AUTO-CATEGORIZE] Stage selected:', stage);
 
     const progressDiv = document.getElementById('autoCategorizeProgress');
     const progressText = document.getElementById('autoCategorizeProgressText');
@@ -10442,7 +10136,6 @@
         return;
       }
 
-      console.log('[AUTO-CATEGORIZE] Sending to backend:', { stage, expenses });
 
       // Update progress
       if (progressText) progressText.textContent = `Analyzing ${expenses.length} expense(s)...`;
@@ -10459,7 +10152,6 @@
         })
       });
 
-      console.log('[AUTO-CATEGORIZE] Response:', response);
 
       // Update progress
       if (progressText) progressText.textContent = 'Applying categorizations...';
@@ -10480,7 +10172,6 @@
         if (els.btnSaveAllExpenses) {
           els.btnSaveAllExpenses.disabled = false;
           els.btnSaveAllExpenses.textContent = 'Save All';
-          console.log('[AUTO-CATEGORIZE] Save button reset to enabled state');
         }
 
         // Show summary
@@ -10510,7 +10201,6 @@
       const row = els.expenseRowsBody.querySelector(`tr[data-row-index="${cat.rowIndex}"]`);
       if (!row) return;
 
-      console.log('[AUTO-CATEGORIZE] Applying to row', cat.rowIndex, ':', cat);
 
       // Find account input
       const accountInput = row.querySelector('[data-field="account_id"]');
@@ -10676,13 +10366,11 @@
       });
     });
 
-    console.log('[COLUMN MANAGER] Visibility applied:', columnVisibility);
   }
 
   function saveColumnVisibility() {
     try {
       localStorage.setItem(COLUMN_VISIBILITY_KEY, JSON.stringify(columnVisibility));
-      console.log('[COLUMN MANAGER] Visibility saved:', columnVisibility);
     } catch (e) {
       console.error('[COLUMN MANAGER] Error saving visibility:', e);
     }
@@ -10698,7 +10386,6 @@
     applyColumnVisibility();
     populateColumnCheckboxes();
 
-    console.log('[COLUMN MANAGER] Reset to defaults');
   }
 
   function openColumnManager() {
@@ -10753,11 +10440,8 @@
     if (!banner) return;
 
     try {
-      const token = localStorage.getItem('ngmToken');
-      const API_BASE = window.API_BASE || 'http://localhost:8000';
-
-      const response = await fetch(`${API_BASE}/budget-alerts/pending/count`, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      const response = await fetch(`${getApiBase()}/budget-alerts/pending/count`, {
+        headers: getAuthHeaders()
       });
 
       if (!response.ok) return;
@@ -10774,7 +10458,6 @@
         banner.classList.add('hidden');
       }
     } catch (err) {
-      console.log('[EXPENSES] Error checking pending alerts:', err.message);
       // Silently fail - banner stays hidden
     }
   }
@@ -10785,7 +10468,6 @@
   function registerCopilotHandlers() {
     // Check if ArturitoWidget is available
     if (typeof ArturitoWidget === 'undefined' || !ArturitoWidget.registerCopilotHandlers) {
-      console.log('[EXPENSES] ArturitoWidget not available, skipping copilot registration');
       return;
     }
 
@@ -10793,7 +10475,6 @@
       // Filter by authorization status
       filterByAuthStatus: (params) => {
         const status = params.status;
-        console.log('[EXPENSES COPILOT] filterByAuthStatus:', status);
 
         // Clear existing auth filter
         columnFilters.auth = [];
@@ -10819,7 +10500,6 @@
       // Filter by project
       filterByProject: (params) => {
         const projectName = params.project_name;
-        console.log('[EXPENSES COPILOT] filterByProject:', projectName);
 
         // Find the project in metadata
         const project = metaData.projects.find(p =>
@@ -10828,7 +10508,7 @@
 
         if (project && els.projectFilter) {
           els.projectFilter.value = project.project_id;
-          loadExpenses(project.project_id);
+          loadExpensesByProject(project.project_id);
 
           if (typeof Toast !== 'undefined') {
             Toast.success('Proyecto seleccionado', project.project_name);
@@ -10843,7 +10523,6 @@
       // Filter by vendor
       filterByVendor: (params) => {
         const vendorName = params.vendor_name;
-        console.log('[EXPENSES COPILOT] filterByVendor:', vendorName);
 
         // Find matching vendor values in current expenses
         const matchingVendors = [...new Set(expenses.map(exp => {
@@ -10870,7 +10549,6 @@
 
       // Filter by date range
       filterByDateRange: (params) => {
-        console.log('[EXPENSES COPILOT] filterByDateRange:', params);
 
         const startDate = params.start_date ? new Date(params.start_date) : null;
         const endDate = params.end_date ? new Date(params.end_date) : null;
@@ -10898,7 +10576,6 @@
 
       // Clear all filters
       clearFilters: () => {
-        console.log('[EXPENSES COPILOT] clearFilters');
 
         // Reset all column filters
         columnFilters.date = [];
@@ -10912,8 +10589,8 @@
 
         // Clear global search
         globalSearchTerm = '';
-        if (els.globalSearch) {
-          els.globalSearch.value = '';
+        if (els.searchInput) {
+          els.searchInput.value = '';
         }
 
         renderExpensesTable();
@@ -10928,7 +10605,6 @@
       sortByColumn: (params) => {
         const column = params.column;
         const direction = params.direction || 'asc';
-        console.log('[EXPENSES COPILOT] sortByColumn:', column, direction);
 
         // Map common column names to expense fields
         const columnMap = {
@@ -10979,7 +10655,6 @@
 
       // Expand all bills (in bill view mode)
       expandAllBills: () => {
-        console.log('[EXPENSES COPILOT] expandAllBills');
 
         const expandBtns = document.querySelectorAll('.bill-expand-btn[data-expanded="false"]');
         expandBtns.forEach(btn => btn.click());
@@ -10991,7 +10666,6 @@
 
       // Collapse all bills
       collapseAllBills: () => {
-        console.log('[EXPENSES COPILOT] collapseAllBills');
 
         const collapseBtns = document.querySelectorAll('.bill-expand-btn[data-expanded="true"]');
         collapseBtns.forEach(btn => btn.click());
@@ -11004,12 +10678,11 @@
       // Search text
       searchText: (params) => {
         const query = params.query;
-        console.log('[EXPENSES COPILOT] searchText:', query);
 
         globalSearchTerm = query || '';
 
-        if (els.globalSearch) {
-          els.globalSearch.value = globalSearchTerm;
+        if (els.searchInput) {
+          els.searchInput.value = globalSearchTerm;
         }
 
         renderExpensesTable();
@@ -11021,7 +10694,6 @@
 
       // Health check: Detect almost-certain duplicate bills
       healthCheckDuplicateBills: async () => {
-        console.log('[EXPENSES COPILOT] healthCheckDuplicateBills');
 
         // Run the detection
         await detectDuplicateBillNumbers();
@@ -11090,7 +10762,6 @@
 
       // Filter to show only duplicate expenses
       filterByDuplicates: async () => {
-        console.log('[EXPENSES COPILOT] filterByDuplicates');
 
         // First, run duplicate detection to populate duplicateBillWarnings
         await detectDuplicateBillNumbers();
@@ -11108,7 +10779,7 @@
           if (typeof Toast !== 'undefined') {
             Toast.info('Sin duplicados', 'No se encontraron gastos duplicados para filtrar');
           }
-          return { filtered: 0, total: allExpenses.length };
+          return { filtered: 0, total: expenses.length };
         }
 
         // Apply filter by setting a special duplicate filter
@@ -11125,12 +10796,11 @@
           Toast.success('Filtrado', `Mostrando ${duplicateIds.size} gastos duplicados`);
         }
 
-        return { filtered: duplicateIds.size, total: allExpenses.length };
+        return { filtered: duplicateIds.size, total: expenses.length };
       },
 
       // Clear duplicate filter
       clearDuplicateFilter: () => {
-        console.log('[EXPENSES COPILOT] clearDuplicateFilter');
         window._duplicateFilterActive = false;
         window._duplicateIds = null;
         renderExpensesTable();
@@ -11141,7 +10811,6 @@
       },
     });
 
-    console.log('[EXPENSES] Arturito copilot handlers registered');
   }
 
   function updateFilterIndicators() {
@@ -11181,7 +10850,6 @@
     // Re-render table
     renderExpensesTable();
 
-    console.log(`[ARTURITO] Filter applied: ${column} = ${filterValues.join(', ')}`);
     return {
       success: true,
       message: `Filtro aplicado: ${column} = ${filterValues.join(', ')}`,
@@ -11213,7 +10881,6 @@
     // Re-render table
     renderExpensesTable();
 
-    console.log('[ARTURITO] All filters cleared');
     return { success: true, message: 'Todos los filtros han sido eliminados' };
   }
 
@@ -11224,7 +10891,6 @@
     if (columnFilters.hasOwnProperty(column)) {
       columnFilters[column] = [];
       renderExpensesTable();
-      console.log(`[ARTURITO] Filter cleared: ${column}`);
       return { success: true, message: `Filtro eliminado: ${column}` };
     }
     return { success: false, message: `Columna no encontrada: ${column}` };
@@ -11254,7 +10920,6 @@
     const searchInput = document.querySelector('.global-search-input');
     if (searchInput) searchInput.value = term;
     renderExpensesTable();
-    console.log(`[ARTURITO] Search applied: "${term}"`);
     return { success: true, message: `Búsqueda: "${term}"` };
   }
 
@@ -11294,7 +10959,6 @@
     getActiveFilters: getActiveFilters
   };
 
-  console.log('[EXPENSES] Arturito interface exposed as window.ExpensesArturito');
 
   // Run on DOM load
   if (document.readyState === 'loading') {

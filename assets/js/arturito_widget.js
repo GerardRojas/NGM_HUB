@@ -196,6 +196,18 @@
       make: () => ({ type: "copilot", action: "filter", params: { field: "auth", value: "Authorized" } }) },
     { rx: /^(?:en\s*)?(?:revision|review)$/i,
       make: () => ({ type: "copilot", action: "filter", params: { field: "auth", value: "Review" } }) },
+    // Auth status with context words (multi-word phrases)
+    { rx: /(?:show|muestrame|muestra|ver|solo)\s+(?:los?\s+)?(?:gastos?\s+)?(?:en\s+)?(?:pending|pendientes?)\s*(?:gastos?|expenses?)?/i,
+      make: () => ({ type: "copilot", action: "filter", params: { field: "auth", value: "Pending" } }) },
+    { rx: /(?:show|muestrame|muestra|ver|solo)\s+(?:los?\s+)?(?:gastos?\s+)?(?:en\s+)?(?:authorized?|autorizad[oa]s?)\s*(?:gastos?|expenses?)?/i,
+      make: () => ({ type: "copilot", action: "filter", params: { field: "auth", value: "Authorized" } }) },
+    { rx: /(?:show|muestrame|muestra|ver|solo)\s+(?:los?\s+)?(?:gastos?\s+)?(?:en\s+)?(?:review|revision)\s*(?:gastos?|expenses?)?/i,
+      make: () => ({ type: "copilot", action: "filter", params: { field: "auth", value: "Review" } }) },
+    // Vendor filter phrases: "gastos de X", "expenses from X", "solo X"
+    { rx: /(?:gastos?|expenses?)\s+(?:de|from|of)\s+(.+)/i,
+      make: (m) => ({ type: "copilot", action: "filter", params: { field: "vendor", value: m[1].trim() } }) },
+    { rx: /(?:show|muestrame|muestra|ver|filtra|filter)\s+(?:los?\s+)?(?:gastos?\s+|expenses?\s+)?(?:de|from|of)\s+(.+)/i,
+      make: (m) => ({ type: "copilot", action: "filter", params: { field: "vendor", value: m[1].trim() } }) },
     // Health check
     { rx: /^health\s*check$/i,
       make: () => ({ type: "copilot", action: "health_check" }) },

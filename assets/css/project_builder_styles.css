@@ -1306,33 +1306,29 @@
    SCAN TAB
    ════════════════════════════════════════════ */
 
-/* Workspace: steps left, canvas right */
+/* Workspace: single column flow, no nested scroll */
 .pb-scan-workspace {
-  display: grid;
-  grid-template-columns: 400px 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  min-height: 600px;
-}
-.pb-scan-workspace:not(.has-canvas) {
-  grid-template-columns: 1fr;
-  max-width: 560px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #1f1f1f;
 }
 .pb-scan-steps-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: calc(100vh - 200px);
-  overflow-y: auto;
-  padding-right: 4px;
+  gap: 16px;
 }
 
-/* Steps */
+/* Steps - same size as .pb-panel cards */
 .pb-scan-step {
   background: #111;
   border: 1px solid #1f1f1f;
-  border-radius: 10px;
-  padding: 16px 18px;
+  border-radius: 12px;
+  padding: 28px;
   transition: opacity 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 .pb-scan-step.locked .pb-scan-step-body {
   opacity: 0.25;
@@ -1350,18 +1346,20 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #1a1a1a;
 }
 .pb-scan-step-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: rgba(62, 207, 142, 0.12);
   color: #3ecf8e;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -1374,15 +1372,17 @@
   min-width: 0;
 }
 .pb-scan-step-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #e5e7eb;
+  font-size: 18px;
+  font-weight: 700;
+  color: #f0f0f0;
   margin: 0;
+  letter-spacing: -0.02em;
 }
 .pb-scan-step-subtitle {
-  font-size: 12px;
-  color: #666;
-  margin: 2px 0 0;
+  font-size: 14px;
+  color: #888;
+  margin: 8px 0 0;
+  line-height: 1.5;
 }
 .pb-scan-step-body {
   transition: opacity 0.2s;
@@ -1394,7 +1394,7 @@
   margin-bottom: 0;
 }
 .pb-scan-step.collapsible:not(.collapsed) .pb-scan-step-header {
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 }
 .pb-scan-step.collapsed .pb-scan-step-body {
   display: none;
@@ -1403,7 +1403,7 @@
   display: none;
 }
 .pb-scan-step-summary {
-  font-size: 12px;
+  font-size: 13px;
   color: #888;
   line-height: 1.5;
   padding: 2px 0 0 40px;
@@ -1644,15 +1644,14 @@
 
 /* ── Canvas ── */
 .pb-scan-canvas-container {
-  position: sticky;
-  top: 80px;
-  height: calc(100vh - 180px);
+  height: 600px;
   background: #0a0a0a;
   border: 1px solid #1f1f1f;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Toolbar */
@@ -1946,7 +1945,7 @@
   padding: 12px 16px;
   font-size: 14px;
   font-weight: 600;
-  margin-top: 8px;
+  margin-top: 12px;
 }
 
 /* Review summary */
@@ -2037,9 +2036,7 @@
   .pb-workspace { padding: 20px 24px; }
   .pb-card--wide { grid-column: 1; }
   .pb-def-layout { grid-template-columns: 200px 1fr; }
-  .pb-scan-workspace { grid-template-columns: 1fr; }
-  .pb-scan-canvas-container { position: relative; top: 0; height: 500px; }
-  .pb-scan-steps-panel { max-height: none; }
+  .pb-scan-canvas-container { height: 450px; }
 }
 
 @media (max-width: 768px) {

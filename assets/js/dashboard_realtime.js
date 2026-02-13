@@ -28,7 +28,13 @@
     }
 
     try {
-      supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+      // Reuse shared singleton to avoid Multiple GoTrueClient warning
+      if (window._ngmSupabaseClient) {
+        supabaseClient = window._ngmSupabaseClient;
+      } else {
+        supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        window._ngmSupabaseClient = supabaseClient;
+      }
       console.log('[DASH_REALTIME] Supabase client initialized');
 
       // Subscribe to changes

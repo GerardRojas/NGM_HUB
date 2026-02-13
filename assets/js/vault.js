@@ -29,6 +29,7 @@
   let currentFolder = null;    // null = root
   let folderPath = [];         // breadcrumb [{id, name}, ...]
   let folderTree = [];         // flat list of all folders
+  let _childrenMap = new Map(); // Map<parentId|"__root__", children[]> - pre-computed for O(1) lookups
   let files = [];              // current folder contents
   let viewMode = "grid";       // 'grid' | 'list'
   let sortBy = "name";         // 'name' | 'date' | 'size' | 'type'
@@ -216,12 +217,25 @@
   }
 
   // ─── Folder Tree ───────────────────────────────────────────────────────────
+
+  // Build O(1) lookup: parentId -> children[], "__root__" for top-level, "__project_<pid>__" for project roots
+  function _buildChildrenMap() {
+    _childrenMap = new Map();
+    for (const f of folderTree) {
+      const key = f.parent_id || "__root__";
+      const arr = _childrenMap.get(key);
+      if (arr) arr.push(f);
+      else _childrenMap.set(key, [f]);
+    }
+  }
+
   async function loadTree(forceRefresh = false) {
     const cacheKey = currentProject || "__global__";
 
     // Use cached data if available and not forcing refresh
     if (!forceRefresh && treeCache[cacheKey]) {
       folderTree = treeCache[cacheKey];
+      _buildChildrenMap();
       renderTree();
       return;
     }
@@ -235,28 +249,33 @@
       console.warn("[Vault] Failed to load tree:", e);
       folderTree = [];
     }
+    _buildChildrenMap();
     renderTree();
   }
 
   function renderTree() {
     if (!$tree) return;
+    const prevScroll = $tree.scrollTop;
 
-    // Save current expansion state before re-rendering
+    // Capture expansion state from live DOM before destroying it
     if ($tree.children.length > 0) {
-      $tree.querySelectorAll(".vault-tree-node").forEach(node => {
-        const id = node.dataset.id;
-        const childrenEl = node.nextElementSibling;
-        if (childrenEl?.classList.contains("vault-tree-children") && childrenEl.classList.contains("open")) {
-          expandedNodes.add(id);
-        }
+      $tree.querySelectorAll(".vault-tree-children.open").forEach(el => {
+        const node = el.previousElementSibling;
+        if (node?.dataset?.id) expandedNodes.add(node.dataset.id);
       });
+    }
+
+    // Auto-expand Projects node if viewing a project
+    if (currentProject) {
+      expandedNodes.add("__projects__");
+      expandedNodes.add(`__project_${currentProject}__`);
     }
 
     // Minimalist folder icon (outline only)
     const folderIcon = `<svg class="tree-folder-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-8l-2-2H5a2 2 0 0 0-2 2Z"/></svg>`;
 
     // ALWAYS show the full tree structure (Global folders + Projects)
-    const globalRoots = folderTree.filter(f => !f.parent_id && !f.project_id);
+    const globalRoots = (_childrenMap.get("__root__") || []).filter(f => !f.project_id);
     let html = "";
 
     // Render global folders
@@ -271,7 +290,8 @@
     }
 
     const hasProjects = filteredProjects.length > 0;
-    const arrowClass = hasProjects ? "tree-arrow" : "tree-arrow empty";
+    const projExpanded = expandedNodes.has("__projects__");
+    const arrowClass = hasProjects ? `tree-arrow${projExpanded ? " expanded" : ""}` : "tree-arrow empty";
     const arrow = `<svg class="${arrowClass}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
 
     html += `<div class="vault-tree-node" data-id="__projects__" data-name="Projects" data-virtual="true">`;
@@ -280,78 +300,59 @@
 
     // Add children (project folders)
     if (hasProjects) {
-      html += `<div class="vault-tree-children">`;
+      html += `<div class="vault-tree-children${projExpanded ? " open" : ""}"><div class="vault-tree-children-inner">`;
       for (const p of filteredProjects) {
         const pid = p.project_id || p.id;
         const name = p.project_name || p.name || pid;
+        const projNodeId = `__project_${pid}__`;
+        const projNodeExpanded = expandedNodes.has(projNodeId);
 
         // Get project folders
-        const projectFolders = folderTree.filter(f => f.project_id === pid && !f.parent_id);
+        const projectFolders = (_childrenMap.get("__root__") || []).filter(f => f.project_id === pid);
         const hasSubfolders = projectFolders.length > 0;
-        const arrow2Class = hasSubfolders ? "tree-arrow" : "tree-arrow empty";
+        const arrow2Class = hasSubfolders ? `tree-arrow${projNodeExpanded ? " expanded" : ""}` : "tree-arrow empty";
         const arrow2 = `<svg class="${arrow2Class}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
 
         const isActive = currentProject === pid && !currentFolder;
-        html += `<div class="vault-tree-node${isActive ? " active" : ""}" data-id="__project_${pid}__" data-project-id="${pid}" data-name="${escapeAttr(name)}" data-virtual="true">`;
+        html += `<div class="vault-tree-node${isActive ? " active" : ""}" data-id="${projNodeId}" data-project-id="${pid}" data-name="${escapeAttr(name)}" data-virtual="true">`;
         html += `<span class="tree-indent" style="width:16px"></span>${arrow2}${folderIcon}<span class="tree-label">${escapeHtml(name)}</span>`;
         html += `</div>`;
 
         // Add project folders as children
         if (hasSubfolders) {
-          html += `<div class="vault-tree-children">`;
+          html += `<div class="vault-tree-children${projNodeExpanded ? " open" : ""}"><div class="vault-tree-children-inner">`;
           html += renderTreeNodes(projectFolders, 2, folderIcon);
-          html += `</div>`;
+          html += `</div></div>`;
         }
       }
-      html += `</div>`;
+      html += `</div></div>`;
     }
 
     $tree.innerHTML = html;
-
-    // Auto-expand Projects node if viewing a project
-    if (currentProject) {
-      expandedNodes.add("__projects__");
-      const projectNodeId = `__project_${currentProject}__`;
-      expandedNodes.add(projectNodeId);
-    }
-
-    restoreExpansion();
+    $tree.scrollTop = prevScroll;
   }
 
   function renderTreeNodes(nodes, depth, folderIcon) {
     let html = "";
     for (const node of nodes) {
-      const children = folderTree.filter(f => f.parent_id === node.id);
+      const children = _childrenMap.get(node.id) || [];
       const hasChildren = children.length > 0;
       const isActive = currentFolder === node.id;
+      const isExpanded = expandedNodes.has(node.id);
       const indent = `<span class="tree-indent" style="width:${depth * 16}px"></span>`;
-      const arrowClass = hasChildren ? "tree-arrow" : "tree-arrow empty";
+      const arrowClass = hasChildren ? `tree-arrow${isExpanded ? " expanded" : ""}` : "tree-arrow empty";
       const arrow = `<svg class="${arrowClass}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
 
       html += `<div class="vault-tree-node${isActive ? " active" : ""}" data-id="${node.id}" data-name="${escapeAttr(node.name)}">`;
       html += `${indent}${arrow}${folderIcon}<span class="tree-label">${escapeHtml(node.name)}</span>`;
       html += `</div>`;
       if (hasChildren) {
-        html += `<div class="vault-tree-children">${renderTreeNodes(children, depth + 1, folderIcon)}</div>`;
+        html += `<div class="vault-tree-children${isExpanded ? " open" : ""}"><div class="vault-tree-children-inner">${renderTreeNodes(children, depth + 1, folderIcon)}</div></div>`;
       }
     }
     return html;
   }
 
-  function restoreExpansion() {
-    if (!$tree) return;
-    expandedNodes.forEach(id => {
-      const node = $tree.querySelector(`[data-id="${id}"]`);
-      if (node) {
-        const childrenEl = node.nextElementSibling;
-        if (childrenEl?.classList.contains("vault-tree-children")) {
-          childrenEl.classList.add("open");
-          const arrow = node.querySelector(".tree-arrow");
-          if (arrow) arrow.classList.add("expanded");
-        }
-      }
-    });
-  }
 
   // ─── File Listing ──────────────────────────────────────────────────────────
   async function loadFiles(forceRefresh = false) {
@@ -622,8 +623,7 @@
 
     hideProgress();
     if (window.Toast && uploaded > 0) window.Toast.success(`Uploaded ${uploaded} file(s)`);
-    await loadFiles(true); // Force refresh after upload
-    await loadTree(true); // Force refresh after upload
+    await loadFiles(true);
   }
 
   async function singleUpload(file) {
@@ -763,8 +763,8 @@
         if (newName && newName !== file.name) {
           await apiPatch(`/vault/files/${file.id}`, { name: newName });
           if (window.Toast) window.Toast.success("Renamed");
-          await loadFiles(true); // Force refresh after rename
-          await loadTree(true); // Force refresh after rename
+          await loadFiles(true);
+          if (file.is_folder) await loadTree(true);
         }
         break;
       }
@@ -791,8 +791,8 @@
         if (confirm(`Delete "${file.name}"?`)) {
           await apiDelete(`/vault/files/${file.id}`);
           if (window.Toast) window.Toast.success("Deleted");
-          await loadFiles(true); // Force refresh after delete
-          await loadTree(true); // Force refresh after delete
+          await loadFiles(true);
+          if (file.is_folder) await loadTree(true);
         }
         break;
     }
@@ -816,7 +816,7 @@
     if (!$moveTree) return;
     // Root option
     let html = `<div class="vault-move-node${moveTargetId === null ? " selected" : ""}" data-id="">(Root)</div>`;
-    const roots = folderTree.filter(f => !f.parent_id);
+    const roots = _childrenMap.get("__root__") || [];
     html += renderMoveNodes(roots, 0);
     $moveTree.innerHTML = html;
   }
@@ -825,7 +825,7 @@
     let html = "";
     for (const node of nodes) {
       if (node.id === selectedFileId) continue; // Can't move into itself
-      const children = folderTree.filter(f => f.parent_id === node.id);
+      const children = _childrenMap.get(node.id) || [];
       const indent = `<span class="move-indent" style="width:${depth * 20}px"></span>`;
       const sel = moveTargetId === node.id ? " selected" : "";
       const folderIcon = `<svg class="vault-folder-svg" width="16" height="16" viewBox="0 0 24 24" style="flex-shrink:0"><path class="vault-folder-back" d="M2 6a2 2 0 0 1 2-2h4.6a1 1 0 0 1 .7.3L11 6h9a2 2 0 0 1 2 2v1H2z"/><path class="vault-folder-front" d="M2 9h20v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/></svg>`;
@@ -838,11 +838,12 @@
   async function confirmMove() {
     if (!selectedFileId) return;
     try {
+      const movedFile = files.find(f => f.id === selectedFileId);
       await apiPatch(`/vault/files/${selectedFileId}`, { parent_id: moveTargetId });
       if (window.Toast) window.Toast.success("Moved");
       closeMoveModal();
-      await loadFiles(true); // Force refresh after move
-      await loadTree(true); // Force refresh after move
+      await loadFiles(true);
+      if (movedFile?.is_folder) await loadTree(true);
     } catch (e) {
       if (window.Toast) window.Toast.error("Move failed");
     }
@@ -941,8 +942,7 @@
         project_id: currentProject,
       });
       if (window.Toast) window.Toast.success("Folder created");
-      await loadFiles(true); // Force refresh after creating folder
-      await loadTree(true); // Force refresh after creating folder
+      await Promise.all([loadFiles(true), loadTree(true)]);
     } catch (e) {
       if (window.Toast) window.Toast.error("Failed to create folder");
     }
@@ -981,22 +981,32 @@
   // ─── Resizer ───────────────────────────────────────────────────────────────
   function setupResizer() {
     if (!$resizer || !$treePanel) return;
-    let startX, startWidth;
+    let startX, startWidth, rafId = 0, lastW = 0;
 
     $resizer.addEventListener("mousedown", (e) => {
       startX = e.clientX;
       startWidth = $treePanel.offsetWidth;
+      lastW = startWidth;
       $resizer.classList.add("active");
+      $treePanel.classList.add("resizing");
       document.addEventListener("mousemove", onResize);
       document.addEventListener("mouseup", stopResize);
     });
 
     function onResize(e) {
-      const w = Math.max(180, Math.min(400, startWidth + (e.clientX - startX)));
-      $treePanel.style.width = `${w}px`;
+      lastW = Math.max(180, Math.min(400, startWidth + (e.clientX - startX)));
+      if (!rafId) {
+        rafId = requestAnimationFrame(() => {
+          $treePanel.style.width = `${lastW}px`;
+          rafId = 0;
+        });
+      }
     }
     function stopResize() {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      $treePanel.style.width = `${lastW}px`;
       $resizer.classList.remove("active");
+      $treePanel.classList.remove("resizing");
       document.removeEventListener("mousemove", onResize);
       document.removeEventListener("mouseup", stopResize);
     }

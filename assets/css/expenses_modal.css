@@ -1587,21 +1587,19 @@ input[type="number"].form-input {
   color: #e5e7eb;
 }
 
-/* ── Scan Layout (2-column: modes | upload) ── */
+/* ── Scan Layout (stacked: modes row on top, upload below) ── */
 .scan-layout {
   display: flex;
-  gap: 24px;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .scan-layout-models {
-  flex: 1 1 55%;
-  min-width: 0;
+  width: 100%;
 }
 
 .scan-layout-upload {
-  flex: 1 1 45%;
-  min-width: 0;
+  width: 100%;
 }
 
 .scan-section-label {
@@ -1613,16 +1611,18 @@ input[type="number"].form-input {
   margin-bottom: 10px;
 }
 
-/* Model Selector (vertical stack) */
+/* Model Selector (horizontal row) */
 .scan-model-selector {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 8px;
 }
 
 .scan-model-option {
   cursor: pointer;
   display: flex;
+  flex: 1 1 0%;
+  min-width: 0;
 }
 
 .scan-model-option input[type="radio"] {
@@ -1693,7 +1693,7 @@ input[type="number"].form-input {
   font-size: 11px;
   line-height: 1.45;
   color: #787f89;
-  padding-left: 48px;
+  padding-left: 0;
 }
 
 .scan-model-option input[type="radio"]:checked + .scan-model-card .scan-model-desc {
@@ -1704,7 +1704,7 @@ input[type="number"].form-input {
 .scan-model-tags {
   display: flex;
   gap: 5px;
-  padding-left: 48px;
+  padding-left: 0;
   margin-top: 2px;
 }
 
@@ -1761,15 +1761,10 @@ input[type="number"].form-input {
   text-align: center;
 }
 
-/* Responsive: stack vertically on narrow screens */
+/* Responsive: stack cards vertically on narrow screens */
 @media (max-width: 640px) {
-  .scan-layout {
+  .scan-model-selector {
     flex-direction: column;
-    gap: 16px;
-  }
-  .scan-layout-models,
-  .scan-layout-upload {
-    flex: 1 1 100%;
   }
 }
 
@@ -1783,8 +1778,8 @@ input[type="number"].form-input {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  padding: 50px 24px;
-  min-height: 280px;
+  padding: 36px 24px;
+  min-height: 160px;
   border: 2px dashed rgba(148, 163, 184, 0.2);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.015);

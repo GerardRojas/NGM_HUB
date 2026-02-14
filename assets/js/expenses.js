@@ -9435,7 +9435,12 @@
     if (selectAllCheckbox) selectAllCheckbox.disabled = true;
   }
 
+  let _reconcileListenersBound = false;
+
   function setupReconciliationEventListeners() {
+    if (_reconcileListenersBound) return;
+    _reconcileListenersBound = true;
+
     // Cancel reconcile mode button
     document.getElementById('btnCancelReconcileMode')?.addEventListener('click', () => {
       resetActiveReconciliation();

@@ -254,6 +254,7 @@
     padding: 0;
     background: transparent;
     border: none;
+    align-items: stretch;
 }
 
 .my-work-card:hover {
@@ -426,9 +427,9 @@
 }
 
 .task-action-btn:hover {
-    background: #202020;
-    border-color: #333333;
-    color: #b4b4b4;
+    border-color: rgba(62, 207, 142, 0.4);
+    background: rgba(62, 207, 142, 0.08);
+    color: #3ecf8e;
 }
 
 /* Loading state for My Work */
@@ -1139,9 +1140,9 @@
 }
 
 .task-start-btn:hover {
-    background: #202020;
-    border-color: #333333;
-    color: #b4b4b4;
+    border-color: rgba(62, 207, 142, 0.4);
+    background: rgba(62, 207, 142, 0.08);
+    color: #3ecf8e;
 }
 
 .task-start-btn:disabled {
@@ -1161,9 +1162,9 @@
 }
 
 .task-view-btn:hover {
-    background: #202020;
-    border-color: #333333;
-    color: #b4b4b4;
+    border-color: rgba(62, 207, 142, 0.4);
+    background: rgba(62, 207, 142, 0.08);
+    color: #3ecf8e;
 }
 
 /* Working indicator */
@@ -1330,9 +1331,9 @@
 }
 
 .task-review-btn:hover {
-    background: #202020 !important;
-    border-color: #333333 !important;
-    color: #b4b4b4 !important;
+    border-color: rgba(62, 207, 142, 0.4) !important;
+    background: rgba(62, 207, 142, 0.08) !important;
+    color: #3ecf8e !important;
 }
 
 /* ==========================================
@@ -1532,6 +1533,7 @@
     padding: 0;
     background: transparent;
     border: none;
+    align-items: stretch;
 }
 
 .pending-reviews-card:hover {
@@ -1668,9 +1670,9 @@
 }
 
 .task-approve-btn:hover {
-    background: #202020;
-    border-color: #333333;
-    color: #b4b4b4;
+    border-color: rgba(62, 207, 142, 0.4);
+    background: rgba(62, 207, 142, 0.08);
+    color: #3ecf8e;
 }
 
 /* Reject button */
@@ -1691,9 +1693,9 @@
 }
 
 .task-reject-btn:hover {
-    background: #202020;
-    border-color: #333333;
-    color: #b4b4b4;
+    border-color: rgba(62, 207, 142, 0.4);
+    background: rgba(62, 207, 142, 0.08);
+    color: #3ecf8e;
 }
 
 /* View result link button */
@@ -1714,9 +1716,9 @@
 }
 
 .task-result-link:hover {
-    background: #202020;
-    border-color: #333333;
-    color: #b4b4b4;
+    border-color: rgba(62, 207, 142, 0.4);
+    background: rgba(62, 207, 142, 0.08);
+    color: #3ecf8e;
 }
 
 /* Submitted by badge */

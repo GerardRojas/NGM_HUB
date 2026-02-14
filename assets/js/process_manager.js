@@ -1083,6 +1083,7 @@
         const supabaseKey = window.SUPABASE_ANON_KEY || window.NGM_CONFIG?.SUPABASE_ANON_KEY;
 
         if (!supabaseUrl || !supabaseKey) {
+            console.warn('[PROCESS-MANAGER] Supabase config missing, cannot load algorithm diagrams');
             return;
         }
 
@@ -1096,7 +1097,10 @@
 
             if (res.ok) {
                 state.algorithmDiagrams = await res.json();
+                console.log(`[PROCESS-MANAGER] Loaded ${state.algorithmDiagrams.length} algorithm diagrams`);
             } else {
+                const errText = await res.text().catch(() => '');
+                console.error(`[PROCESS-MANAGER] Failed to load algorithm diagrams: HTTP ${res.status}`, errText);
             }
         } catch (err) {
             console.error('[PROCESS-MANAGER] Error loading algorithm diagrams:', err);
@@ -1336,6 +1340,7 @@
             connectedToHub: moduleData.connectedToHub !== false, // Default true
             linkedModuleId: validLinkedModuleId, // Parent module if this is a sub-module
             linkedProcesses: moduleData.linkedProcesses || [],
+            diagram_id: moduleData.diagram_id || null,
             processIds: [],
             createdAt: new Date().toISOString()
         };
@@ -2027,18 +2032,22 @@
     // ================================
     // Algorithm Diagram Dropdown Helpers
     // ================================
-    function toggleDiagramDropdownVisibility(show) {
+    async function toggleDiagramDropdownVisibility(show, selectedValue) {
         const diagramGroup = document.getElementById('moduleDiagramGroup');
         if (diagramGroup) {
             diagramGroup.classList.toggle('hidden', !show);
             // Populate dropdown if showing
             if (show) {
-                populateDiagramDropdown();
+                // Retry loading if diagrams haven't loaded yet
+                if (state.algorithmDiagrams.length === 0) {
+                    await loadAlgorithmDiagrams();
+                }
+                populateDiagramDropdown(selectedValue);
             }
         }
     }
 
-    function populateDiagramDropdown() {
+    function populateDiagramDropdown(selectedValue) {
         const select = document.getElementById('moduleDiagram');
         if (!select) return;
 
@@ -2052,6 +2061,11 @@
             option.textContent = `${diagram.codename || diagram.name} v${diagram.version || '1.0'}`;
             select.appendChild(option);
         });
+
+        // Set selected value if provided
+        if (selectedValue) {
+            select.value = selectedValue;
+        }
     }
 
     // ================================
@@ -2332,13 +2346,7 @@
 
         // Show/hide diagram dropdown based on type and set value
         const isAlgorithm = module.type === 'algorithm';
-        toggleDiagramDropdownVisibility(isAlgorithm);
-        if (isAlgorithm) {
-            const diagramSelect = document.getElementById('moduleDiagram');
-            if (diagramSelect) {
-                diagramSelect.value = module.diagram_id || '';
-            }
-        }
+        toggleDiagramDropdownVisibility(isAlgorithm, module.diagram_id || '');
 
         // Hide link fields for main modules (links are only for subprocess nodes)
         toggleLinkFieldsVisibility(false);
@@ -2659,13 +2667,7 @@
 
         // Show/hide diagram dropdown based on type and set value
         const isAlgorithm = node.type === 'algorithm';
-        toggleDiagramDropdownVisibility(isAlgorithm);
-        if (isAlgorithm) {
-            const diagramSelect = document.getElementById('moduleDiagram');
-            if (diagramSelect) {
-                diagramSelect.value = node.diagram_id || '';
-            }
-        }
+        toggleDiagramDropdownVisibility(isAlgorithm, node.diagram_id || '');
 
         // Show/hide link fields based on type and set values
         const isLink = node.type === 'link';
@@ -9116,9 +9118,16 @@
         state.currentDiagramNode = null;
     }
 
+    let _diagramEventsAC = null; // AbortController for diagram container listeners
+
     function bindDiagramNodeEvents(diagram) {
         const container = document.getElementById('diagramSvgContainer');
         if (!container) return;
+
+        // Abort previous container listeners to prevent accumulation
+        if (_diagramEventsAC) _diagramEventsAC.abort();
+        _diagramEventsAC = new AbortController();
+        const signal = _diagramEventsAC.signal;
 
         container.querySelectorAll('.diagram-node').forEach(nodeEl => {
             nodeEl.addEventListener('click', (e) => {
@@ -9140,7 +9149,7 @@
                 document.getElementById('diagramNodeDetails')?.classList.add('hidden');
                 container.querySelectorAll('.diagram-node').forEach(n => n.classList.remove('selected'));
             }
-        });
+        }, { signal });
     }
 
     function showDiagramNodeDetails(nodeId, diagram) {

@@ -5227,7 +5227,6 @@ body.page-process-manager {
     border-width: 2px;
     border-style: solid;
     background: linear-gradient(135deg, #1a1a1a 0%, #1a1a2e 100%);
-    position: relative;
     overflow: visible;
 }
 

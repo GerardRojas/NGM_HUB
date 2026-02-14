@@ -11,6 +11,7 @@
   }
 
   // Current task being edited
+  let _bound = false;
   let currentTaskId = null;
   let currentDocsLink = null;
   let currentResultLink = null;
@@ -205,6 +206,9 @@
   // BIND EVENTS
   // ================================
   function bind() {
+    if (_bound) return;
+    _bound = true;
+
     // Close button
     qs('btnCloseLinksModal')?.addEventListener('click', (e) => {
       e.preventDefault();

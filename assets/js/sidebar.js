@@ -400,13 +400,15 @@
   }
 
   // Auto-init - esperar a que API_BASE esté definido
+  let _apiRetries = 0;
   function waitForAPIAndInit() {
     if (window.API_BASE) {
       console.log("[SIDEBAR] API_BASE ready, initializing...");
       initSidebar();
       initUnreadBadge();
+    } else if (++_apiRetries > 100) {
+      console.warn("[SIDEBAR] API_BASE not available after 5s, proceeding without it");
     } else {
-      console.log("[SIDEBAR] Waiting for API_BASE...");
       setTimeout(waitForAPIAndInit, 50);
     }
   }

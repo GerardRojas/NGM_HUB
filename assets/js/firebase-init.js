@@ -24,6 +24,8 @@
   let firebaseApp = null;
   let messaging = null;
   let currentToken = null;
+  let _foregroundHandlerInit = false;
+  let _tokenRefreshInit = false;
 
   // ============================================================================
   // Initialize Firebase
@@ -183,7 +185,8 @@
   // ============================================================================
 
   function setupForegroundMessageHandler() {
-    if (!messaging) return;
+    if (!messaging || _foregroundHandlerInit) return;
+    _foregroundHandlerInit = true;
 
     messaging.onMessage((payload) => {
       console.log("[Firebase] Foreground message received:", payload);
@@ -280,7 +283,8 @@
   // ============================================================================
 
   function setupTokenRefreshHandler() {
-    if (!messaging) return;
+    if (!messaging || _tokenRefreshInit) return;
+    _tokenRefreshInit = true;
 
     // Firebase v9+ doesn't have onTokenRefresh, we handle it differently
     // Token refresh is automatic, we just need to save new tokens periodically

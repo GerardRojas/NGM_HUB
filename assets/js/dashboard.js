@@ -32,6 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initGreeting(user);
   initMentionsDrawer();
   initCommandPalette();
+  setupDashboardDelegation();
 
   // Wait for sidebar to finish rendering (it loads permissions async)
   function waitForSidebar() {
@@ -138,6 +139,70 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// EVENT DELEGATION FOR DYNAMIC LISTS (set up once, survives re-renders)
+// ─────────────────────────────────────────────────────────────────────────
+
+function setupDashboardDelegation() {
+  const mentionsList = document.getElementById("mentions-list");
+  if (mentionsList) {
+    mentionsList.addEventListener("click", (e) => {
+      const item = e.target.closest(".mention-item");
+      if (item) {
+        const channelId = item.dataset.channelId;
+        const messageId = item.dataset.messageId;
+        window.location.href = `messages.html?channel=${channelId}&message=${messageId}`;
+      }
+    });
+  }
+
+  const myWorkList = document.getElementById("my-work-list");
+  if (myWorkList) {
+    myWorkList.addEventListener("click", (e) => {
+      const startBtn = e.target.closest(".task-start-btn");
+      if (startBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const taskId = startBtn.dataset.taskId;
+        if (taskId) handleStartTask(taskId, startBtn);
+        return;
+      }
+      const reviewBtn = e.target.closest(".task-review-btn");
+      if (reviewBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const taskId = reviewBtn.dataset.taskId;
+        const taskTitle = reviewBtn.dataset.taskTitle;
+        if (taskId) showReviewModal(taskId, taskTitle, reviewBtn);
+      }
+    });
+  }
+
+  const pendingList = document.getElementById("pending-reviews-list");
+  if (pendingList) {
+    pendingList.addEventListener("click", (e) => {
+      const approveBtn = e.target.closest(".task-approve-btn");
+      if (approveBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const taskId = approveBtn.dataset.taskId;
+        const reviewId = approveBtn.dataset.reviewId;
+        if (taskId) handleApproveTask(taskId, reviewId, approveBtn);
+        return;
+      }
+      const rejectBtn = e.target.closest(".task-reject-btn");
+      if (rejectBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const taskId = rejectBtn.dataset.taskId;
+        const reviewId = rejectBtn.dataset.reviewId;
+        const taskTitle = rejectBtn.dataset.taskTitle;
+        if (taskId) showRejectModal(taskId, reviewId, taskTitle, rejectBtn);
+      }
+    });
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 // MENTIONS DRAWER
@@ -284,16 +349,6 @@ function renderMentions(mentions, currentUser) {
   }).join("");
 
   listEl.innerHTML = html;
-
-  // Add click handlers to navigate to message
-  listEl.querySelectorAll(".mention-item").forEach((item) => {
-    item.addEventListener("click", () => {
-      const channelId = item.dataset.channelId;
-      const messageId = item.dataset.messageId;
-      // Navigate to messages page with context
-      window.location.href = `messages.html?channel=${channelId}&message=${messageId}`;
-    });
-  });
 }
 
 function highlightMention(content, username) {
@@ -681,31 +736,6 @@ function renderMyWorkTasks(tasks) {
 
   listEl.innerHTML = html;
 
-  // Attach click handlers for Start buttons
-  listEl.querySelectorAll(".task-start-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const taskId = btn.dataset.taskId;
-      if (taskId) {
-        handleStartTask(taskId, btn);
-      }
-    });
-  });
-
-  // Attach click handlers for Send to Review buttons
-  listEl.querySelectorAll(".task-review-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const taskId = btn.dataset.taskId;
-      const taskTitle = btn.dataset.taskTitle;
-      if (taskId) {
-        showReviewModal(taskId, taskTitle, btn);
-      }
-    });
-  });
-
   // Start elapsed time updater for working tasks
   startElapsedTimeUpdater();
 }
@@ -931,6 +961,7 @@ async function handleSendToReview(taskId, notes, resultLink, closeModalFn) {
 // ─────────────────────────────────────────────────────────────────────────
 
 let elapsedTimeInterval = null;
+window.addEventListener('beforeunload', () => { if (elapsedTimeInterval) clearInterval(elapsedTimeInterval); });
 
 function startElapsedTimeUpdater() {
   // Clear existing interval
@@ -1120,32 +1151,6 @@ function renderPendingReviews(reviews) {
   }).join("");
 
   listEl.innerHTML = html;
-
-  // Attach event handlers
-  listEl.querySelectorAll(".task-approve-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const taskId = btn.dataset.taskId;
-      const reviewId = btn.dataset.reviewId;
-      if (taskId) {
-        handleApproveTask(taskId, reviewId, btn);
-      }
-    });
-  });
-
-  listEl.querySelectorAll(".task-reject-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const taskId = btn.dataset.taskId;
-      const reviewId = btn.dataset.reviewId;
-      const taskTitle = btn.dataset.taskTitle;
-      if (taskId) {
-        showRejectModal(taskId, reviewId, taskTitle, btn);
-      }
-    });
-  });
 }
 
 // ---------------------------------------------------------------------------

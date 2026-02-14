@@ -451,6 +451,29 @@
     // Project info button
     document.getElementById('project-info-btn')?.addEventListener('click', openProjectModal);
 
+    // Sidebar file lists - delegated click handlers (survive re-renders)
+    els.filesList?.addEventListener('click', (e) => {
+      const li = e.target.closest('.estimator-file[data-estimate-id]');
+      if (!li) return;
+      const estimateId = li.dataset.estimateId;
+      if (isDirty) {
+        const ok = window.confirm('You have unsaved changes. Load estimate anyway?');
+        if (!ok) return;
+      }
+      loadEstimate(estimateId);
+    });
+
+    els.templatesList?.addEventListener('click', (e) => {
+      const li = e.target.closest('.estimator-file[data-template-id]');
+      if (!li) return;
+      const templateId = li.dataset.templateId;
+      if (isDirty) {
+        const ok = window.confirm('You have unsaved changes. Load template anyway?');
+        if (!ok) return;
+      }
+      loadTemplate(templateId);
+    });
+
     // Note: beforeunload is handled by auto-save system to persist changes
 
     // Inline qty editing via delegation on tbody
@@ -1110,17 +1133,6 @@
       `;
     }).join('');
 
-    // Add click handlers
-    els.filesList.querySelectorAll('.estimator-file[data-estimate-id]').forEach(li => {
-      li.addEventListener('click', async () => {
-        const estimateId = li.dataset.estimateId;
-        if (isDirty) {
-          const confirm = window.confirm('You have unsaved changes. Load estimate anyway?');
-          if (!confirm) return;
-        }
-        await loadEstimate(estimateId);
-      });
-    });
   }
 
   /**
@@ -1647,17 +1659,6 @@
       `;
     }).join('');
 
-    // Add click handlers
-    templatesList.querySelectorAll('.estimator-file[data-template-id]').forEach(li => {
-      li.addEventListener('click', async () => {
-        const templateId = li.dataset.templateId;
-        if (isDirty) {
-          const confirm = window.confirm('You have unsaved changes. Load template anyway?');
-          if (!confirm) return;
-        }
-        await loadTemplate(templateId);
-      });
-    });
   }
 
   // ================================
@@ -2375,10 +2376,6 @@
       `;
     }).join('');
 
-    // Add click handlers
-    tbody.querySelectorAll('tr[data-concept-id]').forEach(row => {
-      row.addEventListener('click', () => selectConceptForAdd(row));
-    });
   }
 
   function selectConceptForAdd(row) {
@@ -3076,6 +3073,13 @@
       populateConceptPicker(e.target.value);
     });
 
+    // Concept picker rows - delegated click (survive re-renders from search)
+    const cpBody = document.getElementById('concept-picker-body');
+    cpBody?.addEventListener('click', (e) => {
+      const row = e.target.closest('tr[data-concept-id]');
+      if (row) selectConceptForAdd(row);
+    });
+
     // Click backdrop to close
     els.addConceptModal.addEventListener('click', (e) => {
       if (e.target === els.addConceptModal) closeAddConceptModal();
@@ -3250,6 +3254,41 @@
     document.getElementById('overhead-save-btn')?.addEventListener('click', saveOverheadFromModal);
     document.getElementById('overhead-add-line')?.addEventListener('click', addOverheadLine);
 
+    // Delegated events for overhead table rows (survive re-renders)
+    const ohTbody = document.getElementById('overhead-table-body');
+    if (ohTbody) {
+      ohTbody.addEventListener('change', (e) => {
+        const toggle = e.target.closest('.oh-toggle');
+        if (toggle) {
+          const i = parseInt(toggle.dataset.idx, 10);
+          overheadWorkingItems[i].enabled = toggle.checked;
+          renderOverheadTable();
+          return;
+        }
+        const pctInput = e.target.closest('.oh-pct-input');
+        if (pctInput) {
+          const i = parseInt(pctInput.dataset.idx, 10);
+          overheadWorkingItems[i].percentage = parseFloat(pctInput.value) || 0;
+          renderOverheadTable();
+        }
+      });
+      ohTbody.addEventListener('input', (e) => {
+        const nameInput = e.target.closest('.oh-name-input');
+        if (nameInput) {
+          const i = parseInt(nameInput.dataset.idx, 10);
+          overheadWorkingItems[i].name = nameInput.value;
+        }
+      });
+      ohTbody.addEventListener('click', (e) => {
+        const delBtn = e.target.closest('.oh-delete-btn');
+        if (delBtn) {
+          const i = parseInt(delBtn.dataset.idx, 10);
+          overheadWorkingItems.splice(i, 1);
+          renderOverheadTable();
+        }
+      });
+    }
+
     modal.addEventListener('click', (e) => {
       if (e.target === modal) closeOverheadModal();
     });
@@ -3331,37 +3370,7 @@
     if (totalPctEl) totalPctEl.textContent = totalPct.toFixed(1) + '%';
     if (totalAmountEl) totalAmountEl.textContent = formatCurrency(totalAmount);
 
-    // Wire events
-    tbody.querySelectorAll('.oh-toggle').forEach(cb => {
-      cb.addEventListener('change', (e) => {
-        const i = parseInt(e.target.dataset.idx, 10);
-        overheadWorkingItems[i].enabled = e.target.checked;
-        renderOverheadTable();
-      });
-    });
-
-    tbody.querySelectorAll('.oh-name-input').forEach(inp => {
-      inp.addEventListener('input', (e) => {
-        const i = parseInt(e.target.dataset.idx, 10);
-        overheadWorkingItems[i].name = e.target.value;
-      });
-    });
-
-    tbody.querySelectorAll('.oh-pct-input').forEach(inp => {
-      inp.addEventListener('change', (e) => {
-        const i = parseInt(e.target.dataset.idx, 10);
-        overheadWorkingItems[i].percentage = parseFloat(e.target.value) || 0;
-        renderOverheadTable();
-      });
-    });
-
-    tbody.querySelectorAll('.oh-delete-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const i = parseInt(e.target.dataset.idx, 10);
-        overheadWorkingItems.splice(i, 1);
-        renderOverheadTable();
-      });
-    });
+    // Events handled via delegation in setupOverheadModal()
   }
 
   function addOverheadLine() {
@@ -3909,6 +3918,17 @@
         closeTemplatePickerModal();
       }
     });
+
+    // Template picker items - delegated click (survive re-renders)
+    const tpList = document.getElementById('template-picker-list');
+    tpList?.addEventListener('click', (e) => {
+      const item = e.target.closest('.template-picker-item[data-template-id]');
+      if (item) {
+        const templateId = item.dataset.templateId;
+        closeTemplatePickerModal();
+        loadTemplate(templateId).then(() => openProjectModal(true));
+      }
+    });
   }
 
   async function openTemplatePickerModal() {
@@ -4009,16 +4029,7 @@
         `;
       }).join('');
 
-      // Add click handlers to template items
-      listEl.querySelectorAll('.template-picker-item[data-template-id]').forEach(item => {
-        item.addEventListener('click', async () => {
-          const templateId = item.dataset.templateId;
-          closeTemplatePickerModal();
-          await loadTemplate(templateId);
-          // Open project modal so user fills info for the new estimate
-          openProjectModal(true);
-        });
-      });
+      // Click handlers via delegation in setupTemplatePickerModal()
     } catch (err) {
       console.warn('[ESTIMATOR] Error loading templates for picker:', err);
       listEl.innerHTML = `

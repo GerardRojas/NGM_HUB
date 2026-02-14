@@ -1494,8 +1494,8 @@ input[type="number"].form-input {
 
 /* Scan Receipt Modal Card */
 .modal-scan-receipt {
-  width: min(680px, 95vw);
-  max-width: 680px;
+  width: min(900px, 95vw);
+  max-width: 900px;
   max-height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
@@ -1783,8 +1783,8 @@ input[type="number"].form-input {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  padding: 40px 20px;
-  min-height: 200px;
+  padding: 50px 24px;
+  min-height: 280px;
   border: 2px dashed rgba(148, 163, 184, 0.2);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.015);

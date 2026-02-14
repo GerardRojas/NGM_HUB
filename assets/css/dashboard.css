@@ -244,6 +244,7 @@
 .my-work-section {
     margin-bottom: 8px;
     width: 100%;
+    max-width: var(--dashboard-modules-max-width);
 }
 
 .my-work-card {
@@ -1521,6 +1522,7 @@
 .pending-reviews-section {
     margin-bottom: 8px;
     width: 100%;
+    max-width: var(--dashboard-modules-max-width);
 }
 
 .pending-reviews-card {
@@ -1990,6 +1992,7 @@
     justify-content: space-between;
     gap: 24px;
     width: 100%;
+    max-width: var(--dashboard-modules-max-width);
 }
 
 .dash-greeting-text h1 {
@@ -2082,6 +2085,7 @@
     gap: 10px;
     flex-wrap: wrap;
     width: 100%;
+    max-width: var(--dashboard-modules-max-width);
 }
 
 .dash-quick-action {

@@ -1,0 +1,1282 @@
+/* ==========================================
+   Expenses Engine — Dark Theme
+   ========================================== */
+
+.page-expenses .main-content {
+  max-width: none; /* Override global 1400px limit */
+  width: 100%;
+  padding-inline: 16px; /* Reduce side padding to maximize table space */
+}
+
+.page-expenses .workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 24px;
+}
+
+/* Section */
+.page-expenses .data-section {
+  max-width: none; /* No limit - table can expand fully */
+  margin-inline: auto;
+  width: 100%;
+}
+
+/* Titles */
+.page-expenses .section-title {
+  margin: 0 0 20px;
+  padding-bottom: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary, #e5e7eb);
+  border-bottom: 1px solid var(--border-soft, var(--border-medium));
+}
+
+/* ==========================================
+   TOOLBAR
+   ========================================== */
+
+.expenses-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: nowrap;
+  min-height: 48px;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.toolbar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.toolbar-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ngm-text-muted, var(--text-tertiary));
+}
+
+/* ==========================================
+   NGM SELECT — UNIFIED DROPDOWN COMPONENT
+   Use .ngm-select for all dropdowns across the system
+   .toolbar-select is kept for backwards compatibility
+   ========================================== */
+
+.ngm-select,
+.toolbar-select {
+  min-width: 280px;
+  padding: 11px 36px 11px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: var(--bg-hover) !important;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer !important;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+
+  /* Remove default appearance */
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+
+  /* Custom dropdown arrow */
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.65) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.65) 50%, transparent 50%) !important;
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 8px) calc(50% - 2px) !important;
+  background-size: 6px 6px, 6px 6px !important;
+  background-repeat: no-repeat !important;
+  padding-right: 32px;
+}
+
+/* Remove all native select arrows */
+.ngm-select::-ms-expand,
+.toolbar-select::-ms-expand {
+  display: none !important;
+}
+
+.ngm-select::-webkit-calendar-picker-indicator,
+.toolbar-select::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.ngm-select:hover,
+.toolbar-select:hover {
+  border-color: rgba(148, 163, 184, 0.45);
+  background: var(--bg-hover-strong);
+}
+
+/* Source Toggle */
+.source-toggle {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: var(--radius-md);
+  padding: 3px;
+  gap: 2px;
+}
+
+.source-toggle-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: var(--transition-base);
+  white-space: nowrap;
+}
+
+.source-toggle-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.source-toggle-btn.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.ngm-select:focus,
+.toolbar-select:focus {
+  border-color: rgba(62, 207, 142, 0.6);
+  background: var(--bg-hover-strong);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Dropdown options styling */
+.ngm-select option,
+.toolbar-select option {
+  background: var(--ngm-bg-surface);
+  color: var(--text-primary);
+  padding: 10px 14px;
+  font-weight: 400;
+}
+
+.ngm-select option:hover,
+.toolbar-select option:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ngm-select option:checked,
+.toolbar-select option:checked {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 500;
+}
+
+/* Toolbar select - explicit styles to override any conflicts */
+.expenses-toolbar .ngm-select {
+  min-width: 280px;
+  padding: 10px 36px 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-strong);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.5) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 8px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.expenses-toolbar .ngm-select:hover {
+  border-color: var(--border-hover);
+  background-color: var(--bg-hover-strong);
+}
+
+.expenses-toolbar .ngm-select:focus {
+  border-color: var(--accent);
+  background-color: var(--bg-hover-strong);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.expenses-toolbar .ngm-select option {
+  background: var(--ngm-bg-card);
+  color: rgba(255, 255, 255, 0.92);
+  padding: 10px;
+}
+
+/* Toolbar buttons */
+.btn-toolbar:disabled {
+  opacity: 0.5;
+}
+
+/* Sort buttons */
+.btn-sort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border-soft, var(--border-medium));
+  background: transparent;
+  color: var(--text-secondary, var(--text-tertiary));
+  transition: all 0.15s ease;
+}
+
+.btn-sort:hover {
+  background: rgba(148, 163, 184, 0.08);
+  border-color: rgba(148, 163, 184, 0.3);
+  color: var(--text-primary, #e5e7eb);
+}
+
+.btn-sort.active {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: var(--color-success);
+}
+
+.btn-toolbar-secondary {
+  border: 1px solid var(--border-soft, var(--border-medium));
+  background: var(--ngm-bg-card, #18181b);
+  color: var(--text-primary, #e5e7eb);
+}
+
+.btn-toolbar-secondary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(148, 163, 184, 0.5);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-toolbar-primary {
+  border: none;
+  background: linear-gradient(135deg, var(--color-success), #15803d);
+  color: #0f2a1e;
+  font-weight: 600;
+}
+
+.btn-toolbar-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+}
+
+/* QBO Sync button - special styling */
+.btn-toolbar-qbo {
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  background: rgba(139, 92, 246, 0.08);
+  color: #a78bfa;
+}
+
+.btn-toolbar-qbo:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(139, 92, 246, 0.5);
+  background: rgba(139, 92, 246, 0.15);
+  color: #c4b5fd;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.btn-toolbar-qbo:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Hide/show classes */
+.hidden {
+  display: none !important;
+}
+
+/* ==========================================
+   EXPENSES TABLE CONTAINER
+   ========================================== */
+
+.expenses-table-container {
+  position: relative;
+  background: var(--ngm-bg-card, #18181b);
+  border: 1px solid var(--border-soft, var(--border-medium));
+  border-radius: var(--radius-lg);
+  overflow-x: auto; /* Scroll only if viewport is too small */
+  overflow-y: auto; /* Vertical scroll for long tables */
+  max-height: calc(100vh - 280px); /* Limit height, leave room for toolbar/footer */
+  min-height: 400px; /* Ensures filter dropdowns have room to display */
+  width: 100%;
+}
+
+/* Empty state */
+.expenses-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+.expenses-empty-logo {
+  width: 60px;
+  height: 60px;
+  opacity: 0.4;
+  animation: fadeOnly 2s ease-in-out infinite;
+}
+
+@keyframes fadeOnly {
+  0% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+
+.expenses-empty-text {
+  font-size: 14px;
+  color: var(--text-secondary, var(--text-tertiary));
+}
+
+/* Loading state */
+.expenses-loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+}
+
+/* ==========================================
+   Skeleton Table (Placeholder before data loads)
+   ========================================== */
+
+.skeleton-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.skeleton-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--ngm-bg-card, #18181b);
+}
+
+.skeleton-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.45);
+  border-bottom: 1px solid var(--border-soft, var(--border-medium));
+  white-space: nowrap;
+}
+
+.skeleton-table tbody tr {
+  border-bottom: 1px solid var(--border-soft, var(--border-medium));
+}
+
+.skeleton-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.skeleton-table td {
+  padding: 12px 16px;
+}
+
+/* Skeleton cell placeholder */
+.skeleton-cell {
+  height: 14px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-xs);
+}
+
+/* Different widths for variety */
+.skeleton-cell--short {
+  width: 60px;
+}
+
+.skeleton-cell--medium {
+  width: 100px;
+}
+
+.skeleton-cell--long {
+  width: 180px;
+  max-width: 100%;
+}
+
+.skeleton-cell--full {
+  width: 100%;
+}
+
+.skeleton-cell--amount {
+  width: 80px;
+  margin-left: auto;
+}
+
+/* Skeleton icon placeholder */
+.skeleton-icon {
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-xs);
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Hide skeleton when table is visible */
+.skeleton-table.hidden {
+  display: none;
+}
+
+/* Loading logo and animation styles are centralized in styles.css */
+
+/* ==========================================
+   EXPENSES TABLE — DARK THEME
+   ========================================== */
+
+/* Scrollbars for table container (both vertical and horizontal) */
+.expenses-table-container::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.expenses-table-container::-webkit-scrollbar-track {
+  background: var(--bg-hover);
+  border-radius: var(--radius-md);
+}
+
+.expenses-table-container::-webkit-scrollbar-thumb {
+  background-color: rgba(180, 180, 180, 0.35);
+  border-radius: var(--radius-md);
+  border: 2px solid rgba(0, 0, 0, 0.4);
+}
+
+.expenses-table-container::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(200, 200, 200, 0.5);
+}
+
+.expenses-table-container::-webkit-scrollbar-corner {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Firefox scrollbar */
+.expenses-table-container {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(180, 180, 180, 0.35) rgba(255, 255, 255, 0.04);
+}
+
+.expenses-table {
+  width: 100%; /* Fill available space */
+  border-collapse: collapse;
+  table-layout: fixed; /* Fixed layout for consistent widths */
+}
+
+.expenses-table thead {
+  background: rgba(255, 255, 255, 0.03);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-above);
+}
+
+.expenses-table th {
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  text-align: left;
+  border-bottom: 1px solid var(--border-soft);
+  white-space: nowrap;
+  background: var(--ngm-bg-surface);
+}
+
+/* Column widths - fixed sizes except description which grows to fill space */
+.expenses-table .col-checkbox { width: 40px; }
+.expenses-table .col-date { width: 95px; }
+.expenses-table .col-bill-id { width: 90px; }
+.expenses-table .col-description { width: auto; } /* Flexible - fills remaining space */
+.expenses-table .col-account { width: 120px; }
+.expenses-table .col-type { width: 100px; }
+.expenses-table .col-vendor { width: 130px; }
+.expenses-table .col-payment { width: 100px; }
+.expenses-table .col-amount { width: 100px; }
+.expenses-table .col-receipt { width: 50px; }
+.expenses-table .col-auth { width: 110px; }
+.expenses-table .col-actions { width: 50px; }
+
+/* Column resize handle */
+.expenses-table th {
+  position: relative;
+}
+
+.col-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  cursor: col-resize;
+  background: transparent;
+  z-index: var(--z-base);
+}
+
+.col-resize-handle:hover,
+.col-resize-handle.resizing {
+  background: rgba(34, 197, 94, 0.5);
+}
+
+/* Hide resize handle for auth and actions columns in header */
+.expenses-table th.col-auth .col-resize-handle,
+.expenses-table th.col-actions .col-resize-handle {
+  display: none;
+}
+
+.expenses-table.resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.expenses-table td {
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.expenses-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.expenses-table tbody tr:hover:not(.total-row) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Amount column - right aligned with tabular numbers */
+.expenses-table .col-amount {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Receipt column - centered */
+.expenses-table .col-receipt {
+  text-align: center;
+}
+
+/* Authorization column */
+.expenses-table .col-auth {
+  text-align: center;
+  overflow: visible;
+}
+
+/* In Bill View, ensure auth badges display properly */
+.bill-group-row .col-auth {
+  overflow: visible !important;
+  padding-right: 16px;
+}
+
+/* Actions column */
+.expenses-table .col-actions {
+  width: 50px;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* In Bill View, hide the actions column since it's empty */
+.bill-group-row .col-actions {
+  width: 0;
+  min-width: 0;
+  padding: 0 !important;
+  border: none !important;
+  visibility: hidden;
+}
+
+.expenses-table .col-checkbox {
+  width: 40px;
+  min-width: 40px;
+  text-align: center;
+  padding: 8px 4px;
+}
+
+.expenses-table .col-checkbox input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+/* Authorization badge */
+.auth-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.auth-badge-pending {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.auth-badge-pending:hover {
+  background: rgba(251, 191, 36, 0.18);
+  border-color: rgba(251, 191, 36, 0.5);
+}
+
+.auth-badge-authorized {
+  background: rgba(62, 207, 142, 0.12);
+  color: var(--accent);
+  border: 1px solid rgba(62, 207, 142, 0.3);
+}
+
+.auth-badge-authorized:hover {
+  background: rgba(62, 207, 142, 0.18);
+  border-color: rgba(62, 207, 142, 0.5);
+}
+
+.auth-badge-review {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.auth-badge-review:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.auth-badge-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.auth-badge-disabled:hover {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+/* ==========================================
+   REVIEW / SOFT-DELETE ROW STYLES
+   ========================================== */
+
+/* Normal review row - field changed on authorized expense */
+/* Shows with subtle background, no strikethrough, excluded from calculations */
+.expenses-table tbody tr.expense-row-review {
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.expenses-table tbody tr.expense-row-review:hover {
+  background: rgba(245, 158, 11, 0.12);
+}
+
+/* Soft-delete row - deletion requested by bookkeeper */
+/* Dimmed with strikethrough to indicate pending deletion */
+.expenses-table tbody tr.expense-row-review.expense-row-soft-delete {
+  opacity: 0.4;
+  background: rgba(239, 68, 68, 0.03);
+}
+
+.expenses-table tbody tr.expense-row-review.expense-row-soft-delete:hover {
+  opacity: 0.55;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.expenses-table tbody tr.expense-row-review.expense-row-soft-delete td {
+  text-decoration: line-through;
+  text-decoration-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Keep auth badge and actions readable (no line-through) */
+.expenses-table tbody tr.expense-row-review.expense-row-soft-delete td.col-auth,
+.expenses-table tbody tr.expense-row-review.expense-row-soft-delete td.col-actions,
+.expenses-table tbody tr.expense-row-review.expense-row-soft-delete td.col-checkbox {
+  text-decoration: none;
+}
+
+/* ==========================================
+   DUPLICATE BILL WARNING STYLES
+   ========================================== */
+
+/* Row with duplicate bill warning */
+.expenses-table tbody tr.expense-row-warning {
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.expenses-table tbody tr.expense-row-warning:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Bill warning badge */
+.bill-warning-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: help;
+}
+
+.bill-warning-badge:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* ==========================================
+   EDIT MODE — SUBTLE INLINE EDITING
+   ========================================== */
+
+/* Edit mode rows - subtle background change */
+.expenses-table tbody tr.edit-mode-row {
+  background: rgba(148, 163, 184, 0.04);
+  transition: background 0.2s ease;
+}
+
+.expenses-table tbody tr.edit-mode-row:hover {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+/* Editable cells - visual indicator */
+.expenses-table tbody tr.edit-mode-row td.editable-cell {
+  position: relative;
+  cursor: text;
+}
+
+/* Editable cells get a subtle dotted border */
+.expenses-table tbody tr.edit-mode-row td.editable-cell::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px dashed rgba(148, 163, 184, 0.25);
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0.6;
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.expenses-table tbody tr.edit-mode-row td.editable-cell:hover::after {
+  opacity: 1;
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+/* Edit inputs - transparent, blend with cell */
+.edit-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-primary, #e5e7eb);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  position: relative;
+  z-index: var(--z-base);
+  transition: background 0.15s ease;
+}
+
+.edit-input:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.edit-input:focus {
+  background: rgba(34, 197, 94, 0.08);
+  border-radius: 6px;
+}
+
+/* Select dropdowns - custom styling to remove native appearance */
+select.edit-input {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  cursor: pointer;
+  padding-right: 28px;
+
+  /* Custom dropdown arrow */
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.65) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.65) 50%, transparent 50%) !important;
+  background-position:
+    calc(100% - 12px) calc(50% - 2px),
+    calc(100% - 6px) calc(50% - 2px) !important;
+  background-size: 6px 6px, 6px 6px !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Remove all native select arrows */
+select.edit-input::-ms-expand {
+  display: none !important;
+}
+
+select.edit-input::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Option styling */
+select.edit-input option {
+  background: var(--border-soft);
+  color: #ffffff;
+  padding: 8px 12px;
+}
+
+/* Amount input - right aligned */
+.edit-input--amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Datalist inputs */
+.edit-input-datalist {
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-primary, #e5e7eb);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  position: relative;
+  z-index: var(--z-base);
+  cursor: text;
+  transition: background 0.15s ease;
+}
+
+.edit-input-datalist:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.edit-input-datalist:focus {
+  background: rgba(34, 197, 94, 0.08);
+  border-radius: 6px;
+}
+
+/* Hide datalist dropdown arrow */
+.edit-input-datalist::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+/* Delete row button */
+.btn-row-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: rgba(248, 113, 113, 0.7);
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-row-delete:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+}
+
+/* ==========================================
+   EDIT MODE FOOTER
+   ========================================== */
+
+.edit-mode-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--ngm-bg-card, #18181b);
+  border: 1px solid var(--border-soft, var(--border-medium));
+  border-radius: 12px;
+}
+
+.edit-footer-left {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-footer-right {
+  display: flex;
+  gap: 12px;
+}
+
+.edit-mode-footer.hidden {
+  display: none;
+}
+
+.btn-edit-cancel,
+.btn-edit-save,
+.btn-edit-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-edit-cancel {
+  border: 1px solid var(--border-soft, var(--border-medium));
+  background: transparent;
+  color: var(--text-secondary, var(--text-tertiary));
+}
+
+.btn-edit-cancel:hover {
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: var(--text-primary, #e5e7eb);
+}
+
+.btn-edit-save {
+  border: none;
+  background: linear-gradient(135deg, var(--color-success), #15803d);
+  color: #0f2a1e;
+}
+
+.btn-edit-save:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+}
+
+.btn-edit-delete {
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--color-danger);
+}
+
+.btn-edit-delete:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-edit-authorize {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.08);
+  color: var(--color-success);
+}
+
+.btn-edit-authorize:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.5);
+  transform: translateY(-1px);
+}
+
+.btn-edit-save:disabled,
+.btn-edit-cancel:disabled,
+.btn-edit-delete:disabled,
+.btn-edit-authorize:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+
+@media (max-width: 900px) {
+  .expenses-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-left,
+  .toolbar-right {
+    width: 100%;
+  }
+
+  .toolbar-right {
+    justify-content: flex-end;
+  }
+
+  .toolbar-select {
+    min-width: 100%;
+  }
+
+  .expenses-table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .toolbar-right {
+    flex-direction: column;
+  }
+
+  .btn-toolbar {
+    width: 100%;
+  }
+}
+
+/* ==========================================
+   FILTER DROPDOWN (Google Sheets style)
+   ========================================== */
+
+.expenses-table th {
+  position: relative;
+}
+
+.filter-toggle {
+  margin-left: 6px;
+  padding: 2px 6px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.filter-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.filter-toggle.active {
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.filter-dropdown {
+  position: fixed;
+  z-index: var(--z-tooltip);
+  width: 260px;
+  background: var(--border-soft);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  max-height: 400px;
+}
+
+.filter-dropdown.hidden {
+  display: none;
+}
+
+.filter-dropdown-header {
+  padding: 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.filter-search {
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.filter-search:focus {
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.filter-dropdown-options {
+  padding: 8px 0;
+  overflow-y: auto;
+  max-height: 260px;
+}
+
+.filter-dropdown-options::-webkit-scrollbar {
+  width: 8px;
+}
+
+.filter-dropdown-options::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.filter-dropdown-options::-webkit-scrollbar-thumb {
+  background-color: rgba(180, 180, 180, 0.3);
+  border-radius: 4px;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.filter-option:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.filter-option input[type="checkbox"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.filter-option label {
+  flex: 1;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  user-select: none;
+}
+
+.filter-dropdown-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.filter-select-all-btn,
+.filter-clear-btn,
+.filter-apply-btn {
+  flex: 1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.filter-select-all-btn,
+.filter-clear-btn {
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.filter-select-all-btn:hover,
+.filter-clear-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(148, 163, 184, 0.5);
+}
+
+.filter-apply-btn {
+  background: linear-gradient(135deg, var(--color-success), #15803d);
+  border: none;
+  color: #0f2a1e;
+  font-weight: 600;
+}
+
+.filter-apply-btn:hover {
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}
+
+/* ==========================================
+   BILL VIEW MODE
+   ========================================== */
+
+/* Active state for Bill View button */
+.btn-toolbar-active {
+  background: linear-gradient(135deg, var(--color-success), #15803d) !important;
+  color: #0f2a1e !important;
+  border-color: var(--color-success) !important;
+}
+
+.btn-toolbar-active:hover {
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+}

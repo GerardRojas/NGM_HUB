@@ -1,0 +1,1957 @@
+/* ================================
+   Tree Node (Group Node)
+   ================================ */
+.tree-node {
+    position: absolute;
+    background: linear-gradient(135deg, var(--ngm-bg-card) 0%, #151515 100%);
+    border: 2px solid var(--border-soft);
+    border-radius: var(--radius-xl);
+    padding: 20px 24px;
+    min-width: 220px;
+    max-width: 280px;
+    cursor: grab;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+}
+
+.tree-node:hover {
+    border-color: var(--accent);
+    box-shadow: 0 8px 32px rgba(62, 207, 142, 0.15);
+}
+
+.tree-node.dragging {
+    cursor: grabbing;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+    border-color: var(--accent);
+    z-index: var(--z-dropdown);
+}
+
+.tree-node.central {
+    background: linear-gradient(135deg, #0f1a14 0%, var(--bg-main) 100%);
+    border-color: var(--accent);
+    min-width: 320px;
+    padding: 28px 32px;
+}
+
+.tree-node-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(62, 207, 142, 0.1);
+    border-radius: var(--radius-lg);
+    margin-bottom: 12px;
+}
+
+.tree-node-icon svg {
+    width: 24px;
+    height: 24px;
+    color: var(--accent);
+}
+
+.tree-node-icon.department {
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.tree-node-icon.department svg {
+    color: #818cf8;
+}
+
+.tree-node-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e5e7eb;
+    margin-bottom: 4px;
+}
+
+.tree-node-subtitle {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-bottom: 12px;
+}
+
+.tree-node-stats {
+    display: flex;
+    gap: 12px;
+}
+
+.tree-node-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+
+.tree-node-stat .stat-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.tree-node-stat .stat-dot.implemented {
+    background: var(--accent);
+}
+
+.tree-node-stat .stat-dot.draft {
+    background: #6366f1;
+}
+
+/* ================================
+   External Service Node
+   ================================ */
+.service-node {
+    position: absolute;
+    background: linear-gradient(135deg, #1a1510 0%, var(--bg-main) 100%);
+    border: 2px solid var(--color-warning);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    min-width: 140px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.service-node:hover {
+    border-color: #fbbf24;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(245, 158, 11, 0.2);
+}
+
+.service-node-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(245, 158, 11, 0.15);
+    border-radius: var(--radius-md);
+    margin-bottom: 10px;
+}
+
+.service-node-icon svg,
+.service-node-icon img {
+    width: 20px;
+    height: 20px;
+}
+
+.service-node-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #fbbf24;
+    margin-bottom: 2px;
+}
+
+.service-node-type {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ================================
+   Animated Connection Lines - Orthogonal
+   ================================ */
+.connection-path {
+    fill: none;
+    stroke: #3f3f46;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke 0.2s;
+}
+
+.connection-path.orthogonal {
+    stroke-width: 2;
+}
+
+.connection-path.animated {
+    stroke-dasharray: 8 4;
+    animation: dashFlow 1.2s linear infinite;
+}
+
+.connection-path.draft {
+    stroke: #6366f1;
+    stroke-dasharray: 6 4;
+    opacity: 0.6;
+}
+
+.connection-path.service {
+    stroke: var(--color-warning);
+    stroke-dasharray: 4 4;
+}
+
+@keyframes dashFlow {
+    0% {
+        stroke-dashoffset: 0;
+    }
+    100% {
+        stroke-dashoffset: -24;
+    }
+}
+
+/* Connection hover effect */
+.connection-path:hover {
+    stroke-width: 3;
+}
+
+/* Connection endpoints (dots) */
+.connection-dot {
+    fill: currentColor;
+    transition: r 0.15s ease;
+}
+
+.connection-dot.start {
+    fill: var(--accent);
+}
+
+.connection-dot.end {
+    fill: currentColor;
+}
+
+/* ================================
+   Process Card (Detail View)
+   ================================ */
+.process-card {
+    position: absolute;
+    background: linear-gradient(135deg, var(--ngm-bg-card) 0%, #151515 100%);
+    border: 2px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    width: 280px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.process-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.process-card.implemented {
+    border-color: #27272a;
+}
+
+.process-card.implemented:hover {
+    border-color: var(--accent);
+}
+
+.process-card.draft {
+    border-style: dashed;
+    border-color: #6366f1;
+    opacity: 0.75;
+}
+
+.process-card.draft:hover {
+    opacity: 1;
+    border-color: #818cf8;
+}
+
+.process-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.process-card-type {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+}
+
+.process-card-type svg {
+    width: 12px;
+    height: 12px;
+}
+
+.process-card-badge {
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.process-card-badge.implemented {
+    background: rgba(62, 207, 142, 0.15);
+    color: var(--accent);
+}
+
+.process-card-badge.draft {
+    background: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+}
+
+.process-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e5e7eb;
+    margin-bottom: 6px;
+    line-height: 1.3;
+}
+
+.process-card-description {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    line-height: 1.4;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.process-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.process-card-tag {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: #18181b;
+    border-radius: var(--radius-xs);
+    font-size: 10px;
+    color: var(--text-tertiary);
+}
+
+.process-card-tag svg {
+    width: 10px;
+    height: 10px;
+    opacity: 0.7;
+}
+
+.process-card-steps {
+    display: flex;
+    gap: 3px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-soft);
+}
+
+.step-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #3f3f46;
+}
+
+.step-indicator.condition { background: var(--color-warning); }
+.step-indicator.action { background: var(--accent); }
+.step-indicator.notification { background: #a78bfa; }
+.step-indicator.wait { background: var(--text-tertiary); }
+.step-indicator.assignment { background: #60a5fa; }
+.step-indicator.approval { background: #f87171; }
+.step-indicator.event { background: #f472b6; }
+
+/* ================================
+   Step Card (Inside Process)
+   ================================ */
+.step-card {
+    position: absolute;
+    background: var(--ngm-bg-surface);
+    border: 1px solid #27272a;
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    min-width: 180px;
+    max-width: 220px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.step-card:hover {
+    border-color: #3f3f46;
+    background: #151515;
+}
+
+.step-card-number {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: var(--border-soft);
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+}
+
+.step-card-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: #e5e7eb;
+    margin-bottom: 4px;
+}
+
+.step-card-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.step-card-type.condition {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--color-warning);
+}
+
+.step-card-type.action {
+    background: rgba(62, 207, 142, 0.15);
+    color: var(--accent);
+}
+
+.step-card-type.notification {
+    background: rgba(139, 92, 246, 0.15);
+    color: #a78bfa;
+}
+
+.step-card-type.wait {
+    background: rgba(107, 114, 128, 0.15);
+    color: var(--text-tertiary);
+}
+
+.step-card-type.assignment {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+}
+
+.step-card-type.approval {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+}
+
+.step-card-type.event {
+    background: rgba(244, 114, 182, 0.15);
+    color: #f472b6;
+}
+
+/* ================================
+   Platform Branch Indicator
+   ================================ */
+.platform-branch {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    background: var(--bg-main);
+    border: 1px dashed #3f3f46;
+    border-radius: var(--radius-md);
+}
+
+.platform-branch-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    margin-bottom: 4px;
+}
+
+.platform-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.platform-item:hover {
+    border-color: #3f3f46;
+    color: #e5e7eb;
+}
+
+.platform-item svg {
+    width: 14px;
+    height: 14px;
+    opacity: 0.7;
+}
+
+.platform-item.web {
+    border-color: var(--color-info);
+    color: #60a5fa;
+}
+
+.platform-item.mobile {
+    border-color: #10b981;
+    color: #34d399;
+}
+
+/* ================================
+   Zoom Controls Enhancement
+   ================================ */
+.zoom-controls {
+    display: flex;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+/* ================================
+   Stats for Implemented/Draft
+   ================================ */
+.stat-dot.implemented {
+    background: var(--accent);
+}
+
+.stat-dot.draft {
+    background: #6366f1;
+}
+
+/* ================================
+   Responsive Adjustments
+   ================================ */
+@media (max-width: 768px) {
+    .view-switch {
+        display: none;
+    }
+
+    .toolbar-center {
+        display: none;
+    }
+
+    .process-breadcrumb {
+        max-width: 200px;
+        overflow: hidden;
+    }
+
+    .breadcrumb-item {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+
+    .tree-node {
+        min-width: 160px;
+        max-width: 200px;
+        padding: 14px 16px;
+    }
+
+    .tree-node-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    .tree-node-title {
+        font-size: 14px;
+    }
+
+    .process-card {
+        width: 240px;
+        padding: 12px;
+    }
+}
+
+/* ================================
+   Function Cards (Expenses Engine Detail View)
+   ================================ */
+.function-card {
+    position: absolute;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: var(--radius-md);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    animation: nodeAppear 0.3s ease;
+}
+
+.function-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 4px 20px rgba(62, 207, 142, 0.15);
+}
+
+.function-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.function-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e2e8f0;
+    line-height: 1.3;
+}
+
+.function-services {
+    display: flex;
+    gap: 6px;
+}
+
+.service-icon-mini {
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.service-icon-mini svg {
+    width: 14px;
+    height: 14px;
+}
+
+.function-endpoint {
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    background: rgba(62, 207, 142, 0.1);
+    padding: 4px 8px;
+    border-radius: var(--radius-xs);
+    margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.function-description {
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.function-footer {
+    border-top: 1px solid #334155;
+    padding-top: 10px;
+}
+
+.function-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* ================================
+   Role Badges
+   ================================ */
+.role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: var(--radius-xs);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+/* Role-specific colors */
+.role-badge.ceo {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--color-danger);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.role-badge.coo {
+    background: rgba(249, 115, 22, 0.15);
+    color: #f97316;
+    border: 1px solid rgba(249, 115, 22, 0.3);
+}
+
+.role-badge.manager {
+    background: rgba(234, 179, 8, 0.15);
+    color: var(--color-yellow);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.role-badge.pm {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--color-success);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.role-badge.bookkeeper {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--color-info);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.role-badge.system {
+    background: rgba(107, 114, 128, 0.15);
+    color: var(--text-tertiary);
+    border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+/* Model Badge (AI Model indicator) */
+.model-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: var(--radius-xs);
+    font-size: 10px;
+    font-weight: 600;
+    font-family: 'SF Mono', 'Consolas', monospace;
+    white-space: nowrap;
+}
+
+/* ================================
+   Phase Headers
+   ================================ */
+.phase-header {
+    position: absolute;
+    padding: 12px 16px;
+    background: rgba(62, 207, 142, 0.1);
+    border: 1px solid rgba(62, 207, 142, 0.3);
+    border-radius: var(--radius-md);
+    text-align: center;
+    animation: nodeAppear 0.3s ease;
+}
+
+.phase-number {
+    font-size: 11px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+}
+
+.phase-name {
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+/* ================================
+   Role Detail Panel Items
+   ================================ */
+.roles-detail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.role-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: #18181b;
+    border-left: 3px solid var(--text-tertiary);
+    border-radius: 0 6px 6px 0;
+}
+
+.role-detail-item .role-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #e5e7eb;
+}
+
+.role-detail-item .role-auth {
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+
+/* ================================
+   Process Card Enhancements
+   ================================ */
+.process-card-roles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+/* Steps list in panel */
+.steps-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px;
+    background: #18181b;
+    border-radius: var(--radius-sm);
+}
+
+.step-item .step-number {
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--bg-deep);
+    flex-shrink: 0;
+}
+
+.step-item .step-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.step-item .step-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #e5e7eb;
+    margin-bottom: 4px;
+}
+
+.step-type-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.step-type-badge.action {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+}
+
+.step-type-badge.condition {
+    background: rgba(234, 179, 8, 0.15);
+    color: #fbbf24;
+}
+
+.step-type-badge.event {
+    background: rgba(168, 85, 247, 0.15);
+    color: #c084fc;
+}
+
+.step-type-badge.notification {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+}
+
+.step-type-badge.wait {
+    background: rgba(107, 114, 128, 0.15);
+    color: var(--text-tertiary);
+}
+
+.step-type-badge.assignment {
+    background: rgba(249, 115, 22, 0.15);
+    color: var(--color-orange);
+}
+
+/* Services list in panel */
+.services-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.service-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: #18181b;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: #e5e7eb;
+}
+
+.service-item svg {
+    width: 16px;
+    height: 16px;
+}
+
+.service-process-item {
+    padding: 4px 0;
+    font-size: 13px;
+    color: #94a3b8;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.service-process-item:last-child {
+    border-bottom: none;
+}
+
+/* Source file indicator */
+.source-file-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #18181b;
+    border-radius: var(--radius-sm);
+    font-family: 'SF Mono', 'Consolas', monospace;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.source-file-indicator svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+}
+
+/* ================================
+   Animated Connections for Phases
+   ================================ */
+.connection-path.phase {
+    stroke-dasharray: 8 4;
+    animation: flowPhase 1s linear infinite;
+}
+
+@keyframes flowPhase {
+    from {
+        stroke-dashoffset: 12;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+/* ================================
+   Responsive for Function Cards
+   ================================ */
+@media (max-width: 1200px) {
+    .function-card {
+        width: 240px !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .function-card {
+        width: 200px !important;
+        padding: 12px;
+    }
+
+    .function-name {
+        font-size: 12px;
+    }
+
+    .function-endpoint {
+        font-size: 9px;
+    }
+
+    .role-badge {
+        font-size: 9px;
+        padding: 2px 6px;
+    }
+}
+
+/* ================================
+   Add Module Button
+   ================================ */
+.btn-add-module {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-sm);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.btn-add-module:hover {
+    background: rgba(62, 207, 142, 0.1);
+}
+
+.btn-add-module .btn-label {
+    font-weight: 500;
+}
+
+/* Hide on detail view */
+.detail-active .btn-add-module {
+    display: none !important;
+}
+
+@media (max-width: 768px) {
+    .btn-add-module .btn-label {
+        display: none;
+    }
+}
+
+/* ================================
+   Module Modal Additions
+   ================================ */
+.modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-footer-right {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-modal-danger {
+    background: transparent;
+    border: 1px solid var(--color-danger);
+    color: var(--color-danger);
+}
+
+.btn-modal-danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Form Checkbox */
+.form-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #e5e7eb;
+    cursor: pointer;
+    margin-bottom: 4px;
+}
+
+.form-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+/* ================================
+   Context Menu
+   ================================ */
+.context-menu {
+    position: fixed;
+    min-width: 160px;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    padding: 4px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    z-index: var(--z-tooltip);
+}
+
+.context-menu.hidden {
+    display: none;
+}
+
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: #e5e7eb;
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.context-menu-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.context-menu-item.text-danger,
+.context-menu-item.danger {
+    color: var(--color-danger);
+}
+
+.context-menu-item.text-danger:hover,
+.context-menu-item.danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.context-menu-item svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.context-menu-divider {
+    height: 1px;
+    background: var(--border-strong);
+    margin: 6px 12px;
+}
+
+/* ================================
+   Tree Node - Custom Module Styles
+   ================================ */
+.tree-node.custom-module {
+    /* Normal border like base tree-node */
+    border: 2px solid var(--border-soft);
+}
+
+.tree-node.custom-module.is-draft {
+    opacity: 0.85;
+}
+
+.tree-node.custom-module.is-draft .tree-node-icon {
+    background: rgba(107, 114, 128, 0.2);
+    border-color: #4b5563;
+}
+
+.tree-node.custom-module.is-implemented {
+    /* Keep normal border, status shown via badge and icon */
+}
+
+/* Custom module badge */
+.tree-node-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 2px 6px;
+    background: rgba(107, 114, 128, 0.3);
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+}
+
+.tree-node.custom-module.is-implemented .tree-node-badge {
+    background: rgba(62, 207, 142, 0.2);
+    color: var(--accent);
+}
+
+/* Filter state - hide modules based on active filter */
+.tree-view-container.filter-implemented .tree-node.custom-module.is-draft {
+    display: none;
+}
+
+.tree-view-container.filter-draft .tree-node.custom-module.is-implemented {
+    display: none;
+}
+
+/* ================================
+   Snap Guides (Magnetic Alignment)
+   ================================ */
+.snap-guides {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: var(--z-float);
+}
+
+.snap-guide {
+    position: absolute;
+    background: var(--accent);
+    opacity: 0.7;
+    z-index: 51;
+}
+
+.snap-guide.horizontal {
+    height: 1px;
+    left: 0;
+    right: 0;
+    box-shadow: 0 0 4px rgba(62, 207, 142, 0.8);
+}
+
+.snap-guide.vertical {
+    width: 1px;
+    top: 0;
+    bottom: 0;
+    box-shadow: 0 0 4px rgba(62, 207, 142, 0.8);
+}
+
+/* Snap indicator on dragged node */
+.tree-node.snapping {
+    box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.5), 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ================================
+   Multi-Select Box
+   ================================ */
+.selection-box {
+    position: absolute;
+    border: 2px solid rgba(62, 207, 142, 0.8);
+    background: rgba(62, 207, 142, 0.15);
+    pointer-events: none;
+    z-index: var(--z-tooltip);
+    display: none;
+    border-radius: var(--radius-xs);
+}
+
+.selection-box.active {
+    display: block;
+}
+
+/* Selected node state */
+.tree-node.selected {
+    box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.6), 0 8px 32px rgba(0, 0, 0, 0.4);
+    border-color: var(--accent);
+}
+
+.tree-node.selected::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 16px;
+    height: 16px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ================================
+   Tree Node Sizes (Fixed dimensions)
+   ================================ */
+.tree-node.custom-module.size-large {
+    width: 280px;
+    height: 180px;
+    padding: 20px;
+    overflow: visible; /* Allow connection ports to extend outside */
+}
+
+.tree-node.custom-module.size-medium {
+    width: 220px;
+    height: 150px;
+    padding: 16px;
+    overflow: visible; /* Allow connection ports to extend outside */
+}
+
+.tree-node.custom-module.size-small {
+    width: 160px;
+    height: 120px;
+    padding: 12px;
+    overflow: visible; /* Allow connection ports to extend outside */
+}
+
+/* Text truncation for all custom modules */
+.tree-node.custom-module .tree-node-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.tree-node.custom-module .tree-node-subtitle {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* Small size specific adjustments */
+.tree-node.custom-module.size-small .tree-node-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px;
+}
+
+.tree-node.custom-module.size-small .tree-node-icon svg {
+    width: 16px;
+    height: 16px;
+}
+
+.tree-node.custom-module.size-small .tree-node-title {
+    font-size: 13px;
+}
+
+.tree-node.custom-module.size-small .tree-node-subtitle {
+    font-size: 11px;
+    margin-bottom: 8px;
+    -webkit-line-clamp: 1;
+}
+
+.tree-node.custom-module.size-small .tree-node-stats {
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tree-node.custom-module.size-small .tree-node-stat {
+    font-size: 10px;
+}
+
+/* ================================
+   Tree Node Types
+   ================================ */
+.tree-node.custom-module.type-link {
+    border-color: #60a5fa;
+}
+
+.tree-node.custom-module.type-link .tree-node-icon {
+    background: rgba(96, 165, 250, 0.15) !important;
+    border-color: #60a5fa !important;
+}
+
+.tree-node.custom-module.type-link .tree-node-icon svg {
+    color: #60a5fa;
+}
+
+.tree-node.custom-module.type-milestone {
+    border-color: var(--color-warning);
+    border-radius: 24px;
+}
+
+.tree-node.custom-module.type-milestone .tree-node-icon {
+    background: rgba(245, 158, 11, 0.15) !important;
+    border-color: var(--color-warning) !important;
+}
+
+.tree-node.custom-module.type-milestone .tree-node-icon svg {
+    color: var(--color-warning);
+}
+
+/* When milestone has diamond shape, use purple diamond styling instead */
+.tree-node.custom-module.type-milestone.shape-diamond {
+    border-color: rgba(139, 92, 246, 0.4);
+    border-radius: var(--radius-md);
+}
+
+.tree-node.custom-module.type-milestone.shape-diamond .tree-node-icon {
+    background: rgba(139, 92, 246, 0.15) !important;
+    border-color: rgba(139, 92, 246, 0.4) !important;
+}
+
+.tree-node.custom-module.type-milestone.shape-diamond .tree-node-icon svg {
+    color: #a78bfa;
+}
+
+.tree-node.custom-module.type-decision {
+    border-color: #a78bfa;
+}
+
+.tree-node.custom-module.type-decision .tree-node-icon {
+    background: rgba(167, 139, 250, 0.15) !important;
+    border-color: #a78bfa !important;
+}
+
+.tree-node.custom-module.type-decision .tree-node-icon svg {
+    color: #a78bfa;
+}
+
+/* Event type styling */
+.tree-node.custom-module.type-event {
+    border-color: #f472b6;
+}
+
+.tree-node.custom-module.type-event .tree-node-icon {
+    background: rgba(244, 114, 182, 0.15) !important;
+    border-color: #f472b6 !important;
+}
+
+.tree-node.custom-module.type-event .tree-node-icon svg {
+    color: #f472b6;
+}
+
+/* Algorithm type - special branding */
+.tree-node.custom-module.type-algorithm {
+    border-width: 2px;
+    border-style: solid;
+    border-color: var(--algo-color, var(--color-purple));
+    background: linear-gradient(135deg, var(--ngm-bg-card) 0%, #1a1a2e 100%);
+    position: relative;
+    overflow: visible;
+}
+
+.tree-node.custom-module.type-algorithm::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    background: radial-gradient(ellipse at center, var(--algo-glow, #a78bfa) 0%, transparent 70%);
+    opacity: 0.3;
+    z-index: -1;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.tree-node.custom-module.type-algorithm:hover::before {
+    opacity: 0.5;
+}
+
+.tree-node.custom-module.type-algorithm .tree-node-icon {
+    background: rgba(139, 92, 246, 0.15) !important;
+    border-color: var(--color-purple) !important;
+}
+
+.tree-node.custom-module.type-algorithm .tree-node-icon svg {
+    color: var(--color-purple);
+}
+
+.tree-node.custom-module.type-algorithm .tree-node-badge {
+    background: rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+}
+
+.tree-node.custom-module.type-algorithm .tree-node-title::after {
+    content: 'TM';
+    font-size: 8px;
+    font-weight: 600;
+    vertical-align: super;
+    margin-left: 2px;
+    color: var(--color-purple);
+}
+
+/* Infrastructure / Service tree-node types */
+.tree-node.custom-module.type-supabase-pg { border-color: var(--accent); }
+.tree-node.custom-module.type-supabase-pg .tree-node-icon { background: rgba(62, 207, 142, 0.15) !important; border-color: var(--accent) !important; }
+.tree-node.custom-module.type-supabase-pg .tree-node-icon svg { color: var(--accent); }
+
+.tree-node.custom-module.type-supabase-storage { border-color: var(--accent); }
+.tree-node.custom-module.type-supabase-storage .tree-node-icon { background: rgba(62, 207, 142, 0.15) !important; border-color: var(--accent) !important; }
+.tree-node.custom-module.type-supabase-storage .tree-node-icon svg { color: var(--accent); }
+
+.tree-node.custom-module.type-render { border-color: #46e3b7; }
+.tree-node.custom-module.type-render .tree-node-icon { background: rgba(70, 227, 183, 0.15) !important; border-color: #46e3b7 !important; }
+.tree-node.custom-module.type-render .tree-node-icon svg { color: #46e3b7; }
+
+.tree-node.custom-module.type-nass { border-color: #f97316; }
+.tree-node.custom-module.type-nass .tree-node-icon { background: rgba(249, 115, 22, 0.15) !important; border-color: #f97316 !important; }
+.tree-node.custom-module.type-nass .tree-node-icon svg { color: #f97316; }
+
+.tree-node.custom-module.type-firebase { border-color: #ffca28; }
+.tree-node.custom-module.type-firebase .tree-node-icon { background: rgba(255, 202, 40, 0.15) !important; border-color: #ffca28 !important; }
+.tree-node.custom-module.type-firebase .tree-node-icon svg { color: #ffca28; }
+
+.tree-node.custom-module.type-pwd { border-color: #4285f4; }
+.tree-node.custom-module.type-pwd .tree-node-icon { background: rgba(66, 133, 244, 0.15) !important; border-color: #4285f4 !important; }
+.tree-node.custom-module.type-pwd .tree-node-icon svg { color: #4285f4; }
+
+/* ================================
+   Connection Colors by Status
+   ================================ */
+/* Draft module connections - gray dashed */
+.connection-path.module-draft {
+    stroke: var(--text-tertiary) !important;
+    stroke-dasharray: 8 4;
+    animation: none !important;
+}
+
+.connection-dot.module-draft {
+    fill: var(--text-tertiary) !important;
+}
+
+/* Implemented module connections - green animated */
+.connection-path.module-implemented {
+    stroke: var(--accent) !important;
+    animation: flowDash 1s linear infinite;
+}
+
+.connection-dot.module-implemented {
+    fill: var(--accent) !important;
+}
+
+/* ================================
+   Edit Indicator on Hover
+   ================================ */
+.tree-node.custom-module::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'%3E%3C/path%3E%3Cpath d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'%3E%3C/path%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.tree-node.custom-module:hover::after {
+    opacity: 0.6;
+}
+
+/* ================================
+   Connection Ports (Larger, More Visible)
+   ================================ */
+.connection-port {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: var(--border-hover);
+    border: 2px solid #5a5a5a;
+    border-radius: 50%;
+    z-index: var(--z-sticky);
+    transition: all 0.15s ease;
+    opacity: 0;  /* Hidden by default, shown on hover */
+    pointer-events: none;
+    cursor: crosshair;
+}
+
+/* Show ports when hovering the node or in connecting mode */
+.tree-node:hover .connection-port,
+.tree-node.central:hover .connection-port {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.canvas-container.connecting-mode .connection-port {
+    opacity: 0.8;
+    pointer-events: auto;
+}
+
+.connection-port:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    transform: scale(1.4);
+    box-shadow: 0 0 12px rgba(62, 207, 142, 0.8);
+    cursor: crosshair;
+    opacity: 1 !important;
+}
+
+/* Port positions - centered exactly at edges */
+.connection-port.port-top {
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.connection-port.port-right {
+    right: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.connection-port.port-bottom {
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.connection-port.port-left {
+    left: -8px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Port hover transforms (preserve position) */
+.connection-port.port-top:hover {
+    transform: translateX(-50%) scale(1.4);
+}
+
+.connection-port.port-right:hover {
+    transform: translateY(-50%) scale(1.4);
+}
+
+.connection-port.port-bottom:hover {
+    transform: translateX(-50%) scale(1.4);
+}
+
+.connection-port.port-left:hover {
+    transform: translateY(-50%) scale(1.4);
+}
+
+/* Active port (when line is connected) */
+.connection-port.connected {
+    opacity: 1;
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(62, 207, 142, 0.5);
+}
+
+/* Highlight port when dragging over it */
+.connection-port.drop-target {
+    opacity: 1;
+    background: var(--accent);
+    border-color: #fff;
+    transform: scale(1.5);
+    box-shadow: 0 0 14px rgba(62, 207, 142, 0.9);
+}
+
+.connection-port.port-top.drop-target {
+    transform: translateX(-50%) scale(1.5);
+}
+
+.connection-port.port-right.drop-target {
+    transform: translateY(-50%) scale(1.5);
+}
+
+.connection-port.port-bottom.drop-target {
+    transform: translateX(-50%) scale(1.5);
+}
+
+.connection-port.port-left.drop-target {
+    transform: translateY(-50%) scale(1.5);
+}
+
+/* SVG Connection Endpoint Dots (draggable handles) */
+.connection-endpoint {
+    cursor: grab;
+    transition: all 0.15s ease;
+    pointer-events: auto;
+}
+
+.connection-endpoint:hover {
+    filter: drop-shadow(0 0 6px rgba(62, 207, 142, 0.8));
+}
+
+.connection-endpoint.dragging {
+    cursor: grabbing;
+}
+
+.connection-endpoint-outer {
+    transition: all 0.15s ease;
+}
+
+.connection-endpoint-inner {
+    transition: all 0.15s ease;
+}
+
+/* ================================
+   Connection Line Animation Fix
+   ================================ */
+@keyframes flowDash {
+    from {
+        stroke-dashoffset: 24;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.connection-path.animated {
+    stroke-dasharray: 8 4;
+    animation: flowDash 0.8s linear infinite;
+}
+
+.connection-path.module-implemented {
+    stroke-dasharray: 8 4;
+    animation: flowDash 0.8s linear infinite !important;
+}
+
+.connection-path.module-draft {
+    stroke-dasharray: 6 4;
+    animation: none !important;
+    opacity: 0.6;
+}
+
+/* Connection group hover effect */
+.connection-group:hover .connection-path {
+    filter: drop-shadow(0 0 4px currentColor);
+}
+
+/* Temporary connection line while dragging */
+.connection-temp {
+    stroke: var(--accent);
+    stroke-width: 2;
+    stroke-dasharray: 4 4;
+    fill: none;
+    opacity: 0.8;
+}
+
+/* Detail view connection lines - dashed and animated like tree view */
+.detail-connection {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 8 4;
+    animation: flowDash 0.8s linear infinite;
+}
+
+/* Detail view draft connections - gray, static (no animation) */
+.detail-connection.module-draft {
+    stroke: var(--text-tertiary) !important;
+    stroke-dasharray: 6 4;
+    animation: none !important;
+    opacity: 0.6;
+}
+
+/* Detail view live connections - green, animated */
+.detail-connection.module-implemented {
+    stroke: var(--accent) !important;
+    stroke-dasharray: 8 4;
+    animation: flowDash 0.8s linear infinite !important;
+}
+
+/* Connecting mode - show visual feedback */
+.canvas-container.connecting-mode {
+    cursor: crosshair;
+}
+
+.canvas-container.connecting-mode .tree-node {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.canvas-container.connecting-mode .tree-node.valid-drop-target {
+    border-color: rgba(62, 207, 142, 0.3);
+    cursor: pointer;
+}
+
+.canvas-container.connecting-mode .tree-node.valid-drop-target:hover {
+    transform: scale(1.08);
+    border-color: var(--accent);
+    box-shadow: 0 0 25px rgba(62, 207, 142, 0.5), 0 0 0 3px rgba(62, 207, 142, 0.3);
+    z-index: var(--z-dropdown);
+}
+
+/* Source node in connection mode - highlight differently */
+.canvas-container.connecting-mode .tree-node:not(.valid-drop-target) {
+    opacity: 0.7;
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(62, 207, 142, 0.3);
+}
+
+/* Connection preview line */
+.connection-preview {
+    pointer-events: none;
+}
+
+/* ================================
+   Module Detail Panel
+   ================================ */
+.module-detail-panel {
+    position: fixed;
+    top: 60px;
+    right: 0;
+    bottom: 0;
+    width: 360px;
+    background: linear-gradient(180deg, var(--ngm-bg-surface) 0%, var(--bg-deep) 100%);
+    border-left: 1px solid var(--border-soft);
+    z-index: 150;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.module-detail-panel.active {
+    transform: translateX(0);
+}
+
+.module-detail-panel.hidden {
+    display: flex;
+    transform: translateX(100%);
+}
+
+.module-detail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-soft);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.module-detail-title-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+}
+
+.module-detail-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(62, 207, 142, 0.2) 0%, rgba(62, 207, 142, 0.05) 100%);
+    border: 1px solid rgba(62, 207, 142, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.module-detail-icon svg {
+    width: 22px;
+    height: 22px;
+    color: var(--accent);
+}
+
+.module-detail-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.module-detail-info h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.module-detail-type {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    background: rgba(62, 207, 142, 0.15);
+    padding: 2px 8px;
+    border-radius: var(--radius-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Type-specific colors for detail panel */
+.module-detail-type.type-step { color: var(--accent); background: rgba(62, 207, 142, 0.15); }
+.module-detail-type.type-draft { color: var(--text-tertiary); background: rgba(107, 114, 128, 0.15); }
+.module-detail-type.type-milestone { color: #a78bfa; background: rgba(167, 139, 250, 0.15); }
+.module-detail-type.type-decision { color: #fbbf24; background: rgba(251, 191, 36, 0.15); }
+.module-detail-type.type-event { color: #10b981; background: rgba(16, 185, 129, 0.15); }
+.module-detail-type.type-algorithm { color: #60a5fa; background: rgba(96, 165, 250, 0.15); }
+.module-detail-type.type-link { color: #f472b6; background: rgba(244, 114, 182, 0.15); }
+.module-detail-type.type-supabase-pg { color: var(--accent); background: rgba(62, 207, 142, 0.15); }
+.module-detail-type.type-supabase-storage { color: var(--accent); background: rgba(62, 207, 142, 0.15); }
+.module-detail-type.type-render { color: #46e3b7; background: rgba(70, 227, 183, 0.15); }
+.module-detail-type.type-nass { color: #f97316; background: rgba(249, 115, 22, 0.15); }
+.module-detail-type.type-firebase { color: #ffca28; background: rgba(255, 202, 40, 0.15); }
+.module-detail-type.type-pwd { color: #4285f4; background: rgba(66, 133, 244, 0.15); }
+
+/* Status colors */
+.meta-value.status-live { color: var(--accent); }
+.meta-value.status-draft { color: var(--text-tertiary); }
+
+.module-detail-close {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+}
+
+.module-detail-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.module-detail-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.module-detail-section {
+    margin-bottom: 20px;
+}
+
+.module-detail-section label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.module-detail-section p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #d1d5db;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.module-detail-meta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-soft);
+}
+
+.module-detail-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.module-detail-meta-item .meta-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.module-detail-meta-item .meta-value {
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+}
+
+.module-detail-footer {
+    display: flex;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-soft);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.btn-detail {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-detail-secondary {
+    background: var(--bg-active);
+    color: #d1d5db;
+    border: 1px solid #2f2f2f;
+}
+
+.btn-detail-secondary:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+.btn-detail-primary {
+    flex: 1;
+    background: linear-gradient(135deg, var(--accent) 0%, #2ebd7f 100%);
+    color: #000;
+}
+
+.btn-detail-primary:hover {
+    background: linear-gradient(135deg, #4dd99a 0%, var(--accent) 100%);
+}
+
+/* Form hint style */
+.form-hint {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-tertiary);
+    margin-left: 4px;
+}
+

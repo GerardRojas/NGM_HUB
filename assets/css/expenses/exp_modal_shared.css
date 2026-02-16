@@ -1,0 +1,792 @@
+/* =========================================
+   EXPENSES MODALS — SHARED CONSOLIDATED RULES
+   9 modals: addExpenseModal, csvMappingModal,
+   editSingleExpenseModal, columnManagerModal,
+   scanReceiptModal, constructionStageModal,
+   importCSVModal, pendingReceiptsModal, qboMappingModal
+   ========================================= */
+
+/* Hidden must always win (all 9 modals) */
+#addExpenseModal.modal-backdrop.hidden,
+#csvMappingModal.modal-backdrop.hidden,
+#editSingleExpenseModal.modal-backdrop.hidden,
+#columnManagerModal.modal-backdrop.hidden,
+#scanReceiptModal.modal-backdrop.hidden,
+#constructionStageModal.modal-backdrop.hidden,
+#importCSVModal.modal-backdrop.hidden,
+#pendingReceiptsModal.modal-backdrop.hidden,
+#qboMappingModal.modal-backdrop.hidden {
+  display: none !important;
+}
+
+/* Shared backdrop: all 9 share background, position, inset, display, alignment */
+#addExpenseModal.modal-backdrop,
+#csvMappingModal.modal-backdrop,
+#editSingleExpenseModal.modal-backdrop,
+#columnManagerModal.modal-backdrop,
+#scanReceiptModal.modal-backdrop,
+#constructionStageModal.modal-backdrop,
+#importCSVModal.modal-backdrop,
+#pendingReceiptsModal.modal-backdrop,
+#qboMappingModal.modal-backdrop {
+  background: rgba(0, 0, 0, 0.80);
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Backdrop: z-backdrop + clamp padding + overflow-y:auto */
+#addExpenseModal.modal-backdrop,
+#editSingleExpenseModal.modal-backdrop,
+#columnManagerModal.modal-backdrop,
+#importCSVModal.modal-backdrop,
+#qboMappingModal.modal-backdrop {
+  z-index: var(--z-backdrop);
+  padding: clamp(12px, 3vh, 28px);
+}
+
+#addExpenseModal.modal-backdrop,
+#editSingleExpenseModal.modal-backdrop,
+#importCSVModal.modal-backdrop,
+#qboMappingModal.modal-backdrop {
+  overflow-y: auto;
+}
+
+/* Backdrop: z-dialog + fixed 20px padding */
+#csvMappingModal.modal-backdrop,
+#scanReceiptModal.modal-backdrop,
+#constructionStageModal.modal-backdrop,
+#pendingReceiptsModal.modal-backdrop {
+  z-index: var(--z-dialog);
+  padding: 20px;
+}
+
+/* csvMappingModal also has overflow-y */
+#csvMappingModal.modal-backdrop {
+  overflow-y: auto;
+}
+
+/* Shared modal-header override (vs base 16px 20px): gap + padding + bg + border */
+#addExpenseModal .modal-header,
+#editSingleExpenseModal .modal-header,
+#columnManagerModal .modal-header,
+#scanReceiptModal .modal-header,
+#constructionStageModal .modal-header,
+#importCSVModal .modal-header,
+#pendingReceiptsModal .modal-header,
+#qboMappingModal .modal-header {
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+/* Header background with !important */
+#addExpenseModal .modal-header,
+#editSingleExpenseModal .modal-header,
+#scanReceiptModal .modal-header,
+#constructionStageModal .modal-header,
+#importCSVModal .modal-header,
+#pendingReceiptsModal .modal-header,
+#qboMappingModal .modal-header {
+  background: var(--ngm-bg-surface) !important;
+}
+
+/* Header background without !important */
+#columnManagerModal .modal-header {
+  background: var(--ngm-bg-surface);
+}
+
+/* Shared modal-title (font-size:15px, weight:600) */
+#addExpenseModal .modal-title,
+#editSingleExpenseModal .modal-title,
+#columnManagerModal .modal-title,
+#importCSVModal .modal-title,
+#qboMappingModal .modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+#scanReceiptModal .modal-title,
+#constructionStageModal .modal-title,
+#pendingReceiptsModal .modal-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+#scanReceiptModal .modal-title {
+  letter-spacing: -0.01em;
+}
+
+/* Shared simple close button (6 modals) */
+#addExpenseModal .modal-close-btn,
+#editSingleExpenseModal .modal-close-btn,
+#columnManagerModal .modal-close-btn,
+#constructionStageModal .modal-close-btn,
+#importCSVModal .modal-close-btn,
+#qboMappingModal .modal-close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+#addExpenseModal .modal-close-btn:hover,
+#editSingleExpenseModal .modal-close-btn:hover,
+#columnManagerModal .modal-close-btn:hover,
+#constructionStageModal .modal-close-btn:hover,
+#importCSVModal .modal-close-btn:hover,
+#qboMappingModal .modal-close-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Styled close button (scanReceipt + pendingReceipts) */
+#scanReceiptModal .modal-close-btn,
+#pendingReceiptsModal .modal-close-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  color: var(--text-tertiary);
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+#scanReceiptModal .modal-close-btn:hover,
+#pendingReceiptsModal .modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e5e7eb;
+}
+
+/* Shared modal-footer: all share display:flex, flex-end, padding, border-top */
+#addExpenseModal .modal-footer,
+#editSingleExpenseModal .modal-footer,
+#scanReceiptModal .modal-footer,
+#constructionStageModal .modal-footer,
+#importCSVModal .modal-footer,
+#pendingReceiptsModal .modal-footer,
+#qboMappingModal .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 18px;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* Footer gap:12px (no align-items) */
+#addExpenseModal .modal-footer,
+#editSingleExpenseModal .modal-footer {
+  gap: 12px;
+}
+
+/* Footer gap:10px */
+#scanReceiptModal .modal-footer,
+#constructionStageModal .modal-footer,
+#importCSVModal .modal-footer,
+#pendingReceiptsModal .modal-footer,
+#qboMappingModal .modal-footer {
+  gap: 10px;
+}
+
+/* Footer align-items:center */
+#scanReceiptModal .modal-footer,
+#constructionStageModal .modal-footer,
+#importCSVModal .modal-footer,
+#pendingReceiptsModal .modal-footer {
+  align-items: center;
+}
+
+/* Footer background (with !important) */
+#addExpenseModal .modal-footer,
+#editSingleExpenseModal .modal-footer,
+#importCSVModal .modal-footer,
+#qboMappingModal .modal-footer {
+  background: var(--ngm-bg-surface) !important;
+}
+
+/* Footer background (without !important) */
+#scanReceiptModal .modal-footer,
+#constructionStageModal .modal-footer,
+#pendingReceiptsModal .modal-footer {
+  background: var(--ngm-bg-surface);
+}
+
+/* columnManagerModal footer: unique justify-content:space-between */
+#columnManagerModal .modal-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  background: var(--ngm-bg-surface);
+  border-top: 1px solid var(--border-soft);
+}
+
+/* Shared .btn-modal-secondary / .btn-modal-primary base (5 modals) */
+#addExpenseModal .btn-modal-secondary,
+#addExpenseModal .btn-modal-primary,
+#editSingleExpenseModal .btn-modal-secondary,
+#editSingleExpenseModal .btn-modal-primary,
+#columnManagerModal .btn-modal-secondary,
+#columnManagerModal .btn-modal-primary {
+  appearance: none;
+  border-radius: 6px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+#addExpenseModal .btn-modal-secondary,
+#editSingleExpenseModal .btn-modal-secondary,
+#columnManagerModal .btn-modal-secondary {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary, var(--text-primary));
+}
+
+#addExpenseModal .btn-modal-secondary:hover,
+#editSingleExpenseModal .btn-modal-secondary:hover,
+#columnManagerModal .btn-modal-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+}
+
+#addExpenseModal .btn-modal-primary,
+#editSingleExpenseModal .btn-modal-primary,
+#columnManagerModal .btn-modal-primary {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #000;
+  font-weight: 600;
+}
+
+#addExpenseModal .btn-modal-primary:hover,
+#editSingleExpenseModal .btn-modal-primary:hover,
+#columnManagerModal .btn-modal-primary:hover {
+  background: #34b87d;
+  border-color: #34b87d;
+}
+
+#addExpenseModal .btn-modal-primary:disabled,
+#addExpenseModal .btn-modal-secondary:disabled,
+#editSingleExpenseModal .btn-modal-primary:disabled,
+#editSingleExpenseModal .btn-modal-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Shared secondary button for scan/pending modals */
+#scanReceiptModal .btn-modal-secondary,
+#pendingReceiptsModal .btn-modal-secondary {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+#scanReceiptModal .btn-modal-secondary:hover,
+#pendingReceiptsModal .btn-modal-secondary:hover {
+  background: var(--bg-hover-strong);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #e5e7eb;
+}
+
+/* =========================================
+   EXPENSES — Add Expense Modal (unique rules)
+   ========================================= */
+
+/* Card interior */
+#addExpenseModal .modal {
+  width: min(1800px, 98%) !important;
+  max-width: 1800px !important;
+  max-height: calc(100vh - 2 * clamp(12px, 3vh, 28px));
+  display: flex;
+  flex-direction: column;
+
+  background: var(--ngm-bg-surface) !important;
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-2xl);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+/* Body */
+#addExpenseModal .modal-body {
+  padding: 18px 18px 20px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Project info and scan receipt button container */
+#addExpenseModal .modal-project-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Project info */
+#addExpenseModal .modal-project-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: rgba(62, 207, 142, 0.08);
+  border: 1px solid rgba(62, 207, 142, 0.25);
+  border-radius: 10px;
+  width: fit-content;
+}
+
+#addExpenseModal .modal-project-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+#addExpenseModal .modal-project-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Toolbar toggle chevron */
+#addExpenseModal .modal-toolbar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  margin-left: 2px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+  flex-shrink: 0;
+}
+
+#addExpenseModal .modal-toolbar-toggle:hover {
+  color: rgba(255, 255, 255, 0.7);
+  background: var(--bg-hover-strong);
+}
+
+#addExpenseModal .modal-toolbar-toggle svg {
+  transition: transform 0.2s ease;
+}
+
+#addExpenseModal .modal-toolbar-toggle.collapsed svg {
+  transform: rotate(-90deg);
+}
+
+/* Action buttons row */
+#addExpenseModal .modal-toolbar-actions {
+  display: flex;
+  gap: 10px;
+  max-height: 50px;
+  opacity: 1;
+  overflow: visible;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+
+#addExpenseModal .modal-toolbar-actions.collapsed {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Table container */
+#addExpenseModal .modal-table-container {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+/* Expense rows table */
+#addExpenseModal .expense-rows-table {
+  width: 100%;
+  min-width: 1300px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+#addExpenseModal .expense-rows-table thead {
+  background: var(--bg-hover);
+}
+
+#addExpenseModal .expense-rows-table th {
+  padding: 12px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: left;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+/* Column widths */
+#addExpenseModal .expense-rows-table th:nth-child(1) { width: 120px; }  /* Date */
+#addExpenseModal .expense-rows-table th:nth-child(2) { width: 90px; }   /* Bill # */
+#addExpenseModal .expense-rows-table th:nth-child(3) { width: 220px; min-width: 220px; }  /* Description */
+#addExpenseModal .expense-rows-table th:nth-child(4) { width: 130px; }  /* Type */
+#addExpenseModal .expense-rows-table th:nth-child(5) { width: 140px; }  /* Vendor */
+#addExpenseModal .expense-rows-table th:nth-child(6) { width: 120px; }  /* Payment */
+#addExpenseModal .expense-rows-table th:nth-child(7) { width: 130px; }  /* Account */
+#addExpenseModal .expense-rows-table th:nth-child(8) { width: 100px; }  /* Amount */
+#addExpenseModal .expense-rows-table th:nth-child(9) { width: 50px; }   /* Receipt */
+#addExpenseModal .expense-rows-table th:nth-child(10) { width: 40px; }  /* Remove button */
+
+#addExpenseModal .expense-rows-table td {
+  padding: 6px 8px;
+  vertical-align: middle;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.10);
+  overflow: hidden;
+}
+
+/* Description column - fixed width to match header */
+#addExpenseModal .expense-rows-table td:nth-child(3) {
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+  overflow: visible;
+}
+
+#addExpenseModal .expense-rows-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Inputs inside table */
+#addExpenseModal .exp-input {
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-strong);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+/* Searchable input specific styles */
+#addExpenseModal .exp-input-searchable {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.5) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.5) 50%, transparent 50%) !important;
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 8px) calc(50% - 2px) !important;
+  background-size: 6px 6px, 6px 6px !important;
+  background-repeat: no-repeat !important;
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  padding-right: 32px !important;
+  cursor: text !important;
+}
+
+/* Hide native datalist dropdown arrow */
+#addExpenseModal .exp-input-searchable::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+#addExpenseModal input.exp-input[list]::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+#addExpenseModal .exp-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+#addExpenseModal .exp-input:focus {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Input warning state - no exact match found */
+#addExpenseModal .exp-input--no-match {
+  border-color: rgba(251, 191, 36, 0.5);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+#addExpenseModal .exp-input--no-match:focus {
+  border-color: rgba(251, 191, 36, 0.7);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.15);
+  background: rgba(251, 191, 36, 0.1);
+}
+
+#addExpenseModal select.exp-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.65) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.65) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 8px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+/* Remove all native dropdown arrows */
+#addExpenseModal select.exp-input::-ms-expand {
+  display: none;
+}
+
+#addExpenseModal select.exp-input::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#addExpenseModal select.exp-input::-webkit-inner-spin-button,
+#addExpenseModal select.exp-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox specific */
+#addExpenseModal select.exp-input:-moz-focusring {
+  color: transparent;
+  text-shadow: 0 0 0 rgba(255, 255, 255, 0.92);
+}
+
+#addExpenseModal select.exp-input option {
+  background: var(--border-soft);
+  color: #ffffff;
+}
+
+/* Input widths */
+#addExpenseModal .exp-input--date {
+  min-width: 120px;
+}
+
+#addExpenseModal .exp-input--amount {
+  min-width: 100px;
+  text-align: right;
+}
+
+/* Remove spinner arrows from number/amount inputs */
+#addExpenseModal .exp-input--amount::-webkit-outer-spin-button,
+#addExpenseModal .exp-input--amount::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#addExpenseModal .exp-input--amount[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Force hide all dropdown arrows and native appearance for inputs with datalist */
+#addExpenseModal .exp-input[list] {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+
+#addExpenseModal .exp-input[list]::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+#addExpenseModal .exp-input[list]::-webkit-list-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#addExpenseModal .exp-input--desc {
+  min-width: 200px;
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+#addExpenseModal .exp-input--bill-id {
+  width: 100%;
+}
+
+/* Remove row button */
+#addExpenseModal .exp-row-remove {
+  background: transparent;
+  border: none;
+  color: rgba(248, 113, 113, 0.7);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+#addExpenseModal .exp-row-remove:hover {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+}
+
+/* Row receipt button */
+#addExpenseModal .btn-row-receipt {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: rgba(148, 163, 184, 0.6);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+#addExpenseModal .btn-row-receipt:hover {
+  background: rgba(62, 207, 142, 0.15);
+  color: var(--accent);
+}
+
+#addExpenseModal .btn-row-receipt.receipt-icon-btn--has-receipt {
+  color: var(--accent);
+  background: rgba(62, 207, 142, 0.1);
+}
+
+#addExpenseModal .btn-row-receipt.receipt-icon-btn--has-receipt:hover {
+  background: rgba(62, 207, 142, 0.2);
+  color: var(--accent);
+}
+
+/* Add row button */
+#addExpenseModal .add-row-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+#addExpenseModal .btn-add-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+#addExpenseModal .btn-add-row:hover {
+  border-color: rgba(62, 207, 142, 0.5);
+  color: var(--accent);
+  background: rgba(62, 207, 142, 0.08);
+}
+
+/* Auto Categorize button - grey default, purple on hover */
+#addExpenseModal .btn-auto-categorize {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+#addExpenseModal .btn-auto-categorize:hover:not(:disabled) {
+  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.12);
+  color: #a78bfa;
+  transform: translateY(-1px);
+}
+
+#addExpenseModal .btn-auto-categorize:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+#addExpenseModal .btn-auto-categorize:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+#addExpenseModal .btn-auto-categorize svg {
+  flex-shrink: 0;
+}
+
+/* Import CSV button - grey default, blue on hover */
+#addExpenseModal .btn-import-csv {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+#addExpenseModal .btn-import-csv:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  transform: translateY(-1px);
+}
+
+#addExpenseModal .btn-import-csv:active {
+  transform: translateY(0);
+}

@@ -62,7 +62,15 @@
       "WebFetch(domain:cheatsheetseries.owasp.org)",
       "WebFetch(domain:vibeappscanner.com)",
       "WebFetch(domain:curity.io)",
-      "WebFetch(domain:www.leanware.co)"
+      "WebFetch(domain:www.leanware.co)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(npm init:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(python3:*)",
+      "Bash(powershell -File:*)",
+      "Bash(echo:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql",

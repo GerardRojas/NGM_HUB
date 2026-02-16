@@ -1,12 +1,13 @@
 /* =========================================
    EXPENSES MODALS — SHARED CONSOLIDATED RULES
-   9 modals: addExpenseModal, csvMappingModal,
+   10 modals: addExpenseModal, csvMappingModal,
    editSingleExpenseModal, columnManagerModal,
    scanReceiptModal, constructionStageModal,
-   importCSVModal, pendingReceiptsModal, qboMappingModal
+   importCSVModal, pendingReceiptsModal, qboMappingModal,
+   billEditModal
    ========================================= */
 
-/* Hidden must always win (all 9 modals) */
+/* Hidden must always win (all 10 modals) */
 #addExpenseModal.modal-backdrop.hidden,
 #csvMappingModal.modal-backdrop.hidden,
 #editSingleExpenseModal.modal-backdrop.hidden,
@@ -15,11 +16,12 @@
 #constructionStageModal.modal-backdrop.hidden,
 #importCSVModal.modal-backdrop.hidden,
 #pendingReceiptsModal.modal-backdrop.hidden,
-#qboMappingModal.modal-backdrop.hidden {
+#qboMappingModal.modal-backdrop.hidden,
+#billEditModal.modal-backdrop.hidden {
   display: none !important;
 }
 
-/* Shared backdrop: all 9 share background, position, inset, display, alignment */
+/* Shared backdrop: all 10 share background, position, inset, display, alignment */
 #addExpenseModal.modal-backdrop,
 #csvMappingModal.modal-backdrop,
 #editSingleExpenseModal.modal-backdrop,
@@ -28,7 +30,8 @@
 #constructionStageModal.modal-backdrop,
 #importCSVModal.modal-backdrop,
 #pendingReceiptsModal.modal-backdrop,
-#qboMappingModal.modal-backdrop {
+#qboMappingModal.modal-backdrop,
+#billEditModal.modal-backdrop {
   background: rgba(0, 0, 0, 0.80);
   position: fixed;
   inset: 0;
@@ -42,7 +45,8 @@
 #editSingleExpenseModal.modal-backdrop,
 #columnManagerModal.modal-backdrop,
 #importCSVModal.modal-backdrop,
-#qboMappingModal.modal-backdrop {
+#qboMappingModal.modal-backdrop,
+#billEditModal.modal-backdrop {
   z-index: var(--z-backdrop);
   padding: clamp(12px, 3vh, 28px);
 }

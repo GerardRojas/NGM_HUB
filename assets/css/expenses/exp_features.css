@@ -283,6 +283,10 @@
 
 .modal-bill-edit {
   max-width: 560px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* Bill Edit Modal - Improved Spacing */
@@ -290,7 +294,10 @@
   padding: 28px 32px;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 24px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
 }
 
 .modal-bill-edit .form-field {
@@ -311,8 +318,23 @@
 
 .modal-bill-edit .form-textarea {
   padding: 14px 16px;
-  min-height: 90px;
+  min-height: 70px;
   resize: vertical;
+}
+
+/* Internal scroll styling */
+.modal-bill-edit .modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+.modal-bill-edit .modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.modal-bill-edit .modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+.modal-bill-edit .modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .modal-bill-edit .form-hint {
@@ -558,6 +580,7 @@
   padding: 18px 32px;
   background: var(--ngm-bg-surface);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
 #billEditModal .modal-title {
@@ -591,6 +614,7 @@
   padding: 20px 32px;
   background: var(--ngm-bg-surface);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
 #billEditModal .btn-modal-secondary,

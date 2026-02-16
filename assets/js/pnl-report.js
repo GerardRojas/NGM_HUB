@@ -15,6 +15,8 @@
   let selectedProjectId = null;
   let selectedProjectName = '';
 
+  let savedPdfUrl = null;
+
   let reportOptions = {
     groupByAccount: true,
     startDate: null,
@@ -189,6 +191,9 @@
       if (els.btnExportPDF) {
         els.btnExportPDF.classList.remove('hidden');
       }
+
+      // Save PDF to Vault (non-blocking)
+      saveReportToVault(selectedProjectId);
 
     } catch (err) {
       console.error('[PNL_COGS] Error generating report:', err);
@@ -416,9 +421,46 @@
   }
 
   // ================================
+  // SAVE REPORT TO VAULT
+  // ================================
+  async function saveReportToVault(projectId) {
+    savedPdfUrl = null;
+    try {
+      const payload = { project_id: projectId };
+      if (reportOptions.startDate) payload.start_date = reportOptions.startDate;
+      if (reportOptions.endDate) payload.end_date = reportOptions.endDate;
+
+      const result = await apiJson(`${apiBase}/reports/pnl`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      });
+
+      if (result.ok && result.pdf_url) {
+        savedPdfUrl = result.pdf_url;
+        console.log('[PNL_COGS] Report saved to Vault:', savedPdfUrl);
+        if (window.Toast) {
+          Toast.success('Saved to Vault', 'P&L report saved to project Reports folder.');
+        }
+      }
+    } catch (err) {
+      console.warn('[PNL_COGS] Could not save to Vault:', err.message);
+      if (window.Toast) {
+        Toast.warning('Vault Save', 'Report displayed but could not be saved to Vault.');
+      }
+    }
+  }
+
+  // ================================
   // EXPORT TO PDF
   // ================================
   function exportToPDF() {
+    // If we have a Vault URL, open it directly
+    if (savedPdfUrl) {
+      window.open(savedPdfUrl, '_blank');
+      return;
+    }
+
+    // Fallback: browser print dialog
     const printContent = document.getElementById('reportPrintable');
     if (!printContent) {
       if (window.Toast) {

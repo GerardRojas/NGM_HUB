@@ -4540,7 +4540,7 @@
       }
 
       // ============================================
-      // PHASE 2: Create bills and upload receipts
+      // PHASE 2: Upload receipts
       // ============================================
       // Receipt URL is stored in bills table, not in individual expenses
       const uploadedReceiptsByBillId = {}; // bill_id -> receipt_url
@@ -4548,84 +4548,19 @@
 
       if (window.ReceiptUpload) {
 
-        // First, handle grouped expenses (same bill_id) - create bill record and upload receipt
+        // Upload receipts for grouped expenses (same bill_id)
         for (const [billId, expensesInBill] of Object.entries(expensesByBillId)) {
-          // Find the first expense with a receipt file
           const expenseWithReceipt = expensesInBill.find(e => e.receiptFile);
 
           if (expenseWithReceipt) {
             try {
-
-              // Upload using bill_id as identifier
               const receiptUrl = await window.ReceiptUpload.upload(
                 expenseWithReceipt.receiptFile,
                 expenseWithReceipt.expenseId, // Fallback ID
                 selectedProjectId,
                 billId // Use bill_id for the filename
               );
-
               uploadedReceiptsByBillId[billId] = receiptUrl;
-
-              // Create or update bill record in bills table
-              try {
-                // Check if bill already exists
-                const existingBill = getBillMetadata(billId);
-
-                if (existingBill) {
-                  // Update existing bill with receipt_url if not set
-                  const updateData = {};
-                  if (!existingBill.receipt_url) {
-                    updateData.receipt_url = receiptUrl;
-                  }
-                  // Update status based on user selection (selectedBillStatus)
-                  // Only update if this is the bill the user selected status for
-                  if (scannedReceiptBillId === billId || selectedBillStatus !== 'open') {
-                    updateData.status = selectedBillStatus;
-                  }
-                  if (Object.keys(updateData).length > 0) {
-                    await apiJson(`${apiBase}/bills/${billId}`, {
-                      method: 'PATCH',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(updateData)
-                    });
-                  }
-                } else {
-                  // Create new bill record
-                  // Use selectedBillStatus (defaults to 'open', or 'closed' if scanned receipt mode)
-                  const billStatus = selectedBillStatus;
-                  const billData = {
-                    bill_id: billId,
-                    receipt_url: receiptUrl,
-                    status: billStatus
-                  };
-
-                  // Add vendor_id if this is from scan and we have it
-                  if (scannedReceiptBillId === billId && scannedReceiptVendorId) {
-                    billData.vendor_id = scannedReceiptVendorId;
-                  }
-
-                  // Add expected_total if available
-                  if (scannedReceiptBillId === billId && scannedReceiptTotal) {
-                    billData.expected_total = scannedReceiptTotal;
-                  }
-
-                  await apiJson(`${apiBase}/bills`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(billData)
-                  });
-
-                  // Add to local metadata cache (using upsert to prevent duplicates)
-                  upsertBillInCache(billData);
-                }
-              } catch (billErr) {
-                // Bill creation might fail if it already exists - that's OK
-                console.warn(`[EXPENSES] Could not create/update bill ${billId}:`, billErr.message);
-              }
-
-              // NO longer update individual expenses with receipt_url
-              // The receipt is now stored in the bills table
-
             } catch (uploadErr) {
               console.error(`[EXPENSES] Error uploading receipt for bill ${billId}:`, uploadErr);
               failedReceiptUploads.push({
@@ -4669,6 +4604,61 @@
               });
             }
           }
+        }
+      }
+
+      // ============================================
+      // PHASE 2b: Ensure bill records exist for ALL bill groups
+      // Bill status must persist regardless of receipt attachment
+      // ============================================
+      for (const [billId] of Object.entries(expensesByBillId)) {
+        try {
+          const existingBill = getBillMetadata(billId);
+          const receiptUrl = uploadedReceiptsByBillId[billId] || null;
+
+          if (existingBill) {
+            // Bill exists in DB - update receipt_url and/or status if needed
+            const updateData = {};
+            if (receiptUrl && !existingBill.receipt_url) {
+              updateData.receipt_url = receiptUrl;
+            }
+            if (scannedReceiptBillId === billId || selectedBillStatus !== 'open') {
+              updateData.status = selectedBillStatus;
+            }
+            if (Object.keys(updateData).length > 0) {
+              await apiJson(`${apiBase}/bills/${billId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updateData)
+              });
+              Object.assign(existingBill, updateData);
+            }
+          } else {
+            // No bill record yet - create one with status and receipt (if uploaded)
+            const billData = {
+              bill_id: billId,
+              status: selectedBillStatus
+            };
+            if (receiptUrl) {
+              billData.receipt_url = receiptUrl;
+            }
+            if (scannedReceiptBillId === billId && scannedReceiptVendorId) {
+              billData.vendor_id = scannedReceiptVendorId;
+            }
+            if (scannedReceiptBillId === billId && scannedReceiptTotal) {
+              billData.expected_total = scannedReceiptTotal;
+            }
+
+            await apiJson(`${apiBase}/bills`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(billData)
+            });
+            upsertBillInCache(billData);
+          }
+        } catch (billErr) {
+          // Bill creation might fail if it already exists - that's OK
+          console.warn(`[EXPENSES] Could not create/update bill ${billId}:`, billErr.message);
         }
       }
 
@@ -5208,23 +5198,27 @@
       }
     }
 
-    // Detect field changes on authorized expense -> force status to 'review'
+    // Detect field changes -> force status to 'review'
+    // For authorized expenses: any amount/account change requires re-review
+    // For bookkeepers: any amount/account change also triggers review (audit trail)
     const originalAmount = parseFloat(currentEditingExpense.Amount || currentEditingExpense.amount || 0);
     const newAmount = updatedData.Amount || 0;
-    const amountChangedOnAuth = (originalExpenseStatus === 'auth' && newAmount !== originalAmount);
+    const amountChanged = (newAmount !== originalAmount);
 
     const originalAccountId = currentEditingExpense.account_id || null;
     const newAccountId = updatedData.account_id || null;
-    const accountChangedOnAuth = (originalExpenseStatus === 'auth' && newAccountId && String(newAccountId) !== String(originalAccountId || ''));
+    const accountChanged = (newAccountId && String(newAccountId) !== String(originalAccountId || ''));
 
-    const fieldChangedOnAuth = amountChangedOnAuth || accountChangedOnAuth;
+    // Trigger review: authorized expenses always, bookkeepers on any status
+    const shouldForceReview = (amountChanged || accountChanged) &&
+      (originalExpenseStatus === 'auth' || !canAuthorize);
 
-    if (fieldChangedOnAuth) {
+    if (shouldForceReview) {
       selectedStatus = 'review';
       if (!statusReason) {
         const reasons = [];
-        if (amountChangedOnAuth) reasons.push('Amount modified from ' + originalAmount.toFixed(2) + ' to ' + newAmount.toFixed(2));
-        if (accountChangedOnAuth) reasons.push('Account changed');
+        if (amountChanged) reasons.push('Amount modified from ' + originalAmount.toFixed(2) + ' to ' + newAmount.toFixed(2));
+        if (accountChanged) reasons.push('Account changed');
         statusReason = reasons.join('; ');
       }
       updatedData.auth_status = false;
@@ -5232,7 +5226,7 @@
     }
 
     // Require reason when manually changing to review (not auto-triggered by field change)
-    if (selectedStatus === 'review' && !statusReason && !fieldChangedOnAuth) {
+    if (selectedStatus === 'review' && !statusReason && !shouldForceReview) {
       if (window.Toast) {
         Toast.warning('Reason Required', 'Please provide a reason for marking this expense for review.');
       }
@@ -5242,10 +5236,10 @@
     }
 
     // Backwards compatibility: set auth_status based on selected status
-    if (selectedStatus && !fieldChangedOnAuth) {
+    if (selectedStatus && !shouldForceReview) {
       updatedData.auth_status = (selectedStatus === 'auth');
       updatedData.auth_by = (selectedStatus === 'auth') ? (currentUser.user_id || currentUser.id) : null;
-    } else if (!fieldChangedOnAuth && canAuthorize && els.singleExpenseAuthStatus) {
+    } else if (!shouldForceReview && canAuthorize && els.singleExpenseAuthStatus) {
       // Fallback to old checkbox if status selector not available
       updatedData.auth_status = els.singleExpenseAuthStatus.checked;
       updatedData.auth_by = els.singleExpenseAuthStatus.checked ? (currentUser.user_id || currentUser.id) : null;

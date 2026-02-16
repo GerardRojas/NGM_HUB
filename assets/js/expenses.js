@@ -5406,14 +5406,16 @@
         updatedData.receipt_url = null;
       }
 
-      // For bookkeepers: include status in PATCH body (bypasses status endpoint role check)
-      // For managers: use dedicated status endpoint (has proper role-based logging)
-      if (selectedStatus && !canAuthorize) {
-        const currentStatus = currentEditingExpense.status || (currentEditingExpense.auth_status ? 'auth' : 'pending');
-        if (selectedStatus !== currentStatus) {
-          updatedData.status = selectedStatus;
-          updatedData.status_reason = statusReason;
-        }
+      // Include status in main PATCH body when auto-forced (shouldForceReview) for ALL roles
+      // or when bookkeepers change status manually. This avoids a separate /status API call.
+      // Only managers with MANUAL status changes use the dedicated /status endpoint (role check).
+      const currentStatus = currentEditingExpense.status || (currentEditingExpense.auth_status ? 'auth' : 'pending');
+      const statusActuallyChanged = selectedStatus && selectedStatus !== currentStatus;
+      const needsSeparateStatusCall = statusActuallyChanged && canAuthorize && !shouldForceReview;
+
+      if (statusActuallyChanged && !needsSeparateStatusCall) {
+        updatedData.status = selectedStatus;
+        updatedData.status_reason = statusReason;
       }
 
       // Update the current expense
@@ -5427,34 +5429,32 @@
         body: JSON.stringify(updatedData)
       });
 
-      // Managers: update status separately via dedicated endpoint (role-based logging)
-      if (selectedStatus && canAuthorize) {
-        const currentStatus = currentEditingExpense.status || (currentEditingExpense.auth_status ? 'auth' : 'pending');
-        if (selectedStatus !== currentStatus) {
-          try {
-            await apiJson(`${apiBase}/expenses/${expenseId}/status?user_id=${userId}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                status: selectedStatus,
-                reason: statusReason
-              })
-            });
-          } catch (statusErr) {
-            console.error('[EXPENSES] Error updating status:', statusErr);
-            if (window.Toast) {
-              Toast.warning('Status Update Failed', 'Expense saved but status could not be updated.');
-            }
+      // Managers: update status separately ONLY for manual status changes (role-based logging)
+      if (needsSeparateStatusCall) {
+        try {
+          await apiJson(`${apiBase}/expenses/${expenseId}/status?user_id=${userId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              status: selectedStatus,
+              reason: statusReason
+            })
+          });
+        } catch (statusErr) {
+          console.error('[EXPENSES] Error updating status:', statusErr);
+          if (window.Toast) {
+            Toast.warning('Status Update Failed', 'Expense saved but status could not be updated.');
           }
         }
       }
 
-      // Reload expenses BEFORE closing modal so user doesn't see stale data
-      try {
-        await loadExpensesByProject(selectedProjectId);
-      } catch (reloadErr) {
-        console.error('[EXPENSES] Error reloading expenses after save:', reloadErr);
+      // Optimistic local update instead of full reload (much faster)
+      const idx = expenses.findIndex(e => (e.expense_id || e.id) === expenseId);
+      if (idx >= 0) {
+        Object.assign(expenses[idx], updatedData);
+        if (selectedStatus) expenses[idx].status = selectedStatus;
       }
+      renderExpensesTable();
 
       // Reset button state and close modal AFTER reload completes
       els.btnSaveSingleExpense.disabled = false;

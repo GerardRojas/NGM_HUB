@@ -2982,6 +2982,42 @@
       return; // Stop saving
     }
 
+    // Auto-review: when a non-authorized user (bookkeeper) changes amount/account
+    // on an authorized expense, force status to 'review' for manager re-approval
+    let reviewCount = 0;
+    updates.forEach(update => {
+      const original = originalExpensesMap.get(String(update.id));
+      if (!original) return;
+
+      const origStatus = original.status || (original.auth_status ? 'auth' : 'pending');
+      const origAmount = parseFloat(original.Amount || 0);
+      const newAmount = parseFloat(update.data.Amount || 0);
+      const amountChanged = (newAmount !== origAmount);
+
+      const origAccountId = original.account_id || null;
+      const newAccountId = update.data.account_id || null;
+      const accountChanged = (newAccountId && String(newAccountId) !== String(origAccountId || ''));
+
+      // Trigger review: authorized expenses always, bookkeepers on any status
+      const shouldForceReview = (amountChanged || accountChanged) &&
+        (origStatus === 'auth' || !canAuthorize);
+
+      if (shouldForceReview) {
+        const reasons = [];
+        if (amountChanged) reasons.push('Amount modified from ' + origAmount.toFixed(2) + ' to ' + newAmount.toFixed(2));
+        if (accountChanged) reasons.push('Account changed');
+        update.data.status = 'review';
+        update.data.status_reason = reasons.join('; ');
+        update.data.auth_status = false;
+        update.data.auth_by = null;
+        reviewCount++;
+      }
+    });
+
+    if (reviewCount > 0 && window.Toast) {
+      Toast.info('Status Changed', `${reviewCount} expense(s) set to Review due to field changes.`);
+    }
+
     if (updates.length === 0) {
       if (window.Toast) {
         Toast.info('No Changes', 'No changes to save.');
@@ -3011,7 +3047,9 @@
       };
 
       // Single API call for all updates
-      const response = await apiJson(`${apiBase}/expenses/batch`, {
+      const userId = currentUser?.user_id || currentUser?.id;
+      const batchUrl = userId ? `${apiBase}/expenses/batch?user_id=${userId}` : `${apiBase}/expenses/batch`;
+      const response = await apiJson(batchUrl, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(batchPayload)

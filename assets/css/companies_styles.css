@@ -333,8 +333,8 @@
 
 /* Ensure vertical card layout */
 .page-companies .company-card {
-  display: flex !important;
-  flex-direction: column !important;
+  display: flex;
+  flex-direction: column;
   align-items: stretch;
 }
 

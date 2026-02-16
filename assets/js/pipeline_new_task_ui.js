@@ -149,11 +149,14 @@
   // ================================
   // Initialize People Pickers
   // ================================
-  function initPeoplePickers() {
+  function initPeoplePickers(_retries = 0) {
     // Wait for PeoplePicker to be available
     if (typeof window.createPeoplePicker !== 'function') {
-      console.warn('[NewTask] PeoplePicker not loaded yet, retrying...');
-      setTimeout(initPeoplePickers, 100);
+      if (_retries >= 30) {
+        console.error('[NewTask] PeoplePicker failed to load after 3s, giving up');
+        return;
+      }
+      setTimeout(() => initPeoplePickers(_retries + 1), 100);
       return;
     }
 
@@ -186,11 +189,14 @@
   // ================================
   // Initialize Catalog Pickers
   // ================================
-  function initCatalogPickers() {
+  function initCatalogPickers(_retries = 0) {
     // Wait for CatalogPicker to be available
     if (typeof window.createCatalogPicker !== 'function') {
-      console.warn('[NewTask] CatalogPicker not loaded yet, retrying...');
-      setTimeout(initCatalogPickers, 100);
+      if (_retries >= 30) {
+        console.error('[NewTask] CatalogPicker failed to load after 3s, giving up');
+        return;
+      }
+      setTimeout(() => initCatalogPickers(_retries + 1), 100);
       return;
     }
 

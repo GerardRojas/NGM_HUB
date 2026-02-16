@@ -39,8 +39,17 @@
   let companies = [];          // all companies
   let currentCompany = null;   // null = all projects, string = filter by company
   let expandedNodes = new Set(); // Track which tree nodes are expanded
+  const CACHE_MAX = 20;        // Max entries per cache before eviction
   let treeCache = {};          // Cache tree data per project to avoid re-fetching
   let filesCache = {};         // Cache files data per folder/project to avoid re-fetching
+
+  function _cachePut(cache, key, value) {
+    const keys = Object.keys(cache);
+    if (keys.length >= CACHE_MAX) {
+      delete cache[keys[0]]; // evict oldest entry
+    }
+    cache[key] = value;
+  }
   let andrewBatchId = null;    // current vault batch being processed
   let andrewPollInterval = null; // polling timer for batch status
 
@@ -246,7 +255,7 @@
     try {
       const params = currentProject ? `?project_id=${currentProject}` : "";
       folderTree = await apiFetch(`/vault/tree${params}`);
-      treeCache[cacheKey] = folderTree; // Cache the result
+      _cachePut(treeCache, cacheKey, folderTree); // Cache with eviction
     } catch (e) {
       console.warn("[Vault] Failed to load tree:", e);
       folderTree = [];
@@ -377,7 +386,7 @@
       if (currentProject) params.push(`project_id=${currentProject}`);
       const qs = params.length ? `?${params.join("&")}` : "";
       files = await apiFetch(`/vault/files${qs}`);
-      filesCache[cacheKey] = files; // Cache the result
+      _cachePut(filesCache, cacheKey, files); // Cache with eviction
     } catch (e) {
       console.warn("[Vault] Failed to load files:", e);
       files = [];

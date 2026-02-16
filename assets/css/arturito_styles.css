@@ -779,7 +779,7 @@
     padding: 10px 16px;
     flex-shrink: 0;
     position: relative;
-    z-index: 10;
+    z-index: var(--z-above);
   }
 
   .arturito-messages {
@@ -796,7 +796,7 @@
     padding-bottom: calc(28px + env(safe-area-inset-bottom));
     flex-shrink: 0;
     position: relative;
-    z-index: 100;
+    z-index: var(--z-dropdown);
   }
 
   .arturito-input-container {
@@ -850,7 +850,7 @@
 
   .arturito-input:focus {
     position: relative;
-    z-index: 1000;
+    z-index: var(--z-tooltip);
   }
 }
 

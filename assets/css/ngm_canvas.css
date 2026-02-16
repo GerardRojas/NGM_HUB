@@ -45,7 +45,7 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 1;
+    z-index: var(--z-base);
     overflow: visible;
 }
 
@@ -116,7 +116,7 @@
 
 /* Dragging state */
 .ngm-node-dragging {
-    z-index: 100 !important;
+    z-index: var(--z-dropdown) !important;
     cursor: grabbing !important;
 }
 
@@ -134,7 +134,7 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 50;
+    z-index: var(--z-float);
 }
 
 .ngm-snap-guide {
@@ -162,7 +162,7 @@
     background: rgba(62, 207, 142, 0.08);
     border-radius: 2px;
     pointer-events: none;
-    z-index: 1000;
+    z-index: var(--z-tooltip);
     display: none;
 }
 

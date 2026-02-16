@@ -150,6 +150,9 @@ body.auth-ready:not(.page-loading) .app-layout {
        ========================================== */
     --z-base: 1;
     --z-above: 10;
+    --z-float: 50;
+    --z-backdrop: 60;
+    --z-dialog: 70;
     --z-dropdown: 100;
     --z-sticky: 200;
     --z-overlay: 500;
@@ -157,6 +160,7 @@ body.auth-ready:not(.page-loading) .app-layout {
     --z-modal: 700;
     --z-popover: 800;
     --z-toast: 900;
+    --z-tooltip: 1000;
     --z-widget: 9000;
     --z-top: 9999;
 
@@ -775,7 +779,7 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 50;
+    z-index: var(--z-float);
 }
 
 .modal {
@@ -787,6 +791,193 @@ button {
     max-width: 520px;
     width: 100%;
 }
+
+/* ==========================================
+   SHARED MODAL COMPONENTS
+   ========================================== */
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.modal-header h2,
+.modal-header h3,
+.modal-header .modal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-soft);
+}
+
+.modal-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.modal-close-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Modal footer button pair */
+.modal-footer .btn-secondary,
+.modal-footer .btn-primary {
+    appearance: none;
+    border-radius: var(--radius-sm);
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.modal-footer .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text-primary);
+}
+
+.modal-footer .btn-secondary:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-hover);
+}
+
+.modal-footer .btn-primary {
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    color: #000;
+    font-weight: 600;
+}
+
+.modal-footer .btn-primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+}
+
+.modal-footer .btn-secondary:disabled,
+.modal-footer .btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* ==========================================
+   TOOLBAR BUTTONS
+   ========================================== */
+
+.btn-toolbar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.12s ease, border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.btn-toolbar:hover {
+    transform: translateY(-1px);
+}
+
+.btn-toolbar:active {
+    transform: translateY(0);
+}
+
+.btn-toolbar:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-toolbar-secondary {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text-primary);
+}
+
+.btn-toolbar-secondary:hover:not(:disabled) {
+    border-color: var(--border-hover);
+    box-shadow: var(--shadow-xs);
+}
+
+.btn-toolbar-primary {
+    background: linear-gradient(135deg, var(--accent), #2db77a);
+    border: 1px solid var(--accent);
+    color: #000;
+    font-weight: 600;
+}
+
+.btn-toolbar-primary:hover:not(:disabled) {
+    box-shadow: var(--shadow-accent);
+}
+
+/* ==========================================
+   SCROLLBAR UTILITIES
+   ========================================== */
+
+/* Heavy: modal tables, 10px, bordered thumb */
+.scrollbar-heavy::-webkit-scrollbar { width: 10px; height: 10px; }
+.scrollbar-heavy::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.04); border-radius: 8px; }
+.scrollbar-heavy::-webkit-scrollbar-thumb { background-color: rgba(180, 180, 180, 0.35); border-radius: 8px; border: 2px solid rgba(0, 0, 0, 0.4); }
+.scrollbar-heavy::-webkit-scrollbar-thumb:hover { background-color: rgba(200, 200, 200, 0.5); }
+.scrollbar-heavy { scrollbar-width: thin; scrollbar-color: rgba(180, 180, 180, 0.35) rgba(255, 255, 255, 0.04); }
+
+/* Subtle: modal bodies, 8px, low contrast */
+.scrollbar-subtle::-webkit-scrollbar { width: 8px; }
+.scrollbar-subtle::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); }
+.scrollbar-subtle::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.1); border-radius: var(--radius-xs); }
+.scrollbar-subtle::-webkit-scrollbar-thumb:hover { background-color: rgba(255, 255, 255, 0.15); }
+.scrollbar-subtle { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.1) rgba(255, 255, 255, 0.02); }
+
+/* Panel: side panels, 6px, transparent track */
+.scrollbar-panel::-webkit-scrollbar { width: 6px; }
+.scrollbar-panel::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-panel::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+.scrollbar-panel::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* Dropdown: filter/option lists, 8px */
+.scrollbar-dropdown::-webkit-scrollbar { width: 8px; }
+.scrollbar-dropdown::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.03); border-radius: 4px; }
+.scrollbar-dropdown::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+.scrollbar-dropdown::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
+
+/* Micro: chat widgets, 4px minimal */
+.scrollbar-micro::-webkit-scrollbar { width: 4px; }
+.scrollbar-micro::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 2px; }
+
+/* Chat: arturito, 5px subtle */
+.scrollbar-chat::-webkit-scrollbar { width: 5px; }
+.scrollbar-chat::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-chat::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+.scrollbar-chat::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
 
 /* Títulos de sección reutilizables */
 
@@ -951,7 +1142,7 @@ button {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
+    z-index: var(--z-top);
     gap: 16px;
 }
 
@@ -1157,7 +1348,7 @@ button {
         height: 100dvh;
         width: 280px;
         max-width: 85vw;
-        z-index: 100;
+        z-index: var(--z-dropdown);
         transform: translateX(-100%);
         transition: transform 0.3s ease;
         padding-top: 0;

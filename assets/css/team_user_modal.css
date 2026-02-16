@@ -16,7 +16,7 @@
 
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: var(--z-backdrop);
 
   display: flex;
   align-items: center;
@@ -42,13 +42,8 @@
 
 /* Header */
 #teamUserModal .modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  padding: 16px 20px;
   background: var(--ngm-bg-surface);
-  border-bottom: 1px solid var(--border-soft);
 }
 
 #teamUserModal .modal-title {
@@ -83,52 +78,23 @@
 
 /* Footer */
 #teamUserModal .modal-footer {
-  display: flex;
-  justify-content: flex-end;
   gap: 10px;
-  padding: 16px 20px;
-  border-top: 1px solid var(--border-soft);
   background: var(--ngm-bg-surface);
 }
 
 #teamUserModal .modal-footer .btn-secondary,
 #teamUserModal .modal-footer .btn-primary {
-  appearance: none;
   border-radius: 6px;
   padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-#teamUserModal .modal-footer .btn-secondary {
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  color: var(--text-primary, var(--text-primary));
 }
 
 #teamUserModal .modal-footer .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: var(--border-hover);
-}
-
-#teamUserModal .modal-footer .btn-primary {
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: #000;
-  font-weight: 600;
 }
 
 #teamUserModal .modal-footer .btn-primary:hover {
   background: #34b87d;
   border-color: #34b87d;
-}
-
-#teamUserModal .modal-footer .btn-secondary:disabled,
-#teamUserModal .modal-footer .btn-primary:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
 }
 
 /* Scrollbar */

@@ -7,6 +7,9 @@
 
   let supabaseClient = null;
   let tasksSubscription = null;
+  let _retries = 0;
+  var MAX_RETRIES = 5;
+  var BACKOFF = [5000, 10000, 20000, 40000, 60000];
 
   // ================================
   // INITIALIZATION
@@ -70,8 +73,16 @@
 
         if (status === 'SUBSCRIBED') {
           console.log('[PM_REALTIME] Successfully subscribed to tasks changes');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('[PM_REALTIME] Subscription error');
+          _retries = 0;
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          if (_retries < MAX_RETRIES) {
+            var delay = BACKOFF[_retries] || 60000;
+            console.warn('[PM_REALTIME] Connection lost, retrying in ' + (delay / 1000) + 's...');
+            _retries++;
+            setTimeout(function () { subscribeToTasks(); }, delay);
+          } else {
+            console.error('[PM_REALTIME] Subscription failed after ' + MAX_RETRIES + ' retries');
+          }
         }
       });
   }

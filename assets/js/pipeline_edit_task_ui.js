@@ -270,10 +270,13 @@
   // ================================
   // INITIALIZE PEOPLE PICKERS
   // ================================
-  function initPeoplePickers(task) {
+  function initPeoplePickers(task, _retries = 0) {
     if (typeof window.createPeoplePicker !== 'function') {
-      console.warn('[EditTask] PeoplePicker not loaded yet, retrying...');
-      setTimeout(() => initPeoplePickers(task), 100);
+      if (_retries >= 30) {
+        console.error('[EditTask] PeoplePicker failed to load after 3s, giving up');
+        return;
+      }
+      setTimeout(() => initPeoplePickers(task, _retries + 1), 100);
       return;
     }
 
@@ -338,10 +341,13 @@
   // ================================
   // INITIALIZE CATALOG PICKERS
   // ================================
-  function initCatalogPickers(task) {
+  function initCatalogPickers(task, _retries = 0) {
     if (typeof window.createCatalogPicker !== 'function') {
-      console.warn('[EditTask] CatalogPicker not loaded yet, retrying...');
-      setTimeout(() => initCatalogPickers(task), 100);
+      if (_retries >= 30) {
+        console.error('[EditTask] CatalogPicker failed to load after 3s, giving up');
+        return;
+      }
+      setTimeout(() => initCatalogPickers(task, _retries + 1), 100);
       return;
     }
 

@@ -1325,15 +1325,15 @@
 
 /* Send to Review button */
 .task-review-btn {
-    background: var(--ngm-bg-card) !important;
-    border: 1px solid var(--border-strong) !important;
-    color: #999999 !important;
+    background: var(--ngm-bg-card);
+    border: 1px solid var(--border-strong);
+    color: #999999;
 }
 
 .task-review-btn:hover {
-    border-color: rgba(62, 207, 142, 0.4) !important;
-    background: rgba(62, 207, 142, 0.08) !important;
-    color: var(--accent) !important;
+    border-color: rgba(62, 207, 142, 0.4);
+    background: rgba(62, 207, 142, 0.08);
+    color: var(--accent);
 }
 
 /* ==========================================
@@ -1348,7 +1348,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
+    z-index: var(--z-top);
     animation: fadeIn 0.15s ease;
 }
 
@@ -1811,7 +1811,7 @@
     align-items: flex-start;
     justify-content: center;
     padding-top: 120px;
-    z-index: 10000;
+    z-index: var(--z-top);
     animation: fadeIn 0.15s ease;
 }
 

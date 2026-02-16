@@ -645,7 +645,6 @@
 #layoutModal .modal-header,
 #layoutModal .modal-footer {
   background: var(--ngm-bg-surface) !important;
-  border-color: var(--border-soft);
 }
 
 #layoutModal .modal-title {
@@ -677,12 +676,9 @@
 
 /* ---------- FOOTER ---------- */
 #layoutModal .modal-footer {
-    display: flex;
     justify-content: center;
     gap: 15px;
-
     padding: 14px 18px;
-    border-top: 1px solid var(--border-soft);
     background: var(--ngm-bg-surface) !important;
 }
 
@@ -824,7 +820,7 @@
 #layoutModal.modal-backdrop{
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: var(--z-backdrop);
 
   display: flex;
   align-items: center;
@@ -884,13 +880,10 @@
 /* Base común */
 #layoutModal .modal-footer .btn-secondary,
 #layoutModal .modal-footer .btn-primary {
-  appearance: none;
   border-radius: 14px;
-  padding: 10px 18px;
   font-size: 14px;
   font-weight: 600;
   letter-spacing: 0.3px;
-  cursor: pointer;
   border: 1px solid rgba(255, 255, 255, 0.18);
   transition:
     background 0.15s ease,
@@ -928,13 +921,6 @@
   transform: translateY(1px);
 }
 
-/* Disabled */
-#layoutModal .modal-footer .btn-secondary:disabled,
-#layoutModal .modal-footer .btn-primary:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 /* ===== NGM Accent: Save hover ===== */
 #layoutModal .modal-footer .btn-primary:hover {
   background: rgba(255, 255, 255, 0.12);
@@ -964,7 +950,7 @@
   bottom: 0;
   width: 24px;
   pointer-events: none;
-  z-index: 10;
+  z-index: var(--z-above);
   opacity: 0;
   transition: opacity 0.2s ease;
 }
@@ -1016,7 +1002,7 @@
 .pm-group .table td.pm-cell-editing {
   overflow: visible !important;
   position: relative;
-  z-index: 100;
+  z-index: var(--z-dropdown);
 }
 
 /* El div interior de la celda tambien necesita overflow visible
@@ -1041,7 +1027,7 @@
 .pm-group .table tr.pm-has-editing {
   overflow: visible !important;
   position: relative;
-  z-index: 10;
+  z-index: var(--z-above);
 }
 
 /* Group body overflow for dropdowns */
@@ -1055,7 +1041,7 @@
 .pm-group:has(.pm-cell-editing),
 .pm-group.pm-has-editing {
   overflow: visible !important;
-  z-index: 50;
+  z-index: var(--z-float);
 }
 
 /* Inline text editor must be clickable and editable */
@@ -1385,7 +1371,7 @@
 :is(#layoutModal, #newTaskModal).modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: var(--z-backdrop);
 
   display: flex;
   align-items: center;
@@ -1412,7 +1398,6 @@
 :is(#layoutModal, #newTaskModal) .modal-header,
 :is(#layoutModal, #newTaskModal) .modal-footer {
   background: var(--ngm-bg-surface) !important;
-  border-color: var(--border-soft);
 }
 
 /* Title (shared) */
@@ -1445,41 +1430,21 @@
 
 /* Footer buttons style (shared) - Supabase style */
 :is(#layoutModal, #newTaskModal) .modal-footer {
-  display: flex;
   justify-content: center;
   gap: 15px;
   padding: 14px 18px;
-  border-top: 1px solid var(--border-soft);
   background: var(--ngm-bg-surface) !important;
 }
 
 :is(#layoutModal, #newTaskModal) .modal-footer .btn-secondary,
 :is(#layoutModal, #newTaskModal) .modal-footer .btn-primary {
-  appearance: none;
   border-radius: 6px;
-  padding: 10px 18px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-:is(#layoutModal, #newTaskModal) .modal-footer .btn-secondary {
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  color: var(--text-primary, var(--text-primary));
-}
 :is(#layoutModal, #newTaskModal) .modal-footer .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: var(--border-hover);
 }
 
-:is(#layoutModal, #newTaskModal) .modal-footer .btn-primary {
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: #000;
-  font-weight: 600;
-}
 :is(#layoutModal, #newTaskModal) .modal-footer .btn-primary:hover {
   background: #34b87d;
   border-color: #34b87d;
@@ -2065,7 +2030,7 @@ textarea.pm-inline-editor {
   min-width: 260px;
   left: 0;
   right: auto;
-  z-index: 99999 !important;
+  z-index: var(--z-top) !important;
   position: fixed !important;
 }
 
@@ -2215,7 +2180,7 @@ textarea.pm-inline-editor {
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-  z-index: 1000;
+  z-index: var(--z-tooltip);
   display: none;
   flex-direction: column;
   overflow: hidden;
@@ -2472,7 +2437,7 @@ textarea.pm-inline-editor {
   min-width: 220px;
   left: 0;
   right: auto;
-  z-index: 99999 !important;
+  z-index: var(--z-top) !important;
   position: fixed !important;
 }
 
@@ -2611,7 +2576,7 @@ textarea.pm-inline-editor {
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-  z-index: 1000;
+  z-index: var(--z-tooltip);
   display: none;
   flex-direction: column;
   overflow: hidden;
@@ -2900,11 +2865,8 @@ textarea.pm-inline-editor {
 }
 
 #editTaskModal .modal-footer {
-  display: flex;
   align-items: center;
-  gap: 12px;
   padding: 14px 18px;
-  border-top: 1px solid var(--border-soft);
   background: var(--ngm-bg-surface);
 }
 
@@ -2974,12 +2936,8 @@ textarea.pm-inline-editor {
 }
 
 #automationsModal .modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: 14px 18px;
   background: var(--ngm-bg-surface);
-  border-bottom: 1px solid var(--border-soft);
 }
 
 #automationsModal .modal-title {
@@ -3185,41 +3143,19 @@ textarea.pm-inline-editor {
 }
 
 #automationsModal .modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
   padding: 14px 18px;
-  border-top: 1px solid var(--border-soft);
   background: var(--ngm-bg-surface);
 }
 
 #automationsModal .modal-footer .btn-secondary,
 #automationsModal .modal-footer .btn-primary {
-  appearance: none;
   border-radius: 6px;
-  padding: 10px 18px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-#automationsModal .modal-footer .btn-secondary {
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  color: var(--text-primary, var(--text-primary));
-}
 #automationsModal .modal-footer .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: var(--border-hover);
 }
 
-#automationsModal .modal-footer .btn-primary {
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: #000;
-  font-weight: 600;
-}
 #automationsModal .modal-footer .btn-primary:hover {
   background: #34b87d;
   border-color: #34b87d;
@@ -3298,12 +3234,8 @@ textarea.pm-inline-editor {
 }
 
 #linksModal .modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: 14px 18px;
   background: var(--ngm-bg-surface);
-  border-bottom: 1px solid var(--border-soft);
 }
 
 #linksModal .modal-title {
@@ -3337,41 +3269,19 @@ textarea.pm-inline-editor {
 }
 
 #linksModal .modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
   padding: 14px 18px;
-  border-top: 1px solid var(--border-soft);
   background: var(--ngm-bg-surface);
 }
 
 #linksModal .modal-footer .btn-secondary,
 #linksModal .modal-footer .btn-primary {
-  appearance: none;
   border-radius: 6px;
-  padding: 10px 18px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-#linksModal .modal-footer .btn-secondary {
-  background: transparent;
-  border: 1px solid var(--border-strong);
-  color: var(--text-primary, var(--text-primary));
-}
 #linksModal .modal-footer .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: var(--border-hover);
 }
 
-#linksModal .modal-footer .btn-primary {
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: #000;
-  font-weight: 600;
-}
 #linksModal .modal-footer .btn-primary:hover {
   background: #34b87d;
   border-color: #34b87d;
@@ -3779,7 +3689,7 @@ td[data-col="links"]:hover {
 
 .pm-context-menu {
   position: fixed;
-  z-index: 99999;
+  z-index: var(--z-top);
   min-width: 180px;
   background: var(--ngm-bg-card);
   border: 1px solid var(--border-strong);

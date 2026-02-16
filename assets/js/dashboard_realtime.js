@@ -8,6 +8,10 @@
   let supabaseClient = null;
   let tasksSubscription = null;
   let mentionsSubscription = null;
+  let _taskRetries = 0;
+  let _mentionRetries = 0;
+  var MAX_RETRIES = 5;
+  var BACKOFF = [5000, 10000, 20000, 40000, 60000];
 
   // ================================
   // INITIALIZATION
@@ -74,6 +78,18 @@
       )
       .subscribe((status) => {
         console.log('[DASH_REALTIME] Tasks subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          _taskRetries = 0;
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          if (_taskRetries < MAX_RETRIES) {
+            var delay = BACKOFF[_taskRetries] || 60000;
+            console.warn('[DASH_REALTIME] Tasks connection lost, retrying in ' + (delay / 1000) + 's...');
+            _taskRetries++;
+            setTimeout(function () { subscribeToTasks(); }, delay);
+          } else {
+            console.error('[DASH_REALTIME] Tasks subscription failed after ' + MAX_RETRIES + ' retries');
+          }
+        }
       });
   }
 
@@ -107,6 +123,18 @@
       )
       .subscribe((status) => {
         console.log('[DASH_REALTIME] Mentions subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          _mentionRetries = 0;
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          if (_mentionRetries < MAX_RETRIES) {
+            var delay = BACKOFF[_mentionRetries] || 60000;
+            console.warn('[DASH_REALTIME] Mentions connection lost, retrying in ' + (delay / 1000) + 's...');
+            _mentionRetries++;
+            setTimeout(function () { subscribeToMentions(); }, delay);
+          } else {
+            console.error('[DASH_REALTIME] Mentions subscription failed after ' + MAX_RETRIES + ' retries');
+          }
+        }
       });
   }
 

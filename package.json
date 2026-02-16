@@ -1,0 +1,29 @@
+{
+  "name": "ngm-hub-web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "firebase-messaging-sw.js",
+  "scripts": {
+    "build:css": "postcss assets/css/*.css --replace --no-map",
+    "build": "npm run build:css",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GerardRojas/NGM_HUB.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/GerardRojas/NGM_HUB/issues"
+  },
+  "homepage": "https://github.com/GerardRojas/NGM_HUB#readme",
+  "devDependencies": {
+    "autoprefixer": "^10.4.24",
+    "cssnano": "^7.1.2",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1"
+  }
+}

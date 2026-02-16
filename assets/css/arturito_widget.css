@@ -75,7 +75,7 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  z-index: 9999;
+  z-index: var(--z-top);
   width: 380px;
   height: 520px;
   min-height: 520px;
@@ -672,7 +672,7 @@
     position: sticky;
     bottom: 0;
     background: #1a1a1f;
-    z-index: 10;
+    z-index: var(--z-above);
   }
 
   /* When keyboard is open, less bottom padding needed */

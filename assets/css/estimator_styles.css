@@ -435,7 +435,7 @@
 
 .context-menu {
     position: fixed;
-    z-index: 9999;
+    z-index: var(--z-top);
     min-width: 180px;
     background: var(--ngm-bg-card);
     border: 1px solid var(--border-strong);
@@ -771,9 +771,6 @@
 
 /* Header del modal de info: título + botón "Manage info" */
 .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     gap: 16px;
     margin-bottom: 12px;
 }
@@ -913,8 +910,6 @@
 /* Footer del modal pegado abajo y a lo ancho */
 .modal-footer {
     grid-column: 1 / -1;
-    display: flex;
-    justify-content: flex-end;
     gap: 8px;
     margin-top: 12px;
 }
@@ -923,41 +918,15 @@
 .modal-footer .btn-primary,
 .modal-footer .btn-secondary {
     padding: 8px 16px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-
     display: inline-flex;
     align-items: center;
     gap: 6px;
-
     border-width: 1px;
-    cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-/* Primario: CTA verde */
-.modal-footer .btn-primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #000;
-    font-weight: 600;
-}
-
-.modal-footer .btn-primary:hover {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
 }
 
 /* Secundario: oscuro coherente con el hub */
 .modal-footer .btn-secondary {
-    background: transparent;
-    border-color: var(--border-strong);
     color: #e5e7eb;
-}
-
-.modal-footer .btn-secondary:hover {
-    background: var(--bg-hover);
-    border-color: var(--border-hover);
 }
 
 /* Checkboxes del modal con acento NGM en lugar de azul del navegador */

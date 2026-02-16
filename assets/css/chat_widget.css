@@ -72,7 +72,7 @@
   position: fixed;
   bottom: 24px;
   right: 24px;
-  z-index: 9999;
+  z-index: var(--z-top);
   width: 420px;
   height: 520px;
   max-height: calc(100vh - 48px);

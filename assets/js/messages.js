@@ -4019,32 +4019,37 @@
   /**
    * Play notification sound
    */
+  let _notifAudioCtx = null;
+
   function playNotificationSound(type = "message") {
     try {
-      // Create audio context for notification sounds
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
+      if (!_notifAudioCtx || _notifAudioCtx.state === "closed") {
+        _notifAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      // Resume if suspended (browser autoplay policy)
+      if (_notifAudioCtx.state === "suspended") {
+        _notifAudioCtx.resume();
+      }
+
+      const oscillator = _notifAudioCtx.createOscillator();
+      const gainNode = _notifAudioCtx.createGain();
 
       oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      gainNode.connect(_notifAudioCtx.destination);
 
       if (type === "mention") {
-        // Higher pitch for mentions
         oscillator.frequency.value = 880;
         gainNode.gain.value = 0.1;
       } else {
-        // Normal pitch for messages
         oscillator.frequency.value = 660;
         gainNode.gain.value = 0.08;
       }
 
       oscillator.type = "sine";
       oscillator.start();
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
-      oscillator.stop(audioContext.currentTime + 0.2);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, _notifAudioCtx.currentTime + 0.2);
+      oscillator.stop(_notifAudioCtx.currentTime + 0.2);
     } catch (err) {
-      // Silently fail if audio context not available
       console.log("[Messages] Audio notification not available");
     }
   }

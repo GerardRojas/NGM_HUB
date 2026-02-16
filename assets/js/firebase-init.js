@@ -288,7 +288,7 @@
 
     // Firebase v9+ doesn't have onTokenRefresh, we handle it differently
     // Token refresh is automatic, we just need to save new tokens periodically
-    setInterval(async () => {
+    var _tokenRefreshInterval = setInterval(async () => {
       if (messaging && Notification.permission === "granted") {
         try {
           const swRegistration = await navigator.serviceWorker.getRegistration();

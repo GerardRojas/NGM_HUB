@@ -23,9 +23,9 @@
 
 /* Modal Card - Supabase style */
 #reconcileModal .modal-reconcile {
-  background: #111111;
-  border: 1px solid #1f1f1f;
-  border-radius: 8px;
+  background: var(--ngm-bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
 }
 
@@ -35,15 +35,15 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  background: #111111;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 #reconcileModal .modal-title {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: #ededed;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -54,10 +54,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-hover);
   border: 1px solid rgba(148, 163, 184, 0.15);
-  border-radius: 6px;
-  color: #6b7280;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
   font-size: 18px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -82,15 +82,15 @@
   justify-content: flex-end;
   gap: 12px;
   padding: 16px 20px;
-  background: #111111;
-  border-top: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border-top: 1px solid var(--border-soft);
 }
 
 /* Footer Buttons */
 #reconcileModal .btn-modal-secondary,
 #reconcileModal .btn-modal-primary {
   appearance: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 10px 18px;
   font-size: 13px;
   font-weight: 500;
@@ -100,25 +100,25 @@
 
 #reconcileModal .btn-modal-secondary {
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: #ededed;
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
 }
 
 #reconcileModal .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
 }
 
 #reconcileModal .btn-modal-primary {
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   font-weight: 600;
 }
 
 #reconcileModal .btn-modal-primary:hover {
-  background: #34b87d;
-  border-color: #34b87d;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 #reconcileModal .btn-modal-primary:disabled,
@@ -143,8 +143,8 @@
   gap: 12px;
   padding: 16px;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid #1f1f1f;
-  border-radius: 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
   margin-bottom: 20px;
 }
 
@@ -176,7 +176,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-hover);
   border-bottom: 1px solid rgba(148, 163, 184, 0.18);
 }
 
@@ -189,10 +189,10 @@
 
 .reconcile-count {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   background: rgba(255, 255, 255, 0.05);
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
 }
 
 /* Table wrapper with scroll */
@@ -211,8 +211,8 @@
 .reconcile-table thead {
   position: sticky;
   top: 0;
-  background: #1f1f1f;
-  z-index: 1;
+  background: var(--border-soft);
+  z-index: var(--z-base);
 }
 
 .reconcile-table th {
@@ -246,12 +246,12 @@
 /* Row selection states */
 .reconcile-table tbody tr.reconcile-row-selected {
   background: rgba(255, 255, 255, 0.06);
-  border-left: 3px solid #888888;
+  border-left: 3px solid var(--text-secondary);
 }
 
 .reconcile-table tbody tr.reconcile-row-linked {
   background: rgba(62, 207, 142, 0.12);
-  border-left: 3px solid #3ecf8e;
+  border-left: 3px solid var(--accent);
 }
 
 .reconcile-table tbody tr.reconcile-row-linked:hover {
@@ -263,7 +263,7 @@
   display: inline-flex;
   align-items: center;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
@@ -272,13 +272,13 @@
 
 .reconcile-status-badge--pending {
   background: rgba(251, 146, 60, 0.15);
-  color: #fb923c;
+  color: var(--color-orange);
   border: 1px solid rgba(251, 146, 60, 0.3);
 }
 
 .reconcile-status-badge--linked {
   background: rgba(62, 207, 142, 0.15);
-  color: #3ecf8e;
+  color: var(--accent);
   border: 1px solid rgba(62, 207, 142, 0.3);
 }
 
@@ -290,7 +290,7 @@
   padding: 16px;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(148, 163, 184, 0.15);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .reconcile-summary-stat {
@@ -299,7 +299,7 @@
   gap: 4px;
   padding: 12px;
   background: rgba(255, 255, 255, 0.03);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
@@ -318,7 +318,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .reconcile-summary-value {
@@ -328,11 +328,11 @@
 }
 
 .reconcile-summary-stat--success .reconcile-summary-value {
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 .reconcile-summary-stat--pending .reconcile-summary-value {
-  color: #fb923c;
+  color: var(--color-orange);
 }
 
 /* Scrollbar styling */
@@ -341,13 +341,13 @@
 }
 
 .reconcile-table-wrapper::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-md);
 }
 
 .reconcile-table-wrapper::-webkit-scrollbar-thumb {
   background-color: rgba(180, 180, 180, 0.35);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 2px solid rgba(0, 0, 0, 0.4);
 }
 
@@ -379,8 +379,8 @@
 
 .active-reconcile-panel {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid #2a2a2a;
-  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
   padding: 20px;
   margin-bottom: 20px;
   animation: panelSlideIn 0.3s ease-out;
@@ -419,7 +419,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #888888;
+  color: var(--text-secondary);
 }
 
 .active-reconcile-description {
@@ -434,10 +434,10 @@
 
 .btn-cancel-reconcile-mode {
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: #9ca3af;
+  border: 1px solid var(--border-strong);
+  color: var(--text-tertiary);
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -445,9 +445,9 @@
 }
 
 .btn-cancel-reconcile-mode:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
-  color: #ededed;
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
 }
 
 /* Amount boxes */
@@ -461,7 +461,7 @@
 .reconcile-amount-box {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
@@ -473,7 +473,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 .reconcile-amount-box .amount-value {
@@ -498,7 +498,7 @@
 }
 
 .reconcile-amount-remaining .amount-value {
-  color: #fb923c;
+  color: var(--color-orange);
 }
 
 .reconcile-amount-remaining.fully-matched {
@@ -527,7 +527,7 @@
 .selected-label {
   font-size: 12px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   margin-bottom: 8px;
   display: block;
 }
@@ -539,12 +539,12 @@
   min-height: 36px;
   padding: 10px;
   background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px dashed rgba(148, 163, 184, 0.25);
 }
 
 .selected-expenses-list .no-selection {
-  color: #6b7280;
+  color: var(--text-tertiary);
   font-size: 13px;
   font-style: italic;
 }
@@ -555,7 +555,7 @@
   gap: 8px;
   background: rgba(62, 207, 142, 0.15);
   border: 1px solid rgba(62, 207, 142, 0.35);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 6px 10px;
   font-size: 12px;
   color: #e5e7eb;
@@ -569,7 +569,7 @@
 .selected-expense-chip .chip-remove {
   background: none;
   border: none;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   cursor: pointer;
   padding: 0;
   font-size: 14px;
@@ -588,11 +588,11 @@
 }
 
 .btn-confirm-match {
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   padding: 10px 18px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -600,28 +600,28 @@
 }
 
 .btn-confirm-match:hover:not(:disabled) {
-  background: #34b87d;
-  border-color: #34b87d;
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 .btn-confirm-match:disabled {
-  background: #2a2a2a;
-  border-color: #2a2a2a;
-  color: #6b7280;
+  background: var(--border-strong);
+  border-color: var(--border-strong);
+  color: var(--text-tertiary);
   cursor: not-allowed;
 }
 
 /* QBO Row in reconcile mode */
 .reconcile-table tbody tr.qbo-reconciling {
   background: rgba(255, 255, 255, 0.06);
-  border-left: 3px solid #888888;
+  border-left: 3px solid var(--text-secondary);
 }
 
 /* Reconcile button in QBO table */
 .btn-start-reconcile {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid #2a2a2a;
-  color: #ededed;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
   padding: 5px 10px;
   border-radius: 5px;
   font-size: 11px;
@@ -631,13 +631,13 @@
 }
 
 .btn-start-reconcile:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: #3a3a3a;
+  background: var(--bg-active);
+  border-color: var(--border-hover);
 }
 
 .btn-start-reconcile:disabled {
   background: rgba(255, 255, 255, 0.02);
-  border-color: #1f1f1f;
+  border-color: var(--border-soft);
   color: #4b5563;
   cursor: not-allowed;
 }
@@ -665,12 +665,12 @@
 }
 
 .reconcile-table tbody tr.manual-selectable:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-hover);
 }
 
 .reconcile-table tbody tr.manual-selected {
   background: rgba(62, 207, 142, 0.15);
-  border-left: 3px solid #3ecf8e;
+  border-left: 3px solid var(--accent);
 }
 
 .reconcile-table tbody tr.manual-selected:hover {
@@ -682,7 +682,7 @@
   width: 16px;
   height: 16px;
   cursor: pointer;
-  accent-color: #3ecf8e;
+  accent-color: var(--accent);
 }
 
 .reconcile-table input[type="checkbox"]:disabled {
@@ -697,7 +697,7 @@
 }
 
 .reconcile-table tbody tr.manual-already-matched td {
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 /* Responsive for active panel */

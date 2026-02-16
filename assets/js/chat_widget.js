@@ -1092,6 +1092,18 @@
     init();
   }
 
+  // ── Page lifecycle cleanup ──
+  window.addEventListener("beforeunload", function () {
+    if (state.unreadSubscription) {
+      try { state.unreadSubscription.unsubscribe(); } catch (_) {}
+      state.unreadSubscription = null;
+    }
+    if (state.messageSubscription) {
+      try { state.messageSubscription.unsubscribe(); } catch (_) {}
+      state.messageSubscription = null;
+    }
+  });
+
   // Expose API
   window.ChatWidget = {
     open: openPanel,

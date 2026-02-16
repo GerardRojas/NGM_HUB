@@ -52,8 +52,8 @@
 */
 .pm-toolbar-card {
     border-radius: var(--radius-md);
-    background: #111111;
-    border: 1px solid #1f1f1f;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
     box-shadow: none;
     padding: 12px 16px 50px;
 }
@@ -151,8 +151,8 @@
 
 /* Dropdown options styling */
 .pipeline-section .ngm-select option {
-    background: #111111;
-    color: #ededed;
+    background: var(--ngm-bg-surface);
+    color: var(--text-primary);
     padding: 10px 14px;
     font-weight: 400;
 }
@@ -163,7 +163,7 @@
 
 .pipeline-section .ngm-select option:checked {
     background: rgba(62, 207, 142, 0.15);
-    color: #3ecf8e;
+    color: var(--accent);
     font-weight: 500;
 }
 
@@ -194,8 +194,8 @@
 }
 
 .pipeline-section .filter-select:hover {
-    background: #1a1a1a;
-    border-color: #2a2a2a;
+    background: var(--ngm-bg-card);
+    border-color: var(--border-strong);
 }
 
 .pipeline-section .filter-select:focus-visible {
@@ -271,8 +271,8 @@
     margin: 22px 0 32px 0;
 
     border-radius: var(--radius-md);
-    background: #111111;
-    border: 1px solid #1f1f1f;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
     box-shadow: none;
 
     padding: 14px 16px 16px;
@@ -286,9 +286,9 @@
     border-left: 3px solid var(--pm-group-accent);
 
     /* Tabla interna - colores Supabase */
-    --pm-table-bg: #161616;
-    --pm-table-head-bg: #111111;
-    --pm-table-border: #1f1f1f;
+    --pm-table-bg: var(--ngm-bg-surface-soft);
+    --pm-table-head-bg: var(--ngm-bg-surface);
+    --pm-table-border: var(--border-soft);
     --pm-table-row-hover: rgba(255, 255, 255, 0.03);
     --pm-table-col-border: rgba(255, 255, 255, 0.06);
 }
@@ -411,7 +411,7 @@
 /* En manage mode, contorno dashed sutil dentro de la celda */
 .pm-row-manage td > div {
     border-radius: 6px;
-    border: 1px dashed #3a3a3a;
+    border: 1px dashed var(--border-hover);
     background: rgba(99, 99, 99, 0.75);
     padding: 2px 4px;
 }
@@ -426,12 +426,12 @@
 /* Anchos de columnas se controlan desde JS (pipeline_layout.js) */
 
 .pm-group--working-on-it {
-    --pm-group-accent: #3b82f6;
+    --pm-group-accent: var(--color-info);
     --pm-group-glow-strength: 0.3;
 }
 
 .pm-group--done {
-    --pm-group-accent: #22c55e;
+    --pm-group-accent: var(--color-success);
     --pm-group-glow-strength: 0.3;
 }
 
@@ -441,12 +441,12 @@
 }
 
 .pm-group--awaiting-approval {
-    --pm-group-accent: #fb923c;
+    --pm-group-accent: var(--color-orange);
     --pm-group-glow-strength: 0.3;
 }
 
 .pm-group--resubmittal-needed {
-    --pm-group-accent: #eab308;
+    --pm-group-accent: var(--color-yellow);
     --pm-group-glow-strength: 0.3;
 }
 
@@ -582,8 +582,8 @@
 }
 
 .pm-btn:hover {
-    background: #1a1a1a;
-    border-color: #2a2a2a;
+    background: var(--ngm-bg-card);
+    border-color: var(--border-strong);
     box-shadow: none;
 }
 
@@ -620,12 +620,12 @@
 .pm-btn-ghost {
     background: transparent;
     border-color: transparent;
-    color: #888888;
+    color: var(--text-secondary);
 }
 
 .pm-btn-ghost:hover {
-    background: #161616;
-    border-color: #1f1f1f;
+    background: var(--ngm-bg-surface-soft);
+    border-color: var(--border-soft);
 }
 
 /* Títulos de cards en toolbar */
@@ -644,8 +644,8 @@
 /* Header / footer: Supabase style */
 #layoutModal .modal-header,
 #layoutModal .modal-footer {
-  background: #111111 !important;
-  border-color: #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border-color: var(--border-soft);
 }
 
 #layoutModal .modal-title {
@@ -682,8 +682,8 @@
     gap: 15px;
 
     padding: 14px 18px;
-    border-top: 1px solid #1f1f1f;
-    background: #111111 !important;
+    border-top: 1px solid var(--border-soft);
+    background: var(--ngm-bg-surface) !important;
 }
 
 /* Backdrop negro (tipo Estimator) */
@@ -698,18 +698,18 @@
 
 /* Card interior - Supabase style */
 #layoutModal .modal {
-  background: #111111 !important;
-  border: 1px solid #1f1f1f;
-  border-radius: 8px;
+  background: var(--ngm-bg-surface) !important;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
 }
 
 /* Secciones */
 #layoutModal .pm-modal-section {
   padding: 12px 12px;
-  border-radius: 8px;
-  background: #111111;
-  border: 1px solid #1f1f1f;
+  border-radius: var(--radius-md);
+  background: var(--ngm-bg-surface);
+  border: 1px solid var(--border-soft);
 }
 
 #layoutModal .pm-modal-section-title {
@@ -741,10 +741,10 @@
   padding: 10px 12px;
   border-radius: 6px;
 
-  background: #161616;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface-soft);
+  border: 1px solid var(--border-soft);
 
-  color: #ededed;
+  color: var(--text-primary);
   font-size: 12px;
   cursor: pointer;
   user-select: none;
@@ -753,7 +753,7 @@
 }
 
 #layoutModal .pm-checkbox:hover {
-  background: #1a1a1a;
+  background: var(--ngm-bg-card);
   border-color: rgba(62, 207, 142, 0.4);
 }
 
@@ -784,10 +784,10 @@
   padding: 10px 12px;
   border-radius: 6px;
 
-  background: #161616;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface-soft);
+  border: 1px solid var(--border-soft);
 
-  color: #ededed;
+  color: var(--text-primary);
   font-size: 12px;
   cursor: pointer;
   user-select: none;
@@ -796,14 +796,14 @@
 }
 
 #layoutModal .pm-radio-pill:hover {
-  background: #1a1a1a;
+  background: var(--ngm-bg-card);
   border-color: rgba(62, 207, 142, 0.4);
 }
 
 /* FORCE: modal card background (pipeline) */
 #layoutModal.modal-backdrop > .modal {
-  background: #111111 !important;
-  border-radius: 8px;
+  background: var(--ngm-bg-surface) !important;
+  border-radius: var(--radius-md);
 }
 
 /* Botones del footer: mantener estilo NGM (no azules) */
@@ -1189,7 +1189,7 @@
   font-size: 9px;
   font-weight: 600;
   margin-left: -8px;
-  background: #2a2a2a;
+  background: var(--border-strong);
   border: 2px solid #111;
   color: rgba(255, 255, 255, 0.7);
   display: flex;
@@ -1304,8 +1304,8 @@
 /* Badge dropdown */
 .pm-badge-dropdown {
   display: none;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--ngm-bg-card);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 6px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
@@ -1355,7 +1355,7 @@
 
 .pm-badge-option.is-selected .pm-badge-check::before {
   content: "\2713";
-  color: #3ecf8e;
+  color: var(--accent);
   font-size: 14px;
   font-weight: 700;
 }
@@ -1402,17 +1402,17 @@
   display: flex;
   flex-direction: column;
 
-  background: #111111 !important;
-  border: 1px solid #1f1f1f;
-  border-radius: 8px;
+  background: var(--ngm-bg-surface) !important;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
 }
 
 /* Header / Footer (shared) - Supabase style */
 :is(#layoutModal, #newTaskModal) .modal-header,
 :is(#layoutModal, #newTaskModal) .modal-footer {
-  background: #111111 !important;
-  border-color: #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border-color: var(--border-soft);
 }
 
 /* Title (shared) */
@@ -1449,8 +1449,8 @@
   justify-content: center;
   gap: 15px;
   padding: 14px 18px;
-  border-top: 1px solid #1f1f1f;
-  background: #111111 !important;
+  border-top: 1px solid var(--border-soft);
+  background: var(--ngm-bg-surface) !important;
 }
 
 :is(#layoutModal, #newTaskModal) .modal-footer .btn-secondary,
@@ -1466,17 +1466,17 @@
 
 :is(#layoutModal, #newTaskModal) .modal-footer .btn-secondary {
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: var(--text-primary, #ededed);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary, var(--text-primary));
 }
 :is(#layoutModal, #newTaskModal) .modal-footer .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  border-color: var(--border-hover);
 }
 
 :is(#layoutModal, #newTaskModal) .modal-footer .btn-primary {
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   font-weight: 600;
 }
@@ -1550,7 +1550,7 @@
   border-radius: 4px;
 
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-strong);
   color: rgba(255, 255, 255, 0.92);
 
   outline: none;
@@ -1600,9 +1600,9 @@
 
 /* Card interna reusable - Supabase style */
 :is(#layoutModal, #newTaskModal) .pm-modal-section {
-  background: #111111;
-  border: 1px solid #1f1f1f;
-  border-radius: 8px;
+  background: var(--ngm-bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
   padding: 18px 18px;
 }
 
@@ -1713,8 +1713,8 @@ textarea.pm-inline-editor {
 
 .pm-datepicker {
   width: 260px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--ngm-bg-card);
+  border: 1px solid var(--border-strong);
   border-radius: 10px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
   padding: 12px;
@@ -1752,7 +1752,7 @@ textarea.pm-inline-editor {
 }
 .pm-datepicker-nav:hover {
   background: rgba(255, 255, 255, 0.08);
-  border-color: #2a2a2a;
+  border-color: var(--border-strong);
   color: rgba(255, 255, 255, 0.9);
 }
 
@@ -1809,12 +1809,12 @@ textarea.pm-inline-editor {
 
 .pm-datepicker-day--today {
   border: 1px solid rgba(62, 207, 142, 0.5);
-  color: #3ecf8e;
+  color: var(--accent);
   font-weight: 600;
 }
 
 .pm-datepicker-day--selected {
-  background: #3ecf8e !important;
+  background: var(--accent) !important;
   color: #000 !important;
   font-weight: 600;
 }
@@ -1843,7 +1843,7 @@ textarea.pm-inline-editor {
 
 .pm-datepicker-btn--today {
   background: rgba(62, 207, 142, 0.12);
-  color: #3ecf8e;
+  color: var(--accent);
 }
 .pm-datepicker-btn--today:hover {
   background: rgba(62, 207, 142, 0.22);
@@ -1855,7 +1855,7 @@ textarea.pm-inline-editor {
 }
 .pm-datepicker-btn--clear:hover {
   background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 /* Trigger text inside the cell while picker is open */
@@ -1899,8 +1899,8 @@ textarea.pm-inline-editor {
 }
 
 .pm-inline-editor--select option {
-  background: #111111;
-  color: #ededed;
+  background: var(--ngm-bg-surface);
+  color: var(--text-primary);
   padding: 10px 12px;
   font-weight: 500;
 }
@@ -2089,8 +2089,8 @@ textarea.pm-inline-editor {
   gap: 8px;
   min-height: 40px;
   padding: 8px 12px;
-  background: #161616;
-  border: 1px solid #2a2a2a;
+  background: var(--ngm-bg-surface-soft);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -2098,8 +2098,8 @@ textarea.pm-inline-editor {
 }
 
 .pm-people-trigger:hover {
-  border-color: #3a3a3a;
-  background: #1a1a1a;
+  border-color: var(--border-hover);
+  background: var(--ngm-bg-card);
 }
 
 .pm-people-trigger:focus-within,
@@ -2157,7 +2157,7 @@ textarea.pm-inline-editor {
 
 .pm-people-chip-remove:hover {
   background: rgba(239, 68, 68, 0.3);
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 /* Avatar in chip (ring style like Team Manager) */
@@ -2190,7 +2190,7 @@ textarea.pm-inline-editor {
 
 .pm-people-stack .pm-people-avatar {
   margin-left: -8px;
-  box-shadow: 0 0 0 2px #161616;
+  box-shadow: 0 0 0 2px var(--ngm-bg-surface-soft);
 }
 
 .pm-people-stack .pm-people-avatar:first-child {
@@ -2211,8 +2211,8 @@ textarea.pm-inline-editor {
   right: 0;
   min-width: 280px;
   max-height: 320px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--ngm-bg-card);
+  border: 1px solid var(--border-strong);
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   z-index: 1000;
@@ -2228,7 +2228,7 @@ textarea.pm-inline-editor {
 /* Search input in dropdown */
 .pm-people-search-wrap {
   padding: 10px 12px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border-strong);
 }
 
 .pm-people-search {
@@ -2236,8 +2236,8 @@ textarea.pm-inline-editor {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #161616;
-  border: 1px solid #2a2a2a;
+  background: var(--ngm-bg-surface-soft);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
 }
 
@@ -2342,7 +2342,7 @@ textarea.pm-inline-editor {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #3ecf8e;
+  color: var(--accent);
   opacity: 0;
   transition: opacity 0.15s ease;
 }
@@ -2357,8 +2357,8 @@ textarea.pm-inline-editor {
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  border-top: 1px solid #2a2a2a;
-  background: #161616;
+  border-top: 1px solid var(--border-strong);
+  background: var(--ngm-bg-surface-soft);
 }
 
 .pm-people-footer-hint {
@@ -2374,7 +2374,7 @@ textarea.pm-inline-editor {
   font-size: 12px;
   font-weight: 500;
   background: rgba(62, 207, 142, 0.15);
-  color: #3ecf8e;
+  color: var(--accent);
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -2495,16 +2495,16 @@ textarea.pm-inline-editor {
   gap: 8px;
   min-height: 40px;
   padding: 8px 12px;
-  background: #161616;
-  border: 1px solid #2a2a2a;
+  background: var(--ngm-bg-surface-soft);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .pm-catalog-trigger:hover {
-  border-color: #3a3a3a;
-  background: #1a1a1a;
+  border-color: var(--border-hover);
+  background: var(--ngm-bg-card);
 }
 
 .pm-catalog-trigger:focus-within,
@@ -2581,7 +2581,7 @@ textarea.pm-inline-editor {
 
 .pm-catalog-chip-remove:hover {
   background: rgba(239, 68, 68, 0.3);
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 /* Icon in chip (ring style) */
@@ -2607,8 +2607,8 @@ textarea.pm-inline-editor {
   right: 0;
   min-width: 240px;
   max-height: 280px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--ngm-bg-card);
+  border: 1px solid var(--border-strong);
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   z-index: 1000;
@@ -2624,7 +2624,7 @@ textarea.pm-inline-editor {
 /* Search input in dropdown */
 .pm-catalog-search-wrap {
   padding: 10px 12px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border-strong);
 }
 
 .pm-catalog-search {
@@ -2632,8 +2632,8 @@ textarea.pm-inline-editor {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background: #161616;
-  border: 1px solid #2a2a2a;
+  background: var(--ngm-bg-surface-soft);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
 }
 
@@ -2722,7 +2722,7 @@ textarea.pm-inline-editor {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #3ecf8e;
+  color: var(--accent);
   opacity: 0;
   transition: opacity 0.15s ease;
 }
@@ -2789,8 +2789,8 @@ textarea.pm-inline-editor {
 /* Form sections */
 .pm-form-section {
   padding: 16px;
-  background: #161616;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface-soft);
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
 }
 
@@ -2832,7 +2832,7 @@ textarea.pm-inline-editor {
 }
 
 .pm-form-label .required {
-  color: #ef4444;
+  color: var(--color-danger);
   margin-left: 2px;
 }
 
@@ -2840,8 +2840,8 @@ textarea.pm-inline-editor {
 .pm-form-select,
 .pm-form-textarea {
   padding: 10px 12px;
-  background: #111111;
-  border: 1px solid #2a2a2a;
+  background: var(--ngm-bg-surface);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   color: rgba(255, 255, 255, 0.9);
   font-size: 13px;
@@ -2876,7 +2876,7 @@ textarea.pm-inline-editor {
 }
 
 .pm-form-select option {
-  background: #1a1a1a;
+  background: var(--ngm-bg-card);
   color: rgba(255, 255, 255, 0.9);
 }
 
@@ -2904,8 +2904,8 @@ textarea.pm-inline-editor {
   align-items: center;
   gap: 12px;
   padding: 14px 18px;
-  border-top: 1px solid #1f1f1f;
-  background: #111111;
+  border-top: 1px solid var(--border-soft);
+  background: var(--ngm-bg-surface);
 }
 
 .modal-footer-spacer {
@@ -2918,7 +2918,7 @@ textarea.pm-inline-editor {
   font-size: 13px;
   font-weight: 500;
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--color-danger);
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: 6px;
   cursor: pointer;
@@ -2978,8 +2978,8 @@ textarea.pm-inline-editor {
   justify-content: space-between;
   align-items: center;
   padding: 14px 18px;
-  background: #111111;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 #automationsModal .modal-title {
@@ -2988,14 +2988,14 @@ textarea.pm-inline-editor {
   gap: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--ngm-text-main, #ededed);
+  color: var(--ngm-text-main, var(--text-primary));
 }
 
 #automationsModal .modal-title-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #f59e0b;
+  color: var(--color-warning);
 }
 
 #automationsModal .modal-btn {
@@ -3010,7 +3010,7 @@ textarea.pm-inline-editor {
 }
 
 #automationsModal .modal-btn:hover {
-  color: var(--ngm-text-main, #ededed);
+  color: var(--ngm-text-main, var(--text-primary));
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -3035,7 +3035,7 @@ textarea.pm-inline-editor {
   padding: 10px 14px;
   margin-bottom: 16px;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid #1f1f1f;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
 }
 
@@ -3065,15 +3065,15 @@ textarea.pm-inline-editor {
   align-items: center;
   gap: 14px;
   padding: 16px;
-  background: #161616;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface-soft);
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   transition: all 0.15s ease;
 }
 
 .pm-automation-item:hover {
-  border-color: #2a2a2a;
-  background: #1a1a1a;
+  border-color: var(--border-strong);
+  background: var(--ngm-bg-card);
 }
 
 .pm-automation-icon {
@@ -3129,7 +3129,7 @@ textarea.pm-inline-editor {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #2a2a2a;
+  background-color: var(--border-strong);
   border-radius: 24px;
   transition: all 0.2s ease;
 }
@@ -3152,7 +3152,7 @@ textarea.pm-inline-editor {
 
 .pm-automation-checkbox:checked + .pm-toggle-slider::before {
   transform: translateX(20px);
-  background-color: #3ecf8e;
+  background-color: var(--accent);
 }
 
 .pm-automation-checkbox:focus + .pm-toggle-slider {
@@ -3189,8 +3189,8 @@ textarea.pm-inline-editor {
   justify-content: flex-end;
   gap: 12px;
   padding: 14px 18px;
-  border-top: 1px solid #1f1f1f;
-  background: #111111;
+  border-top: 1px solid var(--border-soft);
+  background: var(--ngm-bg-surface);
 }
 
 #automationsModal .modal-footer .btn-secondary,
@@ -3206,17 +3206,17 @@ textarea.pm-inline-editor {
 
 #automationsModal .modal-footer .btn-secondary {
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: var(--text-primary, #ededed);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary, var(--text-primary));
 }
 #automationsModal .modal-footer .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  border-color: var(--border-hover);
 }
 
 #automationsModal .modal-footer .btn-primary {
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   font-weight: 600;
 }
@@ -3265,7 +3265,7 @@ textarea.pm-inline-editor {
 
 .pm-automation-badge--soon {
   background: rgba(251, 146, 60, 0.15);
-  color: #fb923c;
+  color: var(--color-orange);
   margin-left: 8px;
   margin-top: 0;
 }
@@ -3302,8 +3302,8 @@ textarea.pm-inline-editor {
   justify-content: space-between;
   align-items: center;
   padding: 14px 18px;
-  background: #111111;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 #linksModal .modal-title {
@@ -3312,7 +3312,7 @@ textarea.pm-inline-editor {
   gap: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--ngm-text-main, #ededed);
+  color: var(--ngm-text-main, var(--text-primary));
 }
 
 #linksModal .modal-btn {
@@ -3326,7 +3326,7 @@ textarea.pm-inline-editor {
   transition: color 0.15s ease, background 0.15s ease;
 }
 #linksModal .modal-btn:hover {
-  color: var(--ngm-text-main, #ededed);
+  color: var(--ngm-text-main, var(--text-primary));
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -3341,8 +3341,8 @@ textarea.pm-inline-editor {
   justify-content: flex-end;
   gap: 12px;
   padding: 14px 18px;
-  border-top: 1px solid #1f1f1f;
-  background: #111111;
+  border-top: 1px solid var(--border-soft);
+  background: var(--ngm-bg-surface);
 }
 
 #linksModal .modal-footer .btn-secondary,
@@ -3358,17 +3358,17 @@ textarea.pm-inline-editor {
 
 #linksModal .modal-footer .btn-secondary {
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: var(--text-primary, #ededed);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary, var(--text-primary));
 }
 #linksModal .modal-footer .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  border-color: var(--border-hover);
 }
 
 #linksModal .modal-footer .btn-primary {
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   font-weight: 600;
 }
@@ -3416,8 +3416,8 @@ textarea.pm-inline-editor {
 .pm-links-input {
   flex: 1;
   padding: 10px 12px;
-  background: #161616;
-  border: 1px solid #2a2a2a;
+  background: var(--ngm-bg-surface-soft);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   color: rgba(255, 255, 255, 0.9);
   font-size: 13px;
@@ -3441,8 +3441,8 @@ textarea.pm-inline-editor {
   justify-content: center;
   width: 36px;
   height: 36px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--ngm-bg-card);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
@@ -3458,8 +3458,8 @@ textarea.pm-inline-editor {
 
 .pm-links-btn-clear:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.15);
-  border-color: #ef4444;
-  color: #ef4444;
+  border-color: var(--color-danger);
+  color: var(--color-danger);
 }
 
 .pm-links-btn-open:disabled,
@@ -3479,7 +3479,7 @@ textarea.pm-inline-editor {
   margin-top: 8px;
   padding: 16px;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px dashed #2a2a2a;
+  border: 1px dashed var(--border-strong);
   border-radius: 8px;
 }
 
@@ -3499,7 +3499,7 @@ textarea.pm-inline-editor {
 .pm-links-upload-badge {
   padding: 2px 8px;
   background: rgba(251, 146, 60, 0.15);
-  color: #fb923c;
+  color: var(--color-orange);
   border-radius: 10px;
   font-size: 10px;
   font-weight: 600;
@@ -3535,7 +3535,7 @@ td[data-col="links"]:hover {
   padding: 2px 8px;
   background: rgba(62, 207, 142, 0.1);
   border-radius: 4px;
-  color: #3ecf8e;
+  color: var(--accent);
   font-size: 11px;
   font-weight: 500;
   text-decoration: none;
@@ -3584,7 +3584,7 @@ td[data-col="links"]:hover {
   top: 0;
   bottom: 0;
   width: 3px;
-  background: linear-gradient(180deg, #6366f1, #8b5cf6);
+  background: linear-gradient(180deg, #6366f1, var(--color-purple));
   border-radius: 0 2px 2px 0;
 }
 
@@ -3642,7 +3642,7 @@ td[data-col="links"]:hover {
   background: rgba(62, 207, 142, 0.1);
   border: 1px solid rgba(62, 207, 142, 0.3);
   border-radius: 4px;
-  color: #3ecf8e;
+  color: var(--accent);
   cursor: pointer;
   transition: all 0.15s ease;
   flex-shrink: 0;
@@ -3669,7 +3669,7 @@ td[data-col="links"]:hover {
   padding: 0 4px;
   background: rgba(62, 207, 142, 0.2);
   border-radius: 8px;
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 /* Subtask row - indented with connection line */
@@ -3753,11 +3753,11 @@ td[data-col="links"]:hover {
    ========================================== */
 
 .pm-row--automated[data-automation-type="pending_expenses_auth"] {
-  --auto-color: #f59e0b;
+  --auto-color: var(--color-warning);
 }
 
 .pm-row--automated[data-automation-type="pending_expenses_categorize"] {
-  --auto-color: #3b82f6;
+  --auto-color: var(--color-info);
 }
 
 .pm-row--automated[data-automation-type="pending_health_check"] {
@@ -3781,8 +3781,8 @@ td[data-col="links"]:hover {
   position: fixed;
   z-index: 99999;
   min-width: 180px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--ngm-bg-card);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 4px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.5);
@@ -3814,7 +3814,7 @@ td[data-col="links"]:hover {
 
 .pm-context-menu-item--danger:hover {
   background: rgba(239,68,68,0.12);
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .pm-context-menu-item svg {

@@ -165,11 +165,12 @@
   // Periodic token validation (check every 60 seconds)
   // This catches token expiration during active use
   if (isAuthenticated && !isPublicPage()) {
-    setInterval(function() {
+    var _tokenCheckInterval = setInterval(function() {
       const token = localStorage.getItem('ngmToken');
       const user = localStorage.getItem('ngmUser');
 
       if (!token || !user || !isTokenValid(token)) {
+        clearInterval(_tokenCheckInterval);
         console.log('[Auth Guard] Session expired during use, redirecting to login...');
         clearAuthData();
 

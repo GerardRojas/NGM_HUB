@@ -29,7 +29,7 @@
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary, #e5e7eb);
-  border-bottom: 1px solid var(--border-soft, #27272f);
+  border-bottom: 1px solid var(--border-soft, var(--border-medium));
 }
 
 /* ==========================================
@@ -71,7 +71,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--ngm-text-muted, #6b7280);
+  color: var(--ngm-text-muted, var(--text-tertiary));
 }
 
 /* ==========================================
@@ -84,9 +84,9 @@
 .toolbar-select {
   min-width: 280px;
   padding: 11px 36px 11px 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 1px solid rgba(148, 163, 184, 0.28);
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: var(--bg-hover) !important;
   color: rgba(255, 255, 255, 0.92);
   font-size: 13px;
   font-weight: 500;
@@ -130,7 +130,7 @@
 .ngm-select:hover,
 .toolbar-select:hover {
   border-color: rgba(148, 163, 184, 0.45);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-hover-strong);
 }
 
 /* Source Toggle */
@@ -138,7 +138,7 @@
   display: inline-flex;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 3px;
   gap: 2px;
 }
@@ -150,9 +150,9 @@
   color: rgba(255, 255, 255, 0.6);
   font-size: 12px;
   font-weight: 500;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: var(--transition-base);
   white-space: nowrap;
 }
 
@@ -162,23 +162,23 @@
 }
 
 .source-toggle-btn.active {
-  background: rgba(62, 207, 142, 0.15);
-  color: #3ecf8e;
+  background: var(--accent-soft);
+  color: var(--accent);
   font-weight: 600;
 }
 
 .ngm-select:focus,
 .toolbar-select:focus {
   border-color: rgba(62, 207, 142, 0.6);
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.15);
+  background: var(--bg-hover-strong);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 /* Dropdown options styling */
 .ngm-select option,
 .toolbar-select option {
-  background: #111111;
-  color: #ededed;
+  background: var(--ngm-bg-surface);
+  color: var(--text-primary);
   padding: 10px 14px;
   font-weight: 400;
 }
@@ -190,8 +190,8 @@
 
 .ngm-select option:checked,
 .toolbar-select option:checked {
-  background: rgba(62, 207, 142, 0.15);
-  color: #3ecf8e;
+  background: var(--accent-soft);
+  color: var(--accent);
   font-weight: 500;
 }
 
@@ -199,9 +199,9 @@
 .expenses-toolbar .ngm-select {
   min-width: 280px;
   padding: 10px 36px 10px 12px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid #2a2a2a;
+  border-radius: var(--radius-sm);
+  background: var(--bg-hover);
+  border: 1px solid var(--border-strong);
   color: rgba(255, 255, 255, 0.92);
   font-size: 13px;
   font-weight: 500;
@@ -224,18 +224,18 @@
 }
 
 .expenses-toolbar .ngm-select:hover {
-  border-color: #3a3a3a;
-  background-color: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-hover);
+  background-color: var(--bg-hover-strong);
 }
 
 .expenses-toolbar .ngm-select:focus {
-  border-color: #3ecf8e;
-  background-color: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.15);
+  border-color: var(--accent);
+  background-color: var(--bg-hover-strong);
+  box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .expenses-toolbar .ngm-select option {
-  background: #1a1a1a;
+  background: var(--ngm-bg-card);
   color: rgba(255, 255, 255, 0.92);
   padding: 10px;
 }
@@ -268,9 +268,9 @@
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  border: 1px solid var(--border-soft, #27272f);
+  border: 1px solid var(--border-soft, var(--border-medium));
   background: transparent;
-  color: var(--text-secondary, #9ca3af);
+  color: var(--text-secondary, var(--text-tertiary));
   transition: all 0.15s ease;
 }
 
@@ -283,11 +283,11 @@
 .btn-sort.active {
   background: rgba(34, 197, 94, 0.12);
   border-color: rgba(34, 197, 94, 0.4);
-  color: #22c55e;
+  color: var(--color-success);
 }
 
 .btn-toolbar-secondary {
-  border: 1px solid var(--border-soft, #27272f);
+  border: 1px solid var(--border-soft, var(--border-medium));
   background: var(--ngm-bg-card, #18181b);
   color: var(--text-primary, #e5e7eb);
 }
@@ -295,12 +295,12 @@
 .btn-toolbar-secondary:hover:not(:disabled) {
   transform: translateY(-1px);
   border-color: rgba(148, 163, 184, 0.5);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-toolbar-primary {
   border: none;
-  background: linear-gradient(135deg, #22c55e, #15803d);
+  background: linear-gradient(135deg, var(--color-success), #15803d);
   color: #0f2a1e;
   font-weight: 600;
 }
@@ -341,8 +341,8 @@
 .expenses-table-container {
   position: relative;
   background: var(--ngm-bg-card, #18181b);
-  border: 1px solid var(--border-soft, #27272f);
-  border-radius: 12px;
+  border: 1px solid var(--border-soft, var(--border-medium));
+  border-radius: var(--radius-lg);
   overflow-x: auto; /* Scroll only if viewport is too small */
   overflow-y: auto; /* Vertical scroll for long tables */
   max-height: calc(100vh - 280px); /* Limit height, leave room for toolbar/footer */
@@ -381,7 +381,7 @@
 
 .expenses-empty-text {
   font-size: 14px;
-  color: var(--text-secondary, #9ca3af);
+  color: var(--text-secondary, var(--text-tertiary));
 }
 
 /* Loading state */
@@ -419,12 +419,12 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: rgba(255, 255, 255, 0.45);
-  border-bottom: 1px solid var(--border-soft, #27272f);
+  border-bottom: 1px solid var(--border-soft, var(--border-medium));
   white-space: nowrap;
 }
 
 .skeleton-table tbody tr {
-  border-bottom: 1px solid var(--border-soft, #27272f);
+  border-bottom: 1px solid var(--border-soft, var(--border-medium));
 }
 
 .skeleton-table tbody tr:last-child {
@@ -446,7 +446,7 @@
   );
   background-size: 200% 100%;
   animation: skeletonShimmer 1.5s ease-in-out infinite;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 /* Different widths for variety */
@@ -484,7 +484,7 @@
   );
   background-size: 200% 100%;
   animation: skeletonShimmer 1.5s ease-in-out infinite;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
 }
 
 @keyframes skeletonShimmer {
@@ -514,13 +514,13 @@
 }
 
 .expenses-table-container::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-md);
 }
 
 .expenses-table-container::-webkit-scrollbar-thumb {
   background-color: rgba(180, 180, 180, 0.35);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: 2px solid rgba(0, 0, 0, 0.4);
 }
 
@@ -548,7 +548,7 @@
   background: rgba(255, 255, 255, 0.03);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: var(--z-above);
 }
 
 .expenses-table th {
@@ -557,11 +557,11 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #666666;
+  color: var(--text-muted);
   text-align: left;
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--border-soft);
   white-space: nowrap;
-  background: #111111;
+  background: var(--ngm-bg-surface);
 }
 
 /* Column widths - fixed sizes except description which grows to fill space */
@@ -591,7 +591,7 @@
   width: 5px;
   cursor: col-resize;
   background: transparent;
-  z-index: 1;
+  z-index: var(--z-base);
 }
 
 .col-resize-handle:hover,
@@ -613,8 +613,8 @@
 .expenses-table td {
   padding: 10px 14px;
   font-size: 13px;
-  color: #ededed;
-  border-bottom: 1px solid #1f1f1f;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-soft);
   vertical-align: middle;
   white-space: nowrap;
   overflow: hidden;
@@ -680,7 +680,7 @@
   cursor: pointer;
   width: 16px;
   height: 16px;
-  accent-color: #3ecf8e;
+  accent-color: var(--accent);
 }
 
 /* Authorization badge */
@@ -713,7 +713,7 @@
 
 .auth-badge-authorized {
   background: rgba(62, 207, 142, 0.12);
-  color: #3ecf8e;
+  color: var(--accent);
   border: 1px solid rgba(62, 207, 142, 0.3);
 }
 
@@ -724,7 +724,7 @@
 
 .auth-badge-review {
   background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
+  color: var(--color-danger);
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
@@ -911,7 +911,7 @@ select.edit-input::-webkit-calendar-picker-indicator {
 
 /* Option styling */
 select.edit-input option {
-  background: #1f1f1f;
+  background: var(--border-soft);
   color: #ffffff;
   padding: 8px 12px;
 }
@@ -986,7 +986,7 @@ select.edit-input option {
   margin-top: 16px;
   padding: 16px;
   background: var(--ngm-bg-card, #18181b);
-  border: 1px solid var(--border-soft, #27272f);
+  border: 1px solid var(--border-soft, var(--border-medium));
   border-radius: 12px;
 }
 
@@ -1020,9 +1020,9 @@ select.edit-input option {
 }
 
 .btn-edit-cancel {
-  border: 1px solid var(--border-soft, #27272f);
+  border: 1px solid var(--border-soft, var(--border-medium));
   background: transparent;
-  color: var(--text-secondary, #9ca3af);
+  color: var(--text-secondary, var(--text-tertiary));
 }
 
 .btn-edit-cancel:hover {
@@ -1033,7 +1033,7 @@ select.edit-input option {
 
 .btn-edit-save {
   border: none;
-  background: linear-gradient(135deg, #22c55e, #15803d);
+  background: linear-gradient(135deg, var(--color-success), #15803d);
   color: #0f2a1e;
 }
 
@@ -1045,7 +1045,7 @@ select.edit-input option {
 .btn-edit-delete {
   border: 1px solid rgba(239, 68, 68, 0.3);
   background: rgba(239, 68, 68, 0.08);
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .btn-edit-delete:hover:not(:disabled) {
@@ -1067,7 +1067,7 @@ select.edit-input option {
   transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   border: 1px solid rgba(34, 197, 94, 0.3);
   background: rgba(34, 197, 94, 0.08);
-  color: #22c55e;
+  color: var(--color-success);
 }
 
 .btn-edit-authorize:hover:not(:disabled) {
@@ -1157,7 +1157,7 @@ select.edit-input option {
   position: fixed;
   z-index: 1000;
   width: 260px;
-  background: #1f1f1f;
+  background: var(--border-soft);
   border: 1px solid rgba(148, 163, 184, 0.3);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -1269,7 +1269,7 @@ select.edit-input option {
 }
 
 .filter-apply-btn {
-  background: linear-gradient(135deg, #22c55e, #15803d);
+  background: linear-gradient(135deg, var(--color-success), #15803d);
   border: none;
   color: #0f2a1e;
   font-weight: 600;
@@ -1285,9 +1285,9 @@ select.edit-input option {
 
 /* Active state for Bill View button */
 .btn-toolbar-active {
-  background: linear-gradient(135deg, #22c55e, #15803d) !important;
+  background: linear-gradient(135deg, var(--color-success), #15803d) !important;
   color: #0f2a1e !important;
-  border-color: #22c55e !important;
+  border-color: var(--color-success) !important;
 }
 
 .btn-toolbar-active:hover {
@@ -1852,7 +1852,7 @@ select.edit-input option {
   justify-content: space-between;
   gap: 12px;
   padding: 18px 32px;
-  background: #111111;
+  background: var(--ngm-bg-surface);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -1885,7 +1885,7 @@ select.edit-input option {
   justify-content: flex-end;
   gap: 14px;
   padding: 20px 32px;
-  background: #111111;
+  background: var(--ngm-bg-surface);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -1902,18 +1902,18 @@ select.edit-input option {
 
 #billEditModal .btn-modal-secondary {
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: var(--text-primary, #ededed);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary, var(--text-primary));
 }
 
 #billEditModal .btn-modal-secondary:hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  border-color: var(--border-hover);
 }
 
 #billEditModal .btn-modal-primary {
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   font-weight: 600;
 }
@@ -2232,7 +2232,7 @@ select.edit-input option {
 
 .expenses-table .total-row {
   background: rgba(255, 255, 255, 0.03);
-  border-top: 2px solid var(--border-soft, #27272f);
+  border-top: 2px solid var(--border-soft, var(--border-medium));
   font-weight: 600;
 }
 
@@ -2292,19 +2292,19 @@ select.edit-input option {
 
 .status-badge-inactive {
   background: rgba(107, 114, 128, 0.15);
-  color: #9ca3af;
+  color: var(--text-tertiary);
   border: 1px solid rgba(107, 114, 128, 0.3);
 }
 
 .status-badge-warning {
   background: rgba(251, 146, 60, 0.15);
-  color: #fb923c;
+  color: var(--color-orange);
   border: 1px solid rgba(251, 146, 60, 0.3);
 }
 
 .status-badge-error {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
+  color: var(--color-danger);
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
@@ -2346,7 +2346,7 @@ select.edit-input option {
 .permissions-table input[type="checkbox"] {
   width: 16px;
   height: 16px;
-  accent-color: #3ecf8e;
+  accent-color: var(--accent);
   cursor: pointer;
 }
 
@@ -2370,7 +2370,7 @@ select.edit-input option {
 .permissions-table .module-name {
   text-align: left;
   font-weight: 500;
-  color: #ededed;
+  color: var(--text-primary);
   min-width: 160px;
 }
 
@@ -2444,8 +2444,8 @@ select.edit-input option {
   max-height: calc(100vh - 2 * clamp(12px, 3vh, 28px));
   display: flex;
   flex-direction: column;
-  background: #111111;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border: 1px solid var(--border-soft);
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
   border-radius: 8px;
   overflow: hidden;
@@ -2457,8 +2457,8 @@ select.edit-input option {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #111111;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .modal-container .modal-title {
@@ -2494,8 +2494,8 @@ select.edit-input option {
   justify-content: flex-end;
   gap: 12px;
   padding: 14px 18px;
-  background: #111111;
-  border-top: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border-top: 1px solid var(--border-soft);
 }
 
 /* Generic modal buttons */
@@ -2511,18 +2511,18 @@ select.edit-input option {
 
 .btn-modal-secondary {
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: var(--text-primary, #ededed);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary, var(--text-primary));
 }
 
 .btn-modal-secondary:hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  border-color: var(--border-hover);
 }
 
 .btn-modal-primary {
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   font-weight: 600;
 }
@@ -2556,7 +2556,7 @@ select.edit-input option {
   padding: 10px 12px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-strong);
   color: rgba(255, 255, 255, 0.92);
   font-size: 14px;
   outline: none;
@@ -2568,7 +2568,7 @@ select.edit-input option {
 }
 
 .modal-container .form-input:focus {
-  border-color: #3ecf8e;
+  border-color: var(--accent);
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -2579,7 +2579,7 @@ select.edit-input option {
   padding: 10px 36px 10px 12px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-strong);
   color: rgba(255, 255, 255, 0.92);
   font-size: 14px;
   outline: none;
@@ -2601,12 +2601,12 @@ select.edit-input option {
 }
 
 .modal-container .ngm-select:focus {
-  border-color: #3ecf8e;
+  border-color: var(--accent);
   background-color: rgba(255, 255, 255, 0.06);
 }
 
 .modal-container .ngm-select option {
-  background: #1a1a1a;
+  background: var(--ngm-bg-card);
   color: rgba(255, 255, 255, 0.92);
   padding: 10px;
 }
@@ -2628,7 +2628,7 @@ select.edit-input option {
 /* EXACT duplicate - Red (highest confidence) */
 .expense-row-duplicate-exact {
   background: rgba(239, 68, 68, 0.15) !important;
-  border-left: 3px solid #ef4444 !important;
+  border-left: 3px solid var(--color-danger) !important;
 }
 
 .expense-row-duplicate-exact:hover {
@@ -2638,7 +2638,7 @@ select.edit-input option {
 /* STRONG duplicate - Orange (high confidence) */
 .expense-row-duplicate-strong {
   background: rgba(251, 146, 60, 0.15) !important;
-  border-left: 3px solid #fb923c !important;
+  border-left: 3px solid var(--color-orange) !important;
 }
 
 .expense-row-duplicate-strong:hover {
@@ -2664,13 +2664,13 @@ select.edit-input option {
 
 .bill-warning-badge.bill-warning-strong {
   background: rgba(251, 146, 60, 0.15);
-  color: #fb923c;
+  color: var(--color-orange);
   border-color: rgba(251, 146, 60, 0.4);
 }
 
 .bill-warning-badge.bill-warning-likely {
   background: rgba(250, 204, 21, 0.15);
-  color: #eab308;
+  color: var(--color-yellow);
   border-color: rgba(250, 204, 21, 0.4);
 }
 
@@ -2727,12 +2727,12 @@ select.edit-input option {
 .budget-alerts-title {
   font-size: 14px;
   font-weight: 600;
-  color: #fb923c;
+  color: var(--color-orange);
 }
 
 .budget-alerts-count {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 .btn-review-alerts {
@@ -2740,7 +2740,7 @@ select.edit-input option {
   background: rgba(251, 146, 60, 0.2);
   border: 1px solid rgba(251, 146, 60, 0.4);
   border-radius: 6px;
-  color: #fb923c;
+  color: var(--color-orange);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -2749,7 +2749,7 @@ select.edit-input option {
 
 .btn-review-alerts:hover {
   background: rgba(251, 146, 60, 0.3);
-  border-color: #fb923c;
+  border-color: var(--color-orange);
 }
 
 /* ==========================================
@@ -2771,23 +2771,23 @@ select.edit-input option {
 .budget-alerts-loading {
   text-align: center;
   padding: 40px;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 /* Alert Card */
 .budget-alert-card {
-  background: #1e1e24;
-  border: 1px solid #27272f;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-medium);
   border-radius: 8px;
   overflow: hidden;
 }
 
 .budget-alert-card.alert-overspend {
-  border-left: 4px solid #ef4444;
+  border-left: 4px solid var(--color-danger);
 }
 
 .budget-alert-card.alert-no_budget {
-  border-left: 4px solid #3b82f6;
+  border-left: 4px solid var(--color-info);
 }
 
 .budget-alert-card-header {
@@ -2796,7 +2796,7 @@ select.edit-input option {
   justify-content: space-between;
   padding: 12px 16px;
   background: #252530;
-  border-bottom: 1px solid #27272f;
+  border-bottom: 1px solid var(--border-medium);
 }
 
 .budget-alert-card-type {
@@ -2815,17 +2815,17 @@ select.edit-input option {
 
 .budget-alert-badge.badge-overspend {
   background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .budget-alert-badge.badge-no_budget {
   background: rgba(59, 130, 246, 0.2);
-  color: #3b82f6;
+  color: var(--color-info);
 }
 
 .budget-alert-date {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .budget-alert-card-body {
@@ -2841,7 +2841,7 @@ select.edit-input option {
 
 .budget-alert-message {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   margin-bottom: 12px;
   line-height: 1.5;
 }
@@ -2860,7 +2860,7 @@ select.edit-input option {
 
 .budget-alert-amount-label {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   text-transform: uppercase;
 }
 
@@ -2871,7 +2871,7 @@ select.edit-input option {
 }
 
 .budget-alert-amount-value.amount-over {
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .budget-alert-card-actions {
@@ -2881,7 +2881,7 @@ select.edit-input option {
 
 .btn-acknowledge-alert {
   padding: 8px 16px;
-  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+  background: linear-gradient(135deg, #4ade80 0%, var(--color-success) 100%);
   border: none;
   border-radius: 6px;
   color: #000;
@@ -2905,8 +2905,8 @@ select.edit-input option {
 }
 
 .ack-alert-details {
-  background: #1e1e24;
-  border: 1px solid #27272f;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-medium);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 20px;
@@ -2920,13 +2920,13 @@ select.edit-input option {
   font-weight: 600;
   text-transform: uppercase;
   background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
+  color: var(--color-danger);
   margin-bottom: 12px;
 }
 
 .ack-alert-type.type-no_budget {
   background: rgba(59, 130, 246, 0.2);
-  color: #3b82f6;
+  color: var(--color-info);
 }
 
 .ack-alert-title {
@@ -2938,7 +2938,7 @@ select.edit-input option {
 
 .ack-alert-message {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   margin-bottom: 16px;
   line-height: 1.5;
 }
@@ -2959,7 +2959,7 @@ select.edit-input option {
 .ack-amount-label {
   display: block;
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   text-transform: uppercase;
   margin-bottom: 4px;
 }
@@ -2971,21 +2971,21 @@ select.edit-input option {
 }
 
 .ack-amount-actual .ack-amount-value {
-  color: #fb923c;
+  color: var(--color-orange);
 }
 
 .ack-amount-over .ack-amount-value {
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .form-field .required {
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .form-field .form-hint {
   display: block;
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   margin-top: 4px;
 }
 
@@ -2993,7 +2993,7 @@ select.edit-input option {
 .budget-alerts-empty {
   text-align: center;
   padding: 40px 20px;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .budget-alerts-empty-icon {
@@ -3062,12 +3062,12 @@ select.edit-input option {
 }
 
 .expense-context-menu-item svg {
-  color: #9ca3af;
+  color: var(--text-tertiary);
   flex-shrink: 0;
 }
 
 .expense-context-menu-item:hover svg {
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 /* Divider for context menu */
@@ -3080,7 +3080,7 @@ select.edit-input option {
 /* Highlight cell when context menu is open */
 .exp-input.context-active,
 .exp-select.context-active {
-  outline: 2px solid #3ecf8e;
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
@@ -3094,8 +3094,8 @@ select.edit-input option {
   right: 20px;
   width: 420px;
   max-height: calc(100vh - 100px);
-  background: #111111;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
   z-index: 9999;
@@ -3121,14 +3121,14 @@ select.edit-input option {
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  border-bottom: 1px solid #1f1f1f;
-  background: #111111;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--ngm-bg-surface);
 }
 
 .duplicate-panel-title {
   font-size: 14px;
   font-weight: 600;
-  color: #ededed;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -3137,7 +3137,7 @@ select.edit-input option {
   height: 32px;
   border: none;
   background: transparent;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 28px;
   line-height: 1;
   cursor: pointer;
@@ -3165,7 +3165,7 @@ select.edit-input option {
 .duplicate-panel-counter {
   text-align: center;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   font-weight: 500;
   padding: 8px;
   background: rgba(255, 255, 255, 0.02);
@@ -3182,8 +3182,8 @@ select.edit-input option {
   flex-direction: column;
   gap: 10px;
   padding: 16px;
-  background: #0d0d0d;
-  border: 1px solid #1f1f1f;
+  background: var(--bg-main);
+  border: 1px solid var(--border-soft);
   border-radius: 6px;
 }
 
@@ -3195,9 +3195,9 @@ select.edit-input option {
   text-align: center;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background: #1f1f1f;
-  color: #9ca3af;
-  border: 1px solid #2a2a2a;
+  background: var(--border-soft);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-strong);
 }
 
 .duplicate-details {
@@ -3208,7 +3208,7 @@ select.edit-input option {
 
 .duplicate-cluster-size {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .duplicate-panel-expenses {
@@ -3218,15 +3218,15 @@ select.edit-input option {
 }
 
 .duplicate-expense-card {
-  background: #0d0d0d;
-  border: 1px solid #1f1f1f;
+  background: var(--bg-main);
+  border: 1px solid var(--border-soft);
   border-radius: 6px;
   padding: 14px;
   transition: all 0.15s ease;
 }
 
 .duplicate-expense-card:hover {
-  border-color: #2a2a2a;
+  border-color: var(--border-strong);
   background: rgba(255, 255, 255, 0.02);
 }
 
@@ -3240,7 +3240,7 @@ select.edit-input option {
 .duplicate-expense-number {
   font-size: 11px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-tertiary);
   background: rgba(255, 255, 255, 0.05);
   padding: 2px 8px;
   border-radius: 4px;
@@ -3248,7 +3248,7 @@ select.edit-input option {
 
 .duplicate-expense-date {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 .duplicate-expense-body {
@@ -3260,12 +3260,12 @@ select.edit-input option {
 .duplicate-expense-amount {
   font-size: 18px;
   font-weight: 700;
-  color: #3b82f6;
+  color: var(--color-info);
 }
 
 .duplicate-expense-bill {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-family: 'Roboto Mono', monospace;
 }
 
@@ -3279,7 +3279,7 @@ select.edit-input option {
 .duplicate-expense-actions {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #27272f;
+  border-top: 1px solid var(--border-medium);
   display: flex;
   justify-content: flex-end;
 }
@@ -3289,7 +3289,7 @@ select.edit-input option {
   font-size: 12px;
   background: transparent;
   border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #ef4444;
+  color: var(--color-danger);
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
@@ -3298,7 +3298,7 @@ select.edit-input option {
 
 .btn-delete-expense-mini:hover {
   background: rgba(239, 68, 68, 0.1);
-  border-color: #ef4444;
+  border-color: var(--color-danger);
 }
 
 .duplicate-panel-actions {
@@ -3306,16 +3306,16 @@ select.edit-input option {
   align-items: center;
   gap: 12px;
   padding: 14px 18px;
-  border-top: 1px solid #1f1f1f;
-  background: #111111;
+  border-top: 1px solid var(--border-soft);
+  background: var(--ngm-bg-surface);
 }
 
 .btn-duplicate-nav {
   flex: 1;
   padding: 10px 16px;
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: #ededed;
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
   border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
@@ -3325,7 +3325,7 @@ select.edit-input option {
 
 .btn-duplicate-nav:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  border-color: var(--border-hover);
 }
 
 .btn-duplicate-nav:disabled {
@@ -3336,8 +3336,8 @@ select.edit-input option {
 .btn-duplicate-dismiss {
   flex: 1.5;
   padding: 10px 16px;
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   border-radius: 6px;
   font-size: 13px;
@@ -3354,7 +3354,7 @@ select.edit-input option {
 /* Enhanced highlight for current cluster */
 .expense-row-duplicate-current {
   background: rgba(255, 255, 255, 0.03) !important;
-  border-left: 3px solid #6b7280 !important;
+  border-left: 3px solid var(--text-tertiary) !important;
 }
 
 /* Health Check - Currently selected expense highlight */
@@ -3420,8 +3420,8 @@ select.edit-input option {
   display: flex;
   gap: 0;
   padding: 0;
-  background: #111111;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .health-check-tab {
@@ -3434,7 +3434,7 @@ select.edit-input option {
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: #6b7280;
+  color: var(--text-tertiary);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -3442,13 +3442,13 @@ select.edit-input option {
 }
 
 .health-check-tab:hover {
-  color: #9ca3af;
+  color: var(--text-tertiary);
   background: rgba(255, 255, 255, 0.02);
 }
 
 .health-check-tab.active {
-  color: #ededed;
-  border-bottom-color: #9ca3af;
+  color: var(--text-primary);
+  border-bottom-color: var(--text-tertiary);
   background: transparent;
 }
 
@@ -3459,16 +3459,16 @@ select.edit-input option {
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
-  background: #1f1f1f;
+  background: var(--border-soft);
   border-radius: 10px;
   font-size: 11px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .health-check-tab.active .tab-badge {
-  background: #2a2a2a;
-  color: #ededed;
+  background: var(--border-strong);
+  color: var(--text-primary);
 }
 
 .health-check-tabs.hidden {
@@ -3507,10 +3507,10 @@ select.edit-input option {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #1f1f1f;
-  border: 1px solid #2a2a2a;
+  background: var(--border-soft);
+  border: 1px solid var(--border-strong);
   border-radius: 50%;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   margin-bottom: 16px;
 }
 
@@ -3522,13 +3522,13 @@ select.edit-input option {
 .health-check-success .success-title {
   font-size: 16px;
   font-weight: 600;
-  color: #ededed;
+  color: var(--text-primary);
   margin-bottom: 6px;
 }
 
 .health-check-success .success-message {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   line-height: 1.5;
 }
 
@@ -3538,8 +3538,8 @@ select.edit-input option {
 }
 
 .missing-expense-card {
-  background: #0d0d0d;
-  border: 1px solid #1f1f1f;
+  background: var(--bg-main);
+  border: 1px solid var(--border-soft);
   border-radius: 6px;
   padding: 16px;
   transition: all 0.15s ease;
@@ -3554,13 +3554,13 @@ select.edit-input option {
 
 .missing-expense-date {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 .missing-expense-amount {
   font-size: 18px;
   font-weight: 700;
-  color: #3b82f6;
+  color: var(--color-info);
 }
 
 .missing-expense-body {
@@ -3576,7 +3576,7 @@ select.edit-input option {
 
 .missing-expense-desc {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   line-height: 1.4;
 }
 
@@ -3587,14 +3587,14 @@ select.edit-input option {
   gap: 8px;
   padding: 12px;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid #1f1f1f;
+  border: 1px solid var(--border-soft);
   border-radius: 6px;
 }
 
 .missing-issues-label {
   font-size: 12px;
   font-weight: 600;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .missing-item {
@@ -3602,11 +3602,11 @@ select.edit-input option {
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  background: #1f1f1f;
-  border: 1px solid #2a2a2a;
+  background: var(--border-soft);
+  border: 1px solid var(--border-strong);
   border-radius: 4px;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-weight: 500;
 }
 
@@ -3622,21 +3622,21 @@ select.edit-input option {
 .missing-empty-icon {
   width: 32px;
   height: 32px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   margin-bottom: 12px;
 }
 
 .missing-empty-text {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 /* Go to expense button */
 .btn-missing-goto {
   flex: 1.5;
   padding: 10px 16px;
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   border-radius: 6px;
   font-size: 13px;
@@ -3671,8 +3671,8 @@ select.edit-input option {
    ========================================== */
 
 .qbo-mapping-modal {
-  background: #111111;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border: 1px solid var(--border-soft);
   border-radius: 12px;
   width: 90%;
   max-width: 700px;
@@ -3684,7 +3684,7 @@ select.edit-input option {
 
 .qbo-mapping-header {
   padding: 20px 24px;
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--border-soft);
   position: relative;
 }
 
@@ -3698,7 +3698,7 @@ select.edit-input option {
 .qbo-mapping-subtitle {
   margin: 4px 0 0;
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 .qbo-mapping-close {
@@ -3707,7 +3707,7 @@ select.edit-input option {
   right: 16px;
   background: none;
   border: none;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 24px;
   cursor: pointer;
   padding: 4px 8px;
@@ -3717,7 +3717,7 @@ select.edit-input option {
 }
 
 .qbo-mapping-close:hover {
-  background: #2a2a2a;
+  background: var(--border-strong);
   color: #f3f4f6;
 }
 
@@ -3732,11 +3732,11 @@ select.edit-input option {
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  background: #1a1a1a;
+  background: var(--ngm-bg-card);
   border-radius: 8px;
   margin-bottom: 16px;
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 .qbo-mapping-unmapped-count {
@@ -3756,14 +3756,14 @@ select.edit-input option {
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
+  background: var(--ngm-bg-card);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   transition: border-color 0.15s ease;
 }
 
 .qbo-mapping-row:hover {
-  border-color: #3a3a3a;
+  border-color: var(--border-hover);
 }
 
 .qbo-mapping-info {
@@ -3784,12 +3784,12 @@ select.edit-input option {
 
 .qbo-mapping-id {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   font-family: monospace;
 }
 
 .qbo-mapping-arrow {
-  color: #6b7280;
+  color: var(--text-tertiary);
   font-size: 16px;
 }
 
@@ -3800,8 +3800,8 @@ select.edit-input option {
 .qbo-project-select {
   width: 100%;
   padding: 8px 12px;
-  background: #111111;
-  border: 1px solid #3a3a3a;
+  background: var(--ngm-bg-surface);
+  border: 1px solid var(--border-hover);
   border-radius: 6px;
   color: #f3f4f6;
   font-size: 13px;
@@ -3815,7 +3815,7 @@ select.edit-input option {
 
 .qbo-project-select:focus {
   outline: none;
-  border-color: #3ecf8e;
+  border-color: var(--accent);
 }
 
 .qbo-mapping-status {
@@ -3829,7 +3829,7 @@ select.edit-input option {
 
 .mapping-status--mapped {
   background: rgba(62, 207, 142, 0.15);
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 .mapping-status--unmapped {
@@ -3844,7 +3844,7 @@ select.edit-input option {
 
 .qbo-mapping-footer {
   padding: 16px 24px;
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid var(--border-soft);
   display: flex;
   justify-content: flex-end;
   gap: 12px;
@@ -3853,25 +3853,25 @@ select.edit-input option {
 .qbo-mapping-footer .btn-secondary {
   padding: 10px 20px;
   background: transparent;
-  border: 1px solid #3a3a3a;
+  border: 1px solid var(--border-hover);
   border-radius: 6px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .qbo-mapping-footer .btn-secondary:hover {
-  background: #2a2a2a;
+  background: var(--border-strong);
   color: #f3f4f6;
 }
 
 .qbo-mapping-footer .btn-primary {
   padding: 10px 20px;
-  background: #3ecf8e;
+  background: var(--accent);
   border: none;
   border-radius: 6px;
-  color: #111111;
+  color: var(--ngm-bg-surface);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -3915,14 +3915,14 @@ select.edit-input option {
 .qbo-txn-id {
   font-family: monospace;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 .qbo-line-ref {
   font-family: monospace;
   font-size: 11px;
-  color: #6b7280;
-  background: #1f1f1f;
+  color: var(--text-tertiary);
+  background: var(--border-soft);
   padding: 2px 6px;
   border-radius: 3px;
 }
@@ -3932,8 +3932,8 @@ select.edit-input option {
   font-weight: 500;
   padding: 2px 8px;
   border-radius: 4px;
-  background: #1f1f1f;
-  color: #9ca3af;
+  background: var(--border-soft);
+  color: var(--text-tertiary);
 }
 
 /* Database Estimator - Material Description Field */

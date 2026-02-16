@@ -38,10 +38,10 @@
 }
 
 .companies-actions button {
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-strong);
   background: transparent;
   color: var(--text-primary);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: 8px 14px;
   font-size: 13px;
   font-weight: 500;
@@ -50,14 +50,14 @@
 }
 
 .companies-actions button:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
 }
 
 /* Primary button: Add Company */
 .companies-actions #btn-add-company {
-  background: #3ecf8e;
-  border-color: #3ecf8e;
+  background: var(--accent);
+  border-color: var(--accent);
   color: #000;
   font-weight: 600;
 }
@@ -82,9 +82,9 @@
   display: grid;
   place-items: center;
   color: var(--text-secondary);
-  background: #111111;
-  border: 1px solid #1f1f1f;
-  border-radius: 8px;
+  background: var(--ngm-bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
   font-size: 14px;
 }
 
@@ -116,15 +116,15 @@
   gap: 16px;
   padding: 20px;
 
-  background: #111111;
-  border: 1px solid #1f1f1f;
-  border-radius: 8px;
+  background: var(--ngm-bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
 
   transition: border-color 0.15s ease;
 }
 
 .company-card:hover {
-  border-color: #2a2a2a;
+  border-color: var(--border-strong);
 }
 
 /* ===========================
@@ -146,7 +146,7 @@
 
   font-weight: 600;
   font-size: 20px;
-  color: #888;
+  color: var(--text-secondary);
 
   align-self: center;
   margin-bottom: 4px;
@@ -189,7 +189,7 @@
 .company-status-pill {
   font-size: 12px;
   font-weight: 500;
-  color: #666;
+  color: var(--text-muted);
 
   /* No background, no border - just text */
   padding: 0;
@@ -198,7 +198,7 @@
 }
 
 .company-status-pill.is-active {
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 /* ===========================
@@ -229,7 +229,7 @@
 }
 
 .company-field-label {
-  color: #666;
+  color: var(--text-muted);
   font-weight: 400;
   white-space: nowrap;
 }
@@ -262,8 +262,8 @@
   text-align: center;
 
   padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid #2a2a2a;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
   background: transparent;
 
   color: var(--text-primary);
@@ -275,8 +275,8 @@
 }
 
 .company-action-btn:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
 }
 
 /* Delete button - subtle danger style */
@@ -288,7 +288,7 @@
 .company-action-btn[data-action="delete"]:hover {
   background: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.35);
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 /* ===========================
@@ -373,9 +373,9 @@
 
 #companies-board .company-card {
   width: 280px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   position: relative;
-  z-index: 1;
+  z-index: var(--z-base);
 }
 
 #companies-board .company-card-actions {

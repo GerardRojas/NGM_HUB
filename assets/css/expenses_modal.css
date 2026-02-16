@@ -32,10 +32,10 @@
   display: flex;
   flex-direction: column;
 
-  background: #111111 !important;
-  border: 1px solid #1f1f1f;
-  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
-  border-radius: 8px;
+  background: var(--ngm-bg-surface) !important;
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-2xl);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
@@ -46,8 +46,8 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #111111 !important;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 #addExpenseModal .modal-title {
@@ -108,7 +108,7 @@
 #addExpenseModal .modal-project-name {
   font-size: 14px;
   font-weight: 600;
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 /* Toolbar toggle chevron */
@@ -122,7 +122,7 @@
   margin-left: 2px;
   background: transparent;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   color: rgba(255, 255, 255, 0.4);
   cursor: pointer;
   transition: color 0.15s ease, background 0.15s ease;
@@ -131,7 +131,7 @@
 
 #addExpenseModal .modal-toolbar-toggle:hover {
   color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-hover-strong);
 }
 
 #addExpenseModal .modal-toolbar-toggle svg {
@@ -162,7 +162,7 @@
 #addExpenseModal .modal-table-container {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   overflow-x: auto;
   overflow-y: visible;
 }
@@ -176,7 +176,7 @@
 }
 
 #addExpenseModal .expense-rows-table thead {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-hover);
 }
 
 #addExpenseModal .expense-rows-table th {
@@ -227,7 +227,7 @@
   padding: 9px 11px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-strong);
   color: rgba(255, 255, 255, 0.92);
   font-size: 13px;
   outline: none;
@@ -276,7 +276,7 @@
 }
 
 #addExpenseModal .exp-input:focus {
-  border-color: #3ecf8e;
+  border-color: var(--accent);
   background: rgba(255, 255, 255, 0.03);
 }
 
@@ -333,7 +333,7 @@
 }
 
 #addExpenseModal select.exp-input option {
-  background: #1f1f1f;
+  background: var(--border-soft);
   color: #ffffff;
 }
 
@@ -428,17 +428,17 @@
 
 #addExpenseModal .btn-row-receipt:hover {
   background: rgba(62, 207, 142, 0.15);
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 #addExpenseModal .btn-row-receipt.receipt-icon-btn--has-receipt {
-  color: #3ecf8e;
+  color: var(--accent);
   background: rgba(62, 207, 142, 0.1);
 }
 
 #addExpenseModal .btn-row-receipt.receipt-icon-btn--has-receipt:hover {
   background: rgba(62, 207, 142, 0.2);
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 /* Add row button */
@@ -467,7 +467,7 @@
 
 #addExpenseModal .btn-add-row:hover {
   border-color: rgba(62, 207, 142, 0.5);
-  color: #3ecf8e;
+  color: var(--accent);
   background: rgba(62, 207, 142, 0.08);
 }
 
@@ -557,8 +557,8 @@
 }
 
 .modal-csv-mapping {
-  background: #111111;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   max-width: 700px;
@@ -589,7 +589,7 @@
 .modal-csv-mapping .modal-close-btn {
   background: transparent;
   border: none;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 28px;
   line-height: 1;
   cursor: pointer;
@@ -604,7 +604,7 @@
 }
 
 .modal-csv-mapping .modal-close-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-hover-strong);
   color: #e5e7eb;
 }
 
@@ -617,7 +617,7 @@
 
 .modal-csv-mapping .modal-hint {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   margin: 0 0 20px 0;
   line-height: 1.5;
 }
@@ -677,7 +677,7 @@
 }
 
 .csv-mapping-arrow {
-  color: #6b7280;
+  color: var(--text-tertiary);
   font-size: 18px;
   user-select: none;
   font-weight: 400;
@@ -711,18 +711,18 @@
 
 .modal-csv-mapping .btn-modal-secondary {
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: var(--text-primary, #ededed);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary, var(--text-primary));
 }
 
 .modal-csv-mapping .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
 }
 
 .modal-csv-mapping .btn-modal-primary {
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   font-weight: 600;
 }
@@ -744,8 +744,8 @@
   justify-content: flex-end;
   gap: 12px;
   padding: 14px 18px;
-  background: #111111 !important;
-  border-top: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border-top: 1px solid var(--border-soft);
 }
 
 #addExpenseModal .btn-modal-secondary,
@@ -761,18 +761,18 @@
 
 #addExpenseModal .btn-modal-secondary {
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: var(--text-primary, #ededed);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary, var(--text-primary));
 }
 
 #addExpenseModal .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
 }
 
 #addExpenseModal .btn-modal-primary {
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   font-weight: 600;
 }
@@ -797,7 +797,7 @@
 
 #addExpenseModal .modal-body::-webkit-scrollbar-track,
 #addExpenseModal .modal-table-container::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-hover);
   border-radius: 8px;
 }
 
@@ -906,8 +906,8 @@
   max-height: calc(100vh - 2 * clamp(12px, 3vh, 28px));
   display: flex;
   flex-direction: column;
-  background: #111111 !important;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border: 1px solid var(--border-soft);
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
   border-radius: 8px;
   overflow: hidden;
@@ -919,8 +919,8 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #111111 !important;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 #editSingleExpenseModal .modal-title {
@@ -979,7 +979,7 @@
   padding: 9px 11px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-strong);
   color: rgba(255, 255, 255, 0.92);
   font-size: 13px;
   outline: none;
@@ -991,7 +991,7 @@
 }
 
 .form-input:focus {
-  border-color: #3ecf8e;
+  border-color: var(--accent);
   background: rgba(255, 255, 255, 0.03);
 }
 
@@ -1051,7 +1051,7 @@ select.form-input:-moz-focusring {
 }
 
 select.form-input option {
-  background: #1f1f1f;
+  background: var(--border-soft);
   color: #ffffff;
 }
 
@@ -1072,8 +1072,8 @@ input[type="number"].form-input {
   justify-content: flex-end;
   gap: 12px;
   padding: 14px 18px;
-  background: #111111 !important;
-  border-top: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border-top: 1px solid var(--border-soft);
 }
 
 #editSingleExpenseModal .btn-modal-secondary,
@@ -1089,18 +1089,18 @@ input[type="number"].form-input {
 
 #editSingleExpenseModal .btn-modal-secondary {
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: var(--text-primary, #ededed);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary, var(--text-primary));
 }
 
 #editSingleExpenseModal .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
 }
 
 #editSingleExpenseModal .btn-modal-primary {
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   font-weight: 600;
 }
@@ -1146,7 +1146,7 @@ input[type="number"].form-input {
 }
 
 #editSingleExpenseModal .modal-body::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-hover);
   border-radius: 8px;
 }
 
@@ -1199,7 +1199,7 @@ input[type="number"].form-input {
   height: 20px;
   min-width: 20px;
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-active);
   border: 2px solid rgba(148, 163, 184, 0.4);
   cursor: pointer;
   position: relative;
@@ -1213,8 +1213,8 @@ input[type="number"].form-input {
 }
 
 .form-checkbox:checked {
-  background: #3ecf8e;
-  border-color: #3ecf8e;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .form-checkbox:checked::after {
@@ -1274,8 +1274,8 @@ input[type="number"].form-input {
 #columnManagerModal .modal-column-manager {
   width: min(500px, 95%);
   max-width: 500px;
-  background: #111111;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border: 1px solid var(--border-soft);
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
   border-radius: 8px;
   overflow: hidden;
@@ -1287,8 +1287,8 @@ input[type="number"].form-input {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #111111;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 #columnManagerModal .modal-title {
@@ -1352,7 +1352,7 @@ input[type="number"].form-input {
   height: 18px;
   min-width: 18px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-active);
   border: 2px solid rgba(148, 163, 184, 0.4);
   cursor: pointer;
   position: relative;
@@ -1366,8 +1366,8 @@ input[type="number"].form-input {
 }
 
 .column-checkbox-item input[type="checkbox"]:checked {
-  background: #3ecf8e;
-  border-color: #3ecf8e;
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .column-checkbox-item input[type="checkbox"]:checked::after {
@@ -1394,8 +1394,8 @@ input[type="number"].form-input {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #111111;
-  border-top: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border-top: 1px solid var(--border-soft);
 }
 
 #columnManagerModal .btn-modal-secondary,
@@ -1411,18 +1411,18 @@ input[type="number"].form-input {
 
 #columnManagerModal .btn-modal-secondary {
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: var(--text-primary, #ededed);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary, var(--text-primary));
 }
 
 #columnManagerModal .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
 }
 
 #columnManagerModal .btn-modal-primary {
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   font-weight: 600;
 }
@@ -1484,7 +1484,7 @@ input[type="number"].form-input {
 .btn-scan-receipt:hover {
   background: rgba(62, 207, 142, 0.12);
   border-color: rgba(62, 207, 142, 0.4);
-  color: #3ecf8e;
+  color: var(--accent);
   transform: translateY(-1px);
 }
 
@@ -1500,8 +1500,8 @@ input[type="number"].form-input {
   display: flex;
   flex-direction: column;
 
-  background: #111111 !important;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border: 1px solid var(--border-soft);
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
   border-radius: 10px;
   overflow: hidden;
@@ -1514,8 +1514,8 @@ input[type="number"].form-input {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #111111 !important;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 #scanReceiptModal .modal-title {
@@ -1534,7 +1534,7 @@ input[type="number"].form-input {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 20px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1551,7 +1551,7 @@ input[type="number"].form-input {
   flex: 1;
   padding: 20px 22px;
   overflow-y: auto;
-  background: #111111;
+  background: var(--ngm-bg-surface);
 }
 
 #scanReceiptModal .modal-hint {
@@ -1565,8 +1565,8 @@ input[type="number"].form-input {
   justify-content: flex-end;
   gap: 10px;
   padding: 14px 18px;
-  background: #111111;
-  border-top: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border-top: 1px solid var(--border-soft);
 }
 
 #scanReceiptModal .btn-modal-secondary {
@@ -1574,7 +1574,7 @@ input[type="number"].form-input {
   border-radius: 6px;
   border: 1px solid rgba(148, 163, 184, 0.25);
   background: rgba(255, 255, 255, 0.03);
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -1582,7 +1582,7 @@ input[type="number"].form-input {
 }
 
 #scanReceiptModal .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-hover-strong);
   border-color: rgba(148, 163, 184, 0.35);
   color: #e5e7eb;
 }
@@ -1607,7 +1607,7 @@ input[type="number"].form-input {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #6b7280;
+  color: var(--text-tertiary);
   margin-bottom: 10px;
 }
 
@@ -1649,7 +1649,7 @@ input[type="number"].form-input {
 }
 
 .scan-model-option:hover .scan-model-card {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-hover);
   border-color: rgba(255, 255, 255, 0.14);
 }
 
@@ -1666,9 +1666,9 @@ input[type="number"].form-input {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-hover);
   border-radius: 8px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   flex-shrink: 0;
 }
 
@@ -1697,7 +1697,7 @@ input[type="number"].form-input {
 }
 
 .scan-model-option input[type="radio"]:checked + .scan-model-card .scan-model-desc {
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 /* Tags row (PDF only, ~3s, Low cost) */
@@ -1712,10 +1712,10 @@ input[type="number"].form-input {
   font-size: 10px;
   font-weight: 500;
   padding: 1px 6px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-hover);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 4px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   white-space: nowrap;
 }
 
@@ -1752,7 +1752,7 @@ input[type="number"].form-input {
 
 .scan-model-warning {
   font-size: 11px;
-  color: #f59e0b;
+  color: var(--color-warning);
   margin-top: 8px;
   padding: 6px 10px;
   background: rgba(245, 158, 11, 0.06);
@@ -1793,7 +1793,7 @@ input[type="number"].form-input {
 }
 
 .scan-receipt-drop-area.drag-over {
-  border-color: #3ecf8e;
+  border-color: var(--accent);
   background: rgba(62, 207, 142, 0.1);
 }
 
@@ -1803,7 +1803,7 @@ input[type="number"].form-input {
 }
 
 .scan-receipt-drop-area:hover svg {
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 .scan-receipt-drop-text {
@@ -1821,7 +1821,7 @@ input[type="number"].form-input {
 
 .scan-receipt-drop-secondary {
   font-size: 12px;
-  color: var(--text-secondary, #9ca3af);
+  color: var(--text-secondary, var(--text-tertiary));
 }
 
 /* Progress - Updated to match auto-categorize style */
@@ -1858,7 +1858,7 @@ input[type="number"].form-input {
 
 .scan-receipt-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3ecf8e, #34d399);
+  background: linear-gradient(90deg, var(--accent), #34d399);
   border-radius: 3px;
   transition: width 0.3s ease;
   width: 0%;
@@ -1867,7 +1867,7 @@ input[type="number"].form-input {
 .scan-receipt-progress-text {
   text-align: center;
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 /* ==========================================
@@ -1895,8 +1895,8 @@ input[type="number"].form-input {
   max-height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
-  background: #111111 !important;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border: 1px solid var(--border-soft);
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
   border-radius: 8px;
   overflow: hidden;
@@ -1908,8 +1908,8 @@ input[type="number"].form-input {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #111111 !important;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 #constructionStageModal .modal-title {
@@ -1937,12 +1937,12 @@ input[type="number"].form-input {
   flex: 1;
   padding: 20px 18px;
   overflow-y: auto;
-  background: #111111;
+  background: var(--ngm-bg-surface);
 }
 
 #constructionStageModal .modal-hint {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   margin: 0 0 20px 0;
   line-height: 1.5;
 }
@@ -1999,7 +1999,7 @@ input[type="number"].form-input {
 
 .stage-desc {
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   line-height: 1.3;
 }
 
@@ -2009,8 +2009,8 @@ input[type="number"].form-input {
   justify-content: flex-end;
   gap: 10px;
   padding: 14px 18px;
-  background: #111111;
-  border-top: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border-top: 1px solid var(--border-soft);
 }
 
 /* Auto Categorize Progress */
@@ -2045,7 +2045,7 @@ input[type="number"].form-input {
 .auto-categorize-progress-text {
   text-align: center;
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 /* Confidence Badge */
@@ -2065,7 +2065,7 @@ input[type="number"].form-input {
 .confidence-badge-high {
   background: rgba(62, 207, 142, 0.15);
   border: 1px solid rgba(62, 207, 142, 0.4);
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 .confidence-badge-medium {
@@ -2083,7 +2083,7 @@ input[type="number"].form-input {
 .confidence-badge-warning {
   background: rgba(251, 146, 60, 0.15);
   border: 1px solid rgba(251, 146, 60, 0.4);
-  color: #fb923c;
+  color: var(--color-orange);
 }
 
 .confidence-badge-icon {
@@ -2114,7 +2114,7 @@ input[type="number"].form-input {
 }
 
 .account-suggestion-warning {
-  color: #fb923c;
+  color: var(--color-orange);
 }
 
 /* Responsive */
@@ -2150,8 +2150,8 @@ input[type="number"].form-input {
   max-height: calc(100vh - 2 * clamp(12px, 3vh, 28px));
   display: flex;
   flex-direction: column;
-  background: #111111 !important;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border: 1px solid var(--border-soft);
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
   border-radius: 8px;
   overflow: hidden;
@@ -2163,8 +2163,8 @@ input[type="number"].form-input {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #111111 !important;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 #importCSVModal .modal-title {
@@ -2223,7 +2223,7 @@ input[type="number"].form-input {
 #importCSVModal .modal-project-name {
   font-size: 13px;
   font-weight: 600;
-  color: #3ecf8e;
+  color: var(--accent);
   letter-spacing: -0.01em;
 }
 
@@ -2233,25 +2233,25 @@ input[type="number"].form-input {
   justify-content: flex-end;
   gap: 10px;
   padding: 14px 18px;
-  background: #111111 !important;
-  border-top: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border-top: 1px solid var(--border-soft);
 }
 
 #importCSVModal .btn-modal-secondary {
   padding: 9px 18px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-primary, #ededed);
+  color: var(--text-primary, var(--text-primary));
   background: transparent;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 #importCSVModal .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
 }
 
 #importCSVModal .btn-modal-primary {
@@ -2259,8 +2259,8 @@ input[type="number"].form-input {
   font-size: 13px;
   font-weight: 600;
   color: #000;
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
@@ -2298,7 +2298,7 @@ input[type="number"].form-input {
 #importCSVModal .form-input {
   padding: 10px 12px;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-strong);
   border-radius: 4px;
   color: #e5e7eb;
   font-size: 13px;
@@ -2307,7 +2307,7 @@ input[type="number"].form-input {
 
 #importCSVModal .form-input:focus {
   outline: none;
-  border-color: #3ecf8e;
+  border-color: var(--accent);
 }
 
 #importCSVModal .file-input-wrapper {
@@ -2322,7 +2322,7 @@ input[type="number"].form-input {
   font-weight: 500;
   color: #e5e7eb;
   background: transparent;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-strong);
   border-radius: 4px;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease;
@@ -2332,13 +2332,13 @@ input[type="number"].form-input {
 }
 
 #importCSVModal .btn-file-select:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
 }
 
 #importCSVModal .file-name-display {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2358,7 +2358,7 @@ input[type="number"].form-input {
   min-width: 280px;
   padding: 11px 36px 11px 14px;
   border-radius: 4px;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-strong);
   background: rgba(255, 255, 255, 0.02);
   color: rgba(255, 255, 255, 0.92);
   font-size: 13px;
@@ -2389,29 +2389,29 @@ input[type="number"].form-input {
 }
 
 .ngm-select:hover {
-  border-color: #3a3a3a;
+  border-color: var(--border-hover);
   background: rgba(255, 255, 255, 0.03);
 }
 
 .ngm-select:focus {
-  border-color: #3ecf8e;
+  border-color: var(--accent);
   background: rgba(255, 255, 255, 0.03);
 }
 
 .ngm-select option {
-  background: #111111;
+  background: var(--ngm-bg-surface);
   color: rgba(255, 255, 255, 0.92);
   padding: 10px 14px;
   font-weight: 400;
 }
 
 .ngm-select option:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-active);
 }
 
 .ngm-select option:checked {
   background: rgba(62, 207, 142, 0.15);
-  color: #3ecf8e;
+  color: var(--accent);
   font-weight: 500;
 }
 
@@ -2439,7 +2439,7 @@ input[type="number"].form-input {
 .btn-pending-receipts:hover {
   background: rgba(251, 146, 60, 0.12);
   border-color: rgba(251, 146, 60, 0.4);
-  color: #fb923c;
+  color: var(--color-orange);
   transform: translateY(-1px);
 }
 
@@ -2465,7 +2465,7 @@ input[type="number"].form-input {
 
 .btn-pending-receipts:hover .pending-count-badge {
   background: rgba(251, 146, 60, 0.25);
-  color: #fb923c;
+  color: var(--color-orange);
 }
 
 /* Hidden state */
@@ -2492,8 +2492,8 @@ input[type="number"].form-input {
   max-height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
-  background: #111111 !important;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border: 1px solid var(--border-soft);
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
   border-radius: 8px;
   overflow: hidden;
@@ -2506,8 +2506,8 @@ input[type="number"].form-input {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #111111 !important;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 #pendingReceiptsModal .modal-title {
@@ -2525,7 +2525,7 @@ input[type="number"].form-input {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 20px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -2542,12 +2542,12 @@ input[type="number"].form-input {
   flex: 1;
   padding: 20px 18px;
   overflow-y: auto;
-  background: #111111;
+  background: var(--ngm-bg-surface);
 }
 
 #pendingReceiptsModal .modal-hint {
   font-size: 13px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   margin: 0 0 16px 0;
   line-height: 1.5;
 }
@@ -2568,8 +2568,8 @@ input[type="number"].form-input {
   padding: 8px 14px;
   border-radius: 6px;
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.04);
-  color: #9ca3af;
+  background: var(--bg-hover);
+  color: var(--text-tertiary);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -2577,14 +2577,14 @@ input[type="number"].form-input {
 }
 
 .pending-tab:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-active);
   color: #e5e7eb;
 }
 
 .pending-tab.active {
   background: rgba(251, 146, 60, 0.12);
   border-color: rgba(251, 146, 60, 0.3);
-  color: #fb923c;
+  color: var(--color-orange);
 }
 
 .pending-tab-count {
@@ -2602,7 +2602,7 @@ input[type="number"].form-input {
 
 .pending-tab.active .pending-tab-count {
   background: rgba(251, 146, 60, 0.2);
-  color: #fb923c;
+  color: var(--color-orange);
 }
 
 /* Receipts Grid */
@@ -2624,7 +2624,7 @@ input[type="number"].form-input {
   justify-content: center;
   gap: 12px;
   padding: 48px 20px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 13px;
 }
 
@@ -2632,7 +2632,7 @@ input[type="number"].form-input {
   width: 32px;
   height: 32px;
   border: 3px solid rgba(251, 146, 60, 0.2);
-  border-top-color: #fb923c;
+  border-top-color: var(--color-orange);
   border-radius: 50%;
   animation: pendingSpinner 0.8s linear infinite;
 }
@@ -2660,12 +2660,12 @@ input[type="number"].form-input {
 .pending-receipts-empty span {
   font-size: 14px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--text-tertiary);
 }
 
 .pending-receipts-empty p {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   margin: 0;
   max-width: 280px;
   line-height: 1.5;
@@ -2691,7 +2691,7 @@ input[type="number"].form-input {
 }
 
 .pending-receipt-card.selected {
-  border-color: #3ecf8e;
+  border-color: var(--accent);
   background: rgba(62, 207, 142, 0.08);
   box-shadow: 0 0 0 2px rgba(62, 207, 142, 0.25);
 }
@@ -2755,7 +2755,7 @@ input[type="number"].form-input {
 
 .pending-receipt-status--ready {
   background: rgba(62, 207, 142, 0.2);
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 .pending-receipt-status--error {
@@ -2783,17 +2783,17 @@ input[type="number"].form-input {
 .pending-receipt-amount {
   font-size: 14px;
   font-weight: 700;
-  color: #fb923c;
+  color: var(--color-orange);
 }
 
 .pending-receipt-date {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .pending-receipt-filename {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2806,8 +2806,8 @@ input[type="number"].form-input {
   justify-content: flex-end;
   gap: 10px;
   padding: 14px 18px;
-  background: #111111;
-  border-top: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border-top: 1px solid var(--border-soft);
 }
 
 #pendingReceiptsModal .btn-modal-secondary {
@@ -2815,7 +2815,7 @@ input[type="number"].form-input {
   border-radius: 6px;
   border: 1px solid rgba(148, 163, 184, 0.25);
   background: rgba(255, 255, 255, 0.03);
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -2823,7 +2823,7 @@ input[type="number"].form-input {
 }
 
 #pendingReceiptsModal .btn-modal-secondary:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-hover-strong);
   border-color: rgba(148, 163, 184, 0.35);
   color: #e5e7eb;
 }
@@ -2873,8 +2873,8 @@ input[type="number"].form-input {
   max-height: calc(100vh - 2 * clamp(12px, 3vh, 28px));
   display: flex;
   flex-direction: column;
-  background: #111111 !important;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border: 1px solid var(--border-soft);
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
   border-radius: 8px;
   overflow: hidden;
@@ -2886,8 +2886,8 @@ input[type="number"].form-input {
   justify-content: space-between;
   gap: 12px;
   padding: 14px 18px;
-  background: #111111 !important;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 #qboMappingModal .modal-title {
@@ -2924,13 +2924,13 @@ input[type="number"].form-input {
   justify-content: flex-end;
   gap: 10px;
   padding: 14px 18px;
-  background: #111111 !important;
-  border-top: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface) !important;
+  border-top: 1px solid var(--border-soft);
 }
 
 /* Mapping table container with scrollbar */
 #qboMappingModal .mapping-table-container {
-  border: 1px solid #1f1f1f;
+  border: 1px solid var(--border-soft);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -3042,12 +3042,12 @@ input[type="number"].form-input {
 
 .status-badge-auth {
   background: rgba(62, 207, 142, 0.15);
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 .status-badge-review {
   background: rgba(251, 146, 60, 0.15);
-  color: #fb923c;
+  color: var(--color-orange);
 }
 
 .expense-status-btn.active .status-badge-pending {
@@ -3077,7 +3077,7 @@ input[type="number"].form-input {
 
 .status-desc {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   line-height: 1.3;
 }
 
@@ -3129,7 +3129,7 @@ input[type="number"].form-input {
 .audit-trail-loading {
   padding: 20px;
   text-align: center;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 12px;
 }
 
@@ -3180,7 +3180,7 @@ input[type="number"].form-input {
 
 .audit-trail-date {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-tertiary);
 }
 
 .audit-trail-change {
@@ -3191,13 +3191,13 @@ input[type="number"].form-input {
 }
 
 .audit-trail-change strong {
-  color: #3ecf8e;
+  color: var(--accent);
   font-weight: 600;
 }
 
 .audit-trail-reason {
   font-size: 11px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-style: italic;
   padding: 6px 10px;
   background: rgba(255, 255, 255, 0.03);
@@ -3208,7 +3208,7 @@ input[type="number"].form-input {
 
 .audit-trail-user {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   margin-top: 4px;
 }
 
@@ -3235,7 +3235,7 @@ input[type="number"].form-input {
 .audit-trail-empty {
   padding: 20px;
   text-align: center;
-  color: #6b7280;
+  color: var(--text-tertiary);
   font-size: 12px;
 }
 
@@ -3251,7 +3251,7 @@ input[type="number"].form-input {
   text-align: right;
   font-size: 12px;
   font-weight: 600;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   padding: 8px 8px 8px 0;
   letter-spacing: 0.3px;
   text-transform: uppercase;
@@ -3297,7 +3297,7 @@ input[type="number"].form-input {
   height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: #6b7280;
+  background: var(--text-tertiary);
 }
 
 .scan-val-dot.dot-match {
@@ -3318,7 +3318,7 @@ input[type="number"].form-input {
 
 .scan-val-label {
   font-size: 10px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.3px;

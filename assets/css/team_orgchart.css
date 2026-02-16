@@ -44,9 +44,9 @@ body.page-team.orgchart-active .team-section {
    ================================ */
 .team-view-toggle {
     display: flex;
-    background: #111111;
-    border: 1px solid #1f1f1f;
-    border-radius: 6px;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
     overflow: hidden;
 }
 
@@ -57,7 +57,7 @@ body.page-team.orgchart-active .team-section {
     padding: 7px 14px;
     background: transparent;
     border: none;
-    color: #666666;
+    color: var(--text-muted);
     font-size: 12px;
     font-weight: 500;
     cursor: pointer;
@@ -66,12 +66,12 @@ body.page-team.orgchart-active .team-section {
 }
 
 .team-view-btn:hover {
-    color: #ededed;
-    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    background: var(--bg-hover);
 }
 
 .team-view-btn.active {
-    color: #3ecf8e;
+    color: var(--accent);
     background: rgba(62, 207, 142, 0.1);
 }
 
@@ -89,7 +89,7 @@ body.page-team.orgchart-active .team-section {
     flex-direction: column;
     flex: 1;
     overflow: hidden;
-    background: #0d0d0d;
+    background: var(--bg-main);
 }
 
 .orgchart-wrapper.visible {
@@ -102,8 +102,8 @@ body.page-team.orgchart-active .team-section {
     align-items: center;
     justify-content: space-between;
     padding: 10px 20px;
-    background: #0d0d0d;
-    border-bottom: 1px solid #1f1f1f;
+    background: var(--bg-main);
+    border-bottom: 1px solid var(--border-soft);
     flex-shrink: 0;
     gap: 12px;
 }
@@ -123,7 +123,7 @@ body.page-team.orgchart-active .team-section {
 
 .orgchart-toolbar-subtitle {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--text-tertiary);
 }
 
 .orgchart-toolbar-right {
@@ -138,24 +138,24 @@ body.page-team.orgchart-active .team-section {
     justify-content: center;
     width: 30px;
     height: 30px;
-    background: #111111;
-    border: 1px solid #1f1f1f;
-    border-radius: 6px;
-    color: #888888;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.15s;
     font-size: 14px;
 }
 
 .orgchart-zoom-btn:hover {
-    color: #ededed;
-    border-color: #2a2a2a;
-    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+    background: var(--bg-hover);
 }
 
 .orgchart-zoom-level {
     font-size: 11px;
-    color: #6b7280;
+    color: var(--text-tertiary);
     min-width: 36px;
     text-align: center;
     font-variant-numeric: tabular-nums;
@@ -167,8 +167,8 @@ body.page-team.orgchart-active .team-section {
     gap: 5px;
     padding: 6px 12px;
     background: transparent;
-    border: 1px solid #1f1f1f;
-    border-radius: 6px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
     color: #888;
     font-size: 11px;
     cursor: pointer;
@@ -176,9 +176,9 @@ body.page-team.orgchart-active .team-section {
 }
 
 .orgchart-btn-fit:hover {
-    color: #ededed;
-    border-color: #2a2a2a;
-    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+    background: var(--bg-hover);
 }
 
 /* ================================
@@ -189,7 +189,7 @@ body.page-team.orgchart-active .team-section {
     position: relative;
     overflow: hidden;
     cursor: grab;
-    background: #0d0d0d;
+    background: var(--bg-main);
 }
 
 .orgchart-canvas-container:active {
@@ -208,11 +208,11 @@ body.page-team.orgchart-active .team-section {
     width: 8000px;
     height: 8000px;
     transform-origin: 0 0;
-    background-color: #0d0d0d;
+    background-color: var(--bg-main);
     background-image:
         radial-gradient(circle, rgba(255, 255, 255, 0.18) 1.2px, transparent 1.2px);
     background-size: 32px 32px;
-    z-index: 1;
+    z-index: var(--z-base);
 }
 
 /* ================================
@@ -230,7 +230,7 @@ body.page-team.orgchart-active .team-section {
 
 .orgchart-connection-path {
     fill: none;
-    stroke: #3ecf8e;
+    stroke: var(--accent);
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -248,13 +248,13 @@ body.page-team.orgchart-active .team-section {
 }
 
 .orgchart-connection-endpoint {
-    fill: #3ecf8e;
+    fill: var(--accent);
 }
 
 /* Temp line while dragging new connection */
 .orgchart-temp-line {
     fill: none;
-    stroke: #3ecf8e;
+    stroke: var(--accent);
     stroke-width: 2;
     stroke-dasharray: 6 4;
     stroke-linecap: round;
@@ -278,7 +278,7 @@ body.page-team.orgchart-active .team-section {
 
 .orgchart-snap-guide {
     position: absolute;
-    background: #3ecf8e;
+    background: var(--accent);
     opacity: 0.7;
     z-index: 51;
 }
@@ -313,8 +313,8 @@ body.page-team.orgchart-active .team-section {
 .orgchart-node {
     position: absolute;
     width: 220px;
-    background: linear-gradient(135deg, #1a1a1a 0%, #151515 100%);
-    border: 2px solid #1f1f1f;
+    background: linear-gradient(135deg, var(--ngm-bg-card) 0%, #151515 100%);
+    border: 2px solid var(--border-soft);
     border-radius: 12px;
     padding: 18px 16px;
     cursor: grab;
@@ -324,19 +324,19 @@ body.page-team.orgchart-active .team-section {
 }
 
 .orgchart-node:hover {
-    border-color: #3ecf8e;
+    border-color: var(--accent);
     box-shadow: 0 8px 32px rgba(62, 207, 142, 0.15);
 }
 
 .orgchart-node.dragging {
     cursor: grabbing;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
-    border-color: #3ecf8e;
+    border-color: var(--accent);
     z-index: 100;
 }
 
 .orgchart-node.selected {
-    border-color: #3ecf8e;
+    border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.2), 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
@@ -451,7 +451,7 @@ body.page-team.orgchart-active .team-section {
 .orgchart-node-role {
     font-size: 11px;
     font-weight: 500;
-    color: #3ecf8e;
+    color: var(--accent);
     text-align: center;
     margin-bottom: 2px;
     overflow: hidden;
@@ -461,7 +461,7 @@ body.page-team.orgchart-active .team-section {
 
 .orgchart-node-seniority {
     font-size: 10px;
-    color: #6b7280;
+    color: var(--text-tertiary);
     text-align: center;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -473,13 +473,13 @@ body.page-team.orgchart-active .team-section {
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #6b7280;
+    background: var(--text-tertiary);
     margin-left: 4px;
     vertical-align: middle;
 }
 
 .orgchart-node-status.is-active {
-    background: #3ecf8e;
+    background: var(--accent);
     box-shadow: 0 0 6px rgba(62, 207, 142, 0.6);
 }
 
@@ -490,7 +490,7 @@ body.page-team.orgchart-active .team-section {
     position: absolute;
     width: 14px;
     height: 14px;
-    background: #3a3a3a;
+    background: var(--border-hover);
     border: 2px solid #5a5a5a;
     border-radius: 50%;
     z-index: 200;
@@ -506,15 +506,15 @@ body.page-team.orgchart-active .team-section {
 }
 
 .orgchart-port:hover {
-    background: #3ecf8e;
-    border-color: #3ecf8e;
+    background: var(--accent);
+    border-color: var(--accent);
     transform: scale(1.4);
     box-shadow: 0 0 12px rgba(62, 207, 142, 0.8);
 }
 
 .orgchart-port.connected {
-    background: #3ecf8e;
-    border-color: #3ecf8e;
+    background: var(--accent);
+    border-color: var(--accent);
     opacity: 1;
 }
 
@@ -564,7 +564,7 @@ body.page-team.orgchart-active .team-section {
     right: 20px;
     width: 180px;
     background: rgba(17, 17, 17, 0.95);
-    border: 1px solid #1f1f1f;
+    border: 1px solid var(--border-soft);
     border-radius: 10px;
     overflow: hidden;
     z-index: 500;
@@ -577,8 +577,8 @@ body.page-team.orgchart-active .team-section {
     align-items: center;
     justify-content: space-between;
     padding: 6px 10px;
-    background: #0d0d0d;
-    border-bottom: 1px solid #1f1f1f;
+    background: var(--bg-main);
+    border-bottom: 1px solid var(--border-soft);
     cursor: pointer;
 }
 
@@ -587,7 +587,7 @@ body.page-team.orgchart-active .team-section {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #6b7280;
+    color: var(--text-tertiary);
 }
 
 .orgchart-minimap-body {
@@ -618,8 +618,8 @@ body.page-team.orgchart-active .team-section {
 body.page-team.orgchart-active .section-header-row {
     padding: 16px 20px;
     margin-bottom: 0;
-    border-bottom: 1px solid #1f1f1f;
-    background: #0d0d0d;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--bg-main);
     flex-shrink: 0;
 }
 
@@ -685,7 +685,7 @@ body.page-team.orgchart-active .team-board {
 
 .orgchart-group-resize:hover {
     background: rgba(62, 207, 142, 0.3);
-    border-color: #3ecf8e;
+    border-color: var(--accent);
 }
 
 .orgchart-group-resize.handle-se {
@@ -758,8 +758,8 @@ body.page-team.orgchart-active .team-board {
 .orgchart-ctx-menu {
     position: fixed;
     z-index: 10000;
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
+    background: var(--ngm-bg-card);
+    border: 1px solid var(--border-strong);
     border-radius: 8px;
     padding: 4px 0;
     min-width: 180px;
@@ -788,7 +788,7 @@ body.page-team.orgchart-active .team-board {
 }
 
 .orgchart-ctx-item.danger {
-    color: #ef4444;
+    color: var(--color-danger);
 }
 
 .orgchart-ctx-item.danger:hover {
@@ -804,7 +804,7 @@ body.page-team.orgchart-active .team-board {
 
 .orgchart-ctx-sep {
     height: 1px;
-    background: #2a2a2a;
+    background: var(--border-strong);
     margin: 4px 0;
 }
 
@@ -897,8 +897,8 @@ body.page-team.orgchart-active .team-board {
 }
 
 .orgchart-ctx-size-btn.active {
-    border-color: #3ecf8e;
-    color: #3ecf8e;
+    border-color: var(--accent);
+    color: var(--accent);
     background: rgba(62, 207, 142, 0.1);
 }
 
@@ -914,8 +914,8 @@ body.page-team.orgchart-active .team-board {
     z-index: 200;
     width: 260px;
     max-height: 180px;
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
+    background: var(--ngm-bg-card);
+    border: 1px solid var(--border-strong);
     border-radius: 10px;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
     padding: 14px 16px;
@@ -932,7 +932,7 @@ body.page-team.orgchart-active .team-board {
 .orgchart-desc-popover-name {
     font-size: 12px;
     font-weight: 600;
-    color: #3ecf8e;
+    color: var(--accent);
     margin-bottom: 6px;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -941,7 +941,7 @@ body.page-team.orgchart-active .team-board {
 
 .orgchart-desc-popover-text {
     font-size: 12px;
-    color: #9ca3af;
+    color: var(--text-tertiary);
     line-height: 1.5;
     max-height: 120px;
     overflow-y: auto;

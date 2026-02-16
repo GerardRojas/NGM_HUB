@@ -361,6 +361,7 @@
     }
 
     function initRealtime() {
+      if (subscription) return; // guard against double-init
       if (!SUPABASE_URL || !SUPABASE_ANON_KEY || typeof window.supabase === "undefined") return;
 
       // Reuse existing client if chat_widget already created one
@@ -384,6 +385,13 @@
           }
         )
         .subscribe();
+
+      window.addEventListener("beforeunload", function () {
+        if (subscription) {
+          try { subscription.unsubscribe(); } catch (_) {}
+          subscription = null;
+        }
+      });
     }
 
     // Wait for sidebar to finish rendering before starting

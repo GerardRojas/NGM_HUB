@@ -998,7 +998,7 @@
         });
 
         // Allow pointer events on paths for dblclick
-        const observer = new MutationObserver(() => {
+        var _connObserver = new MutationObserver(() => {
             els.connectionsLayer.querySelectorAll('.orgchart-connection-path').forEach(p => {
                 p.style.pointerEvents = 'stroke';
             });
@@ -1006,7 +1006,10 @@
                 g.style.pointerEvents = 'auto';
             });
         });
-        observer.observe(els.connectionsLayer, { childList: true });
+        _connObserver.observe(els.connectionsLayer, { childList: true });
+        window.addEventListener("beforeunload", function () {
+            if (_connObserver) { _connObserver.disconnect(); _connObserver = null; }
+        });
     }
 
     // ================================

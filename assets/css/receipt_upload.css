@@ -29,7 +29,7 @@
 }
 
 .receipt-drop-zone--active {
-  border-color: #3ecf8e;
+  border-color: var(--accent);
   background: rgba(62, 207, 142, 0.1);
 }
 
@@ -53,7 +53,7 @@
 
 .receipt-drop-secondary {
   font-size: 11px;
-  color: var(--text-secondary, #9ca3af);
+  color: var(--text-secondary, var(--text-tertiary));
 }
 
 /* Receipt Preview Container */
@@ -62,7 +62,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 16px;
-  border: 1px solid var(--border-soft, #27272f);
+  border: 1px solid var(--border-soft, var(--border-medium));
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.02);
   margin: 12px 0;
@@ -70,7 +70,7 @@
 
 .receipt-preview-content {
   width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: rgba(0, 0, 0, 0.2);
 }
@@ -92,7 +92,7 @@
   padding: 16px 20px;
   background: rgba(62, 207, 142, 0.03);
   border: 1px solid rgba(62, 207, 142, 0.15);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .receipt-preview-file-icon {
@@ -112,7 +112,7 @@
 .receipt-preview-file-link {
   font-size: 14px;
   font-weight: 600;
-  color: #3ecf8e;
+  color: var(--accent);
   text-decoration: none;
   transition: color 0.15s ease;
   overflow: hidden;
@@ -121,14 +121,14 @@
 }
 
 .receipt-preview-file-link:hover {
-  color: #3ecf8e;
+  color: var(--accent);
   text-decoration: underline;
 }
 
 .receipt-preview-file-label {
   font-size: 11px;
   font-weight: 500;
-  color: var(--text-secondary, #9ca3af);
+  color: var(--text-secondary, var(--text-tertiary));
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -136,7 +136,7 @@
 .receipt-preview-file-text {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary, #9ca3af);
+  color: var(--text-secondary, var(--text-tertiary));
 }
 
 /* Legacy support for old PDF class name */
@@ -149,7 +149,7 @@
   padding: 40px 20px;
   background: rgba(62, 207, 142, 0.03);
   border: 1px solid rgba(62, 207, 142, 0.15);
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 
 .receipt-preview-pdf-icon {
@@ -160,7 +160,7 @@
 .receipt-preview-pdf-text {
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-secondary, #9ca3af);
+  color: var(--text-secondary, var(--text-tertiary));
 }
 
 .receipt-preview-actions {
@@ -174,7 +174,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -203,7 +203,7 @@
 .receipt-btn--replace:hover {
   border-color: rgba(59, 130, 246, 0.6);
   background: rgba(59, 130, 246, 0.15);
-  color: #3b82f6;
+  color: var(--color-info);
   transform: translateY(-1px);
 }
 
@@ -227,7 +227,7 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   border: none;
   background: transparent;
   color: rgba(148, 163, 184, 0.6);
@@ -238,16 +238,16 @@
 
 .receipt-icon-btn:hover {
   background: rgba(62, 207, 142, 0.15);
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 .receipt-icon-btn--has-receipt {
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 .receipt-icon-btn--has-receipt:hover {
   background: rgba(62, 207, 142, 0.2);
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 /* Badge indicator for receipts with attached files */
@@ -261,15 +261,15 @@
   right: 2px;
   width: 8px;
   height: 8px;
-  background: #3ecf8e;
+  background: var(--accent);
   border-radius: 50%;
-  border: 1.5px solid #1a1a1a;
+  border: 1.5px solid var(--ngm-bg-card);
   box-shadow: 0 0 4px rgba(62, 207, 142, 0.5);
 }
 
 /* Red badge for missing receipts */
 .receipt-badge--missing {
-  background: #ef4444;
+  background: var(--color-danger);
   box-shadow: 0 0 4px rgba(239, 68, 68, 0.5);
 }
 
@@ -280,7 +280,7 @@
   justify-content: center;
   gap: 8px;
   padding: 20px;
-  color: var(--text-secondary, #9ca3af);
+  color: var(--text-secondary, var(--text-tertiary));
   font-size: 13px;
 }
 
@@ -306,7 +306,7 @@
 .modal-receipt-section {
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid var(--border-soft, #27272f);
+  border-top: 1px solid var(--border-soft, var(--border-medium));
 }
 
 .modal-receipt-label {
@@ -316,5 +316,5 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--ngm-text-muted, #6b7280);
+  color: var(--ngm-text-muted, var(--text-tertiary));
 }

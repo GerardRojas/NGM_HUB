@@ -66,6 +66,7 @@
   // ── Render message HTML cache ──
   // Maps message.id -> { html, contentHash } for memoized rendering
   const _renderCache = new Map();
+  const _RENDER_CACHE_MAX = 500;
 
   function _msgContentHash(msg) {
     // Lightweight hash of fields that affect rendered HTML
@@ -1309,6 +1310,10 @@
         html += cached.html;
       } else {
         const msgHtml = renderMessage(msg, isSending, showButtons);
+        if (_renderCache.size >= _RENDER_CACHE_MAX) {
+          const firstKey = _renderCache.keys().next().value;
+          _renderCache.delete(firstKey);
+        }
         _renderCache.set(msg.id, { html: msgHtml, contentHash: hash, showButtons });
         html += msgHtml;
       }
@@ -3721,6 +3726,10 @@
       state.typingSubscription.unsubscribe();
     }
 
+    // Clear caches from previous channel to bound memory
+    _renderCache.clear();
+    _formatCache.clear();
+
     const channelKey = `${channel.type}:${channel.id || channel.projectId}`;
     realtimeConnected = false;
 
@@ -4053,6 +4062,9 @@
     }
   }
 
+  let _typingBroadcastChannel = null;
+  let _typingBroadcastKey = null;
+
   function broadcastTyping() {
     if (!state.supabaseClient || !state.currentChannel) return;
 
@@ -4063,10 +4075,23 @@
 
     const channelKey = `${state.currentChannel.type}:${state.currentChannel.id || state.currentChannel.projectId}`;
 
-    state.supabaseClient.channel(`typing:${channelKey}`).track({
-      user_id: state.currentUser?.user_id,
-      user_name: state.currentUser?.user_name,
-    });
+    // Reuse channel if same key; recreate only on channel switch
+    if (_typingBroadcastKey !== channelKey) {
+      if (_typingBroadcastChannel) {
+        try { _typingBroadcastChannel.untrack(); } catch (_) {}
+        try { _typingBroadcastChannel.unsubscribe(); } catch (_) {}
+      }
+      _typingBroadcastKey = channelKey;
+      _typingBroadcastChannel = state.supabaseClient.channel(`typing_bc:${channelKey}`);
+      _typingBroadcastChannel.subscribe();
+    }
+
+    if (_typingBroadcastChannel) {
+      _typingBroadcastChannel.track({
+        user_id: state.currentUser?.user_id,
+        user_name: state.currentUser?.user_name,
+      });
+    }
   }
 
   function updateTypingIndicator(presenceState) {
@@ -5233,6 +5258,36 @@
     document.addEventListener("DOMContentLoaded", init);
   } else {
     init();
+  }
+
+  // ── Page lifecycle cleanup ──
+  function _messagesCleanup() {
+    stopMessagePolling();
+    if (state.messageSubscription) {
+      try { state.messageSubscription.unsubscribe(); } catch (_) {}
+      state.messageSubscription = null;
+    }
+    if (state.typingSubscription) {
+      try { state.typingSubscription.unsubscribe(); } catch (_) {}
+      state.typingSubscription = null;
+    }
+    if (_typingBroadcastChannel) {
+      try { _typingBroadcastChannel.untrack(); } catch (_) {}
+      try { _typingBroadcastChannel.unsubscribe(); } catch (_) {}
+      _typingBroadcastChannel = null;
+      _typingBroadcastKey = null;
+    }
+    if (state.renderDebounceTimer) {
+      cancelAnimationFrame(state.renderDebounceTimer);
+      state.renderDebounceTimer = null;
+    }
+    _renderCache.clear();
+    _formatCache.clear();
+  }
+  if (window.PageLifecycle) {
+    window.PageLifecycle.register("messages", _messagesCleanup);
+  } else {
+    window.addEventListener("beforeunload", _messagesCleanup);
   }
 
   // Export for debugging and external access

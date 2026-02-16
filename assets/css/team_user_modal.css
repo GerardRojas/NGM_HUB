@@ -33,8 +33,8 @@
   display: flex;
   flex-direction: column;
 
-  background: #111111;
-  border: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border: 1px solid var(--border-soft);
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.7);
   border-radius: 8px;
   overflow: hidden;
@@ -47,14 +47,14 @@
   justify-content: space-between;
   gap: 12px;
   padding: 16px 20px;
-  background: #111111;
-  border-bottom: 1px solid #1f1f1f;
+  background: var(--ngm-bg-surface);
+  border-bottom: 1px solid var(--border-soft);
 }
 
 #teamUserModal .modal-title {
   font-size: 15px;
   font-weight: 600;
-  color: var(--text-primary, #ededed);
+  color: var(--text-primary, var(--text-primary));
 }
 
 #teamUserModal .modal-btn {
@@ -68,7 +68,7 @@
 }
 
 #teamUserModal .modal-btn:hover {
-  color: var(--text-primary, #ededed);
+  color: var(--text-primary, var(--text-primary));
 }
 
 /* Body */
@@ -78,7 +78,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: #111111;
+  background: var(--ngm-bg-surface);
 }
 
 /* Footer */
@@ -87,8 +87,8 @@
   justify-content: flex-end;
   gap: 10px;
   padding: 16px 20px;
-  border-top: 1px solid #1f1f1f;
-  background: #111111;
+  border-top: 1px solid var(--border-soft);
+  background: var(--ngm-bg-surface);
 }
 
 #teamUserModal .modal-footer .btn-secondary,
@@ -104,18 +104,18 @@
 
 #teamUserModal .modal-footer .btn-secondary {
   background: transparent;
-  border: 1px solid #2a2a2a;
-  color: var(--text-primary, #ededed);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary, var(--text-primary));
 }
 
 #teamUserModal .modal-footer .btn-secondary:hover {
   background: rgba(255, 255, 255, 0.04);
-  border-color: #3a3a3a;
+  border-color: var(--border-hover);
 }
 
 #teamUserModal .modal-footer .btn-primary {
-  background: #3ecf8e;
-  border: 1px solid #3ecf8e;
+  background: var(--accent);
+  border: 1px solid var(--accent);
   color: #000;
   font-weight: 600;
 }
@@ -189,8 +189,8 @@
   border-radius: 6px;
 
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid #2a2a2a;
-  color: var(--text-primary, #ededed);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary, var(--text-primary));
 
   font-size: 13px;
   outline: none;
@@ -203,7 +203,7 @@
 
 #teamUserModal .tm-input:focus,
 #teamUserModal .tm-select:focus {
-  border-color: #3ecf8e;
+  border-color: var(--accent);
   background: rgba(255, 255, 255, 0.03);
 }
 
@@ -243,7 +243,7 @@
 /* Section cards */
 #teamUserModal .tm-modal-section {
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid #1f1f1f;
+  border: 1px solid var(--border-soft);
   border-radius: 6px;
   padding: 18px 20px;
 }
@@ -263,7 +263,7 @@
 
 #teamUserModal .tm-collapsible {
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid #1f1f1f;
+  border: 1px solid var(--border-soft);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -324,13 +324,13 @@
 
 /* Select options */
 #teamUserModal select option {
-  background: #1a1a1a;
-  color: #ededed;
+  background: var(--ngm-bg-card);
+  color: var(--text-primary);
 }
 
 #teamUserModal select optgroup {
-  background: #1a1a1a;
-  color: #ededed;
+  background: var(--ngm-bg-card);
+  color: var(--text-primary);
 }
 
 #teamUserModal select {

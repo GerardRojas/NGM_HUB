@@ -16,7 +16,7 @@
   height: 56px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #3ecf8e, #10b981);
+  background: linear-gradient(135deg, var(--accent), #10b981);
   color: white;
   font-size: 24px;
   font-weight: 600;
@@ -124,7 +124,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3ecf8e, #10b981);
+  background: linear-gradient(135deg, var(--accent), #10b981);
   color: white;
   font-size: 14px;
   font-weight: 600;
@@ -141,7 +141,7 @@
 
 .arturito-widget-status {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -151,7 +151,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #3ecf8e;
+  background: var(--accent);
 }
 
 .arturito-widget-actions {
@@ -165,7 +165,7 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #6b7280;
+  color: var(--text-tertiary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -220,7 +220,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3ecf8e, #10b981);
+  background: linear-gradient(135deg, var(--accent), #10b981);
   color: white;
   font-size: 20px;
   font-weight: 600;
@@ -232,7 +232,7 @@
 
 .arturito-widget-welcome-text {
   font-size: 14px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   margin: 0;
   line-height: 1.5;
 }
@@ -358,7 +358,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #6b7280;
+  background: var(--text-tertiary);
   animation: widgetTypingDot 1.4s infinite ease-in-out both;
 }
 
@@ -426,7 +426,7 @@
 
 .arturito-widget-input:empty::before {
   content: attr(data-placeholder);
-  color: #6b7280;
+  color: var(--text-tertiary);
   pointer-events: none;
 }
 
@@ -435,8 +435,8 @@
   height: 32px;
   border: none;
   border-radius: 8px;
-  background: #3ecf8e;
-  color: #0a0a0a;
+  background: var(--accent);
+  color: var(--bg-deep);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -493,7 +493,7 @@
 .arturito-widget-action-btn-inline.arturito-widget-action-btn-primary {
   background: rgba(62, 207, 142, 0.15);
   border-color: rgba(62, 207, 142, 0.3);
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 .arturito-widget-action-btn-inline.arturito-widget-action-btn-primary:hover {
@@ -503,7 +503,7 @@
 
 .arturito-widget-action-indicator {
   font-size: 11px;
-  color: #6b7280;
+  color: var(--text-tertiary);
   font-style: italic;
   padding: 4px 0;
 }
@@ -513,14 +513,14 @@
    ───────────────────────────────────────────────────────────────────────────── */
 
 .arturito-widget-link {
-  color: #3ecf8e;
+  color: var(--accent);
   text-decoration: none;
   border-bottom: 1px solid transparent;
   transition: border-color 0.15s ease;
 }
 
 .arturito-widget-link:hover {
-  border-bottom-color: #3ecf8e;
+  border-bottom-color: var(--accent);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -559,7 +559,7 @@
 .arturito-widget-project-btn:hover {
   background: rgba(62, 207, 142, 0.15);
   border-color: rgba(62, 207, 142, 0.3);
-  color: #3ecf8e;
+  color: var(--accent);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -593,7 +593,7 @@
 
 .arturito-bva-row.arturito-bva-matched {
   background: rgba(62, 207, 142, 0.08);
-  border-left: 2px solid #3ecf8e;
+  border-left: 2px solid var(--accent);
 }
 
 .arturito-bva-account {
@@ -605,12 +605,12 @@
 .arturito-bva-nums {
   display: flex;
   gap: 12px;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 10px;
 }
 
 .arturito-bva-nums .arturito-bva-negative {
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .arturito-bva-total {

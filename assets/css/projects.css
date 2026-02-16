@@ -27,16 +27,16 @@
     gap: 16px;
     padding: 16px 20px;
 
-    background: #111111;
-    border: 1px solid #1f1f1f;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
     border-radius: 8px;
 
     transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .project-card:hover {
-    background: #161616;
-    border-color: #2a2a2a;
+    background: var(--ngm-bg-surface-soft);
+    border-color: var(--border-strong);
 }
 
 /* Card content layout */
@@ -59,14 +59,14 @@
 /* Secondary info (company, city, client) */
 .project-card-meta {
     font-size: 12px;
-    color: var(--text-secondary, #9ca3af);
+    color: var(--text-secondary, var(--text-tertiary));
 }
 
 .project-card-meta-label {
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--ngm-text-muted, #6b7280);
+    color: var(--ngm-text-muted, var(--text-tertiary));
     display: block;
     margin-bottom: 2px;
 }
@@ -90,13 +90,13 @@
     font-size: 11px;
     font-weight: 500;
     background: rgba(107, 114, 128, 0.15);
-    color: #9ca3af;
+    color: var(--text-tertiary);
     border: 1px solid rgba(107, 114, 128, 0.3);
 }
 
 .status-pill--active {
     background: rgba(62, 207, 142, 0.12);
-    color: #3ecf8e;
+    color: var(--accent);
     border-color: rgba(62, 207, 142, 0.3);
 }
 
@@ -110,9 +110,9 @@
     justify-content: center;
     padding: 8px 16px;
     border-radius: 6px;
-    border: 1px solid #2a2a2a;
-    background: #1a1a1a;
-    color: #ededed;
+    border: 1px solid var(--border-strong);
+    background: var(--ngm-bg-card);
+    color: var(--text-primary);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -130,9 +130,9 @@
     justify-content: center;
     padding: 6px 12px;
     border-radius: 8px;
-    border: 1px solid var(--border-soft, #27272f);
+    border: 1px solid var(--border-soft, var(--border-medium));
     background: transparent;
-    color: var(--text-secondary, #9ca3af);
+    color: var(--text-secondary, var(--text-tertiary));
     font-size: 11px;
     font-weight: 500;
     cursor: pointer;
@@ -169,7 +169,7 @@
     padding: 6px 14px;
     border-radius: 6px;
     border: none;
-    background: #3ecf8e;
+    background: var(--accent);
     color: #000000;
     font-size: 11px;
     font-weight: 600;
@@ -178,7 +178,7 @@
 }
 
 .btn-primary-small:hover {
-    background: #2db77a;
+    background: var(--accent-hover);
 }
 
 /* ==========================================
@@ -187,7 +187,7 @@
 
 .project-card--new {
     border-style: dashed;
-    border-color: #2a2a2a;
+    border-color: var(--border-strong);
     background: #0f0f0f;
 }
 
@@ -203,7 +203,7 @@
     width: 100%;
     padding: 8px 10px;
     border-radius: 8px;
-    border: 1px solid var(--border-soft, #27272f);
+    border: 1px solid var(--border-soft, var(--border-medium));
     background: var(--bg-input, #050509);
     color: var(--text-primary, #e5e7eb);
     font-size: 12px;
@@ -212,18 +212,18 @@
 }
 
 .cell-input:focus {
-    border-color: #3ecf8e;
-    background: #1a1a1a;
+    border-color: var(--accent);
+    background: var(--ngm-bg-card);
 }
 
 .cell-input::placeholder {
-    color: var(--ngm-text-muted, #6b7280);
+    color: var(--ngm-text-muted, var(--text-tertiary));
 }
 
 /* Select styling */
 .cell-input option {
-    background: #111111;
-    color: #ededed;
+    background: var(--ngm-bg-surface);
+    color: var(--text-primary);
 }
 
 /* ==========================================
@@ -247,10 +247,10 @@
     justify-content: center;
     gap: 16px;
     padding: 60px 48px;
-    background: #111111;
-    border: 1px solid #1f1f1f;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
     border-radius: 8px;
-    color: #888888;
+    color: var(--text-secondary);
     font-size: 13px;
 }
 
@@ -283,7 +283,7 @@
     align-items: center;
     justify-content: center;
     padding: 48px;
-    color: var(--text-secondary, #9ca3af);
+    color: var(--text-secondary, var(--text-tertiary));
     font-size: 13px;
     text-align: center;
     gap: 8px;
@@ -308,7 +308,7 @@
     color: var(--text-primary, #e5e7eb);
     margin-bottom: 20px;
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--border-soft, #27272f);
+    border-bottom: 1px solid var(--border-soft, var(--border-medium));
 }
 
 .data-section {

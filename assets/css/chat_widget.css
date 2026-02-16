@@ -16,7 +16,7 @@
   height: 44px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, var(--color-info), #2563eb);
   color: white;
   cursor: pointer;
   display: flex;
@@ -52,7 +52,7 @@
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  background: #ef4444;
+  background: var(--color-danger);
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -268,7 +268,7 @@
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  background: #ef4444;
+  background: var(--color-danger);
   color: #fff;
   font-size: 9px;
   font-weight: 700;
@@ -593,7 +593,7 @@
   height: 32px;
   border-radius: 8px;
   border: none;
-  background: #3b82f6;
+  background: var(--color-info);
   color: #fff;
   cursor: pointer;
   display: flex;

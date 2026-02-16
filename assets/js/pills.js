@@ -23,27 +23,35 @@
     return { ok: res.ok, status: res.status, data };
   }
 
+  function applyEnvStyle() {
+    if (!envPill) return;
+    const env = (window.ENVIRONMENT || "production").toLowerCase();
+    const labels = { development: "Development", staging: "Staging", production: "Production" };
+    set(envPill, `Environment · ${labels[env] || env}`);
+
+    envPill.classList.remove("ngm-meta-env-staging", "ngm-meta-env-dev");
+    if (env === "staging") envPill.classList.add("ngm-meta-env-staging");
+    else if (env === "development") envPill.classList.add("ngm-meta-env-dev");
+  }
+
   async function loadHealth() {
+    applyEnvStyle();
     try {
       const { ok, data } = await fetchJSON("/health");
       console.log('[PILLS] Health check response:', { ok, data });
 
       if (!ok || !data) {
-        set(envPill, "Environment · Unknown");
         set(serverPill, "Server · Offline");
         serverPill?.classList.remove('ngm-meta-status-live');
         serverPill?.classList.add('ngm-meta-status-offline');
         return;
       }
 
-      const env = String(data.environment || data.env || "production");
-      set(envPill, `Environment · ${env.toLowerCase() === "production" ? "Production" : env}`);
       set(serverPill, "Server · Live");
       serverPill?.classList.add('ngm-meta-status-live');
       serverPill?.classList.remove('ngm-meta-status-offline');
     } catch (err) {
       console.error('[PILLS] Error loading health:', err);
-      set(envPill, "Environment · Unknown");
       set(serverPill, "Server · Offline");
       serverPill?.classList.remove('ngm-meta-status-live');
       serverPill?.classList.add('ngm-meta-status-offline');

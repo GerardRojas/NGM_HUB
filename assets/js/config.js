@@ -9,8 +9,8 @@ function detectEnvironment() {
     return "development";
   }
 
-  // Staging (URL contiene "staging")
-  if (hostname.includes("staging")) {
+  // Staging (URL contiene "staging" o es el Render static site de staging)
+  if (hostname.includes("staging") || hostname === "ngm-hub.onrender.com") {
     return "staging";
   }
 
@@ -23,7 +23,7 @@ const ENVIRONMENT = detectEnvironment();
 // API_BASE segun ambiente
 const API_BASE = {
   development: "http://127.0.0.1:8000",
-  staging: "https://ngm-api-staging.onrender.com",
+  staging: "https://ngm-fastapi-1.onrender.com",
   production: "https://ngm-fastapi.onrender.com"
 }[ENVIRONMENT];
 

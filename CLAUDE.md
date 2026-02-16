@@ -116,10 +116,10 @@ staging  → Pruebas (para testear cambios antes de produccion)
 ### Servicios en Render
 | Servicio | Branch | URL | Proposito |
 |----------|--------|-----|-----------|
-| ngm-hub | main | ngm-hub.onrender.com | Produccion |
-| ngm-hub-staging | staging | ngm-hub-staging.onrender.com | Testing |
-| ngm-fastapi | main | ngm-fastapi.onrender.com | API Produccion |
-| ngm-api-staging | staging | ngm-api-staging.onrender.com | API Testing |
+| NGM_HUB_FRONTEND | main | ngm-hub-frontend.onrender.com (+ custom: www.ngmanagements.com) | Produccion |
+| NGM_HUB_FRONTEND_STAGGING | staging | ngm-hub.onrender.com | Testing |
+| NGM_FastAPI | main | ngm-fastapi.onrender.com | API Produccion |
+| NGM_BACKEND_STAGING | staging | ngm-fastapi-1.onrender.com | API Testing |
 
 ### Flujo de Trabajo
 
@@ -156,9 +156,10 @@ git push origin staging
 4. Si OK → merge a main en ambos repos
 
 ### Variables de Entorno por Ambiente
-El frontend detecta el ambiente via `config.js`:
-- **Produccion**: `API_BASE = https://ngm-fastapi.onrender.com`
-- **Staging**: `API_BASE = https://ngm-api-staging.onrender.com`
+El frontend detecta el ambiente via `config.js` (por hostname):
+- **Development**: localhost/127.0.0.1 → `API_BASE = http://127.0.0.1:8000`
+- **Staging**: `ngm-hub.onrender.com` o hostname con "staging" → `API_BASE = https://ngm-fastapi-1.onrender.com`
+- **Produccion**: default (custom domain) → `API_BASE = https://ngm-fastapi.onrender.com`
 
 ### Reglas de Deployment
 - **NUNCA** pushear directamente a `main` sin probar en `staging`

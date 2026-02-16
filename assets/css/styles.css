@@ -1112,6 +1112,18 @@ button {
     color: #888888;
 }
 
+.ngm-meta-env-staging {
+    border-color: rgba(234, 179, 8, 0.4);
+    color: #eab308;
+    background: rgba(234, 179, 8, 0.08);
+}
+
+.ngm-meta-env-dev {
+    border-color: rgba(99, 102, 241, 0.4);
+    color: #818cf8;
+    background: rgba(99, 102, 241, 0.08);
+}
+
 /* Pill "Server · Live" */
 .ngm-meta-status {
     display: inline-flex;

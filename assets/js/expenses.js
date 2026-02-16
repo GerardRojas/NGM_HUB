@@ -5785,6 +5785,10 @@
       throw new Error('Server response missing expenses data');
     }
 
+    if (result.model_used) {
+      console.log(`%c[SCAN] Model used: ${result.model_used} | method: ${result.extraction_method || '-'} | items: ${result.count || 0} | time: ${result.execution_time_seconds || '-'}s`, 'color:#3ecf8e;font-weight:bold');
+    }
+
     return result;
   }
 

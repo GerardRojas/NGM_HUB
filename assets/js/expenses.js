@@ -4626,7 +4626,7 @@
               updateData.status = selectedBillStatus;
             }
             if (Object.keys(updateData).length > 0) {
-              await apiJson(`${apiBase}/bills/${billId}`, {
+              await apiJson(`${apiBase}/bills/${encodeURIComponent(billId)}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updateData)
@@ -5333,7 +5333,7 @@
 
               if (existingBill) {
                 // Update existing bill with new receipt_url
-                await apiJson(`${apiBase}/bills/${billId}`, {
+                await apiJson(`${apiBase}/bills/${encodeURIComponent(billId)}`, {
                   method: 'PATCH',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({ receipt_url: receiptUrl })
@@ -5391,7 +5391,7 @@
           try {
             const existingBill = getBillMetadata(billId);
             if (existingBill) {
-              await apiJson(`${apiBase}/bills/${billId}`, {
+              await apiJson(`${apiBase}/bills/${encodeURIComponent(billId)}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ receipt_url: null })
@@ -8501,7 +8501,7 @@
 
       if (existingBill) {
         // Update existing bill
-        await apiJson(`${apiBase}/bills/${currentEditBillId}`, {
+        await apiJson(`${apiBase}/bills/${encodeURIComponent(currentEditBillId)}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(updateData)

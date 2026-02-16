@@ -29,6 +29,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   currentUser = user;
 
   // Init UI components
+  if (typeof window.initTopbarPills === 'function') window.initTopbarPills();
   initGreeting(user);
   initMentionsDrawer();
   initCommandPalette();

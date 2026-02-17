@@ -2556,7 +2556,7 @@
       return;
     }
 
-    const displayExpenses = filteredExpenses.length > 0 || Object.values(columnFilters).some(f => f) ? filteredExpenses : expenses;
+    const displayExpenses = filteredExpenses.length > 0 || Object.values(columnFilters).some(f => f.length > 0) ? filteredExpenses : expenses;
 
     // PERFORMANCE: Use requestAnimationFrame for large datasets to avoid blocking UI
     const BATCH_SIZE = 100;
@@ -2583,9 +2583,9 @@
         }
       }).join('');
 
-      // Calculate total (exclude review/soft-deleted expenses)
+      // Calculate total (only authorized expenses — exclude pending and review)
       const total = displayExpenses.reduce((sum, exp) => {
-        if (exp.status === 'review') return sum;
+        if (exp.status === 'review' || exp.status === 'pending' || !exp.status) return sum;
         const amount = parseFloat(exp.Amount) || 0;
         return sum + amount;
       }, 0);
@@ -2903,7 +2903,7 @@
 
   async function saveEditChanges() {
     const apiBase = getApiBase();
-    const displayExpenses = filteredExpenses.length > 0 || Object.values(columnFilters).some(f => f) ? filteredExpenses : expenses;
+    const displayExpenses = filteredExpenses.length > 0 || Object.values(columnFilters).some(f => f.length > 0) ? filteredExpenses : expenses;
     const rows = els.expensesTableBody.querySelectorAll('tr[data-index]:not(.total-row)');
     const updates = [];
 
@@ -4739,8 +4739,21 @@
       isScannedReceiptMode = false;
       selectedBillStatus = 'open'; // Reset to default
 
-      // Reload expenses BEFORE closing modal so user doesn't see stale data
-      await loadExpensesByProject(selectedProjectId);
+      // Optimistic local update: push created expenses into local array
+      // instead of full reload (much faster)
+      for (const item of createdExpenses) {
+        const exp = item.created?.expense;
+        if (exp) {
+          // Enrich with display names from local metadata cache
+          exp.txn_type_name = findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || null;
+          exp.vendor_name = findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || null;
+          exp.payment_method_name = findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || null;
+          exp.account_name = findMetaName('accounts', exp.account_id, 'account_id', 'Name') || null;
+          exp.project_name = findMetaName('projects', exp.project, 'project_id', 'project_name') || null;
+          expenses.push(exp);
+        }
+      }
+      renderExpensesTable();
 
       closeAddExpenseModal();
 
@@ -5924,9 +5937,6 @@
       return;
     }
 
-    // Check file type and toggle model buttons
-    await checkReceiptTypeAndToggleModels(file);
-
     const apiBase = getApiBase();
 
     try {
@@ -5939,11 +5949,19 @@
       };
       let _tStep = _t0;
 
-      // Hide upload zone and show progress
+      // Hide upload zone and show progress IMMEDIATELY (before any async work)
       if (els.scanReceiptUploadZone) {
         els.scanReceiptUploadZone.style.display = 'none';
       }
       els.scanReceiptProgress.classList.remove('hidden');
+      els.scanReceiptProgressText.textContent = 'Checking file...';
+      els.scanReceiptProgressFill.style.width = '10%';
+
+      // Check file type and toggle model buttons (may call API for PDFs)
+      await checkReceiptTypeAndToggleModels(file);
+      _tLog('checkReceiptType', _tStep);
+      _tStep = performance.now();
+
       els.scanReceiptProgressText.textContent = 'Uploading receipt...';
       els.scanReceiptProgressFill.style.width = '30%';
 
@@ -7876,7 +7894,7 @@
     billIds.forEach(billId => {
       const billExpenses = groups.withBill[billId];
       const billTotal = billExpenses.reduce((sum, exp) => {
-        if (exp.status === 'review') return sum;
+        if (exp.status === 'review' || exp.status === 'pending' || !exp.status) return sum;
         return sum + (parseFloat(exp.Amount) || 0);
       }, 0);
       grandTotal += billTotal;
@@ -7959,7 +7977,7 @@
       `;
 
       groups.withoutBill.forEach((exp, idx) => {
-        if (exp.status !== 'review') grandTotal += parseFloat(exp.Amount) || 0;
+        if (exp.status !== 'review' && exp.status !== 'pending' && exp.status) grandTotal += parseFloat(exp.Amount) || 0;
         const isFirst = idx === 0;
         const isLast = idx === groups.withoutBill.length - 1;
         html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), isFirst, isLast, 'no-bill');
@@ -8095,7 +8113,7 @@
       // If we have expected total from bills table, compare with actual
       if (billData.expected_total) {
         const actualTotal = billExpenses.reduce((sum, exp) => {
-          if (exp.status === 'review') return sum;
+          if (exp.status === 'review' || exp.status === 'pending' || !exp.status) return sum;
           return sum + (parseFloat(exp.Amount) || 0);
         }, 0);
         const expectedTotal = parseFloat(billData.expected_total);
@@ -8151,7 +8169,7 @@
 
     if (billMetadata?.expected_total) {
       const actualTotal = billExpenses.reduce((sum, exp) => {
-        if (exp.status === 'review') return sum;
+        if (exp.status === 'review' || exp.status === 'pending' || !exp.status) return sum;
         return sum + (parseFloat(exp.Amount) || 0);
       }, 0);
       const expectedTotal = parseFloat(billMetadata.expected_total);
@@ -8296,7 +8314,7 @@
     // Get expenses for this bill to calculate stats
     const billExpenses = expenses.filter(exp => exp.bill_id === billId);
     const billTotal = billExpenses.reduce((sum, exp) => {
-      if (exp.status === 'review') return sum;
+      if (exp.status === 'review' || exp.status === 'pending' || !exp.status) return sum;
       return sum + (parseFloat(exp.Amount) || 0);
     }, 0);
 
@@ -8545,7 +8563,8 @@
     try {
       // Step 1: Find the Receipts folder for this project
       const tree = await apiJson(`${apiBase}/vault/tree?project_id=${selectedProjectId}`);
-      const receiptsFolder = (tree || []).find(f => f.name === 'Receipts' && f.is_folder);
+      // /vault/tree only returns folders, so no need to check is_folder
+      const receiptsFolder = (tree || []).find(f => f.name === 'Receipts');
 
       if (!receiptsFolder) {
         if (loadingEl) loadingEl.style.display = 'none';
@@ -10227,6 +10246,10 @@
     els.filterDropdown.style.left = `${leftPos}px`;
     els.filterDropdown.style.top = `${rect.bottom + 4}px`;
 
+    // Clear search input from previous use
+    const filterSearchInput = els.filterDropdown.querySelector('.filter-search');
+    if (filterSearchInput) filterSearchInput.value = '';
+
     // Populate options
     populateFilterOptions(uniqueValues, column);
 
@@ -10306,16 +10329,17 @@
     const optionsHtml = values.map(value => {
       const isChecked = currentFilters.includes(value);
       const checkboxId = `filter-${column}-${value.replace(/[^a-zA-Z0-9]/g, '-')}`;
+      const escaped = escapeHtml(value);
 
       return `
         <div class="filter-option">
           <input
             type="checkbox"
             id="${checkboxId}"
-            data-value="${value}"
+            data-value="${escaped}"
             ${isChecked ? 'checked' : ''}
           />
-          <label for="${checkboxId}">${value}</label>
+          <label for="${checkboxId}">${escaped}</label>
         </div>
       `;
     }).join('');
@@ -11302,11 +11326,11 @@
     const filtered = filteredExpenses.length;
     const hasFilters = Object.values(columnFilters).some(f => f.length > 0) || globalSearchTerm;
     const totalAmount = expenses.reduce((sum, e) => {
-      if (e.status === 'review') return sum;
+      if (e.status === 'review' || e.status === 'pending' || !e.status) return sum;
       return sum + (parseFloat(e.Amount) || 0);
     }, 0);
     const filteredAmount = filteredExpenses.reduce((sum, e) => {
-      if (e.status === 'review') return sum;
+      if (e.status === 'review' || e.status === 'pending' || !e.status) return sum;
       return sum + (parseFloat(e.Amount) || 0);
     }, 0);
 

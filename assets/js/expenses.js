@@ -3453,6 +3453,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 auth_status: true,
+                status: 'auth',
                 auth_by: userId
               })
             });
@@ -3463,6 +3464,7 @@
             const expense = expensesMap.get(String(expenseId));
             if (expense) {
               expense.auth_status = true;
+              expense.status = 'auth';
               expense.auth_by = userId;
             }
 
@@ -5219,8 +5221,7 @@
       vendor_id: getDatalistValue(els.singleExpenseVendor, 'singleExpenseVendorList'),
       payment_type: getDatalistValue(els.singleExpensePayment, 'singleExpensePaymentList'),
       account_id: getDatalistValue(els.singleExpenseAccount, 'singleExpenseAccountList'),
-      Amount: parseCurrency(els.singleExpenseAmount.value),
-      created_by: currentUser.user_id || currentUser.id // Update created_by to current user
+      Amount: parseCurrency(els.singleExpenseAmount.value)
     };
 
     // Get selected status (new status selector)
@@ -8272,6 +8273,7 @@
   let billEditReceiptFile = null;
   let billEditReceiptDeleted = false;
   let billEditBlobUrl = null; // Track blob URL for cleanup (memory leak prevention)
+  let billEditVaultUrl = null; // URL from vault file selection (no upload needed)
 
   function openBillEditModal(billId) {
     if (!billId) return;
@@ -8279,6 +8281,7 @@
     currentEditBillId = billId;
     billEditReceiptFile = null;
     billEditReceiptDeleted = false;
+    billEditVaultUrl = null;
 
     // Get bill metadata from cache or create default
     const billData = getBillMetadata(billId) || {
@@ -8347,6 +8350,7 @@
     currentEditBillId = null;
     billEditReceiptFile = null;
     billEditReceiptDeleted = false;
+    billEditVaultUrl = null;
   }
 
   // Helper to create blob URL with tracking for bill edit modal
@@ -8363,7 +8367,8 @@
     if (receiptUrl && !billEditReceiptDeleted) {
       // Show receipt preview - use generic label instead of filename to avoid info disclosure
       const isBlob = receiptUrl.startsWith('blob:');
-      const displayName = isBlob ? 'New file selected' : 'Receipt attached';
+      const isVault = receiptUrl.includes('/storage/v1/object/public/vault/');
+      const displayName = isBlob ? 'New file selected' : isVault ? 'Receipt from Vault' : 'Receipt attached';
       els.billReceiptSection.innerHTML = `
         <div class="bill-receipt-preview">
           <span class="bill-receipt-preview-icon">📎</span>
@@ -8391,6 +8396,7 @@
         }
         billEditReceiptDeleted = true;
         billEditReceiptFile = null;
+        billEditVaultUrl = null;
         renderBillReceiptSection(null);
       });
       document.getElementById('billReceiptFileInput')?.addEventListener('change', (e) => {
@@ -8398,6 +8404,7 @@
         if (file) {
           billEditReceiptFile = file;
           billEditReceiptDeleted = false;
+          billEditVaultUrl = null;
           renderBillReceiptSection(createBillEditBlobUrl(file));
         }
       });
@@ -8425,7 +8432,8 @@
         renderBillReceiptSection(null);
       });
     } else {
-      // Show upload zone
+      // Show upload zone + Browse Vault button
+      const showVaultBtn = selectedProjectId && selectedProjectId !== 'all';
       els.billReceiptSection.innerHTML = `
         <div class="bill-receipt-upload" id="billReceiptUploadZone">
           <span class="bill-receipt-upload-icon">📎</span>
@@ -8433,6 +8441,13 @@
           <div class="bill-receipt-upload-hint">JPG, PNG, GIF, WebP or PDF (max 5MB)</div>
         </div>
         <input type="file" id="billReceiptFileInput" accept="image/*,application/pdf" style="display: none;">
+        ${showVaultBtn ? `
+          <div class="bill-receipt-divider"><span>or</span></div>
+          <button type="button" class="bill-receipt-vault-btn" id="btnBrowseVault">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"/></svg>
+            Browse Vault
+          </button>
+        ` : ''}
       `;
 
       const uploadZone = document.getElementById('billReceiptUploadZone');
@@ -8452,6 +8467,7 @@
         const file = e.dataTransfer.files[0];
         if (file) {
           billEditReceiptFile = file;
+          billEditVaultUrl = null;
           renderBillReceiptSection(createBillEditBlobUrl(file));
         }
       });
@@ -8459,10 +8475,198 @@
         const file = e.target.files[0];
         if (file) {
           billEditReceiptFile = file;
+          billEditVaultUrl = null;
           renderBillReceiptSection(createBillEditBlobUrl(file));
         }
       });
+      document.getElementById('btnBrowseVault')?.addEventListener('click', openVaultPicker);
     }
+  }
+
+  // ================================
+  // VAULT FILE PICKER FOR BILL RECEIPTS
+  // ================================
+
+  let _vaultPickerFiles = [];
+  let _vaultPickerSelected = null;
+  let _vaultPickerStatusMap = {};
+
+  function openVaultPicker() {
+    // Remove any existing picker
+    document.getElementById('vaultPickerBackdrop')?.remove();
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'vaultPickerBackdrop';
+    backdrop.className = 'vault-picker-backdrop';
+    backdrop.innerHTML = `
+      <div class="vault-picker">
+        <div class="vault-picker-header">
+          <div class="vault-picker-title">Select Receipt from Vault</div>
+          <button type="button" class="vault-picker-close" id="btnCloseVaultPicker">&times;</button>
+        </div>
+        <div class="vault-picker-body">
+          <div class="vault-picker-loading" id="vaultPickerLoading">Loading files...</div>
+          <div class="vault-picker-empty" id="vaultPickerEmpty" style="display:none;">No receipt files found in Vault.</div>
+          <div class="vault-picker-grid" id="vaultPickerGrid" style="display:none;"></div>
+        </div>
+        <div class="vault-picker-footer">
+          <button type="button" class="bill-receipt-btn" id="btnCancelVaultPicker">Cancel</button>
+          <button type="button" class="bill-receipt-btn vault-picker-select-btn" id="btnSelectVaultFile" disabled>Select</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(backdrop);
+
+    // Close on backdrop click
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) closeVaultPicker();
+    });
+    document.getElementById('btnCloseVaultPicker')?.addEventListener('click', closeVaultPicker);
+    document.getElementById('btnCancelVaultPicker')?.addEventListener('click', closeVaultPicker);
+    document.getElementById('btnSelectVaultFile')?.addEventListener('click', confirmVaultFileSelection);
+
+    _vaultPickerSelected = null;
+    loadVaultPickerFiles();
+  }
+
+  function closeVaultPicker() {
+    document.getElementById('vaultPickerBackdrop')?.remove();
+    _vaultPickerFiles = [];
+    _vaultPickerSelected = null;
+    _vaultPickerStatusMap = {};
+  }
+
+  async function loadVaultPickerFiles() {
+    const apiBase = getApiBase();
+    const loadingEl = document.getElementById('vaultPickerLoading');
+    const emptyEl = document.getElementById('vaultPickerEmpty');
+    const gridEl = document.getElementById('vaultPickerGrid');
+
+    try {
+      // Step 1: Find the Receipts folder for this project
+      const tree = await apiJson(`${apiBase}/vault/tree?project_id=${selectedProjectId}`);
+      const receiptsFolder = (tree || []).find(f => f.name === 'Receipts' && f.is_folder);
+
+      if (!receiptsFolder) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (emptyEl) { emptyEl.textContent = 'No Receipts folder found for this project.'; emptyEl.style.display = ''; }
+        return;
+      }
+
+      // Step 2: Load files from that folder
+      const files = await apiJson(`${apiBase}/vault/files?parent_id=${receiptsFolder.id}&project_id=${selectedProjectId}`);
+      const validMimes = new Set(['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp', 'image/bmp']);
+      _vaultPickerFiles = (files || []).filter(f => !f.is_folder && validMimes.has((f.mime_type || '').toLowerCase()));
+
+      if (_vaultPickerFiles.length === 0) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (emptyEl) emptyEl.style.display = '';
+        return;
+      }
+
+      // Step 3: Check receipt status and filter out already-linked files
+      const hashes = _vaultPickerFiles.filter(f => f.file_hash).map(f => f.file_hash);
+      if (hashes.length > 0) {
+        try {
+          _vaultPickerStatusMap = await apiJson(`${apiBase}/vault/receipt-status?hashes=${hashes.join(',')}`);
+        } catch (_) {
+          _vaultPickerStatusMap = {};
+        }
+      }
+
+      // Filter: only show files NOT already linked to a processed receipt
+      _vaultPickerFiles = _vaultPickerFiles.filter(f => {
+        const st = f.file_hash && _vaultPickerStatusMap[f.file_hash];
+        return st !== 'linked';
+      });
+
+      if (_vaultPickerFiles.length === 0) {
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (emptyEl) { emptyEl.textContent = 'All vault files are already linked to receipts.'; emptyEl.style.display = ''; }
+        return;
+      }
+
+      // Step 4: Render
+      if (loadingEl) loadingEl.style.display = 'none';
+      renderVaultPickerGrid();
+    } catch (err) {
+      console.error('[VaultPicker] Failed to load files:', err);
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (emptyEl) { emptyEl.textContent = 'Failed to load vault files.'; emptyEl.style.display = ''; }
+    }
+  }
+
+  function renderVaultPickerGrid() {
+    const gridEl = document.getElementById('vaultPickerGrid');
+    if (!gridEl) return;
+
+    const supabaseUrl = window.SUPABASE_URL || window.NGM_CONFIG?.SUPABASE_URL || '';
+    const imgExts = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']);
+
+    const pdfIcon = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
+
+    gridEl.innerHTML = _vaultPickerFiles.map((f, idx) => {
+      const ext = (f.name || '').split('.').pop().toLowerCase();
+      const isImg = imgExts.has(ext);
+      const thumbUrl = isImg && f.bucket_path ? `${supabaseUrl}/storage/v1/object/public/vault/${f.bucket_path}?width=96&height=96&resize=contain` : '';
+      const thumbHtml = isImg ? `<img src="${thumbUrl}" alt="" loading="lazy" />` : pdfIcon;
+
+      // Receipt status badge
+      const status = f.file_hash && _vaultPickerStatusMap[f.file_hash];
+      let badgeHtml = '';
+      if (status === 'linked') {
+        badgeHtml = '<span class="vault-picker-badge vault-picker-badge--linked" title="Processed">Processed</span>';
+      } else if (status === 'pending' || status === 'processing') {
+        badgeHtml = '<span class="vault-picker-badge vault-picker-badge--pending" title="Pending">Pending</span>';
+      }
+
+      // Truncate name
+      const name = f.name || 'Untitled';
+      const shortName = name.length > 22 ? name.slice(0, 19) + '...' : name;
+
+      return `<div class="vault-picker-card" data-idx="${idx}" title="${name.replace(/"/g, '&quot;')}">
+        <div class="vault-picker-card-thumb">${thumbHtml}</div>
+        <div class="vault-picker-card-name">${shortName}</div>
+        ${badgeHtml}
+      </div>`;
+    }).join('');
+
+    gridEl.style.display = '';
+
+    // Click handler for card selection
+    gridEl.addEventListener('click', (e) => {
+      const card = e.target.closest('.vault-picker-card');
+      if (!card) return;
+      const idx = parseInt(card.dataset.idx, 10);
+
+      // Toggle selection
+      gridEl.querySelectorAll('.vault-picker-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      _vaultPickerSelected = _vaultPickerFiles[idx] || null;
+
+      const selectBtn = document.getElementById('btnSelectVaultFile');
+      if (selectBtn) selectBtn.disabled = !_vaultPickerSelected;
+    });
+  }
+
+  function confirmVaultFileSelection() {
+    if (!_vaultPickerSelected) return;
+
+    const supabaseUrl = window.SUPABASE_URL || window.NGM_CONFIG?.SUPABASE_URL || '';
+    const url = `${supabaseUrl}/storage/v1/object/public/vault/${_vaultPickerSelected.bucket_path}`;
+
+    billEditVaultUrl = url;
+    billEditReceiptFile = null;
+    billEditReceiptDeleted = false;
+
+    // Revoke any existing blob URL
+    if (billEditBlobUrl) {
+      URL.revokeObjectURL(billEditBlobUrl);
+      billEditBlobUrl = null;
+    }
+
+    renderBillReceiptSection(url);
+    closeVaultPicker();
   }
 
   async function saveBillEdit() {
@@ -8511,8 +8715,11 @@
     els.btnSaveBillEdit.textContent = 'Saving...';
 
     try {
-      // Handle receipt upload/delete
-      if (billEditReceiptFile) {
+      // Handle receipt: vault URL, upload, or delete
+      if (billEditVaultUrl) {
+        // Vault file selected - just set URL directly (no upload needed)
+        updateData.receipt_url = billEditVaultUrl;
+      } else if (billEditReceiptFile) {
         // Upload new receipt
         const receiptUrl = await window.ReceiptUpload.upload(
           billEditReceiptFile,

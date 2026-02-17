@@ -354,7 +354,8 @@
       const arrowClass = hasChildren ? `tree-arrow${isExpanded ? " expanded" : ""}` : "tree-arrow empty";
       const arrow = `<svg class="${arrowClass}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
 
-      html += `<div class="vault-tree-node${isActive ? " active" : ""}" data-id="${node.id}" data-name="${escapeAttr(node.name)}">`;
+      const projAttr = node.project_id ? ` data-project-id="${node.project_id}"` : "";
+      html += `<div class="vault-tree-node${isActive ? " active" : ""}" data-id="${node.id}" data-name="${escapeAttr(node.name)}"${projAttr}>`;
       html += `${indent}${arrow}${folderIcon}<span class="tree-label">${escapeHtml(node.name)}</span>`;
       html += `</div>`;
       if (hasChildren) {
@@ -364,6 +365,60 @@
     return html;
   }
 
+  // Lightweight DOM-only active state update (no tree rebuild)
+  function updateTreeActiveState() {
+    if (!$tree) return;
+    $tree.querySelectorAll(".vault-tree-node").forEach(n => {
+      const id = n.dataset.id;
+      let isActive = false;
+      if (currentFolder) {
+        isActive = (id === currentFolder);
+      } else if (currentProject) {
+        isActive = (id === `__project_${currentProject}__`);
+      }
+      n.classList.toggle("active", isActive);
+    });
+  }
+
+  // Load project subfolders and inject into existing tree DOM (no full rebuild)
+  async function loadProjectFoldersIntoTree(projectId) {
+    const projNodeId = `__project_${projectId}__`;
+    const projNode = $tree?.querySelector(`[data-id="${projNodeId}"]`);
+    if (!projNode) return;
+
+    const childrenEl = projNode.nextElementSibling;
+    if (!childrenEl?.classList.contains("vault-tree-children")) return;
+    const innerEl = childrenEl.querySelector(".vault-tree-children-inner");
+    if (!innerEl || innerEl.children.length > 0) return;
+
+    let data;
+    const cacheKey = projectId;
+    if (treeCache[cacheKey]) {
+      data = treeCache[cacheKey];
+    } else {
+      try {
+        data = await apiFetch(`/vault/tree?project_id=${projectId}`);
+        _cachePut(treeCache, cacheKey, data);
+      } catch (e) {
+        console.warn("[Vault] Failed to load project folders:", e);
+        return;
+      }
+    }
+
+    if (data.length === 0) return;
+
+    // Merge into children map for recursive rendering
+    for (const f of data) {
+      const key = f.parent_id || "__root__";
+      const arr = _childrenMap.get(key);
+      if (arr) { if (!arr.some(x => x.id === f.id)) arr.push(f); }
+      else _childrenMap.set(key, [f]);
+    }
+
+    const rootFolders = data.filter(f => !f.parent_id);
+    const folderIcon = `<svg class="tree-folder-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-8l-2-2H5a2 2 0 0 0-2 2Z"/></svg>`;
+    innerEl.innerHTML = renderTreeNodes(rootFolders, 2, folderIcon);
+  }
 
   // ─── File Listing ──────────────────────────────────────────────────────────
   async function loadFiles(forceRefresh = false) {
@@ -569,11 +624,7 @@
     updateBackButton();
 
     // Update tree active state immediately
-    if ($tree) {
-      $tree.querySelectorAll(".vault-tree-node").forEach(n => {
-        n.classList.toggle("active", n.dataset.id === (currentFolder || ""));
-      });
-    }
+    updateTreeActiveState();
 
     // Load files (async)
     await loadFiles();
@@ -615,13 +666,7 @@
     updateBackButton();
 
     // Update active state in tree immediately
-    if ($tree) {
-      $tree.querySelectorAll(".vault-tree-node").forEach(n => {
-        const isThisProject = n.dataset.projectId === projectId;
-        const isProjectRoot = n.dataset.id === `__project_${projectId}__`;
-        n.classList.toggle("active", isThisProject || isProjectRoot);
-      });
-    }
+    updateTreeActiveState();
 
     // Load data in parallel (async operations)
     await Promise.all([loadTree(), loadFiles()]);
@@ -1109,17 +1154,56 @@
       // Handle virtual nodes
       if (isVirtual) {
         if (id === "__projects__") {
-          // Just expand/collapse the Projects folder, don't navigate
           return;
         } else if (id && id.startsWith("__project_")) {
-          // Extract project ID and switch to it
           const projectId = node.dataset.projectId;
-          if (projectId) switchProject(projectId);
+          if (!projectId) return;
+
+          const isNewProject = currentProject !== projectId;
+          if (isNewProject) {
+            currentProject = projectId;
+            currentFolder = null;
+            folderPath = [];
+            renderBreadcrumb();
+            updateBackButton();
+            updateTreeActiveState();
+
+            // Ensure children container exists and is open
+            let cEl = node.nextElementSibling;
+            if (!cEl?.classList.contains("vault-tree-children")) {
+              // First visit: create container and animate open
+              const div = document.createElement("div");
+              div.className = "vault-tree-children";
+              div.innerHTML = `<div class="vault-tree-children-inner"></div>`;
+              node.after(div);
+              cEl = div;
+              requestAnimationFrame(() => cEl.classList.add("open"));
+              const arrow = node.querySelector(".tree-arrow");
+              if (arrow) { arrow.classList.remove("empty"); arrow.classList.add("expanded"); }
+              expandedNodes.add(id);
+            } else if (!cEl.classList.contains("open")) {
+              // Toggle above may have closed it; re-open for navigation
+              cEl.classList.add("open");
+              const arrow = node.querySelector(".tree-arrow");
+              if (arrow) arrow.classList.add("expanded");
+              expandedNodes.add(id);
+            }
+
+            // Lazy-load project subfolders into existing DOM
+            loadProjectFoldersIntoTree(projectId);
+            loadFiles();
+          }
+          // If same project, toggle already happened above
           return;
         }
       }
 
-      // Regular folder navigation
+      // Regular folder navigation — auto-switch project if needed
+      const folderProjectId = node.dataset.projectId;
+      if (folderProjectId && folderProjectId !== currentProject) {
+        currentProject = folderProjectId;
+        folderPath = [];
+      }
       navigateToFolder(id, name);
     });
 
@@ -1527,6 +1611,12 @@
     const year = d.getFullYear().toString().slice(-2);
     return `${mon}/${day}/${year}`;
   }
+
+  // ─── Cleanup ──────────────────────────────────────────────────────────────
+  window.addEventListener("beforeunload", () => {
+    if (andrewPollInterval) { clearInterval(andrewPollInterval); andrewPollInterval = null; }
+    if (searchTimeout) { clearTimeout(searchTimeout); searchTimeout = null; }
+  });
 
   // ─── Boot ──────────────────────────────────────────────────────────────────
   if (document.readyState === "loading") {

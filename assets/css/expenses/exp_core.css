@@ -560,7 +560,7 @@
 .expenses-table .col-type { width: 100px; }
 .expenses-table .col-vendor { width: 130px; }
 .expenses-table .col-payment { width: 100px; }
-.expenses-table .col-amount { width: 100px; }
+.expenses-table .col-amount { width: 115px; }
 .expenses-table .col-receipt { width: 50px; }
 .expenses-table .col-auth { width: 110px; }
 .expenses-table .col-actions { width: 50px; }

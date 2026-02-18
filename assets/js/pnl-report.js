@@ -277,12 +277,13 @@
     let skippedCount = 0;
 
     expenses.forEach(expense => {
-      if (expense.status === 'review') {
-        skippedCount++;
-        return;
+      // Use new status field if available, fall back to legacy auth_status boolean
+      let isAuthorized;
+      if (expense.status) {
+        isAuthorized = expense.status === 'auth';
+      } else {
+        isAuthorized = expense.auth_status === true || expense.auth_status === 1;
       }
-
-      const isAuthorized = expense.auth_status === true;
       if (!isAuthorized) {
         skippedCount++;
         return;

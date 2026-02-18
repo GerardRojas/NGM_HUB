@@ -368,14 +368,14 @@
     expenses.forEach(expense => {
       totalExpensesCount++;
 
-      // Filter: Skip soft-deleted expenses (status = 'review')
-      if (expense.status === 'review') {
-        skippedExpensesCount++;
-        return;
+      // Filter: Only include authorized expenses
+      // Use new status field if available, fall back to legacy auth_status boolean
+      let isAuthorized;
+      if (expense.status) {
+        isAuthorized = expense.status === 'auth';
+      } else {
+        isAuthorized = expense.auth_status === true || expense.auth_status === 1;
       }
-
-      // Filter: Only include expenses that are authorized
-      const isAuthorized = expense.auth_status === true;
 
       if (!isAuthorized) {
         skippedExpensesCount++;

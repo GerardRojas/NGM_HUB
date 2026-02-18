@@ -5742,8 +5742,9 @@
           receiptBtn.title = 'Receipt attached from pending';
         }
 
-        // Update running total
+        // Update running total and auto-categorize button
         handleAmountChange();
+        updateAutoCategorizeButton();
       }
     }
 
@@ -6319,6 +6320,7 @@
     // After populating all expenses, update validation section and attach listeners
     attachAmountChangeListeners();
     updateScanValidationSection();
+    updateAutoCategorizeButton();
   }
 
   // ================================
@@ -6912,6 +6914,9 @@
 
       // Close mapping modal
       closeCsvMappingModal();
+
+      // Update auto-categorize button (programmatic .value= doesn't fire input events)
+      updateAutoCategorizeButton();
 
       // Show success message
       if (window.Toast) {

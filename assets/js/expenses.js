@@ -2583,9 +2583,9 @@
         }
       }).join('');
 
-      // Calculate total (only authorized expenses — exclude pending and review)
+      // Calculate total (authorized + pending expenses — exclude review only)
       const total = displayExpenses.reduce((sum, exp) => {
-        if (exp.status === 'review' || exp.status === 'pending' || !exp.status) return sum;
+        if (exp.status === 'review' || !exp.status) return sum;
         const amount = parseFloat(exp.Amount) || 0;
         return sum + amount;
       }, 0);
@@ -5458,14 +5458,12 @@
         updatedData.receipt_url = null;
       }
 
-      // Include status in main PATCH body when auto-forced (shouldForceReview) for ALL roles
-      // or when bookkeepers change status manually. This avoids a separate /status API call.
-      // Only managers with MANUAL status changes use the dedicated /status endpoint (role check).
+      // Always include status in main PATCH body to avoid a second API call.
+      // The main PATCH endpoint handles status changes, logging, and budget triggers.
       const currentStatus = currentEditingExpense.status || (currentEditingExpense.auth_status ? 'auth' : 'pending');
       const statusActuallyChanged = selectedStatus && selectedStatus !== currentStatus;
-      const needsSeparateStatusCall = statusActuallyChanged && canAuthorize && !shouldForceReview;
 
-      if (statusActuallyChanged && !needsSeparateStatusCall) {
+      if (statusActuallyChanged) {
         updatedData.status = selectedStatus;
         updatedData.status_reason = statusReason;
       }
@@ -5480,25 +5478,6 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedData)
       });
-
-      // Managers: update status separately ONLY for manual status changes (role-based logging)
-      if (needsSeparateStatusCall) {
-        try {
-          await apiJson(`${apiBase}/expenses/${expenseId}/status?user_id=${userId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              status: selectedStatus,
-              reason: statusReason
-            })
-          });
-        } catch (statusErr) {
-          console.error('[EXPENSES] Error updating status:', statusErr);
-          if (window.Toast) {
-            Toast.warning('Status Update Failed', 'Expense saved but status could not be updated.');
-          }
-        }
-      }
 
       // Optimistic local update instead of full reload (much faster)
       const idx = expenses.findIndex(e => (e.expense_id || e.id) === expenseId);

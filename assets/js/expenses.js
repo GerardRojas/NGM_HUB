@@ -419,6 +419,9 @@
     els.btnToggleAudit = document.getElementById('btnToggleAudit');
     els.auditTrailList = document.getElementById('auditTrailList');
 
+    // Export button
+    els.btnExportExpenses = document.getElementById('btnExportExpenses');
+
     // Column manager modal
     els.btnColumnManager = document.getElementById('btnColumnManager');
     els.columnManagerModal = document.getElementById('columnManagerModal');
@@ -2534,6 +2537,115 @@
     });
   }
 
+  // ================================
+  // EXPORT EXPENSES
+  // ================================
+
+  function exportExpensesToFile(format) {
+    const data = filteredExpenses.length > 0 ? filteredExpenses : expenses;
+    if (data.length === 0) {
+      if (window.Toast) Toast.warning('Export', 'No hay gastos para exportar');
+      return;
+    }
+
+    // Build rows with human-readable values (same as table display)
+    const headers = ['Date', 'Bill #', 'Description', 'Account', 'Type', 'Vendor', 'Payment Method', 'Amount', 'Status'];
+    const rows = data.map(exp => {
+      const typeName = exp.txn_type_name || findMetaName('txn_types', exp.txn_type, 'TnxType_id', 'TnxType_name') || '';
+      const vendorName = exp.vendor_name || findMetaName('vendors', exp.vendor_id, 'id', 'vendor_name') || '';
+      const paymentName = exp.payment_method_name || findMetaName('payment_methods', exp.payment_type, 'id', 'payment_method_name') || '';
+      const accountName = exp.account_name || findMetaName('accounts', exp.account_id, 'account_id', 'Name') || '';
+      const statusLabel = exp.status === 'auth' ? 'Authorized' : exp.status === 'review' ? 'Review' : 'Pending';
+
+      return [
+        exp.TxnDate ? formatDateSafe(exp.TxnDate) : '',
+        exp.bill_id || '',
+        exp.LineDescription || '',
+        accountName,
+        typeName,
+        vendorName,
+        paymentName,
+        exp.Amount != null ? exp.Amount : '',
+        statusLabel
+      ];
+    });
+
+    if (format === 'csv') {
+      downloadCSV(headers, rows);
+    } else {
+      downloadXLSX(headers, rows);
+    }
+  }
+
+  function downloadCSV(headers, rows) {
+    const esc = (field) => {
+      const str = String(field ?? '');
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    };
+
+    const csvContent = [
+      headers.map(esc).join(','),
+      ...rows.map(row => row.map(esc).join(','))
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    triggerDownload(blob, 'expenses_' + new Date().toISOString().slice(0, 10) + '.csv');
+  }
+
+  async function downloadXLSX(headers, rows) {
+    try {
+      const token = localStorage.getItem('ngmToken');
+      const params = new URLSearchParams({ format: 'xlsx' });
+
+      if (selectedProjectId && selectedProjectId !== '__ALL__') {
+        params.append('project', selectedProjectId);
+      }
+      // Pass active column filters as server-side filters where possible
+      if (columnFilters.vendor.length === 1) {
+        const v = metaData.vendors.find(v => v.vendor_name === columnFilters.vendor[0]);
+        if (v) params.append('vendor_id', v.id);
+      }
+      if (columnFilters.type.length === 1) {
+        const t = metaData.txn_types.find(t => t.TnxType_name === columnFilters.type[0]);
+        if (t) params.append('txn_type', t.TnxType_id);
+      }
+      if (columnFilters.auth.length === 1) {
+        const statusMap = { 'Authorized': 'auth', 'Pending': 'pending', 'Review': 'review' };
+        const s = statusMap[columnFilters.auth[0]];
+        if (s) params.append('status', s);
+      }
+
+      const resp = await fetch(`${window.API_BASE}/expenses/export?${params}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+      const blob = await resp.blob();
+      const disposition = resp.headers.get('Content-Disposition') || '';
+      const filenameMatch = disposition.match(/filename="?(.+?)"?$/);
+      const filename = filenameMatch ? filenameMatch[1] : 'expenses_' + new Date().toISOString().slice(0, 10) + '.xlsx';
+      triggerDownload(blob, filename);
+    } catch (err) {
+      console.error('[EXPORT] XLSX error:', err);
+      if (window.Toast) Toast.error('Export Error', 'No se pudo generar el archivo Excel');
+    }
+  }
+
+  function triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   function renderExpensesTable() {
     if (!els.expensesTableBody) return;
 
@@ -2850,6 +2962,7 @@
       els.btnAddExpense.disabled = true;
       els.btnBillView.disabled = true;
       els.btnDetectDuplicates.disabled = true;
+      if (els.btnExportExpenses) els.btnExportExpenses.disabled = true;
       els.projectFilter.disabled = true;
       if (els.editModeFooter) els.editModeFooter.classList.remove('hidden');
       // Add edit mode class to table for wider columns
@@ -2874,6 +2987,7 @@
       els.btnAddExpense.disabled = !selectedProjectId;
       els.btnBillView.disabled = expenses.length === 0;
       els.btnDetectDuplicates.disabled = expenses.length < 2; // Need at least 2 expenses to compare
+      if (els.btnExportExpenses) els.btnExportExpenses.disabled = expenses.length === 0;
       els.projectFilter.disabled = false;
       if (els.editModeFooter) els.editModeFooter.classList.add('hidden');
       // Remove edit mode class from table
@@ -6967,6 +7081,7 @@
       els.btnEditExpenses.disabled = !selectedProjectId || expenses.length === 0 || isAllProjects;
       els.btnBillView.disabled = !selectedProjectId || expenses.length === 0;
       els.btnDetectDuplicates.disabled = !selectedProjectId || expenses.length < 2; // Need at least 2 expenses
+      if (els.btnExportExpenses) els.btnExportExpenses.disabled = expenses.length === 0;
 
       // Update health check badge (resets to no issues for new project)
       updateDuplicatesButtonBadge();
@@ -7368,6 +7483,47 @@
     // Bill View toggle button
     els.btnBillView?.addEventListener('click', () => {
       toggleBillView();
+    });
+
+    // Export button — dropdown with CSV/Excel options
+    els.btnExportExpenses?.addEventListener('click', (e) => {
+      // Remove any existing export dropdown
+      const existing = document.querySelector('.export-dropdown');
+      if (existing) { existing.remove(); return; }
+
+      const dropdown = document.createElement('div');
+      dropdown.className = 'export-dropdown';
+      dropdown.style.cssText = 'position:absolute;z-index:1000;background:var(--bg-secondary,#1e1e2e);border:1px solid var(--border-color,#363646);border-radius:6px;padding:4px 0;box-shadow:0 4px 12px rgba(0,0,0,.3);min-width:140px;';
+
+      const makeItem = (label, fmt) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.textContent = label;
+        item.style.cssText = 'display:block;width:100%;padding:8px 16px;background:none;border:none;color:var(--text-primary,#e0e0e0);cursor:pointer;text-align:left;font-size:13px;';
+        item.addEventListener('mouseenter', () => item.style.background = 'var(--bg-hover,#2a2a3a)');
+        item.addEventListener('mouseleave', () => item.style.background = 'none');
+        item.addEventListener('click', () => { dropdown.remove(); exportExpensesToFile(fmt); });
+        return item;
+      };
+
+      dropdown.appendChild(makeItem('Export CSV', 'csv'));
+      dropdown.appendChild(makeItem('Export Excel', 'xlsx'));
+
+      // Position below the button
+      const rect = els.btnExportExpenses.getBoundingClientRect();
+      dropdown.style.top = (rect.bottom + 4) + 'px';
+      dropdown.style.left = rect.left + 'px';
+      dropdown.style.position = 'fixed';
+      document.body.appendChild(dropdown);
+
+      // Close on outside click
+      const closeHandler = (ev) => {
+        if (!dropdown.contains(ev.target) && ev.target !== els.btnExportExpenses) {
+          dropdown.remove();
+          document.removeEventListener('click', closeHandler);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', closeHandler), 0);
     });
 
     // Column Manager button

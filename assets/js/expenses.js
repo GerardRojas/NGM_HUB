@@ -7844,17 +7844,24 @@
 
   function groupExpensesByBill(expensesList) {
     const groups = {
-      withBill: {},    // { bill_id: [expenses] }
+      withBill: {},    // { bill_id: [expenses] }  (keyed by bill_id or bill_id::project when "all")
       withoutBill: []  // expenses without bill_id
     };
+
+    // When viewing all projects, use composite key (bill_id::project) to prevent
+    // merging expenses from different projects that share the same invoice number.
+    const useCompositeKey = selectedProjectId === 'all';
 
     expensesList.forEach(exp => {
       const billId = exp.bill_id?.trim();
       if (billId) {
-        if (!groups.withBill[billId]) {
-          groups.withBill[billId] = [];
+        const groupKey = useCompositeKey && exp.project
+          ? `${billId}::${exp.project}`
+          : billId;
+        if (!groups.withBill[groupKey]) {
+          groups.withBill[groupKey] = [];
         }
-        groups.withBill[billId].push(exp);
+        groups.withBill[groupKey].push(exp);
       } else {
         groups.withoutBill.push(exp);
       }
@@ -7875,8 +7882,12 @@
     // Render bill groups first
     const billIds = Object.keys(groups.withBill).sort();
 
-    billIds.forEach(billId => {
-      const billExpenses = groups.withBill[billId];
+    billIds.forEach(groupKey => {
+      const billExpenses = groups.withBill[groupKey];
+
+      // Extract the real bill_id from the group key (strip ::project suffix if present)
+      const billId = groupKey.includes('::') ? groupKey.split('::')[0] : groupKey;
+
       const billTotal = billExpenses.reduce((sum, exp) => {
         if (exp.status === 'review' || exp.status === 'pending' || !exp.status) return sum;
         return sum + (parseFloat(exp.Amount) || 0);
@@ -7895,8 +7906,9 @@
       const hasReceipt = billData?.receipt_url ? true : false;
 
       // Bill group header - full width card header (clickable to edit bill)
+      // Use groupKey for DOM identity (unique per project in "all" mode), billId for display
       html += `
-        <tr class="bill-group-header" data-bill-group="${billId}">
+        <tr class="bill-group-header" data-bill-group="${groupKey}">
           <td colspan="12">
             <div class="bill-card-header">
               <div class="bill-card-info bill-card-clickable" data-bill-id="${billId}" title="Click to edit bill">
@@ -7909,7 +7921,7 @@
                 ${hasReceipt ? '<span class="bill-receipt-indicator" title="Has receipt attached">📎</span>' : ''}
               </div>
               <div class="bill-card-actions">
-                <button type="button" class="bill-collapse-btn" data-bill-group="${billId}" title="Collapse/Expand">
+                <button type="button" class="bill-collapse-btn" data-bill-group="${groupKey}" title="Collapse/Expand">
                   <span class="collapse-icon">▼</span>
                 </button>
               </div>
@@ -7922,12 +7934,12 @@
       billExpenses.forEach((exp, idx) => {
         const isFirst = idx === 0;
         const isLast = idx === billExpenses.length - 1;
-        html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), isFirst, isLast, billId);
+        html += renderBillGroupRow(exp, displayExpenses.indexOf(exp), isFirst, isLast, groupKey);
       });
 
       // Bill group footer with summary
       html += `
-        <tr class="bill-group-footer" data-bill-group="${billId}">
+        <tr class="bill-group-footer" data-bill-group="${groupKey}">
           <td colspan="12">
             <div class="bill-card-footer">
               <span class="bill-footer-items">${billExpenses.length} expense${billExpenses.length > 1 ? 's' : ''} in this bill</span>

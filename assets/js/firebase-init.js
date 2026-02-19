@@ -26,6 +26,7 @@
   let currentToken = null;
   let _foregroundHandlerInit = false;
   let _tokenRefreshInit = false;
+  let _audioCtx = null;
 
   // ============================================================================
   // Initialize Firebase
@@ -184,6 +185,40 @@
   // Handle Foreground Messages
   // ============================================================================
 
+  /**
+   * Play a short notification tone via Web Audio API.
+   * Shares a debounce window (window._lastNotifSoundTs) with messages.js
+   * so the same notification doesn't sound twice.
+   */
+  async function _playNotifSound(type) {
+    try {
+      var now = Date.now();
+      if (window._lastNotifSoundTs && now - window._lastNotifSoundTs < 1000) return;
+      window._lastNotifSoundTs = now;
+
+      if (!_audioCtx || _audioCtx.state === "closed") {
+        _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (_audioCtx.state === "suspended") {
+        await _audioCtx.resume();
+      }
+
+      var osc = _audioCtx.createOscillator();
+      var gain = _audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(_audioCtx.destination);
+
+      osc.frequency.value = type === "mention" ? 880 : 660;
+      gain.gain.value = type === "mention" ? 0.1 : 0.08;
+      osc.type = "sine";
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.2);
+      osc.stop(_audioCtx.currentTime + 0.2);
+    } catch (e) {
+      // Audio not available — ignore silently
+    }
+  }
+
   function setupForegroundMessageHandler() {
     if (!messaging || _foregroundHandlerInit) return;
     _foregroundHandlerInit = true;
@@ -195,6 +230,12 @@
       const body = payload.notification?.body || payload.data?.body || "New notification";
       const senderName = payload.data?.sender_name || null;
       const avatarColor = payload.data?.avatar_color || null;
+      const msgType = payload.data?.type || "mention";
+
+      // Play notification sound if backend signals it
+      if (payload.data?.play_sound === "true") {
+        _playNotifSound(msgType === "mention" ? "mention" : "message");
+      }
 
       // Use Toast system if available
       if (window.Toast) {
@@ -209,7 +250,6 @@
           }
         };
 
-        const msgType = payload.data?.type || "mention";
         if (msgType === "message" && window.Toast.chat) {
           window.Toast.chat(title, body, toastOpts);
         } else if (window.Toast.mention) {
@@ -320,6 +360,21 @@
     getToken: () => currentToken,
     isSupported: () => "serviceWorker" in navigator && "Notification" in window
   };
+
+  // ============================================================================
+  // Pre-warm AudioContext on first user interaction (browser autoplay policy)
+  // ============================================================================
+
+  function _warmAudio() {
+    if (!_audioCtx || _audioCtx.state === "closed") {
+      _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (_audioCtx.state === "suspended") _audioCtx.resume();
+    document.removeEventListener("click", _warmAudio);
+    document.removeEventListener("keydown", _warmAudio);
+  }
+  document.addEventListener("click", _warmAudio, { once: true });
+  document.addEventListener("keydown", _warmAudio, { once: true });
 
   // ============================================================================
   // Auto-initialize when DOM is ready and Firebase SDK is loaded

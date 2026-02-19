@@ -4017,18 +4017,27 @@
   }
 
   /**
-   * Play notification sound
+   * Play notification sound.
+   * Uses Web Audio API oscillator. AudioContext.resume() MUST be awaited
+   * because browsers suspend it until a user gesture has occurred.
+   * A debounce window (window._lastNotifSoundTs) prevents double-play
+   * when both Supabase Realtime and FCM fire for the same message.
    */
   let _notifAudioCtx = null;
 
-  function playNotificationSound(type = "message") {
+  async function playNotificationSound(type = "message") {
     try {
+      // Debounce: skip if another handler already played within 1 s
+      const now = Date.now();
+      if (window._lastNotifSoundTs && now - window._lastNotifSoundTs < 1000) return;
+      window._lastNotifSoundTs = now;
+
       if (!_notifAudioCtx || _notifAudioCtx.state === "closed") {
         _notifAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-      // Resume if suspended (browser autoplay policy)
+      // Await resume — browsers keep context suspended until user gesture
       if (_notifAudioCtx.state === "suspended") {
-        _notifAudioCtx.resume();
+        await _notifAudioCtx.resume();
       }
 
       const oscillator = _notifAudioCtx.createOscillator();
@@ -4053,6 +4062,20 @@
       console.log("[Messages] Audio notification not available");
     }
   }
+
+  // Pre-warm AudioContext on first user interaction so it's ready for notifications
+  function _warmAudioCtx() {
+    if (!_notifAudioCtx || _notifAudioCtx.state === "closed") {
+      _notifAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (_notifAudioCtx.state === "suspended") {
+      _notifAudioCtx.resume();
+    }
+    document.removeEventListener("click", _warmAudioCtx);
+    document.removeEventListener("keydown", _warmAudioCtx);
+  }
+  document.addEventListener("click", _warmAudioCtx, { once: true });
+  document.addEventListener("keydown", _warmAudioCtx, { once: true });
 
   /**
    * Scroll to a specific message

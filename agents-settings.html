@@ -750,19 +750,36 @@
             font-size: 11px; color: var(--ngm-text-muted);
         }
 
-        .daneel-report-row {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 8px 12px; background: var(--ngm-bg-input);
-            border: 1px solid var(--ngm-border); border-radius: 8px;
-            cursor: pointer; transition: border-color 0.15s ease;
+        .daneel-report-table {
+            width: 100%; border-collapse: collapse; font-size: 11px;
         }
-        .daneel-report-row:hover { border-color: var(--border-strong); }
-        .daneel-report-row + .daneel-report-row { margin-top: 6px; }
-
-        .daneel-report-detail {
-            padding: 10px 12px; background: var(--bg-main);
-            border: 1px solid var(--ngm-border); border-top: none;
-            border-radius: 0 0 8px 8px; margin-top: -6px; font-size: 11px;
+        .daneel-report-table th {
+            text-align: left; padding: 6px 8px; font-size: 10px;
+            font-weight: 600; color: var(--ngm-text-muted);
+            text-transform: uppercase; letter-spacing: 0.3px;
+            border-bottom: 1px solid var(--ngm-border);
+            position: sticky; top: 0; background: var(--ngm-bg-card);
+            z-index: 1;
+        }
+        .daneel-report-table td {
+            padding: 4px 8px; border-bottom: 1px solid var(--ngm-border);
+            color: var(--ngm-text); vertical-align: middle;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .daneel-report-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .daneel-report-table .group-header td {
+            padding: 6px 8px; font-weight: 600; font-size: 10px;
+            color: var(--ngm-text-muted); background: var(--ngm-bg-input);
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .daneel-decision-badge {
+            display: inline-block; padding: 1px 6px; border-radius: 3px;
+            font-size: 10px; font-weight: 600; color: #fff;
+        }
+        .daneel-check-pill {
+            display: inline-flex; align-items: center; gap: 2px;
+            padding: 1px 5px; border-radius: 3px; font-size: 9px;
+            font-weight: 500; margin-right: 2px;
         }
 
         .daneel-run-btn {
@@ -1646,10 +1663,16 @@
                                             <div style="margin-top: 24px;">
                                                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
                                                     <h6 style="font-size: 14px; font-weight: 600; color: var(--ngm-text); margin: 0;">Expense Review by Project</h6>
-                                                    <button id="daneelRefreshProjects" type="button"
-                                                            style="padding: 4px 12px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 6px; color: var(--ngm-text-muted); font-size: 11px; cursor: pointer;">
-                                                        Refresh
-                                                    </button>
+                                                    <div style="display: flex; gap: 6px;">
+                                                        <button id="daneelReportActivity" type="button"
+                                                                style="padding: 4px 12px; background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); border-radius: 6px; color: #3b82f6; font-size: 11px; cursor: pointer; font-weight: 500;">
+                                                            Report Activity
+                                                        </button>
+                                                        <button id="daneelRefreshProjects" type="button"
+                                                                style="padding: 4px 12px; background: var(--ngm-bg-input); border: 1px solid var(--ngm-border); border-radius: 6px; color: var(--ngm-text-muted); font-size: 11px; cursor: pointer;">
+                                                            Refresh
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <div id="daneelProjectReview" style="display: flex; flex-direction: column; gap: 8px;">
                                                     <div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Loading projects...</div>
@@ -1670,7 +1693,7 @@
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <div id="daneelAuthReports" style="display: flex; flex-direction: column; gap: 6px;">
+                                                <div id="daneelAuthReports" style="max-height: 480px; overflow-y: auto; border: 1px solid var(--ngm-border); border-radius: 8px;">
                                                     <div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Loading reports...</div>
                                                 </div>
                                             </div>
@@ -3200,6 +3223,9 @@
             // Refresh projects button
             document.getElementById('daneelRefreshProjects').addEventListener('click', loadDaneelProjectReview);
 
+            // Report Activity (digest flush) button
+            document.getElementById('daneelReportActivity').addEventListener('click', runDaneelDigest);
+
             // Refresh reports button
             document.getElementById('daneelRefreshReports').addEventListener('click', loadDaneelAuthReports);
 
@@ -3209,6 +3235,33 @@
             // Andrew metrics buttons
             document.getElementById('andrewClearMetrics').addEventListener('click', clearAndrewMetrics);
             document.getElementById('andrewRefreshMetrics').addEventListener('click', refreshAndrewStats);
+        }
+
+        // ====== Daneel Digest ======
+
+        function runDaneelDigest() {
+            var btn = document.getElementById('daneelReportActivity');
+            if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+            fetch(API_BASE + '/daneel/auto-auth/digest', {
+                method: 'POST',
+                headers: Object.assign({ 'Content-Type': 'application/json' }, _agentAuthHeaders()),
+            }).then(function(resp) { return resp.json(); })
+            .then(function(data) {
+                if (data.ok) {
+                    var msg = 'Digest sent';
+                    if (data.messages_sent) msg += ' | ' + data.messages_sent + ' project message(s)';
+                    if (data.reports_digested) msg += ' | ' + data.reports_digested + ' report(s) processed';
+                    if (!data.messages_sent && !data.reports_digested) msg = 'No pending activity to report';
+                    if (window.Toast) window.Toast.success(msg);
+                } else {
+                    if (window.Toast) window.Toast.error('Digest failed');
+                }
+            }).catch(function(e) {
+                console.error('[Daneel] Digest error:', e);
+                if (window.Toast) window.Toast.error('Digest request failed');
+            }).finally(function() {
+                if (btn) { btn.disabled = false; btn.textContent = 'Report Activity'; }
+            });
         }
 
         // ====== Daneel Auto-Auth Config ======
@@ -3551,41 +3604,82 @@
 
             container.innerHTML = '<div class="empty-state-msg">Loading reports...</div>';
 
-            fetch(API_BASE + '/daneel/auto-auth/reports?limit=15', { headers: _agentAuthHeaders() })
+            var decColors = { authorized: '#10b981', missing_info: '#f59e0b', duplicate: '#8b5cf6', escalated: '#ef4444', info: '#6b7280' };
+            var checkLabels = { health: 'Health', bill_hint: 'Hint', bill_hint_vision: 'Vision', receipt_hash: 'Hash', duplicate: 'Dup R1-R9', gpt_resolve: 'GPT', smart_resolve: 'Smart' };
+
+            fetch(API_BASE + '/daneel/auto-auth/reports?limit=20', { headers: _agentAuthHeaders() })
                 .then(function(resp) { return resp.ok ? resp.json() : null; })
                 .then(function(result) {
                     if (!result || !result.data || result.data.length === 0) {
                         container.innerHTML = '<div class="empty-state-msg">No reports yet</div>';
                         return;
                     }
-                    container.innerHTML = '';
-                    result.data.forEach(function(r) {
-                        var typeLabel = r.report_type === 'project_run' ? 'Project' : r.report_type === 'backlog' ? 'Backlog' : r.report_type === 'realtime' ? 'Realtime' : r.report_type;
-                        var ts = r.created_at ? new Date(r.created_at).toLocaleString() : '--';
-                        var nameStr = r.project_name || '';
 
+                    var html = '<table class="daneel-report-table">'
+                        + '<thead><tr>'
+                        + '<th style="width: 140px;">Vendor</th>'
+                        + '<th style="width: 80px;">Amount</th>'
+                        + '<th style="width: 75px;">Date</th>'
+                        + '<th style="width: 75px;">Decision</th>'
+                        + '<th>Checks</th>'
+                        + '</tr></thead><tbody>';
+
+                    result.data.forEach(function(r) {
+                        var typeLabel = r.report_type === 'project_run' ? 'Project' :
+                            r.report_type === 'backlog' ? 'Backlog' :
+                            r.report_type === 'bill_realtime' ? 'Bill' :
+                            r.report_type === 'realtime' ? 'RT' : r.report_type;
+                        var ts = r.created_at ? new Date(r.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '--';
+                        var nameStr = r.project_name || '';
+                        var decisions = r.decisions || [];
+
+                        // Group header row
                         var badges = '';
                         if (r.authorized > 0) badges += '<span class="daneel-badge daneel-badge-auth">' + r.authorized + ' auth</span>';
                         if (r.missing_info > 0) badges += '<span class="daneel-badge daneel-badge-missing">' + r.missing_info + ' missing</span>';
                         if (r.duplicates > 0) badges += '<span class="daneel-badge daneel-badge-dup">' + r.duplicates + ' dup</span>';
                         if (r.escalated > 0) badges += '<span class="daneel-badge daneel-badge-esc">' + r.escalated + ' esc</span>';
 
-                        var row = document.createElement('div');
-                        row.className = 'daneel-report-row';
-                        row.dataset.reportId = r.report_id;
-                        row.innerHTML = '<div style="flex: 1; min-width: 0;">'
-                            + '<div style="display: flex; align-items: center; gap: 8px;">'
-                            + '<span style="font-size: 10px; font-weight: 600; color: var(--ngm-text-muted); text-transform: uppercase; min-width: 55px;">' + typeLabel + '</span>'
-                            + '<span style="font-size: 12px; color: var(--ngm-text);">' + _escapeHtml(nameStr) + '</span>'
-                            + '</div>'
-                            + '<div style="display: flex; align-items: center; gap: 4px; margin-top: 3px;">'
-                            + badges
-                            + '<span style="font-size: 10px; color: var(--ngm-text-muted); margin-left: auto;">' + ts + '</span>'
-                            + '</div>'
-                            + '</div>';
+                        html += '<tr class="group-header"><td colspan="5">'
+                            + typeLabel + ' &middot; ' + _escapeHtml(nameStr) + ' &middot; ' + ts
+                            + '&nbsp;&nbsp;' + badges
+                            + '</td></tr>';
 
-                        container.appendChild(row);
+                        if (decisions.length === 0) {
+                            html += '<tr><td colspan="5" style="color: var(--ngm-text-muted); font-style: italic; padding: 4px 8px;">No decisions</td></tr>';
+                        }
+
+                        decisions.forEach(function(d) {
+                            var color = decColors[d.decision] || 'var(--ngm-text-muted)';
+                            var amt = '$' + (d.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                            // Build compact check pills
+                            var pills = '';
+                            if (d.checks && d.checks.length > 0) {
+                                d.checks.forEach(function(c) {
+                                    var label = checkLabels[c.check] || c.check;
+                                    var bg = c.passed ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)';
+                                    var fg = c.passed ? '#10b981' : '#ef4444';
+                                    var icon = c.passed ? '\u2713' : '\u2717';
+                                    pills += '<span class="daneel-check-pill" style="background:' + bg + ';color:' + fg + ';" title="' + _escapeHtml(c.detail || '') + '">'
+                                        + icon + ' ' + _escapeHtml(label) + '</span>';
+                                });
+                            } else if (d.reason) {
+                                pills = '<span style="font-size:10px;color:var(--ngm-text-muted);">' + _escapeHtml((d.rule ? d.rule + ': ' : '') + d.reason).substring(0, 60) + '</span>';
+                            }
+
+                            html += '<tr>'
+                                + '<td style="max-width:140px;" title="' + _escapeHtml(d.vendor || '') + '">' + _escapeHtml(d.vendor || '-') + '</td>'
+                                + '<td>' + amt + '</td>'
+                                + '<td>' + (d.date || '-') + '</td>'
+                                + '<td><span class="daneel-decision-badge" style="background:' + color + ';">' + (d.decision || '-') + '</span></td>'
+                                + '<td style="white-space:normal; max-width:220px;">' + pills + '</td>'
+                                + '</tr>';
+                        });
                     });
+
+                    html += '</tbody></table>';
+                    container.innerHTML = html;
                 })
                 .catch(function(e) {
                     console.error('[Daneel] Reports load error:', e);
@@ -3726,89 +3820,7 @@
             }).join('');
         }
 
-        function _openReportDetail(reportId, rowEl) {
-            // Check if detail is already open
-            var existing = rowEl.nextElementSibling;
-            if (existing && existing.classList.contains('daneel-report-detail')) {
-                existing.remove();
-                return;
-            }
-            // Remove any other open detail
-            var allDetails = document.querySelectorAll('.daneel-report-detail');
-            for (var i = 0; i < allDetails.length; i++) allDetails[i].remove();
-
-            var detail = document.createElement('div');
-            detail.className = 'daneel-report-detail';
-            detail.innerHTML = '<div style="text-align: center; color: var(--ngm-text-muted);">Loading...</div>';
-            rowEl.after(detail);
-
-            fetch(API_BASE + '/daneel/auto-auth/reports/' + reportId, { headers: _agentAuthHeaders() })
-                .then(function(resp) { return resp.ok ? resp.json() : null; })
-                .then(function(report) {
-                    if (!report || !report.decisions || report.decisions.length === 0) {
-                        detail.innerHTML = '<div style="color: var(--ngm-text-muted);">No decisions in this report</div>';
-                        return;
-                    }
-                    var decColors = { authorized: '#10b981', missing_info: '#f59e0b', duplicate: '#8b5cf6', escalated: '#ef4444' };
-                    var checkLabels = { health: 'Health Check', bill_hint: 'Bill Hint', bill_hint_vision: 'Bill Hint (Vision)', receipt_hash: 'Receipt Hash', duplicate: 'Duplicate (R1-R9)', gpt_resolve: 'GPT Resolve' };
-                    var html = '';
-
-                    report.decisions.forEach(function(d, idx) {
-                        var color = decColors[d.decision] || 'var(--ngm-text-muted)';
-                        var amt = '$' + (d.amount || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
-
-                        // Expense header row
-                        html += '<div style="' + (idx > 0 ? 'margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--ngm-border);' : '') + ' display: flex; align-items: center; gap: 10px;">'
-                            + '<span style="font-weight: 600; color: var(--ngm-text); min-width: 120px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' + _escapeHtml(d.vendor || '') + '</span>'
-                            + '<span style="color: var(--ngm-text); min-width: 80px;">' + amt + '</span>'
-                            + '<span style="color: var(--ngm-text-muted); min-width: 80px;">' + (d.date || '') + '</span>'
-                            + (d.bill_id ? '<span style="color: var(--ngm-text-muted); font-size: 10px;">Bill: ' + _escapeHtml(d.bill_id) + '</span>' : '')
-                            + '<span style="margin-left: auto; color: ' + color + '; font-weight: 600; font-size: 11px; text-transform: uppercase;">' + (d.decision || '') + '</span>'
-                            + '</div>';
-
-                        // Checks trail (if available)
-                        if (d.checks && d.checks.length > 0) {
-                            html += '<div style="display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 0 4px;">';
-                            d.checks.forEach(function(c) {
-                                var label = checkLabels[c.check] || c.check;
-                                var bg = c.passed ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)';
-                                var fg = c.passed ? '#10b981' : '#ef4444';
-                                var icon = c.passed ? 'V' : 'X';
-                                html += '<span title="' + _escapeHtml(c.detail || '') + '" style="display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; background: ' + bg + '; color: ' + fg + '; font-size: 10px; font-weight: 500; cursor: default;">'
-                                    + '<span style="font-weight: 700;">' + icon + '</span> ' + _escapeHtml(label)
-                                    + '</span>';
-                            });
-                            html += '</div>';
-                            // Detail text under checks
-                            html += '<div style="margin: 2px 0 0 4px; font-size: 10px; color: var(--ngm-text-muted);">';
-                            d.checks.forEach(function(c) {
-                                if (c.detail) {
-                                    var label = checkLabels[c.check] || c.check;
-                                    var fg = c.passed ? '#10b981' : '#ef4444';
-                                    html += '<div style="margin-top: 1px;"><span style="color: ' + fg + '; font-weight: 500;">' + _escapeHtml(label) + ':</span> ' + _escapeHtml(c.detail) + '</div>';
-                                }
-                            });
-                            html += '</div>';
-                        } else {
-                            // Fallback for old reports without checks trail
-                            var detailStr = d.reason || '';
-                            if (d.missing_fields && d.missing_fields.length > 0) {
-                                detailStr = 'Missing: ' + d.missing_fields.join(', ');
-                            }
-                            if (detailStr) {
-                                html += '<div style="margin: 2px 0 0 4px; font-size: 10px; color: var(--ngm-text-muted);">'
-                                    + '<span style="font-weight: 500;">' + _escapeHtml(d.rule || '') + ':</span> ' + _escapeHtml(detailStr)
-                                    + '</div>';
-                            }
-                        }
-                    });
-
-                    detail.innerHTML = html;
-                })
-                .catch(function() {
-                    detail.innerHTML = '<div style="color: #ef4444;">Failed to load report detail</div>';
-                });
-        }
+        // _openReportDetail removed — decisions now render inline in the table
 
         function runDaneelBacklog() {
             var btn = document.getElementById('daneelRunBacklog');
@@ -3893,16 +3905,7 @@
                 });
             }
 
-            // Auth reports: delegated row clicks
-            var reportsContainer = document.getElementById('daneelAuthReports');
-            if (reportsContainer) {
-                reportsContainer.addEventListener('click', function(e) {
-                    var row = e.target.closest('.daneel-report-row');
-                    if (!row) return;
-                    var reportId = row.dataset.reportId;
-                    if (reportId) _openReportDetail(reportId, row);
-                });
-            }
+            // Auth reports: decisions render inline (no click handler needed)
         }
 
         // ============================================
@@ -3959,7 +3962,8 @@
             saveAndrewSmartConfig: saveAndrewSmartConfig,
             saveDaneelSmartConfig: saveDaneelSmartConfig,
             runAndrewFollowupCheck: runAndrewFollowupCheck,
-            runDaneelFollowupCheck: runDaneelFollowupCheck
+            runDaneelFollowupCheck: runDaneelFollowupCheck,
+            runDaneelDigest: runDaneelDigest
         };
 
     })();

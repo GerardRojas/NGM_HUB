@@ -2972,6 +2972,522 @@
 .legend-dot.decision { background: #fbbf24; }
 .legend-dot.output { background: #a78bfa; }
 
+/* ================================
+   Diagram Modal Tabs
+   ================================ */
+
+.diagram-modal-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border-soft);
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.diagram-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.diagram-tab:hover {
+    color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.diagram-tab.active {
+    color: #60a5fa;
+    border-bottom-color: #60a5fa;
+}
+
+.diagram-tab svg {
+    opacity: 0.6;
+}
+
+.diagram-tab.active svg {
+    opacity: 1;
+    stroke: #60a5fa;
+}
+
+.diagram-tab-content {
+    display: none;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+}
+
+.diagram-tab-content.active {
+    display: flex;
+    gap: 16px;
+}
+
+#diagramTabMath.active {
+    display: block;
+    overflow-y: auto;
+}
+
+/* ================================
+   Math Description
+   ================================ */
+
+.math-description-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px;
+    max-height: 520px;
+}
+
+.math-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    gap: 12px;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 13px;
+}
+
+/* Math header */
+.math-header {
+    margin-bottom: 20px;
+}
+
+.math-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0 0 4px 0;
+}
+
+.math-subtitle {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Final formula highlight */
+.math-final-formula {
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.08), rgba(139, 92, 246, 0.08));
+    border: 1px solid rgba(96, 165, 250, 0.2);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.math-final-formula .formula-line {
+    font-size: 16px;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    color: rgba(255, 255, 255, 0.95);
+    letter-spacing: 0.5px;
+}
+
+.math-final-formula .formula-caption {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.35);
+    margin-top: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+/* ================================
+   Full Equation Block
+   ================================ */
+
+.math-full-equation {
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.05), rgba(139, 92, 246, 0.05));
+    border: 1px solid rgba(96, 165, 250, 0.15);
+    border-radius: var(--radius-md);
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* Input / Output signature */
+.math-eq-signature {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.math-eq-io {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.math-eq-io-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255, 255, 255, 0.35);
+    min-width: 50px;
+}
+
+.math-eq-io-value {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+/* Main equation lines */
+.math-eq-main {
+    padding: 14px 0;
+    margin-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.math-eq-line {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.95);
+    line-height: 2;
+    padding: 4px 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-xs);
+    border-left: 3px solid rgba(96, 165, 250, 0.4);
+    margin-bottom: 6px;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.math-eq-line:last-child {
+    margin-bottom: 0;
+}
+
+/* "where" definitions */
+.math-eq-where {
+    margin-top: 0;
+}
+
+.math-eq-where-label {
+    font-size: 11px;
+    font-weight: 700;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 10px;
+    text-transform: lowercase;
+    letter-spacing: 0.5px;
+}
+
+.math-eq-defs {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.math-eq-def {
+    display: grid;
+    grid-template-columns: minmax(100px, auto) 16px 1fr;
+    grid-template-rows: auto auto;
+    align-items: baseline;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    gap: 0 8px;
+}
+
+.math-eq-def:last-child {
+    border-bottom: none;
+}
+
+.math-eq-def:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.math-eq-sym {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 12px;
+    color: #60a5fa;
+    font-weight: 600;
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.math-eq-equals {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.25);
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.math-eq-definition {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.75);
+    grid-column: 3;
+    grid-row: 1;
+}
+
+.math-eq-desc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.35);
+    line-height: 1.4;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-left: 20px;
+    padding-top: 2px;
+}
+
+/* Constraints */
+.math-eq-constraints {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.math-eq-constraints-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255, 255, 255, 0.3);
+    margin-bottom: 8px;
+}
+
+.math-eq-constraint {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    line-height: 1.5;
+    padding: 3px 0 3px 14px;
+    position: relative;
+}
+
+.math-eq-constraint::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(96, 165, 250, 0.3);
+}
+
+/* Variable table */
+.math-variables {
+    margin-bottom: 20px;
+}
+
+.math-section-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.math-var-grid {
+    display: grid;
+    grid-template-columns: 60px 1fr 80px;
+    gap: 0;
+    font-size: 12px;
+}
+
+.math-var-row {
+    display: contents;
+}
+
+.math-var-row:hover > * {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.math-var-symbol,
+.math-var-name,
+.math-var-unit {
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.math-var-symbol {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    color: #60a5fa;
+    font-weight: 600;
+    font-style: italic;
+}
+
+.math-var-name {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.math-var-unit {
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 11px;
+    text-align: right;
+}
+
+/* Stage cards */
+.math-stage {
+    margin-bottom: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.math-stage-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.math-stage-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(96, 165, 250, 0.15);
+    color: #60a5fa;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.math-stage-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.math-stage-body {
+    padding: 12px 14px;
+}
+
+/* Formula rows inside stages */
+.math-formula-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.math-formula-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.math-formula-expr {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+    min-width: 0;
+    flex-shrink: 0;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: var(--radius-xs);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.math-formula-desc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    line-height: 1.5;
+    padding-top: 5px;
+}
+
+/* Inline math styling */
+.m-var {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-style: italic;
+    color: #60a5fa;
+}
+
+.m-sub {
+    font-size: 0.75em;
+    vertical-align: sub;
+    font-style: normal;
+    color: #a78bfa;
+}
+
+.m-op {
+    color: rgba(255, 255, 255, 0.5);
+    padding: 0 2px;
+}
+
+.m-num {
+    color: #fbbf24;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+
+.m-fn {
+    color: #34d399;
+    font-style: normal;
+}
+
+.m-paren {
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.m-brace {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 1.1em;
+}
+
+/* Piecewise / conditional blocks */
+.math-piecewise {
+    margin: 6px 0 6px 20px;
+    padding-left: 12px;
+    border-left: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.math-piecewise-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 3px 0;
+    font-size: 12px;
+}
+
+.math-pw-value {
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    color: #fbbf24;
+    min-width: 50px;
+}
+
+.math-pw-cond {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 11px;
+}
+
+/* Notes/constraints */
+.math-note {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.3);
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-xs);
+    margin-top: 8px;
+    line-height: 1.5;
+}
+
+.math-note strong {
+    color: rgba(255, 255, 255, 0.5);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .diagram-modal {
@@ -2991,6 +3507,20 @@
     .diagram-legend {
         flex-wrap: wrap;
         gap: 10px;
+    }
+
+    .math-var-grid {
+        grid-template-columns: 50px 1fr 60px;
+    }
+
+    .math-formula-row {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .math-formula-expr {
+        white-space: normal;
+        word-break: break-all;
     }
 }
 

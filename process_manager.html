@@ -811,26 +811,46 @@
                     </svg>
                 </button>
             </div>
+            <div class="diagram-modal-tabs" id="diagramModalTabs">
+                <button type="button" class="diagram-tab active" data-tab="diagram">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                    Diagram
+                </button>
+                <button type="button" class="diagram-tab" data-tab="math">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"/><line x1="17" y1="14" x2="17" y2="20"/><line x1="14" y1="17" x2="20" y2="17"/></svg>
+                    Math
+                </button>
+            </div>
             <div class="modal-body diagram-modal-body">
-                <div class="diagram-svg-container" id="diagramSvgContainer">
-                    <div class="diagram-zoom-controls" id="diagramZoomControls">
-                        <button type="button" class="diagram-zoom-btn" id="btnDiagramZoomIn" title="Zoom in">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        </button>
-                        <button type="button" class="diagram-zoom-btn" id="btnDiagramZoomOut" title="Zoom out">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        </button>
-                        <button type="button" class="diagram-zoom-btn" id="btnDiagramZoomReset" title="Reset zoom">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                        </button>
+                <div class="diagram-tab-content active" id="diagramTabDiagram">
+                    <div class="diagram-svg-container" id="diagramSvgContainer">
+                        <div class="diagram-zoom-controls" id="diagramZoomControls">
+                            <button type="button" class="diagram-zoom-btn" id="btnDiagramZoomIn" title="Zoom in">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            </button>
+                            <button type="button" class="diagram-zoom-btn" id="btnDiagramZoomOut" title="Zoom out">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            </button>
+                            <button type="button" class="diagram-zoom-btn" id="btnDiagramZoomReset" title="Reset zoom">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="diagram-node-details hidden" id="diagramNodeDetails">
+                        <div class="diagram-details-header">
+                            <span class="diagram-details-title" id="diagramDetailsTitle">Node</span>
+                            <button type="button" class="diagram-details-close" id="btnCloseDiagramDetails">&times;</button>
+                        </div>
+                        <div class="diagram-details-body" id="diagramDetailsBody"></div>
                     </div>
                 </div>
-                <div class="diagram-node-details hidden" id="diagramNodeDetails">
-                    <div class="diagram-details-header">
-                        <span class="diagram-details-title" id="diagramDetailsTitle">Node</span>
-                        <button type="button" class="diagram-details-close" id="btnCloseDiagramDetails">&times;</button>
+                <div class="diagram-tab-content" id="diagramTabMath">
+                    <div class="math-description-container" id="mathDescriptionContainer">
+                        <div class="math-empty-state">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"/><line x1="17" y1="14" x2="17" y2="20"/><line x1="14" y1="17" x2="20" y2="17"/></svg>
+                            <p>No mathematical description available for this algorithm.</p>
+                        </div>
                     </div>
-                    <div class="diagram-details-body" id="diagramDetailsBody"></div>
                 </div>
             </div>
             <div class="modal-footer diagram-modal-footer">

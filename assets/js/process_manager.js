@@ -8966,6 +8966,734 @@
         return svg;
     }
 
+    // ================================
+    // Algorithm Math Specs Registry
+    // Maps algorithm codename -> math description
+    // ================================
+
+    const ALGORITHM_MATH_SPECS = {
+
+        // ------------------------------------------
+        // ADU ALLOWANCE CALCULATOR
+        // ------------------------------------------
+        ADU_CALC: {
+            title: 'ADU Allowance Calculator',
+            subtitle: 'Multi-factor cost estimation model with additive multipliers',
+            finalFormula: {
+                expr: 'C<sub>total</sub> = C<sub>base</sub> &middot; M<sub>combined</sub> + A<sub>fixed</sub> + A<sub>optional</sub>',
+                caption: 'Total Estimated Construction Cost'
+            },
+            fullEquation: {
+                input: 'x = ( t, c, A, s, d, f, l, n<sub>bed</sub>, n<sub>bath</sub>, fp, flags )',
+                output: 'C<sub>total</sub> &isin; &#x211D;<sup>+</sup>&ensp;(USD)',
+                lines: [
+                    'C(x) = B(t,c) &middot; &sigma;(t,A) &middot; &eta;(t,A,c) &middot; A &middot; max(0.60,&ensp;1 + &Sigma;<sub>i=1</sub><sup>8</sup>(&mu;<sub>i</sub> &minus; 1)) + &Phi; + &Omega;'
+                ],
+                where: [
+                    { sym: 'B(t,c)',            def: 'RATE_MATRIX[t][c]',                                       desc: 'Base rate $/sqft from pricing matrix indexed by ADU type and construction method' },
+                    { sym: '&sigma;(t,A)',      def: 'piecewise size curve modifier',                           desc: '1.25 if A&lt;min, lerp to 1.12, 1.00 in optimal, lerp to 0.94, floor 0.85' },
+                    { sym: '&eta;(t,A,c)',      def: 'conversion/renovation efficiency',                        desc: '0.72-1.05 based on structural reuse for garage conversions, above-garage, renovations' },
+                    { sym: '&mu;<sub>1</sub> = M<sub>s</sub>',     def: '{1.00, 1.35, 1.50, 1.65, 1.80}[s]',  desc: 'Stories multiplier' },
+                    { sym: '&mu;<sub>2</sub> = M<sub>d</sub>',     def: '{0.88, 1.00, 1.30, 1.55}[d]',        desc: 'Design package curve (basic &rarr; custom)' },
+                    { sym: '&mu;<sub>3</sub> = M<sub>f</sub>',     def: '{1.00, 1.18, 1.32}[f]',              desc: 'Foundation multiplier (slab &rarr; reinforced)' },
+                    { sym: '&mu;<sub>4</sub> = M<sub>l</sub>',     def: '{1.00, 1.28}[l]',                    desc: 'Land surface multiplier (flat &rarr; hillside)' },
+                    { sym: '&mu;<sub>5</sub> = M<sub>den</sub>',   def: 'f(A/n<sub>bed</sub>, A/n<sub>bath</sub>)',  desc: 'Density penalty: +20% if sqft/bed &lt; 280, interpolated, &times;1.08 if sqft/bath &lt; 180' },
+                    { sym: '&mu;<sub>6</sub> = M<sub>fp</sub>',    def: '1 + &Sigma; w<sub>j</sub>(low<sub>j</sub> + fp<sub>j</sub>(high<sub>j</sub> &minus; low<sub>j</sub>) &minus; 1)', desc: 'Weighted floor plan analysis from AI screenshot scores' },
+                    { sym: '&mu;<sub>7</sub> = M<sub>x</sub>',     def: '1 + &Sigma;(&alpha;<sub>k</sub> &minus; 1)',   desc: 'Cross-variable interactions: +6% to +15% for specific variable combos' },
+                    { sym: '&mu;<sub>8</sub> = M<sub>r</sub>',     def: '1 + &Sigma;(&gamma;<sub>r</sub> &minus; 1)',   desc: 'Compatibility rule adjustments: +12% to +35% for structural edge cases' },
+                    { sym: '&Phi;',             def: 'C<sub>bed</sub> + C<sub>bath</sub> + &delta;<sub>P</sub>&middot;18k + &delta;<sub>S</sub>&middot;14A + &delta;<sub>F</sub>&middot;7A + &delta;<sub>App</sub>&middot;6.5k&middot;u', desc: 'Fixed additions: bedrooms ($2.5k+$2k/ea), bathrooms ($8.5k+$6k/ea), permits, solar, sprinklers, appliances' },
+                    { sym: '&Omega;',           def: '&Sigma; cost(feat<sub>i</sub>)',                          desc: 'Optional features: retaining wall, kitchen, island, rooftop/exterior deck, landscape' },
+                ],
+                constraints: [
+                    'max(0.60, M<sub>combined</sub>) &mdash; safety floor prevents multiplier collapse',
+                    'Additive model: 1 + &Sigma;(&mu;<sub>i</sub> &minus; 1) avoids exponential compounding',
+                    'Range output: [C &middot; 0.85, C &middot; 1.15] for &plusmn;15% allowance band'
+                ]
+            },
+            variables: [
+                { symbol: 'B',             name: 'Base rate from pricing matrix',          unit: '$/sqft'  },
+                { symbol: 'A',             name: 'Total area (square footage)',             unit: 'sqft'    },
+                { symbol: 'M<sub>sqft</sub>',  name: 'Size curve modifier',                unit: 'factor'  },
+                { symbol: 'M<sub>eff</sub>',   name: 'Conversion/renovation efficiency',   unit: 'factor'  },
+                { symbol: 'M<sub>s</sub>',     name: 'Stories multiplier',                 unit: 'factor'  },
+                { symbol: 'M<sub>d</sub>',     name: 'Design package curve',               unit: 'factor'  },
+                { symbol: 'M<sub>f</sub>',     name: 'Foundation multiplier',              unit: 'factor'  },
+                { symbol: 'M<sub>l</sub>',     name: 'Land surface multiplier',            unit: 'factor'  },
+                { symbol: 'M<sub>den</sub>',   name: 'Density modifier (bed/bath ratio)',  unit: 'factor'  },
+                { symbol: 'M<sub>fp</sub>',    name: 'Floor plan analysis modifier',       unit: 'factor'  },
+                { symbol: 'M<sub>x</sub>',     name: 'Cross-variable interaction',         unit: 'factor'  },
+                { symbol: 'M<sub>r</sub>',     name: 'Compatibility rule adjustment',      unit: 'factor'  },
+            ],
+            stages: [
+                {
+                    name: 'Base Rate Lookup',
+                    formulas: [
+                        {
+                            expr: 'B = PRICING_MATRIX[type][construction]',
+                            desc: 'Lookup base $/sqft from the pricing matrix indexed by ADU type and construction method.'
+                        }
+                    ]
+                },
+                {
+                    name: 'Size Curve Modifier',
+                    formulas: [
+                        {
+                            expr: 'M<sub>sqft</sub> = f(A, curve)',
+                            desc: 'Piecewise function based on where A falls in the optimal range for the ADU type.'
+                        }
+                    ],
+                    piecewise: [
+                        { value: '1.25',        cond: 'A < min' },
+                        { value: 'lerp(1.25, 1.12, r)', cond: 'min &le; A < optimal_min, r = (A - min) / (optimal_min - min)' },
+                        { value: '1.00',        cond: 'optimal_min &le; A &le; optimal_max' },
+                        { value: 'lerp(1.00, 0.94, r)', cond: 'optimal_max < A &le; max, r = (A - optimal_max) / (max - optimal_max)' },
+                        { value: '0.85',        cond: 'A > max (economy of scale floor)' },
+                    ]
+                },
+                {
+                    name: 'Conversion Efficiency',
+                    formulas: [
+                        {
+                            expr: 'M<sub>eff</sub> = f(type, A, construction)',
+                            desc: 'Accounts for structural reuse in garage conversions, above-garage, or renovation types.'
+                        }
+                    ],
+                    piecewise: [
+                        { value: '0.72',  cond: 'garage_conversion, A &le; 400 sqft (excellent reuse)' },
+                        { value: '0.82',  cond: 'garage_conversion, A &le; 550 sqft (good reuse)' },
+                        { value: '0.90',  cond: 'above_garage (base efficiency)' },
+                        { value: '0.85',  cond: 'renovation (default renovation efficiency)' },
+                        { value: '1.00',  cond: 'new construction (no reuse)' },
+                    ]
+                },
+                {
+                    name: 'Adjusted Rate & Base Cost',
+                    formulas: [
+                        {
+                            expr: 'B<sub>adj</sub> = B &middot; M<sub>sqft</sub> &middot; M<sub>eff</sub>',
+                            desc: 'Adjusted $/sqft rate after size curve and efficiency.'
+                        },
+                        {
+                            expr: 'C<sub>base</sub> = B<sub>adj</sub> &middot; A',
+                            desc: 'Base construction cost before multipliers.'
+                        }
+                    ]
+                },
+                {
+                    name: 'Additive Combined Multiplier',
+                    formulas: [
+                        {
+                            expr: 'M<sub>combined</sub> = 1 + (M<sub>s</sub> - 1) + (M<sub>d</sub> - 1) + (M<sub>f</sub> - 1) + (M<sub>l</sub> - 1) + (M<sub>den</sub> - 1) + (M<sub>fp</sub> - 1) + (M<sub>x</sub> - 1) + (M<sub>r</sub> - 1)',
+                            desc: 'Additive model: each factor contributes its premium independently over the base, preventing unrealistic exponential compounding.'
+                        },
+                        {
+                            expr: 'M<sub>combined</sub> = max(0.60, M<sub>combined</sub>)',
+                            desc: 'Safety floor: combined multiplier never drops below 0.60.'
+                        }
+                    ],
+                    note: 'Unlike multiplicative compounding (1.35 &times; 1.28 &times; 1.30 = 2.25x), additive compounding gives 1 + 0.35 + 0.28 + 0.30 = 1.93x, which better reflects real-world cost correlation.'
+                },
+                {
+                    name: 'Density Modifier',
+                    formulas: [
+                        {
+                            expr: 'sqft/bed = A / bedrooms',
+                            desc: 'Calculate space allocated per bedroom to assess layout density.'
+                        },
+                        {
+                            expr: 'M<sub>den</sub> = f(sqft/bed, sqft/bath)',
+                            desc: 'Penalty for cramped layouts, discount for spacious ones.'
+                        }
+                    ],
+                    piecewise: [
+                        { value: '1.20',  cond: 'sqft/bed < 280 (severely cramped)' },
+                        { value: 'lerp(1.20, 1.12, r)', cond: '280 &le; sqft/bed < 350' },
+                        { value: '1.00',  cond: '350 &le; sqft/bed &le; 550 (optimal)' },
+                        { value: '0.97',  cond: 'sqft/bed > 550 (spacious)' },
+                        { value: '&times; 1.08', cond: 'sqft/bath < 180 (additional plumbing penalty)' },
+                    ]
+                },
+                {
+                    name: 'Cross-Variable Interactions',
+                    formulas: [
+                        {
+                            expr: 'M<sub>x</sub> = 1 + &Sigma;(adj<sub>i</sub> - 1)',
+                            desc: 'Sum of premiums from matching variable combinations. Each interaction is additive.'
+                        }
+                    ],
+                    piecewise: [
+                        { value: '+8%',   cond: 'high_end + 2-story (complex detailing)' },
+                        { value: '+12%',  cond: 'custom + 2-story (specialized design)' },
+                        { value: '+15%',  cond: 'raised_foundation + hillside (engineering)' },
+                        { value: '+10%',  cond: 'detached + hillside (access/grading)' },
+                        { value: '+6%',   cond: 'energy_efficient + custom (materials)' },
+                        { value: '+10%',  cond: 'multifamily + high_end (coordination)' },
+                    ]
+                },
+                {
+                    name: 'Fixed Additions',
+                    formulas: [
+                        {
+                            expr: 'A<sub>fixed</sub> = C<sub>bed</sub> + C<sub>bath</sub> + P + S + F + App',
+                            desc: 'Sum of all fixed/semi-fixed costs added after multiplied base.'
+                        },
+                        {
+                            expr: 'C<sub>bed</sub> = $2,500 + (n-1) &middot; $2,000',
+                            desc: 'First bedroom costs more (new walls); additional bedrooms share infrastructure.'
+                        },
+                        {
+                            expr: 'C<sub>bath</sub> = $8,500 + (n-1) &middot; $6,000',
+                            desc: 'First bathroom bears full plumbing run; additional bathrooms share pipes.'
+                        }
+                    ],
+                    note: 'Plans & Permits = $18,000 (fixed). Solar = $14/sqft. Sprinklers = $7/sqft. Appliances = $6,500/unit.'
+                },
+                {
+                    name: 'Final Total',
+                    formulas: [
+                        {
+                            expr: 'C<sub>total</sub> = (C<sub>base</sub> &middot; M<sub>combined</sub>) + A<sub>fixed</sub> + A<sub>optional</sub>',
+                            desc: 'Multiplied base cost plus all additions and optional features.'
+                        },
+                        {
+                            expr: 'Range = [C<sub>total</sub> &middot; 0.85, C<sub>total</sub> &middot; 1.15]',
+                            desc: 'Low/High range displayed as &plusmn;15% of the estimate.'
+                        }
+                    ]
+                }
+            ]
+        },
+
+        // ------------------------------------------
+        // IRIS — Receipt Scanner
+        // ------------------------------------------
+        IRIS: {
+            title: 'IRIS Receipt Scanner',
+            subtitle: 'Dual-mode OCR pipeline with confidence gating',
+            finalFormula: {
+                expr: 'result = route(confidence(OCR<sub>fast</sub>(doc))) &rarr; validate &rarr; match',
+                caption: 'Receipt Processing Pipeline'
+            },
+            fullEquation: {
+                input: 'doc &isin; {PDF, PNG, JPG}',
+                output: 'fields = {vendor, amount, date, items[], payment_method}',
+                lines: [
+                    'fields = parse( conf(pdfplumber(doc)) &ge; &theta; &ensp;?&ensp; pdfplumber(doc) &ensp;:&ensp; GPT4o(doc) )',
+                    'result = DB.match(fields.vendor) &cup; validate(fields)'
+                ],
+                where: [
+                    { sym: 'doc',                       def: 'input file',                                  desc: 'PDF receipt, photo, or scanned image uploaded by user' },
+                    { sym: 'pdfplumber(doc)',            def: 'T<sub>fast</sub>',                            desc: 'Fast text extraction from embedded PDF text layer, O(ms)' },
+                    { sym: 'GPT4o(doc)',                 def: 'T<sub>heavy</sub>',                           desc: 'Vision model OCR fallback for scanned/photo receipts, O(sec)' },
+                    { sym: 'conf(T)',                    def: 'quality(T) &isin; [0,1]',                     desc: 'Text quality score: completeness, parsability, field detection rate' },
+                    { sym: '&theta;',                    def: '0.7',                                         desc: 'Confidence threshold: route to fast vs heavy OCR' },
+                    { sym: 'parse(T)',                   def: 'regex + heuristics &rarr; fields{}',          desc: 'Structured field extraction from raw text' },
+                    { sym: 'DB.match(vendor)',            def: 'vendors &cup; types &cup; payments',          desc: 'Database lookup for vendor, transaction type, and payment method auto-fill' },
+                ],
+                constraints: [
+                    'Fast path: if PDF has extractable text with conf &ge; 0.7, skip vision model entirely',
+                    'Validation pass: cross-check line item totals vs receipt total, flag mismatches',
+                ]
+            },
+            variables: [
+                { symbol: 'doc',               name: 'Input document (PDF/image)',      unit: 'file' },
+                { symbol: 'T<sub>fast</sub>',  name: 'pdfplumber text extraction',      unit: 'text' },
+                { symbol: 'T<sub>heavy</sub>', name: 'GPT-4o vision extraction',        unit: 'text' },
+                { symbol: 'conf',              name: 'Confidence score',                unit: '[0,1]' },
+                { symbol: '&theta;',           name: 'Confidence threshold',            unit: '0.7' },
+            ],
+            stages: [
+                {
+                    name: 'Text Detection',
+                    formulas: [
+                        { expr: 'T<sub>fast</sub> = pdfplumber(doc)', desc: 'Fast text extraction from PDF layer.' },
+                        { expr: 'conf = |T<sub>fast</sub>| > 0 ? quality(T<sub>fast</sub>) : 0', desc: 'Assess text quality and completeness.' }
+                    ]
+                },
+                {
+                    name: 'Route Decision',
+                    formulas: [
+                        { expr: 'T = conf &ge; &theta; ? T<sub>fast</sub> : GPT4o(doc)', desc: 'If fast extraction is confident, use it; otherwise fall back to heavy OCR.' }
+                    ]
+                },
+                {
+                    name: 'Parse & Validate',
+                    formulas: [
+                        { expr: 'fields = parse(T) &rarr; {vendor, amount, date, items[]}', desc: 'Extract structured fields from raw text.' },
+                        { expr: 'match = DB.lookup(fields.vendor)', desc: 'Match vendor to existing database records for auto-fill.' }
+                    ]
+                }
+            ]
+        },
+
+        // ------------------------------------------
+        // ATLAS — Expense Categorizer
+        // ------------------------------------------
+        ATLAS: {
+            title: 'ATLAS Expense Categorizer',
+            subtitle: 'LLM-based multi-class categorization with confidence threshold',
+            finalFormula: {
+                expr: 'category = conf(GPT(prompt, txn)) &ge; &theta; ? auto : manual',
+                caption: 'Categorization Decision Function'
+            },
+            fullEquation: {
+                input: 'txn = {description, amount, vendor, project}',
+                output: 'category &isin; Accounts &cup; {REVIEW}',
+                lines: [
+                    '{cat, conf} = GPT( template(Accounts, txn) )',
+                    'result = conf &ge; &theta; &ensp;?&ensp; auto_assign(cat) &ensp;:&ensp; queue_review(cat, conf)'
+                ],
+                where: [
+                    { sym: 'txn',                       def: '{desc, amount, vendor, project}',                 desc: 'Expense transaction with description, dollar amount, vendor name, and project context' },
+                    { sym: 'Accounts',                  def: 'DB.accounts.where(type &ne; labor)',              desc: 'Chart of non-labor accounts loaded from database' },
+                    { sym: 'template(Accounts, txn)',    def: 'system + accounts + txn context',                desc: 'Structured prompt with construction-domain context and power-tool detection' },
+                    { sym: 'GPT(prompt)',                def: '{category, confidence}',                         desc: 'GPT-4o returns best-match account category and confidence score' },
+                    { sym: '&theta;',                    def: '0.8',                                            desc: 'Auto-accept threshold: above = auto-assign, below = queue for human review' },
+                    { sym: 'conf',                       def: '&isin; [0,1]',                                   desc: 'Model confidence in the categorization, based on prompt specificity' },
+                ],
+                constraints: [
+                    'Only non-labor accounts are candidates: labor expenses use a different pipeline',
+                    'Low confidence (&lt; &theta;) items are queued, not rejected: human makes final call',
+                ]
+            },
+            variables: [
+                { symbol: 'txn',               name: 'Transaction record',              unit: 'object' },
+                { symbol: 'accts',             name: 'Chart of accounts',               unit: 'list' },
+                { symbol: 'conf',              name: 'Model confidence',                unit: '[0,1]' },
+                { symbol: '&theta;',           name: 'Auto-accept threshold',           unit: '0.8' },
+            ],
+            stages: [
+                {
+                    name: 'Prompt Construction',
+                    formulas: [
+                        { expr: 'prompt = template(accts, txn.description, txn.amount)', desc: 'Build LLM prompt with account list and transaction context.' }
+                    ]
+                },
+                {
+                    name: 'Classification',
+                    formulas: [
+                        { expr: '{category, conf} = GPT(prompt)', desc: 'LLM returns suggested category and confidence score.' }
+                    ]
+                },
+                {
+                    name: 'Gating',
+                    formulas: [
+                        { expr: 'result = conf &ge; &theta; ? auto_assign(category) : queue_for_review()', desc: 'High-confidence results are auto-applied; low-confidence goes to manual review.' }
+                    ]
+                }
+            ]
+        },
+
+        // ------------------------------------------
+        // DANEEL — Budget Monitor
+        // ------------------------------------------
+        DANEEL: {
+            title: 'DANEEL Budget Monitor',
+            subtitle: 'Event-driven budget alerting with configurable thresholds',
+            finalFormula: {
+                expr: 'alert = spent(project) / budget(project) &ge; threshold ? notify : noop',
+                caption: 'Budget Alert Trigger'
+            },
+            fullEquation: {
+                input: 'event &isin; {expense_created, expense_updated, expense_authorized}',
+                output: 'action &isin; {noop, warn, critical, overspend}',
+                lines: [
+                    'R = S(p) / B(p) &middot; 100',
+                    'action = R &ge; 100 ? overspend : R &ge; &tau;<sub>crit</sub> ? critical : R &ge; &tau;<sub>warn</sub> ? warn : noop'
+                ],
+                where: [
+                    { sym: 'S(p)',                      def: '&Sigma; expenses.where(project=p, authorized=true)',  desc: 'Total authorized spend on project p' },
+                    { sym: 'B(p)',                      def: 'project.budget',                                      desc: 'Approved budget ceiling for project p' },
+                    { sym: 'R',                         def: 'S / B &middot; 100',                                  desc: 'Spend ratio as percentage of budget' },
+                    { sym: '&tau;<sub>warn</sub>',      def: '80%',                                                 desc: 'Warning threshold: approaching budget limit' },
+                    { sym: '&tau;<sub>crit</sub>',      def: '95%',                                                 desc: 'Critical threshold: near budget exhaustion' },
+                    { sym: 'notify(owner, level, R)',    def: 'push + channel message',                             desc: 'Firebase push notification + Daneel bot message to project channel' },
+                ],
+                constraints: [
+                    'Deduplication: same alert level for same project not re-sent within 24h',
+                    'Only authorized expenses count toward spend total',
+                    'Triggers on expense mutations only, not on manual budget edits',
+                ]
+            },
+            variables: [
+                { symbol: 'S',                 name: 'Total spent on project',          unit: '$' },
+                { symbol: 'B',                 name: 'Approved budget',                 unit: '$' },
+                { symbol: 'R',                 name: 'Ratio S/B',                       unit: '%' },
+                { symbol: '&tau;',             name: 'Alert thresholds (configurable)', unit: '%' },
+            ],
+            stages: [
+                {
+                    name: 'Event Trigger',
+                    formulas: [
+                        { expr: 'on(expense_created | expense_updated)', desc: 'Monitor fires on any expense mutation event.' }
+                    ]
+                },
+                {
+                    name: 'Budget Comparison',
+                    formulas: [
+                        { expr: 'R = S / B &middot; 100', desc: 'Calculate spend ratio as percentage of budget.' },
+                        { expr: 'level = R &ge; 100 ? OVER : R &ge; &tau; ? WARNING : OK', desc: 'Classify budget status against threshold.' }
+                    ]
+                },
+                {
+                    name: 'Notification',
+                    formulas: [
+                        { expr: 'if level &ne; OK &rarr; notify(project.owner, level, R)', desc: 'Send alert to project owner with current spend ratio.' }
+                    ]
+                }
+            ]
+        },
+
+        // ------------------------------------------
+        // DANEEL_AUTH — Auto-Authorization
+        // ------------------------------------------
+        DANEEL_AUTH: {
+            title: 'DANEEL Auto-Authorization',
+            subtitle: 'Rule-based expense authorization with escalation paths',
+            finalFormula: {
+                expr: 'decision = rules(R1..R9) &rarr; {approve | flag | escalate}',
+                caption: 'Authorization Decision Pipeline'
+            },
+            fullEquation: {
+                input: 'txn = {amount, vendor, date, receipt, project, category, hash}',
+                output: 'decision &isin; {approve, flag, escalate}',
+                lines: [
+                    'score = &Sigma;<sub>i=1</sub><sup>9</sup> w<sub>i</sub> &middot; R<sub>i</sub>(txn)',
+                    'decision = score &lt; 0.3 ? approve : score &lt; 0.7 ? flag : escalate'
+                ],
+                where: [
+                    { sym: 'R<sub>1</sub>',             def: 'amount_duplicate(txn, &plusmn;$5, 7d)',           desc: 'Same amount within tolerance in last 7 days' },
+                    { sym: 'R<sub>2</sub>',             def: 'vendor_date_dup(txn)',                            desc: 'Same vendor + same date = likely duplicate' },
+                    { sym: 'R<sub>3</sub>',             def: 'receipt_hash_dup(txn.hash)',                      desc: 'Receipt image fingerprint already exists in system' },
+                    { sym: 'R<sub>4</sub>',             def: 'amount &gt; project.auth_limit',                 desc: 'Amount exceeds project auto-authorization ceiling' },
+                    { sym: 'R<sub>5</sub>',             def: 'vendor_frequency(txn) &gt; &tau;',               desc: 'Abnormal vendor frequency in recent window' },
+                    { sym: 'R<sub>6</sub>',             def: 'category_mismatch(txn)',                         desc: 'Category doesn\'t match vendor history pattern' },
+                    { sym: 'R<sub>7</sub>',             def: 'bill_hint_mismatch(filename, amount)',           desc: 'Amount in filename doesn\'t match extracted amount' },
+                    { sym: 'R<sub>8</sub>',             def: 'is_labor(txn) &and; !is_check(txn)',             desc: 'Labor expense without check (unusual payment method)' },
+                    { sym: 'R<sub>9</sub>',             def: 'missing_required_fields(txn)',                   desc: 'Required fields absent (no receipt, no category, no project)' },
+                    { sym: 'w<sub>i</sub>',             def: 'rule weight &isin; [0,1]',                      desc: 'Per-rule importance weight, configurable' },
+                    { sym: 'GPT review',                def: 'optional fallback',                               desc: 'For ambiguous scores near boundaries, GPT-4o-mini reviews batch before final decision' },
+                ],
+                constraints: [
+                    'Health check first: missing required fields = instant escalate, skip rules',
+                    'Approved expenses post to project channel with summary',
+                    'Flagged/escalated expenses notify project owner for manual review',
+                ]
+            },
+            variables: [
+                { symbol: 'txn',               name: 'Expense transaction',             unit: 'object' },
+                { symbol: 'R<sub>1..9</sub>',  name: 'Authorization rules',            unit: 'bool' },
+                { symbol: 'score',             name: 'Cumulative risk score',           unit: '[0,1]' },
+            ],
+            stages: [
+                {
+                    name: 'Health Check',
+                    formulas: [
+                        { expr: 'valid = hasReceipt(txn) &and; hasProject(txn) &and; hasCategory(txn)', desc: 'Verify required fields are present.' }
+                    ]
+                },
+                {
+                    name: 'Rule Evaluation',
+                    formulas: [
+                        { expr: 'flags[] = [R1(txn), R2(txn), ..., R9(txn)]', desc: 'Evaluate each rule independently. Rules check duplicates, amount limits, category patterns, vendor history.' },
+                        { expr: 'score = &Sigma; weight<sub>i</sub> &middot; flags[i]', desc: 'Weighted sum of triggered rules produces risk score.' }
+                    ]
+                },
+                {
+                    name: 'Decision',
+                    formulas: [
+                        { expr: 'decision = score < 0.3 ? approve : score < 0.7 ? flag : escalate', desc: 'Low risk = auto-approve, medium = flag for review, high = escalate to manager.' }
+                    ]
+                }
+            ]
+        },
+
+        // ------------------------------------------
+        // ANDREW — Bookkeeper Agent
+        // ------------------------------------------
+        ANDREW: {
+            title: 'ANDREW Bookkeeper Agent',
+            subtitle: 'Dual-pipeline receipt and check processing with OCR + categorization',
+            finalFormula: {
+                expr: 'expense = pipeline(doc) &rarr; OCR &rarr; categorize &rarr; correct &rarr; post',
+                caption: 'Document-to-Expense Pipeline'
+            },
+            fullEquation: {
+                input: 'doc &isin; {PDF, PNG, JPG} uploaded to project channel',
+                output: 'expense record + channel notification',
+                lines: [
+                    'type = classify(doc) &ensp;&rarr;&ensp; {receipt, check}',
+                    'fields = IRIS(doc) &ensp;&rarr;&ensp; validate(fields) &ensp;&rarr;&ensp; hint_check(filename, fields)',
+                    'category = type = receipt ? ATLAS(fields) : labor_only(fields)',
+                    'expense = correct(fields, category) &ensp;&rarr;&ensp; save() &ensp;&rarr;&ensp; notify(channel)'
+                ],
+                where: [
+                    { sym: 'classify(doc)',             def: 'filename heuristic + content',                    desc: 'Detect if document is a receipt or labor check based on filename patterns and content' },
+                    { sym: 'IRIS(doc)',                 def: 'fields = {vendor, amount, date, items[]}',        desc: 'Receipt scanner: dual-mode OCR extraction (see IRIS algorithm)' },
+                    { sym: 'validate(fields)',          def: 'cross-check totals, dates, required fields',      desc: 'Validation correction pass: fix mismatched item totals, normalize dates' },
+                    { sym: 'hint_check(filename)',      def: 'amount_in_filename vs fields.amount',             desc: 'Bill hint cross-validation: flag if filename amount mismatches extracted amount' },
+                    { sym: 'ATLAS(fields)',             def: 'category = auto_categorize(fields)',              desc: 'Expense categorizer: LLM-based account assignment (see ATLAS algorithm)' },
+                    { sym: 'labor_only(fields)',        def: 'category &isin; labor_accounts',                 desc: 'Check pipeline: restricted to labor account categories only' },
+                    { sym: 'correct(fields, cat)',      def: 'low_conf ? prompt_user : auto_apply',            desc: 'Low-confidence triggers correction flow; high-confidence auto-applies' },
+                    { sym: 'notify(channel)',           def: 'post expense summary to project channel',        desc: 'Bot message with amount, vendor, category, and receipt thumbnail' },
+                ],
+                constraints: [
+                    'Split reuse detection: if receipt was already processed, skip OCR and reuse fields',
+                    'Check pipeline uses conversational flow via Payroll channel',
+                    'Cross-project notifications when expense splits span multiple projects',
+                ]
+            },
+            variables: [
+                { symbol: 'doc',               name: 'Input document (receipt/check)',   unit: 'file' },
+                { symbol: 'type',              name: 'Document type detection',          unit: 'enum' },
+                { symbol: 'fields',            name: 'Extracted structured data',        unit: 'object' },
+            ],
+            stages: [
+                {
+                    name: 'Split & Route',
+                    formulas: [
+                        { expr: 'type = classify(doc) &rarr; {receipt | check}', desc: 'Detect document type to select processing pipeline.' }
+                    ]
+                },
+                {
+                    name: 'OCR Extraction',
+                    formulas: [
+                        { expr: 'fields = IRIS(doc)', desc: 'Use IRIS scanner for text extraction and field parsing.' }
+                    ]
+                },
+                {
+                    name: 'Auto-Categorization',
+                    formulas: [
+                        { expr: 'category = ATLAS(fields)', desc: 'Use ATLAS categorizer to assign accounting category.' }
+                    ]
+                },
+                {
+                    name: 'Corrections & Post',
+                    formulas: [
+                        { expr: 'expense = correct(fields, category) &rarr; save()', desc: 'Apply corrections, create expense record, notify user.' }
+                    ]
+                }
+            ]
+        },
+
+        // ------------------------------------------
+        // ARTURITO — AI Assistant
+        // ------------------------------------------
+        ARTURITO: {
+            title: 'ARTURITO AI Assistant',
+            subtitle: 'NLU-powered intent routing with copilot mode',
+            finalFormula: {
+                expr: 'response = route(classify(NLU(input))) &rarr; {copilot | navigate | chat}',
+                caption: 'Intent Classification & Routing'
+            },
+            fullEquation: {
+                input: 'input &isin; String (user message in natural language)',
+                output: 'response = {text, action?, navigation?}',
+                lines: [
+                    'match = OBVIOS(input)',
+                    '{intent, conf} = match &ne; &empty; &ensp;?&ensp; {match, 1.0} &ensp;:&ensp; GPT_classify(NLU(input))',
+                    'response = route(intent, conf, user.role)'
+                ],
+                where: [
+                    { sym: 'OBVIOS(input)',             def: 'regex pattern bank &rarr; intent | &empty;',     desc: 'Fast-path: instant regex matching against known command patterns (O(1))' },
+                    { sym: 'NLU(input)',                def: 'tokenize + normalize + extract signals',          desc: 'Natural language understanding: tokenization, stopword removal, entity extraction' },
+                    { sym: 'GPT_classify(tokens)',      def: '{intent, conf} via GPT-4o-mini',                  desc: 'LLM intent classification for ambiguous inputs that don\'t match OBVIOS patterns' },
+                    { sym: 'route(intent, conf, role)',  def: 'handler dispatch',                               desc: 'Route to appropriate handler based on intent type and user permissions' },
+                    { sym: 'copilot(intent)',           def: 'execute action in-app',                           desc: 'Copilot mode: create expense, assign task, run report, etc. (17+ handlers)' },
+                    { sym: 'navigate(intent)',          def: 'redirect to page',                                desc: 'Navigation mode: go to expenses, open project, show dashboard, etc.' },
+                    { sym: 'chat(input)',               def: 'OpenAI Assistants API + thread memory',          desc: 'General chat: conversational AI with persistent thread context and personality levels' },
+                ],
+                constraints: [
+                    'OBVIOS fast-path bypasses LLM entirely for known patterns',
+                    'Backend has secondary NLU: slash commands + local regex + GPT fallback',
+                    'Role-based permissions: copilot actions check user.role before executing',
+                ]
+            },
+            variables: [
+                { symbol: 'input',             name: 'User message',                    unit: 'text' },
+                { symbol: 'intent',            name: 'Classified intent',               unit: 'enum' },
+                { symbol: 'conf',              name: 'Intent confidence',               unit: '[0,1]' },
+            ],
+            stages: [
+                {
+                    name: 'NLU Processing',
+                    formulas: [
+                        { expr: 'tokens = NLU(input)', desc: 'Natural language understanding: tokenize and extract intent signals.' },
+                        { expr: 'match = OBVIOS_CHECK(tokens)', desc: 'Fast-path: check against known command patterns first.' }
+                    ]
+                },
+                {
+                    name: 'Intent Classification',
+                    formulas: [
+                        { expr: '{intent, conf} = match ? direct : GPT_classify(tokens)', desc: 'Obvious matches bypass LLM; ambiguous inputs go through GPT classification.' }
+                    ]
+                },
+                {
+                    name: 'Routing',
+                    formulas: [
+                        { expr: 'handler = intent &isin; copilot_intents ? copilot(intent) : intent &isin; nav_intents ? navigate(intent) : chat(input)', desc: 'Route to copilot (actions), navigation (page redirect), or general chat.' }
+                    ]
+                }
+            ]
+        }
+    };
+
+    /**
+     * Render math description HTML from a math spec
+     * @param {Object} spec - Math spec from ALGORITHM_MATH_SPECS
+     * @returns {string} HTML string
+     */
+    function renderMathDescription(spec) {
+        if (!spec) return '';
+
+        let html = '';
+
+        // Header
+        html += '<div class="math-header">'
+              + '<div class="math-title">' + spec.title + '</div>'
+              + '<div class="math-subtitle">' + spec.subtitle + '</div>'
+              + '</div>';
+
+        // Full equation block (complete math description)
+        if (spec.fullEquation) {
+            const eq = spec.fullEquation;
+
+            html += '<div class="math-full-equation">';
+
+            // Input / Output signature
+            html += '<div class="math-eq-signature">'
+                  + '<div class="math-eq-io"><span class="math-eq-io-label">Input</span><span class="math-eq-io-value">' + eq.input + '</span></div>'
+                  + '<div class="math-eq-io"><span class="math-eq-io-label">Output</span><span class="math-eq-io-value">' + eq.output + '</span></div>'
+                  + '</div>';
+
+            // Main equation lines
+            html += '<div class="math-eq-main">';
+            eq.lines.forEach(line => {
+                html += '<div class="math-eq-line">' + line + '</div>';
+            });
+            html += '</div>';
+
+            // "where" definitions
+            if (eq.where && eq.where.length > 0) {
+                html += '<div class="math-eq-where">'
+                      + '<div class="math-eq-where-label">where</div>'
+                      + '<div class="math-eq-defs">';
+
+                eq.where.forEach(w => {
+                    html += '<div class="math-eq-def">'
+                          + '<span class="math-eq-sym">' + w.sym + '</span>'
+                          + '<span class="math-eq-equals">=</span>'
+                          + '<span class="math-eq-definition">' + w.def + '</span>'
+                          + '<span class="math-eq-desc">' + w.desc + '</span>'
+                          + '</div>';
+                });
+
+                html += '</div></div>';
+            }
+
+            // Constraints / notes
+            if (eq.constraints && eq.constraints.length > 0) {
+                html += '<div class="math-eq-constraints">'
+                      + '<div class="math-eq-constraints-label">Constraints</div>';
+                eq.constraints.forEach(c => {
+                    html += '<div class="math-eq-constraint">' + c + '</div>';
+                });
+                html += '</div>';
+            }
+
+            html += '</div>'; // math-full-equation
+        }
+        // Fallback: show old finalFormula hero if no fullEquation
+        else if (spec.finalFormula) {
+            html += '<div class="math-final-formula">'
+                  + '<div class="formula-line">' + spec.finalFormula.expr + '</div>'
+                  + '<div class="formula-caption">' + spec.finalFormula.caption + '</div>'
+                  + '</div>';
+        }
+
+        // Stages (collapsible detail)
+        if (spec.stages && spec.stages.length > 0) {
+            html += '<div class="math-section-title">Computation Stages</div>';
+
+            spec.stages.forEach((stage, idx) => {
+                html += '<div class="math-stage">'
+                      + '<div class="math-stage-header">'
+                      + '<span class="math-stage-num">' + (idx + 1) + '</span>'
+                      + '<span class="math-stage-name">' + stage.name + '</span>'
+                      + '</div>'
+                      + '<div class="math-stage-body">';
+
+                // Formulas
+                if (stage.formulas) {
+                    stage.formulas.forEach(f => {
+                        html += '<div class="math-formula-row">'
+                              + '<div class="math-formula-expr">' + f.expr + '</div>'
+                              + '<div class="math-formula-desc">' + f.desc + '</div>'
+                              + '</div>';
+                    });
+                }
+
+                // Piecewise conditions
+                if (stage.piecewise) {
+                    html += '<div class="math-piecewise">';
+                    stage.piecewise.forEach(pw => {
+                        html += '<div class="math-piecewise-row">'
+                              + '<span class="math-pw-value">' + pw.value + '</span>'
+                              + '<span class="math-pw-cond">' + pw.cond + '</span>'
+                              + '</div>';
+                    });
+                    html += '</div>';
+                }
+
+                // Note
+                if (stage.note) {
+                    html += '<div class="math-note">' + stage.note + '</div>';
+                }
+
+                html += '</div></div>'; // stage-body, stage
+            });
+        }
+
+        return html;
+    }
+
+    /**
+     * Get math spec for a given algorithm node (by codename or name match)
+     * @param {Object} node - The algorithm node
+     * @returns {Object|null} Math spec or null
+     */
+    function getMathSpecForNode(node) {
+        if (!node) return null;
+
+        // Try exact codename match
+        const codename = (node.codename || '').toUpperCase().replace(/[\s-]/g, '_');
+        if (ALGORITHM_MATH_SPECS[codename]) {
+            return ALGORITHM_MATH_SPECS[codename];
+        }
+
+        // Try matching by name keywords
+        const name = (node.name || '').toLowerCase();
+        for (const [key, spec] of Object.entries(ALGORITHM_MATH_SPECS)) {
+            const specTitle = spec.title.toLowerCase();
+            if (name.includes(key.toLowerCase()) || specTitle.includes(name)) {
+                return spec;
+            }
+        }
+
+        // Try matching by diagram_id -> linked diagram codename
+        if (node.diagram_id) {
+            const linked = getAlgorithmDiagramById(node.diagram_id);
+            if (linked && linked.codename) {
+                const linkedCodename = linked.codename.toUpperCase().replace(/[\s-]/g, '_');
+                if (ALGORITHM_MATH_SPECS[linkedCodename]) {
+                    return ALGORITHM_MATH_SPECS[linkedCodename];
+                }
+            }
+        }
+
+        return null;
+    }
+
     function findAlgorithmNodeById(nodeId) {
         // Search in customModules
         for (const module of state.customModules) {
@@ -9104,6 +9832,29 @@
         // Bind click events on diagram nodes
         bindDiagramNodeEvents(diagram);
 
+        // Render math tab content
+        const mathSpec = getMathSpecForNode(node);
+        const mathContainer = document.getElementById('mathDescriptionContainer');
+        if (mathContainer) {
+            if (mathSpec) {
+                mathContainer.innerHTML = renderMathDescription(mathSpec);
+            } else {
+                mathContainer.innerHTML = '<div class="math-empty-state">'
+                    + '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"/><line x1="17" y1="14" x2="17" y2="20"/><line x1="14" y1="17" x2="20" y2="17"/></svg>'
+                    + '<p>No mathematical description available for this algorithm.</p>'
+                    + '</div>';
+            }
+        }
+
+        // Show/hide math tab based on availability
+        const mathTab = document.querySelector('.diagram-tab[data-tab="math"]');
+        if (mathTab) {
+            mathTab.style.display = mathSpec ? '' : 'none';
+        }
+
+        // Reset to diagram tab
+        switchDiagramTab('diagram');
+
         modal.classList.remove('hidden');
         state.currentDiagramNode = node;
         state.currentDiagram = diagram;
@@ -9194,6 +9945,20 @@
         detailsPanel.classList.remove('hidden');
     }
 
+    function switchDiagramTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.diagram-tab').forEach(tab => {
+            tab.classList.toggle('active', tab.dataset.tab === tabName);
+        });
+        // Update tab content panels
+        document.querySelectorAll('.diagram-tab-content').forEach(panel => {
+            panel.classList.toggle('active', panel.id === 'diagramTab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+        });
+        // Show/hide footer legend based on tab
+        const legend = document.querySelector('.diagram-legend');
+        if (legend) legend.style.display = tabName === 'diagram' ? '' : 'none';
+    }
+
     function setupDiagramModalListeners() {
         const modal = document.getElementById('diagramModal');
         if (!modal) return;
@@ -9209,6 +9974,11 @@
                 document.getElementById('diagramNodeDetails')?.classList.add('hidden');
             });
         }
+
+        // Tab switching
+        document.querySelectorAll('.diagram-tab').forEach(tab => {
+            tab.addEventListener('click', () => switchDiagramTab(tab.dataset.tab));
+        });
 
         // Close on backdrop click
         modal.addEventListener('click', (e) => {

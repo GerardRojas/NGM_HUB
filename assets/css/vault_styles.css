@@ -396,6 +396,16 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.vault-tree-node .tree-count {
+  margin-left: auto;
+  padding: 0 6px;
+  font-size: 10px;
+  line-height: 16px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.4);
+  flex-shrink: 0;
+}
 .vault-tree-children {
   display: grid;
   grid-template-rows: 0fr;
@@ -1122,6 +1132,38 @@
 .vault-content-panel::-webkit-scrollbar-thumb:hover,
 .vault-version-list::-webkit-scrollbar-thumb:hover {
   background: rgba(255,255,255,0.2);
+}
+
+/* ---- Pagination ---- */
+.vault-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.vault-pag-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.7);
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.vault-pag-btn:hover:not([disabled]) {
+  background: rgba(255,255,255,0.12);
+}
+.vault-pag-btn[disabled] {
+  opacity: 0.3;
+  cursor: default;
+}
+.vault-pag-info {
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
 }
 
 /* ---- Animations ---- */

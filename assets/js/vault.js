@@ -52,6 +52,9 @@
   }
   let andrewBatchId = null;    // current vault batch being processed
   let andrewPollInterval = null; // polling timer for batch status
+  let filesTotalCount = 0;       // total files in current folder (from server)
+  let filesOffset = 0;           // current pagination offset
+  const FILES_PER_PAGE = 60;     // items per page (matches backend default)
 
   // ─── DOM refs ──────────────────────────────────────────────────────────────
   const $tree = document.getElementById("vaultTree");
@@ -355,8 +358,9 @@
       const arrow = `<svg class="${arrowClass}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 6 15 12 9 18"></polyline></svg>`;
 
       const projAttr = node.project_id ? ` data-project-id="${node.project_id}"` : "";
+      const countBadge = node.item_count ? `<span class="tree-count">${node.item_count}</span>` : "";
       html += `<div class="vault-tree-node${isActive ? " active" : ""}" data-id="${node.id}" data-name="${escapeAttr(node.name)}"${projAttr}>`;
-      html += `${indent}${arrow}${folderIcon}<span class="tree-label">${escapeHtml(node.name)}</span>`;
+      html += `${indent}${arrow}${folderIcon}<span class="tree-label">${escapeHtml(node.name)}</span>${countBadge}`;
       html += `</div>`;
       if (hasChildren) {
         html += `<div class="vault-tree-children${isExpanded ? " open" : ""}"><div class="vault-tree-children-inner">${renderTreeNodes(children, depth + 1, folderIcon)}</div></div>`;
@@ -422,29 +426,46 @@
 
   // ─── File Listing ──────────────────────────────────────────────────────────
   async function loadFiles(forceRefresh = false) {
-    // Build cache key
-    const cacheKey = `${currentProject || "__global__"}:${currentFolder || "__root__"}`;
+    // Build cache key (includes offset for paginated caching)
+    const cacheKey = `${currentProject || "__global__"}:${currentFolder || "__root__"}:${filesOffset}`;
 
     // Use cached data if available and not forcing refresh
     if (!forceRefresh && filesCache[cacheKey]) {
-      files = filesCache[cacheKey];
+      const cached = filesCache[cacheKey];
+      files = cached.data || cached;
+      filesTotalCount = cached.total ?? files.length;
       renderFiles();
       // Still check receipt status for cached files
       await checkReceiptStatus();
       return;
     }
 
-    // Fetch fresh data
+    // Fetch fresh data (paginated)
     try {
       let params = [];
       if (currentFolder) params.push(`parent_id=${currentFolder}`);
       if (currentProject) params.push(`project_id=${currentProject}`);
-      const qs = params.length ? `?${params.join("&")}` : "";
-      files = await apiFetch(`/vault/files${qs}`);
-      _cachePut(filesCache, cacheKey, files); // Cache with eviction
+      params.push(`limit=${FILES_PER_PAGE}`);
+      params.push(`offset=${filesOffset}`);
+      const qs = `?${params.join("&")}`;
+      const resp = await apiFetch(`/vault/files${qs}`);
+
+      // Handle both paginated {data,total,pagination} and legacy array responses
+      if (resp && resp.data && Array.isArray(resp.data)) {
+        files = resp.data;
+        filesTotalCount = resp.total ?? files.length;
+      } else if (Array.isArray(resp)) {
+        files = resp;
+        filesTotalCount = files.length;
+      } else {
+        files = [];
+        filesTotalCount = 0;
+      }
+      _cachePut(filesCache, cacheKey, { data: files, total: filesTotalCount });
     } catch (e) {
       console.warn("[Vault] Failed to load files:", e);
       files = [];
+      filesTotalCount = 0;
     }
 
     // Check receipt processing status if inside a Receipts folder
@@ -465,10 +486,12 @@
     }
   }
 
-  // Helper to invalidate file cache for current location
+  // Helper to invalidate file cache for current location (all pages)
   function invalidateCurrentFilesCache() {
-    const cacheKey = `${currentProject || "__global__"}:${currentFolder || "__root__"}`;
-    delete filesCache[cacheKey];
+    const prefix = `${currentProject || "__global__"}:${currentFolder || "__root__"}:`;
+    for (const key of Object.keys(filesCache)) {
+      if (key.startsWith(prefix)) delete filesCache[key];
+    }
   }
 
   // Helper to invalidate all caches (e.g., after major changes)
@@ -500,7 +523,44 @@
       $files.innerHTML = header + sorted.map(f => renderFileRow(f)).join("");
     }
 
+    renderPagination();
     updateAndrewButtonVisibility();
+  }
+
+  function renderPagination() {
+    let $pag = document.getElementById("vaultPagination");
+    if (!$pag) {
+      // Create pagination bar once, insert after $files container
+      $pag = document.createElement("div");
+      $pag.id = "vaultPagination";
+      $pag.className = "vault-pagination";
+      $files?.parentNode?.insertBefore($pag, $files.nextSibling);
+    }
+    const totalPages = Math.ceil(filesTotalCount / FILES_PER_PAGE);
+    const currentPage = Math.floor(filesOffset / FILES_PER_PAGE) + 1;
+
+    if (totalPages <= 1) { $pag.style.display = "none"; return; }
+    $pag.style.display = "flex";
+
+    const prevDisabled = currentPage <= 1 ? "disabled" : "";
+    const nextDisabled = currentPage >= totalPages ? "disabled" : "";
+
+    $pag.innerHTML = `
+      <button class="vault-pag-btn" data-page="prev" ${prevDisabled}>&laquo; Prev</button>
+      <span class="vault-pag-info">${currentPage} / ${totalPages} &nbsp;(${filesTotalCount} items)</span>
+      <button class="vault-pag-btn" data-page="next" ${nextDisabled}>Next &raquo;</button>
+    `;
+
+    $pag.onclick = async (e) => {
+      const btn = e.target.closest("[data-page]");
+      if (!btn || btn.disabled) return;
+      if (btn.dataset.page === "prev" && filesOffset >= FILES_PER_PAGE) {
+        filesOffset -= FILES_PER_PAGE;
+      } else if (btn.dataset.page === "next" && (filesOffset + FILES_PER_PAGE) < filesTotalCount) {
+        filesOffset += FILES_PER_PAGE;
+      }
+      await loadFiles(true);
+    };
   }
 
   function updateAndrewButtonVisibility() {
@@ -604,6 +664,9 @@
 
   // ─── Navigation ────────────────────────────────────────────────────────────
   async function navigateToFolder(folderId, folderName) {
+    // Reset pagination when changing folders
+    filesOffset = 0;
+
     // Update state immediately
     if (folderId) {
       // Find if already in path
@@ -660,6 +723,7 @@
     currentProject = projectId || null;
     currentFolder = null;
     folderPath = [];
+    filesOffset = 0;
 
     // Update UI immediately (sync operations)
     renderBreadcrumb();
@@ -1011,9 +1075,12 @@
         return;
       }
       try {
-        const body = { query: query.trim(), limit: 50 };
+        const body = { query: query.trim(), limit: 50, offset: 0 };
         if (currentProject) body.project_id = currentProject;
-        files = await apiPost("/vault/search", body);
+        const resp = await apiPost("/vault/search", body);
+        // Handle both paginated {data, pagination} and legacy array responses
+        files = (resp && resp.data && Array.isArray(resp.data)) ? resp.data : (Array.isArray(resp) ? resp : []);
+        filesTotalCount = files.length;
         renderFiles();
       } catch (e) {
         console.warn("[Vault] Search failed:", e);

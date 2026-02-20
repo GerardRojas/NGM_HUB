@@ -3538,70 +3538,48 @@
       // Convert Set to Array for processing
       const expenseIdsArray = Array.from(selectedExpenseIds);
 
-      // Process in batches to avoid overwhelming the server
-      const BATCH_SIZE = 5; // Process 5 expenses at a time
-      const DELAY_MS = 300; // 300ms delay between batches
-
-
-      // Helper function to delay execution
-      const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
       // Initial progress update
       updateButtonProgress();
 
       // PERFORMANCE: Build Map for O(1) lookups in batch processing
       const expensesMap = buildExpenseMap(expenses);
 
-      // Process expenses in batches
-      for (let i = 0; i < expenseIdsArray.length; i += BATCH_SIZE) {
-        const batch = expenseIdsArray.slice(i, i + BATCH_SIZE);
-        const batchNumber = Math.floor(i / BATCH_SIZE) + 1;
-        const totalBatches = Math.ceil(expenseIdsArray.length / BATCH_SIZE);
+      // Use batch endpoint — single HTTP request instead of N individual calls
+      const batchPayload = {
+        updates: expenseIdsArray.map(id => ({
+          expense_id: id,
+          data: { auth_status: true, status: 'auth', auth_by: userId }
+        }))
+      };
 
+      const result = await apiJson(`${apiBase}/expenses/batch?user_id=${userId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(batchPayload)
+      });
 
-        // Process current batch in parallel
-        const batchPromises = batch.map(async (expenseId) => {
-          try {
-            await apiJson(`${apiBase}/expenses/${expenseId}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                auth_status: true,
-                status: 'auth',
-                auth_by: userId
-              })
-            });
-            successCount++;
-            processedCount++;
+      successCount = result.summary?.total_updated || 0;
+      failedCount = result.summary?.total_failed || 0;
+      processedCount = successCount + failedCount;
 
-            // Update local data immediately (using Map for O(1) lookup)
-            const expense = expensesMap.get(String(expenseId));
-            if (expense) {
-              expense.auth_status = true;
-              expense.status = 'auth';
-              expense.auth_by = userId;
-            }
-
-          } catch (err) {
-            failedCount++;
-            processedCount++;
-            failedIds.push(expenseId);
-            console.error(`[BULK_AUTH] ✗ Failed to authorize expense ${expenseId}:`, err.message);
+      // Update local data for successful updates
+      if (result.updated) {
+        for (const exp of result.updated) {
+          const local = expensesMap.get(String(exp.expense_id));
+          if (local) {
+            local.auth_status = true;
+            local.status = 'auth';
+            local.auth_by = userId;
           }
-        });
-
-        // Wait for current batch to complete
-        await Promise.all(batchPromises);
-
-        // Update progress after each batch
-        updateButtonProgress();
-
-        // Delay before next batch (except for the last batch)
-        if (i + BATCH_SIZE < expenseIdsArray.length) {
-          await delay(DELAY_MS);
         }
       }
 
+      // Collect failed IDs
+      if (result.failed) {
+        for (const f of result.failed) {
+          failedIds.push(f.expense_id);
+        }
+      }
 
       // Show results
       if (window.Toast) {

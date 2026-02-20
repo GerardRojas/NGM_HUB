@@ -2327,6 +2327,30 @@
   border-color: #34b87d;
 }
 
+.btn-duplicate-isolate {
+  flex: 1;
+  padding: 10px 12px;
+  background: transparent;
+  border: 1px solid rgba(147, 197, 253, 0.4);
+  color: #93c5fd;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-duplicate-isolate:hover {
+  background: rgba(147, 197, 253, 0.1);
+  border-color: rgba(147, 197, 253, 0.6);
+}
+
+.btn-duplicate-isolate.btn-isolate-active {
+  background: rgba(147, 197, 253, 0.15);
+  border-color: #93c5fd;
+  color: #bfdbfe;
+}
+
 /* Enhanced highlight for current cluster */
 .expense-row-duplicate-current {
   background: rgba(255, 255, 255, 0.03) !important;
@@ -2369,7 +2393,8 @@
   }
 
   .btn-duplicate-nav,
-  .btn-duplicate-dismiss {
+  .btn-duplicate-dismiss,
+  .btn-duplicate-isolate {
     width: 100%;
   }
 }

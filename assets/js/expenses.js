@@ -79,6 +79,9 @@
   let currentMissingInfoIndex = 0;   // Currently viewing missing info index
   let healthCheckActiveTab = 'duplicates'; // 'duplicates' or 'missing'
 
+  // Isolate mode: when active, table only shows these expense IDs
+  let isolatedExpenseIds = null;     // null = off, Set = active filter
+
   // QBO Integration State
   let currentDataSource = 'manual';  // 'manual' or 'qbo'
   let qboExpenses = [];              // QBO expenses for current project
@@ -1157,6 +1160,7 @@
           const pay2 = exp2PaymentType.toLowerCase();
           const samePaymentType = pay1 && pay2 && pay1 === pay2;
           const isCheck = pay1 === 'check' || pay2 === 'check';
+          const bothChecks = pay1 === 'check' && pay2 === 'check';
 
           const sameAccount = exp1Account && exp2Account && exp1Account === exp2Account;
           const isLabor = exp1Account.toLowerCase().includes('labor')
@@ -1175,13 +1179,11 @@
           // Skip pairs that are definitively NOT duplicates
           // ========================================
 
-          // Rule 0: Different account = NOT a duplicate
-          // Same vendor can charge the same amount to different accounts (separate purchases)
+          // Rule 0: Different account_id — flag for scoring penalty (not early-exit)
+          // Real duplicates CAN be miscategorized to different accounts
           const exp1AccountId = exp1.account_id || '';
           const exp2AccountId = exp2.account_id || '';
-          if (exp1AccountId && exp2AccountId && exp1AccountId !== exp2AccountId) {
-            continue;
-          }
+          const differentAccountId = exp1AccountId && exp2AccountId && exp1AccountId !== exp2AccountId;
 
           // Rule A: Split bill bypass (Daneel R7b)
           // Expenses sharing a bill marked as 'split' are NOT duplicates
@@ -1203,6 +1205,22 @@
           // Same bill + check + different dates = separate check payments
           if (sameBillId && isCheck && diffDate) {
             continue;
+          }
+
+          // Rule E: Check payments with different descriptions
+          // Checks commonly have same vendor + same amount + even same date
+          // (e.g., $X for framing and $X for clearing to same vendor)
+          // Description is the KEY differentiator for checks
+          if (bothChecks) {
+            const hasDescriptions = exp1Description.trim() && exp2Description.trim();
+            if (hasDescriptions && descriptionSimilarity < 0.6) {
+              // Different work described → definitely not duplicates
+              continue;
+            }
+            // Check numbers (bill_id) are unique per check — different check# = different payment
+            if (exp1BillId && exp2BillId && !sameBillId && billSimilarity < 0.7) {
+              continue;
+            }
           }
 
           // Rule D: Different receipt files (Daneel R7a)
@@ -1228,32 +1246,45 @@
           let score = 0;
           const matchReasons = [];
 
-          // Base: same vendor + amount match (40 pts)
-          score += 40;
+          // Base: same vendor + amount match (30 pts)
+          // Lowered from 40 so "likely" (≥40) requires at least 1 additional match
+          score += 30;
           matchReasons.push('Same vendor & amount');
 
-          // Amount precision bonus
+          // Amount precision bonus (0-15 pts)
           if (amountDiff <= 0.01) {
             score += 15;
             matchReasons.push('Exact amount');
           } else if (amountDiff <= 0.50) {
-            score += 5;
+            score += 8;
+            matchReasons.push(`Amount diff: $${amountDiff.toFixed(2)}`);
+          } else {
+            score += 3;
             matchReasons.push(`Amount diff: $${amountDiff.toFixed(2)}`);
           }
 
-          // Date bonuses
+          // Date bonuses (0-25 pts)
           if (sameDate) {
             score += 25;
             matchReasons.push('Same date');
+          } else if (dateDiffDays <= 3) {
+            score += 15;
+            matchReasons.push(`Date diff: ${dateDiffDays} days`);
           } else if (dateDiffDays <= 7) {
             score += 10;
             matchReasons.push(`Date diff: ${dateDiffDays} days`);
+          } else if (dateDiffDays <= 14) {
+            score += 5;
+            matchReasons.push(`Date diff: ${dateDiffDays} days`);
           }
 
-          // Bill ID bonus (now fuzzy)
-          if (sameBillId) {
-            score += 15;
+          // Bill ID bonus — graduated fuzzy matching (0-20 pts)
+          if (billSimilarity >= 0.9) {
+            score += 20;
             matchReasons.push(`Same bill ID (${Math.round(billSimilarity * 100)}%)`);
+          } else if (billSimilarity >= 0.7) {
+            score += 10;
+            matchReasons.push(`Similar bill ID (${Math.round(billSimilarity * 100)}%)`);
           }
 
           // Receipt URL bonus
@@ -1273,7 +1304,7 @@
             matchReasons.push('Same account');
           }
 
-          // Description similarity
+          // Description similarity (0-10 pts)
           if (descriptionSimilarity >= 0.9) {
             score += 10;
             matchReasons.push(`Description match: ${Math.round(descriptionSimilarity * 100)}%`);
@@ -1282,22 +1313,62 @@
             matchReasons.push(`Description match: ${Math.round(descriptionSimilarity * 100)}%`);
           }
 
-          // Penalties
+          // Temporal proximity: expenses created close together (0-10 pts)
+          if (exp1CreatedAt && exp2CreatedAt) {
+            const createdDiffSec = Math.abs(new Date(exp1CreatedAt).getTime() - new Date(exp2CreatedAt).getTime()) / 1000;
+            if (createdDiffSec < 60) {
+              score += 10;
+              matchReasons.push('Created <1min apart');
+            } else if (createdDiffSec < 300) {
+              score += 5;
+              matchReasons.push('Created <5min apart');
+            }
+          }
+
+          // ========================================
+          // PENALTIES
+          // ========================================
+
           if (dateDiffDays > 30) {
             score -= 15;
             matchReasons.push('Date diff >30 days');
           }
 
-          // Different account penalty removed -- handled by early-exit Rule 0
+          // Different account_id penalty (replaces old early-exit Rule 0)
+          if (differentAccountId) {
+            score -= 10;
+            matchReasons.push('Different account');
+          }
 
           if (exp1PaymentType && exp2PaymentType && !samePaymentType) {
             score -= 5;
             matchReasons.push('Different payment type');
           }
 
+          // Different receipts penalty — softer when same bill exists
           if (bothHaveReceipt && !sameReceipt) {
-            score -= 10;
-            matchReasons.push('Different receipt files');
+            if (sameBillId) {
+              score -= 3;
+              matchReasons.push('Different receipts (same bill)');
+            } else {
+              score -= 10;
+              matchReasons.push('Different receipt files');
+            }
+          }
+
+          // Check payment penalty: checks routinely share vendor+amount+date
+          // Without strong description match, raise the bar significantly
+          if (bothChecks) {
+            const hasDescriptions = exp1Description.trim() && exp2Description.trim();
+            if (!hasDescriptions) {
+              // No descriptions to compare — penalize because checks are inherently repetitive
+              score -= 15;
+              matchReasons.push('Check payment without descriptions');
+            } else if (descriptionSimilarity < 0.8) {
+              // Descriptions exist but only moderately similar — still suspicious for checks
+              score -= 10;
+              matchReasons.push(`Check descriptions differ (${Math.round(descriptionSimilarity * 100)}%)`);
+            }
           }
 
           // Classify based on score
@@ -1380,35 +1451,46 @@
       }
     });
 
+    // Build expense lookup map — O(1) instead of O(n) per find
+    const expenseLookup = new Map();
+    expenses.forEach(e => expenseLookup.set(e.expense_id || e.id, e));
+
     // Group expenses by cluster ID
     const clusterMap = new Map();
     expenseToCluster.forEach((clusterId, expenseId) => {
       if (!clusterMap.has(clusterId)) {
         clusterMap.set(clusterId, []);
       }
-      const expense = expenses.find(e => (e.expense_id || e.id) === expenseId);
+      const expense = expenseLookup.get(expenseId);
       if (expense) {
-        clusterMap.set(clusterId, [...clusterMap.get(clusterId), expense]);
+        clusterMap.get(clusterId).push(expense);
       }
     });
 
-    // Convert clusters to array format
-    duplicateClusters = Array.from(clusterMap.values()).map(expenseList => {
-      // Get the first pair's metadata for this cluster
-      const firstExpId = expenseList[0].expense_id || expenseList[0].id;
-      const pairWithThis = duplicatePairs.find(p =>
-        p.expense1Id === firstExpId || p.expense2Id === firstExpId
-      );
+    // Index pairs by cluster: find the HIGHEST-scoring pair per cluster
+    const bestPairPerCluster = new Map();
+    duplicatePairs.forEach(pair => {
+      const clusterId = expenseToCluster.get(pair.expense1Id);
+      if (clusterId == null) return;
+      const existing = bestPairPerCluster.get(clusterId);
+      if (!existing || pair.score > existing.score) {
+        bestPairPerCluster.set(clusterId, pair);
+      }
+    });
+
+    // Convert clusters to array format using best pair metadata
+    duplicateClusters = Array.from(clusterMap.entries()).map(([clusterId, expenseList]) => {
+      const bestPair = bestPairPerCluster.get(clusterId);
 
       return {
         expenses: expenseList,
-        type: pairWithThis?.type || 'likely',
-        confidence: pairWithThis?.confidence || 'medium',
-        score: pairWithThis?.score || 0,
-        matchReasons: pairWithThis?.matchReasons || [],
-        vendorName: pairWithThis?.vendorName || 'Unknown',
-        amount: pairWithThis?.amount || 0,
-        billId: pairWithThis?.billId
+        type: bestPair?.type || 'likely',
+        confidence: bestPair?.confidence || 'medium',
+        score: bestPair?.score || 0,
+        matchReasons: bestPair?.matchReasons || [],
+        vendorName: bestPair?.vendorName || 'Unknown',
+        amount: bestPair?.amount || 0,
+        billId: bestPair?.billId
       };
     });
 
@@ -1632,6 +1714,9 @@
         <div class="duplicate-panel-actions">
           <button type="button" class="btn-duplicate-nav" id="btnPrevCluster" onclick="prevDuplicateCluster()">
             Previous
+          </button>
+          <button type="button" class="btn-duplicate-isolate" id="btnIsolateCluster" onclick="isolateCurrentCluster()" title="Show only these expenses in the table">
+            Isolate
           </button>
           <button type="button" class="btn-duplicate-dismiss" onclick="dismissCurrentCluster()">
             Not a Duplicate
@@ -2076,6 +2161,7 @@
    */
   function nextDuplicateCluster() {
     if (currentClusterIndex < duplicateClusters.length - 1) {
+      clearIsolateMode();
       currentClusterIndex++;
       updateDuplicateReviewPanel();
       highlightCurrentCluster();
@@ -2087,6 +2173,7 @@
    */
   function prevDuplicateCluster() {
     if (currentClusterIndex > 0) {
+      clearIsolateMode();
       currentClusterIndex--;
       updateDuplicateReviewPanel();
       highlightCurrentCluster();
@@ -2097,6 +2184,7 @@
    * Dismiss current cluster as "not a duplicate"
    */
   async function dismissCurrentCluster() {
+    clearIsolateMode();
     const cluster = duplicateClusters[currentClusterIndex];
     if (!cluster) return;
 
@@ -2174,9 +2262,61 @@
   }
 
   /**
+   * Toggle isolate mode: filter the table to only show expenses in the current cluster
+   */
+  function isolateCurrentCluster() {
+    const cluster = duplicateClusters[currentClusterIndex];
+    if (!cluster) return;
+
+    const btn = document.getElementById('btnIsolateCluster');
+    const clusterIds = new Set(cluster.expenses.map(e => e.expense_id || e.id));
+
+    if (isolatedExpenseIds) {
+      // Already isolated — toggle off
+      isolatedExpenseIds = null;
+      if (btn) {
+        btn.textContent = 'Isolate';
+        btn.classList.remove('btn-isolate-active');
+      }
+    } else {
+      // Activate isolate
+      isolatedExpenseIds = clusterIds;
+      if (btn) {
+        btn.textContent = 'Show All';
+        btn.classList.add('btn-isolate-active');
+      }
+    }
+
+    renderExpensesTable();
+    if (isolatedExpenseIds) {
+      highlightCurrentCluster();
+    }
+  }
+
+  /**
+   * Clear isolate mode (called when navigating clusters or dismissing)
+   */
+  function clearIsolateMode() {
+    if (!isolatedExpenseIds) return;
+    isolatedExpenseIds = null;
+    const btn = document.getElementById('btnIsolateCluster');
+    if (btn) {
+      btn.textContent = 'Isolate';
+      btn.classList.remove('btn-isolate-active');
+    }
+    renderExpensesTable();
+  }
+
+  /**
    * Hide the duplicate review panel
    */
   function hideDuplicateReviewPanel() {
+    // Clear isolate filter and re-render full table
+    if (isolatedExpenseIds) {
+      clearIsolateMode();
+      renderExpensesTable();
+    }
+
     // Cleanup drag listeners to prevent memory leaks
     cleanupPanelDrag();
 
@@ -2337,6 +2477,7 @@
   window.nextDuplicateCluster = nextDuplicateCluster;
   window.prevDuplicateCluster = prevDuplicateCluster;
   window.dismissCurrentCluster = dismissCurrentCluster;
+  window.isolateCurrentCluster = isolateCurrentCluster;
   window.hideDuplicateReviewPanel = hideDuplicateReviewPanel;
   window.deleteExpenseFromPanel = deleteExpenseFromPanel;
   window.detectDuplicateBillNumbers = detectDuplicateBillNumbers;
@@ -2668,7 +2809,12 @@
       return;
     }
 
-    const displayExpenses = filteredExpenses.length > 0 || Object.values(columnFilters).some(f => f.length > 0) ? filteredExpenses : expenses;
+    let displayExpenses = filteredExpenses.length > 0 || Object.values(columnFilters).some(f => f.length > 0) ? filteredExpenses : expenses;
+
+    // Isolate mode: override to show only the cluster's expenses
+    if (isolatedExpenseIds) {
+      displayExpenses = displayExpenses.filter(e => isolatedExpenseIds.has(e.expense_id || e.id));
+    }
 
     // PERFORMANCE: Use requestAnimationFrame for large datasets to avoid blocking UI
     const BATCH_SIZE = 100;

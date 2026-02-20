@@ -1131,6 +1131,14 @@
                                     <div id="detailContent">
                                         <!-- ====== Arturito Panels ====== -->
                                         <div id="arturito-overview" class="detail-tab-panel">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                                                <div class="period-selector" data-agent="arturito" style="display:flex;gap:4px;">
+                                                    <button class="period-pill" data-days="7" onclick="AgentHub.setPeriod('arturito',7,this)" style="padding:3px 10px;border-radius:12px;border:1px solid var(--ngm-border);background:var(--ngm-bg-input);color:var(--ngm-text-muted);font-size:11px;cursor:pointer;">7d</button>
+                                                    <button class="period-pill active" data-days="30" onclick="AgentHub.setPeriod('arturito',30,this)" style="padding:3px 10px;border-radius:12px;border:1px solid var(--accent);background:rgba(59,130,246,0.15);color:var(--accent);font-size:11px;cursor:pointer;font-weight:600;">30d</button>
+                                                    <button class="period-pill" data-days="90" onclick="AgentHub.setPeriod('arturito',90,this)" style="padding:3px 10px;border-radius:12px;border:1px solid var(--ngm-border);background:var(--ngm-bg-input);color:var(--ngm-text-muted);font-size:11px;cursor:pointer;">90d</button>
+                                                </div>
+                                                <button onclick="AgentHub.resetStats('arturito')" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.3);background:transparent;color:#ef4444;font-size:11px;cursor:pointer;">Reset Stats</button>
+                                            </div>
                                             <div class="stats-row">
                                                 <div class="stat-card">
                                                     <span class="stat-label">Total Permissions</span>
@@ -1261,6 +1269,14 @@
 
                                         <!-- ====== Andrew Panels ====== -->
                                         <div id="andrew-overview" class="detail-tab-panel">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                                                <div class="period-selector" data-agent="andrew" style="display:flex;gap:4px;">
+                                                    <button class="period-pill" data-days="7" onclick="AgentHub.setPeriod('andrew',7,this)" style="padding:3px 10px;border-radius:12px;border:1px solid var(--ngm-border);background:var(--ngm-bg-input);color:var(--ngm-text-muted);font-size:11px;cursor:pointer;">7d</button>
+                                                    <button class="period-pill active" data-days="30" onclick="AgentHub.setPeriod('andrew',30,this)" style="padding:3px 10px;border-radius:12px;border:1px solid var(--accent);background:rgba(59,130,246,0.15);color:var(--accent);font-size:11px;cursor:pointer;font-weight:600;">30d</button>
+                                                    <button class="period-pill" data-days="90" onclick="AgentHub.setPeriod('andrew',90,this)" style="padding:3px 10px;border-radius:12px;border:1px solid var(--ngm-border);background:var(--ngm-bg-input);color:var(--ngm-text-muted);font-size:11px;cursor:pointer;">90d</button>
+                                                </div>
+                                                <button onclick="AgentHub.resetStats('andrew')" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.3);background:transparent;color:#ef4444;font-size:11px;cursor:pointer;">Reset Stats</button>
+                                            </div>
                                             <div class="stats-row">
                                                 <div class="stat-card">
                                                     <span class="stat-label">Total Processed</span>
@@ -1633,6 +1649,14 @@
 
                                         <!-- ====== Daneel Panels ====== -->
                                         <div id="daneel-overview" class="detail-tab-panel">
+                                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                                                <div class="period-selector" data-agent="daneel" style="display:flex;gap:4px;">
+                                                    <button class="period-pill" data-days="7" onclick="AgentHub.setPeriod('daneel',7,this)" style="padding:3px 10px;border-radius:12px;border:1px solid var(--ngm-border);background:var(--ngm-bg-input);color:var(--ngm-text-muted);font-size:11px;cursor:pointer;">7d</button>
+                                                    <button class="period-pill active" data-days="30" onclick="AgentHub.setPeriod('daneel',30,this)" style="padding:3px 10px;border-radius:12px;border:1px solid var(--accent);background:rgba(59,130,246,0.15);color:var(--accent);font-size:11px;cursor:pointer;font-weight:600;">30d</button>
+                                                    <button class="period-pill" data-days="90" onclick="AgentHub.setPeriod('daneel',90,this)" style="padding:3px 10px;border-radius:12px;border:1px solid var(--ngm-border);background:var(--ngm-bg-input);color:var(--ngm-text-muted);font-size:11px;cursor:pointer;">90d</button>
+                                                </div>
+                                                <button onclick="AgentHub.resetStats('daneel')" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.3);background:transparent;color:#ef4444;font-size:11px;cursor:pointer;">Reset Stats</button>
+                                            </div>
                                             <div class="stats-row">
                                                 <div class="stat-card">
                                                     <span class="stat-label">Agent Status</span>
@@ -1657,6 +1681,25 @@
                                                 <div class="stat-card">
                                                     <span class="stat-label">Pending Info</span>
                                                     <span class="stat-value" id="daneelStatPendingInfo">--</span>
+                                                </div>
+                                            </div>
+                                            <!-- Daneel Breakdown Rates -->
+                                            <div class="stats-row" style="margin-top:8px;">
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Success Rate</span>
+                                                    <span class="stat-value" id="daneelRateSuccess" style="color:var(--accent)">--</span>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Duplicate Rate</span>
+                                                    <span class="stat-value" id="daneelRateDuplicate" style="color:#f59e0b">--</span>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Missing Info Rate</span>
+                                                    <span class="stat-value" id="daneelRateMissing" style="color:#ef4444">--</span>
+                                                </div>
+                                                <div class="stat-card">
+                                                    <span class="stat-label">Escalation Rate</span>
+                                                    <span class="stat-value" id="daneelRateEscalation" style="color:var(--ngm-text-muted)">--</span>
                                                 </div>
                                             </div>
                                             <!-- Project Review Section -->
@@ -2205,7 +2248,7 @@
                 } else if (agentId === 'andrew') {
                     // Load stats with a small delay to ensure DOM is ready
                     setTimeout(function() {
-                        loadAgentStats();
+                        loadAgentStats(_agentPeriods.andrew);
                     }, 100);
                     loadAgentConfig();
                     loadAndrewMismatchConfig();
@@ -2332,7 +2375,7 @@
             if (tabId === 'overview' && currentAgent === 'andrew') {
                 // Reload Andrew stats when switching to overview tab
                 setTimeout(function() {
-                    loadAgentStats();
+                    loadAgentStats(_agentPeriods.andrew);
                 }, 50); // Small delay to ensure DOM is ready
             }
         }
@@ -2340,6 +2383,81 @@
         // ============================================
         // HUB METRICS
         // ============================================
+
+        // ============================================
+        // PERIOD & RESET CONTROLS
+        // ============================================
+
+        var _agentPeriods = { arturito: 30, andrew: 30, daneel: 30 };
+
+        function _setPeriod(agent, days, btnEl) {
+            _agentPeriods[agent] = days;
+            // Update pill styles
+            var container = btnEl.parentElement;
+            var pills = container.querySelectorAll('.period-pill');
+            for (var i = 0; i < pills.length; i++) {
+                pills[i].style.border = '1px solid var(--ngm-border)';
+                pills[i].style.background = 'var(--ngm-bg-input)';
+                pills[i].style.color = 'var(--ngm-text-muted)';
+                pills[i].style.fontWeight = 'normal';
+                pills[i].classList.remove('active');
+            }
+            btnEl.style.border = '1px solid var(--accent)';
+            btnEl.style.background = 'rgba(59,130,246,0.15)';
+            btnEl.style.color = 'var(--accent)';
+            btnEl.style.fontWeight = '600';
+            btnEl.classList.add('active');
+
+            // Invalidate cache and re-fetch for this agent
+            if (agent === 'andrew') {
+                invalidateCache('/pending-receipts/agent-stats');
+                loadAgentStats(days);
+                _fetchAndrewHubStats(days);
+            } else if (agent === 'daneel') {
+                invalidateCache('/daneel/auto-auth/status');
+                _fetchDaneelHubStats(days);
+            } else if (agent === 'arturito') {
+                // Arturito stats come from failed-commands which already has days_back
+                invalidateCache('/arturito/failed-commands/stats');
+                if (window.arturityAnalytics && window.arturityAnalytics.loadIfNeeded) {
+                    window.arturityAnalytics.loadIfNeeded(days);
+                }
+            }
+        }
+
+        function _resetAgentStats(agent) {
+            if (!confirm('Reset ' + agent + ' stats counter? (Data is preserved, only the display window resets.)')) return;
+            fetch(API_BASE + '/pending-receipts/agents/' + agent + '/reset-stats', {
+                method: 'POST',
+                headers: _agentAuthHeaders()
+            })
+            .then(function(resp) { return resp.json(); })
+            .then(function(result) {
+                if (result.ok) {
+                    if (window.Toast) window.Toast.success(agent + ' stats reset');
+                    // Invalidate all caches for this agent and re-fetch
+                    if (agent === 'andrew') {
+                        invalidateCache('/pending-receipts/agent-stats');
+                        loadAgentStats(_agentPeriods.andrew);
+                        _fetchAndrewHubStats(_agentPeriods.andrew);
+                    } else if (agent === 'daneel') {
+                        invalidateCache('/daneel/auto-auth/status');
+                        _fetchDaneelHubStats(_agentPeriods.daneel);
+                    } else if (agent === 'arturito') {
+                        invalidateCache('/arturito/failed-commands/stats');
+                        if (window.arturityAnalytics && window.arturityAnalytics.loadIfNeeded) {
+                            window.arturityAnalytics.loadIfNeeded(_agentPeriods.arturito);
+                        }
+                    }
+                } else {
+                    if (window.Toast) window.Toast.error('Failed to reset stats');
+                }
+            })
+            .catch(function(e) {
+                console.error('[AgentHub] Reset error:', e);
+                if (window.Toast) window.Toast.error('Error resetting stats');
+            });
+        }
 
         function updateHubMetrics() {
             // Arturito
@@ -2366,14 +2484,15 @@
             }
 
             // Andrew
-            _fetchAndrewHubStats();
+            _fetchAndrewHubStats(_agentPeriods.andrew);
 
             // Daneel
-            _fetchDaneelHubStats();
+            _fetchDaneelHubStats(_agentPeriods.daneel);
         }
 
-        function _fetchAndrewHubStats() {
-            cachedFetch(API_BASE + '/pending-receipts/agent-stats', { headers: _agentAuthHeaders() })
+        function _fetchAndrewHubStats(days) {
+            var d = days || 30;
+            cachedFetch(API_BASE + '/pending-receipts/agent-stats?days=' + d, { headers: _agentAuthHeaders() })
                 .then(function(stats) {
                     if (!stats) {
                         _removeSkeleton('hubAndrewProcessed', '-');
@@ -2395,8 +2514,9 @@
                 });
         }
 
-        function _fetchDaneelHubStats() {
-            cachedFetch(API_BASE + '/daneel/auto-auth/status', { headers: _agentAuthHeaders() })
+        function _fetchDaneelHubStats(days) {
+            var d = days || 30;
+            cachedFetch(API_BASE + '/daneel/auto-auth/status?days=' + d, { headers: _agentAuthHeaders() })
                 .then(function(status) {
                     if (!status) return;
 
@@ -2407,7 +2527,7 @@
                     statusEl.classList.remove('skeleton', 'skeleton-stat');
                     statusEl.className = 'hub-metric-value' + (isEnabled ? ' metric-success' : ' metric-error');
 
-                    // Auto-Auth = authorizations last 30 days
+                    // Auto-Auth = authorizations in period
                     var autoAuthEl = document.getElementById('hubDaneelAutoAuth');
                     autoAuthEl.textContent = status.authorized_last_30d || 0;
                     autoAuthEl.classList.remove('skeleton', 'skeleton-stat');
@@ -2422,6 +2542,23 @@
 
                     var dot = document.getElementById('hubDotDaneel');
                     if (dot) dot.className = 'hub-status-dot ' + (isEnabled ? 'hub-status-active' : 'hub-status-disabled');
+
+                    // Daneel detail overview stats
+                    var dStatAutoAuth = document.getElementById('daneelStatAutoAuth');
+                    if (dStatAutoAuth) dStatAutoAuth.textContent = status.authorized_last_30d || 0;
+                    var dStatPending = document.getElementById('daneelStatPendingInfo');
+                    if (dStatPending) dStatPending.textContent = status.pending_info_count || 0;
+
+                    // Breakdown rate cards
+                    var rates = status.rates || {};
+                    var rEl1 = document.getElementById('daneelRateSuccess');
+                    var rEl2 = document.getElementById('daneelRateDuplicate');
+                    var rEl3 = document.getElementById('daneelRateMissing');
+                    var rEl4 = document.getElementById('daneelRateEscalation');
+                    if (rEl1) rEl1.textContent = (rates.success_rate || 0) + '%';
+                    if (rEl2) rEl2.textContent = (rates.duplicate_rate || 0) + '%';
+                    if (rEl3) rEl3.textContent = (rates.missing_rate || 0) + '%';
+                    if (rEl4) rEl4.textContent = (rates.escalation_rate || 0) + '%';
                 })
                 .catch(function() {});
         }
@@ -2631,9 +2768,10 @@
         // ANDREW AGENT
         // ============================================
 
-        function loadAgentStats() {
+        function loadAgentStats(days) {
+            var d = days || 30;
             console.log('[AgentHub] Loading agent stats...');
-            cachedFetch(API_BASE + '/pending-receipts/agent-stats', { headers: _agentAuthHeaders() })
+            cachedFetch(API_BASE + '/pending-receipts/agent-stats?days=' + d, { headers: _agentAuthHeaders() })
                 .then(function(stats) {
                     console.log('[AgentHub] Stats received:', stats);
                     if (!stats) {
@@ -3406,8 +3544,8 @@
                     console.error('[Daneel] Auto-auth config load error:', e);
                 });
 
-            // Load status
-            cachedFetch(API_BASE + '/daneel/auto-auth/status', { headers: _agentAuthHeaders() })
+            // Load status (uses current period)
+            cachedFetch(API_BASE + '/daneel/auto-auth/status?days=' + (_agentPeriods.daneel || 30), { headers: _agentAuthHeaders() })
                 .then(function(status) {
                     if (!status) return;
                     document.getElementById('daneelStatAutoAuth').textContent = status.authorized_last_30d || 0;
@@ -3427,6 +3565,17 @@
                         lastRunEl.textContent = 'Never';
                         lastRunEl.className = 'stat-value metric-muted';
                     }
+
+                    // Breakdown rate cards
+                    var rates = status.rates || {};
+                    var rEl1 = document.getElementById('daneelRateSuccess');
+                    var rEl2 = document.getElementById('daneelRateDuplicate');
+                    var rEl3 = document.getElementById('daneelRateMissing');
+                    var rEl4 = document.getElementById('daneelRateEscalation');
+                    if (rEl1) rEl1.textContent = (rates.success_rate || 0) + '%';
+                    if (rEl2) rEl2.textContent = (rates.duplicate_rate || 0) + '%';
+                    if (rEl3) rEl3.textContent = (rates.missing_rate || 0) + '%';
+                    if (rEl4) rEl4.textContent = (rates.escalation_rate || 0) + '%';
                 })
                 .catch(function(e) {
                     console.error('[Daneel] Auto-auth status load error:', e);
@@ -3734,7 +3883,7 @@
                     if (window.Toast) window.Toast.success('Metrics cleared: ' + result.deleted_count + ' records removed');
                     // Refresh the stats
                     refreshAndrewStats();
-                    _fetchAndrewHubStats(); // Also update hub card
+                    _fetchAndrewHubStats(_agentPeriods.andrew); // Also update hub card
                 } else {
                     if (window.Toast) window.Toast.error('Failed to clear metrics');
                 }
@@ -3747,11 +3896,12 @@
             });
         }
 
-        function refreshAndrewStats() {
+        function refreshAndrewStats(days) {
+            var d = (typeof days === 'number') ? days : (_agentPeriods.andrew || 30);
             console.log('[Andrew] Refreshing stats...');
             // Clear cache and reload stats
             invalidateCache('/pending-receipts/agent-stats');
-            cachedFetch(API_BASE + '/pending-receipts/agent-stats', { headers: _agentAuthHeaders() })
+            cachedFetch(API_BASE + '/pending-receipts/agent-stats?days=' + d, { headers: _agentAuthHeaders() })
                 .then(function(stats) {
                     console.log('[Andrew] Stats received:', stats);
                     if (!stats) {
@@ -3963,7 +4113,9 @@
             saveDaneelSmartConfig: saveDaneelSmartConfig,
             runAndrewFollowupCheck: runAndrewFollowupCheck,
             runDaneelFollowupCheck: runDaneelFollowupCheck,
-            runDaneelDigest: runDaneelDigest
+            runDaneelDigest: runDaneelDigest,
+            setPeriod: _setPeriod,
+            resetStats: _resetAgentStats
         };
 
     })();

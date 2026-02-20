@@ -1195,6 +1195,20 @@
             }
           }
 
+          // Rule F: Same bill + different descriptions = separate line items (Daneel R2b)
+          // Multiple items on the same invoice share bill ID, receipt, date, and vendor
+          // but have different product descriptions — these are NOT duplicates.
+          if (sameBillId) {
+            const hasDescriptions = exp1Description.trim() && exp2Description.trim();
+            if (hasDescriptions && descriptionSimilarity < 0.70) {
+              continue; // Different products on same bill
+            }
+            // Same bill + different accounts + moderately different descriptions
+            if (differentAccountId && hasDescriptions && descriptionSimilarity < 0.85) {
+              continue; // Different line items categorized to different accounts
+            }
+          }
+
           // Rule B: Recurring labor payments (Daneel R5)
           // Labor account + different dates + check payment = recurring payroll
           if (isLabor && diffDate && isCheck) {
@@ -1279,8 +1293,15 @@
           }
 
           // Bill ID bonus — graduated fuzzy matching (0-20 pts)
+          // Reduced when descriptions differ: same bill just means same invoice,
+          // not same line item. Full bonus only when descriptions also match.
           if (billSimilarity >= 0.9) {
-            score += 20;
+            if (descriptionSimilarity >= 0.85) {
+              score += 20;
+            } else if (descriptionSimilarity >= 0.70) {
+              score += 5;  // Same bill but descriptions differ — weak signal
+            }
+            // else: same bill + very different desc → no bonus (line items)
             matchReasons.push(`Same bill ID (${Math.round(billSimilarity * 100)}%)`);
           } else if (billSimilarity >= 0.7) {
             score += 10;
@@ -1343,6 +1364,14 @@
           if (exp1PaymentType && exp2PaymentType && !samePaymentType) {
             score -= 5;
             matchReasons.push('Different payment type');
+          }
+
+          // Same bill + different descriptions penalty
+          // Items on the same invoice with different descriptions are likely
+          // separate line items, not duplicates. Penalize to offset bill ID bonus.
+          if (sameBillId && exp1Description.trim() && exp2Description.trim() && descriptionSimilarity < 0.85) {
+            score -= 20;
+            matchReasons.push(`Different descriptions on same bill (${Math.round(descriptionSimilarity * 100)}%)`);
           }
 
           // Different receipts penalty — softer when same bill exists

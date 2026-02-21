@@ -513,6 +513,17 @@
     }
   }
 
+  // Debounced re-fetch of unread counts (used when messages are deleted)
+  let _unreadRefreshTimer = null;
+  function _debouncedUnreadRefresh() {
+    if (_unreadRefreshTimer) clearTimeout(_unreadRefreshTimer);
+    _unreadRefreshTimer = setTimeout(async () => {
+      _unreadRefreshTimer = null;
+      await loadUnreadCounts();
+      applyAllUnreadBadges();
+    }, 1000);
+  }
+
   function unreadBadgeHtml(channelType, idOrProjectId) {
     const key = `${channelType}:${idOrProjectId}`;
     const count = state.unreadCounts[key];
@@ -2744,11 +2755,10 @@
       const bot = isBot ? BOT_AGENTS[user.user_id] : null;
       const avatarColor = bot ? bot.color : getAvatarColor(user);
       const initials = bot ? bot.initials : getInitials(user.user_name);
-      const badge = isBot ? '<span class="msg-mention-bot-badge">BOT</span>' : '';
       html += `
         <button type="button" class="msg-mention-item" data-user-id="${user.user_id}" data-user-name="${escapeHtml(user.user_name)}">
           <span class="msg-mention-avatar" style="color: ${avatarColor}; border-color: ${avatarColor}">${initials}</span>
-          <span class="msg-mention-name">${escapeHtml(user.user_name)}${badge}</span>
+          <span class="msg-mention-name">${escapeHtml(user.user_name)}</span>
         </button>
       `;
     });
@@ -3962,6 +3972,23 @@
             updateBadgeForChannel(msgKey, state.unreadCounts[msgKey]);
           } else {
             console.log("[Realtime] Skipped (own msg, different channel) | msgKey=%s", msgKey);
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          const msg = payload.new;
+          if (!msg) return;
+
+          // When a message is soft-deleted, re-fetch unread counts
+          if (msg.is_deleted) {
+            _debouncedUnreadRefresh();
           }
         }
       )
@@ -5565,6 +5592,10 @@
     if (_cacheSaveTimer) {
       clearTimeout(_cacheSaveTimer);
       _cacheSaveTimer = null;
+    }
+    if (_unreadRefreshTimer) {
+      clearTimeout(_unreadRefreshTimer);
+      _unreadRefreshTimer = null;
     }
 
     stopMessagePolling();

@@ -366,7 +366,6 @@
     if (!elTimelineContent) return;
     elTimelineContent.innerHTML =
       '<div class="tm-empty-state">' +
-        '<span class="tm-empty-icon">📊</span>' +
         '<span class="tm-empty-text">No phases yet. Click "+ Add Phase" to create the first one.</span>' +
       '</div>';
   }
@@ -376,7 +375,6 @@
     if (!elTimelineContent) return;
     elTimelineContent.innerHTML =
       '<div class="tm-empty-state" id="timelineEmptyState">' +
-        '<span class="tm-empty-icon">📅</span>' +
         '<span class="tm-empty-text">Select a project to view its timeline</span>' +
       '</div>';
   }
@@ -445,7 +443,6 @@
       console.error('[TimelineManager] Gantt render error:', err);
       elTimelineContent.innerHTML =
         '<div class="tm-empty-state">' +
-          '<span class="tm-empty-icon">⚠️</span>' +
           '<span class="tm-empty-text">Failed to render Gantt chart. Check console for details.</span>' +
         '</div>';
     }

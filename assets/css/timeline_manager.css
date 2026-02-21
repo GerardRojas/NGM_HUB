@@ -2,6 +2,11 @@
    TIMELINE MANAGER — Dark Theme (Supabase-inspired)
    ============================================ */
 
+.page-timeline-manager .main-content {
+  max-width: none;
+  width: 100%;
+}
+
 /* Empty state */
 .tm-empty-state {
   display: flex;

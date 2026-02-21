@@ -3,6 +3,11 @@
    Dark theme consistent with NGM design system
    ========================================== */
 
+.page-vendors .main-content {
+  max-width: none;
+  width: 100%;
+}
+
 /* ==========================================
    SCORECARD CONTAINER
    ========================================== */

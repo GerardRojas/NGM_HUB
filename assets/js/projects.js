@@ -567,11 +567,10 @@
   function initTabs() {
     if (!window.NGMTabs) return;
 
-    // Populate project dropdowns in dashboard/cost/timeline tabs
+    // Populate project dropdowns in dashboard/timeline tabs
     function populateProjectDropdowns() {
       const selects = [
         document.getElementById('dashboardProjectSelect'),
-        document.getElementById('costProjectSelect'),
         document.getElementById('timelineProjectSelect')
       ];
       selects.forEach(sel => {
@@ -592,16 +591,6 @@
       dashSel.addEventListener('change', () => {
         if (dashSel.value && window.ProjectDashboard) {
           window.ProjectDashboard.load(dashSel.value);
-        }
-      });
-    }
-
-    // Cost project selector
-    const costSel = document.getElementById('costProjectSelect');
-    if (costSel) {
-      costSel.addEventListener('change', () => {
-        if (costSel.value && window.ProjectCost) {
-          window.ProjectCost.load(costSel.value);
         }
       });
     }
@@ -631,8 +620,8 @@
         return true;
       },
       onSwitch: (tabKey) => {
-        // Populate dropdowns when switching to dashboard/cost/timeline tabs
-        if (tabKey === 'dashboard' || tabKey === 'cost' || tabKey === 'timeline') {
+        // Populate dropdowns when switching to dashboard/timeline tabs
+        if (tabKey === 'dashboard' || tabKey === 'timeline') {
           populateProjectDropdowns();
         }
         // Load KPIs when switching to kpis tab
@@ -646,9 +635,6 @@
         // Unload modules when leaving tabs
         if (tabKey !== 'dashboard' && window.ProjectDashboard) {
           window.ProjectDashboard.unload();
-        }
-        if (tabKey !== 'cost' && window.ProjectCost) {
-          window.ProjectCost.unload();
         }
         if (tabKey !== 'kpis' && window.ProjectKPIs) {
           window.ProjectKPIs.unload();

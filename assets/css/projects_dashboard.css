@@ -3,6 +3,11 @@
    Dark theme consistent with NGM design system
    ========================================== */
 
+.page-projects .main-content {
+  max-width: none;
+  width: 100%;
+}
+
 /* ==========================================
    MAIN GRID LAYOUT
    ========================================== */
@@ -146,6 +151,9 @@
 .pd-chart-wrap canvas {
   width: 100% !important;
   height: 100% !important;
+}
+.pd-chart-wrap--tall {
+  min-height: 300px;
 }
 
 /* Full-width chart card */

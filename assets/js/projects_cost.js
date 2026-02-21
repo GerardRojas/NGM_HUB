@@ -54,7 +54,7 @@ window.ProjectCost = (() => {
       if (err.name === 'AbortError') return;
       container.innerHTML = `
         <div class="pd-empty-state">
-          <span class="pd-empty-icon">⚠️</span>
+          <span class="pd-empty-icon">--</span>
           <span class="pd-empty-text">Error loading cost data: ${err.message}</span>
         </div>`;
     }

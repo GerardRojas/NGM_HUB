@@ -36,7 +36,6 @@
     <link rel="stylesheet" href="assets/css/toast.css" />
     <link rel="stylesheet" href="assets/css/ngm_tabs.css" />
     <link rel="stylesheet" href="assets/css/projects_dashboard.css" />
-    <link rel="stylesheet" href="assets/css/projects_cost.css" />
     <link rel="stylesheet" href="assets/css/projects_kpis.css" />
     <link rel="stylesheet" href="assets/css/projects_timeline.css" />
     <link rel="stylesheet" href="assets/css/projects_scorecard.css" />
@@ -59,7 +58,6 @@
     <script src="assets/js/ngm_tabs.js" defer></script>
     <script src="assets/js/projects.js" defer></script>
     <script src="assets/js/projects_dashboard.js" defer></script>
-    <script src="assets/js/projects_cost.js" defer></script>
     <script src="assets/js/projects_kpis.js" defer></script>
     <script src="assets/js/projects_timeline.js" defer></script>
     <script src="assets/js/projects_scorecard.js" defer></script>
@@ -122,7 +120,6 @@
                         <div class="ngm-tabs-nav">
                             <button class="ngm-tab-btn ngm-tab-active" data-tab="list">Projects</button>
                             <button class="ngm-tab-btn" data-tab="dashboard">Dashboard</button>
-                            <button class="ngm-tab-btn" data-tab="cost">Cost vs Projection</button>
                             <button class="ngm-tab-btn" data-tab="kpis">Executive KPIs</button>
                             <button class="ngm-tab-btn" data-tab="timeline">Timeline</button>
                             <button class="ngm-tab-btn" data-tab="scorecard">Scorecard</button>
@@ -193,24 +190,7 @@
                             </div>
                             <div id="dashboard-panel-content">
                                 <div class="pd-empty-state">
-                                    <span class="pd-empty-icon">📊</span>
                                     <span class="pd-empty-text">Select a project to view its dashboard</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- TAB: Cost vs Projection -->
-                        <div class="ngm-tab-panel" data-tab-panel="cost" hidden>
-                            <div class="pd-project-selector">
-                                <label for="costProjectSelect" class="pd-selector-label">Select Project</label>
-                                <select id="costProjectSelect" class="ngm-select pd-selector-input">
-                                    <option value="">Choose a project...</option>
-                                </select>
-                            </div>
-                            <div id="cost-panel-content">
-                                <div class="pd-empty-state">
-                                    <span class="pd-empty-icon">📈</span>
-                                    <span class="pd-empty-text">Select a project to view cost projection</span>
                                 </div>
                             </div>
                         </div>
@@ -219,7 +199,6 @@
                         <div class="ngm-tab-panel" data-tab-panel="kpis" hidden>
                             <div id="kpis-panel-content">
                                 <div class="pd-empty-state">
-                                    <span class="pd-empty-icon">🎯</span>
                                     <span class="pd-empty-text">Loading executive KPIs...</span>
                                 </div>
                             </div>
@@ -235,7 +214,6 @@
                             </div>
                             <div id="timeline-panel-content">
                                 <div class="pd-empty-state">
-                                    <span class="pd-empty-icon">📅</span>
                                     <span class="pd-empty-text">Select a project to view its timeline</span>
                                 </div>
                             </div>

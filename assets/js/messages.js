@@ -1109,10 +1109,14 @@
 
   // Request counter to handle race conditions when switching channels quickly
   let channelRequestId = 0;
+  let _suppressToasts = false; // true during channel switch to prevent stale toasts
 
   async function selectChannel(channelType, channelId, projectId, channelName, clickedElement) {
     // Generate unique request ID for this selection
     const thisRequestId = ++channelRequestId;
+
+    // Suppress toasts while loading channel data (prevents stale message toasts)
+    _suppressToasts = true;
 
     // Auto-hide mentions view if visible
     const mentionsView = document.getElementById("mentionsView");
@@ -1234,6 +1238,7 @@
 
     // Subscribe to realtime updates
     subscribeToChannel(channel);
+    _suppressToasts = false;
 
     // Close mobile sidebar after selecting channel
     closeMobileSidebar();
@@ -4205,7 +4210,8 @@
     }
 
     // Show toast notification only for messages from others
-    if (message.user_id !== state.currentUser?.user_id) {
+    // Skip toasts during channel switch to avoid stale notifications
+    if (message.user_id !== state.currentUser?.user_id && !_suppressToasts) {
       showMessageNotification(message);
     }
 

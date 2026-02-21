@@ -367,6 +367,8 @@
 
       const userId = getCurrentUserId();
 
+      var _refetchTimer = null;
+
       subscription = supabaseClient
         .channel("sidebar_unread")
         .on(
@@ -379,6 +381,20 @@
               `${msg.channel_type}:${msg.channel_id || msg.project_id}`;
             unreadCounts[msgKey] = (unreadCounts[msgKey] || 0) + 1;
             updateBadge();
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "messages" },
+          (payload) => {
+            // When a message is soft-deleted, re-fetch accurate counts
+            if (payload.new && payload.new.is_deleted) {
+              if (_refetchTimer) clearTimeout(_refetchTimer);
+              _refetchTimer = setTimeout(function () {
+                _refetchTimer = null;
+                fetchUnreadCounts();
+              }, 1000);
+            }
           }
         )
         .subscribe();

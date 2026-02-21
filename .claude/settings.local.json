@@ -70,7 +70,9 @@
       "Bash(powershell.exe:*)",
       "Bash(python3:*)",
       "Bash(powershell -File:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(\"/c/Program Files/nodejs/node.exe\" -c assets/js/adu_calculator.js)",
+      "Bash(git merge:*)"
     ],
     "additionalDirectories": [
       "C:\\Users\\germa\\Desktop\\NGM_API\\sql",

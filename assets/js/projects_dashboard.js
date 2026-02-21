@@ -20,8 +20,6 @@ window.ProjectDashboard = (() => {
   const CHART_IDS = [
     'chart-by-category',
     'chart-top-vendors',
-    'chart-monthly-spend',
-    'chart-cost-projection',
     'chart-expense-timeline'
   ];
 
@@ -152,22 +150,6 @@ window.ProjectDashboard = (() => {
 
       // ── Expense Timeline (rendered by ProjectExpenseChart module) ──
       '  <div id="expense-timeline-container"></div>' +
-
-      // ── Full-width Line Chart: Budget vs Actual ──
-      '  <div class="pd-chart-card pd-chart-card--full">' +
-      '    <h3 class="pd-chart-title">Budget vs Actual</h3>' +
-      '    <div class="pd-chart-wrap pd-chart-wrap--tall">' +
-      '      <canvas id="chart-cost-projection"></canvas>' +
-      '    </div>' +
-      '  </div>' +
-
-      // ── Full-width Line Chart: Monthly Spend ──
-      '  <div class="pd-chart-card pd-chart-card--full">' +
-      '    <h3 class="pd-chart-title">Monthly Spend</h3>' +
-      '    <div class="pd-chart-wrap">' +
-      '      <canvas id="chart-monthly-spend"></canvas>' +
-      '    </div>' +
-      '  </div>' +
 
       // ── Charts Row (2 columns) ──
       '  <div class="pd-charts-row">' +
@@ -350,28 +332,6 @@ window.ProjectDashboard = (() => {
       showChartEmpty('chart-top-vendors', 'No vendor data');
     }
 
-    // ── Line: Monthly Spend ──
-    var monthlySpend = data.monthly_spend || [];
-    if (monthlySpend.length > 0) {
-      var monthLabels = monthlySpend.map(function(m) { return m.month || m.label || ''; });
-      var monthData   = monthlySpend.map(function(m) { return Number(m.amount || m.total || 0); });
-
-      Charts.lineChart('chart-monthly-spend', {
-        labels: monthLabels,
-        datasets: [{
-          label: 'Spend',
-          data: monthData,
-          borderColor: colors[0],
-          backgroundColor: 'rgba(62, 207, 142, 0.1)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 4,
-          pointHoverRadius: 6
-        }]
-      });
-    } else {
-      showChartEmpty('chart-monthly-spend', 'No monthly data');
-    }
   }
 
   /**
@@ -383,91 +343,6 @@ window.ProjectDashboard = (() => {
     var wrap = canvas.parentElement;
     if (!wrap) return;
     wrap.innerHTML = '<div class="pd-chart-empty">' + esc(message) + '</div>';
-  }
-
-  // ── Cost Projection Chart ──────────────────────────────────────────
-
-  /**
-   * Render the Budget vs Actual cumulative line chart from BVA data.
-   * Shows budget ceiling, linear projection, and actual cumulative spend.
-   */
-  function renderCostProjectionChart(d) {
-    var Charts = window.NGMCharts;
-    if (!Charts) return;
-
-    var C = Charts.NGM_COLORS || {};
-    var cumActual = d.cumulative_actual || [];
-    var projection = d.projection || [];
-
-    if (cumActual.length === 0 && projection.length === 0) {
-      showChartEmpty('chart-cost-projection', 'No budget data');
-      return;
-    }
-
-    var cumLabels = cumActual.map(function(m) { return m.month; });
-    var cumData = cumActual.map(function(m) { return m.cumulative; });
-    var projData = projection.map(function(m) { return m.projected_cumulative; });
-    var budgetLine = cumLabels.map(function() { return d.total_budget; });
-
-    Charts.create('chart-cost-projection', {
-      type: 'line',
-      data: {
-        labels: cumLabels,
-        datasets: [
-          {
-            label: 'Budget',
-            data: budgetLine,
-            borderColor: C.muted || '#6b7280',
-            borderDash: [6, 4],
-            borderWidth: 1.5,
-            pointRadius: 0,
-            fill: false
-          },
-          {
-            label: 'Projection',
-            data: projData,
-            borderColor: C.info || '#3b82f6',
-            borderDash: [4, 3],
-            borderWidth: 2,
-            pointRadius: 0,
-            fill: false
-          },
-          {
-            label: 'Actual',
-            data: cumData,
-            borderColor: C.primary || '#3ecf8e',
-            borderWidth: 2.5,
-            pointRadius: 3,
-            pointBackgroundColor: C.primary || '#3ecf8e',
-            fill: {
-              target: 'origin',
-              above: 'rgba(62, 207, 142, 0.08)'
-            }
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { position: 'top' },
-          tooltip: {
-            callbacks: {
-              label: function(ctx) { return ctx.dataset.label + ': ' + fmtMoney(ctx.parsed.y); }
-            }
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            grid: { color: C.grid || 'rgba(255,255,255,0.06)' },
-            ticks: { callback: function(v) { return fmtMoney(v); } }
-          },
-          x: { grid: { display: false } }
-        }
-      }
-    });
   }
 
   // ── Destroy Charts ─────────────────────────────────────────────────
@@ -515,16 +390,9 @@ window.ProjectDashboard = (() => {
     container.innerHTML = buildSkeletonHTML();
 
     try {
-      // Fetch health and budget-vs-actual in parallel
+      // Fetch project health data
       var pid = encodeURIComponent(projectId);
-      var results = await Promise.all([
-        window.NGM.api('/analytics/projects/' + pid + '/health', { signal: _abortController.signal }),
-        window.NGM.api('/analytics/projects/' + pid + '/budget-vs-actual', { signal: _abortController.signal })
-          .catch(function() { return null; })  // Non-critical — dashboard still works without it
-      ]);
-
-      var data = results[0];
-      var bvaData = results[1];
+      var data = await window.NGM.api('/analytics/projects/' + pid + '/health', { signal: _abortController.signal });
 
       // API returned null/empty
       if (!data) {
@@ -537,7 +405,6 @@ window.ProjectDashboard = (() => {
 
       container.innerHTML = buildDashboardHTML(data);
       renderCharts(data);
-      if (bvaData) renderCostProjectionChart(bvaData);
 
       // Load Expense Timeline chart (async, non-blocking)
       if (window.ProjectExpenseChart) {

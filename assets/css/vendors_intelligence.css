@@ -522,3 +522,89 @@
     font-size: 22px;
   }
 }
+
+/* ==========================================
+   INTELLIGENCE SUMMARY TABLE
+   ========================================== */
+
+.vi-summary-table {
+  table-layout: fixed;
+}
+
+.vi-summary-table th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Column widths */
+.vi-col-name     { width: auto; }
+.vi-col-spend    { width: 140px; font-variant-numeric: tabular-nums; }
+.vi-col-txn      { width: 110px; text-align: center; }
+.vi-col-projects { width: 90px; text-align: center; }
+.vi-col-conc     { width: 130px; text-align: center; }
+.vi-col-activity { width: 140px; }
+
+.vi-summary-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.vi-summary-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.vi-row-selected {
+  background: rgba(62, 207, 142, 0.06) !important;
+  border-left: 2px solid var(--accent, #3ecf8e);
+}
+
+/* Concentration pill */
+.vi-conc-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.vi-conc-low {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.vi-conc-medium {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.vi-conc-high {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+/* Total spend badge in toolbar */
+.vi-total-spend-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: rgba(62, 207, 142, 0.08);
+  border: 1px solid rgba(62, 207, 142, 0.2);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent, #3ecf8e);
+  margin-left: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Responsive for summary table */
+@media (max-width: 768px) {
+  .vi-col-spend    { width: 110px; }
+  .vi-col-txn      { width: 80px; }
+  .vi-col-projects { width: 70px; }
+  .vi-col-conc     { width: 110px; }
+  .vi-col-activity { width: 110px; }
+}

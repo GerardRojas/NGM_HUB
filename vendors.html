@@ -34,6 +34,7 @@
     <link rel="stylesheet" href="assets/css/styles.css" />
     <link rel="stylesheet" href="assets/css/expenses_styles.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
+    <link rel="stylesheet" href="assets/css/ngm_tabs.css" />
     <link rel="stylesheet" href="assets/css/vendors_intelligence.css" />
     <link rel="stylesheet" href="assets/css/arturito_widget.css" />
     <link rel="stylesheet" href="assets/css/chat_widget.css" />
@@ -51,6 +52,7 @@
     <script src="assets/js/sidebar.js" defer></script>
     <script src="assets/js/page-loading.js" defer></script>
     <script src="assets/js/ngm_charts.js" defer></script>
+    <script src="assets/js/ngm_tabs.js" defer></script>
     <script src="assets/js/vendors.js" defer></script>
     <script src="assets/js/vendors_intelligence.js" defer></script>
     <script src="assets/js/arturito_widget.js" defer></script>
@@ -107,84 +109,141 @@
             <main class="main-content">
                 <div class="workspace">
 
-                    <!-- Vendors Section -->
-                    <section class="data-section">
-
-                        <!-- Toolbar -->
-                        <div class="expenses-toolbar">
-                            <div class="toolbar-left">
-                                <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Vendors</h2>
-                            </div>
-
-                            <div class="toolbar-right">
-                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnEditVendors" disabled>
-                                    Edit Vendors
-                                </button>
-                                <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnAddVendor">
-                                    Add Vendor
-                                </button>
-                            </div>
+                    <div id="vendors-tabs">
+                        <div class="ngm-tabs-nav">
+                            <button class="ngm-tab-btn ngm-tab-active" data-tab="list">Vendors</button>
+                            <button class="ngm-tab-btn" data-tab="intelligence">Vendor Intelligence</button>
                         </div>
 
-                        <!-- Vendors Table -->
-                        <div class="expenses-table-container">
-                            <!-- Skeleton table (shown while loading) -->
-                            <table class="skeleton-table" id="vendorsSkeletonTable">
-                                <thead>
-                                    <tr>
-                                        <th>Vendor Name</th>
-                                        <th style="width: 80px;"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
-                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
-                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
-                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
-                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
-                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
-                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
-                                    <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
-                                </tbody>
-                            </table>
+                        <!-- TAB 1: Vendor List -->
+                        <div class="ngm-tab-panel ngm-tab-active" data-tab-panel="list">
+                            <section class="data-section">
+                                <div class="expenses-toolbar">
+                                    <div class="toolbar-left">
+                                        <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Vendors</h2>
+                                    </div>
+                                    <div class="toolbar-right">
+                                        <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnEditVendors" disabled>
+                                            Edit Vendors
+                                        </button>
+                                        <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnAddVendor">
+                                            Add Vendor
+                                        </button>
+                                    </div>
+                                </div>
 
-                            <div id="vendorsEmptyState" class="expenses-empty-state" style="display: none;">
-                                <span class="expenses-empty-icon">🏢</span>
-                                <span class="expenses-empty-text">No vendors found</span>
-                            </div>
+                                <div class="expenses-table-container">
+                                    <table class="skeleton-table" id="vendorsSkeletonTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Vendor Name</th>
+                                                <th style="width: 80px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                            <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                            <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                            <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                            <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                            <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                            <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                            <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-icon"></div></td></tr>
+                                        </tbody>
+                                    </table>
 
-                            <table class="expenses-table" id="vendorsTable" style="display: none;">
-                                <thead>
-                                    <tr>
-                                        <th class="col-checkbox" style="width: 40px; display: none;">
-                                            <input type="checkbox" id="selectAllCheckbox" title="Select All">
-                                        </th>
-                                        <th>Vendor Name</th>
-                                        <th class="col-actions"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="vendorsTableBody">
-                                    <!-- Rendered by JS -->
-                                </tbody>
-                            </table>
+                                    <div id="vendorsEmptyState" class="expenses-empty-state" style="display: none;">
+                                        <span class="expenses-empty-icon">&#x1F3E2;</span>
+                                        <span class="expenses-empty-text">No vendors found</span>
+                                    </div>
+
+                                    <table class="expenses-table" id="vendorsTable" style="display: none;">
+                                        <thead>
+                                            <tr>
+                                                <th class="col-checkbox" style="width: 40px; display: none;">
+                                                    <input type="checkbox" id="selectAllCheckbox" title="Select All">
+                                                </th>
+                                                <th>Vendor Name</th>
+                                                <th class="col-actions"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="vendorsTableBody"></tbody>
+                                    </table>
+                                </div>
+
+                                <div class="edit-mode-footer hidden" id="editModeFooter">
+                                    <div class="edit-footer-left">
+                                        <button type="button" class="btn-edit-delete" id="btnBulkDelete" disabled>
+                                            <span style="font-size: 14px;">&#x1F5D1;</span> Delete Selected (<span id="selectedCount">0</span>)
+                                        </button>
+                                    </div>
+                                    <div class="edit-footer-right">
+                                        <button type="button" class="btn-edit-cancel" id="btnCancelEdit">Cancel</button>
+                                        <button type="button" class="btn-edit-save" id="btnSaveChanges">Save Changes</button>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
 
-                        <!-- Edit mode footer (hidden by default) -->
-                        <div class="edit-mode-footer hidden" id="editModeFooter">
-                            <div class="edit-footer-left">
-                                <button type="button" class="btn-edit-delete" id="btnBulkDelete" disabled>
-                                    <span style="font-size: 14px;">🗑</span> Delete Selected (<span id="selectedCount">0</span>)
-                                </button>
-                            </div>
-                            <div class="edit-footer-right">
-                                <button type="button" class="btn-edit-cancel" id="btnCancelEdit">Cancel</button>
-                                <button type="button" class="btn-edit-save" id="btnSaveChanges">Save Changes</button>
-                            </div>
-                        </div>
-                    </section>
+                        <!-- TAB 2: Vendor Intelligence -->
+                        <div class="ngm-tab-panel" data-tab-panel="intelligence" hidden>
+                            <section class="data-section">
+                                <div class="expenses-toolbar">
+                                    <div class="toolbar-left">
+                                        <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Vendor Intelligence</h2>
+                                        <span id="viTotalSpend" class="vi-total-spend-badge" style="display: none;"></span>
+                                    </div>
+                                    <div class="toolbar-right">
+                                        <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnRefreshIntelligence">
+                                            Refresh
+                                        </button>
+                                    </div>
+                                </div>
 
-                    <!-- Vendor Intelligence Scorecard Panel (hidden by default) -->
-                    <div id="vendor-scorecard-panel" hidden></div>
+                                <div class="expenses-table-container">
+                                    <table class="skeleton-table" id="viSkeletonTable" style="display: none;">
+                                        <thead>
+                                            <tr>
+                                                <th>Vendor Name</th>
+                                                <th>Total Spend</th>
+                                                <th>Transactions</th>
+                                                <th>Projects</th>
+                                                <th>Concentration</th>
+                                                <th>Last Activity</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td></tr>
+                                            <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td></tr>
+                                            <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td></tr>
+                                            <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td></tr>
+                                            <tr><td><div class="skeleton-cell skeleton-cell--long"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td><td><div class="skeleton-cell skeleton-cell--short"></div></td></tr>
+                                        </tbody>
+                                    </table>
+
+                                    <div id="viEmptyState" class="expenses-empty-state" style="display: none;">
+                                        <span class="expenses-empty-text">No vendor analytics available</span>
+                                    </div>
+
+                                    <table class="expenses-table vi-summary-table" id="viSummaryTable" style="display: none;">
+                                        <thead>
+                                            <tr>
+                                                <th class="vi-col-name">Vendor Name</th>
+                                                <th class="vi-col-spend">Total Spend</th>
+                                                <th class="vi-col-txn">Transactions</th>
+                                                <th class="vi-col-projects">Projects</th>
+                                                <th class="vi-col-conc">Concentration</th>
+                                                <th class="vi-col-activity">Last Activity</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="viSummaryTableBody"></tbody>
+                                    </table>
+                                </div>
+
+                                <div id="vendor-scorecard-panel" hidden></div>
+                            </section>
+                        </div>
+                    </div>
 
                 </div>
             </main>

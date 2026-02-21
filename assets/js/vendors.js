@@ -1,5 +1,5 @@
 // ================================
-// VENDORS TABLE
+// VENDORS TABLE + INTELLIGENCE TABS
 // ================================
 
 (function() {
@@ -7,14 +7,20 @@
 
   const API_BASE = window.API_BASE || "https://ngm-fastapi.onrender.com";
 
-  // Estado
+  // Estado — Vendor List (Tab 1)
   let vendors = [];
   let originalVendors = [];
   let isEditMode = false;
   let selectedVendorIds = new Set();
 
+  // Estado — Intelligence (Tab 2)
+  let activeTab = 'list';
+  let intelligenceVendors = [];
+  let intelligenceLoaded = false;
+
   // DOM Elements
   const els = {
+    // Tab 1: Vendor list
     table: document.getElementById('vendorsTable'),
     tbody: document.getElementById('vendorsTableBody'),
     emptyState: document.getElementById('vendorsEmptyState'),
@@ -28,8 +34,55 @@
     selectAllCheckbox: document.getElementById('selectAllCheckbox'),
     btnBulkDelete: document.getElementById('btnBulkDelete'),
     selectedCount: document.getElementById('selectedCount'),
-    pageLoadingOverlay: document.getElementById('pageLoadingOverlay')
+    pageLoadingOverlay: document.getElementById('pageLoadingOverlay'),
+    // Tab 2: Intelligence
+    viSkeletonTable: document.getElementById('viSkeletonTable'),
+    viEmptyState: document.getElementById('viEmptyState'),
+    viSummaryTable: document.getElementById('viSummaryTable'),
+    viSummaryBody: document.getElementById('viSummaryTableBody'),
+    viTotalSpend: document.getElementById('viTotalSpend'),
+    btnRefreshIntelligence: document.getElementById('btnRefreshIntelligence')
   };
+
+  // ================================
+  // HELPERS
+  // ================================
+
+  function escapeHtml(str) {
+    if (str == null) return '';
+    if (window.escapeHtml) return window.escapeHtml(str);
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(String(str)));
+    return d.innerHTML;
+  }
+
+  function fmtCurrencyFull(n) {
+    if (n == null || isNaN(n)) return '$0.00';
+    return '$' + Number(n).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  function fmtCurrencyShort(n) {
+    if (n == null || isNaN(n)) return '$0';
+    n = Number(n);
+    if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return '$' + (n / 1000).toFixed(1) + 'K';
+    return '$' + n.toFixed(0);
+  }
+
+  function fmtDate(dateStr) {
+    if (!dateStr || dateStr === '--') return '--';
+    try {
+      var parts = dateStr.split('-');
+      var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2] || '1', 10));
+      var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    } catch (e) {
+      return dateStr;
+    }
+  }
 
   // ================================
   // INITIALIZATION
@@ -38,6 +91,40 @@
   async function init() {
     await loadVendors();
     setupEventListeners();
+  }
+
+  // ================================
+  // TABS
+  // ================================
+
+  function initTabs() {
+    if (!window.NGMTabs) return;
+
+    window.NGMTabs.init('vendors-tabs', {
+      onSwitch: function(tabKey) {
+        activeTab = tabKey;
+
+        // Load intelligence data on first switch
+        if (tabKey === 'intelligence' && !intelligenceLoaded) {
+          loadIntelligenceSummary();
+        }
+
+        // Cleanup scorecard when leaving intelligence tab
+        if (tabKey !== 'intelligence' && window.VendorIntelligence) {
+          window.VendorIntelligence.closeScorecard();
+        }
+
+        // Update search placeholder
+        if (els.searchInput) {
+          els.searchInput.placeholder = tabKey === 'intelligence'
+            ? 'Search vendor analytics...'
+            : 'Search vendors...';
+        }
+
+        // Re-apply search to the active tab
+        filterActiveTab();
+      }
+    });
   }
 
   // ================================
@@ -70,7 +157,7 @@
   }
 
   // ================================
-  // RENDER TABLE
+  // RENDER TABLE (Tab 1)
   // ================================
 
   function renderVendorsTable() {
@@ -92,7 +179,7 @@
 
   function renderReadRow(vendor, index) {
     const id = vendor.id || '';
-    const name = vendor.vendor_name || '—';
+    const name = vendor.vendor_name || '\u2014';
 
     return `
       <tr data-index="${index}" data-id="${id}" class="vendor-row-clickable">
@@ -116,7 +203,7 @@
           <input type="text" class="edit-input" data-field="vendor_name" value="${name}" placeholder="Vendor name">
         </td>
         <td class="col-actions">
-          <button type="button" class="btn-row-delete" data-id="${id}" title="Delete">×</button>
+          <button type="button" class="btn-row-delete" data-id="${id}" title="Delete">\u00d7</button>
         </td>
       </tr>
     `;
@@ -126,6 +213,86 @@
     if (els.skeletonTable) els.skeletonTable.style.display = 'none';
     els.emptyState.style.display = 'flex';
     els.table.style.display = 'none';
+  }
+
+  // ================================
+  // VENDOR INTELLIGENCE SUMMARY (Tab 2)
+  // ================================
+
+  async function loadIntelligenceSummary() {
+    if (!window.VendorIntelligence) return;
+
+    // Show skeleton, hide table and empty state
+    if (els.viSkeletonTable) els.viSkeletonTable.style.display = 'table';
+    if (els.viSummaryTable) els.viSummaryTable.style.display = 'none';
+    if (els.viEmptyState) els.viEmptyState.style.display = 'none';
+
+    var data = await window.VendorIntelligence.loadSummary();
+
+    if (!data || !data.vendors || data.vendors.length === 0) {
+      showIntelligenceEmpty();
+      return;
+    }
+
+    intelligenceVendors = data.vendors;
+    intelligenceLoaded = true;
+
+    // Show total spend badge
+    if (els.viTotalSpend && data.total_spend_all_vendors != null) {
+      els.viTotalSpend.textContent = 'Total: ' + fmtCurrencyShort(data.total_spend_all_vendors);
+      els.viTotalSpend.style.display = 'inline-flex';
+    }
+
+    renderIntelligenceTable();
+  }
+
+  function renderIntelligenceTable() {
+    if (!intelligenceVendors || intelligenceVendors.length === 0) {
+      showIntelligenceEmpty();
+      return;
+    }
+
+    if (els.viSkeletonTable) els.viSkeletonTable.style.display = 'none';
+    if (els.viEmptyState) els.viEmptyState.style.display = 'none';
+    if (els.viSummaryTable) els.viSummaryTable.style.display = 'table';
+    if (!els.viSummaryBody) return;
+
+    els.viSummaryBody.innerHTML = '';
+
+    intelligenceVendors.forEach(function(vendor) {
+      var vendorId = vendor.vendor_id || vendor.id || '';
+      var name = escapeHtml(vendor.vendor_name || '--');
+      var totalAmount = Number(vendor.total_amount || 0);
+      var txnCount = Number(vendor.txn_count || 0);
+      var projectCount = Number(vendor.project_count || 0);
+      var concPct = Number(vendor.concentration_pct || 0);
+      var lastActivity = vendor.last_txn_date || vendor.last_activity || '--';
+
+      // Concentration risk color class
+      var concClass = 'vi-conc-low';
+      if (concPct >= 30) concClass = 'vi-conc-high';
+      else if (concPct >= 15) concClass = 'vi-conc-medium';
+
+      var row = '<tr class="vi-summary-row" data-vendor-id="' + escapeHtml(vendorId) + '">' +
+        '<td class="vi-col-name">' + name + '</td>' +
+        '<td class="vi-col-spend">' + fmtCurrencyFull(totalAmount) + '</td>' +
+        '<td class="vi-col-txn">' + txnCount + '</td>' +
+        '<td class="vi-col-projects">' + projectCount + '</td>' +
+        '<td class="vi-col-conc"><span class="vi-conc-pill ' + concClass + '">' + concPct.toFixed(1) + '%</span></td>' +
+        '<td class="vi-col-activity">' + fmtDate(lastActivity) + '</td>' +
+      '</tr>';
+
+      els.viSummaryBody.insertAdjacentHTML('beforeend', row);
+    });
+
+    // Re-apply search filter
+    filterActiveTab();
+  }
+
+  function showIntelligenceEmpty() {
+    if (els.viSkeletonTable) els.viSkeletonTable.style.display = 'none';
+    if (els.viSummaryTable) els.viSummaryTable.style.display = 'none';
+    if (els.viEmptyState) els.viEmptyState.style.display = 'flex';
   }
 
   // ================================
@@ -318,7 +485,7 @@
 
     els.btnBulkDelete.disabled = true;
     const originalText = els.btnBulkDelete.innerHTML;
-    els.btnBulkDelete.innerHTML = '<span style="font-size: 14px;">⏳</span> Deleting...';
+    els.btnBulkDelete.innerHTML = '<span style="font-size: 14px;">&#x23F3;</span> Deleting...';
 
     try {
       const deletePromises = Array.from(selectedVendorIds).map(vendorId =>
@@ -373,10 +540,8 @@
     const allSelected = vendors.every(v => selectedVendorIds.has(v.id));
 
     if (allSelected) {
-      // Unselect all
       vendors.forEach(v => selectedVendorIds.delete(v.id));
     } else {
-      // Select all
       vendors.forEach(v => selectedVendorIds.add(v.id));
     }
 
@@ -401,20 +566,34 @@
   }
 
   // ================================
-  // SEARCH
+  // SEARCH (unified for both tabs)
   // ================================
 
-  function filterTable() {
-    const searchTerm = els.searchInput.value.toLowerCase().trim();
-    const rows = els.tbody.querySelectorAll('tr');
+  function filterActiveTab() {
+    var searchTerm = els.searchInput ? els.searchInput.value.toLowerCase().trim() : '';
 
-    rows.forEach(row => {
-      const vendorName = row.querySelector('td')?.textContent.toLowerCase() || '';
-      if (vendorName.includes(searchTerm)) {
-        row.style.display = '';
-      } else {
-        row.style.display = 'none';
-      }
+    if (activeTab === 'list') {
+      filterVendorsList(searchTerm);
+    } else if (activeTab === 'intelligence') {
+      filterIntelligenceTable(searchTerm);
+    }
+  }
+
+  function filterVendorsList(searchTerm) {
+    if (!els.tbody) return;
+    var rows = els.tbody.querySelectorAll('tr');
+    rows.forEach(function(row) {
+      var vendorName = row.querySelector('td') ? row.querySelector('td').textContent.toLowerCase() : '';
+      row.style.display = vendorName.includes(searchTerm) ? '' : 'none';
+    });
+  }
+
+  function filterIntelligenceTable(searchTerm) {
+    if (!els.viSummaryBody) return;
+    var rows = els.viSummaryBody.querySelectorAll('tr');
+    rows.forEach(function(row) {
+      var vendorName = row.querySelector('.vi-col-name') ? row.querySelector('.vi-col-name').textContent.toLowerCase() : '';
+      row.style.display = vendorName.includes(searchTerm) ? '' : 'none';
     });
   }
 
@@ -468,29 +647,30 @@
       }
     });
 
-    // Search
-    els.searchInput?.addEventListener('input', filterTable);
-  }
+    // Search (unified)
+    els.searchInput?.addEventListener('input', filterActiveTab);
 
-  // ================================
-  // VENDOR INTELLIGENCE HOOK
-  // ================================
-
-  function initIntelligence() {
-    if (!window.VendorIntelligence) return;
-
-    // Click on vendor row → open scorecard (only in read mode)
-    els.tbody?.addEventListener('click', (e) => {
-      if (isEditMode) return;
-      const row = e.target.closest('tr.vendor-row-clickable');
+    // Intelligence table: click row to open scorecard
+    els.viSummaryBody?.addEventListener('click', function(e) {
+      var row = e.target.closest('tr.vi-summary-row');
       if (!row) return;
-      const vendorId = row.getAttribute('data-id');
-      if (vendorId) {
-        // Highlight selected row
-        els.tbody.querySelectorAll('tr').forEach(r => r.classList.remove('vendor-row-selected'));
-        row.classList.add('vendor-row-selected');
-        window.VendorIntelligence.loadScorecard(vendorId);
-      }
+      var vendorId = row.getAttribute('data-vendor-id');
+      if (!vendorId || !window.VendorIntelligence) return;
+
+      // Highlight selected row
+      els.viSummaryBody.querySelectorAll('tr').forEach(function(r) {
+        r.classList.remove('vi-row-selected');
+      });
+      row.classList.add('vi-row-selected');
+
+      window.VendorIntelligence.loadScorecard(vendorId);
+    });
+
+    // Refresh intelligence button
+    els.btnRefreshIntelligence?.addEventListener('click', function() {
+      intelligenceLoaded = false;
+      if (els.viTotalSpend) els.viTotalSpend.style.display = 'none';
+      loadIntelligenceSummary();
     });
   }
 
@@ -501,7 +681,7 @@
   window.addEventListener('DOMContentLoaded', async () => {
     if (window.initTopbarPills) window.initTopbarPills();
     await init();
-    initIntelligence();
+    initTabs();
   });
 
 })();

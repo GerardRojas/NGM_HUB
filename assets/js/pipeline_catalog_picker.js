@@ -230,6 +230,8 @@
       this.onChange = options.onChange || null;
       this.allowClear = options.allowClear !== false;
 
+      this.staticItems = options.staticItems || [];
+
       this.selectedItem = null;
       this.isOpen = false;
       this.searchQuery = '';
@@ -450,6 +452,20 @@
 
       const items = await fetchCatalog(this.catalogType);
 
+      // Append static items (e.g., "Custom" option)
+      if (this.staticItems.length) {
+        this.staticItems.forEach(si => {
+          items.push({
+            id: si.id || si.name,
+            name: si.name,
+            code: si.code || null,
+            color: si.color || '#888',
+            raw: si,
+            _static: true
+          });
+        });
+      }
+
       if (!items.length) {
         this.list.innerHTML = '<div class="pm-catalog-empty">No items found</div>';
         return;
@@ -481,10 +497,19 @@
       }
 
       const selectedId = this.selectedItem?.id;
+      const hasStaticItems = this.staticItems.length > 0;
 
-      this.list.innerHTML = filtered.map(item =>
-        renderItem(item, this.catalogType, item.id === selectedId)
-      ).join('');
+      let html = '';
+      let separatorAdded = false;
+      filtered.forEach(item => {
+        if (hasStaticItems && item._static && !separatorAdded) {
+          html += '<div class="pm-catalog-separator"></div>';
+          separatorAdded = true;
+        }
+        html += renderItem(item, this.catalogType, item.id === selectedId);
+      });
+
+      this.list.innerHTML = html;
     }
 
     selectItem(itemId) {

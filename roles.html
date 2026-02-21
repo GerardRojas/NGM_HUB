@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#1a1a1a" />
-    <title>NGM HUB — Roles Management</title>
+    <title>NGM HUB -- Roles Management</title>
     <link rel="icon" type="image/png" href="assets/img/greenblack_icon.png" />
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="assets/img/greenblack_icon.png" />
@@ -14,7 +14,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <link rel="stylesheet" href="assets/css/expenses_styles.css" />
+    <link rel="stylesheet" href="assets/css/roles_styles.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
     <link rel="stylesheet" href="assets/css/arturito_widget.css" />
     <link rel="stylesheet" href="assets/css/chat_widget.css" />
@@ -63,130 +63,59 @@
                         <div class="ngm-brand-icon-small"><img src="assets/img/white_icon.png" alt="NGM"></div>
                         <div class="ngm-brand-text">
                             <span class="ngm-brand-org">Next Generation Management</span>
-                            <span class="ngm-brand-context">NGM Hub · Roles Management</span>
+                            <span class="ngm-brand-context">NGM Hub -- Roles Management</span>
                         </div>
                     </div>
                 </div>
                 <div class="ngm-topbar-right">
                     <div class="ngm-meta">
-                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment · —</span>
-                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server · —</span>
+                        <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment -- ---</span>
+                        <span id="server-pill" class="ngm-meta-pill ngm-meta-status ngm-meta-status-live">Server -- ---</span>
                     </div>
-                    <form class="ngm-search" role="search" onsubmit="return false;">
-                        <span class="ngm-global-search-icon">⌕</span>
-                        <input type="search" class="ngm-search-input" placeholder="Search roles..." />
-                    </form>
-                    <span id="user-pill" class="user-pill">User · —</span>
+                    <span id="user-pill" class="user-pill">User -- ---</span>
                 </div>
             </header>
 
             <main class="main-content">
                 <div class="workspace">
                     <section class="data-section">
-                        <div class="expenses-toolbar">
-                            <div class="toolbar-left">
-                                <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Roles & Permissions Matrix</h2>
-                                <p style="font-size: 13px; color: #6b7280; margin: 4px 0 0 0;">Configure module access for each role (CEO & COO are protected)</p>
-                            </div>
-                            <div class="toolbar-right">
-                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnExportPermissions">
-                                    Export Permissions
-                                </button>
-                                <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnEditPermissions">
-                                    Edit Permissions
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Filtros de busqueda -->
-                        <div class="permissions-filters" style="display: flex; flex-wrap: wrap; gap: 16px; padding: 16px 24px; background: rgba(24, 24, 27, 0.5); border-bottom: 1px solid #27272a; align-items: flex-end;">
-                            <div style="flex: 1; min-width: 200px; max-width: 300px;">
-                                <label style="font-size: 12px; color: #6b7280; display: block; margin-bottom: 6px;">Filter Modules/Pages</label>
-                                <input type="text" id="moduleSearchInput" placeholder="e.g. Dashboard, Budget..."
-                                    class="filter-input"
-                                    style="width: 100%; padding: 8px 12px; background: #0d0d0d; border: 1px solid #27272a; border-radius: 6px; color: #e5e7eb; font-size: 13px; transition: border-color 0.2s;">
-                            </div>
-                            <div style="flex: 1; min-width: 200px; max-width: 300px;">
-                                <label style="font-size: 12px; color: #6b7280; display: block; margin-bottom: 6px;">Filter Roles</label>
-                                <input type="text" id="roleSearchInput" placeholder="e.g. Admin, Manager..."
-                                    class="filter-input"
-                                    style="width: 100%; padding: 8px 12px; background: #0d0d0d; border: 1px solid #27272a; border-radius: 6px; color: #e5e7eb; font-size: 13px; transition: border-color 0.2s;">
-                            </div>
-                            <div>
-                                <button type="button" id="btnClearFilters"
-                                    class="btn-clear-filters"
-                                    style="padding: 8px 16px; background: transparent; border: 1px solid #27272a; border-radius: 6px; color: #9ca3af; font-size: 13px; cursor: pointer; transition: all 0.2s;">
-                                    Clear Filters
-                                </button>
-                            </div>
-                            <div style="margin-left: auto;">
-                                <span id="filterStats" style="font-size: 12px; color: #6b7280;"></span>
-                            </div>
-                        </div>
-                        <style>
-                            .filter-input:focus {
-                                outline: none;
-                                border-color: #3b82f6 !important;
-                            }
-                            .filter-input:hover {
-                                border-color: #3f3f46 !important;
-                            }
-                            .btn-clear-filters:hover {
-                                background: rgba(255, 255, 255, 0.05) !important;
-                                color: #e5e7eb !important;
-                            }
-                        </style>
-
                         <div class="expenses-table-container">
                             <div id="rolesLoadingState" class="expenses-loading-state">
                                 <img src="assets/img/white_icon.png" class="loading-logo loading-logo-lg" alt="Loading...">
-                                <span class="loading-text">Loading permissions matrix...</span>
+                                <span class="loading-text">Loading roles...</span>
                             </div>
 
                             <div id="rolesContent" style="display: none;">
-                                <!-- Info banner -->
-                                <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px; padding: 16px; margin: 20px 24px;">
-                                    <div style="display: flex; align-items: start; gap: 12px;">
-                                        <span style="font-size: 20px;">ℹ️</span>
-                                        <div>
-                                            <strong style="color: #3b82f6; font-size: 14px;">Permission Levels:</strong>
-                                            <p style="margin: 4px 0 0 0; font-size: 13px; color: #9ca3af;">
-                                                <strong>V</strong> = View (can see module) ·
-                                                <strong>E</strong> = Edit (can create/modify) ·
-                                                <strong>D</strong> = Delete (can remove data)
-                                                <br>
-                                                <span style="color: #6b7280; font-size: 12px; margin-top: 4px; display: inline-block;">
-                                                    CEO and COO roles have full access to all modules and cannot be modified.
-                                                </span>
-                                            </p>
+                                <!-- Hub View: Role cards grid -->
+                                <div id="hubView"></div>
+
+                                <!-- Detail View: Per-role permission editor -->
+                                <div id="detailView" style="display: none;">
+                                    <button type="button" id="btnBackToHub" class="roles-detail-back">
+                                        &larr; Back to Roles
+                                    </button>
+
+                                    <div id="roleDetailHeader" class="roles-detail-header"></div>
+
+                                    <div class="role-module-search">
+                                        <input type="text" id="moduleFilterInput" class="role-search-input"
+                                               placeholder="Filter modules...">
+                                    </div>
+
+                                    <div id="permissionCategories" class="permission-categories"></div>
+
+                                    <div class="role-save-footer" id="roleSaveFooter" style="display: none;">
+                                        <span class="save-footer-changes" id="changesCounter">0 changes</span>
+                                        <div class="save-footer-actions">
+                                            <button type="button" class="roles-btn roles-btn-discard" id="btnDiscardChanges">
+                                                Discard
+                                            </button>
+                                            <button type="button" class="roles-btn roles-btn-save" id="btnSavePermissions">
+                                                Save Changes
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Permissions Matrix (scroll horizontal) -->
-                                <div class="permissions-table-wrapper">
-                                    <table class="expenses-table permissions-table" id="permissionsTable">
-                                        <thead>
-                                            <!-- Generado dinámicamente por JS -->
-                                        </thead>
-                                        <tbody id="permissionsTableBody">
-                                            <!-- Generado dinámicamente por JS -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Edit mode footer (hidden by default) -->
-                        <div class="edit-mode-footer hidden" id="editModeFooter">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <span style="font-size: 13px; color: #9ca3af;">
-                                    <strong style="color: #e5e7eb;">Edit Mode Active</strong> — Make your changes and save
-                                </span>
-                            </div>
-                            <div style="display: flex; gap: 12px;">
-                                <button type="button" class="btn-edit-cancel" id="btnCancelEdit">Cancel</button>
-                                <button type="button" class="btn-edit-save" id="btnSaveChanges">Save Changes</button>
                             </div>
                         </div>
                     </section>

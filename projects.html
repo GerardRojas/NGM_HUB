@@ -39,6 +39,7 @@
     <link rel="stylesheet" href="assets/css/projects_kpis.css" />
     <link rel="stylesheet" href="assets/css/projects_timeline.css" />
     <link rel="stylesheet" href="assets/css/projects_scorecard.css" />
+    <link rel="stylesheet" href="assets/css/expenses_modal.css" />
     <link rel="stylesheet" href="assets/css/arturito_widget.css" />
     <link rel="stylesheet" href="assets/css/chat_widget.css" />
 
@@ -58,9 +59,11 @@
     <script src="assets/js/ngm_tabs.js" defer></script>
     <script src="assets/js/projects.js" defer></script>
     <script src="assets/js/projects_dashboard.js" defer></script>
+    <script src="assets/js/projects_expense_chart.js" defer></script>
     <script src="assets/js/projects_kpis.js" defer></script>
     <script src="assets/js/projects_timeline.js" defer></script>
     <script src="assets/js/projects_scorecard.js" defer></script>
+    <script src="assets/js/projects_budgets.js" defer></script>
     <script src="assets/js/arturito_widget.js" defer></script>
     <script src="assets/js/chat_widget.js" defer></script>
 </head>
@@ -115,6 +118,18 @@
             <main class="main-content">
                 <div class="workspace">
 
+                    <!-- Global Company Picker -->
+                    <div class="company-picker-bar">
+                        <div class="company-picker" id="projectsCompanyPicker">
+                            <button class="company-picker-btn" id="projectsCompanyBtn" type="button">
+                                <span class="company-picker-dot" id="projectsCompanyDot"></span>
+                                <span class="company-picker-label" id="projectsCompanyLabel">All Projects</span>
+                                <svg class="company-picker-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </button>
+                            <div class="company-picker-dropdown" id="projectsCompanyDropdown" style="display:none;"></div>
+                        </div>
+                    </div>
+
                     <!-- Tab Navigation -->
                     <div id="projects-tabs">
                         <div class="ngm-tabs-nav">
@@ -123,6 +138,7 @@
                             <button class="ngm-tab-btn" data-tab="kpis">Executive KPIs</button>
                             <button class="ngm-tab-btn" data-tab="timeline">Timeline</button>
                             <button class="ngm-tab-btn" data-tab="scorecard">Scorecard</button>
+                            <button class="ngm-tab-btn" data-tab="budgets">Project Budgets</button>
                         </div>
 
                         <!-- TAB: Project List (existing functionality) -->
@@ -133,9 +149,6 @@
                                 <div class="expenses-toolbar">
                                     <div class="toolbar-left">
                                         <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Projects</h2>
-                                        <select id="companyFilter" class="ngm-select" style="min-width: 200px; margin-left: 16px; font-size: 13px; padding: 6px 32px 6px 12px;">
-                                            <option value="">All Companies</option>
-                                        </select>
                                     </div>
 
                                     <div class="toolbar-right">
@@ -223,6 +236,68 @@
                         <div class="ngm-tab-panel" data-tab-panel="scorecard" hidden>
                             <div id="scorecard-panel-content"></div>
                         </div>
+
+                        <!-- TAB: Project Budgets -->
+                        <div class="ngm-tab-panel" data-tab-panel="budgets" hidden>
+                            <section class="data-section">
+                                <!-- Project selector -->
+                                <div class="pd-project-selector" style="margin-bottom: 0;">
+                                    <label for="pb-projectFilter" class="pd-selector-label">Select Project</label>
+                                    <select id="pb-projectFilter" class="ngm-select pd-selector-input">
+                                        <option value="">Select a project...</option>
+                                    </select>
+                                </div>
+
+                                <!-- Toolbar -->
+                                <div class="expenses-toolbar" style="border-top: none;">
+                                    <div class="toolbar-left">
+                                        <input type="search" id="pb-search" class="ngm-search-input" placeholder="Search budgets..." style="max-width: 240px;" />
+                                    </div>
+                                    <div class="toolbar-right">
+                                        <button type="button" class="btn-toolbar btn-toolbar-qbo" id="pb-btnQBOMapping" disabled title="Connect to QuickBooks in Settings first">
+                                            QBO Mapping
+                                        </button>
+                                        <button type="button" class="btn-toolbar btn-toolbar-qbo" id="pb-btnImportQBO" disabled title="Connect to QuickBooks in Settings first">
+                                            Import from QBO
+                                        </button>
+                                        <button type="button" class="btn-toolbar btn-toolbar-secondary" id="pb-btnImportCSV" disabled>
+                                            Import from CSV
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Table container -->
+                                <div class="expenses-table-container">
+                                    <!-- Empty state -->
+                                    <div id="pb-emptyState" class="expenses-loading-state" style="display: flex;">
+                                        <img src="assets/img/white_icon.png" class="loading-logo loading-logo-lg" style="opacity: 0.3;" alt="">
+                                        <span class="loading-text" id="pb-emptyMsg">Select a project to view budgets</span>
+                                        <button type="button" id="pb-btnImportFromEmpty" class="btn-toolbar btn-toolbar-secondary" style="display: none; margin-top: 16px;">
+                                            Import from CSV
+                                        </button>
+                                    </div>
+
+                                    <!-- Content -->
+                                    <div id="pb-content" style="display: none;">
+                                        <table class="expenses-table" id="pb-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Budget Name</th>
+                                                    <th>Year</th>
+                                                    <th>Account</th>
+                                                    <th>Amount</th>
+                                                    <th>Start Date</th>
+                                                    <th>End Date</th>
+                                                    <th>Lines</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="pb-tableBody"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
                     </div>
 
                 </div>
@@ -290,6 +365,90 @@
             <div class="modal-footer">
                 <button type="button" class="btn-modal btn-modal-secondary" id="btnCancelAddProject">Cancel</button>
                 <button type="button" class="btn-modal btn-modal-primary" id="btnConfirmAddProject">Create Project</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget CSV Import Modal -->
+    <div id="pb-importModal" class="modal-backdrop hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <div class="modal-title">Import Budget from CSV</div>
+                <button type="button" class="modal-close-btn" id="pb-btnCloseImport">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-project-header">
+                    <div class="modal-project-info">
+                        <span class="modal-project-label">Project:</span>
+                        <span class="modal-project-name" id="pb-selectedProject">&mdash;</span>
+                    </div>
+                </div>
+                <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                    <p style="font-size: 13px; color: #93c5fd; margin: 0 0 8px 0; font-weight: 500;">CSV Requirements</p>
+                    <code style="font-size: 11px; color: #93c5fd; font-family: monospace; word-break: break-all; display: block; margin-bottom: 8px;">
+                        BudgetName, BudgetId, Year, StartDate, EndDate, Active, AccountId, AccountName, Amount_SUM
+                    </code>
+                    <p style="font-size: 12px; color: #93c5fd; margin: 0;">Each row represents one budget account line. Max file size: 5MB</p>
+                </div>
+                <div class="modal-form-grid">
+                    <div class="form-field form-field-full">
+                        <label class="form-label">Select CSV File</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="pb-csvFileInput" accept=".csv" style="display: none;" />
+                            <button type="button" class="btn-file-select" id="pb-btnSelectFile">Choose File</button>
+                            <span class="file-name-display" id="pb-fileNameDisplay">No file selected</span>
+                        </div>
+                    </div>
+                    <div id="pb-csvPreview" class="form-field form-field-full" style="display: none;">
+                        <label class="form-label">Preview</label>
+                        <div style="background: #18181b; border: 1px solid #27272f; border-radius: 6px; padding: 12px; max-height: 200px; overflow-y: auto;">
+                            <pre id="pb-csvPreviewContent" style="font-size: 11px; color: #9ca3af; margin: 0; font-family: monospace; white-space: pre-wrap;"></pre>
+                        </div>
+                        <p id="pb-csvPreviewStats" style="font-size: 12px; color: #6b7280; margin-top: 8px;"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="pb-btnCancelImport">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="pb-btnConfirmImport" disabled>Import Budget</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget QBO Mapping Modal -->
+    <div id="pb-mappingModal" class="modal-backdrop hidden">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <div class="modal-title">QuickBooks Budget Mapping</div>
+                <button type="button" class="modal-close-btn" id="pb-btnCloseMapping">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="background: rgba(139, 92, 246, 0.1); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 6px; padding: 12px; margin-bottom: 16px;">
+                    <p style="font-size: 13px; color: #c4b5fd; margin: 0;">
+                        Map QuickBooks budgets to NGM Hub projects. Only mapped budgets will be imported when you use "Import from QBO".
+                    </p>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <div id="pb-mappingStats" style="font-size: 13px; color: #9ca3af;">Loading budgets...</div>
+                    <button type="button" class="btn-toolbar btn-toolbar-secondary" id="pb-btnAutoMatch">Auto-Match by Name</button>
+                </div>
+                <div class="mapping-table-container" style="max-height: 400px; overflow-y: auto;">
+                    <table class="expenses-table" id="pb-mappingTable">
+                        <thead>
+                            <tr>
+                                <th>QBO Budget</th>
+                                <th>Year</th>
+                                <th>Status</th>
+                                <th>NGM Project</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pb-mappingTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-secondary" id="pb-btnCancelMapping">Cancel</button>
+                <button type="button" class="btn-modal-primary" id="pb-btnSaveMappings">Save Mappings</button>
             </div>
         </div>
     </div>

@@ -1,9 +1,10 @@
 /**
- * OPERATION MANAGER - Visual Task Dependency Canvas
- * ==================================================
- * Shows the current user's tasks + coworker dependency tasks,
- * color-coded by category, auto-laid out as a dependency tree.
- * Built on NGMCanvas reusable library.
+ * OPERATION MANAGER - Gantt Card Timeline
+ * ========================================
+ * Horizontal timeline with task cards positioned by date.
+ * Rows grouped by person or project, with workload capacity bars.
+ * Zoom levels: Day / Week / Month.
+ * Dependencies rendered as SVG arrows.
  */
 (function () {
     'use strict';
@@ -11,154 +12,527 @@
     const API_BASE = window.API_BASE || 'https://ngm-fastapi.onrender.com';
 
     // ================================
-    // Category config
+    // CONSTANTS
     // ================================
-    const CATEGORIES = {
-        working:      { label: 'WORKING',     color: '#f59e0b' },
-        'good-to-go': { label: 'GOOD TO GO',  color: '#3ecf8e' },
-        blocked:      { label: 'BLOCKED',      color: '#ef4444' },
-        'not-started': { label: 'NOT STARTED', color: '#6b7280' },
-        dependency:   { label: 'DEPENDENCY',   color: '#60a5fa' },
+
+    const ZOOM_CONFIG = {
+        day:   { pxPerDay: 240, headerUnit: 'hour',  label: 'Day'   },
+        week:  { pxPerDay: 120, headerUnit: 'day',   label: 'Week'  },
+        month: { pxPerDay: 40,  headerUnit: 'week',  label: 'Month' },
     };
 
+    const STATUS_CLASSES = {
+        'not started':         'status-not-started',
+        'working on it':       'status-working',
+        'awaiting approval':   'status-awaiting-approval',
+        'good to go':          'status-good-to-go',
+        'correction':          'status-correction',
+        'resubmittal needed':  'status-resubmittal',
+        'done':                'status-done',
+        'delayed':             'status-delayed',
+    };
+
+    const PRIORITY_COLORS = {
+        critical: '#ef4444',
+        high:     '#ef4444',
+        medium:   '#f59e0b',
+        low:      '#22c55e',
+    };
+
+    const STATUS_COLORS_MAP = {
+        'not started':         '#6b7280',
+        'working on it':       '#f59e0b',
+        'awaiting approval':   '#8b5cf6',
+        'good to go':          '#3ecf8e',
+        'correction':          '#ef4444',
+        'resubmittal needed':  '#fb923c',
+        'done':                '#22c55e',
+        'delayed':             '#ef4444',
+    };
+
+    const CARD_HEIGHT = 36;
+    const CARD_GAP = 4;
+    const ROW_PADDING = 10;
+    const MIN_CARD_WIDTH = 80;
+    const MIN_ROW_HEIGHT = 56;
+    const LABEL_COL_WIDTH = 220;
+
+    const DEFAULT_STATUSES = [
+        'not started', 'working on it', 'awaiting approval',
+        'correction', 'resubmittal needed', 'delayed'
+    ];
+
+    const ALL_STATUSES = [
+        'not started', 'working on it', 'awaiting approval', 'good to go',
+        'correction', 'resubmittal needed', 'done', 'delayed'
+    ];
+
     // ================================
-    // State
+    // STATE
     // ================================
+
     const state = {
-        canvas: null,
-        tasks: [],
-        dependencyTasks: [],    // coworker tasks that affect ours
-        allDisplayTasks: [],    // tasks + dependency tasks combined
-        dependencies: [],       // { from, to } pairs
-        workload: null,
-        currentUser: null,
-        categorized: {},        // category -> task[]
-        positions: {},          // taskId -> { x, y }
+        allTasks: [],
+        filteredTasks: [],
+        dependencies: [],
+        users: [],
+        projects: [],
+        teamWorkload: [],
+
+        zoomLevel: 'week',
+        groupBy: 'person',
+        timeRange: { start: null, end: null },
+        rows: [],
+
         filters: {
-            hiddenCategories: [],
+            statuses: [...DEFAULT_STATUSES],
+            projectId: '',
+            personId: '',
         },
+
+        currentUser: null,
+        selectedTaskId: null,
+        unscheduledCollapsed: false,
     };
 
     // ================================
-    // DOM References
+    // DOM CACHE
     // ================================
+
     let els = {};
 
     function cacheElements() {
         els = {
-            canvasContainer: document.getElementById('canvasContainer'),
-            emptyState: document.getElementById('emptyState'),
-            countWorking: document.getElementById('countWorking'),
-            countGoodToGo: document.getElementById('countGoodToGo'),
-            countBlocked: document.getElementById('countBlocked'),
-            countNotStarted: document.getElementById('countNotStarted'),
-            filterMenu: document.getElementById('filterMenu'),
-            filterBadge: document.getElementById('filterBadge'),
-            filterCategoriesList: document.getElementById('filterCategoriesList'),
+            cornerCell:       document.getElementById('omCornerCell'),
+            headerScroll:     document.getElementById('omHeaderScroll'),
+            headerDates:      document.getElementById('omHeaderDates'),
+            rowLabels:        document.getElementById('omRowLabels'),
+            grid:             document.getElementById('omGrid'),
+            gridInner:        document.getElementById('omGridInner'),
+            gridBg:           document.getElementById('omGridBg'),
+            todayLine:        document.getElementById('omTodayLine'),
+            depLayer:         document.getElementById('omDepLayer'),
+            cardsContainer:   document.getElementById('omCardsContainer'),
+            unscheduled:      document.getElementById('omUnscheduled'),
+            unscheduledGrid:  document.getElementById('omUnscheduledGrid'),
+            unscheduledCount: document.getElementById('omUnscheduledCount'),
+            unscheduledToggle:document.getElementById('omUnscheduledToggle'),
+            emptyState:       document.getElementById('omEmptyState'),
+            filterMenu:       document.getElementById('omFilterMenu'),
+            filterBadge:      document.getElementById('omFilterBadge'),
+            filterStatusList: document.getElementById('omFilterStatusList'),
+            filterProject:    document.getElementById('omFilterProject'),
+            filterPerson:     document.getElementById('omFilterPerson'),
+            capacityModal:    document.getElementById('omCapacityModal'),
+            capacityBody:     document.getElementById('omCapacityBody'),
+            taskPanel:        document.getElementById('omTaskPanel'),
+            panelTitle:       document.getElementById('omPanelTitle'),
+            panelBody:        document.getElementById('omPanelBody'),
         };
     }
 
     // ================================
-    // Auth
+    // AUTH
     // ================================
+
     function getAuthHeaders() {
         const token = localStorage.getItem('ngmToken');
         return token ? { Authorization: 'Bearer ' + token } : {};
     }
 
     // ================================
-    // Init
+    // INIT
     // ================================
+
     async function init() {
         cacheElements();
         loadCurrentUser();
-        loadFilters();
-
-        // Initialize canvas
-        state.canvas = new window.NGMCanvas(els.canvasContainer, {
-            gridWidth: 6000,
-            gridHeight: 6000,
-            initialScale: 0.85,
-            showMinimap: true,
-            dotGrid: true,
-        });
+        loadSavedPrefs();
 
         setupToolbarEvents();
-        setupCanvasEvents();
+        setupScrollSync();
+        setupGridEvents();
 
-        await loadTasks();
-        await loadDependencies();
-
-        categorizeAndLayout();
-        renderCards();
-        renderConnections();
-        updateStats();
-
-        if (state.allDisplayTasks.length > 0) {
-            state.canvas.fitToView(80);
+        try {
+            await Promise.all([
+                loadAllTasks(),
+                loadDependencies(),
+                loadUsers(),
+                loadProjects(),
+                loadTeamWorkload(),
+            ]);
+        } catch (err) {
+            console.error('[OM] Data load error:', err);
         }
+
+        populateFilterDropdowns();
+        applyFilters();
+        computeTimeRange();
+        computeRows();
+        renderAll();
+        scrollToToday();
 
         hidePageLoading();
     }
 
     function loadCurrentUser() {
-        const str = localStorage.getItem('ngm_user');
-        if (str) {
-            try { state.currentUser = JSON.parse(str); } catch (e) { /* ignore */ }
-        }
+        try {
+            const str = localStorage.getItem('ngm_user');
+            if (str) state.currentUser = JSON.parse(str);
+        } catch (e) { /* ignore */ }
     }
 
-    // hidePageLoading is provided by page-loading.js (global)
+    function hidePageLoading() {
+        if (window.hidePageLoading) window.hidePageLoading();
+    }
 
     // ================================
-    // Filters
+    // DATA LOADING
     // ================================
-    function loadFilters() {
-        const str = localStorage.getItem('ngm_om_filters');
-        if (str) {
-            try {
-                const saved = JSON.parse(str);
-                state.filters = { ...state.filters, ...saved };
-            } catch (e) { /* ignore */ }
-        }
-    }
 
-    function saveFilters() {
-        localStorage.setItem('ngm_om_filters', JSON.stringify(state.filters));
-    }
-
-    function renderFilterCheckboxes() {
-        if (!els.filterCategoriesList) return;
-        const cats = ['working', 'good-to-go', 'blocked', 'not-started', 'dependency'];
-        els.filterCategoriesList.innerHTML = cats.map(cat => {
-            const checked = !state.filters.hiddenCategories.includes(cat) ? 'checked' : '';
-            const info = CATEGORIES[cat];
-            return `
-                <label class="om-filter-checkbox">
-                    <input type="checkbox" data-category="${cat}" ${checked}>
-                    <span class="om-filter-checkbox-label" style="color:${info.color};">${info.label}</span>
-                </label>
-            `;
-        }).join('');
-
-        els.filterCategoriesList.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-            cb.addEventListener('change', () => {
-                const cat = cb.dataset.category;
-                if (cb.checked) {
-                    state.filters.hiddenCategories = state.filters.hiddenCategories.filter(c => c !== cat);
-                } else {
-                    if (!state.filters.hiddenCategories.includes(cat)) {
-                        state.filters.hiddenCategories.push(cat);
-                    }
-                }
-                saveFilters();
-                refreshView();
+    async function loadAllTasks() {
+        try {
+            const resp = await fetch(API_BASE + '/pipeline/grouped', {
+                headers: getAuthHeaders(),
             });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const data = await resp.json();
+
+            state.allTasks = [];
+            (data.groups || []).forEach(function (group) {
+                var statusName = (group.status_name || '').toLowerCase();
+                (group.tasks || []).forEach(function (t) {
+                    state.allTasks.push(transformTask(t, statusName));
+                });
+            });
+        } catch (err) {
+            console.warn('[OM] Failed to load tasks:', err.message);
+            state.allTasks = [];
+        }
+    }
+
+    async function loadDependencies() {
+        try {
+            const resp = await fetch(API_BASE + '/pipeline/dependencies', {
+                headers: getAuthHeaders(),
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const data = await resp.json();
+            state.dependencies = data.dependencies || [];
+        } catch (err) {
+            console.warn('[OM] Failed to load dependencies:', err.message);
+            state.dependencies = [];
+        }
+    }
+
+    async function loadUsers() {
+        try {
+            const resp = await fetch(API_BASE + '/pipeline/users', {
+                headers: getAuthHeaders(),
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const data = await resp.json();
+            state.users = data.users || data || [];
+        } catch (err) {
+            console.warn('[OM] Failed to load users:', err.message);
+            state.users = [];
+        }
+    }
+
+    async function loadProjects() {
+        try {
+            const resp = await fetch(API_BASE + '/pipeline/projects', {
+                headers: getAuthHeaders(),
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const data = await resp.json();
+            state.projects = data.projects || data || [];
+        } catch (err) {
+            console.warn('[OM] Failed to load projects:', err.message);
+            state.projects = [];
+        }
+    }
+
+    async function loadTeamWorkload() {
+        try {
+            const resp = await fetch(API_BASE + '/pipeline/workload/team', {
+                headers: getAuthHeaders(),
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const data = await resp.json();
+            state.teamWorkload = data.team || [];
+        } catch (err) {
+            console.warn('[OM] Failed to load team workload:', err.message);
+            state.teamWorkload = [];
+        }
+    }
+
+    // ================================
+    // DATA TRANSFORMATION
+    // ================================
+
+    function transformTask(raw, statusName) {
+        var sDate = parseDate(raw.scheduled_start_date) || parseDate(raw.start_date);
+        var eDate = parseDate(raw.scheduled_end_date) || parseDate(raw.deadline) || parseDate(raw.due_date);
+
+        // If we have start but no end, estimate end from hours
+        if (sDate && !eDate && raw.estimated_hours) {
+            var days = Math.max(1, Math.ceil(raw.estimated_hours / 8));
+            eDate = new Date(sDate);
+            eDate.setDate(eDate.getDate() + days);
+        }
+
+        // If we have end but no start, use end as single-day
+        if (!sDate && eDate) {
+            sDate = new Date(eDate);
+        }
+
+        var isScheduled = !!(sDate || eDate);
+
+        // Overdue detection
+        var now = new Date();
+        now.setHours(0, 0, 0, 0);
+        var isOverdue = false;
+        if (eDate && statusName !== 'done') {
+            var deadlineCheck = new Date(eDate);
+            deadlineCheck.setHours(0, 0, 0, 0);
+            isOverdue = deadlineCheck < now;
+        }
+
+        return {
+            id: raw.task_id,
+            description: raw.task_description || 'Untitled',
+            startDate: sDate,
+            endDate: eDate,
+            deadline: parseDate(raw.deadline),
+            dueDate: parseDate(raw.due_date),
+            createdAt: parseDate(raw.created_at),
+            estimatedHours: raw.estimated_hours || 0,
+            ownerId: raw.Owner_id || null,
+            owner: raw.owner || null,
+            collaborators: raw.collaborators || [],
+            managers: raw.managers || [],
+            statusName: statusName,
+            projectId: raw.project_id || null,
+            projectName: raw.project_name || 'No Project',
+            companyName: raw.company_name || '',
+            priority: raw.priority || null,
+            isScheduled: isScheduled,
+            isOverdue: isOverdue,
+        };
+    }
+
+    // ================================
+    // TIME AXIS
+    // ================================
+
+    function computeTimeRange() {
+        var now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        var minDate = new Date(now);
+        var maxDate = new Date(now);
+        minDate.setDate(minDate.getDate() - 14);
+        maxDate.setDate(maxDate.getDate() + 28);
+
+        state.filteredTasks.forEach(function (task) {
+            if (task.startDate && task.startDate < minDate) minDate = new Date(task.startDate);
+            if (task.endDate && task.endDate > maxDate) maxDate = new Date(task.endDate);
+        });
+
+        // Add padding
+        minDate.setDate(minDate.getDate() - 7);
+        maxDate.setDate(maxDate.getDate() + 7);
+
+        // Snap to Monday
+        var dayOfWeek = minDate.getDay();
+        var mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        minDate.setDate(minDate.getDate() + mondayOffset);
+        minDate.setHours(0, 0, 0, 0);
+
+        // Snap end to Sunday
+        var endDay = maxDate.getDay();
+        if (endDay !== 0) maxDate.setDate(maxDate.getDate() + (7 - endDay));
+        maxDate.setHours(23, 59, 59, 999);
+
+        state.timeRange = { start: minDate, end: maxDate };
+    }
+
+    function dateToX(date) {
+        if (!date) return 0;
+        var msFromStart = date.getTime() - state.timeRange.start.getTime();
+        var days = msFromStart / 86400000;
+        return days * ZOOM_CONFIG[state.zoomLevel].pxPerDay;
+    }
+
+    function getTotalGridWidth() {
+        if (!state.timeRange.start || !state.timeRange.end) return 2000;
+        var ms = state.timeRange.end.getTime() - state.timeRange.start.getTime();
+        var days = ms / 86400000;
+        return Math.ceil(days * ZOOM_CONFIG[state.zoomLevel].pxPerDay);
+    }
+
+    function getTotalGridHeight() {
+        if (state.rows.length === 0) return 400;
+        var last = state.rows[state.rows.length - 1];
+        return last.yOffset + last.height;
+    }
+
+    // ================================
+    // ROW COMPUTATION
+    // ================================
+
+    function computeRows() {
+        state.rows = [];
+        var scheduled = state.filteredTasks.filter(function (t) { return t.isScheduled; });
+
+        if (state.groupBy === 'person') {
+            var byPerson = {};
+
+            scheduled.forEach(function (task) {
+                var id = task.ownerId || 'unassigned';
+                if (!byPerson[id]) {
+                    byPerson[id] = {
+                        id: id,
+                        label: task.owner ? task.owner.name : 'Unassigned',
+                        avatarColor: task.owner ? task.owner.avatar_color : null,
+                        photo: task.owner ? task.owner.photo : null,
+                        tasks: [],
+                    };
+                }
+                byPerson[id].tasks.push(task);
+            });
+
+            // Enrich with workload
+            Object.keys(byPerson).forEach(function (key) {
+                var row = byPerson[key];
+                var wl = state.teamWorkload.find(function (w) {
+                    return w.user_id === row.id;
+                });
+
+                if (wl && wl.workload_metrics) {
+                    row.capacityHours = (wl.capacity && wl.capacity.weekly_capacity) || 40;
+                    row.assignedHours = wl.workload_metrics.total_hours || 0;
+                    row.utilization = wl.workload_metrics.utilization || wl.workload_metrics.utilization_percent || 0;
+                    row.workloadStatus = wl.workload_metrics.status || 'normal';
+                } else {
+                    row.capacityHours = 40;
+                    row.assignedHours = row.tasks.reduce(function (s, t) { return s + t.estimatedHours; }, 0);
+                    row.utilization = row.capacityHours > 0 ? (row.assignedHours / row.capacityHours) * 100 : 0;
+                    row.workloadStatus = 'normal';
+                }
+
+                row.tasks.sort(function (a, b) {
+                    return (a.startDate || a.createdAt || 0) - (b.startDate || b.createdAt || 0);
+                });
+
+                row.height = Math.max(MIN_ROW_HEIGHT, row.tasks.length * (CARD_HEIGHT + CARD_GAP) + ROW_PADDING * 2);
+            });
+
+            state.rows = Object.values(byPerson).sort(function (a, b) {
+                return b.utilization - a.utilization;
+            });
+
+        } else {
+            // Group by project
+            var byProject = {};
+
+            scheduled.forEach(function (task) {
+                var id = task.projectId || 'no-project';
+                if (!byProject[id]) {
+                    byProject[id] = {
+                        id: id,
+                        label: task.projectName || 'No Project',
+                        avatarColor: null,
+                        photo: null,
+                        tasks: [],
+                    };
+                }
+                byProject[id].tasks.push(task);
+            });
+
+            Object.keys(byProject).forEach(function (key) {
+                var row = byProject[key];
+                row.assignedHours = row.tasks.reduce(function (s, t) { return s + t.estimatedHours; }, 0);
+                row.capacityHours = row.assignedHours || 1;
+                row.utilization = 0;
+                row.workloadStatus = 'normal';
+
+                row.tasks.sort(function (a, b) {
+                    return (a.startDate || a.createdAt || 0) - (b.startDate || b.createdAt || 0);
+                });
+
+                row.height = Math.max(MIN_ROW_HEIGHT, row.tasks.length * (CARD_HEIGHT + CARD_GAP) + ROW_PADDING * 2);
+            });
+
+            state.rows = Object.values(byProject).sort(function (a, b) {
+                return a.label.localeCompare(b.label);
+            });
+        }
+
+        // Compute cumulative Y offsets
+        var y = 0;
+        state.rows.forEach(function (row) {
+            row.yOffset = y;
+            y += row.height;
         });
     }
 
+    // ================================
+    // FILTERS
+    // ================================
+
+    function applyFilters() {
+        state.filteredTasks = state.allTasks.filter(function (task) {
+            if (!state.filters.statuses.includes(task.statusName)) return false;
+            if (state.filters.projectId && task.projectId !== state.filters.projectId) return false;
+            if (state.filters.personId && task.ownerId !== state.filters.personId) return false;
+            return true;
+        });
+    }
+
+    function populateFilterDropdowns() {
+        // Status checkboxes
+        if (els.filterStatusList) {
+            els.filterStatusList.innerHTML = ALL_STATUSES.map(function (s) {
+                var checked = state.filters.statuses.includes(s) ? 'checked' : '';
+                var color = STATUS_COLORS_MAP[s] || '#6b7280';
+                return '<label class="om-filter-checkbox">' +
+                    '<input type="checkbox" data-status="' + s + '" ' + checked + '>' +
+                    '<span class="om-filter-checkbox-dot" style="background:' + color + ';"></span>' +
+                    '<span class="om-filter-checkbox-label">' + capitalize(s) + '</span>' +
+                    '</label>';
+            }).join('');
+        }
+
+        // Project select
+        if (els.filterProject) {
+            var projectOpts = '<option value="">All Projects</option>';
+            state.projects.forEach(function (p) {
+                var id = p.project_id || p.id;
+                var name = p.project_name || p.name || 'Unknown';
+                projectOpts += '<option value="' + id + '">' + escapeHtml(name) + '</option>';
+            });
+            els.filterProject.innerHTML = projectOpts;
+        }
+
+        // Person select
+        if (els.filterPerson) {
+            var personOpts = '<option value="">All People</option>';
+            state.users.forEach(function (u) {
+                var id = u.user_id || u.id;
+                var name = u.user_name || u.name || 'Unknown';
+                personOpts += '<option value="' + id + '">' + escapeHtml(name) + '</option>';
+            });
+            els.filterPerson.innerHTML = personOpts;
+        }
+    }
+
     function updateFilterBadge() {
-        const count = state.filters.hiddenCategories.length;
+        var count = ALL_STATUSES.length - state.filters.statuses.length;
+        if (state.filters.projectId) count++;
+        if (state.filters.personId) count++;
+
         if (els.filterBadge) {
             els.filterBadge.style.display = count > 0 ? 'inline-flex' : 'none';
             els.filterBadge.textContent = count;
@@ -166,567 +540,913 @@
     }
 
     // ================================
-    // Event Setup
+    // RENDER ALL
     // ================================
-    function setupToolbarEvents() {
-        // Zoom buttons
-        const btnZoomIn = document.getElementById('btnZoomIn');
-        const btnZoomOut = document.getElementById('btnZoomOut');
-        const btnFitView = document.getElementById('btnFitView');
 
-        btnZoomIn?.addEventListener('click', () => state.canvas.setScale(state.canvas.getScale() + 0.1));
-        btnZoomOut?.addEventListener('click', () => state.canvas.setScale(state.canvas.getScale() - 0.1));
-        btnFitView?.addEventListener('click', () => state.canvas.fitToView(80));
+    function renderAll() {
+        var totalW = getTotalGridWidth();
+        var totalH = getTotalGridHeight();
 
-        // Filter toggle
-        const btnFilter = document.getElementById('btnFilter');
-        btnFilter?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            els.filterMenu?.classList.toggle('open');
-        });
-
-        // Close filter on outside click
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('#filterDropdown')) {
-                els.filterMenu?.classList.remove('open');
-            }
-        });
-
-        // Reset filters
-        const btnReset = document.getElementById('btnResetFilters');
-        btnReset?.addEventListener('click', () => {
-            state.filters.hiddenCategories = [];
-            saveFilters();
-            renderFilterCheckboxes();
-            refreshView();
-        });
-
-        renderFilterCheckboxes();
-    }
-
-    function setupCanvasEvents() {
-        els.canvasContainer.addEventListener('ngm:node-drag-end', (e) => {
-            const { nodeId, x, y } = e.detail;
-            state.positions[nodeId] = { x, y };
-            savePositions();
-        });
-
-        els.canvasContainer.addEventListener('ngm:node-click', (e) => {
-            // Future: open task detail panel
-        });
-    }
-
-    // ================================
-    // Data Loading
-    // ================================
-    async function loadTasks() {
-        if (!state.currentUser?.user_id) {
-            state.tasks = generateMockTasks();
-            return;
-        }
-
-        try {
-            const resp = await fetch(
-                API_BASE + '/pipeline/my-work/' + state.currentUser.user_id,
-                { headers: getAuthHeaders() }
-            );
-            if (!resp.ok) throw new Error('API error ' + resp.status);
-
-            const data = await resp.json();
-            state.workload = data.workload || null;
-            state.tasks = (data.tasks || []).map(transformTask);
-        } catch (err) {
-            console.warn('[OM] Failed to load tasks, using mock data:', err.message);
-            state.tasks = generateMockTasks();
-        }
-    }
-
-    async function loadDependencies() {
-        if (!state.currentUser?.user_id) {
-            state.dependencies = generateMockDependencies();
-            return;
-        }
-
-        // Load dependencies for each project the user has tasks in
-        const projectIds = [...new Set(state.tasks.map(t => t.projectId).filter(Boolean))];
-        const allDeps = [];
-
-        for (const pid of projectIds) {
-            try {
-                const resp = await fetch(
-                    API_BASE + '/pipeline/dependencies/' + pid,
-                    { headers: getAuthHeaders() }
-                );
-                if (resp.ok) {
-                    const data = await resp.json();
-                    if (Array.isArray(data)) {
-                        allDeps.push(...data);
-                    }
-                }
-            } catch (err) {
-                console.warn('[OM] Failed to load dependencies for project', pid);
-            }
-        }
-
-        state.dependencies = allDeps.map(d => ({
-            from: d.source_task_id || d.from_task_id,
-            to: d.target_task_id || d.to_task_id,
-        }));
-    }
-
-    function transformTask(t) {
-        const userName = t.assigned_to_name || state.currentUser?.user_name || 'User';
-        const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
-        return {
-            id: t.task_id,
-            title: t.task_description || 'Untitled',
-            project: t.project_name || 'No Project',
-            projectId: t.project_id,
-            assigneeId: t.assigned_to,
-            assigneeName: userName,
-            assigneeInitials: initials,
-            assigneeColor: t.avatar_color || null,
-            status: t.status_name?.toLowerCase().includes('working') ? 'working' : 'not_started',
-            priority: mapPriority(t.priority_name),
-            dueDate: t.deadline || t.due_date,
-            duration: t.estimated_hours || 2,
-            isOverdue: t.is_overdue || false,
-            isDueSoon: t.is_due_soon || false,
-            isOwn: true,
-        };
-    }
-
-    function mapPriority(name) {
-        if (!name) return 'medium';
-        const l = name.toLowerCase();
-        if (l.includes('high') || l.includes('urgent')) return 'high';
-        if (l.includes('low')) return 'low';
-        return 'medium';
-    }
-
-    // ================================
-    // Category Computation
-    // ================================
-    function computeCategory(task) {
-        if (!task.isOwn) return 'dependency';
-        if (task.status === 'working') return 'working';
-
-        // Check workload
-        const util = state.workload?.utilization_percent || 0;
-        if (util >= 100) return 'blocked';
-        if (task.priority === 'high' && util < 80) return 'good-to-go';
-        return 'not-started';
-    }
-
-    // ================================
-    // Tree Layout
-    // ================================
-    function categorizeAndLayout() {
-        // Build combined task list (own + dependency tasks from connections)
-        state.allDisplayTasks = [...state.tasks];
-        state.dependencyTasks = []; // TODO: fetch coworker tasks when API supports it
-
-        // Categorize
-        state.categorized = {};
-        for (const cat of Object.keys(CATEGORIES)) {
-            state.categorized[cat] = [];
-        }
-
-        state.allDisplayTasks.forEach(task => {
-            const cat = computeCategory(task);
-            task._category = cat;
-            if (state.categorized[cat]) {
-                state.categorized[cat].push(task);
-            }
-        });
-
-        // Load saved positions
-        loadPositions();
-
-        // Calculate tree layout
-        const layout = calculateTreeLayout(state.allDisplayTasks, state.dependencies);
-        state.positions = { ...layout, ...state.positions };
-    }
-
-    function calculateTreeLayout(tasks, deps) {
-        const positions = {};
-        if (tasks.length === 0) return positions;
-
-        // Build adjacency: which tasks depend on which
-        const dependsOn = {}; // taskId -> [taskIds it depends on]
-        const depBy = {};     // taskId -> [taskIds that depend on it]
-
-        deps.forEach(d => {
-            if (!dependsOn[d.to]) dependsOn[d.to] = [];
-            dependsOn[d.to].push(d.from);
-            if (!depBy[d.from]) depBy[d.from] = [];
-            depBy[d.from].push(d.to);
-        });
-
-        const taskIds = new Set(tasks.map(t => t.id));
-
-        // Find root nodes (no dependencies within our task set)
-        const roots = tasks.filter(t => {
-            const deps = dependsOn[t.id] || [];
-            return deps.filter(id => taskIds.has(id)).length === 0;
-        });
-
-        // BFS to assign levels
-        const levels = {};
-        const visited = new Set();
-        const queue = roots.map(t => ({ id: t.id, level: 0 }));
-        roots.forEach(t => { levels[t.id] = 0; visited.add(t.id); });
-
-        while (queue.length > 0) {
-            const { id, level } = queue.shift();
-            const children = (depBy[id] || []).filter(cid => taskIds.has(cid));
-            children.forEach(cid => {
-                if (!visited.has(cid)) {
-                    visited.add(cid);
-                    levels[cid] = level + 1;
-                    queue.push({ id: cid, level: level + 1 });
-                }
-            });
-        }
-
-        // Assign level 0 to any unvisited tasks
-        tasks.forEach(t => {
-            if (levels[t.id] === undefined) {
-                levels[t.id] = 0;
-            }
-        });
-
-        // Group by level
-        const byLevel = {};
-        tasks.forEach(t => {
-            const lv = levels[t.id];
-            if (!byLevel[lv]) byLevel[lv] = [];
-            byLevel[lv].push(t);
-        });
-
-        // Sort within each level by priority (high first), then due date
-        const prioOrder = { high: 0, medium: 1, low: 2 };
-        Object.values(byLevel).forEach(arr => {
-            arr.sort((a, b) => {
-                const pa = prioOrder[a.priority] ?? 1;
-                const pb = prioOrder[b.priority] ?? 1;
-                if (pa !== pb) return pa - pb;
-                return (a.dueDate || '').localeCompare(b.dueDate || '');
-            });
-        });
-
-        // Assign positions
-        const SPACING_X = 320;
-        const SPACING_Y = 180;
-        const BASE_X = 200;
-        const BASE_Y = 150;
-
-        Object.entries(byLevel).forEach(([level, arr]) => {
-            arr.forEach((task, idx) => {
-                positions[task.id] = {
-                    x: BASE_X + parseInt(level) * SPACING_X,
-                    y: BASE_Y + idx * SPACING_Y,
-                };
-            });
-        });
-
-        return positions;
-    }
-
-    // ================================
-    // Rendering
-    // ================================
-    function renderCards() {
-        // Clear existing
-        const container = state.canvas.getNodesContainer();
-        container.innerHTML = '';
-
-        const visibleTasks = state.allDisplayTasks.filter(t =>
-            !state.filters.hiddenCategories.includes(t._category)
-        );
-
-        if (visibleTasks.length === 0) {
+        // Show/hide empty state
+        if (state.filteredTasks.length === 0) {
             els.emptyState.style.display = 'block';
+            document.querySelector('.om-timeline-wrapper').style.display = 'none';
+            els.unscheduled.style.display = 'none';
             return;
         }
+
         els.emptyState.style.display = 'none';
+        document.querySelector('.om-timeline-wrapper').style.display = 'flex';
 
-        visibleTasks.forEach(task => {
-            const pos = state.positions[task.id] || { x: 200, y: 200 };
-            const cardEl = createTaskCard(task);
-            state.canvas.addNode(task.id, cardEl, pos.x, pos.y, {
-                color: CATEGORIES[task._category]?.color || '#6b7280',
-            });
-        });
-
+        renderHeader(totalW);
+        renderRowLabels(totalH);
+        renderGridBackground(totalW, totalH);
+        renderTaskCards(totalW, totalH);
+        renderTodayLine(totalH);
+        renderDependencies(totalW, totalH);
+        renderUnscheduled();
         updateFilterBadge();
     }
 
-    function createTaskCard(task) {
-        const cat = task._category;
-        const info = CATEGORIES[cat] || CATEGORIES['not-started'];
+    // ================================
+    // RENDER: HEADER
+    // ================================
 
-        const card = document.createElement('div');
-        card.className = 'om-task-card category-' + cat;
-        card.dataset.taskId = task.id;
-        card.style.position = 'relative'; // for badge absolute positioning
+    function renderHeader(totalW) {
+        var zoom = ZOOM_CONFIG[state.zoomLevel];
+        var start = state.timeRange.start;
+        var end = state.timeRange.end;
 
-        // Project icon color (hash-based)
-        const projHue = hashStringToHue(task.project);
-        const projColor = 'hsl(' + projHue + ', 70%, 45%)';
-        const projInitial = (task.project || '?')[0].toUpperCase();
+        var topHtml = '';
+        var bottomHtml = '';
 
-        // Assignee avatar color
-        const avatarHue = task.assigneeColor || hashStringToHue(task.assigneeId || task.assigneeName);
-        const avatarBg = typeof avatarHue === 'number'
-            ? 'hsl(' + avatarHue + ', 70%, 45%)'
-            : 'hsl(' + avatarHue + ', 70%, 45%)';
+        if (state.zoomLevel === 'day') {
+            // Top tier: dates, bottom tier: hours
+            var d = new Date(start);
+            while (d < end) {
+                var dayWidth = zoom.pxPerDay;
+                var dayLabel = MONTHS_SHORT[d.getMonth()] + ' ' + d.getDate();
+                topHtml += '<div class="om-header-month" style="width:' + dayWidth + 'px;">' + dayLabel + '</div>';
 
-        // Due date info
-        const dueInfo = getDueInfo(task.dueDate, task.isOverdue, task.isDueSoon);
-
-        card.innerHTML = `
-            <div class="om-card-badge">${escapeHtml(info.label)}</div>
-            <div class="om-card-header">
-                <div class="om-card-icon" style="background:${projColor}20;border-color:${projColor};color:${projColor};">
-                    ${projInitial}
-                </div>
-                <span class="om-card-project">${escapeHtml(task.project)}</span>
-            </div>
-            <div class="om-card-title">${escapeHtml(task.title)}</div>
-            <div class="om-card-stats">
-                <div class="om-card-avatar" style="background:${avatarBg};">
-                    ${task.assigneeInitials}
-                </div>
-                <span class="om-card-priority priority-${task.priority}">
-                    <span class="om-priority-dot"></span>
-                    ${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                </span>
-                <span class="om-card-hours">${task.duration}h</span>
-            </div>
-            <div class="om-card-footer">
-                <span class="om-card-due ${dueInfo.cls}">${dueInfo.text}</span>
-                ${!task.isOwn ? '<span class="om-card-owner">' + escapeHtml(task.assigneeName) + '</span>' : ''}
-            </div>
-            <div class="om-port port-left" data-port="left"></div>
-            <div class="om-port port-right" data-port="right"></div>
-        `;
-
-        return card;
-    }
-
-    function renderConnections() {
-        state.canvas.clearConnections();
-
-        const visibleIds = new Set(
-            state.allDisplayTasks
-                .filter(t => !state.filters.hiddenCategories.includes(t._category))
-                .map(t => t.id)
-        );
-
-        state.dependencies.forEach((dep, i) => {
-            if (!visibleIds.has(dep.from) || !visibleIds.has(dep.to)) return;
-
-            const fromTask = state.allDisplayTasks.find(t => t.id === dep.from);
-            const toTask = state.allDisplayTasks.find(t => t.id === dep.to);
-            if (!fromTask || !toTask) return;
-
-            // Color based on status
-            let color = '#3f3f46';
-            let animated = false;
-            if (fromTask.isOverdue || toTask.isOverdue) {
-                color = '#ef4444';
-                animated = true;
-            } else if (fromTask.status === 'working' || toTask.status === 'working') {
-                color = '#3ecf8e';
-                animated = true;
+                for (var h = 0; h < 24; h++) {
+                    var hourW = dayWidth / 24;
+                    var hourLabel = h % 6 === 0 ? (h === 0 ? '12a' : h < 12 ? h + 'a' : h === 12 ? '12p' : (h - 12) + 'p') : '';
+                    bottomHtml += '<div class="om-header-cell" style="width:' + hourW + 'px;">' + hourLabel + '</div>';
+                }
+                d.setDate(d.getDate() + 1);
             }
 
-            state.canvas.addConnection('dep-' + i, dep.from, dep.to, {
-                color,
-                animated,
-                dashed: true,
-                arrowhead: true,
+        } else if (state.zoomLevel === 'week') {
+            // Top tier: months, bottom tier: days
+            var currentMonth = -1;
+            var monthStartX = 0;
+            var monthParts = [];
+            var d2 = new Date(start);
+
+            while (d2 < end) {
+                var m = d2.getMonth();
+                if (m !== currentMonth) {
+                    if (currentMonth >= 0) {
+                        var w = dateToX(d2) - monthStartX;
+                        monthParts.push({ label: MONTHS_SHORT[currentMonth] + ' ' + d2.getFullYear(), width: w });
+                    }
+                    currentMonth = m;
+                    monthStartX = dateToX(d2);
+                }
+
+                var isWeekend = d2.getDay() === 0 || d2.getDay() === 6;
+                var isToday = isSameDay(d2, new Date());
+                var cls = 'om-header-cell' + (isWeekend ? ' om-weekend' : '') + (isToday ? ' om-today' : '');
+                var dayLabel2 = DAYS_SHORT[d2.getDay()] + ' ' + d2.getDate();
+                bottomHtml += '<div class="' + cls + '" style="width:' + zoom.pxPerDay + 'px;">' + dayLabel2 + '</div>';
+
+                d2.setDate(d2.getDate() + 1);
+            }
+            // Last month
+            if (currentMonth >= 0) {
+                var lastW = totalW - monthStartX;
+                monthParts.push({ label: MONTHS_SHORT[currentMonth] + ' ' + d2.getFullYear(), width: lastW });
+            }
+
+            topHtml = monthParts.map(function (p) {
+                return '<div class="om-header-month" style="width:' + p.width + 'px;">' + p.label + '</div>';
+            }).join('');
+
+        } else {
+            // Month zoom: top tier = months, bottom tier = weeks
+            var currentMonth2 = -1;
+            var monthStartX2 = 0;
+            var monthParts2 = [];
+            var d3 = new Date(start);
+
+            while (d3 < end) {
+                var m2 = d3.getMonth();
+                if (m2 !== currentMonth2) {
+                    if (currentMonth2 >= 0) {
+                        var w2 = dateToX(d3) - monthStartX2;
+                        monthParts2.push({ label: MONTHS_SHORT[currentMonth2] + ' ' + d3.getFullYear(), width: w2 });
+                    }
+                    currentMonth2 = m2;
+                    monthStartX2 = dateToX(d3);
+                }
+
+                // One cell per week
+                if (d3.getDay() === 1 || isSameDay(d3, start)) {
+                    var weekEnd = new Date(d3);
+                    weekEnd.setDate(weekEnd.getDate() + 7);
+                    var weekW = 7 * zoom.pxPerDay;
+                    var weekLabel = MONTHS_SHORT[d3.getMonth()] + ' ' + d3.getDate();
+                    bottomHtml += '<div class="om-header-cell" style="width:' + weekW + 'px;">' + weekLabel + '</div>';
+                }
+
+                d3.setDate(d3.getDate() + 1);
+            }
+
+            if (currentMonth2 >= 0) {
+                var lastW2 = totalW - monthStartX2;
+                monthParts2.push({ label: MONTHS_SHORT[currentMonth2] + ' ' + d3.getFullYear(), width: lastW2 });
+            }
+
+            topHtml = monthParts2.map(function (p) {
+                return '<div class="om-header-month" style="width:' + p.width + 'px;">' + p.label + '</div>';
+            }).join('');
+        }
+
+        els.headerDates.style.width = totalW + 'px';
+        els.headerDates.innerHTML =
+            '<div class="om-header-top">' + topHtml + '</div>' +
+            '<div class="om-header-bottom">' + bottomHtml + '</div>';
+
+        // Update corner cell label
+        els.cornerCell.textContent = state.groupBy === 'person' ? 'Person' : 'Project';
+    }
+
+    // ================================
+    // RENDER: ROW LABELS
+    // ================================
+
+    function renderRowLabels() {
+        var html = '';
+
+        state.rows.forEach(function (row) {
+            var utilPct = Math.round(row.utilization);
+            var barWidth = Math.min(100, utilPct);
+            var barColor = utilPct > 100 ? 'var(--color-danger)'
+                         : utilPct > 80 ? 'var(--color-warning)'
+                         : 'var(--accent)';
+
+            var avatarHtml = '';
+            if (state.groupBy === 'person') {
+                avatarHtml = renderRowAvatar(row);
+            } else {
+                var hue = hashStringToHue(row.label);
+                var initial = (row.label || '?')[0].toUpperCase();
+                avatarHtml = '<span class="om-row-avatar" style="background:hsl(' + hue + ',70%,45%);">' + initial + '</span>';
+            }
+
+            var metaText = row.tasks.length + ' task' + (row.tasks.length !== 1 ? 's' : '');
+            if (row.assignedHours > 0) metaText += ' · ' + Math.round(row.assignedHours) + 'h';
+
+            var capacityHtml = '';
+            if (state.groupBy === 'person' && row.id !== 'unassigned') {
+                capacityHtml =
+                    '<div class="om-row-capacity-bar">' +
+                        '<span class="om-row-capacity-text">' + utilPct + '%</span>' +
+                        '<div class="om-row-capacity-fill" style="width:' + barWidth + '%;background:' + barColor + ';"></div>' +
+                    '</div>';
+            }
+
+            html += '<div class="om-row-label" data-row-id="' + row.id + '" style="height:' + row.height + 'px;">' +
+                '<div class="om-row-label-info">' +
+                    avatarHtml +
+                    '<div class="om-row-label-text">' +
+                        '<span class="om-row-label-name">' + escapeHtml(row.label) + '</span>' +
+                        '<span class="om-row-label-meta">' + metaText + '</span>' +
+                    '</div>' +
+                '</div>' +
+                capacityHtml +
+            '</div>';
+        });
+
+        els.rowLabels.innerHTML = '<div class="om-row-labels-inner">' + html + '</div>';
+    }
+
+    function renderRowAvatar(row) {
+        if (row.photo) {
+            return '<span class="om-row-avatar"><img src="' + escapeHtml(row.photo) + '" alt="' + escapeHtml(row.label) + '" /></span>';
+        }
+        var hue = row.avatarColor != null ? row.avatarColor : hashStringToHue(row.id || row.label);
+        var initial = (row.label || '?')[0].toUpperCase();
+        return '<span class="om-row-avatar" style="background:hsl(' + hue + ',70%,45%);">' + initial + '</span>';
+    }
+
+    // ================================
+    // RENDER: GRID BACKGROUND
+    // ================================
+
+    function renderGridBackground(totalW, totalH) {
+        var html = '';
+        var zoom = ZOOM_CONFIG[state.zoomLevel];
+        var d = new Date(state.timeRange.start);
+        var end = state.timeRange.end;
+
+        // Vertical column lines + weekend shading
+        while (d < end) {
+            var x = dateToX(d);
+            var isWeekend = d.getDay() === 0 || d.getDay() === 6;
+
+            if (state.zoomLevel !== 'month') {
+                html += '<div class="om-grid-col-line" style="left:' + x + 'px;height:' + totalH + 'px;"></div>';
+            }
+
+            if (isWeekend && state.zoomLevel === 'week') {
+                html += '<div class="om-grid-col-weekend" style="left:' + x + 'px;width:' + zoom.pxPerDay + 'px;height:' + totalH + 'px;"></div>';
+            }
+
+            d.setDate(d.getDate() + 1);
+        }
+
+        // Horizontal row lines
+        state.rows.forEach(function (row) {
+            var y = row.yOffset + row.height;
+            html += '<div class="om-grid-row-line" style="top:' + y + 'px;width:' + totalW + 'px;"></div>';
+        });
+
+        els.gridBg.innerHTML = html;
+        els.gridInner.style.width = totalW + 'px';
+        els.gridInner.style.height = totalH + 'px';
+    }
+
+    // ================================
+    // RENDER: TASK CARDS
+    // ================================
+
+    function renderTaskCards(totalW, totalH) {
+        var fragment = document.createDocumentFragment();
+
+        state.rows.forEach(function (row) {
+            row.tasks.forEach(function (task, idx) {
+                if (!task.isScheduled) return;
+
+                var x = dateToX(task.startDate);
+                var endX = dateToX(task.endDate);
+                var width = Math.max(MIN_CARD_WIDTH, endX - x);
+                var y = row.yOffset + ROW_PADDING + idx * (CARD_HEIGHT + CARD_GAP);
+
+                var card = document.createElement('div');
+                card.className = 'om-task-card ' + (STATUS_CLASSES[task.statusName] || '');
+                if (task.isOverdue) card.className += ' om-overdue';
+                card.dataset.taskId = task.id;
+
+                card.style.cssText = 'left:' + x + 'px;top:' + y + 'px;width:' + width + 'px;height:' + CARD_HEIGHT + 'px;';
+
+                var priorityName = task.priority ? (task.priority.priority_name || '').toLowerCase() : 'medium';
+                var priorityColor = PRIORITY_COLORS[priorityName] || PRIORITY_COLORS.medium;
+
+                var avatarHtml = '';
+                if (state.groupBy === 'project' && task.owner) {
+                    avatarHtml = renderMiniAvatar(task.owner);
+                }
+
+                // Due date tag for overdue/soon
+                var dueTagHtml = '';
+                if (task.isOverdue) {
+                    var daysOverdue = Math.ceil((new Date() - task.endDate) / 86400000);
+                    dueTagHtml = '<span class="om-card-due-tag overdue">' + daysOverdue + 'd late</span>';
+                }
+
+                card.innerHTML =
+                    '<div class="om-card-inner">' +
+                        '<span class="om-card-priority-dot" style="background:' + priorityColor + ';"></span>' +
+                        '<span class="om-card-title">' + escapeHtml(task.description) + '</span>' +
+                        dueTagHtml +
+                        avatarHtml +
+                    '</div>';
+
+                fragment.appendChild(card);
             });
         });
 
-        // Auto-connect tasks within same project (if no explicit dependencies)
-        if (state.dependencies.length === 0) {
-            autoConnectByProject();
+        els.cardsContainer.innerHTML = '';
+        els.cardsContainer.appendChild(fragment);
+    }
+
+    function renderMiniAvatar(person) {
+        if (!person) return '';
+        if (person.photo) {
+            return '<span class="om-mini-avatar"><img src="' + escapeHtml(person.photo) + '" alt="" /></span>';
+        }
+        var hue = person.avatar_color != null ? person.avatar_color : hashStringToHue(person.id || person.name);
+        var initial = (person.name || '?')[0].toUpperCase();
+        return '<span class="om-mini-avatar" style="background:hsl(' + hue + ',70%,45%);">' + initial + '</span>';
+    }
+
+    // ================================
+    // RENDER: TODAY LINE
+    // ================================
+
+    function renderTodayLine(totalH) {
+        var now = new Date();
+        if (now < state.timeRange.start || now > state.timeRange.end) {
+            els.todayLine.style.display = 'none';
+            return;
+        }
+
+        var x = dateToX(now);
+        els.todayLine.style.display = 'block';
+        els.todayLine.style.left = x + 'px';
+        els.todayLine.style.height = totalH + 'px';
+    }
+
+    // ================================
+    // RENDER: DEPENDENCIES (SVG)
+    // ================================
+
+    function renderDependencies(totalW, totalH) {
+        var svg = els.depLayer;
+        svg.setAttribute('width', totalW);
+        svg.setAttribute('height', totalH);
+        svg.setAttribute('viewBox', '0 0 ' + totalW + ' ' + totalH);
+        svg.innerHTML = '';
+
+        if (state.dependencies.length === 0) return;
+
+        // Build position map from rendered cards
+        var posMap = {};
+        els.cardsContainer.querySelectorAll('.om-task-card').forEach(function (card) {
+            posMap[card.dataset.taskId] = {
+                x: parseFloat(card.style.left),
+                y: parseFloat(card.style.top),
+                w: parseFloat(card.style.width),
+                h: CARD_HEIGHT,
+            };
+        });
+
+        // Arrow marker definition
+        var defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        defs.innerHTML =
+            '<marker id="om-arrow" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">' +
+                '<polygon points="0 0, 8 3, 0 6" fill="#3ecf8e" />' +
+            '</marker>' +
+            '<marker id="om-arrow-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">' +
+                '<polygon points="0 0, 8 3, 0 6" fill="#ef4444" />' +
+            '</marker>';
+        svg.appendChild(defs);
+
+        state.dependencies.forEach(function (dep) {
+            var fromId = dep.predecessor_task_id;
+            var toId = dep.successor_task_id;
+            var from = posMap[fromId];
+            var to = posMap[toId];
+            if (!from || !to) return;
+
+            var x1 = from.x + from.w;
+            var y1 = from.y + from.h / 2;
+            var x2 = to.x;
+            var y2 = to.y + to.h / 2;
+
+            var dx = Math.abs(x2 - x1);
+            var cpOffset = Math.max(30, dx * 0.3);
+
+            var pathD = 'M ' + x1 + ' ' + y1 +
+                       ' C ' + (x1 + cpOffset) + ' ' + y1 +
+                       ', ' + (x2 - cpOffset) + ' ' + y2 +
+                       ', ' + x2 + ' ' + y2;
+
+            var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathD);
+
+            // Check if the successor task is overdue
+            var toTask = state.filteredTasks.find(function (t) { return t.id === toId; });
+            var isOverdue = toTask && toTask.isOverdue;
+
+            path.setAttribute('class', 'om-dep-line' + (isOverdue ? ' om-dep-overdue' : ''));
+            path.setAttribute('marker-end', isOverdue ? 'url(#om-arrow-red)' : 'url(#om-arrow)');
+
+            svg.appendChild(path);
+        });
+    }
+
+    // ================================
+    // RENDER: UNSCHEDULED
+    // ================================
+
+    function renderUnscheduled() {
+        var unscheduled = state.filteredTasks.filter(function (t) { return !t.isScheduled; });
+
+        if (unscheduled.length === 0) {
+            els.unscheduled.style.display = 'none';
+            return;
+        }
+
+        els.unscheduled.style.display = 'block';
+        els.unscheduledCount.textContent = unscheduled.length;
+
+        if (state.unscheduledCollapsed) {
+            els.unscheduled.classList.add('om-collapsed');
+        } else {
+            els.unscheduled.classList.remove('om-collapsed');
+        }
+
+        var html = '';
+        unscheduled.forEach(function (task) {
+            var statusCls = STATUS_CLASSES[task.statusName] || '';
+            var borderColor = STATUS_COLORS_MAP[task.statusName] || '#6b7280';
+            html += '<div class="om-unsched-card" data-task-id="' + task.id + '" style="border-left-color:' + borderColor + ';">' +
+                '<div>' +
+                    '<div class="om-unsched-card-title">' + escapeHtml(task.description) + '</div>' +
+                    '<div class="om-unsched-card-project">' + escapeHtml(task.projectName) + '</div>' +
+                '</div>' +
+            '</div>';
+        });
+
+        els.unscheduledGrid.innerHTML = html;
+    }
+
+    // ================================
+    // SCROLL SYNC
+    // ================================
+
+    function setupScrollSync() {
+        if (!els.grid) return;
+
+        els.grid.addEventListener('scroll', function () {
+            // Sync header horizontal position
+            els.headerDates.style.transform = 'translateX(-' + els.grid.scrollLeft + 'px)';
+
+            // Sync row labels vertical position
+            var labelsInner = els.rowLabels.querySelector('.om-row-labels-inner');
+            if (labelsInner) {
+                labelsInner.style.transform = 'translateY(-' + els.grid.scrollTop + 'px)';
+            }
+        });
+    }
+
+    // ================================
+    // TOOLBAR EVENTS
+    // ================================
+
+    function setupToolbarEvents() {
+        // Zoom buttons
+        document.querySelectorAll('[data-zoom]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                setZoom(btn.dataset.zoom);
+            });
+        });
+
+        // Group buttons
+        document.querySelectorAll('[data-group]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                setGroupBy(btn.dataset.group);
+            });
+        });
+
+        // Today button
+        var btnToday = document.getElementById('btnScrollToday');
+        if (btnToday) btnToday.addEventListener('click', scrollToToday);
+
+        // Filter toggle
+        var btnFilter = document.getElementById('btnFilter');
+        if (btnFilter) {
+            btnFilter.addEventListener('click', function (e) {
+                e.stopPropagation();
+                els.filterMenu.classList.toggle('open');
+            });
+        }
+
+        // Close filter on outside click
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('#omFilterDropdown')) {
+                if (els.filterMenu) els.filterMenu.classList.remove('open');
+            }
+        });
+
+        // Filter reset
+        var btnReset = document.getElementById('btnResetFilters');
+        if (btnReset) {
+            btnReset.addEventListener('click', function () {
+                state.filters.statuses = [...DEFAULT_STATUSES];
+                state.filters.projectId = '';
+                state.filters.personId = '';
+                populateFilterDropdowns();
+                if (els.filterProject) els.filterProject.value = '';
+                if (els.filterPerson) els.filterPerson.value = '';
+                onFilterChange();
+            });
+        }
+
+        // Status checkboxes (delegated)
+        if (els.filterStatusList) {
+            els.filterStatusList.addEventListener('change', function (e) {
+                var cb = e.target;
+                if (!cb.dataset.status) return;
+                var s = cb.dataset.status;
+                if (cb.checked) {
+                    if (!state.filters.statuses.includes(s)) state.filters.statuses.push(s);
+                } else {
+                    state.filters.statuses = state.filters.statuses.filter(function (x) { return x !== s; });
+                }
+                onFilterChange();
+            });
+        }
+
+        // Project filter
+        if (els.filterProject) {
+            els.filterProject.addEventListener('change', function () {
+                state.filters.projectId = els.filterProject.value;
+                onFilterChange();
+            });
+        }
+
+        // Person filter
+        if (els.filterPerson) {
+            els.filterPerson.addEventListener('change', function () {
+                state.filters.personId = els.filterPerson.value;
+                onFilterChange();
+            });
+        }
+
+        // Capacity button
+        var btnCapacity = document.getElementById('btnCapacity');
+        if (btnCapacity) btnCapacity.addEventListener('click', openCapacityModal);
+
+        // Capacity modal close
+        var btnCapClose = document.getElementById('btnCapacityClose');
+        var btnCapCancel = document.getElementById('btnCapacityCancel');
+        if (btnCapClose) btnCapClose.addEventListener('click', closeCapacityModal);
+        if (btnCapCancel) btnCapCancel.addEventListener('click', closeCapacityModal);
+
+        var btnCapSave = document.getElementById('btnCapacitySave');
+        if (btnCapSave) btnCapSave.addEventListener('click', saveCapacitySettings);
+
+        // Close modal on overlay click
+        if (els.capacityModal) {
+            els.capacityModal.addEventListener('click', function (e) {
+                if (e.target === els.capacityModal) closeCapacityModal();
+            });
+        }
+
+        // Task panel close
+        var btnPanelClose = document.getElementById('btnPanelClose');
+        if (btnPanelClose) btnPanelClose.addEventListener('click', closeTaskPanel);
+
+        // Unscheduled toggle
+        if (els.unscheduledToggle) {
+            els.unscheduledToggle.addEventListener('click', function () {
+                state.unscheduledCollapsed = !state.unscheduledCollapsed;
+                savePref('om_unsched_collapsed', state.unscheduledCollapsed);
+                if (state.unscheduledCollapsed) {
+                    els.unscheduled.classList.add('om-collapsed');
+                } else {
+                    els.unscheduled.classList.remove('om-collapsed');
+                }
+            });
         }
     }
 
-    function autoConnectByProject() {
-        const byProject = {};
-        state.allDisplayTasks
-            .filter(t => !state.filters.hiddenCategories.includes(t._category))
-            .forEach(t => {
-                const key = t.projectId || 'none';
-                if (!byProject[key]) byProject[key] = [];
-                byProject[key].push(t);
+    // ================================
+    // GRID EVENTS (card clicks)
+    // ================================
+
+    function setupGridEvents() {
+        // Delegated click on cards container
+        if (els.cardsContainer) {
+            els.cardsContainer.addEventListener('click', function (e) {
+                var card = e.target.closest('.om-task-card');
+                if (card) openTaskPanel(card.dataset.taskId);
             });
+        }
 
-        let connIdx = 0;
-        Object.values(byProject).forEach(arr => {
-            if (arr.length < 2) return;
-            // Sort by X position
-            const sorted = [...arr].sort((a, b) => {
-                const posA = state.positions[a.id] || { x: 0 };
-                const posB = state.positions[b.id] || { x: 0 };
-                return posA.x - posB.x;
+        // Delegated click on unscheduled cards
+        if (els.unscheduledGrid) {
+            els.unscheduledGrid.addEventListener('click', function (e) {
+                var card = e.target.closest('.om-unsched-card');
+                if (card) openTaskPanel(card.dataset.taskId);
             });
-
-            for (let i = 0; i < sorted.length - 1; i++) {
-                state.canvas.addConnection('auto-' + connIdx++, sorted[i].id, sorted[i + 1].id, {
-                    color: '#3ecf8e',
-                    animated: true,
-                    dashed: true,
-                    arrowhead: true,
-                });
-            }
-        });
-    }
-
-    function refreshView() {
-        // Remove all nodes
-        state.allDisplayTasks.forEach(t => {
-            state.canvas.removeNode(t.id);
-        });
-        renderCards();
-        renderConnections();
-        updateStats();
-    }
-
-    // ================================
-    // Stats
-    // ================================
-    function updateStats() {
-        const counts = {};
-        for (const cat of Object.keys(CATEGORIES)) counts[cat] = 0;
-
-        state.allDisplayTasks.forEach(t => {
-            if (counts[t._category] !== undefined) counts[t._category]++;
-        });
-
-        if (els.countWorking) els.countWorking.textContent = counts.working || 0;
-        if (els.countGoodToGo) els.countGoodToGo.textContent = counts['good-to-go'] || 0;
-        if (els.countBlocked) els.countBlocked.textContent = counts.blocked || 0;
-        if (els.countNotStarted) els.countNotStarted.textContent = counts['not-started'] || 0;
-    }
-
-    // ================================
-    // Position Persistence
-    // ================================
-    function loadPositions() {
-        const str = localStorage.getItem('ngm_om_positions');
-        if (str) {
-            try { state.positions = JSON.parse(str); } catch (e) { /* ignore */ }
         }
     }
 
-    function savePositions() {
-        localStorage.setItem('ngm_om_positions', JSON.stringify(state.positions));
+    // ================================
+    // ZOOM
+    // ================================
+
+    function setZoom(level) {
+        if (state.zoomLevel === level) return;
+
+        // Remember center date
+        var centerX = els.grid.scrollLeft + els.grid.clientWidth / 2;
+        var msFromStart = (centerX / ZOOM_CONFIG[state.zoomLevel].pxPerDay) * 86400000;
+        var centerDate = new Date(state.timeRange.start.getTime() + msFromStart);
+
+        state.zoomLevel = level;
+        savePref('om_zoom', level);
+
+        updateToggleButtons('[data-zoom]', level);
+        computeTimeRange();
+        renderAll();
+
+        // Scroll to keep same date centered
+        var newX = dateToX(centerDate);
+        els.grid.scrollLeft = Math.max(0, newX - els.grid.clientWidth / 2);
     }
 
     // ================================
-    // Helpers
+    // GROUP BY
     // ================================
+
+    function setGroupBy(mode) {
+        if (state.groupBy === mode) return;
+        state.groupBy = mode;
+        savePref('om_groupBy', mode);
+
+        updateToggleButtons('[data-group]', mode);
+        computeRows();
+        renderAll();
+    }
+
+    // ================================
+    // FILTER CHANGE
+    // ================================
+
+    function onFilterChange() {
+        savePref('om_filters', state.filters);
+        applyFilters();
+        computeTimeRange();
+        computeRows();
+        renderAll();
+    }
+
+    // ================================
+    // SCROLL TO TODAY
+    // ================================
+
+    function scrollToToday() {
+        if (!els.grid) return;
+        var now = new Date();
+        var x = dateToX(now);
+        els.grid.scrollLeft = Math.max(0, x - els.grid.clientWidth / 3);
+    }
+
+    // ================================
+    // CAPACITY MODAL
+    // ================================
+
+    function openCapacityModal() {
+        var html = '<div class="om-cap-row" style="font-weight:600;color:var(--text-secondary);font-size:11px;">' +
+            '<div>Team Member</div><div style="text-align:center;">Hours/Day</div><div style="text-align:center;">Days/Week</div>' +
+            '</div>';
+
+        state.users.forEach(function (u) {
+            var userId = u.user_id || u.id;
+            var userName = u.user_name || u.name || 'Unknown';
+
+            var wl = state.teamWorkload.find(function (w) { return w.user_id === userId; });
+            var hpd = (wl && wl.capacity && wl.capacity.hours_per_day) || 8;
+            var dpw = (wl && wl.capacity && wl.capacity.days_per_week) || 5;
+
+            var avatarHue = hashStringToHue(userId || userName);
+            var initial = (userName || '?')[0].toUpperCase();
+
+            html += '<div class="om-cap-row" data-user-id="' + userId + '">' +
+                '<div class="om-cap-user">' +
+                    '<span class="om-row-avatar" style="width:24px;height:24px;font-size:10px;background:hsl(' + avatarHue + ',70%,45%);">' + initial + '</span>' +
+                    '<span class="om-cap-user-name">' + escapeHtml(userName) + '</span>' +
+                '</div>' +
+                '<div><input type="number" class="om-cap-input om-cap-hours" value="' + hpd + '" min="1" max="24" step="0.5"></div>' +
+                '<div><input type="number" class="om-cap-input om-cap-days" value="' + dpw + '" min="1" max="7" step="1"></div>' +
+            '</div>';
+        });
+
+        els.capacityBody.innerHTML = html;
+        els.capacityModal.style.display = 'flex';
+    }
+
+    function closeCapacityModal() {
+        els.capacityModal.style.display = 'none';
+    }
+
+    async function saveCapacitySettings() {
+        var rows = els.capacityBody.querySelectorAll('.om-cap-row[data-user-id]');
+        var promises = [];
+
+        rows.forEach(function (row) {
+            var userId = row.dataset.userId;
+            var hours = parseFloat(row.querySelector('.om-cap-hours').value) || 8;
+            var days = parseInt(row.querySelector('.om-cap-days').value, 10) || 5;
+
+            promises.push(
+                fetch(API_BASE + '/pipeline/workload/capacity/' + userId, {
+                    method: 'PUT',
+                    headers: Object.assign({}, getAuthHeaders(), { 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ hours_per_day: hours, days_per_week: days }),
+                }).catch(function (err) {
+                    console.warn('[OM] Failed to save capacity for', userId, err);
+                })
+            );
+        });
+
+        try {
+            await Promise.all(promises);
+            await loadTeamWorkload();
+            computeRows();
+            renderRowLabels();
+            closeCapacityModal();
+            if (window.Toast) window.Toast.success('Capacity settings saved');
+        } catch (err) {
+            console.error('[OM] Capacity save error:', err);
+            if (window.Toast) window.Toast.error('Failed to save capacity settings');
+        }
+    }
+
+    // ================================
+    // TASK DETAIL PANEL
+    // ================================
+
+    function openTaskPanel(taskId) {
+        var task = state.allTasks.find(function (t) { return t.id === taskId; });
+        if (!task) return;
+
+        state.selectedTaskId = taskId;
+
+        var statusColor = STATUS_COLORS_MAP[task.statusName] || '#6b7280';
+        var priorityName = task.priority ? (task.priority.priority_name || 'Medium') : 'Medium';
+        var priorityColor = PRIORITY_COLORS[(priorityName || '').toLowerCase()] || PRIORITY_COLORS.medium;
+
+        var html = '<div class="om-panel-desc">' + escapeHtml(task.description) + '</div>';
+
+        html += '<div class="om-panel-section">' +
+            '<div class="om-panel-section-title">Details</div>' +
+            '<div class="om-panel-field">' +
+                '<span class="om-panel-field-label">Status</span>' +
+                '<span class="om-panel-status-badge" style="background:' + statusColor + '20;color:' + statusColor + ';">' +
+                    capitalize(task.statusName) +
+                '</span>' +
+            '</div>' +
+            '<div class="om-panel-field">' +
+                '<span class="om-panel-field-label">Priority</span>' +
+                '<span class="om-panel-field-value" style="color:' + priorityColor + ';">' + capitalize(priorityName) + '</span>' +
+            '</div>' +
+            '<div class="om-panel-field">' +
+                '<span class="om-panel-field-label">Project</span>' +
+                '<span class="om-panel-field-value">' + escapeHtml(task.projectName) + '</span>' +
+            '</div>' +
+            (task.estimatedHours ? '<div class="om-panel-field">' +
+                '<span class="om-panel-field-label">Estimated</span>' +
+                '<span class="om-panel-field-value">' + task.estimatedHours + 'h</span>' +
+            '</div>' : '') +
+        '</div>';
+
+        // Dates
+        html += '<div class="om-panel-section">' +
+            '<div class="om-panel-section-title">Dates</div>' +
+            '<div class="om-panel-field">' +
+                '<span class="om-panel-field-label">Start</span>' +
+                '<span class="om-panel-field-value">' + formatDateFull(task.startDate) + '</span>' +
+            '</div>' +
+            '<div class="om-panel-field">' +
+                '<span class="om-panel-field-label">Due</span>' +
+                '<span class="om-panel-field-value">' + formatDateFull(task.dueDate || task.endDate) + '</span>' +
+            '</div>' +
+            (task.deadline ? '<div class="om-panel-field">' +
+                '<span class="om-panel-field-label">Deadline</span>' +
+                '<span class="om-panel-field-value" style="color:var(--color-danger);">' + formatDateFull(task.deadline) + '</span>' +
+            '</div>' : '') +
+        '</div>';
+
+        // People
+        html += '<div class="om-panel-section">' +
+            '<div class="om-panel-section-title">People</div>' +
+            '<div class="om-panel-field">' +
+                '<span class="om-panel-field-label">Owner</span>' +
+                '<span class="om-panel-field-value">' + (task.owner ? escapeHtml(task.owner.name) : 'Unassigned') + '</span>' +
+            '</div>';
+
+        if (task.collaborators.length > 0) {
+            var collabNames = task.collaborators.map(function (c) { return escapeHtml(c.name || 'Unknown'); }).join(', ');
+            html += '<div class="om-panel-field">' +
+                '<span class="om-panel-field-label">Collaborators</span>' +
+                '<span class="om-panel-field-value">' + collabNames + '</span>' +
+            '</div>';
+        }
+
+        html += '</div>';
+
+        // Pipeline link
+        html += '<div class="om-panel-section">' +
+            '<a href="pipeline.html" class="om-panel-link">' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>' +
+                'Open in Pipeline Manager' +
+            '</a>' +
+        '</div>';
+
+        els.panelBody.innerHTML = html;
+        els.taskPanel.classList.add('om-panel-open');
+    }
+
+    function closeTaskPanel() {
+        els.taskPanel.classList.remove('om-panel-open');
+        state.selectedTaskId = null;
+    }
+
+    // ================================
+    // UI HELPERS
+    // ================================
+
+    function updateToggleButtons(selector, activeValue) {
+        document.querySelectorAll(selector).forEach(function (btn) {
+            var val = btn.dataset.zoom || btn.dataset.group;
+            btn.classList.toggle('om-btn-active', val === activeValue);
+        });
+    }
+
+    // ================================
+    // PREFERENCES
+    // ================================
+
+    function loadSavedPrefs() {
+        state.zoomLevel = loadPref('om_zoom', 'week');
+        state.groupBy = loadPref('om_groupBy', 'person');
+        state.unscheduledCollapsed = loadPref('om_unsched_collapsed', false);
+
+        var savedFilters = loadPref('om_filters', null);
+        if (savedFilters && savedFilters.statuses) {
+            state.filters = savedFilters;
+        }
+
+        // Set active buttons
+        requestAnimationFrame(function () {
+            updateToggleButtons('[data-zoom]', state.zoomLevel);
+            updateToggleButtons('[data-group]', state.groupBy);
+        });
+    }
+
+    function savePref(key, value) {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) { /* ignore */ }
+    }
+
+    function loadPref(key, defaultValue) {
+        try {
+            var v = localStorage.getItem(key);
+            return v !== null ? JSON.parse(v) : defaultValue;
+        } catch (e) { return defaultValue; }
+    }
+
+    // ================================
+    // HELPERS
+    // ================================
+
+    var MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
     function escapeHtml(str) {
         if (!str) return '';
-        return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
 
     function hashStringToHue(str) {
         if (!str) return 200;
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        var h = 0;
+        for (var i = 0; i < str.length; i++) {
+            h = str.charCodeAt(i) + ((h << 5) - h);
         }
-        return Math.abs(hash) % 360;
+        return Math.abs(h) % 360;
     }
 
-    function getDueInfo(dueDate, isOverdue, isDueSoon) {
-        if (!dueDate) return { text: 'No due date', cls: '' };
-
-        const d = new Date(dueDate);
-        const now = new Date();
-        const diff = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
-
-        if (isOverdue || diff < 0) {
-            return { text: Math.abs(diff) + 'd overdue', cls: 'overdue' };
-        }
-        if (isDueSoon || (diff >= 0 && diff <= 3)) {
-            return { text: diff === 0 ? 'Due today' : diff + 'd left', cls: 'soon' };
-        }
-
-        const month = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        return { text: month[d.getMonth()] + ' ' + d.getDate(), cls: '' };
+    function parseDate(str) {
+        if (!str) return null;
+        var d = new Date(str);
+        return isNaN(d.getTime()) ? null : d;
     }
 
-    function formatDate(dateStr) {
-        if (!dateStr) return '-';
-        const d = new Date(dateStr);
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    function isSameDay(a, b) {
+        return a.getFullYear() === b.getFullYear() &&
+               a.getMonth() === b.getMonth() &&
+               a.getDate() === b.getDate();
     }
 
-    // ================================
-    // Mock Data (for development)
-    // ================================
-    function generateMockTasks() {
-        const user = state.currentUser?.user_name || 'User';
-        const initials = user.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-
-        return [
-            {
-                id: 'task-1', title: 'Review electrical rough-in inspection',
-                project: 'Del Rio Residence', projectId: 'proj-1',
-                assigneeId: 'u1', assigneeName: user, assigneeInitials: initials, assigneeColor: null,
-                status: 'working', priority: 'high',
-                dueDate: '2026-02-12', duration: 4, isOverdue: false, isDueSoon: true, isOwn: true,
-            },
-            {
-                id: 'task-2', title: 'Coordinate HVAC installation schedule',
-                project: 'Del Rio Residence', projectId: 'proj-1',
-                assigneeId: 'u1', assigneeName: user, assigneeInitials: initials, assigneeColor: null,
-                status: 'working', priority: 'medium',
-                dueDate: '2026-02-15', duration: 6, isOverdue: false, isDueSoon: false, isOwn: true,
-            },
-            {
-                id: 'task-3', title: 'Submit permit application for Phase 2',
-                project: 'Arthur Neal Court', projectId: 'proj-2',
-                assigneeId: 'u1', assigneeName: user, assigneeInitials: initials, assigneeColor: null,
-                status: 'not_started', priority: 'high',
-                dueDate: '2026-02-08', duration: 3, isOverdue: true, isDueSoon: false, isOwn: true,
-            },
-            {
-                id: 'task-4', title: 'Order windows and doors for Phase 2',
-                project: 'Arthur Neal Court', projectId: 'proj-2',
-                assigneeId: 'u1', assigneeName: user, assigneeInitials: initials, assigneeColor: null,
-                status: 'not_started', priority: 'medium',
-                dueDate: '2026-02-20', duration: 2, isOverdue: false, isDueSoon: false, isOwn: true,
-            },
-            {
-                id: 'task-5', title: 'Finalize landscaping design review',
-                project: 'Del Rio Residence', projectId: 'proj-1',
-                assigneeId: 'u1', assigneeName: user, assigneeInitials: initials, assigneeColor: null,
-                status: 'not_started', priority: 'low',
-                dueDate: '2026-02-25', duration: 1, isOverdue: false, isDueSoon: false, isOwn: true,
-            },
-        ];
+    function capitalize(str) {
+        if (!str) return '';
+        return str.split(' ').map(function (w) {
+            return w.charAt(0).toUpperCase() + w.slice(1);
+        }).join(' ');
     }
 
-    function generateMockDependencies() {
-        return [
-            { from: 'task-1', to: 'task-2' },
-            { from: 'task-3', to: 'task-4' },
-        ];
+    function formatDateFull(date) {
+        if (!date) return '-';
+        return MONTHS_SHORT[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
     }
 
     // ================================
-    // Bootstrap
+    // BOOTSTRAP
     // ================================
-    document.addEventListener('DOMContentLoaded', init);
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 
 })();

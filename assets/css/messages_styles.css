@@ -1418,9 +1418,15 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
   padding: 10px 14px;
   cursor: pointer;
   transition: background 0.1s ease;
+  background: transparent;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
 }
 
 .msg-mention-item:hover,

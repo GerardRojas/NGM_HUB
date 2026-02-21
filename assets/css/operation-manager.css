@@ -1,125 +1,112 @@
 /* ================================
-   OPERATION MANAGER - Redesigned
-   Canvas styles come from ngm_canvas.css
+   OPERATION MANAGER - Gantt Timeline
    ================================ */
 
-/* Override global main-content max-width for full canvas */
+/* ================================
+   01 - Page Layout Override
+   ================================ */
 .page-operation-manager .main-content {
     max-width: none;
     padding: 0;
     width: 100%;
 }
 
-/* Main container */
-.operation-manager-main {
+.om-main {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: calc(100vh - 52px);
     overflow: hidden;
     background: var(--bg-main);
 }
 
 /* ================================
-   Canvas Toolbar
+   02 - Toolbar
    ================================ */
 .om-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 20px;
+    padding: 10px 20px;
     background: var(--bg-main);
     border-bottom: 1px solid var(--border-soft);
     flex-shrink: 0;
     gap: 16px;
+    z-index: var(--z-sticky);
 }
 
 .om-toolbar-left {
     display: flex;
     align-items: baseline;
-    gap: 12px;
+    gap: 10px;
+    flex-shrink: 0;
 }
 
 .om-toolbar-title {
-    font-size: 18px;
+    font-size: var(--font-lg);
     font-weight: 600;
-    color: #e5e7eb;
+    color: var(--text-primary);
     margin: 0;
 }
 
 .om-toolbar-subtitle {
-    font-size: 13px;
+    font-size: var(--font-sm);
     color: var(--text-tertiary);
 }
 
 .om-toolbar-center {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
 }
 
 .om-toolbar-right {
     display: flex;
     align-items: center;
-    gap: 12px;
-}
-
-/* ================================
-   Category Stats (4 colored counters)
-   ================================ */
-.om-category-stats {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.om-cat-stat {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--text-tertiary);
-    white-space: nowrap;
-}
-
-.om-cat-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+    gap: 8px;
     flex-shrink: 0;
 }
 
-.om-cat-dot.working {
-    background: var(--color-warning);
-    box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+/* Button group (pill toggle) */
+.om-btn-group {
+    display: flex;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    overflow: hidden;
 }
 
-.om-cat-dot.good-to-go {
-    background: var(--accent);
-    box-shadow: 0 0 6px rgba(62, 207, 142, 0.4);
+.om-btn-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    background: transparent;
+    border: none;
+    border-right: 1px solid var(--border-soft);
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    white-space: nowrap;
 }
 
-.om-cat-dot.blocked {
-    background: var(--color-danger);
-    box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+.om-btn-toggle:last-child {
+    border-right: none;
 }
 
-.om-cat-dot.not-started {
-    background: var(--text-tertiary);
+.om-btn-toggle:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.04);
 }
 
-.om-cat-dot.dependency {
-    background: #60a5fa;
+.om-btn-toggle.om-btn-active {
+    color: var(--accent);
+    background: rgba(62, 207, 142, 0.1);
 }
 
-.om-cat-count {
-    font-weight: 600;
-    color: #e5e7eb;
-}
-
-/* ================================
-   Zoom Buttons
-   ================================ */
-.om-btn-zoom {
+/* Icon button */
+.om-btn-icon {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -130,228 +117,526 @@
     border-radius: var(--radius-sm);
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: var(--transition-fast);
 }
 
-.om-btn-zoom:hover {
+.om-btn-icon:hover {
     color: var(--text-primary);
     border-color: var(--border-strong);
-    background: var(--bg-hover);
+}
+
+/* Today button */
+.om-btn-today {
+    padding: 5px 14px;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.om-btn-today:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(62, 207, 142, 0.08);
 }
 
 /* ================================
-   Canvas Container (extends ngm-canvas-container)
+   03 - Filter Dropdown
    ================================ */
-.om-canvas {
+.om-filter-dropdown {
+    position: relative;
+}
+
+.om-filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.om-filter-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+}
+
+.om-filter-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--accent);
+    border-radius: 9px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--bg-deep);
+}
+
+.om-filter-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 6px;
+    width: 280px;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: var(--z-dropdown);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: var(--transition-base);
+}
+
+.om-filter-menu.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.om-filter-menu-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-soft);
+    font-size: var(--font-base);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.om-filter-reset {
+    padding: 3px 10px;
+    background: transparent;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-xs);
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.om-filter-reset:hover {
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+}
+
+.om-filter-section {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.om-filter-section:last-child {
+    border-bottom: none;
+}
+
+.om-filter-section-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+}
+
+.om-filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    cursor: pointer;
+}
+
+.om-filter-checkbox input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.om-filter-checkbox-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.om-filter-checkbox-label {
+    font-size: var(--font-sm);
+    color: var(--text-primary);
+}
+
+.om-filter-select {
+    width: 100%;
+    padding: 6px 10px;
+    background: var(--ngm-bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-xs);
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+    cursor: pointer;
+}
+
+.om-filter-select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* ================================
+   04 - Timeline Wrapper (CSS Grid)
+   ================================ */
+.om-timeline-wrapper {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Header row */
+.om-header-row {
+    display: flex;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--bg-main);
+    z-index: 10;
+}
+
+.om-corner-cell {
+    width: 220px;
+    min-width: 220px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: flex-end;
+    font-size: var(--font-sm);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    background: var(--bg-main);
+    border-right: 1px solid var(--border-soft);
+    z-index: 11;
+}
+
+.om-header-scroll {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+}
+
+.om-header-dates {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    will-change: transform;
+}
+
+/* Header top tier (months/years) */
+.om-header-top {
+    display: flex;
+    border-bottom: 1px solid var(--border-soft);
+}
+
+.om-header-month {
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-right: 1px solid var(--border-soft);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0;
+}
+
+/* Header bottom tier (days/hours/weeks) */
+.om-header-bottom {
+    display: flex;
+}
+
+.om-header-cell {
+    padding: 4px 0;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-align: center;
+    border-right: 1px solid rgba(255, 255, 255, 0.03);
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.om-header-cell.om-weekend {
+    background: rgba(255, 255, 255, 0.015);
+    color: var(--text-faint);
+}
+
+.om-header-cell.om-today {
+    color: var(--accent);
+    font-weight: 600;
 }
 
 /* ================================
-   Task Card (.om-task-card)
-   Based on PM .tree-node aesthetic
+   05 - Body (scrollable area)
    ================================ */
+.om-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Row labels (left column, synced vertical scroll) */
+.om-row-labels {
+    width: 220px;
+    min-width: 220px;
+    overflow: hidden;
+    border-right: 1px solid var(--border-soft);
+    background: var(--bg-main);
+    z-index: 5;
+}
+
+.om-row-labels-inner {
+    display: flex;
+    flex-direction: column;
+}
+
+.om-row-label {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border-soft);
+    gap: 6px;
+    box-sizing: border-box;
+}
+
+.om-row-label-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.om-row-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.om-row-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.om-row-label-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.om-row-label-name {
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.om-row-label-meta {
+    font-size: 10px;
+    color: var(--text-tertiary);
+}
+
+/* Capacity bar */
+.om-row-capacity-bar {
+    height: 4px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 2px;
+    position: relative;
+    overflow: hidden;
+}
+
+.om-row-capacity-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.om-row-capacity-text {
+    position: absolute;
+    right: 0;
+    top: -14px;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+}
+
+/* ================================
+   06 - Grid Area (scrollable)
+   ================================ */
+.om-grid {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+}
+
+/* Custom scrollbar */
+.om-grid::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.om-grid::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.om-grid::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.om-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.om-grid-inner {
+    position: relative;
+    min-height: 100%;
+}
+
+/* Grid background (date lines + row lanes) */
+.om-grid-bg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.om-grid-col-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.om-grid-col-weekend {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.012);
+}
+
+.om-grid-row-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--border-soft);
+}
+
+/* ================================
+   07 - Today Line
+   ================================ */
+.om-today-line {
+    position: absolute;
+    top: 0;
+    width: 2px;
+    background: var(--color-danger);
+    z-index: 4;
+    pointer-events: none;
+}
+
+.om-today-line::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -4px;
+    width: 10px;
+    height: 10px;
+    background: var(--color-danger);
+    border-radius: 50%;
+}
+
+/* ================================
+   08 - Task Cards
+   ================================ */
+.om-cards-container {
+    position: relative;
+    z-index: 3;
+}
+
 .om-task-card {
-    width: 240px;
-    background: linear-gradient(135deg, var(--ngm-bg-card) 0%, #151515 100%);
-    border: 2px solid var(--border-soft);
-    border-radius: var(--radius-xl);
-    padding: 16px 18px;
-    cursor: grab;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    animation: omCardAppear 0.3s ease;
+    position: absolute;
+    height: 36px;
+    background: var(--ngm-bg-card);
+    border: 1px solid var(--border-soft);
+    border-left: 3px solid var(--text-tertiary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    overflow: hidden;
+    z-index: 3;
 }
 
 .om-task-card:hover {
     border-color: var(--border-strong);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    z-index: 4;
 }
 
-@keyframes omCardAppear {
-    from {
-        opacity: 0;
-        transform: scale(0.92);
-    }
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-}
-
-/* ================================
-   Category Variants
-   ================================ */
-
-/* Working */
-.om-task-card.category-working {
-    border-left: 3px solid var(--color-warning);
-    background: linear-gradient(135deg, var(--ngm-bg-card) 0%, #1a1710 100%);
-}
-
-.om-task-card.category-working:hover {
-    border-color: var(--color-warning);
-    box-shadow: 0 8px 32px rgba(245, 158, 11, 0.12);
-}
-
-.om-task-card.category-working .om-card-badge {
-    background: rgba(245, 158, 11, 0.2);
-    color: var(--color-warning);
-}
-
-/* Good to Go */
-.om-task-card.category-good-to-go {
-    border-left: 3px solid var(--accent);
-    background: linear-gradient(135deg, var(--ngm-bg-card) 0%, #0f1a14 100%);
-}
-
-.om-task-card.category-good-to-go:hover {
-    border-color: var(--accent);
-    box-shadow: 0 8px 32px rgba(62, 207, 142, 0.12);
-}
-
-.om-task-card.category-good-to-go .om-card-badge {
-    background: rgba(62, 207, 142, 0.2);
-    color: var(--accent);
-}
-
-/* Blocked */
-.om-task-card.category-blocked {
-    border-left: 3px solid var(--color-danger);
-    background: linear-gradient(135deg, var(--ngm-bg-card) 0%, #1a1212 100%);
-}
-
-.om-task-card.category-blocked:hover {
-    border-color: var(--color-danger);
-    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.12);
-}
-
-.om-task-card.category-blocked .om-card-badge {
-    background: rgba(239, 68, 68, 0.2);
-    color: var(--color-danger);
-}
-
-/* Not Started */
-.om-task-card.category-not-started {
-    border-left: 3px solid var(--text-tertiary);
-    background: linear-gradient(135deg, var(--ngm-bg-card) 0%, #151515 100%);
-}
-
-.om-task-card.category-not-started:hover {
-    border-color: var(--text-tertiary);
-    box-shadow: 0 8px 32px rgba(107, 114, 128, 0.1);
-}
-
-.om-task-card.category-not-started .om-card-badge {
-    background: rgba(107, 114, 128, 0.25);
-    color: var(--text-tertiary);
-}
-
-/* Dependency (coworker task) */
-.om-task-card.category-dependency {
-    width: 200px;
-    border-left: 3px solid #60a5fa;
-    background: linear-gradient(135deg, var(--ngm-bg-card) 0%, #111827 100%);
-    opacity: 0.85;
-}
-
-.om-task-card.category-dependency:hover {
-    border-color: #60a5fa;
-    box-shadow: 0 8px 32px rgba(96, 165, 250, 0.12);
-    opacity: 1;
-}
-
-.om-task-card.category-dependency .om-card-badge {
-    background: rgba(96, 165, 250, 0.2);
-    color: #60a5fa;
-}
-
-.om-task-card.category-dependency .om-card-title {
-    font-size: 12px;
-}
-
-.om-task-card.category-dependency .om-card-header {
-    margin-bottom: 6px;
-}
-
-/* ================================
-   Card Badge (top-right corner)
-   ================================ */
-.om-card-badge {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    padding: 2px 8px;
-    border-radius: var(--radius-xs);
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-/* ================================
-   Card Header (icon + project name)
-   ================================ */
-.om-card-header {
+.om-card-inner {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 6px;
+    padding: 0 10px 0 8px;
+    height: 100%;
 }
 
-.om-card-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-md);
-    border: 1.5px solid;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 700;
-    color: inherit;
+.om-card-priority-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
     flex-shrink: 0;
 }
 
-.om-card-project {
+.om-card-title {
     font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--accent);
+    font-weight: 500;
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 140px;
+    flex: 1;
+    min-width: 0;
 }
 
-/* ================================
-   Card Title
-   ================================ */
-.om-card-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: #e5e7eb;
-    line-height: 1.4;
-    margin-bottom: 10px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    padding-right: 30px; /* space for badge */
-}
-
-/* ================================
-   Card Stats Row
-   ================================ */
-.om-card-stats {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 8px;
-}
-
-.om-card-avatar {
-    width: 22px;
-    height: 22px;
+.om-mini-avatar {
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -362,136 +647,212 @@
     flex-shrink: 0;
 }
 
-.om-card-avatar img {
+.om-mini-avatar img {
     width: 100%;
     height: 100%;
     border-radius: 50%;
     object-fit: cover;
 }
 
-.om-card-priority {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 10px;
+/* Status color variants */
+.om-task-card.status-working {
+    border-left-color: #f59e0b;
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, var(--ngm-bg-card) 40%);
+}
+
+.om-task-card.status-not-started {
+    border-left-color: #6b7280;
+}
+
+.om-task-card.status-awaiting-approval {
+    border-left-color: #8b5cf6;
+    background: linear-gradient(90deg, rgba(139, 92, 246, 0.06) 0%, var(--ngm-bg-card) 40%);
+}
+
+.om-task-card.status-correction {
+    border-left-color: #ef4444;
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.06) 0%, var(--ngm-bg-card) 40%);
+}
+
+.om-task-card.status-delayed {
+    border-left-color: #ef4444;
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.06) 0%, var(--ngm-bg-card) 40%);
+}
+
+.om-task-card.status-good-to-go {
+    border-left-color: var(--accent);
+    background: linear-gradient(90deg, rgba(62, 207, 142, 0.06) 0%, var(--ngm-bg-card) 40%);
+}
+
+.om-task-card.status-done {
+    border-left-color: #22c55e;
+    opacity: 0.6;
+}
+
+.om-task-card.status-resubmittal {
+    border-left-color: #fb923c;
+    background: linear-gradient(90deg, rgba(251, 146, 60, 0.06) 0%, var(--ngm-bg-card) 40%);
+}
+
+/* Overdue indicator */
+.om-task-card.om-overdue {
+    border-color: rgba(239, 68, 68, 0.4);
+    border-left-color: #ef4444;
+}
+
+.om-task-card.om-overdue .om-card-title {
+    color: #fca5a5;
+}
+
+/* Card due date tooltip */
+.om-card-due-tag {
+    font-size: 9px;
     font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+    padding: 1px 5px;
+    border-radius: 3px;
+    flex-shrink: 0;
 }
 
-.om-priority-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
+.om-card-due-tag.overdue {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
 }
 
-.om-card-priority.priority-high {
-    color: var(--color-danger);
-}
-
-.om-card-priority.priority-high .om-priority-dot {
-    background: var(--color-danger);
-}
-
-.om-card-priority.priority-medium {
-    color: var(--color-warning);
-}
-
-.om-card-priority.priority-medium .om-priority-dot {
-    background: var(--color-warning);
-}
-
-.om-card-priority.priority-low {
-    color: var(--color-success);
-}
-
-.om-card-priority.priority-low .om-priority-dot {
-    background: var(--color-success);
-}
-
-.om-card-hours {
-    font-size: 10px;
-    font-weight: 500;
-    color: var(--text-tertiary);
-    margin-left: auto;
+.om-card-due-tag.soon {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
 }
 
 /* ================================
-   Card Footer (due date)
+   09 - Dependency SVG Layer
    ================================ */
-.om-card-footer {
+.om-dep-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 2;
+    overflow: visible;
+}
+
+.om-dep-line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    stroke-dasharray: 5 3;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.om-dep-line.om-dep-overdue {
+    stroke: var(--color-danger);
+    opacity: 0.8;
+}
+
+.om-dep-line:hover {
+    opacity: 1;
+    stroke-width: 2;
+}
+
+/* ================================
+   10 - Unscheduled Section
+   ================================ */
+.om-unscheduled {
+    flex-shrink: 0;
+    border-top: 1px solid var(--border-soft);
+    background: var(--bg-main);
+}
+
+.om-unscheduled-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding-top: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    gap: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: var(--font-base);
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: var(--transition-fast);
 }
 
-.om-card-due {
-    font-size: 10px;
-    font-weight: 500;
+.om-unscheduled-header:hover {
+    color: var(--text-primary);
+}
+
+.om-unscheduled-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    background: var(--ngm-bg-surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
     color: var(--text-tertiary);
-    padding: 2px 6px;
-    background: var(--bg-hover);
-    border-radius: var(--radius-xs);
 }
 
-.om-card-due.overdue {
-    color: var(--color-danger);
-    background: rgba(239, 68, 68, 0.12);
+.om-unscheduled-chevron {
+    margin-left: auto;
+    transition: transform 0.2s ease;
+    color: var(--text-tertiary);
 }
 
-.om-card-due.soon {
-    color: var(--color-warning);
-    background: rgba(245, 158, 11, 0.12);
+.om-unscheduled.om-collapsed .om-unscheduled-chevron {
+    transform: rotate(-90deg);
 }
 
-/* Coworker name (dependency cards) */
-.om-card-owner {
-    font-size: 10px;
-    color: #60a5fa;
-    font-weight: 500;
+.om-unscheduled.om-collapsed .om-unscheduled-grid {
+    display: none;
 }
 
-/* ================================
-   Connection Ports (on cards)
-   ================================ */
-.om-port {
-    position: absolute;
-    width: 12px;
-    height: 12px;
+.om-unscheduled-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 20px 14px;
+}
+
+.om-unsched-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
     background: var(--ngm-bg-card);
-    border: 2px solid var(--border-hover);
-    border-radius: 50%;
-    cursor: crosshair;
-    transition: all 0.2s ease;
-    z-index: 3;
-    opacity: 0;
-    top: 50%;
-    transform: translateY(-50%);
+    border: 1px solid var(--border-soft);
+    border-left: 3px solid var(--text-tertiary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    max-width: 280px;
+    transition: var(--transition-fast);
 }
 
-.om-task-card:hover .om-port {
-    opacity: 1;
+.om-unsched-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
 }
 
-.om-port:hover {
-    background: var(--accent);
-    border-color: var(--accent);
-    transform: translateY(-50%) scale(1.3);
-    box-shadow: 0 0 8px rgba(62, 207, 142, 0.5);
+.om-unsched-card-title {
+    font-size: var(--font-sm);
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.om-port.port-left {
-    left: -6px;
-}
-
-.om-port.port-right {
-    right: -6px;
+.om-unsched-card-project {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* ================================
-   Empty State
+   11 - Empty State
    ================================ */
 .om-empty {
     position: absolute;
@@ -516,178 +877,364 @@
 }
 
 .om-empty-title {
-    font-size: 16px;
+    font-size: var(--font-lg);
     font-weight: 600;
-    color: #e5e7eb;
+    color: var(--text-primary);
     margin: 0 0 6px 0;
 }
 
 .om-empty-subtitle {
-    font-size: 13px;
+    font-size: var(--font-base);
     color: var(--text-tertiary);
     margin: 0;
 }
 
 /* ================================
-   Filter Dropdown
+   12 - Capacity Modal
    ================================ */
-.om-filter-dropdown {
-    position: relative;
-}
-
-.om-filter-btn {
+.om-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: var(--z-modal);
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    background: var(--ngm-bg-surface);
-    border: 1px solid var(--border-soft);
-    border-radius: var(--radius-sm);
-    color: var(--text-secondary);
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.15s;
-}
-
-.om-filter-btn:hover {
-    color: var(--text-primary);
-    border-color: var(--border-strong);
-    background: var(--bg-hover);
-}
-
-.om-filter-btn.active {
-    color: var(--accent);
-    border-color: var(--accent);
-    background: rgba(62, 207, 142, 0.1);
-}
-
-.om-filter-badge {
-    display: inline-flex;
-    align-items: center;
     justify-content: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    background: var(--accent);
-    border-radius: 9px;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--bg-deep);
+    animation: omFadeIn 0.15s ease;
 }
 
-.om-filter-menu {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    margin-top: 8px;
-    width: 260px;
+@keyframes omFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.om-modal {
+    width: 560px;
+    max-width: 90vw;
+    max-height: 80vh;
     background: var(--ngm-bg-surface);
     border: 1px solid var(--border-soft);
-    border-radius: var(--radius-md);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-    z-index: var(--z-dropdown);
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-8px);
-    transition: all 0.2s ease;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    animation: omSlideUp 0.2s ease;
 }
 
-.om-filter-menu.open {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+@keyframes omSlideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.om-filter-menu-header {
+.om-modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border-soft);
-    font-size: 13px;
+}
+
+.om-modal-header h3 {
+    font-size: var(--font-md);
     font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.om-modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-xs);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.om-modal-close:hover {
+    background: rgba(255, 255, 255, 0.06);
     color: var(--text-primary);
 }
 
-.om-filter-reset {
-    padding: 4px 10px;
-    background: transparent;
-    border: 1px solid var(--border-soft);
-    border-radius: var(--radius-xs);
-    font-size: 12px;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.15s;
+.om-modal-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+    flex: 1;
 }
 
-.om-filter-reset:hover {
+.om-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border-soft);
+}
+
+/* Capacity rows */
+.om-cap-row {
+    display: grid;
+    grid-template-columns: 1fr 80px 80px;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.om-cap-row:last-child {
+    border-bottom: none;
+}
+
+.om-cap-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.om-cap-user-name {
+    font-size: var(--font-sm);
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.om-cap-input {
+    width: 100%;
+    padding: 5px 8px;
+    background: var(--ngm-bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-xs);
+    color: var(--text-primary);
+    font-size: var(--font-sm);
+    text-align: center;
+}
+
+.om-cap-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.om-cap-label {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    text-align: center;
+    margin-top: 2px;
+}
+
+/* Modal buttons */
+.om-btn-primary {
+    padding: 7px 18px;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--bg-deep);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.om-btn-primary:hover {
+    background: var(--accent-hover);
+}
+
+.om-btn-secondary {
+    padding: 7px 18px;
+    background: transparent;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.om-btn-secondary:hover {
     color: var(--text-primary);
     border-color: var(--border-strong);
 }
 
-.om-filter-section {
-    padding: 12px 16px;
+/* ================================
+   13 - Task Detail Panel (slide-in)
+   ================================ */
+.om-task-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 360px;
+    height: 100vh;
+    background: var(--ngm-bg-surface);
+    border-left: 1px solid var(--border-soft);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.4);
+    z-index: var(--z-modal);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.om-task-panel.om-panel-open {
+    transform: translateX(0);
+}
+
+.om-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
     border-bottom: 1px solid var(--border-soft);
+    flex-shrink: 0;
 }
 
-.om-filter-section:last-of-type {
-    border-bottom: none;
+.om-panel-title {
+    font-size: var(--font-md);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
 }
 
-.om-filter-section-title {
-    font-size: 11px;
+.om-panel-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-xs);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.om-panel-close:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
+}
+
+.om-panel-body {
+    padding: 16px 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Panel content sections */
+.om-panel-section {
+    margin-bottom: 20px;
+}
+
+.om-panel-section-title {
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-tertiary);
-    margin-bottom: 10px;
+    margin-bottom: 8px;
 }
 
-.om-filter-checkbox {
+.om-panel-field {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 6px 0;
-    cursor: pointer;
 }
 
-.om-filter-checkbox input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    margin: 0;
-    accent-color: var(--accent);
-    cursor: pointer;
+.om-panel-field-label {
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+    min-width: 80px;
 }
 
-.om-filter-checkbox-label {
-    font-size: 13px;
-    color: #e5e7eb;
+.om-panel-field-value {
+    font-size: var(--font-sm);
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.om-panel-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: var(--radius-xs);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.om-panel-desc {
+    font-size: var(--font-md);
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.om-panel-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: rgba(62, 207, 142, 0.1);
+    border: 1px solid rgba(62, 207, 142, 0.2);
+    border-radius: var(--radius-sm);
+    color: var(--accent);
+    font-size: var(--font-sm);
+    font-weight: 500;
+    text-decoration: none;
+    transition: var(--transition-fast);
+}
+
+.om-panel-link:hover {
+    background: rgba(62, 207, 142, 0.15);
+    border-color: var(--accent);
 }
 
 /* ================================
-   Responsive
+   14 - Responsive
    ================================ */
-@media (max-width: 768px) {
-    .om-toolbar {
-        flex-wrap: wrap;
-        gap: 12px;
-    }
-
+@media (max-width: 1024px) {
     .om-toolbar-center {
-        order: 3;
-        width: 100%;
-        justify-content: center;
-    }
-
-    .om-category-stats {
         display: none;
     }
 
-    .om-task-card {
-        width: 200px;
+    .om-corner-cell,
+    .om-row-labels {
+        width: 160px;
+        min-width: 160px;
+    }
+}
+
+@media (max-width: 768px) {
+    .om-toolbar {
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
-    .om-task-card.category-dependency {
-        width: 180px;
+    .om-toolbar-left {
+        width: 100%;
+    }
+
+    .om-corner-cell,
+    .om-row-labels {
+        width: 120px;
+        min-width: 120px;
+    }
+
+    .om-task-panel {
+        width: 100%;
+    }
+
+    .om-row-avatar {
+        width: 22px;
+        height: 22px;
+        font-size: 9px;
+    }
+
+    .om-row-label-meta {
+        display: none;
     }
 }

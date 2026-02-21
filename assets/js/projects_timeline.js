@@ -277,9 +277,9 @@ window.ProjectTimeline = (() => {
     return '' +
       '<div class="pd-error">' +
         ICONS.error +
-      '  <h4 class="pd-error-title">No se pudo cargar el timeline</h4>' +
-      '  <p class="pd-error-msg">' + esc(message || 'Error desconocido') + '</p>' +
-      '  <button class="pd-error-retry" onclick="window.ProjectTimeline.reload()">Reintentar</button>' +
+      '  <h4 class="pd-error-title">Failed to load timeline</h4>' +
+      '  <p class="pd-error-msg">' + esc(message || 'Unknown error') + '</p>' +
+      '  <button class="pd-error-retry" onclick="window.ProjectTimeline.reload()">Retry</button>' +
       '</div>';
   }
 
@@ -321,7 +321,7 @@ window.ProjectTimeline = (() => {
 
       // API returned null/empty
       if (!data) {
-        container.innerHTML = buildError('El servidor no devolvio datos.');
+        container.innerHTML = buildError('The server returned no data.');
         return;
       }
 

@@ -2101,12 +2101,24 @@
 
   function toggleGroup(indexCat) {
     groupState[indexCat] = !groupState[indexCat];
+    // Clear selection if it was inside this collapsed category
+    if (!groupState[indexCat] && selectedRow && String(selectedRow.catIndex) === String(indexCat)) {
+      selectedRow = null;
+      els.tbody?.querySelectorAll('.row-selected').forEach(r => r.classList.remove('row-selected'));
+    }
     applyTableFilter(currentFilter);
   }
 
   function toggleSub(catIndex, subIndex) {
     const key = `${catIndex}-${subIndex}`;
     subState[key] = !subState[key];
+    // Clear selection if it was inside this collapsed subcategory
+    if (!subState[key] && selectedRow &&
+        String(selectedRow.catIndex) === String(catIndex) &&
+        String(selectedRow.subIndex) === String(subIndex)) {
+      selectedRow = null;
+      els.tbody?.querySelectorAll('.row-selected').forEach(r => r.classList.remove('row-selected'));
+    }
     applyTableFilter(currentFilter);
   }
 
@@ -2285,6 +2297,12 @@
     document.getElementById('add-concept-save-to-db').checked = false;
     document.getElementById('add-concept-confirm').disabled = true;
 
+    // Reset category filter so it repopulates from current cache
+    const catSelect = document.getElementById('concept-picker-category');
+    if (catSelect) {
+      catSelect.innerHTML = '<option value="">All Categories</option>';
+    }
+
     // Clear preview
     document.getElementById('concept-preview-content').innerHTML =
       '<p class="preview-empty">Select a concept from the table to see its details and line items.</p>';
@@ -2305,6 +2323,20 @@
     const searchTerm = filterText.toLowerCase().trim();
     const concepts = templateCache.concepts;
 
+    // Populate category filter dropdown with unique categories
+    const categorySelect = document.getElementById('concept-picker-category');
+    if (categorySelect && categorySelect.options.length <= 1) {
+      const cats = [...new Set(concepts.map(c => c.category_name).filter(Boolean))].sort();
+      cats.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        categorySelect.appendChild(opt);
+      });
+    }
+
+    const selectedCategory = categorySelect?.value || '';
+
     if (concepts.length === 0) {
       tbody.innerHTML = `
         <tr>
@@ -2316,14 +2348,18 @@
       return;
     }
 
-    // Filter concepts
-    const filtered = searchTerm
-      ? concepts.filter(c =>
-          (c.code || '').toLowerCase().includes(searchTerm) ||
-          (c.short_description || '').toLowerCase().includes(searchTerm) ||
-          (c.category_name || '').toLowerCase().includes(searchTerm)
-        )
-      : concepts;
+    // Filter concepts by search + category
+    let filtered = concepts;
+    if (selectedCategory) {
+      filtered = filtered.filter(c => c.category_name === selectedCategory);
+    }
+    if (searchTerm) {
+      filtered = filtered.filter(c =>
+        (c.code || '').toLowerCase().includes(searchTerm) ||
+        (c.short_description || '').toLowerCase().includes(searchTerm) ||
+        (c.category_name || '').toLowerCase().includes(searchTerm)
+      );
+    }
 
     if (filtered.length === 0) {
       tbody.innerHTML = `
@@ -2366,7 +2402,7 @@
       if (types.has('percent')) typeBadges += '<span class="type-badge type-percent">%</span>';
 
       return `
-        <tr data-concept-id="${concept.id}" data-concept='${escapeHtml(JSON.stringify(concept))}'>
+        <tr data-concept-id="${concept.id}">
           <td><code style="color: #3ecf8e;">${escapeHtml(concept.code || '')}</code></td>
           <td>${escapeHtml(concept.short_description || concept.name || '')}</td>
           <td>${escapeHtml(concept.unit_name || concept.unit || 'Ea')}</td>
@@ -2387,19 +2423,22 @@
     // Mark as selected
     row.classList.add('selected');
 
-    // Parse concept data
-    try {
-      const concept = JSON.parse(row.dataset.concept);
-      addConceptState.selectedConcept = concept;
-
-      // Enable confirm button
-      document.getElementById('add-concept-confirm').disabled = false;
-
-      // Show preview
-      showConceptPreview(concept);
-    } catch (err) {
-      console.error('[ESTIMATOR] Error parsing concept:', err);
+    // Look up concept from cache by ID (avoids storing full object in DOM)
+    const conceptId = row.dataset.conceptId;
+    const concept = templateCache.concepts.find(c => c.id === conceptId);
+    if (!concept) {
+      console.error('[ESTIMATOR] Concept not found in cache:', conceptId);
+      showFeedback('Concept not found in catalog. Try refreshing.', 'error');
+      return;
     }
+
+    addConceptState.selectedConcept = concept;
+
+    // Enable confirm button
+    document.getElementById('add-concept-confirm').disabled = false;
+
+    // Show preview
+    showConceptPreview(concept);
   }
 
   function showConceptPreview(concept) {
@@ -2484,6 +2523,10 @@
     }
 
     const qty = parseFloat(document.getElementById('add-concept-qty').value) || 1;
+    if (qty <= 0) {
+      showFeedback('Quantity must be greater than 0', 'error');
+      return;
+    }
     const saveToDb = document.getElementById('add-concept-save-to-db').checked;
     const concept = addConceptState.selectedConcept;
 
@@ -2589,6 +2632,12 @@
     }
 
     const unitCost = concept.calculated_cost || concept.base_cost || 0;
+
+    // Warn if concept has no line items and no cost
+    if (lineItems.length === 0 && unitCost === 0) {
+      console.warn('[ESTIMATOR] Concept has no line items and $0 cost:', concept.code);
+      showFeedback(`Warning: "${concept.code}" has no line items and $0 cost`, 'warning');
+    }
 
     // Create new item
     const newItem = {
@@ -2897,9 +2946,20 @@
       item.description = document.getElementById('edit-item-desc').value.trim();
       item.unit = document.getElementById('edit-item-unit').value.trim() || item.unit;
       const newCost = parseFloat(document.getElementById('edit-item-cost').value);
-      if (!isNaN(newCost)) {
+      if (!isNaN(newCost) && newCost >= 0) {
+        const oldCost = item.unit_cost || item.base_cost || 0;
         item.unit_cost = newCost;
         item.base_cost = newCost;
+
+        // Scale line_items proportionally so breakdown stays consistent
+        if (Array.isArray(item.line_items) && item.line_items.length > 0 && oldCost > 0) {
+          const ratio = newCost / oldCost;
+          item.line_items.forEach(li => {
+            if (!li.isPercent && typeof li.unitCost === 'number') {
+              li.unitCost = Math.round(li.unitCost * ratio * 100) / 100;
+            }
+          });
+        }
       }
 
       recalculateEstimateTotals();
@@ -3071,6 +3131,13 @@
     const searchInput = document.getElementById('concept-picker-search');
     searchInput?.addEventListener('input', (e) => {
       populateConceptPicker(e.target.value);
+    });
+
+    // Category filter dropdown
+    const categoryFilter = document.getElementById('concept-picker-category');
+    categoryFilter?.addEventListener('change', () => {
+      const searchVal = document.getElementById('concept-picker-search')?.value || '';
+      populateConceptPicker(searchVal);
     });
 
     // Concept picker rows - delegated click (survive re-renders from search)

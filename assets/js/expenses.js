@@ -1195,6 +1195,16 @@
             }
           }
 
+          // Rule A2: Check split detection (aligns with backend Daneel R2)
+          // Same check number + different account = intentional split of a single
+          // check across multiple expense categories. Standard bookkeeping practice:
+          // one physical check covers several cost accounts (e.g. Drywall Labor,
+          // Exterior Doors, Appliances). The different account_id is proof of
+          // intentional categorization, not duplication.
+          if (sameBillId && differentAccountId && bothChecks) {
+            continue;
+          }
+
           // Rule F: Same bill + different descriptions = separate line items (Daneel R2b)
           // Multiple items on the same invoice share bill ID, receipt, date, and vendor
           // but have different product descriptions — these are NOT duplicates.
@@ -9317,6 +9327,14 @@
       openQBOMappingModal();
     });
 
+    // QBO Connect / Disconnect
+    document.getElementById('btnConnectQBO')?.addEventListener('click', () => {
+      connectQBO();
+    });
+    document.getElementById('btnDisconnectQBO')?.addEventListener('click', () => {
+      disconnectQBO();
+    });
+
     // Reconcile Button
     document.getElementById('btnReconcile')?.addEventListener('click', () => {
       openReconciliationModal();
@@ -9358,12 +9376,19 @@
     const btnEdit = document.getElementById('btnEditExpenses');
     const btnReconcile = document.getElementById('btnReconcile');
 
+    const btnConnect = document.getElementById('btnConnectQBO');
+    const btnDisconnect = document.getElementById('btnDisconnectQBO');
+    const indicator = document.getElementById('qboStatusIndicator');
+
     if (source === 'manual') {
       btnManual?.classList.add('active');
       btnQBO?.classList.remove('active');
       btnSyncQBO?.classList.add('hidden');
       btnSyncQBO?.setAttribute('disabled', 'true');
       btnQBOMapping?.classList.add('hidden');
+      btnConnect?.classList.add('hidden');
+      btnDisconnect?.classList.add('hidden');
+      indicator?.classList.add('hidden');
       btnAdd?.removeAttribute('disabled');
       btnEdit?.removeAttribute('disabled');
       btnReconcile?.removeAttribute('disabled');
@@ -9375,9 +9400,6 @@
     } else {
       btnManual?.classList.remove('active');
       btnQBO?.classList.add('active');
-      btnSyncQBO?.classList.remove('hidden');
-      btnSyncQBO?.removeAttribute('disabled');
-      btnQBOMapping?.classList.remove('hidden');
       btnAdd?.setAttribute('disabled', 'true');
       btnEdit?.setAttribute('disabled', 'true');
       btnReconcile?.removeAttribute('disabled'); // Can still reconcile from QBO view
@@ -9386,6 +9408,9 @@
       if (!originalTableHeaders && els.expensesTableHead) {
         originalTableHeaders = els.expensesTableHead.innerHTML;
       }
+
+      // Check connection status — this shows/hides Sync, Mapping, Connect, Disconnect
+      await checkQBOConnectionStatus();
     }
 
     // Reload data for selected project
@@ -9619,6 +9644,130 @@
         btnSyncQBO.disabled = false;
         btnSyncQBO.innerHTML = originalText;
       }
+    }
+  }
+
+  // ================================
+  // QBO CONNECTION MANAGEMENT
+  // ================================
+  let _qboConnection = null; // cached active connection
+
+  async function checkQBOConnectionStatus() {
+    const indicator = document.getElementById('qboStatusIndicator');
+    const dot = document.getElementById('qboStatusDot');
+    const text = document.getElementById('qboStatusText');
+    const btnConnect = document.getElementById('btnConnectQBO');
+    const btnDisconnect = document.getElementById('btnDisconnectQBO');
+    const btnSync = document.getElementById('btnSyncQBO');
+    const btnMapping = document.getElementById('btnQBOMapping');
+
+    if (!indicator) return;
+
+    // Show indicator in checking state
+    indicator.classList.remove('hidden');
+    dot.className = 'qbo-dot checking';
+    text.textContent = 'Checking...';
+    btnConnect?.classList.add('hidden');
+    btnDisconnect?.classList.add('hidden');
+
+    try {
+      const apiBase = getApiBase();
+      const result = await apiJson(`${apiBase}/qbo/status`);
+      const connections = result?.connections || [];
+      const active = connections.find(c => c.refresh_token_valid) || (connections.length ? connections[0] : null);
+
+      if (active && active.realm_id) {
+        _qboConnection = active;
+        dot.className = 'qbo-dot connected';
+        text.textContent = active.company_name || 'Connected';
+        btnConnect?.classList.add('hidden');
+        btnDisconnect?.classList.remove('hidden');
+        btnSync?.classList.remove('hidden');
+        btnSync?.removeAttribute('disabled');
+        btnMapping?.classList.remove('hidden');
+      } else {
+        _qboConnection = null;
+        dot.className = 'qbo-dot disconnected';
+        text.textContent = 'Not connected';
+        btnConnect?.classList.remove('hidden');
+        btnDisconnect?.classList.add('hidden');
+        btnSync?.classList.add('hidden');
+        btnMapping?.classList.add('hidden');
+      }
+    } catch (err) {
+      console.error('[QBO] Status check error:', err);
+      _qboConnection = null;
+      dot.className = 'qbo-dot disconnected';
+      text.textContent = 'Unavailable';
+      btnConnect?.classList.remove('hidden');
+      btnDisconnect?.classList.add('hidden');
+      btnSync?.classList.add('hidden');
+      btnMapping?.classList.add('hidden');
+    }
+  }
+
+  async function connectQBO() {
+    const btn = document.getElementById('btnConnectQBO');
+    if (btn) { btn.disabled = true; btn.textContent = 'Redirecting...'; }
+
+    try {
+      const apiBase = getApiBase();
+      const data = await apiJson(`${apiBase}/qbo/auth`);
+
+      if (!data?.authorization_url) throw new Error('No authorization URL received');
+
+      const w = 600, h = 700;
+      const left = (window.screen.width - w) / 2;
+      const top = (window.screen.height - h) / 2;
+      const popup = window.open(
+        data.authorization_url,
+        'QuickBooks Authorization',
+        `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+      );
+
+      // Listen for callback message from popup
+      const handler = (event) => {
+        if (event.data && event.data.type === 'QBO_CONNECTED') {
+          window.removeEventListener('message', handler);
+          checkQBOConnectionStatus();
+        }
+      };
+      window.addEventListener('message', handler);
+
+      // Also poll for popup close
+      const poll = setInterval(() => {
+        if (!popup || popup.closed) {
+          clearInterval(poll);
+          if (btn) { btn.disabled = false; btn.textContent = 'Connect QBO'; }
+          setTimeout(() => checkQBOConnectionStatus(), 1000);
+        }
+      }, 500);
+
+    } catch (err) {
+      console.error('[QBO] Connect error:', err);
+      if (window.Toast) Toast.error('Connection Failed', err.message || 'Could not initiate QBO connection.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Connect QBO'; }
+    }
+  }
+
+  async function disconnectQBO() {
+    if (!_qboConnection) return;
+    if (!confirm('Disconnect from QuickBooks? You will need to re-authorize to sync expenses again.')) return;
+
+    const btn = document.getElementById('btnDisconnectQBO');
+    if (btn) { btn.disabled = true; btn.textContent = 'Disconnecting...'; }
+
+    try {
+      const apiBase = getApiBase();
+      await apiJson(`${apiBase}/qbo/disconnect/${_qboConnection.realm_id}`, { method: 'POST' });
+      _qboConnection = null;
+      if (window.Toast) Toast.success('Disconnected from QuickBooks');
+      await checkQBOConnectionStatus();
+    } catch (err) {
+      console.error('[QBO] Disconnect error:', err);
+      if (window.Toast) Toast.error('Disconnect Failed', err.message || 'Could not disconnect from QBO.');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Disconnect'; }
     }
   }
 

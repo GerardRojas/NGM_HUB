@@ -19,6 +19,9 @@
   let projectPicker = null;
   let departmentPicker = null;
   let typePicker = null;
+
+  // Badge picker instances
+  let statusPicker = null;
   let priorityPicker = null;
 
   // Status options (same as pipeline groups)
@@ -85,11 +88,15 @@
     projectPicker?.destroy?.();
     departmentPicker?.destroy?.();
     typePicker?.destroy?.();
-    priorityPicker?.destroy?.();
     companyPicker = null;
     projectPicker = null;
     departmentPicker = null;
     typePicker = null;
+
+    // Destroy badge pickers
+    statusPicker?.destroy?.();
+    priorityPicker?.destroy?.();
+    statusPicker = null;
     priorityPicker = null;
   }
 
@@ -109,7 +116,6 @@
     const project = t.project_name || t.project || '';
     const department = t.department || '';
     const type = t.type || '';
-    const status = (t.status?.name || t.status_name || t.status || 'not started').toLowerCase();
     const dueDate = formatDateForInput(t.due_date || t.due);
     const deadline = formatDateForInput(t.deadline);
     const startDate = formatDateForInput(t.start_date);
@@ -118,13 +124,6 @@
     const estimatedHours = t.estimated_hours ?? '';
     const docsLink = t.docs_link || '';
     const resultLink = t.result_link || '';
-
-    // Build status options HTML
-    const statusOptionsHtml = STATUS_OPTIONS.map(opt => `
-      <option value="${opt.value}" ${status === opt.value ? 'selected' : ''}>
-        ${opt.label}
-      </option>
-    `).join('');
 
     form.innerHTML = `
       <!-- TASK INFO -->
@@ -151,9 +150,7 @@
         <div class="pm-form-grid">
           <div class="pm-form-field">
             <label class="pm-form-label">Status <span class="required">*</span></label>
-            <select id="et_status" class="pm-form-select">
-              ${statusOptionsHtml}
-            </select>
+            <div id="et_status_picker"></div>
           </div>
 
           <div class="pm-form-field">
@@ -265,6 +262,9 @@
 
     // Initialize catalog pickers
     initCatalogPickers(task);
+
+    // Initialize badge pickers (status, priority)
+    initBadgePickers(task);
   }
 
   // ================================
@@ -417,20 +417,53 @@
       }
     }
 
-    // Priority picker
+  }
+
+  // ================================
+  // INITIALIZE BADGE PICKERS (Status, Priority)
+  // ================================
+  const PRIORITY_OPTIONS = [
+    { id: 'critical', name: 'Critical', color: '#ef4444' },
+    { id: 'high',     name: 'High',     color: '#f97316' },
+    { id: 'medium',   name: 'Medium',   color: '#eab308' },
+    { id: 'low',      name: 'Low',      color: '#3b82f6' },
+  ];
+
+  function initBadgePickers(task, _retries = 0) {
+    if (typeof window.BadgePicker !== 'function') {
+      if (_retries >= 30) {
+        console.error('[EditTask] BadgePicker failed to load after 3s, giving up');
+        return;
+      }
+      setTimeout(() => initBadgePickers(task, _retries + 1), 100);
+      return;
+    }
+
+    const t = task || {};
+
+    // Status badge picker
+    const statusContainer = qs('et_status_picker');
+    if (statusContainer) {
+      const items = STATUS_OPTIONS.map(o => ({ id: o.value, name: o.label, color: o.color }));
+      statusPicker = new window.BadgePicker(statusContainer, {
+        items: items,
+        placeholder: 'Select status...',
+      });
+
+      const currentStatus = (t.status?.name || t.status_name || t.status || 'not started').toLowerCase();
+      if (currentStatus) statusPicker.setValueByName(currentStatus);
+    }
+
+    // Priority badge picker
     const priorityContainer = qs('et_priority_picker');
     if (priorityContainer) {
-      const currentPriority = priorityContainer.dataset.current || '';
-      priorityPicker = window.createCatalogPicker(priorityContainer, {
-        catalogType: 'priority',
+      priorityPicker = new window.BadgePicker(priorityContainer, {
+        items: PRIORITY_OPTIONS,
         placeholder: 'Select priority...',
-        onChange: (item) => {
-          console.log('[EditTask] Priority changed:', item);
-        }
       });
-      if (currentPriority) {
-        preSelectCatalogItem(priorityPicker, 'priority', currentPriority, t.priority_id);
-      }
+
+      const currentPriority = (t.priority_name || t.priority || '').toLowerCase();
+      if (currentPriority) priorityPicker.setValueByName(currentPriority);
     }
   }
 
@@ -533,17 +566,16 @@
     const projectItem = projectPicker?.getValue?.() || null;
     const departmentItem = departmentPicker?.getValue?.() || null;
     const typeItem = typePicker?.getValue?.() || null;
-    const priorityItem = priorityPicker?.getValue?.() || null;
 
     const payload = {
       task_description: qs('et_task')?.value?.trim() || '',
       task_notes: qs('et_notes')?.value?.trim() || null,
-      status: qs('et_status')?.value || 'not started',
+      status: statusPicker?.getValueId?.() || 'not started',
       company: companyItem?.id || null,
       project: projectItem?.id || null,
       department: departmentItem?.id || null,
       type: typeItem?.id || null,
-      priority: priorityItem?.id || null,
+      priority: priorityPicker?.getValueId?.() || null,
       estimated_hours: parseFloat(qs('et_estimated_hours')?.value) || null,
       owner: ownerUser?.id || null,
       collaborators: collaborators.length > 0 ? collaborators.map(u => u.id) : null,

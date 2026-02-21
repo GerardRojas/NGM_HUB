@@ -116,14 +116,14 @@ window.ProjectKPIs = (() => {
       '    <div class="pd-kpi-card">' +
       '      <span class="pd-kpi-label">Active Projects</span>' +
       '      <span class="pd-kpi-value pd-kpi-value--neutral">' + activeProjects + '</span>' +
-      '      <span class="pd-kpi-sub">proyectos activos</span>' +
+      '      <span class="pd-kpi-sub">active projects</span>' +
       '    </div>' +
 
       // Card 2: Total Spend
       '    <div class="pd-kpi-card">' +
       '      <span class="pd-kpi-label">Total Spend</span>' +
       '      <span class="pd-kpi-value">' + esc(fmtMoney(totalSpend)) + '</span>' +
-      '      <span class="pd-kpi-sub">' + esc(fmtPct(totalBudget > 0 ? (totalSpend / totalBudget) * 100 : 0)) + ' del presupuesto total</span>' +
+      '      <span class="pd-kpi-sub">' + esc(fmtPct(totalBudget > 0 ? (totalSpend / totalBudget) * 100 : 0)) + ' of total budget</span>' +
       '      <div class="pd-kpi-progress">' +
       '        <div class="pd-kpi-progress-fill" style="width:' + clamp(totalBudget > 0 ? (totalSpend / totalBudget) * 100 : 0, 0, 100) + '%"></div>' +
       '      </div>' +
@@ -133,14 +133,14 @@ window.ProjectKPIs = (() => {
       '    <div class="pd-kpi-card">' +
       '      <span class="pd-kpi-label">Avg Margin</span>' +
       '      <span class="pd-kpi-value' + marginClass + '">' + esc(fmtPct(avgMargin)) + '</span>' +
-      '      <span class="pd-kpi-sub">margen promedio</span>' +
+      '      <span class="pd-kpi-sub">average margin</span>' +
       '    </div>' +
 
       // Card 4: Daneel Auth Rate
       '    <div class="pd-kpi-card">' +
       '      <span class="pd-kpi-label">Daneel Auth Rate</span>' +
       '      <span class="pd-kpi-value' + authClass + '">' + esc(fmtPct(authRate)) + '</span>' +
-      '      <span class="pd-kpi-sub">tasa de autorizacion</span>' +
+      '      <span class="pd-kpi-sub">authorization rate</span>' +
       '      <div class="pd-kpi-progress">' +
       '        <div class="pd-kpi-progress-fill" style="width:' + clamp(authRate, 0, 100) + '%"></div>' +
       '      </div>' +
@@ -157,7 +157,7 @@ window.ProjectKPIs = (() => {
       '      <div class="pd-chart-wrap">' +
              (sortedProjects.length > 0
                ? '<canvas id="chart-kpi-burn"></canvas>'
-               : '<div class="pd-chart-empty">Sin datos de proyectos</div>') +
+               : '<div class="pd-chart-empty">No project data</div>') +
       '      </div>' +
       '    </div>' +
 
@@ -167,7 +167,7 @@ window.ProjectKPIs = (() => {
       '      <div class="pd-chart-wrap">' +
              (monthlySpend.length > 0
                ? '<canvas id="chart-kpi-monthly"></canvas>'
-               : '<div class="pd-chart-empty">Sin datos mensuales</div>') +
+               : '<div class="pd-chart-empty">No monthly data</div>') +
       '      </div>' +
       '    </div>' +
 
@@ -180,7 +180,7 @@ window.ProjectKPIs = (() => {
       '      <div class="pd-chart-wrap">' +
              (topVendors.length > 0
                ? '<canvas id="chart-kpi-vendors"></canvas>'
-               : '<div class="pd-chart-empty">Sin datos de vendors</div>') +
+               : '<div class="pd-chart-empty">No vendor data</div>') +
       '      </div>' +
       '    </div>' +
 
@@ -219,7 +219,7 @@ window.ProjectKPIs = (() => {
   /** Build vendor list rows for the vendor info card. */
   function buildVendorList(vendors) {
     if (!vendors || vendors.length === 0) {
-      return '<div class="pd-chart-empty">Sin datos de vendors</div>';
+      return '<div class="pd-chart-empty">No vendor data</div>';
     }
     var html = '';
     vendors.forEach(function(v) {
@@ -338,9 +338,9 @@ window.ProjectKPIs = (() => {
     return '' +
       '<div class="pd-error">' +
         ICONS.error +
-      '  <h4 class="pd-error-title">No se pudo cargar los KPIs ejecutivos</h4>' +
-      '  <p class="pd-error-msg">' + esc(message || 'Error desconocido') + '</p>' +
-      '  <button class="pd-error-retry" onclick="window.ProjectKPIs.reload()">Reintentar</button>' +
+      '  <h4 class="pd-error-title">Failed to load executive KPIs</h4>' +
+      '  <p class="pd-error-msg">' + esc(message || 'Unknown error') + '</p>' +
+      '  <button class="pd-error-retry" onclick="window.ProjectKPIs.reload()">Retry</button>' +
       '</div>';
   }
 
@@ -559,7 +559,7 @@ window.ProjectKPIs = (() => {
 
       // API returned null/empty
       if (!data) {
-        container.innerHTML = buildError('El servidor no devolvio datos.');
+        container.innerHTML = buildError('The server returned no data.');
         return;
       }
 

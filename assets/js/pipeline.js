@@ -284,7 +284,7 @@
           if (!statusName) return '-';
           const lowerStatus = statusName.toLowerCase();
           const color = STATUS_CONFIG.getAccentColor(lowerStatus);
-          return `<span class="pm-badge-pill" style="background: ${color};">${Utils.escapeHtml(statusName)}</span>`;
+          return `<span class="pm-badge-pill" style="--badge-color: ${color};">${Utils.escapeHtml(statusName)}</span>`;
         }
 
         case "time_start":
@@ -313,7 +313,7 @@
           if (!prioName) return '-';
           const PRIO_COLORS = { critical: "#ef4444", high: "#f97316", medium: "#eab308", low: "#3b82f6" };
           const prioColor = PRIO_COLORS[prioName.toLowerCase()] || '#6b7280';
-          return `<span class="pm-badge-pill" style="background: ${prioColor};">${Utils.escapeHtml(prioName)}</span>`;
+          return `<span class="pm-badge-pill" style="--badge-color: ${prioColor};">${Utils.escapeHtml(prioName)}</span>`;
         }
 
         case "finished":
@@ -1226,9 +1226,12 @@
       }
     });
 
-    // Remove rows for tasks that no longer exist
+    // Remove rows for tasks that no longer exist (preserve drafts)
     existingRowsMap.forEach((row, taskId) => {
       if (!newTaskIds.has(taskId)) {
+        // Never remove draft rows — they only exist locally
+        if (taskId.startsWith("__draft__")) return;
+
         // Close active editor if it's on this row (prevents orphaned state)
         if (row.querySelector('.pm-cell-editing')) {
           window.PM_TableInteractions?.closeActiveEditor?.();
@@ -1433,6 +1436,134 @@
     return tbody;
   }
 
+  // ================================
+  // DRAFT TASKS — quick-add creates a local draft row, not a DB record.
+  // Required fields are marked with ✱ so the user knows what to fill.
+  // Once every required field is populated the task is POSTed for real.
+  // ================================
+
+  // Fields the business logic considers mandatory before persisting
+  const DRAFT_REQUIRED_COLS = ["company", "owner", "type", "department"];
+
+  // Global store:  draftId → { task_description, status, company, owner, … }
+  window._pipelineDrafts = window._pipelineDrafts || new Map();
+
+  /**
+   * Builds a visible task row for a draft (not yet saved).
+   * Very similar to createTaskRow but adds draft styling + required-field markers.
+   */
+  function createDraftTaskRow(draftId, draftData, statusKey) {
+    const tr = document.createElement("tr");
+    tr.className = "pm-row pm-row--draft";
+    tr.dataset.taskId = draftId;
+    tr.dataset.status = statusKey;
+
+    // Build a minimal task-like object for Renderers.getCellValue
+    const pseudoTask = {
+      task_description: draftData.task_description,
+      status_name: statusKey,
+    };
+
+    tr.innerHTML = VISIBLE_COLUMNS.map((col) => {
+      const html = Renderers.getCellValue(pseudoTask, col.key);
+      const isRequired = DRAFT_REQUIRED_COLS.includes(col.key);
+      // Show a small ✱ marker on required but still-empty cells
+      const marker = (isRequired && (!draftData[col.key]))
+        ? '<span class="pm-draft-required" title="Required">✱</span>'
+        : '';
+      return `
+        <td data-col="${Utils.escapeHtml(col.key)}">
+          <div>${html}${marker}</div>
+        </td>`;
+    }).join("");
+
+    storeTaskDataInRow(tr, pseudoTask);
+    return tr;
+  }
+
+  /**
+   * Called by pipeline_table_interactions after a required field is filled on a
+   * draft row.  If every required field is now present we POST to the backend,
+   * swap the temp id for the real one, and remove draft styling.
+   */
+  async function tryPersistDraft(draftId) {
+    const draft = window._pipelineDrafts.get(draftId);
+    if (!draft) return;
+
+    // Check all required fields
+    const missing = DRAFT_REQUIRED_COLS.filter(k => !draft[k]);
+    if (missing.length) {
+      console.log(`[DRAFT] Still missing: ${missing.join(", ")}`);
+      return; // not ready yet
+    }
+
+    // All required fields present → POST
+    const apiBase = window.API_BASE || "";
+    const token = localStorage.getItem("ngmToken");
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = "Bearer " + token;
+
+    const payload = {
+      task_description: draft.task_description,
+      status: draft.status,
+      company: draft.company || null,
+      project: draft.project || null,
+      owner: draft.owner || null,
+      collaborator: draft.collaborator || null,
+      type: draft.type || null,
+      department: draft.department || null,
+      due_date: draft.due_date || null,
+      deadline: draft.deadline || null,
+    };
+
+    const row = document.querySelector(`tr[data-task-id="${draftId}"]`);
+    if (row) row.classList.add("pm-row--saving");
+
+    try {
+      const res = await fetch(`${apiBase}/pipeline/tasks`, {
+        method: "POST",
+        headers,
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Server error (${res.status}): ${errText}`);
+      }
+
+      const { task: created } = await res.json();
+      const realId = created.task_id || created.id;
+
+      // Swap draft → real
+      window._pipelineDrafts.delete(draftId);
+
+      if (row) {
+        row.dataset.taskId = realId;
+        row.classList.remove("pm-row--draft", "pm-row--saving");
+        // Remove any remaining ✱ markers
+        row.querySelectorAll(".pm-draft-required").forEach(el => el.remove());
+      }
+
+      if (window.Toast) Toast.success("Task Created", "Task saved successfully!");
+
+      // Refresh to get fully enriched data
+      if (typeof window.fetchPipeline === "function") {
+        window.fetchPipeline({ forceRefresh: true }).catch(() => {});
+      }
+    } catch (err) {
+      console.error("[DRAFT] Persist failed:", err);
+      if (row) row.classList.remove("pm-row--saving");
+      if (window.Toast) Toast.error("Create Failed", err.message);
+    }
+  }
+
+  // Expose helpers for cross-module use (pipeline_table_interactions)
+  window._pipelineDraftHelpers = {
+    DRAFT_REQUIRED_COLS,
+    tryPersistDraft,
+  };
+
   /**
    * Creates an input row at the bottom of every group for quick task creation
    */
@@ -1465,8 +1596,8 @@
       }
     });
 
-    // Enter key creates the task
-    input.addEventListener("keydown", async (e) => {
+    // Enter key creates a local draft row (no API call yet)
+    input.addEventListener("keydown", (e) => {
       if (e.key !== "Enter") return;
       e.preventDefault();
 
@@ -1476,48 +1607,39 @@
       const groupElem = input.closest(".pm-group");
       const groupKey = groupElem?.dataset?.groupKey || "not started";
 
-      input.disabled = true;
-      input.value = "Creating...";
+      // Create draft
+      const draftId = `__draft__${Date.now()}`;
+      const draftData = {
+        task_description: description,
+        status: groupKey,
+        company: null,
+        project: null,
+        owner: null,
+        collaborator: null,
+        type: null,
+        department: null,
+        due_date: null,
+        deadline: null,
+      };
+      window._pipelineDrafts.set(draftId, draftData);
 
-      try {
-        const apiBase = window.API_BASE || "";
-        const token = localStorage.getItem("ngmToken");
-        const headers = { "Content-Type": "application/json" };
-        if (token) headers["Authorization"] = "Bearer " + token;
+      // Build and insert draft row before the empty-row
+      const draftRow = createDraftTaskRow(draftId, draftData, groupKey);
+      const tbody = emptyRow.closest("tbody");
+      if (tbody) tbody.insertBefore(draftRow, emptyRow);
 
-        const res = await fetch(`${apiBase}/pipeline/tasks`, {
-          method: "POST",
-          headers,
-          credentials: "include",
-          body: JSON.stringify({
-            task_description: description,
-            status: groupKey,
-          }),
-        });
+      // Update group task counter
+      const pill = groupElem?.querySelector(".ngm-pill-value");
+      if (pill) {
+        const current = parseInt(pill.textContent) || 0;
+        pill.textContent = `${current + 1} tasks`;
+      }
 
-        if (!res.ok) {
-          throw new Error(`Server error (${res.status})`);
-        }
+      // Clear input for next entry
+      input.value = "";
 
-        // Clear input for next entry
-        input.disabled = false;
-        input.value = "";
-
-        if (window.Toast) {
-          Toast.success("Task Created", "Task added successfully!");
-        }
-
-        // Refresh pipeline (force to bypass cache since we just created a task)
-        if (typeof window.fetchPipeline === "function") {
-          window.fetchPipeline({ forceRefresh: true }).catch(() => {});
-        }
-      } catch (err) {
-        console.error("[Pipeline] Quick-add failed:", err);
-        if (window.Toast) {
-          Toast.error("Create Failed", err.message);
-        }
-        input.disabled = false;
-        input.value = description;
+      if (window.Toast) {
+        Toast.info("Draft Task", "Fill required fields (✱) to save task.");
       }
     });
 

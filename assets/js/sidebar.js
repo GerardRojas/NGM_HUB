@@ -35,10 +35,9 @@
     "expenses": { label: "Expenses Engine", href: "expenses.html", order: 1, category: "bookkeeping" },
     "company_expenses": { label: "Company Expenses", href: "company-expenses.html", order: 2, category: "bookkeeping" },
     "budget_monitor": { label: "Budget Monitor", href: "budget_monitor.html", order: 3, category: "bookkeeping" },
-    "budgets": { label: "Budgets", href: "budgets.html", order: 4, category: "bookkeeping" },
-    "accounts": { label: "Accounts", href: "accounts.html", order: 5, category: "bookkeeping" },
-    "vendors": { label: "Vendors", href: "vendors.html", order: 6, category: "bookkeeping" },
-    "reporting": { label: "Reporting", href: "reporting.html", order: 7, category: "bookkeeping" },
+    "accounts": { label: "Accounts", href: "accounts.html", order: 4, category: "bookkeeping" },
+    "vendors": { label: "Vendors", href: "vendors.html", order: 5, category: "bookkeeping" },
+    "reporting": { label: "Reporting", href: "reporting.html", order: 6, category: "bookkeeping" },
 
     // Architecture
     "projects": { label: "Projects", href: "projects.html", order: 1, category: "architecture" },
@@ -54,10 +53,7 @@
     "team": { label: "Team Management", href: "team.html", order: 1, category: "admin" },
     "companies": { label: "Companies", href: "companies.html", order: 2, category: "admin" },
     "roles": { label: "Roles Management", href: "roles.html", order: 3, category: "admin" },
-    "god_view": { label: "God View", href: "god-view.html", order: 4, category: "admin" },
-    "arturito_settings": { label: "Agent Hub", href: "agents-settings.html", order: 5, category: "admin" },
-    "settings": { label: "Settings", href: "settings.html", order: 6, category: "admin" },
-    "audit": { label: "Audit Logs", href: "audit.html", order: 7, category: "admin" },
+    "arturito_settings": { label: "Agent Hub", href: "agents-settings.html", order: 4, category: "admin" },
   };
 
   // Generar el HTML completo del sidebar

@@ -16,10 +16,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
 
-    <!-- Preload loading logo -->
     <link rel="preload" href="assets/img/white_icon.png" as="image" />
 
-    <!-- Critical CSS for loading overlay -->
     <style>
       body.page-loading { overflow: hidden; }
       .page-loading-overlay { position: fixed; inset: 0; background: #0d0d0d; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; gap: 16px; }
@@ -31,9 +29,10 @@
     </style>
 
     <link rel="stylesheet" href="assets/css/styles.css" />
-    <link rel="stylesheet" href="assets/css/ngm_canvas.css" />
     <link rel="stylesheet" href="assets/css/operation-manager.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
+    <link rel="stylesheet" href="assets/css/arturito_widget.css" />
+    <link rel="stylesheet" href="assets/css/chat_widget.css" />
 
     <script src="assets/js/config.js"></script>
     <script src="assets/js/auth-guard.js"></script>
@@ -51,13 +50,9 @@
     </div>
 
     <div class="app-layout">
-        <!-- Mobile sidebar overlay -->
         <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-        <!-- Sidebar -->
         <aside class="sidebar" id="sidebar"></aside>
 
-        <!-- Main area -->
         <div class="main-area">
             <!-- Topbar -->
             <header class="ngm-topbar">
@@ -77,7 +72,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="ngm-topbar-right">
                     <div class="ngm-meta">
                         <span id="env-pill" class="ngm-meta-pill ngm-meta-env">Environment - -</span>
@@ -88,105 +82,167 @@
             </header>
 
             <!-- Main content -->
-            <main class="main-content operation-manager-main">
+            <main class="main-content om-main">
                 <!-- Toolbar -->
                 <div class="om-toolbar">
                     <div class="om-toolbar-left">
                         <h2 class="om-toolbar-title">Operation Manager</h2>
-                        <span class="om-toolbar-subtitle">Task Dependencies</span>
+                        <span class="om-toolbar-subtitle">Gantt Timeline</span>
                     </div>
+
                     <div class="om-toolbar-center">
-                        <div class="om-category-stats" id="categoryStats">
-                            <span class="om-cat-stat">
-                                <span class="om-cat-dot working"></span>
-                                <span class="om-cat-count" id="countWorking">0</span> Working
-                            </span>
-                            <span class="om-cat-stat">
-                                <span class="om-cat-dot good-to-go"></span>
-                                <span class="om-cat-count" id="countGoodToGo">0</span> Ready
-                            </span>
-                            <span class="om-cat-stat">
-                                <span class="om-cat-dot blocked"></span>
-                                <span class="om-cat-count" id="countBlocked">0</span> Blocked
-                            </span>
-                            <span class="om-cat-stat">
-                                <span class="om-cat-dot not-started"></span>
-                                <span class="om-cat-count" id="countNotStarted">0</span> Pending
-                            </span>
+                        <!-- Zoom toggle -->
+                        <div class="om-btn-group">
+                            <button type="button" class="om-btn-toggle" id="btnZoomDay" data-zoom="day">Day</button>
+                            <button type="button" class="om-btn-toggle om-btn-active" id="btnZoomWeek" data-zoom="week">Week</button>
+                            <button type="button" class="om-btn-toggle" id="btnZoomMonth" data-zoom="month">Month</button>
+                        </div>
+                        <!-- Group toggle -->
+                        <div class="om-btn-group">
+                            <button type="button" class="om-btn-toggle om-btn-active" id="btnGroupPerson" data-group="person">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                By Person
+                            </button>
+                            <button type="button" class="om-btn-toggle" id="btnGroupProject" data-group="project">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                By Project
+                            </button>
                         </div>
                     </div>
+
                     <div class="om-toolbar-right">
-                        <!-- Filter -->
-                        <div class="om-filter-dropdown" id="filterDropdown">
+                        <!-- Filter dropdown -->
+                        <div class="om-filter-dropdown" id="omFilterDropdown">
                             <button type="button" class="om-filter-btn" id="btnFilter" title="Filter tasks">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
                                 </svg>
                                 <span>Filters</span>
-                                <span class="om-filter-badge" id="filterBadge" style="display:none;">0</span>
+                                <span class="om-filter-badge" id="omFilterBadge" style="display:none;">0</span>
                             </button>
-                            <div class="om-filter-menu" id="filterMenu">
+                            <div class="om-filter-menu" id="omFilterMenu">
                                 <div class="om-filter-menu-header">
                                     <span>Filter Tasks</span>
                                     <button type="button" class="om-filter-reset" id="btnResetFilters">Reset</button>
                                 </div>
                                 <div class="om-filter-section">
-                                    <div class="om-filter-section-title">Categories</div>
-                                    <div id="filterCategoriesList"></div>
+                                    <div class="om-filter-section-title">Status</div>
+                                    <div id="omFilterStatusList"></div>
+                                </div>
+                                <div class="om-filter-section">
+                                    <div class="om-filter-section-title">Project</div>
+                                    <select id="omFilterProject" class="om-filter-select">
+                                        <option value="">All Projects</option>
+                                    </select>
+                                </div>
+                                <div class="om-filter-section">
+                                    <div class="om-filter-section-title">Person</div>
+                                    <select id="omFilterPerson" class="om-filter-select">
+                                        <option value="">All People</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Zoom controls -->
-                        <button type="button" class="om-btn-zoom" id="btnZoomIn" title="Zoom In">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                <line x1="11" y1="8" x2="11" y2="14"></line>
-                                <line x1="8" y1="11" x2="14" y2="11"></line>
+                        <!-- Capacity settings -->
+                        <button type="button" class="om-btn-icon" id="btnCapacity" title="Capacity settings">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                             </svg>
                         </button>
-                        <button type="button" class="om-btn-zoom" id="btnZoomOut" title="Zoom Out">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                                <line x1="8" y1="11" x2="14" y2="11"></line>
-                            </svg>
-                        </button>
-                        <button type="button" class="om-btn-zoom" id="btnFitView" title="Fit to View">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-                            </svg>
-                        </button>
+
+                        <!-- Today button -->
+                        <button type="button" class="om-btn-today" id="btnScrollToday">Today</button>
                     </div>
                 </div>
 
-                <!-- Canvas container (NGMCanvas builds its DOM inside here) -->
-                <div class="om-canvas" id="canvasContainer">
-                    <!-- Empty state (shown/hidden by JS) -->
-                    <div class="om-empty" id="emptyState" style="display:none;">
-                        <div class="om-empty-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"></path>
-                                <rect x="9" y="3" width="6" height="4" rx="1"></rect>
-                                <path d="M9 12l2 2 4-4"></path>
-                            </svg>
+                <!-- Timeline container -->
+                <div class="om-timeline-wrapper">
+                    <!-- Header row (sticky top) -->
+                    <div class="om-header-row">
+                        <div class="om-corner-cell" id="omCornerCell">Person</div>
+                        <div class="om-header-scroll" id="omHeaderScroll">
+                            <div class="om-header-dates" id="omHeaderDates"></div>
                         </div>
-                        <h3 class="om-empty-title">No tasks assigned</h3>
-                        <p class="om-empty-subtitle">Tasks assigned to you will appear here</p>
                     </div>
+
+                    <!-- Body (scrollable both axes) -->
+                    <div class="om-body">
+                        <div class="om-row-labels" id="omRowLabels"></div>
+                        <div class="om-grid" id="omGrid">
+                            <div class="om-grid-inner" id="omGridInner">
+                                <div class="om-grid-bg" id="omGridBg"></div>
+                                <div class="om-today-line" id="omTodayLine"></div>
+                                <svg class="om-dep-layer" id="omDepLayer"></svg>
+                                <div class="om-cards-container" id="omCardsContainer"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Unscheduled section -->
+                <div class="om-unscheduled" id="omUnscheduled" style="display:none;">
+                    <div class="om-unscheduled-header" id="omUnscheduledToggle">
+                        <span>Unscheduled Tasks</span>
+                        <span class="om-unscheduled-count" id="omUnscheduledCount">0</span>
+                        <svg class="om-unscheduled-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                    <div class="om-unscheduled-grid" id="omUnscheduledGrid"></div>
+                </div>
+
+                <!-- Empty state -->
+                <div class="om-empty" id="omEmptyState" style="display:none;">
+                    <div class="om-empty-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                    </div>
+                    <h3 class="om-empty-title">No tasks to display</h3>
+                    <p class="om-empty-subtitle">Tasks from the Pipeline Manager will appear here on the timeline</p>
                 </div>
             </main>
         </div>
     </div>
 
+    <!-- Capacity Settings Modal -->
+    <div class="om-modal-overlay" id="omCapacityModal" style="display:none;">
+        <div class="om-modal">
+            <div class="om-modal-header">
+                <h3>Team Capacity Settings</h3>
+                <button type="button" class="om-modal-close" id="btnCapacityClose">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="om-modal-body" id="omCapacityBody"></div>
+            <div class="om-modal-footer">
+                <button type="button" class="om-btn-secondary" id="btnCapacityCancel">Cancel</button>
+                <button type="button" class="om-btn-primary" id="btnCapacitySave">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Detail Panel (slide-in) -->
+    <div class="om-task-panel" id="omTaskPanel">
+        <div class="om-panel-header">
+            <h3 class="om-panel-title" id="omPanelTitle">Task Detail</h3>
+            <button type="button" class="om-panel-close" id="btnPanelClose">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="om-panel-body" id="omPanelBody"></div>
+    </div>
+
     <script src="assets/js/page-loading.js" defer></script>
-    <script src="assets/js/ngm_canvas.js" defer></script>
     <script src="assets/js/operation-manager.js" defer></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.initTopbarPills) window.initTopbarPills();
-        });
-    </script>
+    <script src="assets/js/arturito_widget.js" defer></script>
+    <script src="assets/js/chat_widget.js" defer></script>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
+    <script src="assets/js/firebase-init.js"></script>
 </body>
 </html>

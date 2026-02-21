@@ -303,7 +303,7 @@
     budget_monitor: "budget_monitor.html",
     company_expenses: "company-expenses.html",
     arturito: "arturito.html",
-    settings: "settings.html",
+    settings: "agents-settings.html",
   };
 
   const MODAL_PAGE_MAP = {

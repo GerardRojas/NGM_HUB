@@ -3066,9 +3066,8 @@
 
     var html = '<span class="formula-var ' + cls + '" data-node="' + nodeId + '">';
     html += '<span class="formula-var-symbol">' + symbol + '</span>';
-    if (val) {
-      html += '<span class="formula-var-value">' + val + '</span>';
-    }
+    // Always render the value span (positioned absolute, no layout impact)
+    html += '<span class="formula-var-value">' + (val || "") + '</span>';
     html += '</span>';
     return html;
   }

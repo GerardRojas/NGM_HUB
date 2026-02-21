@@ -1266,8 +1266,11 @@
   font-weight: 600;
   white-space: nowrap;
   line-height: 1.4;
-  color: #fff;
   letter-spacing: 0.2px;
+  --badge-color: #6b7280;
+  color: var(--badge-color);
+  background: color-mix(in srgb, var(--badge-color) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--badge-color) 25%, transparent);
 }
 
 /* Badge picker trigger */
@@ -1880,9 +1883,15 @@ textarea.pm-inline-editor {
   padding: 4px !important;
 }
 
-/* Picker cells (person, catalog) - button-like behavior, no persistent state */
+/* Picker cells (person, catalog) - button-like behavior, no persistent state.
+   Dropdowns go to document.body via position:fixed, so cell does NOT need overflow:visible */
 .pm-cell-editing--picker {
   background: transparent !important;
+  overflow: hidden !important;
+}
+
+.pm-group .table td.pm-cell-editing--picker > div {
+  max-width: unset;
 }
 
 /* Cell saving state */
@@ -1972,7 +1981,6 @@ textarea.pm-inline-editor {
 /* Inline people picker in table cells */
 .pm-inline-people-picker {
   width: 100%;
-  min-width: 180px;
   position: relative;
 }
 
@@ -2391,7 +2399,6 @@ textarea.pm-inline-editor {
 /* Inline catalog picker in table cells */
 .pm-inline-catalog-picker {
   width: 100%;
-  min-width: 140px;
   position: relative;
 }
 
@@ -2726,6 +2733,13 @@ textarea.pm-inline-editor {
   animation: pm-spinner 0.8s linear infinite;
 }
 
+/* Separator for static items in catalog list */
+.pm-catalog-separator {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 4px 8px;
+}
+
 /* ==========================================
    NEW TASK MODAL — Form styles
    ========================================== */
@@ -2799,6 +2813,39 @@ textarea.pm-inline-editor {
 .pm-form-label .required {
   color: var(--color-danger);
   margin-left: 2px;
+}
+
+.pm-form-label--with-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pm-form-label-action {
+  margin-left: auto;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 10px;
+  padding: 2px 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pm-form-label-action:hover {
+  color: rgba(255, 255, 255, 0.8);
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.pm-form-subfield {
+  margin-top: 8px;
+}
+
+.pm-form-sublabel {
+  margin-bottom: 4px;
+  font-size: 11px;
 }
 
 .pm-form-input,
@@ -2919,6 +2966,44 @@ textarea.pm-inline-editor {
 
 .pm-row:active {
   background: rgba(62, 207, 142, 0.08);
+}
+
+/* ==========================================
+   DRAFT TASK ROW
+   ========================================== */
+
+.pm-row--draft {
+  border-left: 3px dashed rgba(250, 204, 21, 0.6);
+  background: rgba(250, 204, 21, 0.04);
+}
+
+.pm-row--draft:hover {
+  background: rgba(250, 204, 21, 0.08);
+}
+
+.pm-row--draft td {
+  opacity: 0.88;
+}
+
+/* Pulsing required-field marker */
+.pm-draft-required {
+  color: #facc15;
+  font-size: 11px;
+  margin-left: 4px;
+  animation: pm-pulse-required 1.8s ease-in-out infinite;
+  vertical-align: middle;
+  user-select: none;
+}
+
+@keyframes pm-pulse-required {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* While the draft is being persisted */
+.pm-row--saving {
+  pointer-events: none;
+  opacity: 0.55;
 }
 
 /* ==========================================

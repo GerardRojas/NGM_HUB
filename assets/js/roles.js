@@ -1,434 +1,589 @@
 // ================================
 // ROLES MANAGEMENT
-// Sistema de gestión de permisos por rol
+// Hub/Detail two-view permission manager
 // ================================
 
-(function() {
+(function () {
   'use strict';
 
-  const API_BASE = window.API_BASE || "https://ngm-fastapi.onrender.com";
+  var API_BASE = window.API_BASE || 'https://ngm-fastapi.onrender.com';
+  var PROTECTED_ROLES = ['CEO', 'COO'];
 
-  // Estado
-  let roles = [];
-  let modules = [];
-  let permissions = {}; // { rol_id: { module_key: {can_view, can_edit, can_delete} } }
-  let originalPermissions = {}; // Para detectar cambios
-  let isEditMode = false;
+  // ================================
+  // MODULE CATEGORIES (mirrors sidebar.js)
+  // ================================
 
-  // Filtros
-  let moduleFilter = '';
-  let roleFilter = '';
-
-  // Roles protegidos que no se pueden modificar
-  const PROTECTED_ROLES = ['CEO', 'COO'];
-
-  // DOM Elements
-  const els = {
-    loadingState: document.getElementById('rolesLoadingState'),
-    content: document.getElementById('rolesContent'),
-    permissionsTable: document.getElementById('permissionsTable'),
-    permissionsTableBody: document.getElementById('permissionsTableBody'),
-    btnEditPermissions: document.getElementById('btnEditPermissions'),
-    btnCancelEdit: document.getElementById('btnCancelEdit'),
-    btnSaveChanges: document.getElementById('btnSaveChanges'),
-    editModeFooter: document.getElementById('editModeFooter'),
-    moduleSearchInput: document.getElementById('moduleSearchInput'),
-    roleSearchInput: document.getElementById('roleSearchInput'),
-    btnClearFilters: document.getElementById('btnClearFilters'),
-    filterStats: document.getElementById('filterStats')
+  var CATEGORIES = {
+    general:      { label: 'General',          order: 0, colorClass: 'cat-general',      icon: 'G' },
+    coordination: { label: 'Coordination',     order: 1, colorClass: 'cat-coordination', icon: 'C' },
+    bookkeeping:  { label: 'Bookkeeping',      order: 2, colorClass: 'cat-bookkeeping',  icon: 'B' },
+    architecture: { label: 'Architecture',     order: 3, colorClass: 'cat-architecture', icon: 'A' },
+    costs:        { label: 'Costs & Estimates', order: 4, colorClass: 'cat-costs',       icon: 'C' },
+    admin:        { label: 'Admin',            order: 5, colorClass: 'cat-admin',        icon: 'A' }
   };
+
+  var MODULE_CATEGORY = {
+    dashboard: 'general',
+    my_work: 'general',
+    messages: 'general',
+    arturito: 'general',
+    vault: 'general',
+    operation_manager: 'coordination',
+    pipeline: 'coordination',
+    expenses: 'bookkeeping',
+    company_expenses: 'bookkeeping',
+    budget_monitor: 'bookkeeping',
+    accounts: 'bookkeeping',
+    vendors: 'bookkeeping',
+    reporting: 'bookkeeping',
+    projects: 'architecture',
+    project_builder: 'architecture',
+    timeline_manager: 'architecture',
+    estimator: 'costs',
+    estimator_database: 'costs',
+    allowance_adu_calculator: 'costs',
+    team: 'admin',
+    companies: 'admin',
+    roles: 'admin',
+    arturito_settings: 'admin',
+    settings: 'admin',
+    audit: 'admin',
+    process_manager: 'admin'
+  };
+
+  // ================================
+  // STATE
+  // ================================
+
+  var roles = [];
+  var modules = [];
+  var allPermissions = {};   // { rol_id: { module_key: { can_view, can_edit, can_delete } } }
+  var editState = {};        // Working copy for the current role
+  var originalState = {};    // Snapshot when entering detail view
+  var currentRoleId = null;
+  var moduleFilter = '';
+  var viewTransitioning = false;
 
   // ================================
   // INITIALIZATION
   // ================================
 
   async function init() {
-    await loadData();
-    setupEventListeners();
-    // Iniciar en modo de edición por defecto
-    toggleEditMode(true);
+    try {
+      await loadData();
+      renderHubView();
+      setupEventListeners();
+      hidePageLoading();
+    } catch (err) {
+      console.error('[ROLES] Init error:', err);
+      hidePageLoading();
+    }
   }
 
   // ================================
-  // LOAD DATA
+  // DATA LOADING
   // ================================
 
   async function loadData() {
+    showLoadingState();
+
+    var rolesRes, modulesRes;
     try {
-      showLoadingState();
-
-      // Cargar roles y módulos en paralelo
-      const [rolesRes, modulesRes] = await Promise.all([
-        fetch(`${API_BASE}/permissions/roles`),
-        fetch(`${API_BASE}/permissions/modules`)
+      var results = await Promise.all([
+        fetch(API_BASE + '/permissions/roles'),
+        fetch(API_BASE + '/permissions/modules')
       ]);
-
-      if (!rolesRes.ok || !modulesRes.ok) {
-        console.error('[ROLES] Error loading data');
-        if (window.Toast) {
-          Toast.error('Load Failed', 'Error loading roles and modules.');
-        }
-        return;
-      }
-
-      const rolesData = await rolesRes.json();
-      const modulesData = await modulesRes.json();
-
-      roles = rolesData.data || [];
-      modules = modulesData.data || [];
-
-      // Cargar permisos para cada rol
-      await loadAllPermissions();
-
-      renderPermissionsMatrix();
-      showContent();
-      hidePageLoading();
-
+      rolesRes = results[0];
+      modulesRes = results[1];
     } catch (err) {
-      console.error('[ROLES] Error loading data:', err);
-      if (window.Toast) {
-        Toast.error('Load Failed', 'Error loading data.', { details: err.message });
-      }
-      hidePageLoading();
-    }
-  }
-
-  async function loadAllPermissions() {
-    permissions = {};
-
-    for (const role of roles) {
-      try {
-        const res = await fetch(`${API_BASE}/permissions/role/${role.rol_id}`);
-        if (!res.ok) continue;
-
-        const data = await res.json();
-        const rolePerms = {};
-
-        // Organizar permisos por module_key
-        (data.permissions || []).forEach(perm => {
-          rolePerms[perm.module_key] = {
-            can_view: perm.can_view,
-            can_edit: perm.can_edit,
-            can_delete: perm.can_delete
-          };
-        });
-
-        permissions[role.rol_id] = rolePerms;
-      } catch (err) {
-        console.error(`[ROLES] Error loading permissions for role ${role.rol_id}:`, err);
-      }
+      if (window.Toast) Toast.error('Load Failed', 'Could not connect to server.');
+      throw err;
     }
 
-    // Guardar copia para detectar cambios
-    originalPermissions = JSON.parse(JSON.stringify(permissions));
-  }
-
-  // ================================
-  // RENDER
-  // ================================
-
-  function renderPermissionsMatrix() {
-    if (!roles || roles.length === 0 || !modules || modules.length === 0) {
-      els.permissionsTableBody.innerHTML = '<tr><td colspan="100" style="text-align: center; padding: 40px; color: #6b7280;">No data available</td></tr>';
-      updateFilterStats(0, 0, 0, 0);
-      return;
+    if (!rolesRes.ok || !modulesRes.ok) {
+      if (window.Toast) Toast.error('Load Failed', 'Error loading roles data.');
+      throw new Error('Failed to fetch roles/modules');
     }
 
-    // Filtrar modulos y roles
-    const filteredModules = modules.filter(mod =>
-      mod.module_name.toLowerCase().includes(moduleFilter.toLowerCase()) ||
-      mod.module_key.toLowerCase().includes(moduleFilter.toLowerCase())
-    );
+    var rolesData = await rolesRes.json();
+    var modulesData = await modulesRes.json();
+    roles = rolesData.data || [];
+    modules = modulesData.data || [];
 
-    const filteredRoles = roles.filter(role =>
-      role.rol_name.toLowerCase().includes(roleFilter.toLowerCase())
-    );
+    // Load permissions for ALL roles in parallel
+    var permPromises = roles.map(function (role) {
+      return fetch(API_BASE + '/permissions/role/' + role.rol_id)
+        .then(function (r) { return r.json(); })
+        .then(function (data) { return { rolId: role.rol_id, perms: data.permissions || [] }; })
+        .catch(function () { return { rolId: role.rol_id, perms: [] }; });
+    });
 
-    // Actualizar estadisticas de filtrado
-    updateFilterStats(filteredModules.length, modules.length, filteredRoles.length, roles.length);
+    var permResults = await Promise.all(permPromises);
 
-    // Verificar si hay resultados
-    if (filteredModules.length === 0 || filteredRoles.length === 0) {
-      const thead = els.permissionsTable.querySelector('thead');
-      thead.innerHTML = '<tr><th>Role</th><th>No matching modules</th></tr>';
-      els.permissionsTableBody.innerHTML = '<tr><td colspan="100" style="text-align: center; padding: 40px; color: #6b7280;">No results match your filters. Try adjusting your search.</td></tr>';
-      return;
-    }
+    allPermissions = {};
+    permResults.forEach(function (item) {
+      var map = {};
+      item.perms.forEach(function (p) {
+        map[p.module_key] = {
+          can_view: p.can_view,
+          can_edit: p.can_edit,
+          can_delete: p.can_delete
+        };
+      });
+      allPermissions[item.rolId] = map;
+    });
 
-    // Crear header dinámico con los módulos filtrados
-    const thead = els.permissionsTable.querySelector('thead');
-    thead.innerHTML = `
-      <tr>
-        <th style="position: sticky; left: 0; background: #18181b; z-index: 2; min-width: 180px;">Role</th>
-        ${filteredModules.map(mod => `
-          <th style="min-width: 140px; text-align: center;">
-            <div style="font-size: 13px; font-weight: 600;">${mod.module_name}</div>
-            <div style="font-size: 11px; font-weight: 400; color: #6b7280; margin-top: 2px;">V · E · D</div>
-          </th>
-        `).join('')}
-        <th style="min-width: 100px; text-align: center;">Actions</th>
-      </tr>
-    `;
-
-    // Renderizar filas de roles filtrados
-    els.permissionsTableBody.innerHTML = filteredRoles.map(role => {
-      const isProtected = PROTECTED_ROLES.includes(role.rol_name);
-      const rolePerms = permissions[role.rol_id] || {};
-
-      return `
-        <tr data-role-id="${role.rol_id}" data-role-name="${role.rol_name}">
-          <td style="position: sticky; left: 0; background: #18181b; z-index: 1;">
-            <strong style="color: #e5e7eb;">${role.rol_name}</strong>
-          </td>
-          ${filteredModules.map(mod => {
-            const perm = rolePerms[mod.module_key] || { can_view: false, can_edit: false, can_delete: false };
-            return renderPermissionCell(role.rol_id, mod.module_key, perm, isProtected);
-          }).join('')}
-          <td style="text-align: center;">
-            ${!isProtected && isEditMode ? `
-              <button class="btn-reset-role" data-role-id="${role.rol_id}" style="padding: 4px 12px; background: transparent; border: 1px solid #27272f; color: #9ca3af; border-radius: 4px; font-size: 12px; cursor: pointer;">
-                Reset
-              </button>
-            ` : '—'}
-          </td>
-        </tr>
-      `;
-    }).join('');
-  }
-
-  function updateFilterStats(modsShown, modsTotal, rolesShown, rolesTotal) {
-    if (els.filterStats) {
-      const hasFilter = moduleFilter || roleFilter;
-      if (hasFilter) {
-        els.filterStats.textContent = `Showing ${modsShown} of ${modsTotal} modules, ${rolesShown} of ${rolesTotal} roles`;
-      } else {
-        els.filterStats.textContent = `${modsTotal} modules, ${rolesTotal} roles`;
-      }
-    }
-  }
-
-  function renderPermissionCell(rolId, moduleKey, perm, isProtected) {
-    const disabled = isProtected || !isEditMode;
-    const disabledAttr = disabled ? 'disabled' : '';
-    const opacity = disabled ? 'opacity: 0.5;' : '';
-
-    return `
-      <td style="text-align: center;">
-        <div style="display: flex; justify-content: center; gap: 8px; ${opacity}">
-          <label style="cursor: ${disabled ? 'not-allowed' : 'pointer'}; display: flex; flex-direction: column; align-items: center;">
-            <input
-              type="checkbox"
-              class="perm-checkbox"
-              data-role-id="${rolId}"
-              data-module-key="${moduleKey}"
-              data-permission="view"
-              ${perm.can_view ? 'checked' : ''}
-              ${disabledAttr}
-              style="cursor: ${disabled ? 'not-allowed' : 'pointer'};"
-            />
-          </label>
-          <label style="cursor: ${disabled ? 'not-allowed' : 'pointer'}; display: flex; flex-direction: column; align-items: center;">
-            <input
-              type="checkbox"
-              class="perm-checkbox"
-              data-role-id="${rolId}"
-              data-module-key="${moduleKey}"
-              data-permission="edit"
-              ${perm.can_edit ? 'checked' : ''}
-              ${disabledAttr}
-              style="cursor: ${disabled ? 'not-allowed' : 'pointer'};"
-            />
-          </label>
-          <label style="cursor: ${disabled ? 'not-allowed' : 'pointer'}; display: flex; flex-direction: column; align-items: center;">
-            <input
-              type="checkbox"
-              class="perm-checkbox"
-              data-role-id="${rolId}"
-              data-module-key="${moduleKey}"
-              data-permission="delete"
-              ${perm.can_delete ? 'checked' : ''}
-              ${disabledAttr}
-              style="cursor: ${disabled ? 'not-allowed' : 'pointer'};"
-            />
-          </label>
-        </div>
-      </td>
-    `;
+    showContent();
   }
 
   // ================================
-  // EDIT MODE
+  // VIEW SWITCHING
   // ================================
 
-  function toggleEditMode(enable) {
-    isEditMode = enable;
+  function animateViewSwitch(outId, inId, onAfter) {
+    if (viewTransitioning) return;
+    viewTransitioning = true;
 
-    if (enable) {
-      els.btnEditPermissions.style.display = 'none';
-      els.editModeFooter.classList.remove('hidden');
+    var outEl = document.getElementById(outId);
+    var inEl = document.getElementById(inId);
+    var container = document.getElementById('rolesContent');
+    if (container) container.scrollTop = 0;
+
+    outEl.classList.add('view-leaving');
+    outEl.addEventListener('animationend', function handler() {
+      outEl.removeEventListener('animationend', handler);
+      outEl.classList.remove('view-leaving');
+      outEl.style.display = 'none';
+
+      inEl.style.display = '';
+      inEl.classList.add('view-entering');
+      inEl.addEventListener('animationend', function h2() {
+        inEl.removeEventListener('animationend', h2);
+        inEl.classList.remove('view-entering');
+        viewTransitioning = false;
+      });
+
+      if (onAfter) onAfter();
+    });
+  }
+
+  function showHub() {
+    if (currentRoleId && countChanges() > 0) {
+      if (!confirm('You have unsaved changes. Discard and go back?')) return;
+    }
+    animateViewSwitch('detailView', 'hubView', function () {
+      currentRoleId = null;
+      editState = {};
+      originalState = {};
+      moduleFilter = '';
+      var filterInput = document.getElementById('moduleFilterInput');
+      if (filterInput) filterInput.value = '';
+      renderHubView();
+    });
+  }
+
+  function showDetail(rolId) {
+    currentRoleId = rolId;
+    editState = JSON.parse(JSON.stringify(allPermissions[rolId] || {}));
+    originalState = JSON.parse(JSON.stringify(editState));
+    moduleFilter = '';
+
+    animateViewSwitch('hubView', 'detailView', function () {
+      renderDetailHeader(rolId);
+      renderPermissionCategories(rolId);
+      updateSaveFooter();
+      var filterInput = document.getElementById('moduleFilterInput');
+      if (filterInput) filterInput.value = '';
+    });
+  }
+
+  // ================================
+  // HUB VIEW
+  // ================================
+
+  function renderHubView() {
+    var hubView = document.getElementById('hubView');
+    if (!hubView) return;
+
+    var totalRoles = roles.length;
+    var protectedCount = roles.filter(function (r) { return PROTECTED_ROLES.indexOf(r.rol_name) !== -1; }).length;
+    var totalModules = modules.length;
+
+    var html = '<div class="roles-hub-header">' +
+      '<h2>Roles & Permissions</h2>' +
+      '<p>Select a role to configure its module access</p>' +
+    '</div>';
+
+    // Stats row
+    html += '<div class="roles-stats-row">' +
+      statCard('Total Roles', totalRoles, '') +
+      statCard('Protected', protectedCount, 'stat-disabled') +
+      statCard('Editable', totalRoles - protectedCount, 'stat-enabled') +
+      statCard('Modules', totalModules, '') +
+    '</div>';
+
+    // Role cards grid
+    html += '<div class="roles-hub-grid">';
+    roles.forEach(function (role) {
+      html += renderRoleCard(role);
+    });
+    html += '</div>';
+
+    hubView.innerHTML = html;
+  }
+
+  function statCard(label, value, cls) {
+    return '<div class="roles-stat-card">' +
+      '<span class="roles-stat-label">' + label + '</span>' +
+      '<span class="roles-stat-value ' + cls + '">' + value + '</span>' +
+    '</div>';
+  }
+
+  function renderRoleCard(role) {
+    var isProtected = PROTECTED_ROLES.indexOf(role.rol_name) !== -1;
+    var perms = allPermissions[role.rol_id] || {};
+    var viewCount = 0, editCount = 0, deleteCount = 0;
+
+    var keys = Object.keys(perms);
+    keys.forEach(function (key) {
+      if (perms[key].can_view) viewCount++;
+      if (perms[key].can_edit) editCount++;
+      if (perms[key].can_delete) deleteCount++;
+    });
+
+    var hue = hashStringToHue(role.rol_name);
+    var initials = role.rol_name.substring(0, 2).toUpperCase();
+    var badge = isProtected
+      ? '<span class="role-protected-badge">Protected</span>'
+      : '<span class="roles-status-dot"></span>';
+    var cta = isProtected ? 'View permissions' : 'Configure';
+
+    return '<div class="roles-hub-card" data-role-id="' + role.rol_id + '" tabindex="0">' +
+      '<div class="roles-hub-card-top">' +
+        '<div class="role-avatar" style="background:hsl(' + hue + ',55%,40%)">' + initials + '</div>' +
+        '<div class="roles-hub-card-identity">' +
+          '<h3 class="roles-hub-card-name">' + escapeHtml(role.rol_name) + '</h3>' +
+          '<p class="roles-hub-card-role">' + keys.length + ' modules configured</p>' +
+        '</div>' +
+        badge +
+      '</div>' +
+      '<div class="roles-hub-card-metrics">' +
+        '<div class="roles-hub-metric"><span class="roles-hub-metric-value metric-success">' + viewCount + '</span><span class="roles-hub-metric-label">Can View</span></div>' +
+        '<div class="roles-hub-metric"><span class="roles-hub-metric-value">' + editCount + '</span><span class="roles-hub-metric-label">Can Edit</span></div>' +
+        '<div class="roles-hub-metric"><span class="roles-hub-metric-value">' + deleteCount + '</span><span class="roles-hub-metric-label">Can Delete</span></div>' +
+      '</div>' +
+      '<div class="roles-hub-card-footer"><span class="roles-hub-card-cta">' + cta + ' &rarr;</span></div>' +
+    '</div>';
+  }
+
+  // ================================
+  // DETAIL VIEW
+  // ================================
+
+  function renderDetailHeader(rolId) {
+    var role = roles.find(function (r) { return r.rol_id === rolId; });
+    if (!role) return;
+
+    var isProtected = PROTECTED_ROLES.indexOf(role.rol_name) !== -1;
+    var hue = hashStringToHue(role.rol_name);
+    var initials = role.rol_name.substring(0, 2).toUpperCase();
+
+    var header = document.getElementById('roleDetailHeader');
+    header.innerHTML =
+      '<div class="role-avatar role-avatar-lg" style="background:hsl(' + hue + ',55%,40%)">' + initials + '</div>' +
+      '<div class="roles-detail-header-info">' +
+        '<h3 class="roles-detail-name">' + escapeHtml(role.rol_name) + '</h3>' +
+        '<p class="roles-detail-subtitle">' + (isProtected ? 'Protected role - Read only' : 'Configure module permissions') + '</p>' +
+      '</div>' +
+      (isProtected ? '<span class="role-protected-badge">Protected</span>' : '');
+
+    var detailView = document.getElementById('detailView');
+    if (isProtected) {
+      detailView.classList.add('role-readonly');
     } else {
-      els.btnEditPermissions.style.display = '';
-      els.editModeFooter.classList.add('hidden');
-      // Restaurar permisos originales
-      permissions = JSON.parse(JSON.stringify(originalPermissions));
+      detailView.classList.remove('role-readonly');
     }
+  }
 
-    renderPermissionsMatrix();
+  function renderPermissionCategories(rolId) {
+    var container = document.getElementById('permissionCategories');
+    if (!container) return;
+
+    var role = roles.find(function (r) { return r.rol_id === rolId; });
+    var isProtected = role ? PROTECTED_ROLES.indexOf(role.rol_name) !== -1 : false;
+
+    // Group modules by category
+    var grouped = {};
+    modules.forEach(function (mod) {
+      var cat = MODULE_CATEGORY[mod.module_key] || 'general';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(mod);
+    });
+
+    // Sort categories by order
+    var sortedCats = Object.keys(grouped).sort(function (a, b) {
+      return (CATEGORIES[a] || { order: 99 }).order - (CATEGORIES[b] || { order: 99 }).order;
+    });
+
+    var html = '';
+    var filterLower = moduleFilter.toLowerCase();
+
+    sortedCats.forEach(function (cat) {
+      var catConfig = CATEGORIES[cat] || { label: cat, colorClass: 'cat-general', icon: '?' };
+      var catModules = grouped[cat];
+
+      // Apply module filter
+      if (filterLower) {
+        catModules = catModules.filter(function (m) {
+          return m.module_name.toLowerCase().indexOf(filterLower) !== -1 ||
+                 m.module_key.toLowerCase().indexOf(filterLower) !== -1;
+        });
+      }
+      if (catModules.length === 0) return;
+
+      html += '<div class="roles-perm-card">' +
+        '<div class="roles-perm-card-header">' +
+          '<h4 class="roles-perm-card-title">' +
+            '<span class="roles-category-icon ' + catConfig.colorClass + '">' + catConfig.icon + '</span>' +
+            catConfig.label +
+            '<span class="roles-perm-card-count">' + catModules.length + ' modules</span>' +
+          '</h4>' +
+          (!isProtected ?
+            '<div class="category-bulk-actions">' +
+              '<button class="bulk-toggle-btn" data-category="' + cat + '" data-action="all">Enable All</button>' +
+              '<button class="bulk-toggle-btn" data-category="' + cat + '" data-action="none">Disable All</button>' +
+            '</div>' : '') +
+        '</div>' +
+        '<div class="roles-perm-list">';
+
+      catModules.forEach(function (mod) {
+        var perm = editState[mod.module_key] || { can_view: false, can_edit: false, can_delete: false };
+        html += renderModuleRow(mod, perm, isProtected, rolId);
+      });
+
+      html += '</div></div>';
+    });
+
+    container.innerHTML = html || '<div class="roles-empty-state">No modules match your filter.</div>';
+  }
+
+  function renderModuleRow(mod, perm, isProtected, rolId) {
+    var disabled = isProtected ? ' disabled' : '';
+    return '<div class="roles-perm-item" data-module="' + mod.module_key + '">' +
+      '<div class="roles-perm-info">' +
+        '<span class="roles-perm-name">' + escapeHtml(mod.module_name) + '</span>' +
+        '<span class="roles-perm-desc">' + mod.module_key + '</span>' +
+      '</div>' +
+      '<div class="roles-perm-toggles">' +
+        toggleGroup('View', rolId, mod.module_key, 'view', perm.can_view, disabled) +
+        toggleGroup('Edit', rolId, mod.module_key, 'edit', perm.can_edit, disabled) +
+        toggleGroup('Delete', rolId, mod.module_key, 'delete', perm.can_delete, disabled) +
+      '</div>' +
+    '</div>';
+  }
+
+  function toggleGroup(label, rolId, moduleKey, permType, checked, disabled) {
+    return '<div class="roles-toggle-group">' +
+      '<span class="roles-toggle-label">' + label + '</span>' +
+      '<label class="roles-toggle-switch">' +
+        '<input type="checkbox" data-role="' + rolId + '" data-module="' + moduleKey + '" data-perm="' + permType + '"' +
+        (checked ? ' checked' : '') + disabled + '>' +
+        '<span class="roles-toggle-slider"></span>' +
+      '</label>' +
+    '</div>';
   }
 
   // ================================
-  // SAVE CHANGES
+  // TOGGLE LOGIC
+  // ================================
+
+  function handleToggleChange(e) {
+    var input = e.target;
+    if (!input.matches || !input.matches('.roles-toggle-switch input[type="checkbox"]')) return;
+
+    var moduleKey = input.getAttribute('data-module');
+    var permType = input.getAttribute('data-perm');
+    var checked = input.checked;
+
+    if (!editState[moduleKey]) {
+      editState[moduleKey] = { can_view: false, can_edit: false, can_delete: false };
+    }
+
+    var perm = editState[moduleKey];
+
+    // Cascading logic
+    if (permType === 'view') {
+      perm.can_view = checked;
+      if (!checked) {
+        perm.can_edit = false;
+        perm.can_delete = false;
+      }
+    } else if (permType === 'edit') {
+      perm.can_edit = checked;
+      if (checked) perm.can_view = true;
+    } else if (permType === 'delete') {
+      perm.can_delete = checked;
+      if (checked) {
+        perm.can_view = true;
+        perm.can_edit = true;
+      }
+    }
+
+    // Update only the sibling toggles in this row (O(1), not full re-render)
+    var row = input.closest('.roles-perm-item');
+    if (row) {
+      var toggles = row.querySelectorAll('.roles-toggle-switch input');
+      toggles.forEach(function (t) {
+        var p = t.getAttribute('data-perm');
+        if (p === 'view') t.checked = perm.can_view;
+        if (p === 'edit') t.checked = perm.can_edit;
+        if (p === 'delete') t.checked = perm.can_delete;
+      });
+    }
+
+    updateSaveFooter();
+  }
+
+  // ================================
+  // BULK TOGGLE
+  // ================================
+
+  function handleBulkToggle(category, action) {
+    var enable = action === 'all';
+
+    modules.forEach(function (mod) {
+      if (MODULE_CATEGORY[mod.module_key] !== category) return;
+
+      if (!editState[mod.module_key]) {
+        editState[mod.module_key] = { can_view: false, can_edit: false, can_delete: false };
+      }
+
+      editState[mod.module_key].can_view = enable;
+      editState[mod.module_key].can_edit = enable;
+      editState[mod.module_key].can_delete = enable;
+    });
+
+    renderPermissionCategories(currentRoleId);
+    updateSaveFooter();
+  }
+
+  // ================================
+  // CHANGES TRACKING
+  // ================================
+
+  function countChanges() {
+    var count = 0;
+    var allKeys = {};
+
+    var key;
+    for (key in editState) allKeys[key] = true;
+    for (key in originalState) allKeys[key] = true;
+
+    for (key in allKeys) {
+      var orig = originalState[key] || { can_view: false, can_edit: false, can_delete: false };
+      var curr = editState[key] || { can_view: false, can_edit: false, can_delete: false };
+      if (orig.can_view !== curr.can_view ||
+          orig.can_edit !== curr.can_edit ||
+          orig.can_delete !== curr.can_delete) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  function updateSaveFooter() {
+    var changes = countChanges();
+    var footer = document.getElementById('roleSaveFooter');
+    var counter = document.getElementById('changesCounter');
+    if (!footer || !counter) return;
+
+    if (changes > 0) {
+      footer.style.display = '';
+      counter.textContent = changes + (changes === 1 ? ' change' : ' changes');
+    } else {
+      footer.style.display = 'none';
+    }
+  }
+
+  // ================================
+  // SAVE
   // ================================
 
   async function saveChanges() {
+    var updates = [];
+
+    for (var moduleKey in editState) {
+      var orig = originalState[moduleKey] || { can_view: false, can_edit: false, can_delete: false };
+      var curr = editState[moduleKey];
+
+      if (orig.can_view !== curr.can_view ||
+          orig.can_edit !== curr.can_edit ||
+          orig.can_delete !== curr.can_delete) {
+        updates.push({
+          rol_id: currentRoleId,
+          module_key: moduleKey,
+          can_view: curr.can_view,
+          can_edit: curr.can_edit,
+          can_delete: curr.can_delete
+        });
+      }
+    }
+
+    if (updates.length === 0) {
+      if (window.Toast) Toast.info('No Changes', 'Nothing to save.');
+      return;
+    }
+
+    var saveBtn = document.getElementById('btnSavePermissions');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
+
     try {
-      // Detectar cambios
-      const updates = [];
-
-      for (const rolId in permissions) {
-        const original = originalPermissions[rolId] || {};
-        const current = permissions[rolId] || {};
-
-        for (const moduleKey in current) {
-          const origPerm = original[moduleKey] || {};
-          const currPerm = current[moduleKey] || {};
-
-          // Verificar si cambió
-          if (JSON.stringify(origPerm) !== JSON.stringify(currPerm)) {
-            updates.push({
-              rol_id: rolId,
-              module_key: moduleKey,
-              can_view: currPerm.can_view,
-              can_edit: currPerm.can_edit,
-              can_delete: currPerm.can_delete
-            });
-          }
-        }
-      }
-
-      if (updates.length === 0) {
-        if (window.Toast) {
-          Toast.info('No Changes', 'No changes to save.');
-        }
-        toggleEditMode(false);
-        return;
-      }
-
-      // Confirmar cambios
-      const confirmMsg = `You are about to update ${updates.length} permission(s). Continue?`;
-      if (!confirm(confirmMsg)) return;
-
-      // Enviar actualizaciones al backend
-      console.log('[ROLES] Saving changes:', updates);
-
-      const res = await fetch(`${API_BASE}/permissions/batch-update`, {
+      var res = await fetch(API_BASE + '/permissions/batch-update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ updates })
+        body: JSON.stringify({ updates: updates })
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.detail || 'Failed to update permissions');
+        var errData = await res.json().catch(function () { return {}; });
+        throw new Error(errData.detail || 'Server error');
       }
 
-      const result = await res.json();
+      var result = await res.json();
 
-      // Mostrar resultado
-      if (window.Toast) {
-        let message = `${result.successful_updates} permission(s) updated!`;
-        if (result.protected_blocked > 0) {
-          message += ` ${result.protected_blocked} protected role(s) skipped.`;
-        }
-        if (result.failed_updates > 0) {
-          Toast.warning('Partial Success', message + ` ${result.failed_updates} update(s) failed.`);
-        } else {
-          Toast.success('Changes Saved', message);
-        }
+      // Success feedback
+      var message = result.successful_updates + ' permission(s) updated.';
+      if (result.protected_blocked > 0) {
+        message += ' ' + result.protected_blocked + ' protected role(s) skipped.';
+      }
+      if (result.failed_updates > 0) {
+        if (window.Toast) Toast.warning('Partial Success', message);
+      } else {
+        if (window.Toast) Toast.success('Saved', message);
       }
 
-      // Recargar datos
-      await loadData();
-      toggleEditMode(false);
+      // Update master state
+      allPermissions[currentRoleId] = JSON.parse(JSON.stringify(editState));
+      originalState = JSON.parse(JSON.stringify(editState));
+      updateSaveFooter();
+
+      // Invalidate sidebar cache so navigation reflects changes
+      if (window.reloadSidebarPermissions) {
+        window.reloadSidebarPermissions();
+      }
 
     } catch (err) {
-      console.error('[ROLES] Error saving changes:', err);
-      if (window.Toast) {
-        Toast.error('Save Failed', 'Error saving changes.', { details: err.message });
+      console.error('[ROLES] Save error:', err);
+      if (window.Toast) Toast.error('Save Failed', err.message || 'Could not save changes.');
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Changes';
       }
     }
-  }
-
-  // ================================
-  // HANDLE CHECKBOX CHANGES
-  // ================================
-
-  function handleCheckboxChange(e) {
-    if (!isEditMode) return;
-
-    const checkbox = e.target;
-    const rolId = checkbox.getAttribute('data-role-id');
-    const moduleKey = checkbox.getAttribute('data-module-key');
-    const permission = checkbox.getAttribute('data-permission');
-
-    if (!permissions[rolId]) permissions[rolId] = {};
-    if (!permissions[rolId][moduleKey]) {
-      permissions[rolId][moduleKey] = { can_view: false, can_edit: false, can_delete: false };
-    }
-
-    // Actualizar el permiso
-    if (permission === 'view') {
-      permissions[rolId][moduleKey].can_view = checkbox.checked;
-
-      // Si se desmarca view, desmarcar edit y delete también
-      if (!checkbox.checked) {
-        permissions[rolId][moduleKey].can_edit = false;
-        permissions[rolId][moduleKey].can_delete = false;
-      }
-    } else if (permission === 'edit') {
-      permissions[rolId][moduleKey].can_edit = checkbox.checked;
-
-      // Si se marca edit, marcar view automáticamente
-      if (checkbox.checked) {
-        permissions[rolId][moduleKey].can_view = true;
-      }
-    } else if (permission === 'delete') {
-      permissions[rolId][moduleKey].can_delete = checkbox.checked;
-
-      // Si se marca delete, marcar view y edit automáticamente
-      if (checkbox.checked) {
-        permissions[rolId][moduleKey].can_view = true;
-        permissions[rolId][moduleKey].can_edit = true;
-      }
-    }
-
-    // Re-renderizar solo esa celda para actualizar checkboxes dependientes
-    renderPermissionsMatrix();
-  }
-
-  // ================================
-  // RESET ROLE
-  // ================================
-
-  function resetRole(rolId) {
-    if (!confirm('Reset all permissions for this role to original values?')) return;
-
-    permissions[rolId] = JSON.parse(JSON.stringify(originalPermissions[rolId] || {}));
-    renderPermissionsMatrix();
-  }
-
-  // ================================
-  // UI HELPERS
-  // ================================
-
-  function showLoadingState() {
-    els.loadingState.style.display = 'flex';
-    els.content.style.display = 'none';
-  }
-
-  function showContent() {
-    els.loadingState.style.display = 'none';
-    els.content.style.display = 'block';
   }
 
   // ================================
@@ -436,69 +591,118 @@
   // ================================
 
   function setupEventListeners() {
-    // Edit mode
-    els.btnEditPermissions?.addEventListener('click', () => {
-      toggleEditMode(true);
-    });
+    var hubView = document.getElementById('hubView');
+    var detailView = document.getElementById('detailView');
+    var permCats = document.getElementById('permissionCategories');
+    var filterInput = document.getElementById('moduleFilterInput');
+    var btnBack = document.getElementById('btnBackToHub');
+    var btnSave = document.getElementById('btnSavePermissions');
+    var btnDiscard = document.getElementById('btnDiscardChanges');
 
-    els.btnCancelEdit?.addEventListener('click', () => {
-      if (confirm('Discard all changes?')) {
-        toggleEditMode(false);
-      }
-    });
+    // Hub card clicks
+    if (hubView) {
+      hubView.addEventListener('click', function (e) {
+        var card = e.target.closest('.roles-hub-card');
+        if (card) showDetail(card.getAttribute('data-role-id'));
+      });
 
-    els.btnSaveChanges?.addEventListener('click', () => {
-      saveChanges();
-    });
+      // Keyboard accessibility
+      hubView.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          var card = e.target.closest('.roles-hub-card');
+          if (card) {
+            e.preventDefault();
+            showDetail(card.getAttribute('data-role-id'));
+          }
+        }
+      });
+    }
 
-    // Checkbox changes (delegación de eventos)
-    els.permissionsTableBody?.addEventListener('change', (e) => {
-      if (e.target.classList.contains('perm-checkbox')) {
-        handleCheckboxChange(e);
-      }
-    });
+    // Back button
+    if (btnBack) btnBack.addEventListener('click', showHub);
 
-    // Reset role button (delegación)
-    els.permissionsTableBody?.addEventListener('click', (e) => {
-      if (e.target.classList.contains('btn-reset-role')) {
-        const rolId = e.target.getAttribute('data-role-id');
-        resetRole(rolId);
-      }
-    });
+    // Toggle changes
+    if (permCats) {
+      permCats.addEventListener('change', handleToggleChange);
 
-    // Filtros de busqueda
-    let filterDebounce = null;
+      // Bulk actions
+      permCats.addEventListener('click', function (e) {
+        var btn = e.target.closest('.bulk-toggle-btn');
+        if (!btn) return;
+        handleBulkToggle(btn.getAttribute('data-category'), btn.getAttribute('data-action'));
+      });
+    }
 
-    els.moduleSearchInput?.addEventListener('input', (e) => {
-      clearTimeout(filterDebounce);
-      filterDebounce = setTimeout(() => {
-        moduleFilter = e.target.value.trim();
-        renderPermissionsMatrix();
-      }, 200);
-    });
+    // Module search filter
+    if (filterInput) {
+      var filterTimer = null;
+      filterInput.addEventListener('input', function (e) {
+        clearTimeout(filterTimer);
+        filterTimer = setTimeout(function () {
+          moduleFilter = e.target.value.trim();
+          renderPermissionCategories(currentRoleId);
+        }, 200);
+      });
+    }
 
-    els.roleSearchInput?.addEventListener('input', (e) => {
-      clearTimeout(filterDebounce);
-      filterDebounce = setTimeout(() => {
-        roleFilter = e.target.value.trim();
-        renderPermissionsMatrix();
-      }, 200);
-    });
+    // Save button
+    if (btnSave) btnSave.addEventListener('click', saveChanges);
 
-    els.btnClearFilters?.addEventListener('click', () => {
-      moduleFilter = '';
-      roleFilter = '';
-      if (els.moduleSearchInput) els.moduleSearchInput.value = '';
-      if (els.roleSearchInput) els.roleSearchInput.value = '';
-      renderPermissionsMatrix();
-    });
+    // Discard button
+    if (btnDiscard) {
+      btnDiscard.addEventListener('click', function () {
+        editState = JSON.parse(JSON.stringify(originalState));
+        renderPermissionCategories(currentRoleId);
+        updateSaveFooter();
+        if (window.Toast) Toast.info('Discarded', 'Changes have been reverted.');
+      });
+    }
   }
 
   // ================================
-  // START
+  // UTILITIES
   // ================================
 
-  window.addEventListener('DOMContentLoaded', () => {
+  function hashStringToHue(str) {
+    if (!str) return 0;
+    var hash = 0;
+    for (var i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return Math.abs(hash % 360);
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function showLoadingState() {
+    var el = document.getElementById('rolesLoadingState');
+    var content = document.getElementById('rolesContent');
+    if (el) el.style.display = 'flex';
+    if (content) content.style.display = 'none';
+  }
+
+  function showContent() {
+    var el = document.getElementById('rolesLoadingState');
+    var content = document.getElementById('rolesContent');
+    if (el) el.style.display = 'none';
+    if (content) content.style.display = '';
+  }
+
+  function hidePageLoading() {
+    var overlay = document.getElementById('pageLoadingOverlay');
+    if (overlay) overlay.classList.add('hidden');
+    document.body.classList.remove('page-loading');
+  }
+
+  // ================================
+  // BOOT
+  // ================================
+
+  window.addEventListener('DOMContentLoaded', function () {
     if (window.initTopbarPills) window.initTopbarPills();
     init();
   });

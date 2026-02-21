@@ -106,7 +106,7 @@
 
     console.log('[DASH_REALTIME] Subscribing to mentions table...');
 
-    // Subscribe to messages table for mentions
+    // Subscribe to messages table for mentions (INSERT + UPDATE for deletes)
     mentionsSubscription = supabaseClient
       .channel('dashboard-mentions-changes')
       .on(
@@ -119,6 +119,17 @@
         (payload) => {
           console.log('[DASH_REALTIME] New message detected');
           handleMentionChange(payload);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages'
+        },
+        (payload) => {
+          handleMentionUpdate(payload);
         }
       )
       .subscribe((status) => {
@@ -186,24 +197,61 @@
   // HANDLE MENTION CHANGES
   // ================================
 
+  // Cached regex — built once per username, reused across all realtime events
+  var _mentionRe = null;
+  var _mentionReUser = null;
+
+  function _contentMentionsUser(content) {
+    if (!content) return false;
+    var user = getCurrentUser();
+    if (!user || !user.user_name) return false;
+
+    // Build regex once, cache it (invalidate if username changes)
+    if (!_mentionRe || _mentionReUser !== user.user_name) {
+      var name = user.user_name;
+      var nameNoSpaces = name.replace(/\s+/g, '');
+      _mentionRe = nameNoSpaces !== name
+        ? new RegExp('@(' + _escapeRe(nameNoSpaces) + '|' + _escapeRe(name) + ')\\b', 'i')
+        : new RegExp('@' + _escapeRe(name) + '\\b', 'i');
+      _mentionReUser = user.user_name;
+    }
+    return _mentionRe.test(content);
+  }
+
+  function _escapeRe(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
   function handleMentionChange(payload) {
-    const { new: newRecord } = payload;
-    const currentUserId = getCurrentUserId();
+    var newRecord = payload.new;
+    var currentUserId = getCurrentUserId();
 
     if (!currentUserId || !newRecord) return;
 
-    // Check if current user was mentioned in the new message
-    const mentionedUsers = newRecord.mentioned_users || [];
+    // Skip own messages
+    if (newRecord.user_id === currentUserId) return;
 
-    if (mentionedUsers.includes(currentUserId)) {
+    // Check if current user is mentioned by scanning message content
+    if (_contentMentionsUser(newRecord.content)) {
       console.log('[DASH_REALTIME] User was mentioned, refreshing mentions...');
 
-      debounceRefresh('mentions', () => {
+      debounceRefresh('mentions', function() {
         refreshMentions();
-        // Show notification toast
         if (window.Toast) {
           Toast.info('New Mention', 'You were mentioned in a message');
         }
+      }, 500);
+    }
+  }
+
+  function handleMentionUpdate(payload) {
+    var newRecord = payload.new;
+    if (!newRecord) return;
+
+    // When a message is soft-deleted, refresh mentions to remove it
+    if (newRecord.is_deleted) {
+      debounceRefresh('mentions', function() {
+        refreshMentions();
       }, 500);
     }
   }

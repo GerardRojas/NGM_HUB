@@ -142,6 +142,103 @@
     Object.values(CACHE_KEYS).forEach(key => {
       localStorage.removeItem(key);
     });
+    clearAllMessageCaches();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // PER-CHANNEL MESSAGE CACHE - Instant channel switching
+  // ─────────────────────────────────────────────────────────────────────────
+  const MSG_CACHE_PREFIX = "ngm_msg_";
+  const MSG_CACHE_INDEX_KEY = "ngm_msg_index";  // tracks which channels are cached
+  const MSG_CACHE_MAX_CHANNELS = 8;             // max channels in cache (LRU eviction)
+  const MSG_CACHE_MAX_MESSAGES = 50;            // max messages per channel
+
+  function _getMsgCacheKey(channelType, channelId, projectId) {
+    if (channelType.startsWith("project_")) {
+      return `${MSG_CACHE_PREFIX}${channelType}:${projectId}`;
+    }
+    return `${MSG_CACHE_PREFIX}${channelType}:${channelId}`;
+  }
+
+  function _getMsgCacheIndex() {
+    try {
+      const raw = localStorage.getItem(MSG_CACHE_INDEX_KEY);
+      return raw ? JSON.parse(raw) : [];  // array of { key, timestamp }
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function _saveMsgCacheIndex(index) {
+    try {
+      localStorage.setItem(MSG_CACHE_INDEX_KEY, JSON.stringify(index));
+    } catch (e) { /* quota error - handled by eviction */ }
+  }
+
+  function saveMessagesToCache(channelType, channelId, projectId, messages) {
+    if (!messages || messages.length === 0) return;
+
+    const cacheKey = _getMsgCacheKey(channelType, channelId, projectId);
+
+    // Only cache the last N messages, strip temp messages
+    const toCache = messages
+      .filter(m => !m.id?.toString().startsWith("temp-") && !m._failed)
+      .slice(-MSG_CACHE_MAX_MESSAGES);
+
+    if (toCache.length === 0) return;
+
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({
+        messages: toCache,
+        timestamp: Date.now(),
+      }));
+
+      // Update LRU index
+      let index = _getMsgCacheIndex();
+      index = index.filter(entry => entry.key !== cacheKey);
+      index.push({ key: cacheKey, timestamp: Date.now() });
+
+      // Evict oldest if over limit
+      while (index.length > MSG_CACHE_MAX_CHANNELS) {
+        const evicted = index.shift();
+        localStorage.removeItem(evicted.key);
+      }
+      _saveMsgCacheIndex(index);
+    } catch (e) {
+      // localStorage quota exceeded - evict oldest and retry once
+      if (e.name === "QuotaExceededError") {
+        const index = _getMsgCacheIndex();
+        if (index.length > 0) {
+          const evicted = index.shift();
+          localStorage.removeItem(evicted.key);
+          _saveMsgCacheIndex(index);
+          try {
+            localStorage.setItem(cacheKey, JSON.stringify({
+              messages: toCache,
+              timestamp: Date.now(),
+            }));
+          } catch (e2) { /* give up */ }
+        }
+      }
+    }
+  }
+
+  function loadMessagesFromCache(channelType, channelId, projectId) {
+    try {
+      const cacheKey = _getMsgCacheKey(channelType, channelId, projectId);
+      const raw = localStorage.getItem(cacheKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      return parsed.messages || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function clearAllMessageCaches() {
+    const index = _getMsgCacheIndex();
+    index.forEach(entry => localStorage.removeItem(entry.key));
+    localStorage.removeItem(MSG_CACHE_INDEX_KEY);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -1012,6 +1109,12 @@
       hideMentionsView();
     }
 
+    // ── Save current channel's messages to cache before switching ──
+    if (state.currentChannel && state.messages.length > 0) {
+      const prev = state.currentChannel;
+      saveMessagesToCache(prev.type, prev.id, prev.projectId, state.messages);
+    }
+
     // Update UI state
     document.querySelectorAll(".msg-channel-item").forEach((el) => {
       el.classList.remove("active");
@@ -1039,26 +1142,94 @@
     // Update header
     updateChatHeader(channel);
 
-    // Show loading spinner, hide other states
+    // Show input area
     DOM.emptyState.style.display = "none";
-    DOM.messagesList.style.display = "none";
-    if (DOM.chatLoading) DOM.chatLoading.style.display = "flex";
     DOM.messageInputArea.style.display = "block";
 
-    // Load messages
-    const messages = await loadMessages(channelType, channelId, projectId);
+    // ── INSTANT PATH: Show cached messages immediately if available ──
+    const cachedMessages = loadMessagesFromCache(channelType, channelId, projectId);
+    let showedCached = false;
+
+    if (cachedMessages && cachedMessages.length > 0) {
+      state.messages = cachedMessages;
+      _markFullRebuild();
+      _scanActiveFlows(cachedMessages);
+
+      // Show messages instantly (no loading spinner)
+      if (DOM.chatLoading) DOM.chatLoading.style.display = "none";
+      DOM.messagesList.style.display = "flex";
+      renderMessages(true); // immediate render, no debounce
+      scrollToBottom();
+      showedCached = true;
+      console.log(`[Messages] Instant render from cache (${cachedMessages.length} msgs)`);
+    } else {
+      // No cache - show loading spinner
+      DOM.messagesList.style.display = "none";
+      if (DOM.chatLoading) DOM.chatLoading.style.display = "flex";
+    }
+
+    // ── BACKGROUND REFRESH: Fetch fresh messages from API ──
+    const freshMessages = await loadMessages(channelType, channelId, projectId);
 
     // RACE CONDITION CHECK: If user switched to another channel while loading,
-    // discard these results and don't render
+    // discard these results, but still save to cache for next time
     if (thisRequestId !== channelRequestId) {
       console.log("[Messages] Discarding stale response for channel:", channelId);
+      if (freshMessages.length > 0) {
+        saveMessagesToCache(channelType, channelId, projectId, freshMessages);
+      }
       return;
     }
 
-    state.messages = messages;
-    _markFullRebuild();
+    // ── SMART MERGE: Only re-render if data actually changed ──
+    if (showedCached) {
+      const cachedIds = cachedMessages.map(m => m.id).join(",");
+      const freshIds = freshMessages.map(m => m.id).join(",");
 
-    // Scan loaded messages for active flows (check flow / duplicate flow / receipt flow)
+      if (cachedIds === freshIds) {
+        // Identical — no re-render needed, just update state silently
+        // (fresh data may have updated metadata like reactions)
+        state.messages = freshMessages;
+        console.log("[Messages] Cache matched API, no re-render needed");
+      } else {
+        // Data changed — full refresh
+        state.messages = freshMessages;
+        _markFullRebuild();
+        renderMessages(true);
+        scrollToBottom();
+        console.log("[Messages] Cache stale, re-rendered with fresh data");
+      }
+    } else {
+      // No cached version was shown — standard first-load path
+      state.messages = freshMessages;
+      _markFullRebuild();
+      if (DOM.chatLoading) DOM.chatLoading.style.display = "none";
+      DOM.messagesList.style.display = "flex";
+      renderMessages();
+      scrollToBottom();
+    }
+
+    // Scan fresh messages for active flows (always use fresh data)
+    _scanActiveFlows(freshMessages);
+
+    // Save fresh messages to cache for next time
+    if (freshMessages.length > 0) {
+      saveMessagesToCache(channelType, channelId, projectId, freshMessages);
+    }
+
+    // Reset pagination state for new channel
+    _hasMoreMessages = true;
+    _currentOffset = 0;
+
+    // Subscribe to realtime updates
+    subscribeToChannel(channel);
+
+    // Close mobile sidebar after selecting channel
+    closeMobileSidebar();
+  }
+
+  // Extract flow scanning into reusable function (used by both cache and fresh paths)
+  function _scanActiveFlows(messages) {
     state.activeCheckFlow = null;
     state.activeDuplicateFlow = null;
     state.activeReceiptFlow = null;
@@ -1081,24 +1252,6 @@
         state.activeReceiptFlow = null;
       }
     }
-
-    // Hide loading, show messages
-    if (DOM.chatLoading) DOM.chatLoading.style.display = "none";
-    DOM.messagesList.style.display = "flex";
-    renderMessages();
-
-    // Reset pagination state for new channel
-    _hasMoreMessages = true;
-    _currentOffset = 0;
-
-    // Subscribe to realtime updates
-    subscribeToChannel(channel);
-
-    // Scroll to bottom
-    scrollToBottom();
-
-    // Close mobile sidebar after selecting channel
-    closeMobileSidebar();
   }
 
   function updateChatHeader(channel) {
@@ -2489,18 +2642,29 @@
     renderMessages(true);
 
     try {
+      console.log("[sendMessage] POST /messages:", {
+        content: content?.slice(0, 60),
+        channel_type: messageData.channel_type,
+        project_id: messageData.project_id,
+        channel_id: messageData.channel_id,
+        has_attachments: (uploadedAttachments.length > 0),
+      });
+
       const res = await authFetch(`${API_BASE}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(messageData),
       });
 
-      if (!res.ok) throw new Error("Failed to send message");
+      if (!res.ok) throw new Error("Failed to send message (status " + res.status + ")");
 
       const data = await res.json();
+      const savedMsg = data.message || data;
+      console.log("[sendMessage] POST OK -> id=%s | backend should now trigger agent brain if @mention detected", savedMsg?.id);
+
       const tempIndex = state.messages.findIndex((m) => m.id === tempMessage.id);
       if (tempIndex !== -1) {
-        state.messages[tempIndex] = data.message || data;
+        state.messages[tempIndex] = savedMsg;
         _markFullRebuild();
         renderMessages();
       }
@@ -2770,6 +2934,14 @@
         renderMessages();
         const err = await res.json().catch(() => ({}));
         showToast(err.detail || "Failed to delete message", "error");
+      } else {
+        // Remove from mentions cache if present (deleted msgs excluded from API)
+        const prevLen = mentionsCache.length;
+        mentionsCache = mentionsCache.filter((m) => m.message_id !== messageId);
+        if (mentionsCache.length !== prevLen) {
+          const unreadCount = mentionsCache.filter((m) => !m.is_read).length;
+          updateMentionsBadge(unreadCount);
+        }
       }
     } catch (err) {
       console.error("[Messages] Delete error:", err);
@@ -3680,6 +3852,10 @@
   // SUPABASE REALTIME
   // ─────────────────────────────────────────────────────────────────────────
   function initSupabaseRealtime() {
+    console.log("[Messages] initSupabaseRealtime() called | SUPABASE_URL=%s | ANON_KEY=%s",
+      SUPABASE_URL ? "SET" : "MISSING",
+      SUPABASE_ANON_KEY ? (SUPABASE_ANON_KEY.slice(0, 20) + "...") : "MISSING");
+
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
       console.warn("[Messages] Supabase not configured, realtime disabled");
       return;
@@ -3687,13 +3863,13 @@
 
     // Check if Supabase client is available
     if (typeof supabase === "undefined") {
-      console.warn("[Messages] Supabase client not loaded");
+      console.warn("[Messages] Supabase JS library not loaded (typeof supabase === undefined)");
       return;
     }
 
     try {
       state.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      console.log("[Messages] Supabase client initialized");
+      console.log("[Messages] Supabase client initialized OK");
     } catch (err) {
       console.error("[Messages] Supabase init error:", err);
     }
@@ -3702,12 +3878,21 @@
   // ── Polling fallback state ──
   let pollingTimer = null;
   let pollingDelayTimer = null;
-  const POLL_BASE_MS = 4000;
-  const POLL_MAX_MS = 30000;
+  const POLL_BASE_MS = 4000;       // Fast polling when realtime is down
+  const POLL_MAX_MS = 30000;       // Max backoff for fast polling
+  const POLL_SAFETY_MS = 12000;    // Safety-net poll when realtime is "connected"
   let pollIntervalMs = POLL_BASE_MS;
   let realtimeConnected = false;
 
   function subscribeToChannel(channel) {
+    console.log("[Messages] subscribeToChannel() called:", {
+      type: channel.type,
+      id: channel.id,
+      projectId: channel.projectId,
+      supabaseClient: !!state.supabaseClient,
+      prevSubscription: !!state.messageSubscription,
+    });
+
     // Stop any existing polling
     stopMessagePolling();
 
@@ -3720,6 +3905,7 @@
 
     // Unsubscribe from previous channel
     if (state.messageSubscription) {
+      console.log("[Messages] Unsubscribing from previous channel");
       state.messageSubscription.unsubscribe();
     }
     if (state.typingSubscription) {
@@ -3749,18 +3935,27 @@
         },
         (payload) => {
           const msg = payload.new;
+          console.log("[Realtime] INSERT event received:", {
+            id: msg?.id,
+            user: msg?.user_id?.slice(0, 8),
+            channel_key: msg?.channel_key,
+            channel_type: msg?.channel_type,
+            contentPreview: msg?.content?.slice(0, 60),
+          });
           if (!msg) return;
 
           const msgKey = msg.channel_key ||
             `${msg.channel_type}:${msg.channel_id || msg.project_id}`;
 
           if (msgKey === channelKey) {
-            // Current channel: render message normally
+            console.log("[Realtime] Channel match -> handleNewMessage");
             handleNewMessage(msg);
           } else if (msg.user_id !== state.currentUser?.user_id) {
-            // Other channel, from another user: increment unread badge
+            console.log("[Realtime] Other channel -> unread badge | msgKey=%s vs current=%s", msgKey, channelKey);
             state.unreadCounts[msgKey] = (state.unreadCounts[msgKey] || 0) + 1;
             updateBadgeForChannel(msgKey, state.unreadCounts[msgKey]);
+          } else {
+            console.log("[Realtime] Skipped (own msg, different channel) | msgKey=%s", msgKey);
           }
         }
       )
@@ -3768,12 +3963,14 @@
         console.log("[Messages] Realtime subscription status:", status);
         if (status === "SUBSCRIBED") {
           realtimeConnected = true;
-          // Realtime is working — stop redundant polling to save bandwidth
-          stopMessagePolling();
+          console.log("[Messages] Realtime CONNECTED -> starting safety polling (every %dms)", POLL_SAFETY_MS);
+          startSafetyPolling();
         } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
           realtimeConnected = false;
-          console.warn("[Messages] Realtime disconnected, starting polling fallback");
+          console.warn("[Messages] Realtime DISCONNECTED (%s) -> starting fast polling", status);
           startMessagePolling();
+        } else {
+          console.log("[Messages] Realtime status: %s (waiting...)", status);
         }
       });
 
@@ -3801,22 +3998,30 @@
     }, 3000);
   }
 
-  /**
-   * Polling fallback: fetches recent messages every few seconds
-   * to catch anything the realtime subscription might miss.
-   */
+  /** Fast polling — used when realtime is disconnected. */
   function startMessagePolling() {
     stopMessagePolling();
     pollIntervalMs = POLL_BASE_MS;
+    console.log("[Polling] Starting FAST polling (every %dms)", POLL_BASE_MS);
     _pollTick();
   }
 
+  /** Slow safety-net polling — used when realtime reports connected.
+   *  Catches messages realtime might miss (e.g. bot inserts via service_role). */
+  function startSafetyPolling() {
+    stopMessagePolling();
+    pollIntervalMs = POLL_SAFETY_MS;
+    console.log("[Polling] Starting SAFETY polling (every %dms)", POLL_SAFETY_MS);
+    pollingTimer = setTimeout(_pollTick, POLL_SAFETY_MS);
+  }
+
   async function _pollTick() {
-    if (realtimeConnected) return;
     if (!state.currentChannel || document.hidden) {
       pollingTimer = setTimeout(_pollTick, pollIntervalMs);
       return;
     }
+
+    const mode = realtimeConnected ? "safety" : "fast";
 
     try {
       const ch = state.currentChannel;
@@ -3829,7 +4034,11 @@
       }
 
       const res = await authFetch(url);
-      if (!res.ok) { _scheduleNextPoll(); return; }
+      if (!res.ok) {
+        console.warn("[Polling:%s] Fetch failed (status %d)", mode, res.status);
+        _scheduleNextPoll();
+        return;
+      }
       const data = await res.json();
       const freshMessages = data.messages || data || [];
 
@@ -3837,22 +4046,25 @@
       const newMessages = freshMessages.filter(m => !existingIds.has(m.id));
 
       if (newMessages.length > 0) {
-        console.log(`[Messages] Polling found ${newMessages.length} new message(s)`);
+        console.log("[Polling:%s] Found %d new message(s):", mode, newMessages.length,
+          newMessages.map(m => ({ id: m.id, user: m.user_id?.slice(0, 8), content: m.content?.slice(0, 40) })));
         newMessages.forEach(msg => handleNewMessage(msg));
-        pollIntervalMs = POLL_BASE_MS;
-      } else {
+        // Reset to fast interval when new messages found (conversation active)
+        if (!realtimeConnected) pollIntervalMs = POLL_BASE_MS;
+      } else if (!realtimeConnected) {
+        // Only back off when realtime is down; safety poll stays fixed
         pollIntervalMs = Math.min(pollIntervalMs * 1.5, POLL_MAX_MS);
       }
     } catch (err) {
-      // Silently ignore polling errors
+      console.warn("[Polling:%s] Error: %s", mode, err.message);
     }
     _scheduleNextPoll();
   }
 
   function _scheduleNextPoll() {
-    if (!realtimeConnected) {
-      pollingTimer = setTimeout(_pollTick, pollIntervalMs);
-    }
+    // Always schedule next poll (safety or fast)
+    const interval = realtimeConnected ? POLL_SAFETY_MS : pollIntervalMs;
+    pollingTimer = setTimeout(_pollTick, interval);
   }
 
   function stopMessagePolling() {
@@ -3866,13 +4078,31 @@
     }
   }
 
+  // Catch up on missed messages when tab becomes visible again
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && state.currentChannel) {
+      console.log("[Messages] Tab visible again -> immediate poll catch-up");
+      clearTimeout(pollingTimer);
+      pollingTimer = null;
+      _pollTick();
+    }
+  });
+
   function handleNewMessage(message) {
     // Check if message already exists (by real ID)
     const existingIndex = state.messages.findIndex((m) => m.id === message.id);
     if (existingIndex !== -1) {
-      // Message already exists, skip
+      console.log("[handleNewMessage] SKIP duplicate id=%s", message.id);
       return;
     }
+
+    console.log("[handleNewMessage] Processing:", {
+      id: message.id,
+      user_id: message.user_id?.slice(0, 8),
+      content: message.content?.slice(0, 60),
+      channel_type: message.channel_type,
+      metadata: message.metadata ? Object.keys(message.metadata) : null,
+    });
 
     // For own messages: replace temp message with real one (optimistic update completion)
     if (message.user_id === state.currentUser?.user_id) {
@@ -3891,6 +4121,7 @@
         );
       }
       if (tempIndex !== -1) {
+        console.log("[handleNewMessage] Replaced temp message at index %d", tempIndex);
         state.messages[tempIndex] = message;
         _markFullRebuild();
         renderMessages();
@@ -3905,6 +4136,7 @@
     }
 
     // New message - add and render (uses fast-path incremental append)
+    console.log("[handleNewMessage] APPENDING to state.messages (total=%d)", state.messages.length + 1);
     state.messages.push(message);
 
     // Auto-scroll if user is near the bottom (within 150px)
@@ -3943,6 +4175,22 @@
     if (message.user_id !== state.currentUser?.user_id) {
       showMessageNotification(message);
     }
+
+    // Debounced save to cache (avoid thrashing localStorage on rapid messages)
+    _debouncedCacheSave();
+  }
+
+  // Debounced cache persistence for current channel (batches rapid messages)
+  let _cacheSaveTimer = null;
+  function _debouncedCacheSave() {
+    if (_cacheSaveTimer) clearTimeout(_cacheSaveTimer);
+    _cacheSaveTimer = setTimeout(() => {
+      _cacheSaveTimer = null;
+      if (state.currentChannel && state.messages.length > 0) {
+        const ch = state.currentChannel;
+        saveMessagesToCache(ch.type, ch.id, ch.projectId, state.messages);
+      }
+    }, 2000); // 2s debounce — batches bursts of messages
   }
 
   /**
@@ -4012,7 +4260,15 @@
    */
   function checkIfMentioned(content, currentUser) {
     if (!content || !currentUser) return false;
-    const mentionPattern = new RegExp(`@${escapeRegex(currentUser.user_name)}\\b`, "i");
+    const name = currentUser.user_name;
+    // Frontend strips spaces: "German Osorio" -> @GermanOsorio
+    const nameNoSpaces = name.replace(/\s+/g, "");
+    // Match either form with word boundary
+    if (nameNoSpaces !== name) {
+      const pattern = new RegExp(`@(${escapeRegex(nameNoSpaces)}|${escapeRegex(name)})\\b`, "i");
+      return pattern.test(content);
+    }
+    const mentionPattern = new RegExp(`@${escapeRegex(name)}\\b`, "i");
     return mentionPattern.test(content);
   }
 
@@ -5121,8 +5377,12 @@
     // Escape HTML first
     text = escapeHtml(text);
 
-    // Highlight @mentions
-    const mentionRegex = new RegExp(`@(${username})`, "gi");
+    // Highlight @mentions (both original and no-spaces form)
+    const nameNoSpaces = username.replace(/\s+/g, "");
+    const pattern = nameNoSpaces !== username
+      ? `(${escapeRegex(nameNoSpaces)}|${escapeRegex(username)})`
+      : escapeRegex(username);
+    const mentionRegex = new RegExp(`@(${pattern})`, "gi");
     text = text.replace(mentionRegex, '<span class="mention-highlight">@$1</span>');
 
     return text;
@@ -5229,9 +5489,11 @@
     if (searchContainer) searchContainer.style.display = "none";
     if (headerBtn) headerBtn.style.display = "none";
 
-    // Load mentions if not loaded yet
-    if (!mentionsLoaded) {
-      // Show loading state
+    // Show cached data immediately, then always refresh from API
+    if (mentionsLoaded && mentionsCache.length > 0) {
+      renderMentions(mentionsCache);
+    } else {
+      // Show loading state on first open
       const listContainer = document.getElementById("mentionsList");
       if (listContainer) {
         listContainer.innerHTML = `
@@ -5241,13 +5503,12 @@
           </div>
         `;
       }
-
-      loadMentions().then((mentions) => {
-        renderMentions(mentions);
-      });
-    } else {
-      renderMentions(mentionsCache);
     }
+
+    // Always fetch fresh data (handles deleted messages, new mentions)
+    loadMentions().then((mentions) => {
+      renderMentions(mentions);
+    });
   }
 
   function hideMentionsView() {
@@ -5290,6 +5551,16 @@
 
   // ── Page lifecycle cleanup ──
   function _messagesCleanup() {
+    // Save current channel's messages to cache before unload
+    if (state.currentChannel && state.messages.length > 0) {
+      const ch = state.currentChannel;
+      saveMessagesToCache(ch.type, ch.id, ch.projectId, state.messages);
+    }
+    if (_cacheSaveTimer) {
+      clearTimeout(_cacheSaveTimer);
+      _cacheSaveTimer = null;
+    }
+
     stopMessagePolling();
     if (state.messageSubscription) {
       try { state.messageSubscription.unsubscribe(); } catch (_) {}

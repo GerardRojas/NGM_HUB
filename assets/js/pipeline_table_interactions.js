@@ -236,33 +236,77 @@
   // ================================
   // GUARDAR EN BACKEND
   // ================================
+
+  // Field-key mapping shared by both draft and persisted saves
+  const FIELD_MAP = {
+    task: "task_description",
+    project: "project",
+    company: "company",
+    department: "department",
+    type: "type",
+    owner: "owner",
+    collaborator: "collaborator",
+    collaborators: "collaborators",
+    manager: "manager",
+    managers: "managers",
+    due: "due_date",
+    start: "start_date",
+    deadline: "deadline",
+    time_start: "time_start",
+    time_finish: "time_finish",
+    est: "estimated_hours",
+    priority: "priority",
+    status: "status",
+  };
+
+  /**
+   * Save a field value for a DRAFT row (local-only, no API call).
+   * After updating the local store we check if all required fields are
+   * now present — if so, tryPersistDraft will POST to the backend.
+   */
+  function saveDraftField(taskId, colKey, newValue, td, options = {}) {
+    const draft = window._pipelineDrafts?.get(taskId);
+    if (!draft) return;
+
+    const backendField = FIELD_MAP[colKey] || colKey;
+    draft[backendField] = newValue;
+
+    // Update cell display
+    if (!options.skipDisplayUpdate) {
+      updateCellDisplay(td, colKey, newValue);
+    }
+
+    // Remove the ✱ marker from this cell if the field now has a value
+    if (newValue) {
+      const marker = td.querySelector(".pm-draft-required");
+      if (marker) marker.remove();
+    }
+
+    // Brief "saved" flash (purely cosmetic — it's local)
+    td.classList.add("pm-cell-saved");
+    setTimeout(() => td.classList.remove("pm-cell-saved"), 800);
+
+    // Update dataset on the row
+    const tr = td.closest("tr");
+    if (tr && backendField) {
+      tr.dataset[backendField.replace(/_([a-z])/g, (_, c) => c.toUpperCase())] = newValue || "";
+    }
+
+    // Attempt to persist if all required fields are now present
+    if (window._pipelineDraftHelpers?.tryPersistDraft) {
+      window._pipelineDraftHelpers.tryPersistDraft(taskId);
+    }
+  }
+
   async function saveFieldToBackend(taskId, colKey, newValue, td, options = {}) {
+    // ── Draft row? Save locally instead of PATCHing ──
+    if (taskId && taskId.startsWith("__draft__")) {
+      saveDraftField(taskId, colKey, newValue, td, options);
+      return;
+    }
+
     const apiBase = window.API_BASE || "";
-
-    // Mapear columna UI -> campo backend
-    // Note: collaborators/managers (plural) are for array values from multi-select pickers
-    const fieldMap = {
-      task: "task_description",
-      project: "project",
-      company: "company",
-      department: "department",
-      type: "type",
-      owner: "owner",
-      collaborator: "collaborator",
-      collaborators: "collaborators",  // plural for multi-select
-      manager: "manager",
-      managers: "managers",            // plural for multi-select
-      due: "due_date",
-      start: "start_date",
-      deadline: "deadline",
-      time_start: "time_start",
-      time_finish: "time_finish",
-      est: "estimated_hours",
-      priority: "priority",
-      status: "status",
-    };
-
-    const backendField = fieldMap[colKey] || colKey;
+    const backendField = FIELD_MAP[colKey] || colKey;
     const payload = { [backendField]: newValue };
 
     // Mostrar estado de guardado
@@ -514,7 +558,7 @@
       }
     }
 
-    return `<span class="pm-badge-pill" style="background: ${color};">${escapeHtml(name)}</span>`;
+    return `<span class="pm-badge-pill" style="--badge-color: ${color};">${escapeHtml(name)}</span>`;
   }
 
   // ================================
@@ -1196,6 +1240,12 @@
     const taskId = tr.dataset?.taskId;
     if (!taskId) return;
 
+    // Draft rows can't open the edit modal — fill required fields first
+    if (taskId.startsWith("__draft__")) {
+      if (window.Toast) Toast.info("Draft Task", "Fill required fields (✱) first.");
+      return;
+    }
+
     // Build task object from row data
     const task = buildTaskFromRow(tr);
 
@@ -1258,6 +1308,14 @@
     hideContextMenu();
 
     if (action === "delete-task" && taskId) {
+      // Draft rows: just remove from DOM + map (no API call)
+      if (taskId.startsWith("__draft__")) {
+        window._pipelineDrafts?.delete(taskId);
+        const row = document.querySelector(`tr[data-task-id="${taskId}"]`);
+        if (row) row.remove();
+        if (window.Toast) Toast.success("Draft Removed", "Draft task discarded.");
+        return;
+      }
       deleteTaskById(taskId);
     }
   });

@@ -92,7 +92,7 @@
         const isSelected = itemId === selectedId;
         return `
           <div class="pm-badge-option ${isSelected ? 'is-selected' : ''}" data-value="${escapeHtml(item.id)}">
-            <span class="pm-badge-pill" style="background: ${item.color};">${escapeHtml(item.name)}</span>
+            <span class="pm-badge-pill" style="--badge-color: ${item.color};">${escapeHtml(item.name)}</span>
             <span class="pm-badge-check"></span>
           </div>
         `;
@@ -200,7 +200,7 @@
         return;
       }
       this.trigger.innerHTML = `
-        <span class="pm-badge-pill" style="background: ${this.selectedItem.color};">${escapeHtml(this.selectedItem.name)}</span>
+        <span class="pm-badge-pill" style="--badge-color: ${this.selectedItem.color};">${escapeHtml(this.selectedItem.name)}</span>
       `;
     }
 

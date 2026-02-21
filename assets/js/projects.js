@@ -12,6 +12,7 @@
   let originalProjects = [];
   let isEditMode = false;
   let selectedCompanyId = '';
+  let sharedSelectedProjectId = null;
   let metaData = {
     companies: [],
     statuses: [],
@@ -35,7 +36,12 @@
     btnCloseAddModal: document.getElementById('btnCloseAddModal'),
     btnCancelAddProject: document.getElementById('btnCancelAddProject'),
     btnConfirmAddProject: document.getElementById('btnConfirmAddProject'),
-    companyFilter: document.getElementById('companyFilter'),
+    // Company Picker
+    companyPicker: document.getElementById('projectsCompanyPicker'),
+    companyBtn: document.getElementById('projectsCompanyBtn'),
+    companyDot: document.getElementById('projectsCompanyDot'),
+    companyLabel: document.getElementById('projectsCompanyLabel'),
+    companyDropdown: document.getElementById('projectsCompanyDropdown'),
     // Add Project Form Fields
     newProjectName: document.getElementById('newProjectName'),
     newProjectCompany: document.getElementById('newProjectCompany'),
@@ -51,19 +57,106 @@
 
   async function init() {
     await loadMeta();
-    populateCompanyFilter();
+    renderCompanyPicker();
     await loadProjects();
     setupEventListeners();
   }
 
-  function populateCompanyFilter() {
-    if (!els.companyFilter) return;
-    els.companyFilter.innerHTML = '<option value="">All Companies</option>';
+  // ================================
+  // COMPANY PICKER
+  // ================================
+
+  function hashHue(str) {
+    if (window.hashStringToHue) return window.hashStringToHue(str);
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+    return ((h % 360) + 360) % 360;
+  }
+
+  function renderCompanyPicker() {
+    const dd = els.companyDropdown;
+    const label = els.companyLabel;
+    const dot = els.companyDot;
+    if (!dd) return;
+
+    let html = '<button class="company-picker-option' +
+      (selectedCompanyId === '' ? ' active' : '') +
+      '" data-company="">' +
+      '<span class="company-picker-opt-dot" style="background:#3ecf8e"></span>All Projects</button>';
+
     metaData.companies.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.company_id;
-      opt.textContent = c.name;
-      els.companyFilter.appendChild(opt);
+      const hue = hashHue(c.name || c.company_id || '');
+      const color = 'hsl(' + hue + ',70%,50%)';
+      const active = selectedCompanyId === c.company_id ? ' active' : '';
+      html += '<button class="company-picker-option' + active +
+        '" data-company="' + c.company_id + '">' +
+        '<span class="company-picker-opt-dot" style="background:' + color + '"></span>' +
+        (c.name || 'Unknown') + '</button>';
+    });
+
+    dd.innerHTML = html;
+
+    if (selectedCompanyId === '') {
+      if (label) label.textContent = 'All Projects';
+      if (dot) dot.style.background = '#3ecf8e';
+    } else {
+      const co = metaData.companies.find(c => c.company_id === selectedCompanyId);
+      if (label) label.textContent = co ? co.name : 'Company';
+      const hue = co ? hashHue(co.name || '') : 0;
+      if (dot) dot.style.background = 'hsl(' + hue + ',70%,50%)';
+    }
+  }
+
+  function toggleCompanyDropdown(show) {
+    const dd = els.companyDropdown;
+    const picker = els.companyPicker;
+    if (!dd || !picker) return;
+    const isOpen = dd.style.display !== 'none';
+    if (show === undefined) show = !isOpen;
+    dd.style.display = show ? 'flex' : 'none';
+    picker.classList.toggle('open', show);
+  }
+
+  function switchCompany(companyId) {
+    selectedCompanyId = companyId || '';
+    renderCompanyPicker();
+    renderProjectsTable();
+    populateProjectDropdowns();
+
+    // If current shared project doesn't belong to new company, reset it
+    if (sharedSelectedProjectId && selectedCompanyId) {
+      const proj = projects.find(p =>
+        String(p.project_id || p.id) === String(sharedSelectedProjectId)
+      );
+      if (proj && proj.source_company !== selectedCompanyId) {
+        setSharedProject(null);
+      }
+    }
+  }
+
+  // ================================
+  // SHARED PROJECT STATE
+  // ================================
+
+  function setSharedProject(projectId) {
+    sharedSelectedProjectId = projectId || null;
+    syncProjectDropdowns();
+  }
+
+  function syncProjectDropdowns() {
+    const selects = [
+      document.getElementById('dashboardProjectSelect'),
+      document.getElementById('timelineProjectSelect'),
+      document.getElementById('pb-projectFilter')
+    ];
+    selects.forEach(sel => {
+      if (!sel) return;
+      if (sharedSelectedProjectId) {
+        const optExists = Array.from(sel.options).some(o => o.value === String(sharedSelectedProjectId));
+        if (optExists) sel.value = sharedSelectedProjectId;
+      } else {
+        sel.value = '';
+      }
     });
   }
 
@@ -516,10 +609,26 @@
       createProject();
     });
 
-    // Company filter
-    els.companyFilter?.addEventListener('change', () => {
-      selectedCompanyId = els.companyFilter.value;
-      renderProjectsTable();
+    // Company picker toggle
+    els.companyBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleCompanyDropdown();
+    });
+
+    // Company dropdown option click (delegated)
+    els.companyDropdown?.addEventListener('click', (e) => {
+      const opt = e.target.closest('.company-picker-option');
+      if (!opt) return;
+      const companyId = opt.dataset.company || '';
+      toggleCompanyDropdown(false);
+      switchCompany(companyId);
+    });
+
+    // Close company dropdown on click outside
+    document.addEventListener('click', (e) => {
+      if (els.companyPicker && !els.companyPicker.contains(e.target)) {
+        toggleCompanyDropdown(false);
+      }
     });
 
     // Close modal on overlay click
@@ -564,31 +673,41 @@
   // TABS INTEGRATION (hooks into ngm_tabs.js)
   // ================================
 
+  // Populate all project dropdowns with company-filtered projects
+  function populateProjectDropdowns() {
+    const filtered = getFilteredProjects();
+    const selects = [
+      document.getElementById('dashboardProjectSelect'),
+      document.getElementById('timelineProjectSelect'),
+      document.getElementById('pb-projectFilter')
+    ];
+    selects.forEach(sel => {
+      if (!sel) return;
+      sel.innerHTML = '<option value="">Choose a project...</option>';
+      filtered.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.project_id || p.id;
+        opt.textContent = p.project_name || p.project_id;
+        sel.appendChild(opt);
+      });
+      // Restore shared selection if option exists
+      if (sharedSelectedProjectId) {
+        const optExists = Array.from(sel.options).some(
+          o => o.value === String(sharedSelectedProjectId)
+        );
+        if (optExists) sel.value = sharedSelectedProjectId;
+      }
+    });
+  }
+
   function initTabs() {
     if (!window.NGMTabs) return;
-
-    // Populate project dropdowns in dashboard/timeline tabs
-    function populateProjectDropdowns() {
-      const selects = [
-        document.getElementById('dashboardProjectSelect'),
-        document.getElementById('timelineProjectSelect')
-      ];
-      selects.forEach(sel => {
-        if (!sel) return;
-        sel.innerHTML = '<option value="">Choose a project...</option>';
-        projects.forEach(p => {
-          const opt = document.createElement('option');
-          opt.value = p.project_id || p.id;
-          opt.textContent = p.project_name || p.project_id;
-          sel.appendChild(opt);
-        });
-      });
-    }
 
     // Dashboard project selector
     const dashSel = document.getElementById('dashboardProjectSelect');
     if (dashSel) {
       dashSel.addEventListener('change', () => {
+        setSharedProject(dashSel.value);
         if (dashSel.value && window.ProjectDashboard) {
           window.ProjectDashboard.load(dashSel.value);
         }
@@ -599,30 +718,41 @@
     const tlSel = document.getElementById('timelineProjectSelect');
     if (tlSel) {
       tlSel.addEventListener('change', () => {
+        setSharedProject(tlSel.value);
         if (tlSel.value && window.ProjectTimeline) {
           window.ProjectTimeline.load(tlSel.value);
         }
       });
     }
 
-    // Permission check for KPIs tab
-    function canViewKPIs() {
+    // Permission checks for gated tabs
+    function canViewTab(moduleKey) {
       try {
         const perms = JSON.parse(localStorage.getItem('sidebar_permissions') || '[]');
-        const mod = perms.find(p => p.module_key === 'project_kpis');
+        const mod = perms.find(p => p.module_key === moduleKey);
         return mod ? mod.can_view : false;
       } catch { return false; }
     }
 
     window.NGMTabs.init('projects-tabs', {
       permissionCheck: (tabKey) => {
-        if (tabKey === 'kpis') return canViewKPIs();
+        if (tabKey === 'kpis') return canViewTab('project_kpis');
+        if (tabKey === 'budgets') return canViewTab('budgets');
         return true;
       },
       onSwitch: (tabKey) => {
-        // Populate dropdowns when switching to dashboard/timeline tabs
-        if (tabKey === 'dashboard' || tabKey === 'timeline') {
+        // Populate dropdowns when switching to project-specific tabs
+        if (tabKey === 'dashboard' || tabKey === 'timeline' || tabKey === 'budgets') {
           populateProjectDropdowns();
+        }
+
+        // Auto-load dashboard if project is already selected
+        if (tabKey === 'dashboard' && sharedSelectedProjectId && window.ProjectDashboard) {
+          window.ProjectDashboard.load(sharedSelectedProjectId);
+        }
+        // Auto-load timeline if project is already selected
+        if (tabKey === 'timeline' && sharedSelectedProjectId && window.ProjectTimeline) {
+          window.ProjectTimeline.load(sharedSelectedProjectId);
         }
         // Load KPIs when switching to kpis tab
         if (tabKey === 'kpis' && window.ProjectKPIs) {
@@ -631,6 +761,14 @@
         // Load Scorecard when switching to scorecard tab
         if (tabKey === 'scorecard' && window.ProjectScorecard) {
           window.ProjectScorecard.load();
+        }
+        // Load Budgets when switching to budgets tab
+        if (tabKey === 'budgets' && window.ProjectBudgets) {
+          window.ProjectBudgets.load();
+          // After load, if shared project is set, trigger its selection
+          if (sharedSelectedProjectId) {
+            window.ProjectBudgets.selectProject(sharedSelectedProjectId);
+          }
         }
         // Unload modules when leaving tabs
         if (tabKey !== 'dashboard' && window.ProjectDashboard) {
@@ -645,6 +783,9 @@
         if (tabKey !== 'scorecard' && window.ProjectScorecard) {
           window.ProjectScorecard.unload();
         }
+        if (tabKey !== 'budgets' && window.ProjectBudgets) {
+          window.ProjectBudgets.unload();
+        }
       }
     });
   }
@@ -653,7 +794,13 @@
   function getProjects() { return projects; }
 
   // Expose for external access
-  window.ProjectsPage = { getProjects };
+  window.ProjectsPage = {
+    getProjects,
+    getFilteredProjects,
+    getSharedProjectId: function() { return sharedSelectedProjectId; },
+    getSelectedCompanyId: function() { return selectedCompanyId; },
+    setSharedProject
+  };
 
   // ================================
   // START

@@ -187,11 +187,21 @@
                                     Health Check
                                 </button>
                                 <!-- QBO Buttons (only visible in QBO mode) -->
+                                <span id="qboStatusIndicator" class="qbo-status-indicator hidden">
+                                    <span id="qboStatusDot" class="qbo-dot"></span>
+                                    <span id="qboStatusText">Checking...</span>
+                                </span>
+                                <button type="button" class="btn-toolbar btn-toolbar-qbo hidden" id="btnConnectQBO">
+                                    Connect QBO
+                                </button>
                                 <button type="button" class="btn-toolbar btn-toolbar-qbo hidden" id="btnSyncQBO" disabled>
-                                    <span style="font-size: 14px;">🔄</span> Sync QBO
+                                    Sync QBO
                                 </button>
                                 <button type="button" class="btn-toolbar btn-toolbar-qbo hidden" id="btnQBOMapping">
-                                    <span style="font-size: 14px;">🔗</span> Mapping
+                                    Mapping
+                                </button>
+                                <button type="button" class="btn-toolbar btn-toolbar-qbo btn-toolbar-qbo-danger hidden" id="btnDisconnectQBO">
+                                    Disconnect
                                 </button>
                                 <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnReconcile" disabled>
                                     Conciliation View

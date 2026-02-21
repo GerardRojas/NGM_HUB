@@ -81,8 +81,15 @@
           </div>
 
           <div class="pm-form-field">
-            <label class="pm-form-label">Type <span class="required">*</span></label>
+            <label class="pm-form-label pm-form-label--with-action">
+              Preset Task <span class="required">*</span>
+              <button type="button" id="nt_manage_presets_btn" class="pm-form-label-action" title="Manage Preset Tasks">Manage</button>
+            </label>
             <div id="nt_type_picker"></div>
+            <div id="nt_custom_time_wrap" class="pm-form-subfield" style="display:none;">
+              <label class="pm-form-label pm-form-sublabel">Estimated Time (hours) <span class="required">*</span></label>
+              <input id="nt_custom_time" class="pm-form-input" type="number" min="0.5" step="0.5" placeholder="e.g. 4" />
+            </div>
           </div>
 
           <div class="pm-form-field">
@@ -144,6 +151,9 @@
 
     // Initialize catalog pickers
     initCatalogPickers();
+
+    // Initialize priority badge picker
+    initPriorityBadgePicker();
   }
 
   // ================================
@@ -236,29 +246,57 @@
       });
     }
 
-    // Type picker
+    // Preset Task picker (formerly "Type")
     const typeContainer = qs('nt_type_picker');
     if (typeContainer) {
       typePicker = window.createCatalogPicker(typeContainer, {
         catalogType: 'type',
-        placeholder: 'Select type...',
+        placeholder: 'Select preset task...',
+        staticItems: [{ id: '_custom', name: 'Custom', color: '#6c757d' }],
         onChange: (item) => {
-          console.log('[NewTask] Type selected:', item);
+          console.log('[NewTask] Preset task selected:', item);
+          const wrap = qs('nt_custom_time_wrap');
+          if (wrap) {
+            const isCustom = item && item.id === '_custom';
+            wrap.style.display = isCustom ? '' : 'none';
+            if (!isCustom) {
+              const inp = qs('nt_custom_time');
+              if (inp) inp.value = '';
+            }
+          }
         }
       });
     }
 
-    // Priority picker
-    const priorityContainer = qs('nt_priority_picker');
-    if (priorityContainer) {
-      priorityPicker = window.createCatalogPicker(priorityContainer, {
-        catalogType: 'priority',
-        placeholder: 'Select priority...',
-        onChange: (item) => {
-          console.log('[NewTask] Priority selected:', item);
-        }
-      });
+  }
+
+  // ================================
+  // Initialize Priority Badge Picker
+  // ================================
+  function initPriorityBadgePicker(_retries = 0) {
+    if (typeof window.BadgePicker !== 'function') {
+      if (_retries >= 30) {
+        console.error('[NewTask] BadgePicker failed to load after 3s, giving up');
+        return;
+      }
+      setTimeout(() => initPriorityBadgePicker(_retries + 1), 100);
+      return;
     }
+
+    const container = qs('nt_priority_picker');
+    if (!container) return;
+
+    const items = [
+      { id: 'critical', name: 'Critical', color: '#ef4444' },
+      { id: 'high',     name: 'High',     color: '#f97316' },
+      { id: 'medium',   name: 'Medium',   color: '#eab308' },
+      { id: 'low',      name: 'Low',      color: '#3b82f6' },
+    ];
+
+    priorityPicker = new window.BadgePicker(container, {
+      items: items,
+      placeholder: 'Select priority...',
+    });
   }
 
   // ================================
@@ -292,13 +330,18 @@
       notes: qs("nt_notes")?.value?.trim() || null,
     };
 
+    // Check if Custom preset was selected
+    const isCustomType = ui.type && ui.type.id === '_custom';
+    const customTime = parseFloat(qs("nt_custom_time")?.value) || 0;
+
     // Required fields (frontend guard)
     const missing = [];
     if (!ui.task) missing.push("Task Description");
     if (!ui.owner) missing.push("Owner");
     if (!ui.company) missing.push("Company");
-    if (!ui.type) missing.push("Type");
+    if (!ui.type) missing.push("Preset Task");
     if (!ui.department) missing.push("Department");
+    if (isCustomType && customTime <= 0) missing.push("Estimated Time");
 
     if (missing.length) {
       if (window.Toast) {
@@ -310,13 +353,13 @@
     }
 
     // UI -> backend payload (send IDs, not names)
-    return {
+    const payload = {
       task_description: ui.task,
       company: ui.company?.id || null,
       project: ui.project?.id || null,
       owner: ui.owner?.id || null,
       collaborators: ui.collaborators.length > 0 ? ui.collaborators.map(u => u.id) : null,
-      type: ui.type?.id || null,
+      type: isCustomType ? null : (ui.type?.id || null),
       department: ui.department?.id || null,
       priority: ui.priority?.id || null,
       due_date: ui.due,
@@ -326,6 +369,13 @@
       // forced by business rule
       status: "not started",
     };
+
+    // Custom type: include estimated_time (hours)
+    if (isCustomType) {
+      payload.estimated_time = customTime;
+    }
+
+    return payload;
   }
 
   function bind() {

@@ -21,7 +21,8 @@ window.ProjectDashboard = (() => {
     'chart-by-category',
     'chart-top-vendors',
     'chart-monthly-spend',
-    'chart-cost-projection'
+    'chart-cost-projection',
+    'chart-expense-timeline'
   ];
 
   // ── Helpers ────────────────────────────────────────────────────────
@@ -118,16 +119,16 @@ window.ProjectDashboard = (() => {
 
       // Card 1: Budget Total
       '    <div class="pd-kpi-card">' +
-      '      <span class="pd-kpi-label">Presupuesto Total</span>' +
+      '      <span class="pd-kpi-label">Total Budget</span>' +
       '      <span class="pd-kpi-value pd-kpi-value--neutral">' + esc(fmtMoney(budgetTotal)) + '</span>' +
-      '      <span class="pd-kpi-sub">Budget asignado</span>' +
+      '      <span class="pd-kpi-sub">Allocated budget</span>' +
       '    </div>' +
 
       // Card 2: Spent
       '    <div class="pd-kpi-card">' +
-      '      <span class="pd-kpi-label">Gastado</span>' +
+      '      <span class="pd-kpi-label">Spent</span>' +
       '      <span class="pd-kpi-value' + (tier ? ' pd-kpi-value--' + tier : '') + '">' + esc(fmtMoney(spent)) + '</span>' +
-      '      <span class="pd-kpi-sub">' + esc(fmtPct(spentPct)) + ' del presupuesto</span>' +
+      '      <span class="pd-kpi-sub">' + esc(fmtPct(spentPct)) + ' of budget</span>' +
       '      <div class="pd-kpi-progress">' +
       '        <div class="pd-kpi-progress-fill' + (tier ? ' pd-kpi-progress-fill--' + tier : '') + '" style="width:' + clamp(spentPct, 0, 100) + '%"></div>' +
       '      </div>' +
@@ -135,26 +136,45 @@ window.ProjectDashboard = (() => {
 
       // Card 3: Pending Auth
       '    <div class="pd-kpi-card">' +
-      '      <span class="pd-kpi-label">Pendientes Autorizacion</span>' +
+      '      <span class="pd-kpi-label">Pending Authorization</span>' +
       '      <span class="pd-kpi-value pd-kpi-value--warning">' + pendingCount + '</span>' +
-      '      <span class="pd-kpi-sub">' + esc(fmtMoney(pendingAmt)) + ' por autorizar</span>' +
+      '      <span class="pd-kpi-sub">' + esc(fmtMoney(pendingAmt)) + ' to authorize</span>' +
       '    </div>' +
 
       // Card 4: Pending Receipts
       '    <div class="pd-kpi-card">' +
-      '      <span class="pd-kpi-label">Recibos Pendientes</span>' +
+      '      <span class="pd-kpi-label">Pending Receipts</span>' +
       '      <span class="pd-kpi-value' + (receiptCount > 0 ? ' pd-kpi-value--warning' : ' pd-kpi-value--neutral') + '">' + receiptCount + '</span>' +
-      '      <span class="pd-kpi-sub">sin comprobante</span>' +
+      '      <span class="pd-kpi-sub">without receipt</span>' +
       '    </div>' +
 
+      '  </div>' +
+
+      // ── Expense Timeline (rendered by ProjectExpenseChart module) ──
+      '  <div id="expense-timeline-container"></div>' +
+
+      // ── Full-width Line Chart: Budget vs Actual ──
+      '  <div class="pd-chart-card pd-chart-card--full">' +
+      '    <h3 class="pd-chart-title">Budget vs Actual</h3>' +
+      '    <div class="pd-chart-wrap pd-chart-wrap--tall">' +
+      '      <canvas id="chart-cost-projection"></canvas>' +
+      '    </div>' +
+      '  </div>' +
+
+      // ── Full-width Line Chart: Monthly Spend ──
+      '  <div class="pd-chart-card pd-chart-card--full">' +
+      '    <h3 class="pd-chart-title">Monthly Spend</h3>' +
+      '    <div class="pd-chart-wrap">' +
+      '      <canvas id="chart-monthly-spend"></canvas>' +
+      '    </div>' +
       '  </div>' +
 
       // ── Charts Row (2 columns) ──
       '  <div class="pd-charts-row">' +
 
-      // Doughnut: Gasto por Categoria
+      // Doughnut: Spend by Category
       '    <div class="pd-chart-card">' +
-      '      <h3 class="pd-chart-title">Gasto por Categor\u00EDa</h3>' +
+      '      <h3 class="pd-chart-title">Spend by Category</h3>' +
       '      <div class="pd-chart-wrap">' +
       '        <canvas id="chart-by-category"></canvas>' +
       '      </div>' +
@@ -168,22 +188,6 @@ window.ProjectDashboard = (() => {
       '      </div>' +
       '    </div>' +
 
-      '  </div>' +
-
-      // ── Full-width Line Chart: Gasto Mensual ──
-      '  <div class="pd-chart-card pd-chart-card--full">' +
-      '    <h3 class="pd-chart-title">Gasto Mensual</h3>' +
-      '    <div class="pd-chart-wrap">' +
-      '      <canvas id="chart-monthly-spend"></canvas>' +
-      '    </div>' +
-      '  </div>' +
-
-      // ── Full-width Line Chart: Budget vs Actual (Cost Projection) ──
-      '  <div class="pd-chart-card pd-chart-card--full">' +
-      '    <h3 class="pd-chart-title">Budget vs Actual</h3>' +
-      '    <div class="pd-chart-wrap pd-chart-wrap--tall">' +
-      '      <canvas id="chart-cost-projection"></canvas>' +
-      '    </div>' +
       '  </div>' +
 
       // ── Bottom Row: Daneel + Tasks ──
@@ -290,9 +294,9 @@ window.ProjectDashboard = (() => {
     return '' +
       '<div class="pd-error">' +
         ICONS.error +
-      '  <h4 class="pd-error-title">No se pudo cargar el dashboard</h4>' +
-      '  <p class="pd-error-msg">' + esc(message || 'Error desconocido') + '</p>' +
-      '  <button class="pd-error-retry" onclick="window.ProjectDashboard.reload()">Reintentar</button>' +
+      '  <h4 class="pd-error-title">Failed to load dashboard</h4>' +
+      '  <p class="pd-error-msg">' + esc(message || 'Unknown error') + '</p>' +
+      '  <button class="pd-error-retry" onclick="window.ProjectDashboard.reload()">Retry</button>' +
       '</div>';
   }
 
@@ -311,10 +315,10 @@ window.ProjectDashboard = (() => {
       '#14b8a6', '#6366f1', '#eab308', '#06b6d4'
     ];
 
-    // ── Doughnut: Gasto por Categoria ──
+    // ── Doughnut: Spend by Category ──
     var byCategory = data.by_category || [];
     if (byCategory.length > 0) {
-      var catLabels = byCategory.map(function(c) { return c.category || c.name || 'Sin categoria'; });
+      var catLabels = byCategory.map(function(c) { return c.category || c.name || 'Uncategorized'; });
       var catData   = byCategory.map(function(c) { return Number(c.amount || c.total || 0); });
       var catColors = byCategory.map(function(_, i) { return colors[i % colors.length]; });
 
@@ -324,29 +328,29 @@ window.ProjectDashboard = (() => {
         colors: catColors
       });
     } else {
-      showChartEmpty('chart-by-category', 'Sin datos de categor\u00EDas');
+      showChartEmpty('chart-by-category', 'No category data');
     }
 
     // ── Horizontal Bar: Top Vendors ──
     var topVendors = data.top_vendors || [];
     if (topVendors.length > 0) {
-      var vendorLabels = topVendors.map(function(v) { return v.vendor_name || v.vendor || v.name || 'Desconocido'; });
+      var vendorLabels = topVendors.map(function(v) { return v.vendor_name || v.vendor || v.name || 'Unknown'; });
       var vendorData   = topVendors.map(function(v) { return Number(v.amount || v.total || 0); });
 
       Charts.horizontalBar('chart-top-vendors', {
         labels: vendorLabels,
         datasets: [{
-          label: 'Gasto',
+          label: 'Spend',
           data: vendorData,
           backgroundColor: colors[0],
           borderRadius: 4
         }]
       });
     } else {
-      showChartEmpty('chart-top-vendors', 'Sin datos de vendors');
+      showChartEmpty('chart-top-vendors', 'No vendor data');
     }
 
-    // ── Line: Gasto Mensual ──
+    // ── Line: Monthly Spend ──
     var monthlySpend = data.monthly_spend || [];
     if (monthlySpend.length > 0) {
       var monthLabels = monthlySpend.map(function(m) { return m.month || m.label || ''; });
@@ -355,7 +359,7 @@ window.ProjectDashboard = (() => {
       Charts.lineChart('chart-monthly-spend', {
         labels: monthLabels,
         datasets: [{
-          label: 'Gasto',
+          label: 'Spend',
           data: monthData,
           borderColor: colors[0],
           backgroundColor: 'rgba(62, 207, 142, 0.1)',
@@ -366,7 +370,7 @@ window.ProjectDashboard = (() => {
         }]
       });
     } else {
-      showChartEmpty('chart-monthly-spend', 'Sin datos mensuales');
+      showChartEmpty('chart-monthly-spend', 'No monthly data');
     }
   }
 
@@ -396,7 +400,7 @@ window.ProjectDashboard = (() => {
     var projection = d.projection || [];
 
     if (cumActual.length === 0 && projection.length === 0) {
-      showChartEmpty('chart-cost-projection', 'Sin datos de presupuesto');
+      showChartEmpty('chart-cost-projection', 'No budget data');
       return;
     }
 
@@ -524,7 +528,7 @@ window.ProjectDashboard = (() => {
 
       // API returned null/empty
       if (!data) {
-        container.innerHTML = buildErrorHTML('El servidor no devolvio datos.');
+        container.innerHTML = buildErrorHTML('The server returned no data.');
         return;
       }
 
@@ -534,6 +538,12 @@ window.ProjectDashboard = (() => {
       container.innerHTML = buildDashboardHTML(data);
       renderCharts(data);
       if (bvaData) renderCostProjectionChart(bvaData);
+
+      // Load Expense Timeline chart (async, non-blocking)
+      if (window.ProjectExpenseChart) {
+        window.ProjectExpenseChart.load(pid);
+      }
+
       _loaded = true;
 
     } catch (err) {
@@ -549,6 +559,7 @@ window.ProjectDashboard = (() => {
    */
   function unload() {
     destroyCharts();
+    if (window.ProjectExpenseChart) window.ProjectExpenseChart.unload();
     _loaded = false;
     _currentProjectId = null;
     if (_abortController) {

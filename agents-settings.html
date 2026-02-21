@@ -754,32 +754,66 @@
             width: 100%; border-collapse: collapse; font-size: 11px;
         }
         .daneel-report-table th {
-            text-align: left; padding: 6px 8px; font-size: 10px;
+            text-align: left; padding: 8px 10px; font-size: 10px;
             font-weight: 600; color: var(--ngm-text-muted);
-            text-transform: uppercase; letter-spacing: 0.3px;
-            border-bottom: 1px solid var(--ngm-border);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--ngm-border);
             position: sticky; top: 0; background: var(--ngm-bg-card);
-            z-index: 1;
+            z-index: 2;
         }
         .daneel-report-table td {
-            padding: 4px 8px; border-bottom: 1px solid var(--ngm-border);
+            padding: 5px 10px; border-bottom: 1px solid rgba(255,255,255,0.04);
             color: var(--ngm-text); vertical-align: middle;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .daneel-report-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .daneel-report-table tr:hover td { background: rgba(255,255,255,0.03); }
+
+        /* Report-level header (Project / Bill run) */
         .daneel-report-table .group-header td {
-            padding: 6px 8px; font-weight: 600; font-size: 10px;
-            color: var(--ngm-text-muted); background: var(--ngm-bg-input);
-            text-transform: uppercase; letter-spacing: 0.3px;
+            padding: 10px 10px 6px; font-weight: 600; font-size: 10px;
+            color: var(--ngm-text-muted); background: transparent;
+            text-transform: uppercase; letter-spacing: 0.4px;
+            border-bottom: 1px solid var(--ngm-border);
         }
+
+        /* Bill sub-group header */
+        .daneel-report-table .bill-group-header td {
+            padding: 6px 10px 4px; font-size: 10px; font-weight: 600;
+            color: var(--ngm-text); background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .bill-group-label {
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .bill-group-id {
+            font-family: 'SF Mono', 'Consolas', monospace; font-size: 10px;
+            color: hsl(217 80% 65%); font-weight: 600;
+        }
+        .bill-group-summary {
+            font-weight: 400; color: var(--ngm-text-muted); font-size: 10px;
+        }
+        .bill-group-total {
+            float: right; font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 10px; color: var(--ngm-text-muted); font-weight: 500;
+        }
+
+        /* Indent rows inside a bill group */
+        .daneel-report-table .bill-child td:first-child {
+            padding-left: 20px;
+        }
+        .daneel-report-table .bill-child:last-of-type td {
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
         .daneel-decision-badge {
-            display: inline-block; padding: 1px 6px; border-radius: 3px;
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
             font-size: 10px; font-weight: 600; color: #fff;
         }
         .daneel-check-pill {
             display: inline-flex; align-items: center; gap: 2px;
-            padding: 1px 5px; border-radius: 3px; font-size: 9px;
-            font-weight: 500; margin-right: 2px;
+            padding: 2px 6px; border-radius: 4px; font-size: 9px;
+            font-weight: 500; margin-right: 3px;
         }
 
         .daneel-run-btn {
@@ -790,8 +824,9 @@
         .daneel-run-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .daneel-badge {
-            padding: 1px 6px; border-radius: 4px; font-size: 10px;
+            padding: 2px 7px; border-radius: 4px; font-size: 10px;
             color: #fff; margin-right: 4px; display: inline-block;
+            font-weight: 600;
         }
         .daneel-badge-auth { background: #10b981; }
         .daneel-badge-missing { background: #f59e0b; }
@@ -1736,7 +1771,7 @@
                                                         </button>
                                                     </div>
                                                 </div>
-                                                <div id="daneelAuthReports" style="max-height: 480px; overflow-y: auto; border: 1px solid var(--ngm-border); border-radius: 8px;">
+                                                <div id="daneelAuthReports" style="max-height: 560px; overflow-y: auto; border: 1px solid var(--ngm-border); border-radius: 8px;">
                                                     <div style="text-align: center; padding: 24px; color: var(--ngm-text-muted); font-size: 12px;">Loading reports...</div>
                                                 </div>
                                             </div>
@@ -3755,6 +3790,49 @@
             var decColors = { authorized: '#10b981', missing_info: '#f59e0b', duplicate: '#8b5cf6', escalated: '#ef4444', info: '#6b7280' };
             var checkLabels = { health: 'Health', bill_hint: 'Hint', bill_hint_vision: 'Vision', receipt_hash: 'Hash', duplicate: 'Dup R1-R9', gpt_resolve: 'GPT', smart_resolve: 'Smart' };
 
+            function buildCheckPills(d) {
+                var pills = '';
+                if (d.checks && d.checks.length > 0) {
+                    d.checks.forEach(function(c) {
+                        var label = checkLabels[c.check] || c.check;
+                        var bg = c.passed ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+                        var fg = c.passed ? '#10b981' : '#ef4444';
+                        var icon = c.passed ? '\u2713' : '\u2717';
+                        pills += '<span class="daneel-check-pill" style="background:' + bg + ';color:' + fg + ';" title="' + _escapeHtml(c.detail || '') + '">'
+                            + icon + ' ' + _escapeHtml(label) + '</span>';
+                    });
+                } else if (d.reason) {
+                    pills = '<span style="font-size:10px;color:var(--ngm-text-muted);">' + _escapeHtml((d.rule ? d.rule + ': ' : '') + d.reason).substring(0, 80) + '</span>';
+                }
+                return pills;
+            }
+
+            function buildExpenseRow(d, cssClass) {
+                var color = decColors[d.decision] || 'var(--ngm-text-muted)';
+                var amt = '$' + (d.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                return '<tr class="' + (cssClass || '') + '">'
+                    + '<td style="max-width:140px;" title="' + _escapeHtml(d.vendor || '') + '">' + _escapeHtml(d.vendor || '-') + '</td>'
+                    + '<td>' + amt + '</td>'
+                    + '<td>' + (d.date || '-') + '</td>'
+                    + '<td><span class="daneel-decision-badge" style="background:' + color + ';">' + (d.decision || '-').replace('_', ' ') + '</span></td>'
+                    + '<td style="white-space:normal; max-width:280px;">' + buildCheckPills(d) + '</td>'
+                    + '</tr>';
+            }
+
+            function groupByBill(decisions) {
+                var groups = {};
+                var order = [];
+                decisions.forEach(function(d) {
+                    var key = (d.bill_id || '').trim() || '__none__';
+                    if (!groups[key]) {
+                        groups[key] = [];
+                        order.push(key);
+                    }
+                    groups[key].push(d);
+                });
+                return { groups: groups, order: order };
+            }
+
             fetch(API_BASE + '/daneel/auto-auth/reports?limit=20', { headers: _agentAuthHeaders() })
                 .then(function(resp) { return resp.ok ? resp.json() : null; })
                 .then(function(result) {
@@ -3765,10 +3843,10 @@
 
                     var html = '<table class="daneel-report-table">'
                         + '<thead><tr>'
-                        + '<th style="width: 140px;">Vendor</th>'
-                        + '<th style="width: 80px;">Amount</th>'
-                        + '<th style="width: 75px;">Date</th>'
-                        + '<th style="width: 75px;">Decision</th>'
+                        + '<th style="width:140px;">Vendor</th>'
+                        + '<th style="width:90px;">Amount</th>'
+                        + '<th style="width:80px;">Date</th>'
+                        + '<th style="width:90px;">Decision</th>'
                         + '<th>Checks</th>'
                         + '</tr></thead><tbody>';
 
@@ -3781,12 +3859,12 @@
                         var nameStr = r.project_name || '';
                         var decisions = r.decisions || [];
 
-                        // Group header row
+                        // Report-level header with summary badges
                         var badges = '';
-                        if (r.authorized > 0) badges += '<span class="daneel-badge daneel-badge-auth">' + r.authorized + ' auth</span>';
-                        if (r.missing_info > 0) badges += '<span class="daneel-badge daneel-badge-missing">' + r.missing_info + ' missing</span>';
-                        if (r.duplicates > 0) badges += '<span class="daneel-badge daneel-badge-dup">' + r.duplicates + ' dup</span>';
-                        if (r.escalated > 0) badges += '<span class="daneel-badge daneel-badge-esc">' + r.escalated + ' esc</span>';
+                        if (r.authorized > 0) badges += '<span class="daneel-badge daneel-badge-auth">' + r.authorized + ' AUTH</span>';
+                        if (r.missing_info > 0) badges += '<span class="daneel-badge daneel-badge-missing">' + r.missing_info + ' MISSING</span>';
+                        if (r.duplicates > 0) badges += '<span class="daneel-badge daneel-badge-dup">' + r.duplicates + ' DUP</span>';
+                        if (r.escalated > 0) badges += '<span class="daneel-badge daneel-badge-esc">' + r.escalated + ' ESC</span>';
 
                         html += '<tr class="group-header"><td colspan="5">'
                             + typeLabel + ' &middot; ' + _escapeHtml(nameStr) + ' &middot; ' + ts
@@ -3794,35 +3872,52 @@
                             + '</td></tr>';
 
                         if (decisions.length === 0) {
-                            html += '<tr><td colspan="5" style="color: var(--ngm-text-muted); font-style: italic; padding: 4px 8px;">No decisions</td></tr>';
+                            html += '<tr><td colspan="5" style="color:var(--ngm-text-muted);font-style:italic;padding:6px 10px;">No decisions</td></tr>';
+                            return;
                         }
 
-                        decisions.forEach(function(d) {
-                            var color = decColors[d.decision] || 'var(--ngm-text-muted)';
-                            var amt = '$' + (d.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                        // Group decisions by bill_id
+                        var billData = groupByBill(decisions);
+                        var hasManyBills = billData.order.length > 1 || (billData.order.length === 1 && billData.order[0] !== '__none__');
 
-                            // Build compact check pills
-                            var pills = '';
-                            if (d.checks && d.checks.length > 0) {
-                                d.checks.forEach(function(c) {
-                                    var label = checkLabels[c.check] || c.check;
-                                    var bg = c.passed ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)';
-                                    var fg = c.passed ? '#10b981' : '#ef4444';
-                                    var icon = c.passed ? '\u2713' : '\u2717';
-                                    pills += '<span class="daneel-check-pill" style="background:' + bg + ';color:' + fg + ';" title="' + _escapeHtml(c.detail || '') + '">'
-                                        + icon + ' ' + _escapeHtml(label) + '</span>';
+                        billData.order.forEach(function(billKey) {
+                            var items = billData.groups[billKey];
+
+                            if (hasManyBills && billKey !== '__none__') {
+                                // Bill sub-group header
+                                var billTotal = 0;
+                                var billAuth = 0;
+                                var billMissing = 0;
+                                items.forEach(function(d) {
+                                    billTotal += (d.amount || 0);
+                                    if (d.decision === 'authorized') billAuth++;
+                                    if (d.decision === 'missing_info') billMissing++;
                                 });
-                            } else if (d.reason) {
-                                pills = '<span style="font-size:10px;color:var(--ngm-text-muted);">' + _escapeHtml((d.rule ? d.rule + ': ' : '') + d.reason).substring(0, 60) + '</span>';
+                                var totalStr = '$' + billTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                                var billSummary = items.length + ' expense' + (items.length > 1 ? 's' : '');
+                                if (billAuth > 0 && billAuth === items.length) billSummary += ' - all authorized';
+                                else if (billMissing > 0) billSummary += ' - ' + billMissing + ' need info';
+
+                                html += '<tr class="bill-group-header"><td colspan="5">'
+                                    + '<span class="bill-group-label">'
+                                    + '<span class="bill-group-id">Bill #' + _escapeHtml(billKey) + '</span>'
+                                    + '<span class="bill-group-summary">' + billSummary + '</span>'
+                                    + '</span>'
+                                    + '<span class="bill-group-total">' + totalStr + '</span>'
+                                    + '</td></tr>';
+                            } else if (hasManyBills && billKey === '__none__') {
+                                html += '<tr class="bill-group-header"><td colspan="5">'
+                                    + '<span class="bill-group-label">'
+                                    + '<span class="bill-group-id" style="color:var(--ngm-text-muted);">No Bill #</span>'
+                                    + '<span class="bill-group-summary">' + items.length + ' expense' + (items.length > 1 ? 's' : '') + '</span>'
+                                    + '</span>'
+                                    + '</td></tr>';
                             }
 
-                            html += '<tr>'
-                                + '<td style="max-width:140px;" title="' + _escapeHtml(d.vendor || '') + '">' + _escapeHtml(d.vendor || '-') + '</td>'
-                                + '<td>' + amt + '</td>'
-                                + '<td>' + (d.date || '-') + '</td>'
-                                + '<td><span class="daneel-decision-badge" style="background:' + color + ';">' + (d.decision || '-') + '</span></td>'
-                                + '<td style="white-space:normal; max-width:220px;">' + pills + '</td>'
-                                + '</tr>';
+                            items.forEach(function(d) {
+                                html += buildExpenseRow(d, hasManyBills ? 'bill-child' : '');
+                            });
                         });
                     });
 
@@ -3977,6 +4072,8 @@
             btn.disabled = true;
             btn.textContent = 'Processing...';
             statusEl.textContent = 'Running -- this may take a moment...';
+            var t0 = performance.now();
+            console.log('[DaneelAutoAuth] Backlog run started');
 
             fetch(API_BASE + '/daneel/auto-auth/run-backlog', {
                 method: 'POST',
@@ -3984,6 +4081,8 @@
             })
             .then(function(resp) { return resp.json(); })
             .then(function(result) {
+                var elapsed = Math.round(performance.now() - t0);
+                console.log('[DaneelAutoAuth] Backlog run completed in ' + elapsed + 'ms', result.timings || {});
                 btn.disabled = false;
                 btn.textContent = 'Process Backlog';
                 if (result.status === 'disabled') {
@@ -3995,7 +4094,7 @@
                     + (result.missing_info || 0) + ' missing info, '
                     + (result.duplicates || 0) + ' duplicates, '
                     + (result.escalated || 0) + ' escalated';
-                statusEl.textContent = 'Done: ' + summary;
+                statusEl.textContent = 'Done: ' + summary + ' (' + elapsed + 'ms)';
                 if (window.Toast) window.Toast.success('Backlog processed: ' + summary);
                 // Refresh stats and reports (invalidate cache for fresh data)
                 invalidateCache('/daneel/auto-auth');
@@ -4003,6 +4102,8 @@
                 loadDaneelAuthReports();
             })
             .catch(function(e) {
+                var elapsed = Math.round(performance.now() - t0);
+                console.error('[DaneelAutoAuth] Backlog run failed in ' + elapsed + 'ms', e);
                 btn.disabled = false;
                 btn.textContent = 'Process Backlog';
                 statusEl.textContent = 'Error: ' + e.message;
@@ -4025,11 +4126,15 @@
                     var pid = btn.dataset.projectId;
                     btn.disabled = true;
                     btn.textContent = '...';
+                    var t0 = performance.now();
+                    console.log('[DaneelAutoAuth] Project run started | project=' + pid);
                     fetch(API_BASE + '/daneel/auto-auth/run?project_id=' + encodeURIComponent(pid), {
                         method: 'POST',
                         headers: _agentAuthHeaders()
                     }).then(function(resp) { return resp.ok ? resp.json() : null; })
                     .then(function(data) {
+                        var elapsed = Math.round(performance.now() - t0);
+                        console.log('[DaneelAutoAuth] Project run completed in ' + elapsed + 'ms | project=' + pid, data && data.timings ? data.timings : {});
                         btn.disabled = false;
                         btn.textContent = 'Run';
                         if (data) {
@@ -4039,6 +4144,7 @@
                             if (data.duplicates) parts.push(data.duplicates + ' duplicates');
                             if (data.escalated) parts.push(data.escalated + ' escalated');
                             var msg = parts.length > 0 ? parts.join(', ') : 'No pending expenses found';
+                            msg += ' (' + elapsed + 'ms)';
                             if (window.Toast) window.Toast.success(msg);
                             invalidateCache('/daneel/auto-auth');
                             loadDaneelProjectReview();
@@ -4046,7 +4152,9 @@
                         } else {
                             if (window.Toast) window.Toast.error('Run failed');
                         }
-                    }).catch(function() {
+                    }).catch(function(e) {
+                        var elapsed = Math.round(performance.now() - t0);
+                        console.error('[DaneelAutoAuth] Project run failed in ' + elapsed + 'ms | project=' + pid, e);
                         btn.disabled = false;
                         btn.textContent = 'Run';
                         if (window.Toast) window.Toast.error('Run failed');

@@ -358,8 +358,12 @@ function highlightMention(content, username) {
   // Escape HTML first
   let safe = escapeHtml(content);
 
-  // Then highlight mentions
-  const mentionPattern = new RegExp(`(@${escapeRegex(username)})`, "gi");
+  // Highlight both original and no-spaces form (frontend sends @GermanOsorio)
+  const nameNoSpaces = username.replace(/\s+/g, "");
+  const pattern = nameNoSpaces !== username
+    ? `(${escapeRegex(nameNoSpaces)}|${escapeRegex(username)})`
+    : escapeRegex(username);
+  const mentionPattern = new RegExp(`(@${pattern})`, "gi");
   return safe.replace(mentionPattern, '<span class="mention-highlight">$1</span>');
 }
 

@@ -1459,3 +1459,117 @@ button {
         font-size: 16px !important;
     }
 }
+
+/* ============================================
+   COMPANY PICKER — Reusable company selector
+   ============================================ */
+
+.company-picker-bar {
+    display: flex;
+    align-items: center;
+    padding: 16px 24px 0;
+    gap: 12px;
+}
+
+.company-picker {
+    position: relative;
+}
+
+.company-picker-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    background: var(--bg-hover-strong);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-md);
+    color: rgba(255,255,255,0.8);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    white-space: nowrap;
+    font-family: inherit;
+}
+
+.company-picker-btn:hover {
+    background: rgba(255,255,255,0.09);
+    border-color: rgba(255,255,255,0.18);
+}
+
+.company-picker.open .company-picker-btn {
+    border-color: var(--accent);
+    background: var(--bg-active);
+}
+
+.company-picker-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+    background: var(--accent);
+}
+
+.company-picker-chevron {
+    color: rgba(255,255,255,0.35);
+    flex-shrink: 0;
+    transition: transform 0.15s;
+}
+
+.company-picker.open .company-picker-chevron {
+    transform: rotate(180deg);
+}
+
+.company-picker-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 220px;
+    max-height: 320px;
+    overflow-y: auto;
+    background: var(--ngm-bg-card);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px;
+    padding: 4px;
+    z-index: var(--z-sticky);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+}
+
+.company-picker-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: rgba(255,255,255,0.7);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+    white-space: nowrap;
+}
+
+.company-picker-option:hover {
+    background: rgba(255,255,255,0.07);
+    color: #fff;
+}
+
+.company-picker-option.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.company-picker-opt-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    flex-shrink: 0;
+}

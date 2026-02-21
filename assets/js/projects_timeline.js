@@ -17,6 +17,8 @@ window.ProjectTimeline = (() => {
   let _abortController = null;
   let _currentProject = null;
 
+  var GENERAL_CHART_ID = 'chart-general-timeline';
+
   // ── Helpers ────────────────────────────────────────────────────────
 
   const MONTH_SHORT = [
@@ -64,6 +66,22 @@ window.ProjectTimeline = (() => {
   /** Clamp a number between min and max. */
   function clamp(val, min, max) {
     return Math.min(Math.max(val, min), max);
+  }
+
+  /** Format monetary amounts for display. */
+  function fmtMoney(n) {
+    if (n == null || isNaN(n)) return '$0';
+    n = Number(n);
+    if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return '$' + (n / 1000).toFixed(1) + 'K';
+    return '$' + n.toFixed(0);
+  }
+
+  /** Format a month key "2025-03" as "Mar 25". */
+  function formatMonthLabel(key) {
+    var p = key.split('-');
+    var mi = parseInt(p[1], 10) - 1;
+    return (MONTH_SHORT[mi] || '') + ' ' + p[0].substring(2);
   }
 
   /** Return the human-readable label for a status key. */
@@ -227,6 +245,323 @@ window.ProjectTimeline = (() => {
     return html;
   }
 
+  // ── General Timeline (expense-based fallback) ─────────────────────
+
+  /**
+   * Load and render a general timeline based on expense data.
+   * Called when the project has no formal phases or milestones.
+   */
+  async function loadGeneralTimeline(container, projectId) {
+    var data = await window.NGM.api(
+      '/analytics/projects/' + encodeURIComponent(projectId) + '/expense-timeline',
+      { signal: _abortController.signal }
+    );
+
+    var expenses = (data && data.expenses) || [];
+    if (expenses.length === 0) {
+      container.innerHTML = buildEmptyTimeline(projectId);
+      _loaded = true;
+      return;
+    }
+
+    // Sort dates and find range
+    var dates = [];
+    var totalSpent = 0;
+    expenses.forEach(function(e) {
+      if (e.date) dates.push(e.date);
+      totalSpent += Number(e.amount || 0);
+    });
+    dates.sort();
+    var firstDate = dates[0];
+    var lastDate = dates[dates.length - 1];
+
+    // Duration in months
+    var fp = firstDate.split('-');
+    var lp = lastDate.split('-');
+    var durationMonths = (parseInt(lp[0], 10) - parseInt(fp[0], 10)) * 12 +
+                         (parseInt(lp[1], 10) - parseInt(fp[1], 10)) + 1;
+
+    // Aggregate by month
+    var monthMap = {};
+    expenses.forEach(function(e) {
+      if (!e.date) return;
+      var key = e.date.substring(0, 7);
+      monthMap[key] = (monthMap[key] || 0) + Number(e.amount || 0);
+    });
+
+    // Fill all months in range (including gaps)
+    var allMonths = [];
+    var y = parseInt(fp[0], 10);
+    var m = parseInt(fp[1], 10);
+    var ey = parseInt(lp[0], 10);
+    var em = parseInt(lp[1], 10);
+    while (y < ey || (y === ey && m <= em)) {
+      allMonths.push(y + '-' + String(m).padStart(2, '0'));
+      m++;
+      if (m > 12) { m = 1; y++; }
+    }
+
+    var totalBudget = Number((data && data.total_budget) || 0);
+
+    container.innerHTML = buildGeneralHTML({
+      firstDate: firstDate,
+      lastDate: lastDate,
+      totalSpent: totalSpent,
+      totalBudget: totalBudget,
+      expenseCount: expenses.length,
+      durationMonths: durationMonths,
+      activeMonths: Object.keys(monthMap).length,
+      allMonths: allMonths,
+      projectId: projectId
+    });
+
+    renderGeneralChart(allMonths, monthMap, totalBudget);
+    _loaded = true;
+  }
+
+  function buildGeneralHTML(info) {
+    var html = '<div class="pd-grid">';
+
+    // Header
+    html +=
+      '<div class="pt-general-header">' +
+      '  <div class="pt-general-title-row">' +
+      '    <h3 class="pt-milestones-title" style="margin:0">' + ICONS.progress + ' Project Activity Timeline</h3>' +
+      '    <span class="pt-general-badge">Auto-generated</span>' +
+      '  </div>' +
+      '  <p class="pt-general-subtitle">Based on recorded expenses. No formal timeline has been defined for this project.</p>' +
+      '</div>';
+
+    // KPI Row
+    html += '<div class="pd-kpi-row">';
+
+    html +=
+      '<div class="pd-kpi-card">' +
+      '  <span class="pd-kpi-label">First Expense</span>' +
+      '  <span class="pd-kpi-value pd-kpi-value--neutral" style="font-size:18px">' + esc(fmtDateFull(info.firstDate)) + '</span>' +
+      '  <span class="pd-kpi-sub">project start</span>' +
+      '</div>';
+
+    html +=
+      '<div class="pd-kpi-card">' +
+      '  <span class="pd-kpi-label">Last Expense</span>' +
+      '  <span class="pd-kpi-value pd-kpi-value--neutral" style="font-size:18px">' + esc(fmtDateFull(info.lastDate)) + '</span>' +
+      '  <span class="pd-kpi-sub">latest activity</span>' +
+      '</div>';
+
+    html +=
+      '<div class="pd-kpi-card">' +
+      '  <span class="pd-kpi-label">Duration</span>' +
+      '  <span class="pd-kpi-value">' + info.durationMonths + '<span style="font-size:14px;opacity:0.6;margin-left:4px">months</span></span>' +
+      '  <span class="pd-kpi-sub">' + info.activeMonths + ' with activity</span>' +
+      '</div>';
+
+    html +=
+      '<div class="pd-kpi-card">' +
+      '  <span class="pd-kpi-label">Total Spent</span>' +
+      '  <span class="pd-kpi-value">' + esc(fmtMoney(info.totalSpent)) + '</span>' +
+      '  <span class="pd-kpi-sub">' + info.expenseCount + ' transactions</span>' +
+      '</div>';
+
+    html += '</div>'; // end KPI row
+
+    // Timeline Bar
+    html += buildTimelineBar(info);
+
+    // Monthly Activity Chart
+    html +=
+      '<div class="pt-general-chart-card">' +
+      '  <h3 class="pd-chart-title">Monthly Activity</h3>' +
+      '  <div class="pd-chart-wrap pd-chart-wrap--tall">' +
+      '    <canvas id="' + GENERAL_CHART_ID + '"></canvas>' +
+      '  </div>' +
+      '</div>';
+
+    // Footer: Open Timeline Manager
+    html +=
+      '<div class="pt-footer">' +
+      '  <a class="pt-open-manager-btn" href="timeline-manager.html?project=' + encodeURIComponent(info.projectId || _currentProject || '') + '">' +
+           ICONS.openManager + ' Open Timeline Manager' +
+      '  </a>' +
+      '</div>';
+
+    html += '</div>';
+    return html;
+  }
+
+  function buildTimelineBar(info) {
+    var firstDate = info.firstDate;
+    var lastDate = info.lastDate;
+    var allMonths = info.allMonths;
+
+    var startTs = new Date(firstDate + 'T00:00:00').getTime();
+    var endTs = new Date(lastDate + 'T00:00:00').getTime();
+    var range = endTs - startTs;
+
+    // Today marker position
+    var now = new Date();
+    var todayTs = now.getTime();
+    var todayPct = -1;
+    if (range > 0 && todayTs >= startTs && todayTs <= endTs) {
+      todayPct = ((todayTs - startTs) / range) * 100;
+    }
+
+    // Month tick marks (show up to 36 months)
+    var ticksHtml = '';
+    if (allMonths.length <= 36 && range > 0) {
+      allMonths.forEach(function(key, i) {
+        var ts = new Date(key + '-01T00:00:00').getTime();
+        var pct = ((ts - startTs) / range) * 100;
+        if (pct >= 0 && pct <= 100) {
+          // Show label for every nth month based on count
+          var showLabel = allMonths.length <= 12 || (i % Math.ceil(allMonths.length / 12) === 0);
+          ticksHtml +=
+            '<div class="pt-bar-tick" style="left:' + pct.toFixed(1) + '%">' +
+            '  <span class="pt-bar-tick-line"></span>' +
+            (showLabel ? '<span class="pt-bar-tick-label">' + esc(formatMonthLabel(key)) + '</span>' : '') +
+            '</div>';
+        }
+      });
+    }
+
+    // Today indicator
+    var todayHtml = '';
+    if (todayPct >= 0 && todayPct <= 100) {
+      todayHtml =
+        '<div class="pt-bar-today" style="left:' + todayPct.toFixed(1) + '%">' +
+        '  <span class="pt-bar-today-line"></span>' +
+        '  <span class="pt-bar-today-label">Today</span>' +
+        '</div>';
+    }
+
+    // Fill up to today or full bar
+    var fillPct = todayPct >= 0 ? Math.min(todayPct, 100) : 100;
+
+    return '' +
+      '<div class="pt-timeline-bar">' +
+      '  <div class="pt-bar-labels">' +
+      '    <span class="pt-bar-label-start">' + esc(fmtDateFull(firstDate)) + '</span>' +
+      '    <span class="pt-bar-label-end">' + esc(fmtDateFull(lastDate)) + '</span>' +
+      '  </div>' +
+      '  <div class="pt-bar-track">' +
+      '    <div class="pt-bar-fill" style="width:' + fillPct.toFixed(1) + '%"></div>' +
+           ticksHtml +
+           todayHtml +
+      '  </div>' +
+      '</div>';
+  }
+
+  function renderGeneralChart(allMonths, monthMap, totalBudget) {
+    var Charts = window.NGMCharts;
+    if (!Charts) return;
+
+    var C = Charts.NGM_COLORS;
+    var labels = allMonths.map(function(key) { return formatMonthLabel(key); });
+    var amounts = allMonths.map(function(key) { return Math.round((monthMap[key] || 0) * 100) / 100; });
+
+    // Cumulative line
+    var cum = 0;
+    var cumulative = amounts.map(function(a) { cum += a; return Math.round(cum * 100) / 100; });
+
+    var datasets = [
+      {
+        label: 'Monthly Spend',
+        data: amounts,
+        backgroundColor: 'rgba(62, 207, 142, 0.5)',
+        borderRadius: 4,
+        order: 2,
+        yAxisID: 'y'
+      },
+      {
+        label: 'Cumulative',
+        type: 'line',
+        data: cumulative,
+        borderColor: C.info,
+        borderWidth: 2,
+        pointRadius: labels.length > 24 ? 0 : 3,
+        pointBackgroundColor: C.info,
+        fill: false,
+        tension: 0,
+        order: 1,
+        yAxisID: 'y1'
+      }
+    ];
+
+    // Budget pace line
+    if (totalBudget > 0) {
+      var perMonth = totalBudget / allMonths.length;
+      var cumBudget = 0;
+      var budgetPace = allMonths.map(function() {
+        cumBudget += perMonth;
+        return Math.round(cumBudget * 100) / 100;
+      });
+
+      datasets.push({
+        label: 'Budget Pace',
+        type: 'line',
+        data: budgetPace,
+        borderColor: C.muted,
+        borderDash: [6, 4],
+        borderWidth: 1.5,
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+        order: 0,
+        yAxisID: 'y1'
+      });
+    }
+
+    Charts.create(GENERAL_CHART_ID, {
+      type: 'bar',
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'top', labels: { boxWidth: 12, padding: 16 } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) { return ctx.dataset.label + ': ' + fmtMoney(ctx.parsed.y); }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            position: 'left',
+            grid: { color: C.grid },
+            ticks: { callback: function(v) { return fmtMoney(v); } },
+            title: { display: true, text: 'Monthly', color: 'rgba(255,255,255,0.4)', font: { size: 11 } }
+          },
+          y1: {
+            beginAtZero: true,
+            position: 'right',
+            grid: { drawOnChartArea: false },
+            ticks: { callback: function(v) { return fmtMoney(v); } },
+            title: { display: true, text: 'Cumulative', color: 'rgba(255,255,255,0.4)', font: { size: 11 } }
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  function buildEmptyTimeline(projectId) {
+    return '' +
+      '<div class="pd-grid">' +
+      '  <div class="pt-general-header">' +
+      '    <h3 class="pt-milestones-title" style="margin:0">' + ICONS.progress + ' Timeline</h3>' +
+      '  </div>' +
+      '  <div class="pt-phases-empty">No timeline or expense data available for this project.</div>' +
+      '  <div class="pt-footer">' +
+      '    <a class="pt-open-manager-btn" href="timeline-manager.html?project=' + encodeURIComponent(projectId || _currentProject || '') + '">' +
+              ICONS.openManager + ' Create Timeline in Manager' +
+      '    </a>' +
+      '  </div>' +
+      '</div>';
+  }
+
   // ── Skeleton HTML ──────────────────────────────────────────────────
 
   function buildSkeleton() {
@@ -314,22 +649,34 @@ window.ProjectTimeline = (() => {
     container.innerHTML = buildSkeleton();
 
     try {
-      var data = await window.NGM.api(
-        '/timeline/projects/' + encodeURIComponent(projectId) + '/summary',
-        { signal: _abortController.signal }
-      );
-
-      // API returned null/empty
-      if (!data) {
-        container.innerHTML = buildError('The server returned no data.');
-        return;
+      // Try loading formal timeline first
+      var payload = null;
+      try {
+        var data = await window.NGM.api(
+          '/timeline/projects/' + encodeURIComponent(projectId) + '/summary',
+          { signal: _abortController.signal }
+        );
+        if (data) {
+          payload = data.data ? data.data : data;
+        }
+      } catch (timelineErr) {
+        if (timelineErr.name === 'AbortError') throw timelineErr;
+        // Timeline endpoint may not exist or return error — fall through to general
+        console.warn('[ProjectTimeline] Timeline summary unavailable:', timelineErr.message);
       }
 
-      // Unwrap .data envelope if present (compat with both shapes)
-      var payload = data.data ? data.data : data;
+      // Check if formal timeline has real content
+      var hasTimeline = payload &&
+        ((payload.phases && payload.phases.length > 0) ||
+         (Number(payload.total_milestones || 0) > 0));
 
-      container.innerHTML = buildHTML(payload);
-      _loaded = true;
+      if (hasTimeline) {
+        container.innerHTML = buildHTML(payload);
+        _loaded = true;
+      } else {
+        // No formal timeline — show general timeline from expenses
+        await loadGeneralTimeline(container, projectId);
+      }
 
     } catch (err) {
       if (err.name === 'AbortError') return; // Intentionally cancelled
@@ -348,6 +695,10 @@ window.ProjectTimeline = (() => {
     if (_abortController) {
       _abortController.abort();
       _abortController = null;
+    }
+    // Destroy general timeline chart if present
+    if (window.NGMCharts) {
+      try { window.NGMCharts.destroy(GENERAL_CHART_ID); } catch (e) { /* noop */ }
     }
     var container = document.getElementById('timeline-panel-content');
     if (container) {

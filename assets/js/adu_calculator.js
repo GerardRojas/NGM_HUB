@@ -630,6 +630,7 @@
   var algoPanelArrow       = document.getElementById("algoPanelArrow");
   var algoPanelContent     = document.getElementById("algoPanelContent");
   var algoGraphContainer   = document.getElementById("algoGraphContainer");
+  var algoFormulaContainer = document.getElementById("algoFormulaContainer");
   var algoLegend           = document.getElementById("algoLegend");
   var algoNodeDetails      = document.getElementById("algoNodeDetails");
 
@@ -2991,10 +2992,13 @@
 
     algoGraphContainer.innerHTML = svg;
 
+    // Render formula display
+    renderAlgoFormula();
+
     // Render legend
     renderAlgoLegend();
 
-    // Bind node click events
+    // Bind node click events (includes formula hover bindings)
     bindAlgoNodeEvents();
   }
 
@@ -3013,6 +3017,194 @@
              + '<div class="legend-hint">Circle size = cost impact</div>';
 
     algoLegend.innerHTML = html;
+  }
+
+  // ------------------------------------------
+  // FORMULA DISPLAY (below diagram)
+  // ------------------------------------------
+
+  /**
+   * Get CSS class for a formula variable based on its node status
+   */
+  function getFormulaVarClass(nodeId) {
+    var status = getNodeStatus(nodeId);
+    var node = ALGO_NODES.find(function(n) { return n.id === nodeId; });
+
+    if (!status.active && !status.value) return "fv-inactive";
+    if (status.status === "penalty") return "fv-penalty";
+    if (status.status === "discount") return "fv-discount";
+    if (status.status === "output") return "fv-output";
+    if (status.status === "warning") return "fv-penalty";
+    if (status.active) {
+      if (!node) return "fv-active";
+      if (node.type === "calc") return "fv-calc";
+      if (node.type === "modifier") return "fv-modifier";
+      return "fv-active";
+    }
+    if (!node) return "fv-input";
+    if (node.type === "calc") return "fv-calc";
+    if (node.type === "modifier") return "fv-modifier";
+    return "fv-input";
+  }
+
+  /**
+   * Build a formula variable chip HTML
+   */
+  function fvar(nodeId, symbol, valueOverride) {
+    var status = getNodeStatus(nodeId);
+    var cls = getFormulaVarClass(nodeId);
+    var val = valueOverride || "";
+
+    if (!val && status.value) {
+      val = status.value;
+      // Shorten long values
+      if (val.length > 14) val = val.substring(0, 13) + "...";
+    }
+    if (!val && status.modifier && status.modifier !== 1) {
+      val = "x" + status.modifier.toFixed(2);
+    }
+
+    var html = '<span class="formula-var ' + cls + '" data-node="' + nodeId + '">';
+    html += '<span class="formula-var-symbol">' + symbol + '</span>';
+    if (val) {
+      html += '<span class="formula-var-value">' + val + '</span>';
+    }
+    html += '</span>';
+    return html;
+  }
+
+  /**
+   * Render the algorithm formula below the diagram
+   */
+  function renderAlgoFormula() {
+    if (!algoFormulaContainer) return;
+
+    var html = '<div class="algo-formula-title">Cost Formula</div>';
+
+    // Line 1: Total = (BaseRate x SizeMod x Eff) x Sqft x Multiplier + Additions
+    html += '<div class="formula-line">';
+    html += fvar("total", "Total");
+    html += '<span class="formula-eq">=</span>';
+    html += '<span class="formula-paren">(</span>';
+    html += fvar("base_rate", "R", "");
+    html += '<span class="formula-op">&times;</span>';
+    html += fvar("sqft_curve", "S<sub>m</sub>");
+    html += '<span class="formula-op">&times;</span>';
+    html += fvar("efficiency", "Ef");
+    html += '<span class="formula-paren">)</span>';
+    html += '<span class="formula-op">&times;</span>';
+    html += fvar("sqft", "A");
+    html += '<span class="formula-op">&times;</span>';
+    html += fvar("multiplier", "M");
+    html += '<span class="formula-op">+</span>';
+    html += fvar("additions", "Adds");
+    html += '</div>';
+
+    // Line 2: Multiplier breakdown (additive model)
+    html += '<div class="formula-line formula-line-sub">';
+    html += '<span class="formula-section-label">where</span>';
+    html += fvar("multiplier", "M");
+    html += '<span class="formula-eq">=</span>';
+    html += '<span class="formula-num">1</span>';
+
+    // Each additive factor: + (factor - 1)
+    var factors = [
+      { id: "stories", sym: "St" },
+      { id: "design", sym: "Ds" },
+      { id: "foundation", sym: "Fn" },
+      { id: "land", sym: "Ln" },
+      { id: "density", sym: "Dn" },
+      { id: "floorplan", sym: "Fp" },
+      { id: "cross", sym: "Cx" },
+      { id: "rules", sym: "Rl" }
+    ];
+
+    factors.forEach(function(f) {
+      var status = getNodeStatus(f.id);
+      // Show the delta value if modifier exists
+      var delta = "";
+      if (status.modifier && status.modifier !== 1) {
+        var d = status.modifier - 1;
+        delta = (d >= 0 ? "+" : "") + (d * 100).toFixed(0) + "%";
+      }
+      html += '<span class="formula-op">+</span>';
+      html += '<span class="formula-paren">(</span>';
+      html += fvar(f.id, f.sym, delta || "");
+      html += '<span class="formula-op">-</span>';
+      html += '<span class="formula-num">1</span>';
+      html += '<span class="formula-paren">)</span>';
+    });
+
+    html += '</div>';
+
+    // Line 3: Additions breakdown
+    html += '<div class="formula-line formula-line-sub">';
+    html += '<span class="formula-section-label">where</span>';
+    html += fvar("additions", "Adds");
+    html += '<span class="formula-eq">=</span>';
+    html += fvar("config", "Bed/Ba");
+    html += '<span class="formula-op">+</span>';
+    html += fvar("options", "Opts");
+    html += '<span class="formula-op">+</span>';
+    html += fvar("opt_features", "Site");
+    html += '</div>';
+
+    algoFormulaContainer.innerHTML = html;
+
+    // Bind formula hover interactions
+    bindFormulaHoverEvents();
+  }
+
+  /**
+   * Bidirectional hover: formula var <-> diagram node
+   */
+  function bindFormulaHoverEvents() {
+    if (!algoFormulaContainer || !algoGraphContainer) return;
+
+    // Formula var hover -> highlight diagram node
+    algoFormulaContainer.querySelectorAll(".formula-var").forEach(function(varEl) {
+      var nodeId = varEl.getAttribute("data-node");
+
+      varEl.addEventListener("mouseenter", function() {
+        // Highlight all formula vars with same node
+        algoFormulaContainer.querySelectorAll('.formula-var[data-node="' + nodeId + '"]').forEach(function(v) {
+          v.classList.add("fv-highlight");
+        });
+        // Highlight the SVG node
+        var svgNode = algoGraphContainer.querySelector('.algo-node[data-node="' + nodeId + '"]');
+        if (svgNode) svgNode.classList.add("node-formula-highlight");
+      });
+
+      varEl.addEventListener("mouseleave", function() {
+        algoFormulaContainer.querySelectorAll('.formula-var[data-node="' + nodeId + '"]').forEach(function(v) {
+          v.classList.remove("fv-highlight");
+        });
+        var svgNode = algoGraphContainer.querySelector('.algo-node[data-node="' + nodeId + '"]');
+        if (svgNode) svgNode.classList.remove("node-formula-highlight");
+      });
+
+      // Click formula var -> show node details
+      varEl.addEventListener("click", function() {
+        showNodeDetails(nodeId);
+      });
+    });
+
+    // Diagram node hover -> highlight formula vars
+    algoGraphContainer.querySelectorAll(".algo-node").forEach(function(nodeEl) {
+      var nodeId = nodeEl.getAttribute("data-node");
+
+      nodeEl.addEventListener("mouseenter", function() {
+        algoFormulaContainer.querySelectorAll('.formula-var[data-node="' + nodeId + '"]').forEach(function(v) {
+          v.classList.add("fv-highlight");
+        });
+      });
+
+      nodeEl.addEventListener("mouseleave", function() {
+        algoFormulaContainer.querySelectorAll('.formula-var[data-node="' + nodeId + '"]').forEach(function(v) {
+          v.classList.remove("fv-highlight");
+        });
+      });
+    });
   }
 
   function bindAlgoNodeEvents() {

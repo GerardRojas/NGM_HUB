@@ -43,6 +43,7 @@
     // Architecture
     "projects": { label: "Projects", href: "projects.html", order: 1, category: "architecture" },
     "project_builder": { label: "Project Builder", href: "project-builder.html", order: 2, category: "architecture" },
+    "timeline_manager": { label: "Timeline Manager", href: "timeline-manager.html", order: 3, category: "architecture" },
 
     // Costs & Estimates
     "estimator": { label: "Estimator Suite", href: "estimator.html", order: 1, category: "costs" },

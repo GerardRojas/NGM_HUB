@@ -34,8 +34,12 @@
     <link rel="stylesheet" href="assets/css/styles.css" />
     <link rel="stylesheet" href="assets/css/expenses_styles.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
+    <link rel="stylesheet" href="assets/css/vendors_intelligence.css" />
     <link rel="stylesheet" href="assets/css/arturito_widget.css" />
     <link rel="stylesheet" href="assets/css/chat_widget.css" />
+
+    <!-- Chart.js v4 (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 
     <!-- Global env/server/user pills -->
     <script src="assets/js/config.js"></script>
@@ -46,7 +50,9 @@
     <script src="assets/js/pills.js" defer></script>
     <script src="assets/js/sidebar.js" defer></script>
     <script src="assets/js/page-loading.js" defer></script>
+    <script src="assets/js/ngm_charts.js" defer></script>
     <script src="assets/js/vendors.js" defer></script>
+    <script src="assets/js/vendors_intelligence.js" defer></script>
     <script src="assets/js/arturito_widget.js" defer></script>
     <script src="assets/js/chat_widget.js" defer></script>
 </head>
@@ -176,6 +182,9 @@
                             </div>
                         </div>
                     </section>
+
+                    <!-- Vendor Intelligence Scorecard Panel (hidden by default) -->
+                    <div id="vendor-scorecard-panel" hidden></div>
 
                 </div>
             </main>

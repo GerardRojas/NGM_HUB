@@ -1,0 +1,185 @@
+/* ============================================
+   Projects — Cost vs Projection Tab Styles
+   ============================================ */
+
+/* --- Layout --- */
+.pc-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* --- Main chart card --- */
+.pc-main-chart {
+  background: var(--ngm-bg-card);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.pc-main-chart canvas {
+  width: 100% !important;
+  max-height: 340px;
+}
+
+/* --- Two-column row --- */
+.pc-split-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .pc-split-row { grid-template-columns: 1fr; }
+}
+
+/* --- Variance bar chart card --- */
+.pc-variance-card {
+  background: var(--ngm-bg-card);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.pc-variance-card canvas {
+  width: 100% !important;
+  max-height: 260px;
+}
+
+/* --- EAC Summary card --- */
+.pc-eac-card {
+  background: var(--ngm-bg-card);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pc-eac-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.pc-eac-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.pc-eac-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pc-eac-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.06);
+}
+
+/* --- Status badge --- */
+.pc-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.pc-status-badge--on_track {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.pc-status-badge--at_risk {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.pc-status-badge--over_budget {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+/* --- BVA Table --- */
+.pc-bva-table-wrap {
+  background: var(--ngm-bg-card);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pc-bva-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pc-bva-table thead {
+  background: var(--ngm-bg-surface);
+}
+
+.pc-bva-table th {
+  padding: 10px 16px;
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  white-space: nowrap;
+}
+
+.pc-bva-table td {
+  padding: 10px 16px;
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.pc-bva-table tr:last-child td {
+  border-bottom: none;
+}
+
+.pc-bva-table .pc-bva-footer td {
+  font-weight: 600;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  background: var(--ngm-bg-surface);
+}
+
+.pc-variance-positive {
+  color: var(--color-danger);
+}
+
+.pc-variance-negative {
+  color: var(--color-success);
+}
+
+/* --- Chart title --- */
+.pc-chart-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+/* --- Skeleton --- */
+.pc-skeleton {
+  animation: pc-pulse 1.5s ease-in-out infinite;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+}
+
+.pc-skeleton-chart {
+  height: 340px;
+}
+
+.pc-skeleton-card {
+  height: 200px;
+}
+
+@keyframes pc-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}

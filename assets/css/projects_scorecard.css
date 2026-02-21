@@ -1,0 +1,155 @@
+/* ============================================================
+   Projects Scorecard Tab — cross-project comparison table
+   ============================================================ */
+
+/* Scorecard Table */
+.sc-table-wrapper {
+    overflow-x: auto;
+    margin-top: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    background: #111827;
+}
+
+.sc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    min-width: 800px;
+}
+
+.sc-table th {
+    color: #9ca3af;
+    font-weight: 500;
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    white-space: nowrap;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.sc-table td {
+    color: #e2e8f0;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    vertical-align: middle;
+}
+
+.sc-table tr:hover {
+    background: rgba(255,255,255,0.02);
+}
+
+.sc-project-name {
+    font-weight: 600;
+    color: #f3f4f6;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Mini progress bars */
+.sc-mini-bar {
+    width: 80px;
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+
+.sc-mini-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.sc-pct {
+    font-size: 12px;
+    color: #9ca3af;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Health score */
+.sc-score {
+    font-size: 18px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.sc-score-label {
+    display: block;
+    font-size: 10px;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Status badges */
+.sc-status-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+    background: rgba(255,255,255,0.06);
+    color: #9ca3af;
+}
+
+/* Overdue milestones */
+.sc-overdue-badge {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-right: 4px;
+}
+.sc-overdue-badge--ok { background: rgba(62,207,142,0.15); color: #3ecf8e; }
+.sc-overdue-badge--danger { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+/* Skeleton shimmer */
+.sc-skeleton-row td {
+    padding: 14px;
+}
+.sc-shimmer {
+    height: 14px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+    background-size: 200% 100%;
+    animation: sc-shimmer-move 1.4s ease-in-out infinite;
+}
+@keyframes sc-shimmer-move {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Error card */
+.sc-error-card {
+    text-align: center;
+    padding: 48px 24px;
+    color: #9ca3af;
+}
+.sc-error-card p {
+    margin: 0 0 16px;
+    font-size: 14px;
+}
+.sc-error-card button {
+    background: rgba(255,255,255,0.06);
+    color: #e2e8f0;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+.sc-error-card button:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+@media (max-width: 768px) {
+    .sc-table { font-size: 12px; }
+    .sc-table th, .sc-table td { padding: 8px 10px; }
+}

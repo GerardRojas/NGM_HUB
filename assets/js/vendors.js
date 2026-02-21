@@ -95,7 +95,7 @@
     const name = vendor.vendor_name || '—';
 
     return `
-      <tr data-index="${index}" data-id="${id}">
+      <tr data-index="${index}" data-id="${id}" class="vendor-row-clickable">
         <td>${name}</td>
         <td class="col-actions"></td>
       </tr>
@@ -473,12 +473,35 @@
   }
 
   // ================================
+  // VENDOR INTELLIGENCE HOOK
+  // ================================
+
+  function initIntelligence() {
+    if (!window.VendorIntelligence) return;
+
+    // Click on vendor row → open scorecard (only in read mode)
+    els.tbody?.addEventListener('click', (e) => {
+      if (isEditMode) return;
+      const row = e.target.closest('tr.vendor-row-clickable');
+      if (!row) return;
+      const vendorId = row.getAttribute('data-id');
+      if (vendorId) {
+        // Highlight selected row
+        els.tbody.querySelectorAll('tr').forEach(r => r.classList.remove('vendor-row-selected'));
+        row.classList.add('vendor-row-selected');
+        window.VendorIntelligence.loadScorecard(vendorId);
+      }
+    });
+  }
+
+  // ================================
   // START
   // ================================
 
-  window.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('DOMContentLoaded', async () => {
     if (window.initTopbarPills) window.initTopbarPills();
-    init();
+    await init();
+    initIntelligence();
   });
 
 })();

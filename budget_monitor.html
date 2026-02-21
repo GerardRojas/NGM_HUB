@@ -18,6 +18,8 @@
 
     <link rel="stylesheet" href="assets/css/styles.css" />
     <link rel="stylesheet" href="assets/css/budget_monitor.css" />
+    <link rel="stylesheet" href="assets/css/budget_health.css" />
+    <link rel="stylesheet" href="assets/css/projects_dashboard.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
     <link rel="stylesheet" href="assets/css/arturito_widget.css" />
     <link rel="stylesheet" href="assets/css/chat_widget.css" />
@@ -119,6 +121,9 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Budget Health Analytics -->
+                        <div id="budgetHealthPanel" class="bh-panel"></div>
 
                         <!-- Summary Stats -->
                         <div class="budget-summary-stats" id="budgetSummaryStats">
@@ -272,6 +277,13 @@
         </div>
     </div>
 
+    <!-- Chart.js v4 (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <script src="assets/js/ngm_charts.js"></script>
+
+    <!-- Budget Health Analytics -->
+    <script src="assets/js/budget_health.js"></script>
+
     <!-- Budget Monitor Logic -->
     <script src="assets/js/budget_monitor.js"></script>
 
@@ -279,6 +291,18 @@
         window.addEventListener("DOMContentLoaded", () => {
             if (window.initTopbarPills) window.initTopbarPills();
             if (window.initSidebar) window.initSidebar();
+
+            // Budget Health Analytics — initial load + project filter sync
+            if (window.BudgetHealth) {
+                window.BudgetHealth.load(null);
+
+                var pf = document.getElementById('projectFilter');
+                if (pf) {
+                    pf.addEventListener('change', function() {
+                        window.BudgetHealth.load(pf.value || null);
+                    });
+                }
+            }
         });
     </script>
 

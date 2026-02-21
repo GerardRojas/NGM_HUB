@@ -1,0 +1,203 @@
+/* ==========================================
+   Budget Health Analytics - Dark Theme
+   ========================================== */
+
+.bh-panel { padding: 0 0 24px; }
+
+/* ── Section Title ──────────────────────── */
+.bh-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 16px;
+}
+
+/* ── Projects Grid ──────────────────────── */
+.bh-projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.bh-project-card {
+    background: #111827;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 16px;
+    transition: border-color 0.15s ease;
+}
+
+.bh-project-card:hover {
+    border-color: rgba(255,255,255,0.12);
+}
+
+.bh-project-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.bh-project-name {
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 70%;
+}
+
+.bh-health-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.bh-health--healthy { background: rgba(62,207,142,0.15); color: #3ecf8e; }
+.bh-health--warning { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.bh-health--critical { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+.bh-budget-bar {
+    height: 8px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.bh-budget-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+
+.bh-budget-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.bh-burn-rate {
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 6px;
+}
+
+/* ── Chart Section ──────────────────────── */
+.bh-chart-section {
+    margin-top: 20px;
+    background: #111827;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.bh-chart-title {
+    color: #e2e8f0;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.bh-chart-wrap {
+    position: relative;
+    height: 300px;
+}
+
+/* ── Skeleton Loading ───────────────────── */
+.bh-skeleton-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.bh-skeleton-card {
+    background: #111827;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 18px;
+}
+
+.bh-skeleton-line {
+    height: 12px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 6px;
+    margin-bottom: 10px;
+    animation: bhPulse 1.5s ease-in-out infinite;
+}
+
+.bh-skeleton-line--short { width: 40%; }
+.bh-skeleton-line--med   { width: 65%; }
+.bh-skeleton-line--tall  { height: 24px; width: 50%; }
+.bh-skeleton-line--bar   { height: 8px; width: 100%; }
+
+@keyframes bhPulse {
+    0%, 100% { opacity: 0.3; }
+    50%      { opacity: 0.6; }
+}
+
+.bh-skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+}
+
+.bh-skeleton-chart {
+    margin-top: 20px;
+    background: #111827;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 16px;
+    height: 200px;
+}
+
+/* ── Error State ────────────────────────── */
+.bh-error {
+    text-align: center;
+    padding: 32px 20px;
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+.bh-error-msg {
+    margin-bottom: 12px;
+}
+
+.bh-error .bh-retry-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    color: #e2e8f0;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.bh-error .bh-retry-btn:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.15);
+}
+
+/* ── Responsive ─────────────────────────── */
+@media (max-width: 1024px) {
+    .bh-skeleton-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+    .bh-projects-grid { grid-template-columns: 1fr; }
+    .bh-skeleton-row  { grid-template-columns: 1fr; }
+    .bh-skeleton-grid { grid-template-columns: 1fr; }
+    .bh-chart-wrap    { height: 220px; }
+}

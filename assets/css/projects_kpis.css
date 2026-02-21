@@ -1,0 +1,350 @@
+/* ============================================
+   PROJECTS — Executive KPIs Tab Styles
+   Dark theme consistent with NGM design system
+   ============================================ */
+
+/* ============================================
+   MAIN GRID LAYOUT
+   ============================================ */
+
+.pk-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 4px 0 24px;
+  max-width: 1400px;
+}
+
+/* ============================================
+   CHARTS ROW (2 columns)
+   ============================================ */
+
+.pk-charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ============================================
+   CHART CARD
+   ============================================ */
+
+.pk-chart-card {
+  background: var(--ngm-bg-card, #1a1a1a);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 20px;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pk-chart-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Burn chart needs extra height for many project rows */
+.pk-chart-card--burn {
+  min-height: 340px;
+}
+
+.pk-chart-card--burn .pd-chart-wrap {
+  min-height: 280px;
+}
+
+/* ============================================
+   KPI VALUE COLOR MODIFIERS
+   ============================================ */
+
+.pk-kpi-value--success {
+  color: var(--color-success, #22c55e);
+}
+
+.pk-kpi-value--warning {
+  color: var(--color-warning, #f59e0b);
+}
+
+.pk-kpi-value--danger {
+  color: var(--color-danger, #ef4444);
+}
+
+/* ============================================
+   VENDOR INFO CARD (right side of vendors row)
+   ============================================ */
+
+.pk-chart-card--vendor-info {
+  min-height: auto;
+}
+
+.pk-vendor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.pk-vendor-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.pk-vendor-row:last-child {
+  border-bottom: none;
+}
+
+.pk-vendor-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary, #ededed);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 55%;
+}
+
+.pk-vendor-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.pk-vendor-amount {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent, #3ecf8e);
+  font-variant-numeric: tabular-nums;
+}
+
+.pk-vendor-count {
+  font-size: 11px;
+  color: var(--text-secondary, #888888);
+}
+
+/* ============================================
+   PROJECTS KPI TABLE
+   ============================================ */
+
+.pk-table-wrap {
+  background: var(--ngm-bg-card, #1a1a1a);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  overflow: hidden;
+  overflow-x: auto;
+}
+
+.pk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.pk-table thead {
+  background: var(--ngm-bg-surface, #111111);
+}
+
+.pk-table th {
+  padding: 10px 16px;
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-secondary, #888888);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pk-table td {
+  padding: 10px 16px;
+  color: var(--text-primary, #ededed);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pk-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.pk-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Project name cell with status dot */
+.pk-cell-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Cell color modifiers */
+.pk-cell--success {
+  color: var(--color-success, #22c55e);
+}
+
+.pk-cell--warning {
+  color: var(--color-warning, #f59e0b);
+}
+
+.pk-cell--danger {
+  color: var(--color-danger, #ef4444);
+}
+
+/* Empty table state */
+.pk-table-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-secondary, #888888);
+  font-size: 13px;
+}
+
+/* ============================================
+   STATUS BADGES & DOTS
+   ============================================ */
+
+/* Inline status dot (table cell) */
+.pk-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.pk-status-dot.pk-status--on_track {
+  background: var(--color-success, #22c55e);
+}
+
+.pk-status-dot.pk-status--at_risk {
+  background: var(--color-warning, #f59e0b);
+}
+
+.pk-status-dot.pk-status--over_budget {
+  background: var(--color-danger, #ef4444);
+}
+
+/* Text status badge (table Status column) */
+.pk-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.pk-status--on_track {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--color-success, #22c55e);
+}
+
+.pk-status--at_risk {
+  background: rgba(245, 158, 11, 0.12);
+  color: var(--color-warning, #f59e0b);
+}
+
+.pk-status--over_budget {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--color-danger, #ef4444);
+}
+
+/* ============================================
+   ERROR ICON (reuses pd-error layout from dashboard)
+   ============================================ */
+
+.pk-error-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--color-danger, #ef4444);
+  opacity: 0.7;
+}
+
+/* ============================================
+   SKELETON TABLE
+   ============================================ */
+
+.pk-skeleton-table {
+  background: var(--ngm-bg-card, #1a1a1a);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+/* ============================================
+   RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+@media (max-width: 1024px) {
+  .pk-charts-row {
+    grid-template-columns: 1fr;
+  }
+
+  .pk-chart-card--burn {
+    min-height: 300px;
+  }
+
+  .pk-cell-name {
+    max-width: 180px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pk-grid {
+    gap: 16px;
+    padding: 4px 0 16px;
+  }
+
+  .pk-chart-card {
+    min-height: 240px;
+    padding: 16px;
+  }
+
+  .pk-chart-card--burn {
+    min-height: 260px;
+  }
+
+  .pk-table th,
+  .pk-table td {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .pk-cell-name {
+    max-width: 140px;
+  }
+
+  .pk-vendor-name {
+    max-width: 45%;
+    font-size: 12px;
+  }
+
+  .pk-vendor-amount {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pk-table {
+    font-size: 11px;
+  }
+
+  .pk-table th,
+  .pk-table td {
+    padding: 6px 8px;
+  }
+
+  .pk-status {
+    font-size: 10px;
+    padding: 2px 8px;
+  }
+}

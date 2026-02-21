@@ -1,0 +1,87 @@
+/* ============================================
+   NGM TABS — Reusable tab styles
+   ============================================ */
+
+.ngm-tabs-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-main, #0d0d0d);
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.ngm-tab-btn {
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-secondary, #888888);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+  outline: none;
+}
+
+.ngm-tab-btn:hover {
+  color: var(--text-primary, #ededed);
+}
+
+.ngm-tab-btn.ngm-tab-active {
+  color: var(--accent, #3ecf8e);
+  border-bottom-color: var(--accent, #3ecf8e);
+}
+
+.ngm-tab-panel {
+  padding: 24px;
+}
+
+.ngm-tab-panel[hidden] {
+  display: none !important;
+}
+
+/* --- Project selector used in dashboard/cost tabs --- */
+.pd-project-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.pd-selector-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #888888);
+  white-space: nowrap;
+}
+
+.pd-selector-input {
+  min-width: 280px;
+  font-size: 13px;
+}
+
+/* --- Empty state for tabs --- */
+.pd-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.pd-empty-icon {
+  font-size: 40px;
+  opacity: 0.4;
+}
+
+.pd-empty-text {
+  font-size: 14px;
+  color: var(--text-tertiary, #6b7280);
+}

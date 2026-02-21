@@ -561,12 +561,122 @@
   }
 
   // ================================
+  // TABS INTEGRATION (hooks into ngm_tabs.js)
+  // ================================
+
+  function initTabs() {
+    if (!window.NGMTabs) return;
+
+    // Populate project dropdowns in dashboard/cost/timeline tabs
+    function populateProjectDropdowns() {
+      const selects = [
+        document.getElementById('dashboardProjectSelect'),
+        document.getElementById('costProjectSelect'),
+        document.getElementById('timelineProjectSelect')
+      ];
+      selects.forEach(sel => {
+        if (!sel) return;
+        sel.innerHTML = '<option value="">Choose a project...</option>';
+        projects.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.project_id || p.id;
+          opt.textContent = p.project_name || p.project_id;
+          sel.appendChild(opt);
+        });
+      });
+    }
+
+    // Dashboard project selector
+    const dashSel = document.getElementById('dashboardProjectSelect');
+    if (dashSel) {
+      dashSel.addEventListener('change', () => {
+        if (dashSel.value && window.ProjectDashboard) {
+          window.ProjectDashboard.load(dashSel.value);
+        }
+      });
+    }
+
+    // Cost project selector
+    const costSel = document.getElementById('costProjectSelect');
+    if (costSel) {
+      costSel.addEventListener('change', () => {
+        if (costSel.value && window.ProjectCost) {
+          window.ProjectCost.load(costSel.value);
+        }
+      });
+    }
+
+    // Timeline project selector
+    const tlSel = document.getElementById('timelineProjectSelect');
+    if (tlSel) {
+      tlSel.addEventListener('change', () => {
+        if (tlSel.value && window.ProjectTimeline) {
+          window.ProjectTimeline.load(tlSel.value);
+        }
+      });
+    }
+
+    // Permission check for KPIs tab
+    function canViewKPIs() {
+      try {
+        const perms = JSON.parse(localStorage.getItem('sidebar_permissions') || '[]');
+        const mod = perms.find(p => p.module_key === 'project_kpis');
+        return mod ? mod.can_view : false;
+      } catch { return false; }
+    }
+
+    window.NGMTabs.init('projects-tabs', {
+      permissionCheck: (tabKey) => {
+        if (tabKey === 'kpis') return canViewKPIs();
+        return true;
+      },
+      onSwitch: (tabKey) => {
+        // Populate dropdowns when switching to dashboard/cost/timeline tabs
+        if (tabKey === 'dashboard' || tabKey === 'cost' || tabKey === 'timeline') {
+          populateProjectDropdowns();
+        }
+        // Load KPIs when switching to kpis tab
+        if (tabKey === 'kpis' && window.ProjectKPIs) {
+          window.ProjectKPIs.load();
+        }
+        // Load Scorecard when switching to scorecard tab
+        if (tabKey === 'scorecard' && window.ProjectScorecard) {
+          window.ProjectScorecard.load();
+        }
+        // Unload modules when leaving tabs
+        if (tabKey !== 'dashboard' && window.ProjectDashboard) {
+          window.ProjectDashboard.unload();
+        }
+        if (tabKey !== 'cost' && window.ProjectCost) {
+          window.ProjectCost.unload();
+        }
+        if (tabKey !== 'kpis' && window.ProjectKPIs) {
+          window.ProjectKPIs.unload();
+        }
+        if (tabKey !== 'timeline' && window.ProjectTimeline) {
+          window.ProjectTimeline.unload();
+        }
+        if (tabKey !== 'scorecard' && window.ProjectScorecard) {
+          window.ProjectScorecard.unload();
+        }
+      }
+    });
+  }
+
+  // Make projects accessible to tabs (for dropdown population)
+  function getProjects() { return projects; }
+
+  // Expose for external access
+  window.ProjectsPage = { getProjects };
+
+  // ================================
   // START
   // ================================
 
-  window.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('DOMContentLoaded', async () => {
     if (window.initTopbarPills) window.initTopbarPills();
-    init();
+    await init();
+    initTabs();
   });
 
 })();

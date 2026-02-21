@@ -1,0 +1,322 @@
+/* ==========================================
+   EXPENSE INTELLIGENCE — Analytics Panel
+   Dark theme consistent with NGM design system
+   ========================================== */
+
+/* Panel container */
+.ei-panel {
+    padding: 0 0 24px;
+}
+
+/* ==========================================
+   KPI CARDS ROW (reuse pd-kpi patterns)
+   ========================================== */
+
+.ei-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.ei-kpi-card {
+    background: var(--ngm-bg-card, #1a1a1a);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: border-color 0.15s ease;
+}
+
+.ei-kpi-card:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.ei-kpi-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary, #888888);
+    margin: 0;
+}
+
+.ei-kpi-value {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--accent, #3ecf8e);
+    line-height: 1.2;
+    margin: 4px 0 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.ei-kpi-value--neutral {
+    color: var(--text-primary, #ededed);
+}
+
+.ei-kpi-value--warning {
+    color: var(--color-warning, #f59e0b);
+}
+
+.ei-kpi-value--danger {
+    color: var(--color-danger, #ef4444);
+}
+
+.ei-kpi-sub {
+    font-size: 12px;
+    color: var(--text-tertiary, #6b7280);
+    margin: 2px 0 0;
+}
+
+/* ==========================================
+   CHARTS GRID — 2x2
+   ========================================== */
+
+.ei-charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.ei-chart-card {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.ei-chart-card:hover {
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.ei-chart-title {
+    color: #e2e8f0;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.ei-chart-wrap {
+    position: relative;
+    width: 100%;
+    height: 220px;
+}
+
+.ei-chart-wrap canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+.ei-chart-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    color: #6b7280;
+    font-size: 13px;
+    font-style: italic;
+}
+
+/* ==========================================
+   ANOMALIES TABLE
+   ========================================== */
+
+.ei-anomalies {
+    margin-top: 20px;
+}
+
+.ei-anomalies-header {
+    margin-bottom: 6px;
+}
+
+.ei-anomalies-title {
+    color: #f59e0b;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.ei-anomalies-subtitle {
+    color: #6b7280;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.ei-anomaly-table-wrap {
+    background: #111827;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.ei-anomaly-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.ei-anomaly-table th {
+    color: #9ca3af;
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-weight: 500;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.ei-anomaly-table td {
+    color: #e2e8f0;
+    padding: 9px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.ei-anomaly-row {
+    border-left: 3px solid #ef4444;
+    transition: background 0.1s ease;
+}
+
+.ei-anomaly-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.ei-anomaly-amount {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    color: #ef4444;
+}
+
+.ei-anomaly-zscore {
+    font-variant-numeric: tabular-nums;
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+/* ==========================================
+   SKELETON / LOADING
+   ========================================== */
+
+.ei-skeleton {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    animation: eiShimmer 1.5s ease-in-out infinite;
+}
+
+.ei-skeleton--card {
+    background: var(--ngm-bg-card, #1a1a1a);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.ei-skeleton-line {
+    height: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 4px;
+    animation: eiShimmer 1.5s ease-in-out infinite;
+}
+
+.ei-skeleton-line--lg {
+    height: 28px;
+    width: 60%;
+}
+
+.ei-skeleton-line--sm {
+    height: 10px;
+    width: 40%;
+}
+
+.ei-skeleton-chart {
+    height: 200px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    margin-top: 12px;
+    animation: eiShimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes eiShimmer {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+/* ==========================================
+   ERROR STATE
+   ========================================== */
+
+.ei-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+    gap: 12px;
+}
+
+.ei-error-icon {
+    color: #ef4444;
+    margin-bottom: 4px;
+}
+
+.ei-error-title {
+    color: #e2e8f0;
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.ei-error-msg {
+    color: #6b7280;
+    font-size: 13px;
+    margin: 0;
+    max-width: 400px;
+}
+
+.ei-error-retry {
+    background: rgba(62, 207, 142, 0.1);
+    color: #3ecf8e;
+    border: 1px solid rgba(62, 207, 142, 0.2);
+    border-radius: 6px;
+    padding: 8px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin-top: 4px;
+}
+
+.ei-error-retry:hover {
+    background: rgba(62, 207, 142, 0.15);
+    border-color: rgba(62, 207, 142, 0.4);
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+
+@media (max-width: 1024px) {
+    .ei-kpi-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .ei-charts-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ei-kpi-row {
+        grid-template-columns: 1fr;
+    }
+
+    .ei-kpi-value {
+        font-size: 22px;
+    }
+}

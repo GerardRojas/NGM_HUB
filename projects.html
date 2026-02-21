@@ -34,8 +34,17 @@
     <link rel="stylesheet" href="assets/css/styles.css" />
     <link rel="stylesheet" href="assets/css/expenses_styles.css" />
     <link rel="stylesheet" href="assets/css/toast.css" />
+    <link rel="stylesheet" href="assets/css/ngm_tabs.css" />
+    <link rel="stylesheet" href="assets/css/projects_dashboard.css" />
+    <link rel="stylesheet" href="assets/css/projects_cost.css" />
+    <link rel="stylesheet" href="assets/css/projects_kpis.css" />
+    <link rel="stylesheet" href="assets/css/projects_timeline.css" />
+    <link rel="stylesheet" href="assets/css/projects_scorecard.css" />
     <link rel="stylesheet" href="assets/css/arturito_widget.css" />
     <link rel="stylesheet" href="assets/css/chat_widget.css" />
+
+    <!-- Chart.js v4 (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 
     <!-- Global env/server/user pills -->
     <script src="assets/js/config.js"></script>
@@ -46,7 +55,14 @@
     <script src="assets/js/pills.js" defer></script>
     <script src="assets/js/sidebar.js" defer></script>
     <script src="assets/js/page-loading.js" defer></script>
+    <script src="assets/js/ngm_charts.js" defer></script>
+    <script src="assets/js/ngm_tabs.js" defer></script>
     <script src="assets/js/projects.js" defer></script>
+    <script src="assets/js/projects_dashboard.js" defer></script>
+    <script src="assets/js/projects_cost.js" defer></script>
+    <script src="assets/js/projects_kpis.js" defer></script>
+    <script src="assets/js/projects_timeline.js" defer></script>
+    <script src="assets/js/projects_scorecard.js" defer></script>
     <script src="assets/js/arturito_widget.js" defer></script>
     <script src="assets/js/chat_widget.js" defer></script>
 </head>
@@ -101,58 +117,135 @@
             <main class="main-content">
                 <div class="workspace">
 
-                    <!-- Projects Section -->
-                    <section class="data-section">
+                    <!-- Tab Navigation -->
+                    <div id="projects-tabs">
+                        <div class="ngm-tabs-nav">
+                            <button class="ngm-tab-btn ngm-tab-active" data-tab="list">Projects</button>
+                            <button class="ngm-tab-btn" data-tab="dashboard">Dashboard</button>
+                            <button class="ngm-tab-btn" data-tab="cost">Cost vs Projection</button>
+                            <button class="ngm-tab-btn" data-tab="kpis">Executive KPIs</button>
+                            <button class="ngm-tab-btn" data-tab="timeline">Timeline</button>
+                            <button class="ngm-tab-btn" data-tab="scorecard">Scorecard</button>
+                        </div>
 
-                        <!-- Toolbar -->
-                        <div class="expenses-toolbar">
-                            <div class="toolbar-left">
-                                <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Projects</h2>
-                                <select id="companyFilter" class="ngm-select" style="min-width: 200px; margin-left: 16px; font-size: 13px; padding: 6px 32px 6px 12px;">
-                                    <option value="">All Companies</option>
+                        <!-- TAB: Project List (existing functionality) -->
+                        <div class="ngm-tab-panel ngm-tab-active" data-tab-panel="list">
+                            <section class="data-section">
+
+                                <!-- Toolbar -->
+                                <div class="expenses-toolbar">
+                                    <div class="toolbar-left">
+                                        <h2 style="font-size: 18px; font-weight: 600; color: #e5e7eb; margin: 0;">Projects</h2>
+                                        <select id="companyFilter" class="ngm-select" style="min-width: 200px; margin-left: 16px; font-size: 13px; padding: 6px 32px 6px 12px;">
+                                            <option value="">All Companies</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="toolbar-right">
+                                        <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnEditProjects" disabled>
+                                            Edit Projects
+                                        </button>
+                                        <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnAddProject">
+                                            Add Project
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Projects Table -->
+                                <div class="expenses-table-container">
+                                    <div id="projectsEmptyState" class="expenses-empty-state" style="display: none;">
+                                        <span class="expenses-empty-icon">📁</span>
+                                        <span class="expenses-empty-text">No projects found</span>
+                                    </div>
+
+                                    <table class="expenses-table" id="projectsTable" style="display: none;">
+                                        <thead>
+                                            <tr>
+                                                <th>Project Name</th>
+                                                <th>Company</th>
+                                                <th>City</th>
+                                                <th>Client</th>
+                                                <th>Status</th>
+                                                <th class="col-actions"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="projectsTableBody">
+                                            <!-- Rendered by JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Edit mode footer (hidden by default) -->
+                                <div class="edit-mode-footer hidden" id="editModeFooter">
+                                    <button type="button" class="btn-edit-cancel" id="btnCancelEdit">Cancel</button>
+                                    <button type="button" class="btn-edit-save" id="btnSaveChanges">Save Changes</button>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- TAB: Project Dashboard -->
+                        <div class="ngm-tab-panel" data-tab-panel="dashboard" hidden>
+                            <div class="pd-project-selector">
+                                <label for="dashboardProjectSelect" class="pd-selector-label">Select Project</label>
+                                <select id="dashboardProjectSelect" class="ngm-select pd-selector-input">
+                                    <option value="">Choose a project...</option>
                                 </select>
                             </div>
-
-                            <div class="toolbar-right">
-                                <button type="button" class="btn-toolbar btn-toolbar-secondary" id="btnEditProjects" disabled>
-                                    Edit Projects
-                                </button>
-                                <button type="button" class="btn-toolbar btn-toolbar-primary" id="btnAddProject">
-                                    Add Project
-                                </button>
+                            <div id="dashboard-panel-content">
+                                <div class="pd-empty-state">
+                                    <span class="pd-empty-icon">📊</span>
+                                    <span class="pd-empty-text">Select a project to view its dashboard</span>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Projects Table -->
-                        <div class="expenses-table-container">
-                            <div id="projectsEmptyState" class="expenses-empty-state" style="display: none;">
-                                <span class="expenses-empty-icon">📁</span>
-                                <span class="expenses-empty-text">No projects found</span>
+                        <!-- TAB: Cost vs Projection -->
+                        <div class="ngm-tab-panel" data-tab-panel="cost" hidden>
+                            <div class="pd-project-selector">
+                                <label for="costProjectSelect" class="pd-selector-label">Select Project</label>
+                                <select id="costProjectSelect" class="ngm-select pd-selector-input">
+                                    <option value="">Choose a project...</option>
+                                </select>
                             </div>
-
-                            <table class="expenses-table" id="projectsTable" style="display: none;">
-                                <thead>
-                                    <tr>
-                                        <th>Project Name</th>
-                                        <th>Company</th>
-                                        <th>City</th>
-                                        <th>Client</th>
-                                        <th>Status</th>
-                                        <th class="col-actions"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="projectsTableBody">
-                                    <!-- Rendered by JS -->
-                                </tbody>
-                            </table>
+                            <div id="cost-panel-content">
+                                <div class="pd-empty-state">
+                                    <span class="pd-empty-icon">📈</span>
+                                    <span class="pd-empty-text">Select a project to view cost projection</span>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Edit mode footer (hidden by default) -->
-                        <div class="edit-mode-footer hidden" id="editModeFooter">
-                            <button type="button" class="btn-edit-cancel" id="btnCancelEdit">Cancel</button>
-                            <button type="button" class="btn-edit-save" id="btnSaveChanges">Save Changes</button>
+                        <!-- TAB: Executive KPIs -->
+                        <div class="ngm-tab-panel" data-tab-panel="kpis" hidden>
+                            <div id="kpis-panel-content">
+                                <div class="pd-empty-state">
+                                    <span class="pd-empty-icon">🎯</span>
+                                    <span class="pd-empty-text">Loading executive KPIs...</span>
+                                </div>
+                            </div>
                         </div>
-                    </section>
+
+                        <!-- TAB: Timeline Summary -->
+                        <div class="ngm-tab-panel" data-tab-panel="timeline" hidden>
+                            <div class="pd-project-selector">
+                                <label for="timelineProjectSelect" class="pd-selector-label">Select Project</label>
+                                <select id="timelineProjectSelect" class="ngm-select pd-selector-input">
+                                    <option value="">Choose a project...</option>
+                                </select>
+                            </div>
+                            <div id="timeline-panel-content">
+                                <div class="pd-empty-state">
+                                    <span class="pd-empty-icon">📅</span>
+                                    <span class="pd-empty-text">Select a project to view its timeline</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB: Scorecard -->
+                        <div class="ngm-tab-panel" data-tab-panel="scorecard" hidden>
+                            <div id="scorecard-panel-content"></div>
+                        </div>
+                    </div>
 
                 </div>
             </main>

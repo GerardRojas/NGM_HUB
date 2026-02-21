@@ -3075,78 +3075,82 @@
 
   /**
    * Render the algorithm formula below the diagram
+   * Uses mathematical notation: serif italic, middle dot, proper subscripts
    */
   function renderAlgoFormula() {
     if (!algoFormulaContainer) return;
 
-    var html = '<div class="algo-formula-title">Cost Formula</div>';
+    var html = '<div class="algo-formula-title">Cost Formula (Additive Multiplier Model)</div>';
 
-    // Line 1: Total = (BaseRate x SizeMod x Eff) x Sqft x Multiplier + Additions
+    // Line 1:  T = ( R · S_m · E_f ) · A · M  +  C_a
     html += '<div class="formula-line">';
-    html += fvar("total", "Total");
+    html += fvar("total", "T");
     html += '<span class="formula-eq">=</span>';
     html += '<span class="formula-paren">(</span>';
-    html += fvar("base_rate", "R", "");
-    html += '<span class="formula-op">&times;</span>';
+    html += fvar("base_rate", "R");
+    html += '<span class="formula-op">&middot;</span>';
     html += fvar("sqft_curve", "S<sub>m</sub>");
-    html += '<span class="formula-op">&times;</span>';
-    html += fvar("efficiency", "Ef");
+    html += '<span class="formula-op">&middot;</span>';
+    html += fvar("efficiency", "E<sub>f</sub>");
     html += '<span class="formula-paren">)</span>';
-    html += '<span class="formula-op">&times;</span>';
+    html += '<span class="formula-op">&middot;</span>';
     html += fvar("sqft", "A");
-    html += '<span class="formula-op">&times;</span>';
+    html += '<span class="formula-op">&middot;</span>';
     html += fvar("multiplier", "M");
     html += '<span class="formula-op">+</span>';
-    html += fvar("additions", "Adds");
+    html += fvar("additions", "C<sub>a</sub>");
     html += '</div>';
 
-    // Line 2: Multiplier breakdown (additive model)
+    // Line 2:  where  M = 1 + Σ(α_i − 1)  expanded
     html += '<div class="formula-line formula-line-sub">';
     html += '<span class="formula-section-label">where</span>';
     html += fvar("multiplier", "M");
     html += '<span class="formula-eq">=</span>';
     html += '<span class="formula-num">1</span>';
+    html += '<span class="formula-op">+</span>';
+    html += '<span class="formula-sigma">&Sigma;</span>';
 
-    // Each additive factor: + (factor - 1)
+    // Each additive factor: (α_i − 1)
     var factors = [
-      { id: "stories", sym: "St" },
-      { id: "design", sym: "Ds" },
-      { id: "foundation", sym: "Fn" },
-      { id: "land", sym: "Ln" },
-      { id: "density", sym: "Dn" },
-      { id: "floorplan", sym: "Fp" },
-      { id: "cross", sym: "Cx" },
-      { id: "rules", sym: "Rl" }
+      { id: "stories",    sym: "&alpha;<sub>s</sub>" },
+      { id: "design",     sym: "&alpha;<sub>d</sub>" },
+      { id: "foundation", sym: "&alpha;<sub>f</sub>" },
+      { id: "land",       sym: "&alpha;<sub>l</sub>" },
+      { id: "density",    sym: "&alpha;<sub>&rho;</sub>" },
+      { id: "floorplan",  sym: "&alpha;<sub>p</sub>" },
+      { id: "cross",      sym: "&alpha;<sub>x</sub>" },
+      { id: "rules",      sym: "&alpha;<sub>r</sub>" }
     ];
 
-    factors.forEach(function(f) {
+    html += '<span class="formula-paren">(</span>';
+    factors.forEach(function(f, idx) {
       var status = getNodeStatus(f.id);
-      // Show the delta value if modifier exists
       var delta = "";
       if (status.modifier && status.modifier !== 1) {
         var d = status.modifier - 1;
         delta = (d >= 0 ? "+" : "") + (d * 100).toFixed(0) + "%";
       }
-      html += '<span class="formula-op">+</span>';
-      html += '<span class="formula-paren">(</span>';
+      if (idx > 0) {
+        html += '<span class="formula-op">,</span>';
+      }
       html += fvar(f.id, f.sym, delta || "");
-      html += '<span class="formula-op">-</span>';
-      html += '<span class="formula-num">1</span>';
-      html += '<span class="formula-paren">)</span>';
     });
+    html += '<span class="formula-paren">)</span>';
+    html += '<span class="formula-op">&minus;</span>';
+    html += '<span class="formula-num">' + factors.length + '</span>';
 
     html += '</div>';
 
-    // Line 3: Additions breakdown
+    // Line 3:  where  C_a = C_cfg + C_opt + C_site
     html += '<div class="formula-line formula-line-sub">';
     html += '<span class="formula-section-label">where</span>';
-    html += fvar("additions", "Adds");
+    html += fvar("additions", "C<sub>a</sub>");
     html += '<span class="formula-eq">=</span>';
-    html += fvar("config", "Bed/Ba");
+    html += fvar("config", "C<sub>cfg</sub>");
     html += '<span class="formula-op">+</span>';
-    html += fvar("options", "Opts");
+    html += fvar("options", "C<sub>opt</sub>");
     html += '<span class="formula-op">+</span>';
-    html += fvar("opt_features", "Site");
+    html += fvar("opt_features", "C<sub>site</sub>");
     html += '</div>';
 
     algoFormulaContainer.innerHTML = html;

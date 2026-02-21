@@ -2080,31 +2080,32 @@
 
 .algo-formula-container {
   margin-top: 20px;
-  padding: 20px 24px;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  padding: 24px 28px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.1);
   border-radius: 10px;
 }
 
 .algo-formula-title {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: rgba(255, 255, 255, 0.4);
-  margin-bottom: 16px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.35);
+  margin-bottom: 20px;
+  font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* Formula lines */
+/* Formula lines — math serif font */
 .formula-line {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px;
-  margin-bottom: 12px;
-  font-family: 'Courier New', 'Fira Code', monospace;
-  font-size: 14px;
-  line-height: 1.8;
+  gap: 4px;
+  margin-bottom: 14px;
+  font-family: 'Cambria Math', 'Latin Modern Math', 'STIX Two Math', 'Times New Roman', Georgia, serif;
+  font-size: 16px;
+  line-height: 2;
 }
 
 .formula-line:last-child {
@@ -2112,47 +2113,61 @@
 }
 
 .formula-line-sub {
-  font-size: 12px;
-  padding-left: 12px;
-  border-left: 2px solid rgba(148, 163, 184, 0.1);
-  margin-left: 4px;
+  font-size: 14px;
+  padding-left: 16px;
+  border-left: 2px solid rgba(139, 92, 246, 0.15);
+  margin-left: 6px;
+  margin-top: 2px;
 }
 
 /* Formula operators and static text */
 .formula-eq {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.55);
   font-weight: 400;
-  margin: 0 2px;
+  margin: 0 6px;
+  font-size: 16px;
 }
 
 .formula-op {
-  color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.3);
   font-weight: 400;
-  margin: 0 1px;
+  margin: 0 3px;
+  font-size: 15px;
 }
 
 .formula-num {
-  color: rgba(255, 255, 255, 0.6);
-  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 400;
+  font-style: italic;
 }
 
 .formula-paren {
-  color: rgba(255, 255, 255, 0.25);
-  font-size: 16px;
+  color: rgba(255, 255, 255, 0.22);
+  font-size: 18px;
+  font-weight: 300;
+}
+
+.formula-sigma {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 400;
+  line-height: 1;
+  margin: 0 2px;
 }
 
 /* Interactive formula variable chips */
 .formula-var {
   position: relative;
   display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: 6px;
+  align-items: baseline;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid transparent;
   white-space: nowrap;
+  background: transparent;
 }
 
 .formula-var:hover {
@@ -2160,141 +2175,148 @@
 }
 
 .formula-var-symbol {
-  font-weight: 700;
-  font-size: 13px;
+  font-style: italic;
+  font-weight: 400;
+  font-size: inherit;
+  letter-spacing: 0.01em;
+}
+
+.formula-var-symbol sub {
+  font-size: 0.7em;
+  font-style: italic;
+  opacity: 0.85;
+  vertical-align: baseline;
+  position: relative;
+  top: 0.25em;
 }
 
 .formula-var-value {
-  font-size: 10px;
+  font-size: 0.65em;
   font-weight: 500;
-  opacity: 0.75;
+  font-style: normal;
+  opacity: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  transition: opacity 0.2s ease;
+  color: inherit;
 }
 
-/* Color states for formula variables */
+.formula-var:hover .formula-var-value {
+  opacity: 0.8;
+}
+
+/* Color states — transparent default, subtle colored text, bg appears on hover */
 .formula-var.fv-input {
-  background: rgba(51, 65, 85, 0.5);
-  border-color: rgba(148, 163, 184, 0.25);
   color: #cbd5e1;
 }
 .formula-var.fv-input:hover {
-  background: rgba(51, 65, 85, 0.8);
-  border-color: rgba(148, 163, 184, 0.5);
-  box-shadow: 0 0 10px rgba(148, 163, 184, 0.15);
+  background: rgba(51, 65, 85, 0.6);
+  border-color: rgba(148, 163, 184, 0.35);
+  box-shadow: 0 0 12px rgba(148, 163, 184, 0.1);
 }
 
 .formula-var.fv-calc {
-  background: rgba(30, 58, 138, 0.35);
-  border-color: rgba(96, 165, 250, 0.3);
   color: #93c5fd;
 }
 .formula-var.fv-calc:hover {
-  background: rgba(30, 58, 138, 0.6);
-  border-color: rgba(96, 165, 250, 0.6);
-  box-shadow: 0 0 10px rgba(96, 165, 250, 0.2);
+  background: rgba(30, 58, 138, 0.45);
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 0 12px rgba(96, 165, 250, 0.15);
 }
 
 .formula-var.fv-modifier {
-  background: rgba(88, 28, 135, 0.3);
-  border-color: rgba(167, 139, 250, 0.3);
   color: #c4b5fd;
 }
 .formula-var.fv-modifier:hover {
-  background: rgba(88, 28, 135, 0.55);
-  border-color: rgba(167, 139, 250, 0.6);
-  box-shadow: 0 0 10px rgba(167, 139, 250, 0.2);
+  background: rgba(88, 28, 135, 0.4);
+  border-color: rgba(167, 139, 250, 0.4);
+  box-shadow: 0 0 12px rgba(167, 139, 250, 0.15);
 }
 
 .formula-var.fv-active {
-  background: rgba(6, 78, 59, 0.4);
-  border-color: rgba(62, 207, 142, 0.35);
   color: #6ee7b7;
 }
 .formula-var.fv-active:hover {
-  background: rgba(6, 78, 59, 0.65);
-  border-color: rgba(62, 207, 142, 0.6);
-  box-shadow: 0 0 10px rgba(62, 207, 142, 0.2);
+  background: rgba(6, 78, 59, 0.45);
+  border-color: rgba(62, 207, 142, 0.4);
+  box-shadow: 0 0 12px rgba(62, 207, 142, 0.15);
 }
 
 .formula-var.fv-penalty {
-  background: rgba(127, 29, 29, 0.35);
-  border-color: rgba(248, 113, 113, 0.35);
   color: #fca5a5;
 }
 .formula-var.fv-penalty:hover {
-  background: rgba(127, 29, 29, 0.6);
-  border-color: rgba(248, 113, 113, 0.6);
-  box-shadow: 0 0 10px rgba(248, 113, 113, 0.25);
+  background: rgba(127, 29, 29, 0.45);
+  border-color: rgba(248, 113, 113, 0.4);
+  box-shadow: 0 0 12px rgba(248, 113, 113, 0.15);
 }
 
 .formula-var.fv-discount {
-  background: rgba(6, 78, 59, 0.35);
-  border-color: rgba(52, 211, 153, 0.35);
   color: #6ee7b7;
 }
 .formula-var.fv-discount:hover {
-  background: rgba(6, 78, 59, 0.6);
-  border-color: rgba(52, 211, 153, 0.6);
-  box-shadow: 0 0 10px rgba(52, 211, 153, 0.25);
+  background: rgba(6, 78, 59, 0.45);
+  border-color: rgba(52, 211, 153, 0.4);
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.15);
 }
 
 .formula-var.fv-output {
-  background: rgba(88, 28, 135, 0.4);
-  border-color: rgba(167, 139, 250, 0.4);
   color: #c4b5fd;
+  font-weight: 500;
 }
 .formula-var.fv-output:hover {
-  background: rgba(88, 28, 135, 0.65);
-  border-color: rgba(167, 139, 250, 0.7);
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
+  background: rgba(88, 28, 135, 0.45);
+  border-color: rgba(167, 139, 250, 0.5);
+  box-shadow: 0 0 14px rgba(139, 92, 246, 0.2);
 }
 
 .formula-var.fv-inactive {
-  background: rgba(30, 41, 59, 0.4);
-  border-color: rgba(148, 163, 184, 0.1);
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.25);
 }
 
 /* Highlight state when corresponding node is hovered */
 .formula-var.fv-highlight {
   transform: translateY(-2px);
-  filter: brightness(1.3);
-  box-shadow: 0 0 16px currentColor;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: currentColor;
+  box-shadow: 0 0 14px currentColor;
+}
+
+.formula-var.fv-highlight .formula-var-value {
+  opacity: 0.85;
 }
 
 /* SVG node highlight when formula var is hovered */
 .algo-node.node-formula-highlight .algo-node-circle {
-  filter: brightness(1.4) drop-shadow(0 0 10px currentColor);
+  filter: brightness(1.4) drop-shadow(0 0 12px currentColor);
   stroke-width: 3.5;
 }
 
-/* Formula section label */
+/* Formula section label — math "where" keyword */
 .formula-section-label {
-  font-size: 10px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.3);
-  margin-right: 4px;
-  font-family: 'Inter', system-ui, sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 0.8em;
+  font-weight: 400;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.35);
+  margin-right: 6px;
+  font-family: 'Cambria Math', 'Latin Modern Math', Georgia, serif;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .algo-formula-container {
-    padding: 14px 16px;
+    padding: 16px 18px;
   }
   .formula-line {
-    font-size: 12px;
-    gap: 4px;
+    font-size: 13px;
+    gap: 3px;
   }
   .formula-var {
-    padding: 2px 7px;
-  }
-  .formula-var-symbol {
-    font-size: 11px;
+    padding: 2px 5px;
   }
   .formula-var-value {
-    font-size: 9px;
+    font-size: 0.6em;
   }
 }
 
@@ -2673,22 +2695,14 @@
   }
 
   .formula-line {
-    font-size: 11px;
+    font-size: 13px;
     gap: 3px;
     flex-wrap: nowrap;
     min-width: max-content;
   }
 
   .formula-var {
-    padding: 2px 6px;
-  }
-
-  .formula-var-symbol {
-    font-size: 10px;
-  }
-
-  .formula-var-value {
-    font-size: 8px;
+    padding: 2px 5px;
   }
 
   .algo-node-details {

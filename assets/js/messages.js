@@ -2717,11 +2717,17 @@
 
   function showMentionDropdown(query, startPos) {
     // Bot agents available for @mention
+    const botIds = new Set([
+      "00000000-0000-0000-0000-000000000003",  // Andrew
+      "00000000-0000-0000-0000-000000000002",  // Daneel
+    ]);
     const botMentionables = [
       { user_id: "00000000-0000-0000-0000-000000000003", user_name: "Andrew", _isBot: true },
       { user_id: "00000000-0000-0000-0000-000000000002", user_name: "Daneel", _isBot: true },
     ];
-    const allMentionables = [...state.users, ...botMentionables];
+    // Filter bot users from state.users to avoid duplicates (bots exist in users table too)
+    const humanUsers = state.users.filter(u => !botIds.has(u.user_id));
+    const allMentionables = [...humanUsers, ...botMentionables];
 
     const filtered = allMentionables.filter((u) =>
       u.user_name?.toLowerCase().includes(query)
